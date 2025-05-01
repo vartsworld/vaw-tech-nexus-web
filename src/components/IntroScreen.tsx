@@ -86,8 +86,12 @@ const IntroScreen = () => {
             <img 
               src={gifUrl}
               alt="VAW Logo Animation"
-              className="w-full h-full object-cover max-w-[100vw] max-h-[100vh]"
-              style={{ objectPosition: 'center center' }}
+              className="w-full h-full object-contain md:object-cover max-w-screen max-h-screen"
+              style={{ 
+                objectPosition: 'center center',
+                width: '100vw',
+                height: '100vh' 
+              }}
               onLoad={() => {
                 console.info("GIF loaded successfully");
                 setGifLoaded(true);
