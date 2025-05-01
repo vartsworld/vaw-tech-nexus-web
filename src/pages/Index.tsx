@@ -29,7 +29,7 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <ParticleBackground />
       <Navbar />
-      {/* Removed spacing between Hero and ClientLogos by placing them in a div with no margins/padding */}
+      {/* Tight grouping of Hero and ClientLogos with no gap */}
       <div className="flex flex-col">
         <Hero />
         <ClientLogos />

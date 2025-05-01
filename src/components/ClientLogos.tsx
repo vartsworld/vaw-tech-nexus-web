@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from "react";
 interface ClientLogoProps {
   src: string;
@@ -8,7 +9,7 @@ const ClientLogo: React.FC<ClientLogoProps> = ({
   alt
 }) => {
   return <div className="flex items-center justify-center p-4 group">
-      <img src={src} alt={alt} className="h-16 w-auto object-contain grayscale hover:grayscale-0 opacity-70 group-hover:opacity-100 transition-all duration-300 transform group-hover:scale-110" />
+      <img src={src} alt={alt} className="h-16 w-auto object-contain hover:opacity-100 opacity-80 transition-all duration-300 transform group-hover:scale-110" />
     </div>;
 };
 const ClientLogos = () => {
@@ -67,15 +68,16 @@ const ClientLogos = () => {
       window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
-  return <section ref={containerRef} className="relative overflow-hidden py-0 my-0 px-0">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
-            Trusted by <span className="text-gradient">Industry Leaders</span>
+  return <section ref={containerRef} className="relative overflow-hidden py-0 my-0 px-0 -mt-10">
+      <div className="container mx-auto px-4 pt-0 mt-0">
+        <div className="text-center">
+          <h2 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk'] animate-pulse-gentle">
+            <span className="bg-gradient-to-r from-tech-blue to-[#33C3F0] bg-clip-text text-transparent">Trusted & Partnered by</span>{" "}
+            <span className="text-gradient">Industry Leaders</span>
           </h2>
         </div>
         
-        <div className="relative overflow-hidden py-10 before:absolute before:left-0 before:top-0 before:z-10 before:w-24 before:h-full before:bg-gradient-to-r before:from-background before:to-transparent after:absolute after:right-0 after:top-0 after:z-10 after:w-24 after:h-full after:bg-gradient-to-l after:from-background after:to-transparent">
+        <div className="relative overflow-hidden py-8 before:absolute before:left-0 before:top-0 before:z-10 before:w-24 before:h-full before:bg-gradient-to-r before:from-background before:to-transparent after:absolute after:right-0 after:top-0 after:z-10 after:w-24 after:h-full after:bg-gradient-to-l after:from-background after:to-transparent">
           <div className="flex scroller" data-direction="right" style={{
           animation: 'scroll 25s linear infinite'
         }}>
