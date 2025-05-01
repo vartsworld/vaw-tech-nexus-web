@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import Lottie from "lottie-react";
 import { useToast } from "@/components/ui/use-toast";
 import logoAnimation from "@/assets/animations/logo-animation.json";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Simple fallback animation data
 const fallbackAnimationData = {
@@ -69,14 +70,19 @@ const IntroScreen = () => {
   const [nameInput, setNameInput] = useState("");
   const [logoAnimationComplete, setLogoAnimationComplete] = useState(false);
   const [greetingAnimationComplete, setGreetingAnimationComplete] = useState(false);
-  const [animationData, setAnimationData] = useState<any>(logoAnimation);
-  const [isLoadingAnimation, setIsLoadingAnimation] = useState(false);
+  const [isAnimationLoaded, setIsAnimationLoaded] = useState(false);
   const { toast } = useToast();
 
   // Handle animation completion
   const handleAnimationComplete = () => {
+    console.log("Animation complete!");
     setStage("logo");
   };
+
+  useEffect(() => {
+    // Debug log to confirm animation data is available
+    console.log("Animation data available:", !!logoAnimation);
+  }, []);
 
   // Handle logo animation timing
   useEffect(() => {
@@ -105,6 +111,12 @@ const IntroScreen = () => {
     if (nameInput.trim()) {
       setUserName(nameInput.trim());
       setHasCompletedIntro(true);
+    } else {
+      toast({
+        title: "Name required",
+        description: "Please enter your name to continue.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -113,12 +125,22 @@ const IntroScreen = () => {
       {/* JSON Animation Stage */}
       {stage === "animation" && (
         <div className="w-full h-full flex items-center justify-center">
-          <div className="w-[280px] md:w-[400px] h-[280px] md:h-[400px]">
+          <div className="w-[280px] md:w-[400px] h-[280px] md:h-[400px] relative">
+            {!isAnimationLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Skeleton className="w-full h-full rounded-full" />
+              </div>
+            )}
             <Lottie 
-              animationData={animationData} 
+              animationData={logoAnimation} 
               loop={false}
               onComplete={handleAnimationComplete}
-              className="w-full h-full"
+              onLoadedImages={() => {
+                console.log("Animation loaded successfully");
+                setIsAnimationLoaded(true);
+              }}
+              className={`w-full h-full ${isAnimationLoaded ? 'opacity-100' : 'opacity-0'}`}
+              style={{ display: 'block' }} // Ensure it's displayed as block
             />
           </div>
         </div>
