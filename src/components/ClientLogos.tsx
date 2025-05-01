@@ -50,8 +50,8 @@ const ClientLogos = () => {
     <section className="relative overflow-hidden py-10 my-0 px-0">
       <div className="container mx-auto px-4 pt-6 mt-0 pb-4 transition-all duration-300 smooth-scroll">
         <h2 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk'] text-center mb-12 animate-pulse-gentle">
-          <span className="bg-gradient-to-r from-tech-blue to-[#33C3F0] bg-clip-text text-transparent">
-            Trusted by Industry Leaders
+          <span className="bg-gradient-to-r from-tech-blue via-[#33C3F0] to-[#0FA0CE] bg-clip-text text-transparent animate-gradient-x">
+            Trusted &amp; Partnered with Industry Leaders
           </span>
         </h2>
         
