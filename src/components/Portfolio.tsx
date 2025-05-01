@@ -3,16 +3,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-
-interface Project {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  image_url: string;
-  featured: boolean;
-  display_order: number;
-}
+import { Project } from "@/types/database";
 
 const Portfolio = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -28,7 +19,7 @@ const Portfolio = () => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("projects")
         .select("*")
         .order("display_order", { ascending: true });
@@ -39,7 +30,7 @@ const Portfolio = () => {
 
       if (data && data.length > 0) {
         // Type assertion to tell TypeScript that the data matches our Project interface
-        const projectsData = data as unknown as Project[];
+        const projectsData = data as Project[];
         setProjects(projectsData);
         setFilteredProjects(projectsData);
         

@@ -48,8 +48,8 @@ const ContactForm = () => {
     setIsSubmitting(true);
 
     try {
-      // Submit to Supabase with type assertion to match the database schema
-      const { error } = await supabase
+      // Use type assertion to handle the table that doesn't exist in the types
+      const { error } = await (supabase as any)
         .from("inquiries")
         .insert({
           name: formData.name,

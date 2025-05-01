@@ -20,17 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-
-interface Inquiry {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  service: string | null;
-  message: string;
-  status: string;
-  created_at: string;
-}
+import { Inquiry } from "@/types/database";
 
 const InquiryList = () => {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
@@ -44,7 +34,7 @@ const InquiryList = () => {
   const fetchInquiries = async () => {
     try {
       setLoading(true);
-      let query = supabase.from("inquiries").select("*");
+      let query = (supabase as any).from("inquiries").select("*");
 
       if (filter !== "all") {
         query = query.eq("status", filter);
@@ -67,7 +57,7 @@ const InquiryList = () => {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("inquiries")
         .update({ status, updated_at: new Date().toISOString() })
         .eq("id", id);
@@ -96,7 +86,7 @@ const InquiryList = () => {
   const deleteInquiry = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this inquiry?")) {
       try {
-        const { error } = await supabase.from("inquiries").delete().eq("id", id);
+        const { error } = await (supabase as any).from("inquiries").delete().eq("id", id);
 
         if (error) throw error;
 

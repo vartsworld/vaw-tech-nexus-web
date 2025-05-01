@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Carousel,
   CarouselContent,
@@ -10,17 +10,7 @@ import {
   CarouselPrevious
 } from "@/components/ui/carousel";
 import { Star } from "lucide-react";
-
-interface Testimonial {
-  id: string;
-  client_name: string;
-  client_position: string | null;
-  client_company: string | null;
-  message: string;
-  rating: number;
-  image_url: string | null;
-  is_featured: boolean;
-}
+import { Testimonial } from "@/types/database";
 
 const Testimonials = () => {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
@@ -29,7 +19,7 @@ const Testimonials = () => {
   useEffect(() => {
     const fetchTestimonials = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from("testimonials")
           .select("*")
           .order("display_order", { ascending: true });
@@ -38,13 +28,16 @@ const Testimonials = () => {
           throw error;
         }
 
-        // Filter out non-featured testimonials if there are featured ones
-        const featuredTestimonials = data.filter((t) => t.is_featured);
-        
-        if (featuredTestimonials.length > 0) {
-          setTestimonials(featuredTestimonials);
-        } else {
-          setTestimonials(data);
+        if (data && data.length > 0) {
+          // Filter out non-featured testimonials if there are featured ones
+          const testimonialsData = data as Testimonial[];
+          const featuredTestimonials = testimonialsData.filter((t) => t.is_featured);
+          
+          if (featuredTestimonials.length > 0) {
+            setTestimonials(featuredTestimonials);
+          } else {
+            setTestimonials(testimonialsData);
+          }
         }
       } catch (error) {
         console.error("Error fetching testimonials:", error);
