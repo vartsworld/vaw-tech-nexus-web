@@ -82,11 +82,12 @@ const IntroScreen = () => {
       {/* GIF Animation */}
       {stage === "logo" && (
         <div className="flex flex-col items-center justify-center animate-fade-in h-full w-full">
-          <div className="w-full h-full overflow-hidden">
+          <div className="h-full w-full relative">
             <img 
               src={gifUrl}
               alt="VAW Logo Animation"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover max-w-[100vw] max-h-[100vh]"
+              style={{ objectPosition: 'center center' }}
               onLoad={() => {
                 console.info("GIF loaded successfully");
                 setGifLoaded(true);
