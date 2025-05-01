@@ -15,8 +15,9 @@ const IntroScreen = () => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const logoGifUrl = "https://www.varts.org/wp-content/uploads/2025/05/ezgif-34875bda657622.gif";
-
+  // Using a more reliable placeholder image as fallback
+  const logoGifUrl = "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExeW85NXUyeGh3NW9pb3JpdHM5MjU1aGx1YXo3OTdvdnFybXNldXJmYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3vRfwrddpKT9ySIg/giphy.gif";
+  
   // Handle logo animation timing
   useEffect(() => {
     if (stage === "logo") {
@@ -48,6 +49,7 @@ const IntroScreen = () => {
   };
 
   const handleImageLoad = () => {
+    console.log("GIF loaded successfully");
     setImageLoaded(true);
     setImageError(false);
   };
