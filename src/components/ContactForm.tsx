@@ -48,17 +48,17 @@ const ContactForm = () => {
     setIsSubmitting(true);
 
     try {
-      // Submit to Supabase
+      // Submit to Supabase with type assertion to match the database schema
       const { error } = await supabase
-        .from('inquiries')
-        .insert([{
+        .from("inquiries")
+        .insert({
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
           service: formData.service,
           message: formData.message,
           status: 'new'
-        }]);
+        });
       
       if (error) throw error;
 

@@ -11,6 +11,7 @@ interface Project {
   description: string;
   image_url: string;
   featured: boolean;
+  display_order: number;
 }
 
 const Portfolio = () => {
@@ -37,11 +38,13 @@ const Portfolio = () => {
       }
 
       if (data && data.length > 0) {
-        setProjects(data);
-        setFilteredProjects(data);
+        // Type assertion to tell TypeScript that the data matches our Project interface
+        const projectsData = data as unknown as Project[];
+        setProjects(projectsData);
+        setFilteredProjects(projectsData);
         
         // Extract unique categories
-        const uniqueCategories = [...new Set(data.map((project) => project.category))];
+        const uniqueCategories = [...new Set(projectsData.map((project) => project.category))];
         setCategories(uniqueCategories);
       }
     } catch (error) {
