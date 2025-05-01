@@ -1,0 +1,52 @@
+
+import React from "react";
+
+interface ClientLogoProps {
+  src: string;
+  alt: string;
+}
+
+const ClientLogo: React.FC<ClientLogoProps> = ({ src, alt }) => {
+  return (
+    <div className="flex items-center justify-center p-4">
+      <img 
+        src={src} 
+        alt={alt} 
+        className="h-16 w-auto object-contain grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition-all duration-300"
+      />
+    </div>
+  );
+};
+
+const ClientLogos = () => {
+  const clients = [
+    { name: "Google", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1200px-Google_2015_logo.svg.png" },
+    { name: "Amazon", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/1024px-Amazon_logo.svg.png" },
+    { name: "Microsoft", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/1200px-Microsoft_logo.svg.png" },
+    { name: "Meta", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/1200px-Meta_Platforms_Inc._logo.svg.png" },
+    { name: "Apple", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/1200px-Apple_logo_black.svg.png" },
+    { name: "Tesla", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Tesla_Motors.svg/1200px-Tesla_Motors.svg.png" },
+  ];
+
+  return (
+    <section className="py-16 relative overflow-hidden">
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
+            Trusted by <span className="text-gradient">Industry Leaders</span>
+          </h2>
+        </div>
+        
+        <div className="relative overflow-hidden py-10 before:absolute before:left-0 before:top-0 before:z-10 before:w-24 before:h-full before:bg-gradient-to-r before:from-background before:to-transparent after:absolute after:right-0 after:top-0 after:z-10 after:w-24 after:h-full after:bg-gradient-to-l after:from-background after:to-transparent">
+          <div className="flex animate-[scroll_25s_linear_infinite] items-center">
+            {[...clients, ...clients].map((client, index) => (
+              <ClientLogo key={index} src={client.logo} alt={client.name} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default ClientLogos;

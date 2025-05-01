@@ -9,6 +9,7 @@ import TechStack from "@/components/TechStack";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import ParticleBackground from "@/components/ParticleBackground";
+import ClientLogos from "@/components/ClientLogos";
 
 const Index = () => {
   useEffect(() => {
@@ -21,6 +22,7 @@ const Index = () => {
       <ParticleBackground />
       <Navbar />
       <Hero />
+      <ClientLogos />
       <Services />
       <TechStack />
       <About />
