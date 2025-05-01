@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -27,7 +26,7 @@ const ClientLogo: React.FC<ClientLogoProps> = ({ src, alt }) => {
       <img 
         src={src} 
         alt={alt} 
-        className="h-16 w-auto object-contain grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition-all duration-300"
+        className="h-16 w-auto object-contain hover:opacity-100 transition-all duration-300"
       />
     </div>
   );
@@ -88,20 +87,20 @@ const TechStack = () => {
     }
   ];
 
-  // New tech logos from the provided image
+  // New tech logos with correct paths
   const techLogos = [
-    { name: "Angular", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#angular" },
-    { name: "WordPress", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#wordpress" },
-    { name: "Flutter", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#flutter" },
-    { name: "Laravel", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#laravel" },
-    { name: "Java", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#java" },
-    { name: "Ionic", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#ionic" },
-    { name: "Salesforce", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#salesforce" },
-    { name: "SharePoint", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#sharepoint" },
-    { name: "Shopify", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#shopify" },
-    { name: "Magento", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#magento" },
-    { name: "Node.js", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#nodejs" },
-    { name: ".NET", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#dotnet" },
+    { name: "Angular", logo: "/angular.png" },
+    { name: "WordPress", logo: "/wordpress.png" },
+    { name: "Flutter", logo: "/flutter.png" },
+    { name: "Laravel", logo: "/laravel.png" },
+    { name: "Java", logo: "/java.png" },
+    { name: "Ionic", logo: "/ionic.png" },
+    { name: "Salesforce", logo: "/salesforce.png" },
+    { name: "SharePoint", logo: "/sharepoint.png" },
+    { name: "Shopify", logo: "/shopify.png" },
+    { name: "Magento", logo: "/magento.png" },
+    { name: "Node.js", logo: "/nodejs.png" },
+    { name: ".NET", logo: "/dotnet.png" },
   ];
 
   const clients = [
