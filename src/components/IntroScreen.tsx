@@ -13,10 +13,35 @@ const IntroScreen = () => {
   const [nameInput, setNameInput] = useState("");
   const [logoAnimationComplete, setLogoAnimationComplete] = useState(false);
   const [greetingAnimationComplete, setGreetingAnimationComplete] = useState(false);
-  const [animationLoaded, setAnimationLoaded] = useState(false);
+  const [animationData, setAnimationData] = useState<any>(null);
+  const [animationLoading, setAnimationLoading] = useState(true);
   const [animationError, setAnimationError] = useState(false);
 
   const animationUrl = "https://www.varts.org/dev/Logo-5-%5Bremix%5D.json";
+
+  // Fetch animation data
+  useEffect(() => {
+    const fetchAnimationData = async () => {
+      try {
+        setAnimationLoading(true);
+        const response = await fetch(animationUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+        setAnimationData(data);
+        setAnimationLoading(false);
+        setAnimationError(false);
+        console.log("Animation data loaded successfully");
+      } catch (error) {
+        console.error("Error loading animation data:", error);
+        setAnimationError(true);
+        setAnimationLoading(false);
+      }
+    };
+
+    fetchAnimationData();
+  }, [animationUrl]);
 
   // Handle logo animation timing
   useEffect(() => {
@@ -48,38 +73,29 @@ const IntroScreen = () => {
     }
   };
 
-  const handleLottieLoad = () => {
-    console.log("Lottie animation loaded successfully");
-    setAnimationLoaded(true);
-    setAnimationError(false);
-  };
-
-  const handleLottieError = () => {
-    console.error("Failed to load Lottie animation from URL:", animationUrl);
-    setAnimationError(true);
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
       {/* Logo Animation */}
       {stage === "logo" && (
         <div className="flex flex-col items-center justify-center animate-fade-in w-full max-w-md">
-          {!animationLoaded && !animationError && (
+          {/* Loading state */}
+          {animationLoading && (
             <Skeleton className="w-64 h-64 rounded-full mx-auto mb-4" />
           )}
           
-          <div className={`w-64 h-64 mx-auto ${animationLoaded ? 'block' : 'hidden'}`}>
-            <Lottie
-              animationData={null}
-              path={animationUrl}
-              loop={true}
-              autoplay={true}
-              onLoadedImages={handleLottieLoad}
-              onError={handleLottieError}
-              className="w-full h-full"
-            />
-          </div>
+          {/* Animation display */}
+          {!animationLoading && !animationError && animationData && (
+            <div className="w-64 h-64 mx-auto">
+              <Lottie
+                animationData={animationData}
+                loop={true}
+                autoplay={true}
+                className="w-full h-full"
+              />
+            </div>
+          )}
           
+          {/* Fallback for error */}
           {animationError && (
             <div className="text-5xl md:text-7xl font-bold font-['Space_Grotesk'] mb-4 animate-pulse">
               <span className="text-gradient">V Arts World</span>
