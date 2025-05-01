@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 interface ClientLogoProps {
   src: string;
@@ -68,10 +67,10 @@ const ClientLogos = () => {
       window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
-  return <section ref={containerRef} className="relative overflow-hidden py-4 my-0 px-0 bg-gradient-to-b from-blue-50/30 to-transparent dark:from-blue-900/10 dark:to-transparent">
+  return <section ref={containerRef} className="relative overflow-hidden py-0 my-0 px-0 bg-gradient-to-b from-blue-50/30 to-transparent dark:from-blue-900/10 dark:to-transparent">
       <div className="container mx-auto px-4">
         <div className="text-center mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk'] text-blue-700">
+          <h2 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk'] text-blue-700">
             Trusted & Partnered by <span className="text-tech-blue">Industry Leaders</span>
           </h2>
         </div>
