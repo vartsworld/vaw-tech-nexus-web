@@ -10,8 +10,11 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import ParticleBackground from "@/components/ParticleBackground";
 import ClientLogos from "@/components/ClientLogos";
+import { useUser } from "@/contexts/UserContext";
 
 const Index = () => {
+  const { userName } = useUser();
+
   useEffect(() => {
     // Scroll to top on page load
     window.scrollTo(0, 0);
