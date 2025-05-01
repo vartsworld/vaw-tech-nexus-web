@@ -9,7 +9,7 @@ import TechStack from "@/components/TechStack";
 import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import ParticleBackground from "@/components/ParticleBackground";
-import ClientLogos from "@/components/ClientLogos";
+import Partners from "@/components/Partners";
 import { useUser } from "@/context/UserContext";
 
 const Index = () => {
@@ -29,10 +29,10 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <ParticleBackground />
       <Navbar />
-      {/* Tight grouping of Hero and ClientLogos with no gap */}
+      {/* Tight grouping of Hero and Partners with no gap */}
       <div className="flex flex-col">
         <Hero />
-        <ClientLogos />
+        <Partners />
       </div>
       <Services />
       <TechStack />
