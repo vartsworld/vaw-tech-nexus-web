@@ -1,26 +1,33 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useUser } from "@/context/UserContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const IntroScreen = () => {
   const { setUserName, setHasCompletedIntro } = useUser();
   const [stage, setStage] = useState<"logo" | "greeting" | "name">("logo");
   const [nameInput, setNameInput] = useState("");
   const [gifLoaded, setGifLoaded] = useState(false);
+  const [gifError, setGifError] = useState(false);
   const [typingText, setTypingText] = useState("");
   const [showNameInput, setShowNameInput] = useState(false);
   const [showButton, setShowButton] = useState(false);
+  const isMobile = useIsMobile();
+  
   const fullText = "Hello, I'm Mr. VAW";
   const typingSpeed = 100; // ms per character
   
   // Handle GIF animation timing
   useEffect(() => {
     if (stage === "logo") {
-      // Log when attempting to load the GIF
-      console.info("GIF loaded successfully");
+      // Reset error state on mount
+      setGifError(false);
+      setGifLoaded(false);
+      
+      console.info("Attempting to load GIF...");
       
       // After GIF displays for 5 seconds, move to greeting
       const timer = setTimeout(() => {
@@ -66,19 +73,36 @@ const IntroScreen = () => {
     }
   };
 
+  const gifUrl = isMobile 
+    ? "https://www.varts.org/wp-content/uploads/2025/05/ezgif-789ea740a66a2c.gif"
+    : "https://www.varts.org/wp-content/uploads/2025/05/ezgif-34875bda657622.gif";
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
       {/* GIF Animation */}
       {stage === "logo" && (
-        <div className="flex flex-col items-center justify-center animate-fade-in">
-          <div className="w-72 h-72 md:w-96 md:h-96 overflow-hidden relative">
+        <div className="flex flex-col items-center justify-center animate-fade-in h-full w-full">
+          <div className="w-full h-full overflow-hidden">
             <img 
-              src="https://www.varts.org/wp-content/uploads/2025/05/ezgif-34875bda657622.gif" 
+              src={gifUrl}
               alt="VAW Logo Animation"
-              className="w-full h-full object-contain"
-              onLoad={() => setGifLoaded(true)}
-              onError={() => console.error("Failed to load GIF")}
+              className="w-full h-full object-cover"
+              onLoad={() => {
+                console.info("GIF loaded successfully");
+                setGifLoaded(true);
+              }}
+              onError={() => {
+                console.error("Failed to load GIF");
+                setGifError(true);
+              }}
             />
+            
+            {/* Fallback if there's an error loading the GIF */}
+            {gifError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background">
+                <div className="text-3xl font-bold text-primary animate-pulse">VAW</div>
+              </div>
+            )}
           </div>
         </div>
       )}
