@@ -4,6 +4,8 @@ import { useUser } from "@/context/UserContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import Lottie from "lottie-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const IntroScreen = () => {
   const { setUserName, setHasCompletedIntro } = useUser();
@@ -11,6 +13,10 @@ const IntroScreen = () => {
   const [nameInput, setNameInput] = useState("");
   const [logoAnimationComplete, setLogoAnimationComplete] = useState(false);
   const [greetingAnimationComplete, setGreetingAnimationComplete] = useState(false);
+  const [animationLoaded, setAnimationLoaded] = useState(false);
+  const [animationError, setAnimationError] = useState(false);
+
+  const animationUrl = "https://www.varts.org/dev/Logo-5-%5Bremix%5D.json";
 
   // Handle logo animation timing
   useEffect(() => {
@@ -18,7 +24,7 @@ const IntroScreen = () => {
       const timer = setTimeout(() => {
         setLogoAnimationComplete(true);
         setStage("greeting");
-      }, 3000); // 3 seconds for logo animation
+      }, 5000); // 5 seconds for logo animation (increased to allow Lottie to play)
       return () => clearTimeout(timer);
     }
   }, [stage]);
@@ -42,14 +48,44 @@ const IntroScreen = () => {
     }
   };
 
+  const handleLottieLoad = () => {
+    console.log("Lottie animation loaded successfully");
+    setAnimationLoaded(true);
+    setAnimationError(false);
+  };
+
+  const handleLottieError = () => {
+    console.error("Failed to load Lottie animation from URL:", animationUrl);
+    setAnimationError(true);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
       {/* Logo Animation */}
       {stage === "logo" && (
-        <div className="flex flex-col items-center justify-center animate-fade-in">
-          <div className="text-5xl md:text-7xl font-bold font-['Space_Grotesk'] mb-4 animate-pulse">
-            <span className="text-gradient">V Arts World</span>
+        <div className="flex flex-col items-center justify-center animate-fade-in w-full max-w-md">
+          {!animationLoaded && !animationError && (
+            <Skeleton className="w-64 h-64 rounded-full mx-auto mb-4" />
+          )}
+          
+          <div className={`w-64 h-64 mx-auto ${animationLoaded ? 'block' : 'hidden'}`}>
+            <Lottie
+              animationData={null}
+              path={animationUrl}
+              loop={true}
+              autoplay={true}
+              onLoadedImages={handleLottieLoad}
+              onError={handleLottieError}
+              className="w-full h-full"
+            />
           </div>
+          
+          {animationError && (
+            <div className="text-5xl md:text-7xl font-bold font-['Space_Grotesk'] mb-4 animate-pulse">
+              <span className="text-gradient">V Arts World</span>
+            </div>
+          )}
+          
           <div className="text-2xl md:text-3xl text-muted-foreground mb-8 animate-pulse">
             Pvt. Ltd.
           </div>
@@ -86,6 +122,7 @@ const IntroScreen = () => {
               <Button 
                 type="submit" 
                 size="lg"
+                disabled={!nameInput.trim()}
                 className="bg-primary hover:bg-primary/80 text-primary-foreground group relative overflow-hidden w-full"
               >
                 <span className="relative z-10 flex items-center">
