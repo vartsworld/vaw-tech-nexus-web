@@ -7,20 +7,84 @@ import { ArrowRight } from "lucide-react";
 import Lottie from "lottie-react";
 import { useToast } from "@/components/ui/use-toast";
 
+// Simple fallback animation data
+const fallbackAnimationData = {
+  v: "5.5.7",
+  fr: 30,
+  ip: 0,
+  op: 60,
+  w: 400,
+  h: 400,
+  nm: "V Arts World - Fallback",
+  ddd: 0,
+  assets: [],
+  layers: [
+    {
+      ddd: 0,
+      ind: 1,
+      ty: 4,
+      nm: "V Arts Shape",
+      sr: 1,
+      ks: {
+        o: { a: 1, k: [{ t: 0, s: [0], h: 1 }, { t: 30, s: [100], h: 1 }, { t: 60, s: [0], h: 1 }] },
+        r: { a: 0, k: 0 },
+        p: { a: 0, k: [200, 200, 0] },
+        s: { a: 1, k: [{ t: 0, s: [0, 0, 100], h: 1 }, { t: 30, s: [100, 100, 100], h: 1 }, { t: 60, s: [120, 120, 100], h: 1 }] }
+      },
+      shapes: [
+        {
+          ty: "gr",
+          it: [
+            {
+              ind: 0,
+              ty: "sh",
+              ks: {
+                a: 0,
+                k: {
+                  c: true,
+                  v: [[0, -50], [50, 50], [-50, 50]],
+                  i: [[0, 0], [0, 0], [0, 0]],
+                  o: [[0, 0], [0, 0], [0, 0]]
+                }
+              },
+              nm: "V Shape"
+            },
+            {
+              ty: "fl",
+              c: { a: 0, k: [1, 0.84, 0, 1] },
+              o: { a: 0, k: 100 },
+              nm: "Gold Fill"
+            }
+          ],
+          nm: "V"
+        }
+      ]
+    }
+  ]
+};
+
 const IntroScreen = () => {
   const { setUserName, setHasCompletedIntro } = useUser();
   const [stage, setStage] = useState<"animation" | "logo" | "greeting" | "name">("animation");
   const [nameInput, setNameInput] = useState("");
   const [logoAnimationComplete, setLogoAnimationComplete] = useState(false);
   const [greetingAnimationComplete, setGreetingAnimationComplete] = useState(false);
-  const [animationData, setAnimationData] = useState<any>(null);
+  const [animationData, setAnimationData] = useState<any>(fallbackAnimationData);
+  const [isLoadingAnimation, setIsLoadingAnimation] = useState(true);
   const { toast } = useToast();
 
   // Fetch the animation data when component mounts
   useEffect(() => {
     const fetchAnimation = async () => {
+      setIsLoadingAnimation(true);
       try {
-        const response = await fetch("https://www.varts.org/dev/Logo-5-%5Bremix%5D.json");
+        // First, try to load from the remote URL
+        const response = await fetch("https://www.varts.org/dev/Logo-5-%5Bremix%5D.json", { 
+          cache: "no-cache", // Prevent caching issues
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
         
         if (!response.ok) {
           throw new Error(`Failed to fetch animation: ${response.status}`);
@@ -30,13 +94,14 @@ const IntroScreen = () => {
         setAnimationData(data);
       } catch (error) {
         console.error("Error loading animation:", error);
+        // Use the fallback animation (already set as default)
         toast({
           title: "Animation Error",
           description: "Failed to load the intro animation. Proceeding with standard intro.",
           variant: "destructive",
         });
-        // If animation fails to load, skip to logo stage
-        setStage("logo");
+      } finally {
+        setIsLoadingAnimation(false);
       }
     };
     
@@ -81,16 +146,23 @@ const IntroScreen = () => {
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
       {/* JSON Animation Stage */}
-      {stage === "animation" && animationData && (
+      {stage === "animation" && (
         <div className="w-full h-full flex items-center justify-center">
-          <div className="w-[280px] md:w-[400px] h-[280px] md:h-[400px]">
-            <Lottie 
-              animationData={animationData} 
-              loop={false}
-              onComplete={handleAnimationComplete}
-              className="w-full h-full"
-            />
-          </div>
+          {isLoadingAnimation ? (
+            <div className="flex flex-col items-center justify-center">
+              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <p className="mt-4 text-muted-foreground">Loading animation...</p>
+            </div>
+          ) : (
+            <div className="w-[280px] md:w-[400px] h-[280px] md:h-[400px]">
+              <Lottie 
+                animationData={animationData} 
+                loop={false}
+                onComplete={handleAnimationComplete}
+                className="w-full h-full"
+              />
+            </div>
+          )}
         </div>
       )}
 
