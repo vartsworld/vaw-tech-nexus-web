@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from "react";
 interface ClientLogoProps {
   src: string;
@@ -68,8 +69,8 @@ const ClientLogos = () => {
     };
   }, []);
   return <section ref={containerRef} className="relative overflow-hidden py-0 my-0 px-0 -mt-10">
-      <div className="container mx-auto px-4 pt-0 mt-0">
-        <div className="text-center">
+      <div className="container mx-auto px-4 pt-6 mt-0 pb-4 transition-all duration-300 smooth-scroll">
+        <div className="text-center mb-6">
           <h2 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk'] animate-pulse-gentle">
             <span className="bg-gradient-to-r from-tech-blue to-[#33C3F0] bg-clip-text text-transparent">Trusted & Partnered by</span>{" "}
             <span className="text-gradient text-blue-700">Industry Leaders</span>
