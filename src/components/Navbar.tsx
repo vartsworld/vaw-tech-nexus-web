@@ -1,12 +1,14 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Moon, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTheme } from "@/hooks/use-theme";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -59,15 +61,32 @@ const Navbar = () => {
           <a href="#contact" className="text-foreground/80 hover:text-accent transition-colors">
             Contact
           </a>
-          <Button className="bg-accent hover:bg-accent/80 text-accent-foreground">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="mr-2"
+          >
+            {theme === "dark" ? <Sun size={20} className="text-accent" /> : <Moon size={20} className="text-accent" />}
+          </Button>
+          <Button className="bg-primary hover:bg-primary/80 text-primary-foreground">
             Get a Quote
           </Button>
         </div>
 
         {/* Mobile Menu Button */}
-        <button className="md:hidden text-foreground" onClick={toggleMenu}>
-          {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        <div className="md:hidden flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? <Sun size={20} className="text-accent" /> : <Moon size={20} className="text-accent" />}
+          </Button>
+          <button className="text-foreground" onClick={toggleMenu}>
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -102,7 +121,7 @@ const Navbar = () => {
             >
               Contact
             </a>
-            <Button className="bg-accent hover:bg-accent/80 text-accent-foreground w-full">
+            <Button className="bg-primary hover:bg-primary/80 text-primary-foreground w-full">
               Get a Quote
             </Button>
           </div>

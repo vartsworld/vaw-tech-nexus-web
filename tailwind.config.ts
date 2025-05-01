@@ -58,7 +58,10 @@ export default {
 					blue: '#1EAEDB',
 					purple: '#9b87f5',
 					cyan: '#33C3F0', 
-					gray: '#403E43'
+					gray: '#403E43',
+					gold: '#FFD700',
+					red: '#ea384c',
+					black: '#000000e6',
 				}
 			},
 			borderRadius: {
