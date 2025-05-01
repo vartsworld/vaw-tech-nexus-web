@@ -1,12 +1,15 @@
 
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -14,157 +17,205 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 interface Inquiry {
   id: string;
   name: string;
   email: string;
-  phone: string;
-  service: string;
+  phone: string | null;
+  service: string | null;
   message: string;
-  date: string;
-  status: "new" | "in-progress" | "completed";
+  status: string;
+  created_at: string;
 }
 
 const InquiryList = () => {
-  // Mock data for demo purposes
-  const [inquiries, setInquiries] = useState<Inquiry[]>([
-    {
-      id: "INQ-001",
-      name: "John Smith",
-      email: "john@example.com",
-      phone: "+1 (555) 123-4567",
-      service: "Website Development",
-      message: "I need a new e-commerce website for my small business.",
-      date: "2023-05-01T10:30:00",
-      status: "new",
-    },
-    {
-      id: "INQ-002",
-      name: "Emily Johnson",
-      email: "emily@example.com",
-      phone: "+1 (555) 987-6543",
-      service: "Digital Marketing",
-      message: "Looking for help with social media marketing campaign.",
-      date: "2023-05-02T14:15:00",
-      status: "in-progress",
-    },
-    {
-      id: "INQ-003",
-      name: "Michael Brown",
-      email: "michael@example.com",
-      phone: "+1 (555) 456-7890",
-      service: "VR/AR Projects",
-      message: "Interested in developing a VR experience for our product showcase.",
-      date: "2023-05-03T09:45:00",
-      status: "new",
-    },
-    {
-      id: "INQ-004",
-      name: "Sarah Williams",
-      email: "sarah@example.com",
-      phone: "+1 (555) 789-0123",
-      service: "AI Solutions",
-      message: "We need an AI chatbot for our customer service portal.",
-      date: "2023-05-04T16:20:00",
-      status: "completed",
-    },
-  ]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>("all");
 
-  const handleStatusChange = (id: string, newStatus: "new" | "in-progress" | "completed") => {
-    setInquiries((prev) =>
-      prev.map((inquiry) =>
-        inquiry.id === id ? { ...inquiry, status: newStatus } : inquiry
-      )
-    );
+  useEffect(() => {
+    fetchInquiries();
+  }, [filter]);
+
+  const fetchInquiries = async () => {
+    try {
+      setLoading(true);
+      let query = supabase.from("inquiries").select("*");
+
+      if (filter !== "all") {
+        query = query.eq("status", filter);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setInquiries(data || []);
+    } catch (error) {
+      console.error("Error fetching inquiries:", error);
+      toast({
+        title: "Failed to load inquiries",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const updateStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from("inquiries")
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setInquiries((prev) =>
+        prev.map((inquiry) =>
+          inquiry.id === id ? { ...inquiry, status } : inquiry
+        )
+      );
+
+      toast({
+        title: "Status updated",
+        description: `Inquiry has been marked as ${status}`,
+      });
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast({
+        title: "Failed to update status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteInquiry = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this inquiry?")) {
+      try {
+        const { error } = await supabase.from("inquiries").delete().eq("id", id);
+
+        if (error) throw error;
+
+        setInquiries((prev) => prev.filter((inquiry) => inquiry.id !== id));
+
+        toast({
+          title: "Inquiry deleted",
+        });
+      } catch (error) {
+        console.error("Error deleting inquiry:", error);
+        toast({
+          title: "Failed to delete inquiry",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "new":
-        return "bg-primary/20 text-primary border-primary/30";
+        return "bg-blue-500";
       case "in-progress":
-        return "bg-accent/20 text-accent border-accent/30";
+        return "bg-yellow-500";
       case "completed":
-        return "bg-muted/20 text-muted-foreground border-muted/30";
+        return "bg-green-500";
       default:
-        return "bg-muted/20 text-muted-foreground border-muted/30";
+        return "bg-gray-500";
     }
   };
 
-  return (
-    <div className="bg-card border border-muted/20 rounded-xl shadow-lg p-6">
-      <h2 className="text-xl font-semibold mb-6">Recent Inquiries</h2>
-      
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Service</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {inquiries.map((inquiry) => (
-              <TableRow key={inquiry.id}>
-                <TableCell className="font-medium">{inquiry.id}</TableCell>
-                <TableCell>{inquiry.name}</TableCell>
-                <TableCell>{inquiry.email}</TableCell>
-                <TableCell>{inquiry.service}</TableCell>
-                <TableCell>{formatDate(inquiry.date)}</TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(inquiry.status)} variant="outline">
-                    {inquiry.status === "new" && "New"}
-                    {inquiry.status === "in-progress" && "In Progress"}
-                    {inquiry.status === "completed" && "Completed"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center space-x-2">
-                    <Select
-                      value={inquiry.status}
-                      onValueChange={(value: any) =>
-                        handleStatusChange(inquiry.id, value)
-                      }
-                    >
-                      <SelectTrigger className="w-32 h-8">
-                        <SelectValue placeholder="Change Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="sm">
-                      View
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <p>Loading inquiries...</p>
       </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Customer Inquiries</h2>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Filter:</span>
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Inquiries</SelectItem>
+              <SelectItem value="new">New</SelectItem>
+              <SelectItem value="in-progress">In Progress</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {inquiries.length === 0 ? (
+        <div className="text-center py-8 bg-card border border-muted/20 rounded-lg">
+          <p className="text-muted-foreground">No inquiries found.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {inquiries.map((inquiry) => (
+            <Card key={inquiry.id} className="overflow-hidden">
+              <CardHeader className="flex flex-row justify-between items-start pb-2">
+                <div>
+                  <CardTitle>{inquiry.name}</CardTitle>
+                  <CardDescription className="flex gap-2 items-center mt-1">
+                    <span>{inquiry.email}</span>
+                    {inquiry.phone && <span>• {inquiry.phone}</span>}
+                  </CardDescription>
+                </div>
+                <Badge className={getStatusColor(inquiry.status)}>
+                  {inquiry.status}
+                </Badge>
+              </CardHeader>
+              <CardContent className="pb-2">
+                {inquiry.service && (
+                  <div className="mb-2">
+                    <span className="font-medium">Service:</span> {inquiry.service}
+                  </div>
+                )}
+                <p className="whitespace-pre-wrap">{inquiry.message}</p>
+                <div className="mt-3 text-xs text-muted-foreground">
+                  Received on{" "}
+                  {format(new Date(inquiry.created_at), "PPP 'at' p")}
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between pt-2">
+                <div className="flex gap-2">
+                  <Select
+                    value={inquiry.status}
+                    onValueChange={(value) => updateStatus(inquiry.id, value)}
+                  >
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">New</SelectItem>
+                      <SelectItem value="in-progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => deleteInquiry(inquiry.id)}
+                >
+                  Delete
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

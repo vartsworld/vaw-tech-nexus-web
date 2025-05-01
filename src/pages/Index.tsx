@@ -10,6 +10,7 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import ParticleBackground from "@/components/ParticleBackground";
 import Partners from "@/components/Partners";
+import Testimonials from "@/components/Testimonials";
 import { useUser } from "@/context/UserContext";
 
 const Index = () => {
@@ -36,6 +37,7 @@ const Index = () => {
       </div>
       <Services />
       <TechStack />
+      <Testimonials />
       <About />
       <Portfolio />
       <Contact />

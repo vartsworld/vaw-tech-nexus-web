@@ -1,55 +1,70 @@
 
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Project {
+  id: string;
   title: string;
   category: string;
-  image: string;
   description: string;
+  image_url: string;
+  featured: boolean;
 }
 
 const Portfolio = () => {
-  const [projects] = useState<Project[]>([
-    {
-      title: "Crypto Dashboard",
-      category: "webapp",
-      image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5",
-      description: "Real-time cryptocurrency tracking platform with advanced analytics"
-    },
-    {
-      title: "AI Fashion Assistant",
-      category: "ai",
-      image: "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7",
-      description: "Style recommendation system powered by artificial intelligence"
-    },
-    {
-      title: "VR Property Tour",
-      category: "vr",
-      image: "https://images.unsplash.com/photo-1501854140801-50d01698950b",
-      description: "Immersive virtual reality experience for real estate listings"
-    },
-    {
-      title: "E-Commerce Platform",
-      category: "website",
-      image: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d",
-      description: "Fully-featured online store with integrated payment processing"
-    },
-    {
-      title: "Brand Identity Package",
-      category: "design",
-      image: "https://images.unsplash.com/photo-1493397212122-2b85dda8106b",
-      description: "Comprehensive brand identity development for a tech startup"
-    },
-    {
-      title: "Social Marketing Campaign",
-      category: "marketing",
-      image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
-      description: "Cross-platform digital marketing strategy with measurable results"
-    },
-  ]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  const fetchProjects = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .order("display_order", { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        setProjects(data);
+        setFilteredProjects(data);
+        
+        // Extract unique categories
+        const uniqueCategories = [...new Set(data.map((project) => project.category))];
+        setCategories(uniqueCategories);
+      }
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterProjects = (category: string) => {
+    setActiveFilter(category);
+
+    if (category === "all") {
+      setFilteredProjects(projects);
+    } else {
+      setFilteredProjects(projects.filter((project) => project.category === category));
+    }
+  };
+
+  // Don't show the section if there are no projects
+  if (projects.length === 0 && !loading) {
+    return null;
+  }
 
   return (
     <section id="portfolio" className="py-20">
@@ -59,79 +74,86 @@ const Portfolio = () => {
             Our <span className="text-gradient">Portfolio</span>
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-['Outfit']">
-            Explore our recent projects that showcase our expertise and innovation across various industries.
+            Check out some of our recent projects
           </p>
         </div>
 
-        <Tabs defaultValue="all" className="w-full">
-          <div className="flex justify-center mb-8">
-            <TabsList className="bg-muted/20">
-              <TabsTrigger value="all">All Projects</TabsTrigger>
-              <TabsTrigger value="website">Websites</TabsTrigger>
-              <TabsTrigger value="webapp">Web Apps</TabsTrigger>
-              <TabsTrigger value="ai">AI Solutions</TabsTrigger>
-              <TabsTrigger value="vr">VR/AR</TabsTrigger>
-              <TabsTrigger value="design">Design</TabsTrigger>
-            </TabsList>
+        {loading ? (
+          <div className="text-center py-12">
+            <p>Loading portfolio...</p>
           </div>
-
-          <TabsContent value="all" className="mt-0">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {projects.map((project, index) => (
-                <ProjectCard key={index} project={project} />
+        ) : (
+          <>
+            <div className="flex flex-wrap justify-center gap-2 mb-8">
+              <Button
+                variant={activeFilter === "all" ? "default" : "outline"}
+                className="rounded-full"
+                onClick={() => filterProjects("all")}
+              >
+                All
+              </Button>
+              {categories.map((category) => (
+                <Button
+                  key={category}
+                  variant={activeFilter === category ? "default" : "outline"}
+                  className="rounded-full"
+                  onClick={() => filterProjects(category)}
+                >
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </Button>
               ))}
             </div>
-          </TabsContent>
 
-          {["website", "webapp", "ai", "vr", "design", "marketing"].map((category) => (
-            <TabsContent key={category} value={category} className="mt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {projects
-                  .filter((project) => project.category === category)
-                  .map((project, index) => (
-                    <ProjectCard key={index} project={project} />
-                  ))}
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
-
-        <div className="mt-12 text-center">
-          <Button variant="outline" className="border-primary text-primary hover:bg-primary/10">
-            View All Projects
-          </Button>
-        </div>
+            <motion.div
+              layout
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {filteredProjects.map((project) => (
+                <motion.div
+                  key={project.id}
+                  layout
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="group"
+                >
+                  <div className="bg-card overflow-hidden rounded-xl shadow-lg border border-muted/20">
+                    <div className="relative aspect-[16/9] overflow-hidden">
+                      <img
+                        src={project.image_url}
+                        alt={project.title}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+                        <div className="p-6 text-white">
+                          <h3 className="text-xl font-bold mb-2">{project.title}</h3>
+                          <p className="text-sm line-clamp-2">{project.description}</p>
+                        </div>
+                      </div>
+                      {project.featured && (
+                        <div className="absolute top-2 right-2 bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full font-medium">
+                          Featured
+                        </div>
+                      )}
+                      <div className="absolute top-2 left-2 bg-card/80 backdrop-blur-sm text-xs px-2 py-1 rounded-full font-medium">
+                        {project.category.charAt(0).toUpperCase() + project.category.slice(1)}
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <h3 className="text-xl font-bold mb-2">{project.title}</h3>
+                      <p className="text-muted-foreground line-clamp-2">
+                        {project.description}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </>
+        )}
       </div>
     </section>
-  );
-};
-
-const ProjectCard = ({ project }: { project: Project }) => {
-  return (
-    <Card className="overflow-hidden group bg-transparent border-0">
-      <div className="relative overflow-hidden rounded-lg aspect-[16/10]">
-        <img 
-          src={project.image} 
-          alt={project.title}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent opacity-60"></div>
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <h3 className="text-lg font-semibold">{project.title}</h3>
-          <p className="text-sm text-foreground/80">{project.description}</p>
-        </div>
-        <div className="absolute top-3 right-3">
-          <span className="bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs">
-            {project.category.toUpperCase()}
-          </span>
-        </div>
-        <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <Button size="sm" className="bg-background/80 backdrop-blur-sm text-foreground hover:bg-background">
-            View Project
-          </Button>
-        </div>
-      </div>
-    </Card>
   );
 };
 

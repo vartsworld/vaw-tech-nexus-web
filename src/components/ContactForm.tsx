@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FormData {
   name: string;
@@ -42,15 +43,25 @@ const ContactForm = () => {
     setFormData((prev) => ({ ...prev, service: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // In a real application, you would send this data to your backend
-    console.log("Form data submitted:", formData);
+    try {
+      // Submit to Supabase
+      const { error } = await supabase
+        .from('inquiries')
+        .insert([{
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          service: formData.service,
+          message: formData.message,
+          status: 'new'
+        }]);
+      
+      if (error) throw error;
 
-    // Simulate API call
-    setTimeout(() => {
       toast({
         title: "Message sent successfully!",
         description: "We'll get back to you as soon as possible.",
@@ -64,9 +75,16 @@ const ContactForm = () => {
         service: "",
         message: "",
       });
-      
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: "Error sending message",
+        description: "Please try again later or contact us directly by email.",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   return (
