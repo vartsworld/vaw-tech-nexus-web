@@ -1,13 +1,17 @@
 
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useUser } from "@/context/UserContext";
 
 const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const { userName } = useUser();
+  const [hasScrolled, setHasScrolled] = useState(false);
+  const [isInitialView, setIsInitialView] = useState(true);
+  const scrollThreshold = 150; // pixels to scroll before triggering animation
 
+  // Handle parallax effect on mouse move
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!heroRef.current) return;
@@ -36,6 +40,32 @@ const Hero = () => {
       window.removeEventListener("mousemove", handleMouseMove);
     };
   }, []);
+  
+  // Handle scroll animation
+  useEffect(() => {
+    // Wait a bit after initial load to activate the initial view state
+    const initialTimer = setTimeout(() => {
+      setIsInitialView(false);
+    }, 2000);
+    
+    const handleScroll = () => {
+      if (window.scrollY > scrollThreshold && !hasScrolled) {
+        setHasScrolled(true);
+      } else if (window.scrollY <= scrollThreshold && hasScrolled) {
+        setHasScrolled(false);
+      }
+    };
+    
+    window.addEventListener("scroll", handleScroll);
+    
+    // Run once to check initial scroll position
+    handleScroll();
+    
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      clearTimeout(initialTimer);
+    };
+  }, [hasScrolled]);
 
   return (
     <section ref={heroRef} className="relative min-h-screen flex items-center pt-20 pb-20 overflow-hidden">
@@ -45,29 +75,33 @@ const Hero = () => {
       
       <div className="container mx-auto px-4 z-10 relative">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="mb-6 relative">
-            <div className="absolute inset-0 flex items-center justify-center scale-110 opacity-30 blur-sm parallax-element" data-speed="0.03">
-              <h1 className="text-4xl md:text-7xl font-bold leading-tight font-['Space_Grotesk']">
-                <span className="text-gradient">Transforming Ideas</span>
+          <div className={`transition-all duration-1000 ease-out ${isInitialView ? "mb-16" : hasScrolled ? "mb-0 scale-75 -translate-y-12 opacity-80" : "mb-6"}`}>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center justify-center scale-110 opacity-30 blur-sm parallax-element" data-speed="0.03">
+                <h1 className="text-4xl md:text-7xl font-bold leading-tight font-['Space_Grotesk']">
+                  <span className="text-gradient">
+                    {userName ? `Welcome, ${userName}` : 'Transforming Ideas'}
+                  </span>
+                </h1>
+              </div>
+              <h1 className="text-4xl md:text-7xl font-bold mb-2 leading-tight font-['Space_Grotesk'] relative z-10">
+                <span className="text-gradient">
+                  {userName ? `Welcome, ${userName}` : 'Transforming Ideas'}
+                </span>
               </h1>
             </div>
-            <h1 className="text-4xl md:text-7xl font-bold mb-2 leading-tight font-['Space_Grotesk'] relative z-10">
-              <span className="text-gradient">
-                {userName ? `Welcome, ${userName}` : 'Transforming Ideas'}
-              </span>
-            </h1>
           </div>
           
-          <div className="relative">
+          <div className={`transition-all duration-1000 ease-out transform ${isInitialView ? "opacity-0 translate-y-8" : hasScrolled ? "opacity-100 translate-y-0 scale-110" : "opacity-90 translate-y-4"}`}>
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight font-['Space_Grotesk'] relative z-10">
               Into Digital <span className="relative inline-block">
                 <span className="relative z-10">Excellence</span>
-                <span className="absolute -bottom-2 left-0 right-0 h-3 bg-tech-gold/30 skew-x-12 z-0 parallax-element" data-speed="0.02"></span>
+                <span className={`absolute -bottom-2 left-0 right-0 h-3 bg-tech-gold/30 skew-x-12 z-0 parallax-element transition-all duration-700 ${hasScrolled ? "w-full" : "w-3/4"}`} data-speed="0.02"></span>
               </span>
             </h1>
           </div>
           
-          <p className="text-xl md:text-2xl text-foreground/80 mb-10 max-w-3xl mx-auto font-['Outfit'] neo-border p-6 glass-panel">
+          <p className={`text-xl md:text-2xl text-foreground/80 max-w-3xl mx-auto font-['Outfit'] neo-border p-6 glass-panel transition-all duration-1000 ease-out ${isInitialView ? "opacity-0" : "opacity-100"} ${hasScrolled ? "mb-12" : "mb-10"}`}>
             {userName 
               ? `${userName}, we deliver premium digital solutions that merge innovation with creativity, crafted just for you.` 
               : `VAW Technologies delivers premium digital solutions that merge innovation with creativity, 
@@ -75,7 +109,7 @@ const Hero = () => {
             }
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className={`flex flex-col sm:flex-row gap-4 justify-center transition-all duration-1000 ease-out ${isInitialView ? "opacity-0 translate-y-8" : "opacity-100 translate-y-0"}`}>
             <Button size="lg" className="bg-primary hover:bg-primary/80 text-primary-foreground group relative overflow-hidden">
               <span className="relative z-10 flex items-center">
                 Our Services 
@@ -89,7 +123,7 @@ const Hero = () => {
             </Button>
           </div>
           
-          <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className={`grid grid-cols-2 md:grid-cols-4 gap-8 transition-all duration-1000 ease-out ${isInitialView ? "opacity-0 translate-y-16 mt-16" : hasScrolled ? "opacity-100 translate-y-0 mt-24" : "opacity-100 translate-y-0 mt-20"}`}>
             <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
               <span className="text-4xl font-bold text-gradient">150+</span>
               <span className="text-muted-foreground">Projects Delivered</span>

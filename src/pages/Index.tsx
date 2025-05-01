@@ -16,7 +16,7 @@ const Index = () => {
   const { hasCompletedIntro } = useUser();
 
   useEffect(() => {
-    // Scroll to top on page load
+    // Scroll to top on page load to ensure animations play properly
     window.scrollTo(0, 0);
   }, []);
 
