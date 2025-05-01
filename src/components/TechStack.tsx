@@ -7,7 +7,7 @@ import {
   Server, 
   Cpu,
 } from "lucide-react";
-import { useUser } from "@/contexts/UserContext";
+import { useUser } from "@/context/UserContext";
 
 interface TechItem {
   name: string;
@@ -41,60 +41,76 @@ const TechStack = () => {
     {
       name: "React",
       icon: <Code className="h-8 w-8 text-tech-blue" />,
-      description: userName ? `Modern frontend solutions for ${userName}'s projects` : "Modern frontend development with React and Next.js",
+      description: "Modern frontend development with React and Next.js",
       category: "Frontend"
     },
     {
       name: "Node.js",
       icon: <Server className="h-8 w-8 text-tech-purple" />,
-      description: userName ? `Scalable backend services tailored for ${userName}` : "Scalable server-side solutions with Node.js",
+      description: "Scalable server-side solutions with Node.js",
       category: "Backend"
     },
     {
       name: "Python",
       icon: <Code className="h-8 w-8 text-tech-blue" />,
-      description: userName ? `AI & data processing solutions for ${userName}'s needs` : "AI & data processing with Python libraries",
+      description: "AI & data processing with Python libraries",
       category: "AI & Data"
     },
     {
       name: "AWS",
       icon: <Server className="h-8 w-8 text-tech-purple" />,
-      description: userName ? `Cloud infrastructure optimized for ${userName}'s requirements` : "Cloud infrastructure with AWS services",
+      description: "Cloud infrastructure with AWS services",
       category: "Cloud"
     },
     {
       name: "MongoDB",
       icon: <Database className="h-8 w-8 text-tech-blue" />,
-      description: userName ? `NoSQL database solutions perfect for ${userName}'s applications` : "NoSQL database solutions for modern applications",
+      description: "NoSQL database solutions for modern applications",
       category: "Database"
     },
     {
       name: "WebXR",
       icon: <Cpu className="h-8 w-8 text-tech-purple" />,
-      description: userName ? `Immersive AR/VR experiences for ${userName}` : "Immersive AR/VR experiences with WebXR",
+      description: "Immersive AR/VR experiences with WebXR",
       category: "XR"
     },
     {
       name: "TensorFlow",
       icon: <Cpu className="h-8 w-8 text-tech-blue" />,
-      description: userName ? `AI & ML solutions customized for ${userName}` : "AI & ML solutions with TensorFlow",
+      description: "AI & ML solutions with TensorFlow",
       category: "AI"
     },
     {
       name: "Blockchain",
       icon: <Database className="h-8 w-8 text-tech-purple" />,
-      description: userName ? `Web3 blockchain development for ${userName}'s innovation` : "Blockchain development for web3 applications",
+      description: "Blockchain development for web3 applications",
       category: "Web3"
     }
   ];
 
+  // New tech logos from the provided image
+  const techLogos = [
+    { name: "Angular", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#angular" },
+    { name: "WordPress", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#wordpress" },
+    { name: "Flutter", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#flutter" },
+    { name: "Laravel", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#laravel" },
+    { name: "Java", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#java" },
+    { name: "Ionic", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#ionic" },
+    { name: "Salesforce", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#salesforce" },
+    { name: "SharePoint", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#sharepoint" },
+    { name: "Shopify", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#shopify" },
+    { name: "Magento", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#magento" },
+    { name: "Node.js", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#nodejs" },
+    { name: ".NET", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#dotnet" },
+  ];
+
   const clients = [
-    { name: "Google", logo: "https://placehold.co/200x80?text=Google" },
-    { name: "Amazon", logo: "https://placehold.co/200x80?text=Amazon" },
-    { name: "Microsoft", logo: "https://placehold.co/200x80?text=Microsoft" },
-    { name: "Meta", logo: "https://placehold.co/200x80?text=Meta" },
-    { name: "Apple", logo: "https://placehold.co/200x80?text=Apple" },
-    { name: "Tesla", logo: "https://placehold.co/200x80?text=Tesla" },
+    { name: "Google", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1200px-Google_2015_logo.svg.png" },
+    { name: "Amazon", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/1024px-Amazon_logo.svg.png" },
+    { name: "Microsoft", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/1200px-Microsoft_logo.svg.png" },
+    { name: "Meta", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/1200px-Meta_Platforms_Inc._logo.svg.png" },
+    { name: "Apple", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/1200px-Apple_logo_black.svg.png" },
+    { name: "Tesla", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Tesla_Motors.svg/1200px-Tesla_Motors.svg.png" },
   ];
 
   useEffect(() => {
@@ -114,8 +130,8 @@ const TechStack = () => {
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-['Outfit']">
             {userName 
-              ? `${userName}, we work with future-proof technologies to deliver optimal solutions for your specific needs.`
-              : "We work with future-proof technologies for optimal software solutions and strategies."
+              ? `${userName}, we work with future-proof technologies to build optimal software solutions tailored for your needs.`
+              : `We work with future-proof technologies for optimal software solutions and strategies.`
             }
           </p>
         </div>
@@ -142,11 +158,26 @@ const TechStack = () => {
 
         <div className="mb-10">
           <h3 className="text-2xl text-center font-bold mb-8 font-['Space_Grotesk']">
-            {userName
-              ? `${userName}, join our list of `
-              : "Trusted by "
-            }
-            <span className="text-gradient">Industry Leaders</span>
+            {userName ? `${userName}, Our Expertise Includes` : 'Our Technical Expertise'}
+          </h3>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-16">
+            {techLogos.map((tech, index) => (
+              <div key={index} className="tech-card flex flex-col items-center justify-center p-4 hover:-translate-y-2 transition-all duration-300">
+                <img
+                  src={tech.logo}
+                  alt={tech.name}
+                  className="h-12 w-auto object-contain mb-2"
+                />
+                <span className="text-sm font-medium">{tech.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-10">
+          <h3 className="text-2xl text-center font-bold mb-8 font-['Space_Grotesk']">
+            Trusted by <span className="text-gradient">Industry Leaders</span>
           </h3>
           
           <div className="relative overflow-hidden py-10 before:absolute before:left-0 before:top-0 before:z-10 before:w-24 before:h-full before:bg-gradient-to-r before:from-background before:to-transparent after:absolute after:right-0 after:top-0 after:z-10 after:w-24 after:h-full after:bg-gradient-to-l after:from-background after:to-transparent">

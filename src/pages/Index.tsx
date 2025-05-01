@@ -10,15 +10,20 @@ import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 import ParticleBackground from "@/components/ParticleBackground";
 import ClientLogos from "@/components/ClientLogos";
-import { useUser } from "@/contexts/UserContext";
+import { useUser } from "@/context/UserContext";
 
 const Index = () => {
-  const { userName } = useUser();
+  const { hasCompletedIntro } = useUser();
 
   useEffect(() => {
     // Scroll to top on page load
     window.scrollTo(0, 0);
   }, []);
+
+  // Don't render the page content until intro is completed
+  if (!hasCompletedIntro) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">

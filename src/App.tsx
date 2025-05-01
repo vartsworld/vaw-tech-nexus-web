@@ -9,18 +9,18 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./providers/ThemeProvider";
-import { UserProvider } from "./contexts/UserContext";
+import { UserProvider } from "./context/UserContext";
 import IntroScreen from "./components/IntroScreen";
-import { useUser } from "./contexts/UserContext";
+import { useUser } from "./context/UserContext";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { isIntroCompleted } = useUser();
+  const { hasCompletedIntro } = useUser();
 
   return (
     <>
-      {!isIntroCompleted && <IntroScreen />}
+      {!hasCompletedIntro && <IntroScreen />}
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
