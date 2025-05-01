@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from "react";
 interface ClientLogoProps {
   src: string;
@@ -67,11 +68,11 @@ const ClientLogos = () => {
       window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
-  return <section ref={containerRef} className="relative overflow-hidden py-0 my-0 px-0">
+  return <section ref={containerRef} className="relative overflow-hidden py-12 my-0 px-0">
       <div className="container mx-auto px-4">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
-            Trusted by <span className="text-gradient">Industry Leaders</span>
+            Trusted &amp; Partnered by <span className="text-gradient">Industry Leaders</span>
           </h2>
         </div>
         

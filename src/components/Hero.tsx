@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -80,7 +81,7 @@ const Hero = () => {
             </Button>
           </div>
           
-          <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="mt-12 grid grid-cols-2 md:grid-cols-5 gap-6">
             <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
               <span className="text-4xl font-bold text-gradient">150+</span>
               <span className="text-muted-foreground">Projects Delivered</span>
@@ -92,6 +93,10 @@ const Hero = () => {
             <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
               <span className="text-4xl font-bold text-gradient">10+</span>
               <span className="text-muted-foreground">Industries Served</span>
+            </div>
+            <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
+              <span className="text-4xl font-bold text-gradient">5+</span>
+              <span className="text-muted-foreground">Countries Served</span>
             </div>
             <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
               <span className="text-4xl font-bold text-gradient">24/7</span>
