@@ -4,7 +4,6 @@ import { useUser } from "@/context/UserContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import Lottie from "lottie-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const IntroScreen = () => {
@@ -13,35 +12,10 @@ const IntroScreen = () => {
   const [nameInput, setNameInput] = useState("");
   const [logoAnimationComplete, setLogoAnimationComplete] = useState(false);
   const [greetingAnimationComplete, setGreetingAnimationComplete] = useState(false);
-  const [animationData, setAnimationData] = useState<any>(null);
-  const [animationLoading, setAnimationLoading] = useState(true);
-  const [animationError, setAnimationError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
-  const animationUrl = "https://www.varts.org/dev/Logo-5-%5Bremix%5D.json";
-
-  // Fetch animation data
-  useEffect(() => {
-    const fetchAnimationData = async () => {
-      try {
-        setAnimationLoading(true);
-        const response = await fetch(animationUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
-        }
-        const data = await response.json();
-        setAnimationData(data);
-        setAnimationLoading(false);
-        setAnimationError(false);
-        console.log("Animation data loaded successfully");
-      } catch (error) {
-        console.error("Error loading animation data:", error);
-        setAnimationError(true);
-        setAnimationLoading(false);
-      }
-    };
-
-    fetchAnimationData();
-  }, [animationUrl]);
+  const logoGifUrl = "https://www.varts.org/wp-content/uploads/2025/05/ezgif-34875bda657622.gif";
 
   // Handle logo animation timing
   useEffect(() => {
@@ -49,7 +23,7 @@ const IntroScreen = () => {
       const timer = setTimeout(() => {
         setLogoAnimationComplete(true);
         setStage("greeting");
-      }, 5000); // 5 seconds for logo animation (increased to allow Lottie to play)
+      }, 5000); // 5 seconds for logo animation
       return () => clearTimeout(timer);
     }
   }, [stage]);
@@ -73,30 +47,39 @@ const IntroScreen = () => {
     }
   };
 
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    console.error("Failed to load GIF from URL:", logoGifUrl);
+    setImageError(true);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
       {/* Logo Animation */}
       {stage === "logo" && (
         <div className="flex flex-col items-center justify-center animate-fade-in w-full max-w-md">
           {/* Loading state */}
-          {animationLoading && (
+          {!imageLoaded && !imageError && (
             <Skeleton className="w-64 h-64 rounded-full mx-auto mb-4" />
           )}
           
-          {/* Animation display */}
-          {!animationLoading && !animationError && animationData && (
-            <div className="w-64 h-64 mx-auto">
-              <Lottie
-                animationData={animationData}
-                loop={true}
-                autoplay={true}
-                className="w-full h-full"
-              />
-            </div>
-          )}
+          {/* GIF display */}
+          <div className={`w-64 h-64 mx-auto overflow-hidden ${imageLoaded ? 'block' : 'hidden'}`}>
+            <img
+              src={logoGifUrl}
+              alt="V Arts World Logo"
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              className="w-full h-full object-contain"
+            />
+          </div>
           
           {/* Fallback for error */}
-          {animationError && (
+          {imageError && (
             <div className="text-5xl md:text-7xl font-bold font-['Space_Grotesk'] mb-4 animate-pulse">
               <span className="text-gradient">V Arts World</span>
             </div>
