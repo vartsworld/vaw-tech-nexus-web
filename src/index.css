@@ -7,63 +7,46 @@
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
-
-    --card: 0 0% 98%;
+    --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-
-    --primary: 43 100% 50%;
-    --primary-foreground: 0 0% 12%;
-
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
-
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
-
-    --accent: 346 84% 56%;
-    --accent-foreground: 355 100% 97%;
-
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 355 100% 97%;
-
+    --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 43 100% 50%;
-
-    --radius: 0.75rem;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
   }
 
   .dark {
-    --background: 0 0% 7%;
-    --foreground: 210 40% 98%;
-
-    --card: 0 0% 9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 0 0% 9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 43 100% 50%;
-    --primary-foreground: 0 0% 12%;
-
-    --secondary: 217 92% 49%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217 33% 18%;
-    --muted-foreground: 215 20% 80%;
-
-    --accent: 346 84% 56%;
-    --accent-foreground: 355 100% 97%;
-
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 215 28% 17%;
-    --input: 215 28% 17%;
-    --ring: 43 100% 50%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
   }
 }
 
@@ -71,290 +54,51 @@
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
 
+@layer components {
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-tech-gold via-tech-red to-tech-gold animate-gradient-x;
-  }
-
-  .tech-card {
-    @apply bg-card border-2 border-tech-gold/30 rounded-xl p-6 shadow-xl hover:shadow-tech-gold/30 transition-all duration-300 backdrop-blur-sm relative overflow-hidden;
-  }
-  
-  .tech-card::before {
-    content: '';
-    @apply absolute -inset-1 bg-gradient-to-r from-tech-gold/30 via-tech-red/20 to-tech-gold/30 blur-sm opacity-0 transition-opacity duration-300;
-    z-index: -1;
-  }
-  
-  .tech-card:hover::before {
-    @apply opacity-100;
-  }
-
-  .tech-button {
-    @apply px-6 py-3 bg-gradient-to-r from-tech-red to-tech-gold text-white rounded-md hover:shadow-lg hover:shadow-tech-gold/50 transition-all duration-300 relative overflow-hidden;
-  }
-  
-  .tech-button::after {
-    content: '';
-    @apply absolute top-0 left-0 right-0 h-px bg-white/50 transform translate-x-full transition-transform duration-500;
-  }
-  
-  .tech-button:hover::after {
-    @apply translate-x-0;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-tech-blue to-tech-purple;
   }
   
   .glass-panel {
-    @apply bg-background/80 backdrop-blur-lg border border-tech-gold/20 rounded-xl shadow-lg relative overflow-hidden;
-  }
-  
-  .glass-panel::before {
-    content: '';
-    @apply absolute -inset-px bg-gradient-to-r from-tech-gold/20 via-transparent to-tech-gold/20 opacity-0 transition-opacity duration-500;
-  }
-  
-  .glass-panel:hover::before {
-    @apply opacity-100;
+    @apply bg-white/5 backdrop-blur-sm border border-white/10 dark:bg-black/20 dark:border-white/5 rounded-lg;
   }
   
   .neo-border {
-    @apply border border-tech-gold/30 shadow-[0_0_15px_rgba(255,215,0,0.3)] relative;
+    @apply relative before:absolute before:inset-0 before:p-[1px] before:rounded-lg before:bg-gradient-to-r before:from-tech-blue/30 before:to-tech-purple/30 before:-z-10 before:animate-pulse-gentle;
   }
   
-  .neo-border::after {
-    content: '';
-    @apply absolute inset-0 border border-tech-gold/0 rounded-xl transition-all duration-300;
+  .cyber-corner {
+    @apply relative before:absolute before:w-2 before:h-2 before:border-t-2 before:border-l-2 before:border-tech-blue/50 before:top-0 before:left-0 after:absolute after:w-2 after:h-2 after:border-b-2 after:border-r-2 after:border-tech-blue/50 after:bottom-0 after:right-0;
   }
   
-  .neo-border:hover::after {
-    @apply border-tech-gold/50 scale-105 blur-sm;
+  /* Add styles for the no-spacing-container */
+  .no-spacing-container > * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
   }
   
-  .futuristic-input {
-    @apply bg-background border border-tech-gold/30 focus:border-tech-gold focus:ring-1 focus:ring-tech-gold/50 rounded-md transition-all duration-300;
+  /* Add this for the scroller animation */
+  @keyframes scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
   }
   
-  .futuristic-input:focus {
-    @apply shadow-[0_0_10px_rgba(255,215,0,0.3)];
+  .scroller {
+    min-width: 100%;
+    display: flex;
+    flex-wrap: nowrap;
+    white-space: nowrap;
   }
-}
-
-.particle-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  z-index: 0;
-}
-
-.particle {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.5;
-  pointer-events: none;
-  z-index: 0;
-}
-
-@keyframes scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(calc(-200px * 6));
-  }
-}
-
-/* Luxury Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-background/50;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-gradient-to-b from-tech-gold/30 via-tech-red/30 to-tech-gold/30 rounded-full hover:bg-tech-gold/50 transition-colors;
-}
-
-/* Glow effect for interactive elements */
-.glow-on-hover {
-  @apply relative overflow-hidden;
-}
-
-.glow-on-hover::after {
-  content: '';
-  @apply absolute inset-0 bg-tech-gold/0 transition-all duration-500 rounded-md;
-  box-shadow: 0 0 0px 0px theme('colors.tech.gold');
-}
-
-.glow-on-hover:hover::after {
-  @apply bg-tech-gold/10;
-  box-shadow: 0 0 20px 5px theme('colors.tech.gold');
-}
-
-/* High-tech card hover animation */
-.tech-hover-card {
-  @apply transition-all duration-500;
-  transform-style: preserve-3d;
-  perspective: 1000px;
-}
-
-.tech-hover-card:hover {
-  transform: translateY(-5px) rotateX(5deg);
-  @apply shadow-lg shadow-tech-gold/20;
-}
-
-/* Futuristic Divider */
-.tech-divider {
-  @apply h-px bg-gradient-to-r from-transparent via-tech-gold/50 to-transparent my-8 relative overflow-hidden;
-}
-
-.tech-divider::after {
-  content: '';
-  @apply absolute top-0 left-0 right-0 h-full bg-gradient-to-r from-transparent via-tech-gold/80 to-transparent translate-x-[-100%];
-  animation: shine 3s infinite;
-}
-
-@keyframes shine {
-  0% { transform: translateX(-100%); }
-  20% { transform: translateX(100%); }
-  100% { transform: translateX(100%); }
-}
-
-/* Animated borders */
-.animated-border {
-  @apply relative;
-  background-clip: padding-box;
-}
-
-.animated-border::before {
-  content: '';
-  @apply absolute inset-0 rounded-xl border-2 border-transparent;
-  background: linear-gradient(90deg, #FFD700, #ea384c, #9b87f5, #FFD700) border-box;
-  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: destination-out;
-  mask-composite: exclude;
-  background-size: 300% 100%;
-  animation: border-animation 8s linear infinite;
-}
-
-@keyframes border-animation {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 300% 0%; }
-}
-
-/* Text reveal animation */
-.reveal-text {
-  @apply relative overflow-hidden inline-block;
-}
-
-.reveal-text span {
-  @apply block transform transition-transform duration-700;
-}
-
-.reveal-text:hover span {
-  @apply translate-y-[-100%];
-}
-
-.reveal-text span + span {
-  @apply absolute top-0 left-0 translate-y-full;
-}
-
-/* Staggered animations for lists */
-@keyframes fade-in-up {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.staggered-fade-in > * {
-  opacity: 0;
-  animation: fade-in-up 0.6s ease forwards;
-}
-
-.staggered-fade-in > *:nth-child(1) { animation-delay: 0.1s; }
-.staggered-fade-in > *:nth-child(2) { animation-delay: 0.2s; }
-.staggered-fade-in > *:nth-child(3) { animation-delay: 0.3s; }
-.staggered-fade-in > *:nth-child(4) { animation-delay: 0.4s; }
-.staggered-fade-in > *:nth-child(5) { animation-delay: 0.5s; }
-.staggered-fade-in > *:nth-child(6) { animation-delay: 0.6s; }
-
-/* 3D Button effect */
-.btn-3d {
-  @apply relative transition-all duration-300 active:translate-y-1;
-}
-
-.btn-3d::before {
-  content: '';
-  @apply absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-0 transition-opacity duration-300;
-}
-
-.btn-3d:hover::before {
-  @apply opacity-100;
-}
-
-.btn-3d::after {
-  content: '';
-  @apply absolute -bottom-2 left-0 right-0 h-2 bg-black/20 rounded-b-md transform scale-x-90 transition-transform duration-300;
-}
-
-.btn-3d:hover::after {
-  @apply scale-x-95;
-}
-
-.btn-3d:active::after {
-  @apply scale-x-0;
-}
-
-/* Cybernetic design elements */
-.cyber-corner {
-  @apply relative;
-  clip-path: polygon(0 10px, 10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px));
-}
-
-.cyber-corner::before {
-  content: '';
-  @apply absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-tech-gold/50;
-}
-
-.cyber-corner::after {
-  content: '';
-  @apply absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-tech-gold/50;
-}
-
-/* Holographic effect */
-.holographic {
-  @apply relative overflow-hidden;
-}
-
-.holographic::before {
-  content: '';
-  @apply absolute inset-0 bg-gradient-to-br from-tech-gold/10 via-tech-red/10 to-tech-purple/10 opacity-0 transition-opacity duration-500;
-  filter: blur(8px);
-}
-
-.holographic:hover::before {
-  @apply opacity-100;
-}
-
-/* Custom animations for keyframes defined in tailwind config */
-.float {
-  animation: float 5s ease-in-out infinite;
-}
-
-.pulse-gentle {
-  animation: pulse-gentle 3s ease-in-out infinite;
 }

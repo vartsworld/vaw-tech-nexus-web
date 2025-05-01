@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -35,7 +36,7 @@ const Hero = () => {
     };
   }, []);
   
-  return <section ref={heroRef} className="relative min-h-screen flex items-center pt-20 pb-0 overflow-hidden py-0">
+  return <section ref={heroRef} className="relative min-h-screen flex items-center pt-20 pb-0 overflow-hidden m-0">
       <div className="absolute -left-20 -top-20 w-64 h-64 rounded-full bg-tech-gold/10 filter blur-3xl opacity-70 parallax-element" data-speed="0.08"></div>
       <div className="absolute -right-10 top-40 w-80 h-80 rounded-full bg-tech-red/10 filter blur-3xl opacity-70 parallax-element" data-speed="0.06"></div>
       <div className="absolute right-40 bottom-20 w-60 h-60 rounded-full bg-tech-purple/10 filter blur-3xl opacity-70 parallax-element" data-speed="0.04"></div>

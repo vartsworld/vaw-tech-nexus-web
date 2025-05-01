@@ -29,7 +29,7 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <ParticleBackground />
       <Navbar />
-      <div className="no-spacing-container">
+      <div className="no-spacing-container flex flex-col">
         <Hero />
         <ClientLogos />
       </div>
