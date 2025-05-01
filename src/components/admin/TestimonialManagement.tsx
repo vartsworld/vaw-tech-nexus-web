@@ -23,9 +23,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Check, Star, Trash, Upload, PenSquare } from "lucide-react";
+import { Testimonial } from "@/types/database";
 
-interface Testimonial {
-  id: string;
+interface TestimonialInput {
+  id?: string;
   client_name: string;
   client_position: string | null;
   client_company: string | null;
@@ -41,7 +42,7 @@ const TestimonialManagement = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [currentTestimonial, setCurrentTestimonial] = useState<Partial<Testimonial>>({
+  const [currentTestimonial, setCurrentTestimonial] = useState<TestimonialInput>({
     client_name: "",
     client_position: "",
     client_company: "",
@@ -62,13 +63,13 @@ const TestimonialManagement = () => {
   const fetchTestimonials = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("testimonials")
         .select("*")
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      setTestimonials(data || []);
+      setTestimonials(data as Testimonial[] || []);
     } catch (error) {
       console.error("Error fetching testimonials:", error);
       toast({
@@ -103,13 +104,13 @@ const TestimonialManagement = () => {
     const filePath = `testimonials/${fileName}`;
 
     try {
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError } = await (supabase as any).storage
         .from("media")
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage
+      const { data } = (supabase as any).storage
         .from("media")
         .getPublicUrl(filePath);
 
@@ -140,7 +141,7 @@ const TestimonialManagement = () => {
 
       if (isEditing && currentTestimonial.id) {
         // Update existing testimonial
-        response = await supabase
+        response = await (supabase as any)
           .from("testimonials")
           .update({
             client_name: testimonialData.client_name,
@@ -156,7 +157,7 @@ const TestimonialManagement = () => {
           .eq("id", currentTestimonial.id);
       } else {
         // Create new testimonial
-        response = await supabase
+        response = await (supabase as any)
           .from("testimonials")
           .insert({
             client_name: testimonialData.client_name!,
@@ -201,7 +202,7 @@ const TestimonialManagement = () => {
     }
 
     try {
-      const { error } = await supabase.from("testimonials").delete().eq("id", id);
+      const { error } = await (supabase as any).from("testimonials").delete().eq("id", id);
 
       if (error) throw error;
 
@@ -249,7 +250,7 @@ const TestimonialManagement = () => {
 
   const toggleFeatured = async (id: string, currentValue: boolean) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("testimonials")
         .update({ is_featured: !currentValue, updated_at: new Date().toISOString() })
         .eq("id", id);
@@ -281,7 +282,7 @@ const TestimonialManagement = () => {
 
   const updateOrder = async (id: string, newOrder: number) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("testimonials")
         .update({ display_order: newOrder, updated_at: new Date().toISOString() })
         .eq("id", id);

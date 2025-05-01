@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -53,55 +54,58 @@ const ProjectsManagement = () => {
   }, []);
 
   const fetchProjects = async () => {
-  try {
-    setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from('projects')
-      .select('*')
-      .order('display_order', { ascending: true });
+    try {
+      setLoading(true);
+      const { data, error } = await (supabase as any)
+        .from('projects')
+        .select('*')
+        .order('display_order', { ascending: true });
 
-    if (error) throw error;
-    
-    if (data) {
-      setProjects(data as Project[]);
+      if (error) throw error;
       
-      // Extract unique categories
-      const uniqueCategories = [...new Set(data.map((project: Project) => project.category))];
-      setCategories(uniqueCategories);
+      if (data) {
+        setProjects(data as Project[]);
+        
+        // Extract unique categories and cast the result to string[]
+        const uniqueCategories = [...new Set(data.map((project: Project) => project.category))];
+        setCategories(uniqueCategories as string[]);
+      }
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load projects data',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Error fetching projects:', error);
-    toast({
-      title: 'Error',
-      description: 'Failed to load projects data',
-      variant: 'destructive',
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     
     setNewProject(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: name === 'featured' ? checked : value
     }));
   };
 
   const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    
     setEditProject(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: name === 'featured' ? checked : value
     }));
   };
 
   const toggleFeatured = (id: string) => {
     const project = projects.find(project => project.id === id);
     if (project) {
-      updateProject(id, { featured: !project.featured });
+      updateProject(id);
     }
   };
 
@@ -119,39 +123,39 @@ const ProjectsManagement = () => {
   };
 
   const addProject = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  if (!validateProjectForm()) return;
+    e.preventDefault();
+    if (!validateProjectForm()) return;
 
-  try {
-    const { data, error } = await (supabase as any)
-      .from('projects')
-      .insert({
-        title: newProject.title,
-        category: newProject.category,
-        description: newProject.description,
-        image_url: newProject.image_url,
-        featured: newProject.featured,
-        display_order: newProject.display_order || 0
-      })
-      .select();
+    try {
+      const { data, error } = await (supabase as any)
+        .from('projects')
+        .insert({
+          title: newProject.title,
+          category: newProject.category,
+          description: newProject.description,
+          image_url: newProject.image_url,
+          featured: newProject.featured,
+          display_order: newProject.display_order || 0
+        })
+        .select();
 
-    if (error) throw error;
+      if (error) throw error;
 
-    setProjects([...projects, data[0] as Project]);
-    resetForm();
-    toast({
-      title: 'Success',
-      description: 'Project added successfully',
-    });
-  } catch (error) {
-    console.error('Error adding project:', error);
-    toast({
-      title: 'Error',
-      description: 'Failed to add project',
-      variant: 'destructive',
-    });
-  }
-};
+      setProjects([...projects, data[0] as Project]);
+      resetForm();
+      toast({
+        title: 'Success',
+        description: 'Project added successfully',
+      });
+    } catch (error) {
+      console.error('Error adding project:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add project',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const resetForm = () => {
     setNewProject({
@@ -170,69 +174,69 @@ const ProjectsManagement = () => {
   };
 
   const updateProject = async (id: string) => {
-  if (!validateProjectForm(true)) return;
+    if (!validateProjectForm(true)) return;
 
-  try {
-    const { error } = await (supabase as any)
-      .from('projects')
-      .update({
-        title: editProject.title,
-        category: editProject.category,
-        description: editProject.description,
-        image_url: editProject.image_url,
-        featured: editProject.featured,
-        display_order: editProject.display_order
-      })
-      .eq('id', id);
-
-    if (error) throw error;
-
-    setProjects(projects.map(project =>
-      project.id === id ? { ...project, ...editProject } : project
-    ));
-    
-    setIsEditing(false);
-    setEditProject({ id: '', title: '', category: '', description: '', image_url: '', featured: false, display_order: 0 });
-    
-    toast({
-      title: 'Success',
-      description: 'Project updated successfully',
-    });
-  } catch (error) {
-    console.error('Error updating project:', error);
-    toast({
-      title: 'Error',
-      description: 'Failed to update project',
-      variant: 'destructive',
-    });
-  }
-};
-
-  const deleteProject = async (id: string) => {
-  if (window.confirm('Are you sure you want to delete this project?')) {
     try {
       const { error } = await (supabase as any)
         .from('projects')
-        .delete()
+        .update({
+          title: editProject.title,
+          category: editProject.category,
+          description: editProject.description,
+          image_url: editProject.image_url,
+          featured: editProject.featured,
+          display_order: editProject.display_order
+        })
         .eq('id', id);
 
       if (error) throw error;
 
-      setProjects(projects.filter(project => project.id !== id));
+      setProjects(projects.map(project =>
+        project.id === id ? { ...project, ...editProject } : project
+      ));
+      
+      setIsEditing(false);
+      setEditProject({ id: '', title: '', category: '', description: '', image_url: '', featured: false, display_order: 0 });
+      
       toast({
         title: 'Success',
-        description: 'Project deleted successfully',
+        description: 'Project updated successfully',
       });
     } catch (error) {
-      console.error('Error deleting project:', error);
+      console.error('Error updating project:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete project',
+        description: 'Failed to update project',
         variant: 'destructive',
       });
     }
-  }
-};
+  };
+
+  const deleteProject = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this project?')) {
+      try {
+        const { error } = await (supabase as any)
+          .from('projects')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        setProjects(projects.filter(project => project.id !== id));
+        toast({
+          title: 'Success',
+          description: 'Project deleted successfully',
+        });
+      } catch (error) {
+        console.error('Error deleting project:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to delete project',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
 
   if (loading) {
     return <p>Loading projects...</p>;
