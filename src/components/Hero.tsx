@@ -1,15 +1,12 @@
-
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useUser } from "@/context/UserContext";
-
 const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const {
     userName
   } = useUser();
-  
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!heroRef.current) return;
@@ -35,8 +32,7 @@ const Hero = () => {
       window.removeEventListener("mousemove", handleMouseMove);
     };
   }, []);
-  
-  return <section ref={heroRef} className="relative min-h-screen flex items-center pt-20 pb-0 overflow-hidden m-0 mb-0 border-b-0">
+  return <section ref={heroRef} className="relative min-h-screen flex items-center pt-20 pb-20 overflow-hidden">
       <div className="absolute -left-20 -top-20 w-64 h-64 rounded-full bg-tech-gold/10 filter blur-3xl opacity-70 parallax-element" data-speed="0.08"></div>
       <div className="absolute -right-10 top-40 w-80 h-80 rounded-full bg-tech-red/10 filter blur-3xl opacity-70 parallax-element" data-speed="0.06"></div>
       <div className="absolute right-40 bottom-20 w-60 h-60 rounded-full bg-tech-purple/10 filter blur-3xl opacity-70 parallax-element" data-speed="0.04"></div>
@@ -65,7 +61,7 @@ const Hero = () => {
             </h1>
           </div>
           
-          <p className="text-xl md:text-2xl text-foreground/80 mb-8 max-w-3xl mx-auto font-['Outfit'] neo-border p-6 glass-panel">
+          <p className="text-xl md:text-2xl text-foreground/80 mb-10 max-w-3xl mx-auto font-['Outfit'] neo-border p-6 glass-panel">
             {userName ? `${userName}, we deliver premium digital solutions that merge innovation with creativity, crafted just for you.` : `VAW Technologies delivers premium digital solutions that merge innovation with creativity, 
               from stunning websites to immersive AR/VR experiences.`}
           </p>
@@ -84,7 +80,7 @@ const Hero = () => {
             </Button>
           </div>
           
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-6">
+          <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
               <span className="text-4xl font-bold text-gradient">150+</span>
               <span className="text-muted-foreground">Projects Delivered</span>
@@ -98,10 +94,6 @@ const Hero = () => {
               <span className="text-muted-foreground">Industries Served</span>
             </div>
             <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
-              <span className="text-4xl font-bold text-gradient">5+</span>
-              <span className="text-muted-foreground">Countries Served</span>
-            </div>
-            <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
               <span className="text-4xl font-bold text-gradient">24/7</span>
               <span className="text-muted-foreground">Support</span>
             </div>
@@ -109,6 +101,9 @@ const Hero = () => {
         </div>
       </div>
       
+      
+      
+      {/* Animated geometric elements */}
       <div className="absolute left-10 top-1/3 w-16 h-16 border-2 border-tech-gold/30 animate-float opacity-40 parallax-element" data-speed="0.07" style={{
       animationDelay: '0.5s'
     }}></div>
@@ -120,5 +115,4 @@ const Hero = () => {
     }}></div>
     </section>;
 };
-
 export default Hero;

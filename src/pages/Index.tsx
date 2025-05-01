@@ -29,10 +29,8 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <ParticleBackground />
       <Navbar />
-      <div className="flex flex-col space-y-0">
-        <Hero />
-        <ClientLogos />
-      </div>
+      <Hero />
+      <ClientLogos />
       <Services />
       <TechStack />
       <About />
