@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useUser } from "@/context/UserContext";
 import { Input } from "@/components/ui/input";
@@ -78,11 +77,11 @@ const IntroScreen = () => {
     : "https://www.varts.org/wp-content/uploads/2025/05/ezgif-34875bda657622.gif";
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
       {/* GIF Animation */}
       {stage === "logo" && (
-        <div className="flex flex-col items-center justify-center animate-fade-in h-full w-full">
-          <div className="h-full w-full relative">
+        <div className="flex flex-col items-center justify-center animate-fade-in h-full w-full bg-black">
+          <div className="h-full w-full relative bg-black">
             <img 
               src={gifUrl}
               alt="VAW Logo Animation"
@@ -90,7 +89,8 @@ const IntroScreen = () => {
               style={{ 
                 objectPosition: 'center center',
                 width: '100vw',
-                height: '100vh' 
+                height: '100vh',
+                backgroundColor: 'black' 
               }}
               onLoad={() => {
                 console.info("GIF loaded successfully");
@@ -104,7 +104,7 @@ const IntroScreen = () => {
             
             {/* Fallback if there's an error loading the GIF */}
             {gifError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background">
+              <div className="absolute inset-0 flex items-center justify-center bg-black">
                 <div className="text-3xl font-bold text-primary animate-pulse">VAW</div>
               </div>
             )}
