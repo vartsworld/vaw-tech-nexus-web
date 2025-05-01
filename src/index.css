@@ -14,8 +14,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
 
-    --primary: 346 84% 56%;
-    --primary-foreground: 355 100% 97%;
+    --primary: 43 100% 50%;
+    --primary-foreground: 0 0% 12%;
 
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -23,31 +23,31 @@
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;
 
-    --accent: 43 100% 50%;
-    --accent-foreground: 0 0% 12%;
+    --accent: 346 84% 56%;
+    --accent-foreground: 355 100% 97%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 355 100% 97%;
 
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 346 84% 56%;
+    --ring: 43 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222 47% 11%;
+    --background: 0 0% 7%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 13%;
+    --card: 0 0% 9%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 47% 11%;
+    --popover: 0 0% 9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 346 84% 56%;
-    --primary-foreground: 355 100% 97%;
+    --primary: 43 100% 50%;
+    --primary-foreground: 0 0% 12%;
 
     --secondary: 217 92% 49%;
     --secondary-foreground: 210 40% 98%;
@@ -55,15 +55,15 @@
     --muted: 217 33% 18%;
     --muted-foreground: 215 20% 80%;
 
-    --accent: 43 100% 50%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 346 84% 56%;
+    --accent-foreground: 355 100% 97%;
 
     --destructive: 0 62% 30%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217 33% 20%;
-    --input: 217 33% 20%;
-    --ring: 346 84% 56%;
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 43 100% 50%;
   }
 }
 
@@ -82,11 +82,23 @@
   }
 
   .tech-card {
-    @apply bg-card border border-tech-gold/20 rounded-xl p-6 shadow-lg hover:shadow-tech-gold/20 transition-all duration-300;
+    @apply bg-card border-2 border-tech-gold/30 rounded-xl p-6 shadow-xl hover:shadow-tech-gold/30 transition-all duration-300 backdrop-blur-sm;
   }
 
   .tech-button {
-    @apply px-6 py-3 bg-gradient-to-r from-tech-red to-tech-gold text-white rounded-md hover:shadow-md hover:shadow-tech-gold/50 transition-all duration-300;
+    @apply px-6 py-3 bg-gradient-to-r from-tech-red to-tech-gold text-white rounded-md hover:shadow-lg hover:shadow-tech-gold/50 transition-all duration-300;
+  }
+  
+  .glass-panel {
+    @apply bg-background/80 backdrop-blur-lg border border-tech-gold/20 rounded-xl shadow-lg;
+  }
+  
+  .neo-border {
+    @apply border border-tech-gold/30 shadow-[0_0_15px_rgba(255,215,0,0.3)];
+  }
+  
+  .futuristic-input {
+    @apply bg-background border border-tech-gold/30 focus:border-tech-gold focus:ring-1 focus:ring-tech-gold/50 rounded-md;
   }
 }
 
@@ -115,4 +127,39 @@
   100% {
     transform: translateX(calc(-200px * 6));
   }
+}
+
+/* Luxury Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background/50;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-tech-gold/30 rounded-full hover:bg-tech-gold/50 transition-colors;
+}
+
+/* Glow effect for interactive elements */
+.glow-on-hover:hover {
+  filter: drop-shadow(0 0 8px theme('colors.tech.gold'));
+}
+
+/* High-tech card hover animation */
+.tech-hover-card {
+  @apply transition-all duration-300;
+  transform-style: preserve-3d;
+}
+
+.tech-hover-card:hover {
+  transform: translateY(-5px);
+  @apply shadow-lg shadow-tech-gold/20;
+}
+
+/* Futuristic Divider */
+.tech-divider {
+  @apply h-px bg-gradient-to-r from-transparent via-tech-gold/50 to-transparent my-8;
 }

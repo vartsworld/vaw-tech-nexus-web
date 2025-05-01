@@ -54,11 +54,11 @@ export default {
 					foreground: 'hsl(var(--card-foreground))'
 				},
 				tech: {
-					dark: '#1A1F2C',
+					dark: '#121212',
 					blue: '#1EAEDB',
 					purple: '#9b87f5',
 					cyan: '#33C3F0', 
-					gray: '#403E43',
+					gray: '#2a2a2a',
 					gold: '#FFD700',
 					red: '#ea384c',
 					black: '#000000e6',
@@ -95,6 +95,10 @@ export default {
 						'background-size': '200% 200%',
 						'background-position': 'right center'
 					}
+				},
+				'shimmer': {
+					'0%': { backgroundPosition: '-200% 0' },
+					'100%': { backgroundPosition: '200% 0' }
 				}
 			},
 			animation: {
@@ -102,7 +106,17 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'float': 'float 5s ease-in-out infinite',
 				'pulse-gentle': 'pulse-gentle 3s ease-in-out infinite',
-				'gradient-x': 'gradient-x 15s ease infinite'
+				'gradient-x': 'gradient-x 15s ease infinite',
+				'shimmer': 'shimmer 2s infinite linear'
+			},
+			boxShadow: {
+				'neon': '0 0 5px theme("colors.tech.gold"), 0 0 20px theme("colors.tech.gold")',
+				'inner-glow': 'inset 0 0 20px rgba(255,215,0,0.3)'
+			},
+			backgroundImage: {
+				'tech-gradient': 'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(42,42,42,0.8) 100%)',
+				'gold-gradient': 'linear-gradient(90deg, #FFD700 0%, #FFC107 100%)',
+				'dark-gradient': 'radial-gradient(circle at center, rgba(42,42,42,1) 0%, rgba(0,0,0,1) 100%)'
 			}
 		}
 	},
