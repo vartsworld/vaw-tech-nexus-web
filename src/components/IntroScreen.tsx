@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useUser } from "@/context/UserContext";
 import { Input } from "@/components/ui/input";
@@ -6,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import Lottie from "lottie-react";
 import { useToast } from "@/components/ui/use-toast";
+import logoAnimation from "@/assets/animations/logo-animation.json";
 
 // Simple fallback animation data
 const fallbackAnimationData = {
@@ -69,44 +69,9 @@ const IntroScreen = () => {
   const [nameInput, setNameInput] = useState("");
   const [logoAnimationComplete, setLogoAnimationComplete] = useState(false);
   const [greetingAnimationComplete, setGreetingAnimationComplete] = useState(false);
-  const [animationData, setAnimationData] = useState<any>(fallbackAnimationData);
-  const [isLoadingAnimation, setIsLoadingAnimation] = useState(true);
+  const [animationData, setAnimationData] = useState<any>(logoAnimation);
+  const [isLoadingAnimation, setIsLoadingAnimation] = useState(false);
   const { toast } = useToast();
-
-  // Fetch the animation data when component mounts
-  useEffect(() => {
-    const fetchAnimation = async () => {
-      setIsLoadingAnimation(true);
-      try {
-        // First, try to load from the remote URL
-        const response = await fetch("https://www.varts.org/dev/Logo-5-%5Bremix%5D.json", { 
-          cache: "no-cache", // Prevent caching issues
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch animation: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setAnimationData(data);
-      } catch (error) {
-        console.error("Error loading animation:", error);
-        // Use the fallback animation (already set as default)
-        toast({
-          title: "Animation Error",
-          description: "Failed to load the intro animation. Proceeding with standard intro.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoadingAnimation(false);
-      }
-    };
-    
-    fetchAnimation();
-  }, [toast]);
 
   // Handle animation completion
   const handleAnimationComplete = () => {
@@ -148,21 +113,14 @@ const IntroScreen = () => {
       {/* JSON Animation Stage */}
       {stage === "animation" && (
         <div className="w-full h-full flex items-center justify-center">
-          {isLoadingAnimation ? (
-            <div className="flex flex-col items-center justify-center">
-              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-              <p className="mt-4 text-muted-foreground">Loading animation...</p>
-            </div>
-          ) : (
-            <div className="w-[280px] md:w-[400px] h-[280px] md:h-[400px]">
-              <Lottie 
-                animationData={animationData} 
-                loop={false}
-                onComplete={handleAnimationComplete}
-                className="w-full h-full"
-              />
-            </div>
-          )}
+          <div className="w-[280px] md:w-[400px] h-[280px] md:h-[400px]">
+            <Lottie 
+              animationData={animationData} 
+              loop={false}
+              onComplete={handleAnimationComplete}
+              className="w-full h-full"
+            />
+          </div>
         </div>
       )}
 
