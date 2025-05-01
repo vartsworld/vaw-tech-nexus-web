@@ -81,6 +81,15 @@
     @apply bg-clip-text text-transparent bg-gradient-to-r from-tech-gold via-tech-red to-tech-gold animate-gradient-x;
   }
 
+  /* Hero welcome animation */
+  .welcome-container {
+    @apply mt-20 transition-all duration-1000 ease-in-out;
+  }
+  
+  .welcome-container-small {
+    @apply mt-0;
+  }
+
   .tech-card {
     @apply bg-card border-2 border-tech-gold/30 rounded-xl p-6 shadow-xl hover:shadow-tech-gold/30 transition-all duration-300 backdrop-blur-sm relative overflow-hidden;
   }
