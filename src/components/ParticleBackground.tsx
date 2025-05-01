@@ -8,13 +8,16 @@ interface Particle {
   speedX: number;
   speedY: number;
   color: string;
+  opacity: number;
 }
 
 const ParticleBackground: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particles: Particle[] = [];
-  const particleCount = 100;
-  const colors = ["#9b87f5", "#1EAEDB", "#33C3F0", "#7E69AB"];
+  const particleCount = 80;
+  const colors = ["#FFD700", "#ea384c", "#9b87f5"];
+  const mousePosition = useRef({ x: 0, y: 0 });
+  const animationFrameId = useRef<number>();
   
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -29,6 +32,26 @@ const ParticleBackground: React.FC = () => {
       initParticles();
     };
 
+    const handleMouseMove = (e: MouseEvent) => {
+      mousePosition.current.x = e.clientX;
+      mousePosition.current.y = e.clientY;
+      
+      // Create a small burst of particles when mouse moves
+      if (Math.random() > 0.92) {
+        for (let i = 0; i < 3; i++) {
+          particles.push({
+            x: mousePosition.current.x,
+            y: mousePosition.current.y,
+            size: Math.random() * 3 + 1,
+            speedX: (Math.random() - 0.5) * 2,
+            speedY: (Math.random() - 0.5) * 2,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            opacity: 0.8,
+          });
+        }
+      }
+    };
+
     const initParticles = () => {
       particles.length = 0;
       for (let i = 0; i < particleCount; i++) {
@@ -39,6 +62,7 @@ const ParticleBackground: React.FC = () => {
           speedX: (Math.random() - 0.5) * 0.5,
           speedY: (Math.random() - 0.5) * 0.5,
           color: colors[Math.floor(Math.random() * colors.length)],
+          opacity: Math.random() * 0.5 + 0.2,
         });
       }
     };
@@ -60,11 +84,35 @@ const ParticleBackground: React.FC = () => {
           particle.speedY = -particle.speedY;
         }
         
+        // Mouse interaction
+        const dx = particle.x - mousePosition.current.x;
+        const dy = particle.y - mousePosition.current.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < 120) {
+          const angle = Math.atan2(dy, dx);
+          const force = (120 - distance) / 120;
+          
+          particle.speedX += Math.cos(angle) * force * 0.2;
+          particle.speedY += Math.sin(angle) * force * 0.2;
+          
+          // Limit max speed
+          const speed = Math.sqrt(particle.speedX * particle.speedX + particle.speedY * particle.speedY);
+          if (speed > 3) {
+            particle.speedX = (particle.speedX / speed) * 3;
+            particle.speedY = (particle.speedY / speed) * 3;
+          }
+        }
+        
+        // Slowly normalize speed
+        particle.speedX *= 0.99;
+        particle.speedY *= 0.99;
+        
         // Draw particle
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         ctx.fillStyle = particle.color;
-        ctx.globalAlpha = 0.3;
+        ctx.globalAlpha = particle.opacity;
         ctx.fill();
         
         // Draw connections
@@ -87,15 +135,26 @@ const ParticleBackground: React.FC = () => {
         });
       });
       
-      requestAnimationFrame(drawParticles);
+      // Remove extra particles if we have too many
+      while (particles.length > particleCount + 20) {
+        particles.shift();
+      }
+      
+      animationFrameId.current = requestAnimationFrame(drawParticles);
     };
 
     window.addEventListener("resize", handleResize);
+    window.addEventListener("mousemove", handleMouseMove);
+    
     handleResize();
     drawParticles();
     
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("mousemove", handleMouseMove);
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
     };
   }, []);
   
