@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { useUser } from "@/context/UserContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, DoorOpen } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const IntroScreen = () => {
@@ -70,11 +69,14 @@ const IntroScreen = () => {
   useEffect(() => {
     if (stage === "door-opening") {
       let animationProgress = 0;
-      const animationSpeed = 15; // ms per frame
+      // Make animation smoother by reducing speed and using non-linear progress
+      const animationSpeed = 12; // ms per frame - slower for smoother animation
       
       const doorAnimation = setInterval(() => {
         if (animationProgress < 100) {
-          animationProgress += 1;
+          // Use easing function for smoother animation (quadratic easing)
+          const increment = 0.8 + (animationProgress / 300); // Gradual acceleration
+          animationProgress += increment;
           setDoorProgress(animationProgress);
         } else {
           clearInterval(doorAnimation);
@@ -198,7 +200,7 @@ const IntroScreen = () => {
           <div className="relative w-full h-full">
             {/* Left door panel */}
             <div 
-              className="absolute top-0 bottom-0 bg-tech-gold/10 backdrop-blur-md border-r border-tech-gold/30 transition-transform duration-1000 ease-in-out flex items-center justify-end"
+              className="absolute top-0 bottom-0 bg-tech-gold/10 backdrop-blur-md border-r border-tech-gold/30 transition-transform duration-1500 ease-out flex items-center justify-end"
               style={{ 
                 left: 0, 
                 width: '50%',
@@ -210,7 +212,7 @@ const IntroScreen = () => {
             
             {/* Right door panel */}
             <div 
-              className="absolute top-0 bottom-0 bg-tech-gold/10 backdrop-blur-md border-l border-tech-gold/30 transition-transform duration-1000 ease-in-out flex items-center justify-start"
+              className="absolute top-0 bottom-0 bg-tech-gold/10 backdrop-blur-md border-l border-tech-gold/30 transition-transform duration-1500 ease-out flex items-center justify-start"
               style={{ 
                 right: 0, 
                 width: '50%',
@@ -220,24 +222,19 @@ const IntroScreen = () => {
               <div className="h-full w-4 bg-gradient-to-r from-tech-gold/20 to-transparent"></div>
             </div>
             
-            {/* Door handle and icon */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
-              <DoorOpen className="w-20 h-20 text-tech-gold animate-pulse" />
-            </div>
-            
             {/* Light beam through opening door */}
             <div 
-              className="absolute top-0 left-1/2 h-full bg-gradient-to-r from-transparent via-white to-transparent transition-all duration-1000 ease-in-out"
+              className="absolute top-0 left-1/2 h-full bg-gradient-to-r from-transparent via-white to-transparent transition-all duration-1500 ease-out"
               style={{ 
-                width: `${doorProgress * 2}%`, 
+                width: `${doorProgress * 2.5}%`, 
                 transform: `translateX(-50%)`, 
-                opacity: doorProgress / 200 + 0.2
+                opacity: doorProgress / 150 + 0.2
               }}
             ></div>
             
             {/* Preview of home page fading in behind doors */}
             <div 
-              className="absolute inset-0 bg-gradient-to-b from-background to-background/90 transition-opacity duration-1000 ease-in-out flex items-center justify-center"
+              className="absolute inset-0 bg-gradient-to-b from-background to-background/90 transition-opacity duration-1500 ease-out flex items-center justify-center"
               style={{ opacity: doorProgress / 100 }}
             >
               <h1 className="text-4xl md:text-7xl font-bold text-gradient opacity-70">Welcome to VAW</h1>
