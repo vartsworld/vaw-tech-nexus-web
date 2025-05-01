@@ -33,9 +33,16 @@ const Navbar = () => {
     >
       <div className="container mx-auto px-4 flex justify-between items-center">
         <Link to="/" className="flex items-center gap-2">
-          <span className="font-bold text-2xl font-['Space_Grotesk'] text-gradient">
-            VAW<span className="text-accent">tech</span>
-          </span>
+          <div className="flex items-center">
+            <img 
+              src="/lovable-uploads/8a3ad1d1-fa8e-4a28-819d-ad6fc9fd461b.png" 
+              alt="V Logo" 
+              className="h-8 w-auto mr-2"
+            />
+            <span className="font-bold text-2xl font-['Space_Grotesk'] text-gradient">
+              VAW<span className="text-accent">tech</span>
+            </span>
+          </div>
         </Link>
 
         {/* Desktop Menu */}

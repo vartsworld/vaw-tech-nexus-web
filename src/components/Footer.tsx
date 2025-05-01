@@ -15,9 +15,26 @@ const Footer = () => {
             <p className="text-muted-foreground mb-6">
               Premium digital solutions for businesses looking to innovate and excel in the digital landscape.
             </p>
+            <div className="mb-6">
+              <p className="text-sm text-muted-foreground mb-2">A subsidiary of:</p>
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/lovable-uploads/f3a836cc-e5eb-4f70-bc65-a5d8ea72f726.png" 
+                  alt="V Arts World Logo" 
+                  className="h-16 w-auto"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                <span className="font-semibold">V ARTS WORLD PVT. LTD.</span><br/>
+                <span className="text-xs">
+                  <span className="text-accent">H</span>uman-centric 
+                  <span className="text-accent"> A</span>rt and 
+                  <span className="text-accent"> I</span>nnovations
+                </span>
+              </p>
+            </div>
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} VAW Technologies.<br />
-              A subsidiary of V Arts World Pvt Ltd.<br />
               All rights reserved.
             </p>
           </div>
