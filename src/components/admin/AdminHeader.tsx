@@ -4,10 +4,12 @@ import { Link, useNavigate } from "react-router-dom";
 
 const AdminHeader = () => {
   const navigate = useNavigate();
+  const adminEmail = localStorage.getItem("admin_email") || "Admin";
 
   const handleLogout = () => {
-    // In a real app, this would clear authentication tokens
     localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_role");
+    localStorage.removeItem("admin_email");
     navigate("/admin");
   };
 
@@ -21,9 +23,14 @@ const AdminHeader = () => {
             </span>
           </Link>
           
-          <Button variant="outline" onClick={handleLogout} className="border-accent text-accent hover:bg-accent/10">
-            Log Out
-          </Button>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              Logged in as: <span className="font-semibold">{adminEmail}</span>
+            </span>
+            <Button variant="outline" onClick={handleLogout} className="border-accent text-accent hover:bg-accent/10">
+              Log Out
+            </Button>
+          </div>
         </div>
       </div>
     </header>

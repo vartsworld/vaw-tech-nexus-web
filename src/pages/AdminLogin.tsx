@@ -5,6 +5,8 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import ParticleBackground from "@/components/ParticleBackground";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -12,18 +14,26 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate authentication
-    setTimeout(() => {
-      // In a real application, this would verify credentials with a backend
-      
-      // Mock credentials for demo purposes only
-      if (email === "admin@vawtechnologies.com" && password === "admin123") {
-        // Store mock token (in a real app, this would be a JWT or similar)
-        localStorage.setItem("admin_token", "mock_token_12345");
+    try {
+      // Query the users table to check credentials
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, role')
+        .eq('email', email)
+        .eq('password', password)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Store user info in localStorage
+        localStorage.setItem("admin_token", "auth_" + data.id);
+        localStorage.setItem("admin_role", data.role);
+        localStorage.setItem("admin_email", data.email);
         
         toast({
           title: "Login successful!",
@@ -38,9 +48,16 @@ const AdminLogin = () => {
           variant: "destructive",
         });
       }
-      
+    } catch (error) {
+      console.error("Login error:", error);
+      toast({
+        title: "Login failed",
+        description: "An error occurred during login.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -106,39 +123,6 @@ const AdminLogin = () => {
           </form>
         </CardContent>
       </Card>
-    </div>
-  );
-};
-
-// To avoid code duplication, we're reusing the ParticleBackground component
-// with simplified settings for the login page
-const ParticleBackground = () => {
-  return (
-    <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-0">
-      <div className="particle-container">
-        {Array.from({ length: 20 }).map((_, i) => {
-          const size = Math.random() * 6 + 1;
-          const animationDuration = Math.random() * 20 + 10;
-          const opacity = Math.random() * 0.5 + 0.1;
-          
-          return (
-            <div
-              key={i}
-              className="particle"
-              style={{
-                width: `${size}px`,
-                height: `${size}px`,
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                backgroundColor: ['#9b87f5', '#1EAEDB', '#33C3F0'][Math.floor(Math.random() * 3)],
-                opacity,
-                animation: `float ${animationDuration}s infinite ease-in-out`,
-                animationDelay: `${Math.random() * 5}s`,
-              }}
-            />
-          );
-        })}
-      </div>
     </div>
   );
 };

@@ -1,19 +1,29 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminHeader from "@/components/admin/AdminHeader";
 import InquiryList from "@/components/admin/InquiryList";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     // Check if user is authenticated
     const token = localStorage.getItem("admin_token");
-    if (!token) {
+    const role = localStorage.getItem("admin_role");
+    
+    if (!token || !role || !['admin', 'superadmin'].includes(role)) {
       navigate("/admin");
+      return;
     }
+    
+    setIsAuthorized(true);
   }, [navigate]);
+
+  if (!isAuthorized) {
+    return null; // Don't render anything until authorization is confirmed
+  }
 
   return (
     <div className="min-h-screen bg-background">
