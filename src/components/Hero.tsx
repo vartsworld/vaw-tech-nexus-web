@@ -1,13 +1,12 @@
 
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useUser } from "@/context/UserContext";
 
 const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const { userName } = useUser();
-  const [animationState, setAnimationState] = useState("initial"); // initial -> transitioning -> complete
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -33,19 +32,8 @@ const Hero = () => {
 
     window.addEventListener("mousemove", handleMouseMove);
     
-    // Start the welcome animation after 2 seconds
-    const timer = setTimeout(() => {
-      setAnimationState("transitioning");
-      
-      // Complete the animation after transition duration
-      setTimeout(() => {
-        setAnimationState("complete");
-      }, 1000); // Match this with the CSS transition duration
-    }, 2000);
-    
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
-      clearTimeout(timer);
     };
   }, []);
 
@@ -57,34 +45,20 @@ const Hero = () => {
       
       <div className="container mx-auto px-4 z-10 relative">
         <div className="max-w-4xl mx-auto text-center">
-          <div 
-            className={`welcome-container transition-all duration-1000 ease-in-out ${
-              animationState !== "initial" ? "welcome-container-small" : ""
-            }`}
-          >
-            <div className="mb-6 relative">
-              <div className="absolute inset-0 flex items-center justify-center scale-110 opacity-30 blur-sm parallax-element" data-speed="0.03">
-                <h1 className="text-4xl md:text-7xl font-bold leading-tight font-['Space_Grotesk']">
-                  <span className="text-gradient">Transforming Ideas</span>
-                </h1>
-              </div>
-              <h1 
-                className={`text-4xl md:text-7xl font-bold mb-2 leading-tight font-['Space_Grotesk'] relative z-10 transition-all duration-1000 ease-in-out ${
-                  animationState !== "initial" ? "transform -translate-y-4 scale-75" : ""
-                }`}
-              >
-                <span className="text-gradient">
-                  {userName ? `Welcome, ${userName}` : 'Transforming Ideas'}
-                </span>
+          <div className="mb-6 relative">
+            <div className="absolute inset-0 flex items-center justify-center scale-110 opacity-30 blur-sm parallax-element" data-speed="0.03">
+              <h1 className="text-4xl md:text-7xl font-bold leading-tight font-['Space_Grotesk']">
+                <span className="text-gradient">Transforming Ideas</span>
               </h1>
             </div>
+            <h1 className="text-4xl md:text-7xl font-bold mb-2 leading-tight font-['Space_Grotesk'] relative z-10">
+              <span className="text-gradient">
+                {userName ? `Welcome, ${userName}` : 'Transforming Ideas'}
+              </span>
+            </h1>
           </div>
           
-          <div 
-            className={`relative transition-all duration-1000 ease-in-out ${
-              animationState !== "initial" ? "transform translate-y-0 opacity-100" : "transform translate-y-6 opacity-0"
-            }`}
-          >
+          <div className="relative">
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight font-['Space_Grotesk'] relative z-10">
               Into Digital <span className="relative inline-block">
                 <span className="relative z-10">Excellence</span>
@@ -93,11 +67,7 @@ const Hero = () => {
             </h1>
           </div>
           
-          <p 
-            className={`text-xl md:text-2xl text-foreground/80 mb-10 max-w-3xl mx-auto font-['Outfit'] neo-border p-6 glass-panel transition-all duration-1000 ease-in-out ${
-              animationState !== "initial" ? "opacity-100" : "opacity-0 transform translate-y-8"
-            }`}
-          >
+          <p className="text-xl md:text-2xl text-foreground/80 mb-10 max-w-3xl mx-auto font-['Outfit'] neo-border p-6 glass-panel">
             {userName 
               ? `${userName}, we deliver premium digital solutions that merge innovation with creativity, crafted just for you.` 
               : `VAW Technologies delivers premium digital solutions that merge innovation with creativity, 
@@ -105,11 +75,7 @@ const Hero = () => {
             }
           </p>
           
-          <div 
-            className={`flex flex-col sm:flex-row gap-4 justify-center transition-all duration-1000 ease-in-out delay-100 ${
-              animationState !== "initial" ? "opacity-100 transform translate-y-0" : "opacity-0 transform translate-y-10"
-            }`}
-          >
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" className="bg-primary hover:bg-primary/80 text-primary-foreground group relative overflow-hidden">
               <span className="relative z-10 flex items-center">
                 Our Services 
@@ -123,11 +89,7 @@ const Hero = () => {
             </Button>
           </div>
           
-          <div 
-            className={`mt-20 grid grid-cols-2 md:grid-cols-4 gap-8 transition-all duration-1000 ease-in-out delay-200 ${
-              animationState !== "initial" ? "opacity-100 transform translate-y-0" : "opacity-0 transform translate-y-12"
-            }`}
-          >
+          <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
               <span className="text-4xl font-bold text-gradient">150+</span>
               <span className="text-muted-foreground">Projects Delivered</span>
