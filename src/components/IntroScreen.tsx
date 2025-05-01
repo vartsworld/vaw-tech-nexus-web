@@ -4,7 +4,6 @@ import { useUser } from "@/context/UserContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const IntroScreen = () => {
   const { setUserName, setHasCompletedIntro } = useUser();
@@ -12,19 +11,14 @@ const IntroScreen = () => {
   const [nameInput, setNameInput] = useState("");
   const [logoAnimationComplete, setLogoAnimationComplete] = useState(false);
   const [greetingAnimationComplete, setGreetingAnimationComplete] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
 
-  // Using a more reliable placeholder image as fallback
-  const logoGifUrl = "https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExeW85NXUyeGh3NW9pb3JpdHM5MjU1aGx1YXo3OTdvdnFybXNldXJmYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l3vRfwrddpKT9ySIg/giphy.gif";
-  
   // Handle logo animation timing
   useEffect(() => {
     if (stage === "logo") {
       const timer = setTimeout(() => {
         setLogoAnimationComplete(true);
         setStage("greeting");
-      }, 5000); // 5 seconds for logo animation
+      }, 3000); // 3 seconds for logo animation
       return () => clearTimeout(timer);
     }
   }, [stage]);
@@ -48,45 +42,14 @@ const IntroScreen = () => {
     }
   };
 
-  const handleImageLoad = () => {
-    console.log("GIF loaded successfully");
-    setImageLoaded(true);
-    setImageError(false);
-  };
-
-  const handleImageError = () => {
-    console.error("Failed to load GIF from URL:", logoGifUrl);
-    setImageError(true);
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
       {/* Logo Animation */}
       {stage === "logo" && (
-        <div className="flex flex-col items-center justify-center animate-fade-in w-full max-w-md">
-          {/* Loading state */}
-          {!imageLoaded && !imageError && (
-            <Skeleton className="w-64 h-64 rounded-full mx-auto mb-4" />
-          )}
-          
-          {/* GIF display */}
-          <div className={`w-64 h-64 mx-auto overflow-hidden ${imageLoaded ? 'block' : 'hidden'}`}>
-            <img
-              src={logoGifUrl}
-              alt="V Arts World Logo"
-              onLoad={handleImageLoad}
-              onError={handleImageError}
-              className="w-full h-full object-contain"
-            />
+        <div className="flex flex-col items-center justify-center animate-fade-in">
+          <div className="text-5xl md:text-7xl font-bold font-['Space_Grotesk'] mb-4 animate-pulse">
+            <span className="text-gradient">V Arts World</span>
           </div>
-          
-          {/* Fallback for error */}
-          {imageError && (
-            <div className="text-5xl md:text-7xl font-bold font-['Space_Grotesk'] mb-4 animate-pulse">
-              <span className="text-gradient">V Arts World</span>
-            </div>
-          )}
-          
           <div className="text-2xl md:text-3xl text-muted-foreground mb-8 animate-pulse">
             Pvt. Ltd.
           </div>
@@ -123,7 +86,6 @@ const IntroScreen = () => {
               <Button 
                 type="submit" 
                 size="lg"
-                disabled={!nameInput.trim()}
                 className="bg-primary hover:bg-primary/80 text-primary-foreground group relative overflow-hidden w-full"
               >
                 <span className="relative z-10 flex items-center">
