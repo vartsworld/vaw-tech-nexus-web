@@ -161,12 +161,27 @@
   z-index: 0;
 }
 
+/* Logo carousel for infinite loop */
+.logo-carousel {
+  display: flex;
+  overflow: hidden;
+  width: 100%;
+}
+
+.logo-slide {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: scroll 20s linear infinite;
+  min-width: 100%;
+}
+
 @keyframes scroll {
   0% {
     transform: translateX(0);
   }
   100% {
-    transform: translateX(calc(-200px * 6));
+    transform: translateX(-100%);
   }
 }
 
@@ -358,3 +373,4 @@
 .pulse-gentle {
   animation: pulse-gentle 3s ease-in-out infinite;
 }
+
