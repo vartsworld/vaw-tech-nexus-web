@@ -7,7 +7,6 @@ import {
   Server, 
   Cpu,
 } from "lucide-react";
-import { useUser } from "@/context/UserContext";
 
 interface TechItem {
   name: string;
@@ -35,7 +34,6 @@ const ClientLogo: React.FC<ClientLogoProps> = ({ src, alt }) => {
 
 const TechStack = () => {
   const [animatedIndex, setAnimatedIndex] = useState(0);
-  const { userName } = useUser();
   
   const techItems: TechItem[] = [
     {
@@ -88,29 +86,13 @@ const TechStack = () => {
     }
   ];
 
-  // New tech logos from the provided image
-  const techLogos = [
-    { name: "Angular", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#angular" },
-    { name: "WordPress", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#wordpress" },
-    { name: "Flutter", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#flutter" },
-    { name: "Laravel", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#laravel" },
-    { name: "Java", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#java" },
-    { name: "Ionic", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#ionic" },
-    { name: "Salesforce", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#salesforce" },
-    { name: "SharePoint", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#sharepoint" },
-    { name: "Shopify", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#shopify" },
-    { name: "Magento", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#magento" },
-    { name: "Node.js", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#nodejs" },
-    { name: ".NET", logo: "/lovable-uploads/b68da513-ec5d-41b1-9cec-d47db3979353.png#dotnet" },
-  ];
-
   const clients = [
-    { name: "Google", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1200px-Google_2015_logo.svg.png" },
-    { name: "Amazon", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/1024px-Amazon_logo.svg.png" },
-    { name: "Microsoft", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/1200px-Microsoft_logo.svg.png" },
-    { name: "Meta", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/1200px-Meta_Platforms_Inc._logo.svg.png" },
-    { name: "Apple", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/1200px-Apple_logo_black.svg.png" },
-    { name: "Tesla", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Tesla_Motors.svg/1200px-Tesla_Motors.svg.png" },
+    { name: "Google", logo: "https://placehold.co/200x80?text=Google" },
+    { name: "Amazon", logo: "https://placehold.co/200x80?text=Amazon" },
+    { name: "Microsoft", logo: "https://placehold.co/200x80?text=Microsoft" },
+    { name: "Meta", logo: "https://placehold.co/200x80?text=Meta" },
+    { name: "Apple", logo: "https://placehold.co/200x80?text=Apple" },
+    { name: "Tesla", logo: "https://placehold.co/200x80?text=Tesla" },
   ];
 
   useEffect(() => {
@@ -129,10 +111,7 @@ const TechStack = () => {
             Our <span className="text-gradient">Tech Stack</span>
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-['Outfit']">
-            {userName 
-              ? `${userName}, we work with future-proof technologies to build optimal software solutions tailored for your needs.`
-              : `We work with future-proof technologies for optimal software solutions and strategies.`
-            }
+            We work with future-proof technologies for optimal software solutions and strategies.
           </p>
         </div>
 
@@ -154,25 +133,6 @@ const TechStack = () => {
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        <div className="mb-10">
-          <h3 className="text-2xl text-center font-bold mb-8 font-['Space_Grotesk']">
-            {userName ? `${userName}, Our Expertise Includes` : 'Our Technical Expertise'}
-          </h3>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-16">
-            {techLogos.map((tech, index) => (
-              <div key={index} className="tech-card flex flex-col items-center justify-center p-4 hover:-translate-y-2 transition-all duration-300">
-                <img
-                  src={tech.logo}
-                  alt={tech.name}
-                  className="h-12 w-auto object-contain mb-2"
-                />
-                <span className="text-sm font-medium">{tech.name}</span>
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="mb-10">
