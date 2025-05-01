@@ -4,13 +4,49 @@ import { useUser } from "@/context/UserContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import Lottie from "lottie-react";
+import { useToast } from "@/components/ui/use-toast";
 
 const IntroScreen = () => {
   const { setUserName, setHasCompletedIntro } = useUser();
-  const [stage, setStage] = useState<"logo" | "greeting" | "name">("logo");
+  const [stage, setStage] = useState<"animation" | "logo" | "greeting" | "name">("animation");
   const [nameInput, setNameInput] = useState("");
   const [logoAnimationComplete, setLogoAnimationComplete] = useState(false);
   const [greetingAnimationComplete, setGreetingAnimationComplete] = useState(false);
+  const [animationData, setAnimationData] = useState<any>(null);
+  const { toast } = useToast();
+
+  // Fetch the animation data when component mounts
+  useEffect(() => {
+    const fetchAnimation = async () => {
+      try {
+        const response = await fetch("https://www.varts.org/dev/Logo-5-%5Bremix%5D.json");
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch animation: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setAnimationData(data);
+      } catch (error) {
+        console.error("Error loading animation:", error);
+        toast({
+          title: "Animation Error",
+          description: "Failed to load the intro animation. Proceeding with standard intro.",
+          variant: "destructive",
+        });
+        // If animation fails to load, skip to logo stage
+        setStage("logo");
+      }
+    };
+    
+    fetchAnimation();
+  }, [toast]);
+
+  // Handle animation completion
+  const handleAnimationComplete = () => {
+    setStage("logo");
+  };
 
   // Handle logo animation timing
   useEffect(() => {
@@ -44,6 +80,20 @@ const IntroScreen = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
+      {/* JSON Animation Stage */}
+      {stage === "animation" && animationData && (
+        <div className="w-full h-full flex items-center justify-center">
+          <div className="w-[280px] md:w-[400px] h-[280px] md:h-[400px]">
+            <Lottie 
+              animationData={animationData} 
+              loop={false}
+              onComplete={handleAnimationComplete}
+              className="w-full h-full"
+            />
+          </div>
+        </div>
+      )}
+
       {/* Logo Animation */}
       {stage === "logo" && (
         <div className="flex flex-col items-center justify-center animate-fade-in">
