@@ -1,146 +1,151 @@
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious
-} from "@/components/ui/carousel";
-import { Star } from "lucide-react";
 import { Testimonial } from "@/types/database";
 
 const Testimonials = () => {
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [allTestimonials, setAllTestimonials] = useState<Testimonial[]>([]);
+  const [featuredTestimonials, setFeaturedTestimonials] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchTestimonials = async () => {
-      try {
-        const { data, error } = await (supabase as any)
-          .from("testimonials")
-          .select("*")
-          .order("display_order", { ascending: true });
-
-        if (error) {
-          throw error;
-        }
-
-        if (data && data.length > 0) {
-          // Filter out non-featured testimonials if there are featured ones
-          const testimonialsData = data as Testimonial[];
-          const featuredTestimonials = testimonialsData.filter((t) => t.is_featured);
-          
-          if (featuredTestimonials.length > 0) {
-            setTestimonials(featuredTestimonials);
-          } else {
-            setTestimonials(testimonialsData);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching testimonials:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTestimonials();
   }, []);
 
-  // If no testimonials found and not loading, don't render the component
-  if (testimonials.length === 0 && !loading) {
-    return null;
-  }
-
-  const renderRatingStars = (rating: number) => {
-    return Array.from({ length: 5 }).map((_, i) => (
-      <Star
-        key={i}
-        className={`h-4 w-4 ${
-          i < rating ? "text-yellow-500 fill-yellow-500" : "text-gray-300"
-        }`}
-      />
-    ));
+  const fetchTestimonials = async () => {
+    try {
+      setLoading(true);
+      
+      const { data, error } = await (supabase as any)
+        .from("testimonials")
+        .select("*")
+        .order("display_order", { ascending: true });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        setAllTestimonials(data as Testimonial[]);
+        
+        const featured = (data as Testimonial[]).filter(
+          (testimonial) => testimonial.is_featured
+        );
+        setFeaturedTestimonials(featured);
+      }
+    } catch (error) {
+      console.error("Error fetching testimonials:", error);
+      setError("Failed to load testimonials");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <section id="testimonials" className="py-20 bg-background">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
-            Client <span className="text-gradient">Testimonials</span>
-          </h2>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-['Outfit']">
-            See what our clients have to say about working with us
+  const testimonialVariants = {
+    hidden: { opacity: 0, x: -50 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeInOut",
+      },
+    },
+    exit: {
+      opacity: 0,
+      x: 50,
+      transition: {
+        duration: 0.3,
+      },
+    },
+  };
+
+  if (loading) {
+    return (
+      <section className="py-16 bg-background/50">
+        <div className="container mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4">What Our Clients Say</h2>
+          <p className="text-muted-foreground">Loading testimonials...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="py-16 bg-background/50">
+        <div className="container mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4">What Our Clients Say</h2>
+          <p className="text-muted-foreground">
+            Failed to load testimonials. Please try again later.
           </p>
         </div>
+      </section>
+    );
+  }
 
-        <div className="max-w-5xl mx-auto">
-          {loading ? (
-            <div className="text-center py-12">
-              <p>Loading testimonials...</p>
-            </div>
-          ) : (
-            <Carousel className="w-full">
-              <CarouselContent>
-                {testimonials.map((testimonial) => (
-                  <CarouselItem key={testimonial.id}>
-                    <div className="bg-card border border-muted/20 rounded-xl p-8 shadow-lg mb-1">
-                      <div className="flex justify-between items-start mb-6">
-                        <div className="flex items-center">
-                          {testimonial.image_url ? (
-                            <img
-                              src={testimonial.image_url}
-                              alt={testimonial.client_name}
-                              className="h-14 w-14 rounded-full object-cover mr-4"
-                            />
-                          ) : (
-                            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mr-4">
-                              <span className="text-xl font-bold text-primary">
-                                {testimonial.client_name.charAt(0)}
-                              </span>
-                            </div>
-                          )}
-                          <div>
-                            <h4 className="text-lg font-semibold">
-                              {testimonial.client_name}
-                            </h4>
-                            <p className="text-muted-foreground">
-                              {testimonial.client_position &&
-                                `${testimonial.client_position}${
-                                  testimonial.client_company ? " at " : ""
-                                }`}
-                              {testimonial.client_company}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-1">
-                          {renderRatingStars(testimonial.rating)}
-                        </div>
-                      </div>
-
-                      <blockquote className="text-lg italic relative">
-                        <span className="text-4xl text-primary/20 font-serif absolute -top-4 -left-2">
-                          "
-                        </span>
-                        <p className="relative z-10 pl-4">{testimonial.message}</p>
-                        <span className="text-4xl text-primary/20 font-serif absolute bottom-0 right-0">
-                          "
-                        </span>
-                      </blockquote>
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <div className="flex justify-center gap-4 mt-8">
-                <CarouselPrevious className="relative inset-auto" />
-                <CarouselNext className="relative inset-auto" />
-              </div>
-            </Carousel>
-          )}
-        </div>
+  return (
+    <section className="py-16 bg-background/50">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center mb-8 font-['Space_Grotesk']">
+          What Our Clients <span className="text-gradient">Say</span>
+        </h2>
+        
+        {featuredTestimonials.length === 0 ? (
+          <div className="text-center">
+            <p className="text-muted-foreground">No testimonials available.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {featuredTestimonials.map((testimonial) => (
+              <motion.div
+                key={testimonial.id}
+                className="bg-card rounded-lg shadow-md p-6 border border-muted/20"
+                variants={testimonialVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+              >
+                <div className="flex items-center mb-4">
+                  {testimonial.image_url && (
+                    <img
+                      src={testimonial.image_url}
+                      alt={testimonial.client_name}
+                      className="w-12 h-12 rounded-full object-cover mr-4"
+                    />
+                  )}
+                  <div>
+                    <h3 className="text-lg font-semibold">{testimonial.client_name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {testimonial.client_position}{" "}
+                      {testimonial.client_company && `at ${testimonial.client_company}`}
+                    </p>
+                  </div>
+                </div>
+                <div className="mb-4">
+                  {[...Array(testimonial.rating)].map((_, i) => (
+                    <svg
+                      key={i}
+                      className="w-5 h-5 text-yellow-500 inline-block"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 0l2.928 6.028L20 6.951l-4.572 4.477L16.291 20 10 16.291 3.709 20l.863-8.572L0 6.951l7.072-.923L10 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-muted-foreground italic">
+                  "{testimonial.message}"
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

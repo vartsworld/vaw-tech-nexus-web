@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { type Partner } from "@/types/partners";
@@ -42,7 +41,7 @@ const Partners = () => {
         setLoading(true);
         
         // Fetch featured partners
-        const { data: featuredData, error: featuredError } = await supabase
+        const { data: featuredData, error: featuredError } = await (supabase as any)
           .from('partners')
           .select('*')
           .eq('featured', true)
