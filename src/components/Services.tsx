@@ -8,17 +8,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import React from "react";
 
 interface ServiceCardProps {
   title: string;
   description: string;
   examples: string[];
   className?: string;
+  style?: React.CSSProperties;
 }
 
-const ServiceCard: React.FC<ServiceCardProps> = ({ title, description, examples, className = "" }) => {
+const ServiceCard: React.FC<ServiceCardProps> = ({ title, description, examples, className = "", style }) => {
   return (
-    <Card className={`bg-card border-muted/20 hover:border-primary/50 transition-colors shadow-lg hover:shadow-primary/20 h-full ${className}`}>
+    <Card className={`bg-card border-muted/20 hover:border-primary/50 transition-colors shadow-lg hover:shadow-primary/20 h-full ${className}`} style={style}>
       <CardHeader>
         <CardTitle className="text-xl font-semibold">{title}</CardTitle>
         <CardDescription className="text-muted-foreground">{description}</CardDescription>

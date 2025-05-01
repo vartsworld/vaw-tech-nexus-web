@@ -77,3 +77,12 @@
   pointer-events: none;
   z-index: 0;
 }
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-200px * 6));
+  }
+}
