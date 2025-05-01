@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useUser } from "@/context/UserContext";
 import { Input } from "@/components/ui/input";
@@ -77,7 +78,7 @@ const IntroScreen = () => {
     : "https://www.varts.org/wp-content/uploads/2025/05/ezgif-34875bda657622.gif";
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background">
       {/* GIF Animation */}
       {stage === "logo" && (
         <div className="flex flex-col items-center justify-center animate-fade-in h-full w-full bg-black">
