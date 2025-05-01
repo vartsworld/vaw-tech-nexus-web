@@ -2,9 +2,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { useUser } from "@/context/UserContext";
 
 const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
+  const { userName } = useUser();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -50,7 +52,9 @@ const Hero = () => {
               </h1>
             </div>
             <h1 className="text-4xl md:text-7xl font-bold mb-2 leading-tight font-['Space_Grotesk'] relative z-10">
-              <span className="text-gradient">Transforming Ideas</span>
+              <span className="text-gradient">
+                {userName ? `Welcome, ${userName}` : 'Transforming Ideas'}
+              </span>
             </h1>
           </div>
           
@@ -64,8 +68,11 @@ const Hero = () => {
           </div>
           
           <p className="text-xl md:text-2xl text-foreground/80 mb-10 max-w-3xl mx-auto font-['Outfit'] neo-border p-6 glass-panel">
-            VAW Technologies delivers premium digital solutions that merge innovation with creativity, 
-            from stunning websites to immersive AR/VR experiences.
+            {userName 
+              ? `${userName}, we deliver premium digital solutions that merge innovation with creativity, crafted just for you.` 
+              : `VAW Technologies delivers premium digital solutions that merge innovation with creativity, 
+              from stunning websites to immersive AR/VR experiences.`
+            }
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
