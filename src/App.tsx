@@ -17,8 +17,6 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { hasCompletedIntro } = useUser();
-  
-  console.log("Has completed intro:", hasCompletedIntro);
 
   return (
     <>
