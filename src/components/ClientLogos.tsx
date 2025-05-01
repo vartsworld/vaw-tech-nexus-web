@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 interface ClientLogoProps {
   src: string;
@@ -72,7 +71,7 @@ const ClientLogos = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
-            Trusted &amp; Partnered by <span className="text-gradient">Industry Leaders</span>
+            Trusted &amp; Partnered by <span className="text-gradient text-blue-700">Industry Leaders</span>
           </h2>
         </div>
         
