@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -33,16 +34,44 @@ const InquiryList = () => {
   const fetchInquiries = async () => {
     try {
       setLoading(true);
-      let query = (supabase as any).from("inquiries").select("*");
+      
+      // Try to fetch from Supabase first
+      try {
+        let query = (supabase as any).from("inquiries").select("*");
 
-      if (filter !== "all") {
-        query = query.eq("status", filter);
+        if (filter !== "all") {
+          query = query.eq("status", filter);
+        }
+
+        const { data, error } = await query.order("created_at", { ascending: false });
+
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          setInquiries(data);
+          setLoading(false);
+          return;
+        }
+      } catch (supabaseError) {
+        console.error("Supabase error:", supabaseError);
+        // Continue to localStorage fallback
       }
-
-      const { data, error } = await query.order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setInquiries(data || []);
+      
+      // Fallback to localStorage if Supabase fails or returns no data
+      const localInquiries = JSON.parse(localStorage.getItem("inquiries") || "[]");
+      
+      // Apply filtering if needed
+      const filteredInquiries = filter === "all" 
+        ? localInquiries 
+        : localInquiries.filter((inq: any) => inq.status === filter);
+      
+      // Add IDs if they don't have them
+      const inquiriesWithIds = filteredInquiries.map((inq: any, index: number) => ({
+        ...inq,
+        id: inq.id || `local-${index}`,
+      }));
+      
+      setInquiries(inquiriesWithIds);
     } catch (error) {
       console.error("Error fetching inquiries:", error);
       toast({
@@ -56,23 +85,47 @@ const InquiryList = () => {
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      const { error } = await (supabase as any)
-        .from("inquiries")
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq("id", id);
+      if (id.startsWith('local-')) {
+        // Update in localStorage
+        const localInquiries = JSON.parse(localStorage.getItem("inquiries") || "[]");
+        const index = parseInt(id.replace('local-', ''));
+        
+        if (localInquiries[index]) {
+          localInquiries[index].status = status;
+          localInquiries[index].updated_at = new Date().toISOString();
+          localStorage.setItem("inquiries", JSON.stringify(localInquiries));
+          
+          setInquiries((prev) =>
+            prev.map((inquiry) =>
+              inquiry.id === id ? { ...inquiry, status, updated_at: new Date().toISOString() } : inquiry
+            )
+          );
+          
+          toast({
+            title: "Status updated",
+            description: `Inquiry has been marked as ${status}`,
+          });
+        }
+      } else {
+        // Update in Supabase
+        const { error } = await (supabase as any)
+          .from("inquiries")
+          .update({ status, updated_at: new Date().toISOString() })
+          .eq("id", id);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setInquiries((prev) =>
-        prev.map((inquiry) =>
-          inquiry.id === id ? { ...inquiry, status } : inquiry
-        )
-      );
+        setInquiries((prev) =>
+          prev.map((inquiry) =>
+            inquiry.id === id ? { ...inquiry, status } : inquiry
+          )
+        );
 
-      toast({
-        title: "Status updated",
-        description: `Inquiry has been marked as ${status}`,
-      });
+        toast({
+          title: "Status updated",
+          description: `Inquiry has been marked as ${status}`,
+        });
+      }
     } catch (error) {
       console.error("Error updating status:", error);
       toast({
@@ -85,15 +138,33 @@ const InquiryList = () => {
   const deleteInquiry = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this inquiry?")) {
       try {
-        const { error } = await (supabase as any).from("inquiries").delete().eq("id", id);
+        if (id.startsWith('local-')) {
+          // Delete from localStorage
+          const localInquiries = JSON.parse(localStorage.getItem("inquiries") || "[]");
+          const index = parseInt(id.replace('local-', ''));
+          
+          if (index >= 0) {
+            localInquiries.splice(index, 1);
+            localStorage.setItem("inquiries", JSON.stringify(localInquiries));
+            
+            setInquiries((prev) => prev.filter((inquiry) => inquiry.id !== id));
+            
+            toast({
+              title: "Inquiry deleted",
+            });
+          }
+        } else {
+          // Delete from Supabase
+          const { error } = await (supabase as any).from("inquiries").delete().eq("id", id);
 
-        if (error) throw error;
+          if (error) throw error;
 
-        setInquiries((prev) => prev.filter((inquiry) => inquiry.id !== id));
+          setInquiries((prev) => prev.filter((inquiry) => inquiry.id !== id));
 
-        toast({
-          title: "Inquiry deleted",
-        });
+          toast({
+            title: "Inquiry deleted",
+          });
+        }
       } catch (error) {
         console.error("Error deleting inquiry:", error);
         toast({

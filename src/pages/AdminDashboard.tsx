@@ -37,20 +37,43 @@ const AdminDashboard = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      // Fetch counts from each table - using 'as any' to bypass TypeScript errors
-      const [inquiryCount, projectCount, testimonialCount, partnerCount] = await Promise.all([
-        (supabase as any).from('inquiries').select('id', { count: 'exact', head: true }),
-        (supabase as any).from('projects').select('id', { count: 'exact', head: true }),
-        (supabase as any).from('testimonials').select('id', { count: 'exact', head: true }),
-        supabase.from('partners').select('id', { count: 'exact', head: true }),
-      ]);
+      // Start with default values
+      let stats = {
+        inquiries: 0,
+        projects: 0,
+        testimonials: 0,
+        partners: 0,
+      };
+      
+      // Try to fetch counts from Supabase tables
+      try {
+        const [inquiryCount, projectCount, testimonialCount, partnerCount] = await Promise.all([
+          (supabase as any).from('inquiries').select('id', { count: 'exact', head: true }),
+          (supabase as any).from('projects').select('id', { count: 'exact', head: true }),
+          (supabase as any).from('testimonials').select('id', { count: 'exact', head: true }),
+          supabase.from('partners').select('id', { count: 'exact', head: true }),
+        ]);
 
-      setDashboardStats({
-        inquiries: inquiryCount.count || 0,
-        projects: projectCount.count || 0,
-        testimonials: testimonialCount.count || 0,
-        partners: partnerCount.count || 0,
-      });
+        // Update stats with counts from Supabase when available
+        stats = {
+          inquiries: inquiryCount.count || 0,
+          projects: projectCount.count || 0,
+          testimonials: testimonialCount.count || 0,
+          partners: partnerCount.count || 0,
+        };
+      } catch (error) {
+        console.log('Error fetching from Supabase, using localStorage fallback');
+        
+        // Fallback to localStorage for inquiries
+        try {
+          const localInquiries = JSON.parse(localStorage.getItem('inquiries') || '[]');
+          stats.inquiries = localInquiries.length;
+        } catch (e) {
+          console.error('Error reading inquiries from localStorage', e);
+        }
+      }
+
+      setDashboardStats(stats);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
     }
