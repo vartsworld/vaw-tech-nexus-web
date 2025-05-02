@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -7,6 +8,7 @@ import {
   Cpu,
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TechItem {
   name: string;
@@ -35,6 +37,7 @@ const ClientLogo: React.FC<ClientLogoProps> = ({ src, alt }) => {
 const TechStack = () => {
   const [animatedIndex, setAnimatedIndex] = useState(0);
   const { userName } = useUser();
+  const isMobile = useIsMobile();
   
   const techItems: TechItem[] = [
     {
@@ -135,7 +138,7 @@ const TechStack = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
+        <div className="grid grid-cols-3 md:grid-cols-4 gap-6 mb-16">
           {techItems.map((tech, index) => (
             <Card 
               key={index} 
@@ -146,7 +149,7 @@ const TechStack = () => {
                   {tech.icon}
                 </div>
                 <h3 className="font-bold text-lg mb-1">{tech.name}</h3>
-                <p className="text-muted-foreground text-sm">{tech.description}</p>
+                <p className="hidden md:block text-muted-foreground text-sm">{tech.description}</p>
                 <span className="mt-2 px-2 py-1 bg-muted/20 rounded-full text-xs font-medium">
                   {tech.category}
                 </span>
