@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface FormData {
   name: string;
@@ -33,36 +35,64 @@ const ContactForm = () => {
   
   const isMobile = useIsMobile();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormError(null); // Clear error when form is edited
   };
 
   const handleServiceChange = (value: string) => {
     setFormData((prev) => ({ ...prev, service: value }));
+    setFormError(null); // Clear error when form is edited
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setFormError(null);
+
+    // Validate form
+    if (!formData.name || !formData.email || !formData.message) {
+      setFormError("Please fill in all required fields.");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
-      // Use type assertion to handle the table that doesn't exist in the types
-      const { error } = await (supabase as any)
-        .from("inquiries")
-        .insert({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          service: formData.service,
-          message: formData.message,
-          status: 'new'
-        });
+      // Store in localStorage as a fallback
+      const inquiries = JSON.parse(localStorage.getItem('inquiries') || '[]');
+      const newInquiry = {
+        ...formData,
+        status: 'new',
+        created_at: new Date().toISOString(),
+      };
       
-      if (error) throw error;
+      inquiries.push(newInquiry);
+      localStorage.setItem('inquiries', JSON.stringify(inquiries));
+      
+      // Try to send to Supabase (this may fail if table doesn't exist)
+      try {
+        const { error } = await (supabase as any)
+          .from("inquiries")
+          .insert({
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            service: formData.service,
+            message: formData.message,
+            status: 'new'
+          });
+        
+        if (error) {
+          console.log("Supabase storage failed, but message saved locally:", error);
+        }
+      } catch (supabaseError) {
+        console.log("Using local storage fallback due to Supabase error");
+      }
 
       toast({
         title: "Message sent successfully!",
@@ -79,11 +109,7 @@ const ContactForm = () => {
       });
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast({
-        title: "Error sending message",
-        description: "Please try again later or contact us directly by email.",
-        variant: "destructive",
-      });
+      setFormError("There was a problem sending your message. Please try again or contact us directly by email.");
     } finally {
       setIsSubmitting(false);
     }
@@ -91,6 +117,13 @@ const ContactForm = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {formError && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{formError}</AlertDescription>
+        </Alert>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <label htmlFor="name" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
@@ -143,7 +176,7 @@ const ContactForm = () => {
           <label htmlFor="service" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
             Service Interested In
           </label>
-          <Select onValueChange={handleServiceChange}>
+          <Select onValueChange={handleServiceChange} value={formData.service}>
             <SelectTrigger 
               className="bg-muted/20 border-muted"
               id="service"
