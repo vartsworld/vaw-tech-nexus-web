@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -97,7 +98,7 @@ const Hero = () => {
               <span className="text-4xl font-bold text-gradient">5+</span>
               <span className="text-muted-foreground">Countries Served</span>
             </div>
-            <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
+            <div className="flex flex-col items-center col-span-2 md:col-span-1 transform hover:scale-110 transition-transform duration-300 cursor-default">
               <span className="text-4xl font-bold text-gradient">24/7</span>
               <span className="text-muted-foreground">Support</span>
             </div>
