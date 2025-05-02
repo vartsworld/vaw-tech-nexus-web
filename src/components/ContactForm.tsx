@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface FormData {
   name: string;
@@ -29,7 +30,8 @@ const ContactForm = () => {
     service: "",
     message: "",
   });
-
+  
+  const isMobile = useIsMobile();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (
@@ -91,7 +93,7 @@ const ContactForm = () => {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <label htmlFor="name" className="text-sm font-medium">
+          <label htmlFor="name" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
             Your Name
           </label>
           <Input
@@ -106,7 +108,7 @@ const ContactForm = () => {
         </div>
         
         <div className="space-y-2">
-          <label htmlFor="email" className="text-sm font-medium">
+          <label htmlFor="email" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
             Email Address
           </label>
           <Input
@@ -124,7 +126,7 @@ const ContactForm = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
-          <label htmlFor="phone" className="text-sm font-medium">
+          <label htmlFor="phone" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
             Phone Number (Optional)
           </label>
           <Input
@@ -138,7 +140,7 @@ const ContactForm = () => {
         </div>
         
         <div className="space-y-2">
-          <label htmlFor="service" className="text-sm font-medium">
+          <label htmlFor="service" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
             Service Interested In
           </label>
           <Select onValueChange={handleServiceChange}>
@@ -162,7 +164,7 @@ const ContactForm = () => {
       </div>
       
       <div className="space-y-2">
-        <label htmlFor="message" className="text-sm font-medium">
+        <label htmlFor="message" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
           Your Message
         </label>
         <Textarea
