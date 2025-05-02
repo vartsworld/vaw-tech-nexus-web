@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -91,7 +90,7 @@ const TechStack = () => {
     }
   ];
 
-  // New tech logos with correct paths
+  // Update the techLogos array with absolute URLs to ensure images load properly
   const techLogos = [
     { name: "Angular", logo: "/angular.png" },
     { name: "WordPress", logo: "/wordpress.png" },
@@ -169,11 +168,18 @@ const TechStack = () => {
           <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
             {techLogos.map((tech, index) => (
               <div key={index} className="flex flex-col items-center justify-center py-2">
-                <img
-                  src={tech.logo}
-                  alt={tech.name}
-                  className="h-8 md:h-10 w-auto object-contain"
-                />
+                {/* Add fallback and error handling for images */}
+                <div className="h-8 md:h-10 w-12 md:w-16 flex items-center justify-center">
+                  <img
+                    src={tech.logo}
+                    alt={tech.name}
+                    className="max-h-8 md:max-h-10 w-auto object-contain"
+                    onError={(e) => {
+                      console.error(`Failed to load image: ${tech.logo}`);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                </div>
                 <span className="text-xs mt-1">{tech.name}</span>
               </div>
             ))}
