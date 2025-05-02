@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -160,20 +161,20 @@ const TechStack = () => {
           ))}
         </div>
 
-        <div className="mb-10">
-          <h3 className="text-2xl text-center font-bold mb-8 font-['Space_Grotesk']">
+        <div className="mb-6">
+          <h3 className="text-2xl text-center font-bold mb-4 font-['Space_Grotesk']">
             {userName ? `${userName}, Our Expertise Includes` : 'Our Technical Expertise'}
           </h3>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-16">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
             {techLogos.map((tech, index) => (
-              <div key={index} className="tech-card flex flex-col items-center justify-center p-4 hover:-translate-y-2 transition-all duration-300">
+              <div key={index} className="flex flex-col items-center justify-center py-2">
                 <img
                   src={tech.logo}
                   alt={tech.name}
-                  className="h-12 w-auto object-contain mb-2"
+                  className="h-8 md:h-10 w-auto object-contain"
                 />
-                <span className="text-sm font-medium">{tech.name}</span>
+                <span className="text-xs mt-1">{tech.name}</span>
               </div>
             ))}
           </div>
