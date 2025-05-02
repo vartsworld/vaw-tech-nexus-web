@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -9,6 +8,7 @@ import {
 } from "lucide-react";
 import { useUser } from "@/context/UserContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface TechItem {
   name: string;
@@ -138,22 +138,24 @@ const TechStack = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 md:grid-cols-4 gap-6 mb-16">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
           {techItems.map((tech, index) => (
             <Card 
               key={index} 
               className={`tech-card hover:-translate-y-2 transition-all duration-300 ${index === animatedIndex ? 'ring-2 ring-tech-purple/50' : ''}`}
             >
-              <CardContent className="flex flex-col items-center p-6 text-center">
-                <div className="mb-4 bg-muted/30 p-3 rounded-full">
-                  {tech.icon}
-                </div>
-                <h3 className="font-bold text-lg mb-1">{tech.name}</h3>
-                <p className="hidden md:block text-muted-foreground text-sm">{tech.description}</p>
-                <span className="mt-2 px-2 py-1 bg-muted/20 rounded-full text-xs font-medium">
-                  {tech.category}
-                </span>
-              </CardContent>
+              <AspectRatio ratio={1/1} className="w-full">
+                <CardContent className="flex flex-col items-center p-4 text-center h-full justify-center">
+                  <div className="mb-2 bg-muted/30 p-3 rounded-full">
+                    {tech.icon}
+                  </div>
+                  <h3 className="font-bold text-lg mb-1">{tech.name}</h3>
+                  <p className="hidden md:block text-muted-foreground text-sm">{tech.description}</p>
+                  <span className="mt-2 px-2 py-1 bg-muted/20 rounded-full text-xs font-medium">
+                    {tech.category}
+                  </span>
+                </CardContent>
+              </AspectRatio>
             </Card>
           ))}
         </div>
