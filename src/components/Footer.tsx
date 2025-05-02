@@ -63,7 +63,7 @@ const Footer = () => {
             </ul>
           </div>
           
-          <div>
+          <div className="hidden md:block">
             <h3 className="font-semibold text-lg mb-4">Connect</h3>
             <ul className="space-y-3">
               <li><a href="#contact" className="text-muted-foreground hover:text-accent transition-colors">Contact Us</a></li>
