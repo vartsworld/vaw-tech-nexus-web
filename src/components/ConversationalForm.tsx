@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -67,12 +68,13 @@ const services = [
   "Custom VR/AR Projects",
 ];
 
-// Create schema for the form
+// Create schema for the form with services as an array
 const formSchema = z.object({
   fullName: z.string().min(2, { message: "Please enter your full name" }),
-  dateOfBirth: z.date({ required_error: "Please select a date of birth" }),
   companyName: z.string().optional(),
   phoneNumber: z.string().min(5, { message: "Please enter a valid phone number" }),
+  selectedServices: z.array(z.string()).min(1, { message: "Please select at least one service" }),
+  dateOfBirth: z.date({ required_error: "Please select a date of birth" }),
   email: z.string().email({ message: "Please enter a valid email address" }),
   addressLine1: z.string().min(1, { message: "Please enter your address" }),
   city: z.string().min(1, { message: "Please enter your city" }),
@@ -80,7 +82,6 @@ const formSchema = z.object({
   pinCode: z.string().min(1, { message: "Please enter your pin/postal code" }),
   country: z.string().min(1, { message: "Please select your country" }),
   logo: z.any().optional(),
-  service: z.string({ required_error: "Please select a service" }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -98,23 +99,24 @@ const ConversationalForm = () => {
       fullName: "",
       companyName: "",
       phoneNumber: "",
+      selectedServices: [],
       email: "",
       addressLine1: "",
       city: "",
       state: "",
       pinCode: "",
       country: "",
-      service: "",
     },
   });
 
+  // Reordered steps based on the user's request
   const steps = [
-    { title: "Personal Info", fields: ["fullName", "dateOfBirth"] },
-    { title: "Company Info", fields: ["companyName"] },
-    { title: "Contact Info", fields: ["phoneNumber", "email"] },
+    { title: "Personal Info", fields: ["fullName", "companyName", "phoneNumber"] },
+    { title: "Service Selection", fields: ["selectedServices"] },
+    { title: "Contact Info", fields: ["email"] },
+    { title: "Date of Birth", fields: ["dateOfBirth"] },
     { title: "Address", fields: ["addressLine1", "city", "state", "pinCode", "country"] },
     { title: "Brand", fields: ["logo"] },
-    { title: "Service", fields: ["service"] },
     { title: "Summary", fields: [] },
   ];
 
@@ -184,7 +186,7 @@ const ConversationalForm = () => {
           state: formValues.state,
           pin_code: formValues.pinCode,
           country: formValues.country,
-          service: formValues.service,
+          services: formValues.selectedServices,
           status: "new",
         });
 
@@ -291,6 +293,124 @@ const ConversationalForm = () => {
 
             <FormField
               control={form.control}
+              name="companyName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-lg">What's your company name? (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Acme Inc."
+                      className="text-lg py-6"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-lg">What's your phone number?</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="tel"
+                      placeholder="+1 (555) 123-4567"
+                      className="text-lg py-6"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="space-y-6 animate-slide-in">
+            <FormField
+              control={form.control}
+              name="selectedServices"
+              render={() => (
+                <FormItem>
+                  <div className="mb-4">
+                    <FormLabel className="text-lg">Which services are you interested in?</FormLabel>
+                    <FormMessage />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {services.map((service) => (
+                      <FormField
+                        key={service}
+                        control={form.control}
+                        name="selectedServices"
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={service}
+                              className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm"
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(service)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange([...field.value, service]);
+                                    } else {
+                                      field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== service
+                                        )
+                                      );
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">
+                                {service}
+                              </FormLabel>
+                            </FormItem>
+                          );
+                        }}
+                      />
+                    ))}
+                  </div>
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-6 animate-slide-in">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-lg">What's your email address?</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="john@example.com"
+                      className="text-lg py-6"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-6 animate-slide-in">
+            <FormField
+              control={form.control}
               name="dateOfBirth"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
@@ -333,71 +453,7 @@ const ConversationalForm = () => {
           </div>
         )}
 
-        {step === 1 && (
-          <div className="space-y-6 animate-slide-in">
-            <FormField
-              control={form.control}
-              name="companyName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-lg">What's your company name? (optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Acme Inc."
-                      className="text-lg py-6"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-6 animate-slide-in">
-            <FormField
-              control={form.control}
-              name="phoneNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-lg">What's your phone number?</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="tel"
-                      placeholder="+1 (555) 123-4567"
-                      className="text-lg py-6"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-lg">What's your email address?</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="john@example.com"
-                      className="text-lg py-6"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        )}
-
-        {step === 3 && (
+        {step === 4 && (
           <div className="space-y-6 animate-slide-in">
             <FormField
               control={form.control}
@@ -490,7 +546,7 @@ const ConversationalForm = () => {
           </div>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <div className="space-y-6 animate-slide-in">
             <FormItem>
               <FormLabel className="text-lg">Do you have a logo to upload? (optional)</FormLabel>
@@ -529,35 +585,6 @@ const ConversationalForm = () => {
           </div>
         )}
 
-        {step === 5 && (
-          <div className="space-y-6 animate-slide-in">
-            <FormField
-              control={form.control}
-              name="service"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-lg">What service are you interested in?</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="text-lg py-6">
-                        <SelectValue placeholder="Choose a service" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {services.map((service) => (
-                        <SelectItem key={service} value={service}>
-                          {service}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        )}
-
         {step === 6 && (
           <div className="space-y-6 animate-slide-in">
             <div className="bg-muted/10 p-6 rounded-lg">
@@ -568,15 +595,6 @@ const ConversationalForm = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Full Name</p>
                     <p className="font-medium">{form.getValues().fullName}</p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm text-muted-foreground">Date of Birth</p>
-                    <p className="font-medium">
-                      {form.getValues().dateOfBirth 
-                        ? format(form.getValues().dateOfBirth, "PPP") 
-                        : "Not provided"}
-                    </p>
                   </div>
                   
                   <div>
@@ -597,8 +615,23 @@ const ConversationalForm = () => {
                   </div>
                   
                   <div>
-                    <p className="text-sm text-muted-foreground">Service</p>
-                    <p className="font-medium">{form.getValues().service}</p>
+                    <p className="text-sm text-muted-foreground">Date of Birth</p>
+                    <p className="font-medium">
+                      {form.getValues().dateOfBirth 
+                        ? format(form.getValues().dateOfBirth, "yyyy-MM-dd") 
+                        : "Not provided"}
+                    </p>
+                  </div>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground">Selected Services</p>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {form.getValues().selectedServices?.map((service, index) => (
+                      <span key={index} className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
+                        {service}
+                      </span>
+                    ))}
                   </div>
                 </div>
                 
