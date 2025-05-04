@@ -1,9 +1,17 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Moon, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
+
+const navigationItems = [
+  { name: "Home", href: "/" },
+  { name: "Services", href: "/#services" },
+  { name: "About", href: "/#about" },
+  { name: "Portfolio", href: "/#portfolio" },
+  { name: "Contact", href: "/#contact" },
+  { name: "Request Service", href: "/service-request" }
+];
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -49,18 +57,11 @@ const Navbar = () => {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8">
-          <a href="#services" className="text-foreground/80 hover:text-accent transition-colors">
-            Services
-          </a>
-          <a href="#about" className="text-foreground/80 hover:text-accent transition-colors">
-            About
-          </a>
-          <a href="#portfolio" className="text-foreground/80 hover:text-accent transition-colors">
-            Portfolio
-          </a>
-          <a href="#contact" className="text-foreground/80 hover:text-accent transition-colors">
-            Contact
-          </a>
+          {navigationItems.map((item, index) => (
+            <a key={index} href={item.href} className="text-foreground/80 hover:text-accent transition-colors">
+              {item.name}
+            </a>
+          ))}
           <Button 
             variant="ghost" 
             size="icon" 
@@ -93,34 +94,16 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="md:hidden bg-background/95 backdrop-blur-md absolute top-full left-0 w-full py-4 shadow-lg">
           <div className="container mx-auto px-4 flex flex-col gap-4">
-            <a 
-              href="#services" 
-              className="text-foreground/80 hover:text-accent transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Services
-            </a>
-            <a 
-              href="#about" 
-              className="text-foreground/80 hover:text-accent transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              About
-            </a>
-            <a 
-              href="#portfolio" 
-              className="text-foreground/80 hover:text-accent transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Portfolio
-            </a>
-            <a 
-              href="#contact" 
-              className="text-foreground/80 hover:text-accent transition-colors py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Contact
-            </a>
+            {navigationItems.map((item, index) => (
+              <a 
+                key={index} 
+                href={item.href} 
+                className="text-foreground/80 hover:text-accent transition-colors py-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {item.name}
+              </a>
+            ))}
             <Button className="bg-primary hover:bg-primary/80 text-primary-foreground w-full">
               Get a Quote
             </Button>
