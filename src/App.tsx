@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import ServiceRequest from "./pages/ServiceRequest";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import Internship from "./pages/Internship";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UserProvider } from "./context/UserContext";
@@ -26,6 +27,7 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/service-request" element={<ServiceRequest />} />
+          <Route path="/internship" element={<Internship />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />

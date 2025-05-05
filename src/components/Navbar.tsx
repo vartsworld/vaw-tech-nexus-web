@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Moon, Sun } from "lucide-react";
@@ -10,7 +11,8 @@ const navigationItems = [
   { name: "About", href: "/#about" },
   { name: "Portfolio", href: "/#portfolio" },
   { name: "Contact", href: "/#contact" },
-  { name: "Request Service", href: "/service-request" }
+  { name: "Request Service", href: "/service-request" },
+  { name: "Internship", href: "/internship" }
 ];
 
 const Navbar = () => {
