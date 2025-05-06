@@ -48,9 +48,9 @@ const AdminDashboard = () => {
       // Try to fetch counts from Supabase tables
       try {
         const [inquiryCount, projectCount, testimonialCount, partnerCount] = await Promise.all([
-          (supabase as any).from('inquiries').select('id', { count: 'exact', head: true }),
-          (supabase as any).from('projects').select('id', { count: 'exact', head: true }),
-          (supabase as any).from('testimonials').select('id', { count: 'exact', head: true }),
+          supabase.from('inquiries').select('id', { count: 'exact', head: true }),
+          supabase.from('projects').select('id', { count: 'exact', head: true }),
+          supabase.from('testimonials').select('id', { count: 'exact', head: true }),
           supabase.from('partners').select('id', { count: 'exact', head: true }),
         ]);
 

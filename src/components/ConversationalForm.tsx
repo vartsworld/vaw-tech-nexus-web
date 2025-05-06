@@ -175,7 +175,7 @@ const ConversationalForm = () => {
       // Try to upload to Supabase if it exists
       try {
         // First, submit form data
-        const { error: submissionError } = await (supabase as any).from("service_requests").insert({
+        const { error: submissionError } = await supabase.from("service_requests").insert({
           full_name: formValues.fullName,
           date_of_birth: format(formValues.dateOfBirth, "yyyy-MM-dd"),
           company_name: formValues.companyName,
@@ -195,7 +195,7 @@ const ConversationalForm = () => {
           const logoPath = `logos/${formValues.fullName.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`;
           
           try {
-            const { error: storageError } = await (supabase as any).storage
+            const { error: storageError } = await supabase.storage
               .from("services")
               .upload(logoPath, logoFile);
               
@@ -203,7 +203,7 @@ const ConversationalForm = () => {
               console.error("Logo upload error:", storageError);
             } else {
               // Update the record with the logo path
-              await (supabase as any).from("service_requests")
+              await supabase.from("service_requests")
                 .update({ logo_path: logoPath })
                 .eq("email", formValues.email)
                 .eq("createdAt", newSubmission.createdAt);

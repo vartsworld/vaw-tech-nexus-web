@@ -76,7 +76,7 @@ const ContactForm = () => {
       
       // Try to send to Supabase (this may fail if table doesn't exist)
       try {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from("inquiries")
           .insert({
             name: formData.name,

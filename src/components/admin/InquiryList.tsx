@@ -37,7 +37,7 @@ const InquiryList = () => {
       
       // Try to fetch from Supabase first
       try {
-        let query = (supabase as any).from("inquiries").select("*");
+        let query = supabase.from("inquiries").select("*");
 
         if (filter !== "all") {
           query = query.eq("status", filter);
@@ -108,7 +108,7 @@ const InquiryList = () => {
         }
       } else {
         // Update in Supabase
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from("inquiries")
           .update({ status, updated_at: new Date().toISOString() })
           .eq("id", id);
@@ -155,7 +155,7 @@ const InquiryList = () => {
           }
         } else {
           // Delete from Supabase
-          const { error } = await (supabase as any).from("inquiries").delete().eq("id", id);
+          const { error } = await supabase.from("inquiries").delete().eq("id", id);
 
           if (error) throw error;
 
