@@ -47,3 +47,22 @@ export interface Partner {
   created_at: string;
   updated_at: string;
 }
+
+export interface ServiceRequest {
+  id: string;
+  full_name: string;
+  company_name: string | null;
+  phone_number: string;
+  email: string;
+  date_of_birth: string | null;
+  services: string[];
+  address_line1: string;
+  city: string;
+  state: string;
+  pin_code: string;
+  country: string;
+  logo_path: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}

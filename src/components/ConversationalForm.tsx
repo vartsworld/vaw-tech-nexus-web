@@ -206,7 +206,7 @@ const ConversationalForm = () => {
               await supabase.from("service_requests")
                 .update({ logo_path: logoPath })
                 .eq("email", formValues.email)
-                .eq("createdAt", newSubmission.createdAt);
+                .eq("created_at", newSubmission.createdAt);
             }
           } catch (uploadError) {
             console.error("Storage upload error:", uploadError);

@@ -45,6 +45,42 @@ export type Database = {
         }
         Relationships: []
       }
+      inquiries: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          service: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          service?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          service?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -254,6 +290,63 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+        }
+        Relationships: []
+      }
+      service_requests: {
+        Row: {
+          address_line1: string
+          city: string
+          company_name: string | null
+          country: string
+          created_at: string | null
+          date_of_birth: string | null
+          email: string
+          full_name: string
+          id: string
+          logo_path: string | null
+          phone_number: string
+          pin_code: string
+          services: string[]
+          state: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address_line1: string
+          city: string
+          company_name?: string | null
+          country: string
+          created_at?: string | null
+          date_of_birth?: string | null
+          email: string
+          full_name: string
+          id?: string
+          logo_path?: string | null
+          phone_number: string
+          pin_code: string
+          services: string[]
+          state: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address_line1?: string
+          city?: string
+          company_name?: string | null
+          country?: string
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          logo_path?: string | null
+          phone_number?: string
+          pin_code?: string
+          services?: string[]
+          state?: string
+          status?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
