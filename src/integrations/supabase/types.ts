@@ -293,6 +293,42 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string
+          display_order: number | null
+          featured: boolean | null
+          id: string
+          image_url: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description: string
+          display_order?: number | null
+          featured?: boolean | null
+          id?: string
+          image_url: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string
+          display_order?: number | null
+          featured?: boolean | null
+          id?: string
+          image_url?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       service_requests: {
         Row: {
           address_line1: string
@@ -371,6 +407,48 @@ export type Database = {
           proj4text?: string | null
           srid?: number
           srtext?: string | null
+        }
+        Relationships: []
+      }
+      testimonials: {
+        Row: {
+          client_company: string | null
+          client_name: string
+          client_position: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          image_url: string | null
+          is_featured: boolean | null
+          message: string
+          rating: number
+          updated_at: string | null
+        }
+        Insert: {
+          client_company?: string | null
+          client_name: string
+          client_position?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          message: string
+          rating: number
+          updated_at?: string | null
+        }
+        Update: {
+          client_company?: string | null
+          client_name?: string
+          client_position?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
+          message?: string
+          rating?: number
+          updated_at?: string | null
         }
         Relationships: []
       }

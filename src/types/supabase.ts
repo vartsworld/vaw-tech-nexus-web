@@ -8,6 +8,9 @@ export type TableRow<T extends keyof Database['public']['Tables']> =
 // Type definitions for specific tables
 export type Inquiry = TableRow<'inquiries'>;
 export type ServiceRequest = TableRow<'service_requests'>;
+export type Project = TableRow<'projects'>;
+export type Testimonial = TableRow<'testimonials'>;
+export type Partner = TableRow<'partners'>;
 
 // Type guard functions
 export function isInquiry(obj: any): obj is Inquiry {
@@ -22,4 +25,18 @@ export function isServiceRequest(obj: any): obj is ServiceRequest {
     && typeof obj.full_name === 'string'
     && typeof obj.email === 'string'
     && Array.isArray(obj.services);
+}
+
+export function isProject(obj: any): obj is Project {
+  return obj && typeof obj === 'object'
+    && typeof obj.title === 'string'
+    && typeof obj.category === 'string'
+    && typeof obj.description === 'string';
+}
+
+export function isTestimonial(obj: any): obj is Testimonial {
+  return obj && typeof obj === 'object'
+    && typeof obj.client_name === 'string'
+    && typeof obj.message === 'string'
+    && typeof obj.rating === 'number';
 }
