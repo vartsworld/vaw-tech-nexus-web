@@ -78,7 +78,7 @@ const ProjectsManagement = () => {
         
         // Combine predefined categories with existing ones from projects
         const projectCategories = [...new Set(data.map((project: Project) => project.category))];
-        const allCategories = [...new Set([...predefinedCategories, ...projectCategories])];
+        const allCategories = [...new Set([...predefinedCategories, ...projectCategories])] as string[];
         setCategories(allCategories);
       }
     } catch (error) {
