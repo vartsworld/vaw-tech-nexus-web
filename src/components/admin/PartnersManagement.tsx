@@ -1,26 +1,41 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "@/hooks/use-toast";
-import { Partner } from '@/types/partners';
+import { Check, Trash, PenSquare } from "lucide-react";
+import { type Partner } from "@/types/partners";
+import ImageUploadField from "./ImageUploadField";
 
 const PartnersManagement = () => {
   const [partners, setPartners] = useState<Partner[]>([]);
-  const [newPartner, setNewPartner] = useState({
-    name: '',
-    logo_url: '',
-    industry: '',
-    description: '',
-    featured: false,
-    display_order: 0,
-  });
   const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editPartner, setEditPartner] = useState<Partner | null>(null);
+  const [currentPartner, setCurrentPartner] = useState<Partial<Partner>>({
+    name: "",
+    website_url: "",
+    logo_url: "",
+    display_order: 0,
+    featured: false,
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchPartners();
@@ -29,344 +44,383 @@ const PartnersManagement = () => {
   const fetchPartners = async () => {
     try {
       setLoading(true);
-      const { data, error } = await (supabase as any).from('partners').select('*').order('display_order');
-    
+      const { data, error } = await supabase
+        .from("partners")
+        .select("*")
+        .order("display_order", { ascending: true });
+
       if (error) throw error;
-    
-      if (data) {
-        setPartners(data as Partner[]);
-      }
+      setPartners(data || []);
     } catch (error) {
-      console.error('Error fetching partners:', error);
+      console.error("Error fetching partners:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to load partners data',
-        variant: 'destructive',
+        title: "Failed to load partners",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setNewPartner(prev => ({ ...prev, [name]: value }));
-  };
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setNewPartner(prev => ({ ...prev, [name]: checked }));
-  };
-
-  const addPartner = async () => {
     try {
-      if (!newPartner.name || !newPartner.logo_url) {
-        toast({
-          title: 'Validation Error',
-          description: 'Name and logo URL are required',
-          variant: 'destructive',
-        });
-        return;
+      let response;
+
+      if (isEditing && currentPartner.id) {
+        // Update existing partner
+        response = await supabase
+          .from("partners")
+          .update({
+            name: currentPartner.name!,
+            website_url: currentPartner.website_url || null,
+            logo_url: currentPartner.logo_url || null,
+            featured: currentPartner.featured || false,
+            display_order: currentPartner.display_order || 0,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", currentPartner.id);
+      } else {
+        // Create new partner
+        response = await supabase
+          .from("partners")
+          .insert({
+            name: currentPartner.name!,
+            website_url: currentPartner.website_url || null,
+            logo_url: currentPartner.logo_url || null,
+            featured: currentPartner.featured || false,
+            display_order: partners.length,
+          });
       }
-    
-      const { data, error } = await (supabase as any).from('partners').insert([
-        {
-          name: newPartner.name,
-          logo_url: newPartner.logo_url,
-          industry: newPartner.industry || null,
-          description: newPartner.description || null,
-          featured: newPartner.featured || false,
-          display_order: newPartner.display_order || 0,
-        }
-      ]).select();
-    
-      if (error) throw error;
-    
-      setPartners([...partners, data[0] as Partner]);
-      setNewPartner({
-        name: '',
-        logo_url: '',
-        industry: '',
-        description: '',
-        featured: false,
-        display_order: 0,
-      });
-    
+
+      if (response.error) throw response.error;
+
       toast({
-        title: 'Partner Added',
-        description: 'The partner has been added successfully',
+        title: isEditing ? "Partner updated" : "Partner created",
+        description: isEditing
+          ? "The partner has been updated successfully."
+          : "A new partner has been added.",
       });
+
+      // Reset form and fetch updated data
+      setDialogOpen(false);
+      resetForm();
+      fetchPartners();
     } catch (error) {
-      console.error('Error adding partner:', error);
+      console.error("Error saving partner:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to add partner',
-        variant: 'destructive',
+        title: "Error",
+        description: `Failed to ${isEditing ? "update" : "create"} partner.`,
+        variant: "destructive",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleEditClick = (partner: Partner) => {
-    setIsEditing(true);
-    setEditPartner(partner);
-  };
+  const handleDeletePartner = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this partner?")) {
+      return;
+    }
 
-  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setEditPartner(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleEditCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setEditPartner(prev => ({ ...prev, [name]: checked }));
-  };
-
-  const updatePartner = async (id: string, updatedData: Partial<Partner>) => {
     try {
-      const { error } = await (supabase as any)
-        .from('partners')
-        .update(updatedData)
-        .eq('id', id);
-    
+      const { error } = await supabase.from("partners").delete().eq("id", id);
+
       if (error) throw error;
-    
-      setPartners(partners.map(partner => 
-        partner.id === id ? { ...partner, ...updatedData } : partner
-      ));
-    
+
+      setPartners((prev) => prev.filter((p) => p.id !== id));
+
       toast({
-        title: 'Partner Updated',
-        description: 'The partner has been updated successfully',
+        title: "Partner deleted",
       });
     } catch (error) {
-      console.error('Error updating partner:', error);
+      console.error("Error deleting partner:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to update partner',
-        variant: 'destructive',
+        title: "Failed to delete partner",
+        variant: "destructive",
       });
     }
   };
 
-  const deletePartner = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this partner?')) {
-      try {
-        const { error } = await (supabase as any)
-          .from('partners')
-          .delete()
-          .eq('id', id);
-      
+  const handleEditPartner = (partner: Partner) => {
+    setCurrentPartner(partner);
+    setIsEditing(true);
+    setDialogOpen(true);
+  };
+
+  const resetForm = () => {
+    setCurrentPartner({
+      name: "",
+      website_url: "",
+      logo_url: "",
+      featured: false,
+      display_order: partners.length,
+    });
+    setIsEditing(false);
+  };
+
+  const handleNewPartner = () => {
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const toggleFeatured = async (id: string, currentValue: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("partners")
+        .update({ featured: !currentValue, updated_at: new Date().toISOString() })
+        .eq("id", id);
+
       if (error) throw error;
-      
-      setPartners(partners.filter(partner => partner.id !== id));
-      toast({
-        title: 'Partner Deleted',
-        description: 'The partner has been deleted successfully',
-      });
+
+      setPartners((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, featured: !currentValue } : p))
+      );
     } catch (error) {
-      console.error('Error deleting partner:', error);
+      console.error("Error updating partner:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to delete partner',
-        variant: 'destructive',
+        title: "Failed to update partner",
+        variant: "destructive",
       });
     }
-  }
-};
+  };
+
+  const updateOrder = async (id: string, newOrder: number) => {
+    try {
+      const { error } = await supabase
+        .from("partners")
+        .update({ display_order: newOrder, updated_at: new Date().toISOString() })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      fetchPartners(); // Refetch to ensure correct order
+    } catch (error) {
+      console.error("Error updating order:", error);
+      toast({
+        title: "Failed to update order",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const moveUp = (partner: Partner) => {
+    const index = partners.findIndex((p) => p.id === partner.id);
+    if (index > 0) {
+      const prevItem = partners[index - 1];
+      updateOrder(partner.id, prevItem.display_order);
+      updateOrder(prevItem.id, partner.display_order);
+    }
+  };
+
+  const moveDown = (partner: Partner) => {
+    const index = partners.findIndex((p) => p.id === partner.id);
+    if (index < partners.length - 1) {
+      const nextItem = partners[index + 1];
+      updateOrder(partner.id, nextItem.display_order);
+      updateOrder(nextItem.id, partner.display_order);
+    }
+  };
 
   if (loading) {
-    return <p>Loading partners...</p>;
+    return (
+      <div className="text-center py-8">
+        <p>Loading partners...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Add Partner Form */}
-      <div className="bg-card border border-muted/20 rounded-lg p-4">
-        <h3 className="text-xl font-semibold mb-4">Add New Partner</h3>
-        <div className="grid gap-4">
-          <div>
-            <Label htmlFor="name">Name</Label>
-            <Input
-              type="text"
-              id="name"
-              name="name"
-              value={newPartner.name}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div>
-            <Label htmlFor="logo_url">Logo URL</Label>
-            <Input
-              type="text"
-              id="logo_url"
-              name="logo_url"
-              value={newPartner.logo_url}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div>
-            <Label htmlFor="industry">Industry</Label>
-            <Input
-              type="text"
-              id="industry"
-              name="industry"
-              value={newPartner.industry || ''}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              name="description"
-              value={newPartner.description || ''}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="featured">Featured</Label>
-            <Switch
-              id="featured"
-              name="featured"
-              checked={newPartner.featured || false}
-              onCheckedChange={(checked) => setNewPartner(prev => ({ ...prev, featured: checked }))}
-            />
-          </div>
-          <div>
-            <Label htmlFor="display_order">Display Order</Label>
-            <Input
-              type="number"
-              id="display_order"
-              name="display_order"
-              value={newPartner.display_order || 0}
-              onChange={handleInputChange}
-            />
-          </div>
-          <Button onClick={addPartner}>Add Partner</Button>
-        </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold">Partners Management</h2>
+        <Button onClick={handleNewPartner}>Add New Partner</Button>
       </div>
 
-      {/* List of Partners */}
-      <div className="bg-card border border-muted/20 rounded-lg p-4">
-        <h3 className="text-xl font-semibold mb-4">List of Partners</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="text-left">
-                <th>Name</th>
-                <th>Logo</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {partners.map((partner) => (
-                <tr key={partner.id} className="border-b border-muted/20">
-                  <td className="py-2">{partner.name}</td>
-                  <td className="py-2">
-                    <img
-                      src={partner.logo_url}
-                      alt={partner.name}
-                      className="h-8 w-auto"
-                    />
-                  </td>
-                  <td className="py-2">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleEditClick(partner)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deletePartner(partner.id)}
-                    >
-                      Delete
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {isEditing ? "Edit Partner" : "Add New Partner"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="name" className="block text-sm font-medium">
+                Partner Name*
+              </label>
+              <Input
+                id="name"
+                value={currentPartner.name || ""}
+                onChange={(e) =>
+                  setCurrentPartner({
+                    ...currentPartner,
+                    name: e.target.value,
+                  })
+                }
+                placeholder="Company Name"
+                required
+              />
+            </div>
 
-      {/* Edit Partner Form */}
-      {isEditing && editPartner && (
-        <div className="bg-card border border-muted/20 rounded-lg p-4 col-span-2">
-          <h3 className="text-xl font-semibold mb-4">Edit Partner</h3>
-          <div className="grid gap-4">
-            <div>
-              <Label htmlFor="edit-name">Name</Label>
+            <div className="space-y-2">
+              <label htmlFor="website_url" className="block text-sm font-medium">
+                Website URL
+              </label>
               <Input
-                type="text"
-                id="edit-name"
-                name="name"
-                value={editPartner.name}
-                onChange={handleEditInputChange}
+                id="website_url"
+                value={currentPartner.website_url || ""}
+                onChange={(e) =>
+                  setCurrentPartner({
+                    ...currentPartner,
+                    website_url: e.target.value,
+                  })
+                }
+                placeholder="https://example.com"
+                type="url"
               />
             </div>
-            <div>
-              <Label htmlFor="edit-logo_url">Logo URL</Label>
-              <Input
-                type="text"
-                id="edit-logo_url"
-                name="logo_url"
-                value={editPartner.logo_url}
-                onChange={handleEditInputChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-industry">Industry</Label>
-              <Input
-                type="text"
-                id="edit-industry"
-                name="industry"
-                value={editPartner.industry || ''}
-                onChange={handleEditInputChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-description">Description</Label>
-              <Textarea
-                id="edit-description"
-                name="description"
-                value={editPartner.description || ''}
-                onChange={handleEditInputChange}
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="edit-featured">Featured</Label>
+
+            <ImageUploadField
+              initialImageUrl={currentPartner.logo_url || null}
+              onImageChange={(url) => 
+                setCurrentPartner({
+                  ...currentPartner,
+                  logo_url: url
+                })
+              }
+              folderPath="partners"
+              label="Partner Logo"
+            />
+
+            <div className="flex items-center gap-2">
+              <label htmlFor="featured" className="text-sm font-medium">
+                Featured Partner
+              </label>
               <Switch
-                id="edit-featured"
-                name="featured"
-                checked={editPartner.featured || false}
-                onCheckedChange={(checked) => setEditPartner(prev => ({ ...prev, featured: checked }))}
+                id="featured"
+                checked={currentPartner.featured || false}
+                onCheckedChange={(checked) =>
+                  setCurrentPartner({
+                    ...currentPartner,
+                    featured: checked,
+                  })
+                }
               />
             </div>
-            <div>
-              <Label htmlFor="edit-display_order">Display Order</Label>
-              <Input
-                type="number"
-                id="edit-display_order"
-                name="display_order"
-                value={editPartner.display_order || 0}
-                onChange={handleEditInputChange}
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="ghost" onClick={() => setIsEditing(false)}>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setDialogOpen(false);
+                  resetForm();
+                }}
+              >
                 Cancel
               </Button>
-              <Button onClick={() => {
-                updatePartner(editPartner.id, editPartner);
-                setIsEditing(false);
-              }}>
-                Update Partner
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Saving..." : isEditing ? "Update" : "Create"}
               </Button>
             </div>
-          </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {partners.length === 0 ? (
+        <div className="text-center py-8 bg-card border border-muted/20 rounded-lg">
+          <p className="text-muted-foreground">No partners found.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {partners.map((partner, index) => (
+            <Card key={partner.id}>
+              <CardHeader className="pb-2 flex flex-row items-start justify-between space-y-0">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2">
+                    {partner.name}
+                    {partner.featured && (
+                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">
+                        Featured
+                      </span>
+                    )}
+                  </CardTitle>
+                  {partner.website_url && (
+                    <a
+                      href={partner.website_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-500 hover:underline"
+                    >
+                      {partner.website_url}
+                    </a>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => moveUp(partner)}
+                    disabled={index === 0}
+                    title="Move Up"
+                  >
+                    ↑
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => moveDown(partner)}
+                    disabled={index === partners.length - 1}
+                    title="Move Down"
+                  >
+                    ↓
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="pb-2">
+                {partner.logo_url && (
+                  <img
+                    src={partner.logo_url}
+                    alt={partner.name}
+                    className="h-16 object-contain"
+                  />
+                )}
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <div className="flex items-center">
+                  <Switch
+                    id={`featured-${partner.id}`}
+                    checked={partner.featured}
+                    onCheckedChange={() =>
+                      toggleFeatured(partner.id, partner.featured)
+                    }
+                  />
+                  <label htmlFor={`featured-${partner.id}`} className="ml-2 text-sm">
+                    Featured
+                  </label>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditPartner(partner)}
+                  >
+                    <PenSquare className="h-4 w-4 mr-1" /> Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDeletePartner(partner.id)}
+                  >
+                    <Trash className="h-4 w-4 mr-1" /> Delete
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          ))}
         </div>
       )}
     </div>
