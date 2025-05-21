@@ -216,7 +216,7 @@ const ConversationalForm = () => {
           }
         }
       } catch (supabaseError) {
-        console.log("Using local storage only due to Supabase error:", supababError);
+        console.log("Using local storage only due to Supabase error:", supabaseError);
       }
 
       // Show success message
