@@ -49,6 +49,16 @@ const ProjectsManagement = () => {
     display_order: 0
   });
 
+  // Predefined categories
+  const predefinedCategories = [
+    "Website Development",
+    "WebApp Development",
+    "AI Solutions",
+    "VR/AR Development",
+    "Digital Marketing",
+    "Digital Design"
+  ];
+
   useEffect(() => {
     fetchProjects();
   }, []);
@@ -66,9 +76,10 @@ const ProjectsManagement = () => {
       if (data) {
         setProjects(data as Project[]);
         
-        // Extract unique categories and cast the result to string[]
-        const uniqueCategories = [...new Set(data.map((project: Project) => project.category))];
-        setCategories(uniqueCategories as string[]);
+        // Combine predefined categories with existing ones from projects
+        const projectCategories = [...new Set(data.map((project: Project) => project.category))];
+        const allCategories = [...new Set([...predefinedCategories, ...projectCategories])];
+        setCategories(allCategories);
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -261,9 +272,14 @@ const ProjectsManagement = () => {
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map(category => (
+                {predefinedCategories.map(category => (
                   <SelectItem key={category} value={category}>{category}</SelectItem>
                 ))}
+                {categories
+                  .filter(category => !predefinedCategories.includes(category))
+                  .map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -303,9 +319,14 @@ const ProjectsManagement = () => {
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map(category => (
+                  {predefinedCategories.map(category => (
                     <SelectItem key={category} value={category}>{category}</SelectItem>
                   ))}
+                  {categories
+                    .filter(category => !predefinedCategories.includes(category))
+                    .map(category => (
+                      <SelectItem key={category} value={category}>{category}</SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
