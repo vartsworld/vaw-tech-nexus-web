@@ -1,7 +1,10 @@
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import React, { useState } from "react";
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+
 interface ServiceCardProps {
   title: string;
   description: string;
@@ -48,9 +51,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         </ul>
       </CardContent>
       <CardFooter>
-        <Button variant="ghost" className="text-accent hover:text-accent/80 hover:bg-accent/10 px-0 group">
-          <span>Learn more</span>
-          <ArrowRight className="ml-1 h-4 w-4 transition-transform duration-300 transform group-hover:translate-x-1" />
+        <Button variant="ghost" className="text-accent hover:text-accent/80 hover:bg-accent/10 px-0 group" asChild>
+          <Link to="/service-request">
+            <span>Learn more</span>
+            <ArrowRight className="ml-1 h-4 w-4 transition-transform duration-300 transform group-hover:translate-x-1" />
+          </Link>
         </Button>
       </CardFooter>
     </Card>;
@@ -105,9 +110,11 @@ const Services = () => {
       </div>
       
       <div className="mt-16 text-center">
-        <Button size="lg" className="btn-3d bg-primary hover:bg-primary/80 text-primary-foreground group relative overflow-hidden">
-          <span className="relative z-10">Request Custom Service</span>
-          <span className="absolute inset-0 bg-gradient-to-r from-tech-red to-tech-gold opacity-0 group-hover:opacity-20 transition-opacity duration-500"></span>
+        <Button size="lg" className="btn-3d bg-primary hover:bg-primary/80 text-primary-foreground group relative overflow-hidden" asChild>
+          <Link to="/service-request">
+            <span className="relative z-10">Request Custom Service</span>
+            <span className="absolute inset-0 bg-gradient-to-r from-tech-red to-tech-gold opacity-0 group-hover:opacity-20 transition-opacity duration-500"></span>
+          </Link>
         </Button>
       </div>
       

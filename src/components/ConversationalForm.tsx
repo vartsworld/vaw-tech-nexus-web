@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -56,12 +55,16 @@ const countries = [
 ];
 
 const services = [
+  "Website Development",
+  "WebApp Development",
+  "AI Solutions",
+  "VR/AR Development",
+  "Digital Marketing",
+  "Digital Design",
   "Digital Album",
   "NFC/Digital Business Card",
-  "Digital Marketing",
   "Digital Poster/Ads Design",
   "E-book/Catalogs",
-  "Website Development",
   "Custom Software",
   "App/Platform",
   "AI Platform/AI Character Chatbots",
@@ -213,7 +216,7 @@ const ConversationalForm = () => {
           }
         }
       } catch (supabaseError) {
-        console.log("Using local storage only due to Supabase error:", supabaseError);
+        console.log("Using local storage only due to Supabase error:", supababError);
       }
 
       // Show success message
