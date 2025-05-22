@@ -10,12 +10,12 @@ const CheckStorageBuckets = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAndCreateBucket = async () => {
+    const checkBucket = async () => {
       if (checked) return;
       
       try {
         setLoading(true);
-        // Check if media bucket exists
+        // Only check if the media bucket exists, don't try to create it
         const { data: buckets, error: listError } = await supabase.storage.listBuckets();
         
         if (listError) {
@@ -26,35 +26,27 @@ const CheckStorageBuckets = () => {
         const mediaBucket = buckets?.find(bucket => bucket.name === 'media');
         
         if (!mediaBucket) {
-          // Create the bucket if it doesn't exist
-          const { error: createError } = await supabase.storage.createBucket('media', {
-            public: true,
-            fileSizeLimit: 5242880, // 5MB
-          });
-          
-          if (createError) {
-            console.error('Error creating bucket:', createError);
-            throw new Error(createError.message);
-          }
-          
-          console.log('Created media storage bucket');
-          toast({
-            title: "Storage bucket created",
-            description: "Media storage has been set up successfully",
-          });
+          // Instead of creating it (which can fail due to permissions),
+          // just inform the user that it needs to be created manually
+          console.error('Media bucket does not exist');
+          throw new Error('Media bucket does not exist in storage. Please create it manually in the Supabase dashboard.');
         } else {
-          console.log('Media bucket already exists');
+          console.log('Media bucket exists');
+          toast({
+            title: "Storage ready",
+            description: "Media storage is properly configured",
+          });
         }
         
         setChecked(true);
         setError(null);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error('Error checking/creating storage bucket:', errorMessage);
+        console.error('Error checking storage bucket:', errorMessage);
         setError(`Storage setup error: ${errorMessage}`);
         toast({
           title: "Storage setup error",
-          description: "There was a problem setting up storage for uploads. Please check your permissions.",
+          description: "There was a problem with the storage configuration. Please check your Supabase storage settings.",
           variant: "destructive",
         });
       } finally {
@@ -62,7 +54,7 @@ const CheckStorageBuckets = () => {
       }
     };
     
-    checkAndCreateBucket();
+    checkBucket();
   }, [checked]);
   
   if (error && !loading) {
@@ -71,7 +63,16 @@ const CheckStorageBuckets = () => {
         <AlertTitle>Storage Error</AlertTitle>
         <AlertDescription>
           {error}. File uploads will not work. 
-          Please check your Supabase storage permissions.
+          <p className="mt-2 font-medium">Please follow these steps:</p>
+          <ol className="list-decimal ml-5 mt-1">
+            <li>Log in to your Supabase dashboard</li>
+            <li>Go to "Storage" section</li>
+            <li>Click "New Bucket"</li>
+            <li>Name it "media" and set it to "public"</li>
+            <li>Click "Create bucket"</li>
+            <li>Set appropriate RLS policies to allow uploads</li>
+            <li>Refresh this page</li>
+          </ol>
         </AlertDescription>
       </Alert>
     );
