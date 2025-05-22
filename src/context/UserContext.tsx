@@ -7,7 +7,8 @@ type UserContextType = {
   hasCompletedIntro: boolean;
   setHasCompletedIntro: (completed: boolean) => void;
   resetIntroState: () => void;
-  isLoggedIn: boolean; // Added isLoggedIn property
+  isLoggedIn: boolean;
+  setIsLoggedIn: (loggedIn: boolean) => void; // Added setIsLoggedIn function
 };
 
 const UserContext = createContext<UserContextType>({
@@ -16,7 +17,8 @@ const UserContext = createContext<UserContextType>({
   hasCompletedIntro: false,
   setHasCompletedIntro: () => {},
   resetIntroState: () => {},
-  isLoggedIn: false, // Added default value
+  isLoggedIn: false,
+  setIsLoggedIn: () => {}, // Added default value
 });
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
@@ -32,7 +34,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   });
 
   // Add state for login status
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+  const [isLoggedIn, setIsLoggedInState] = useState(() => {
     // Check if there's a stored login state in localStorage
     const loginState = localStorage.getItem("vaw_isLoggedIn");
     return loginState === "true";
@@ -60,6 +62,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     setHasCompletedIntroState(completed);
   };
   
+  // Function to set login status
+  const setIsLoggedIn = (loggedIn: boolean) => {
+    setIsLoggedInState(loggedIn);
+  };
+  
   // Function to reset intro state (for testing purposes)
   const resetIntroState = () => {
     localStorage.removeItem("vaw_hasCompletedIntro");
@@ -75,6 +82,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         setHasCompletedIntro,
         resetIntroState,
         isLoggedIn,
+        setIsLoggedIn,
       }}
     >
       {children}

@@ -1,15 +1,18 @@
 
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
+import { useUser } from "@/context/UserContext"; // Import useUser hook
 
 const AdminHeader = () => {
   const navigate = useNavigate();
   const adminEmail = localStorage.getItem("admin_email") || "Admin";
+  const { setIsLoggedIn } = useUser(); // Get setIsLoggedIn from UserContext
 
   const handleLogout = () => {
     localStorage.removeItem("admin_token");
     localStorage.removeItem("admin_role");
     localStorage.removeItem("admin_email");
+    setIsLoggedIn(false); // Update isLoggedIn state in UserContext
     navigate("/admin");
   };
 
