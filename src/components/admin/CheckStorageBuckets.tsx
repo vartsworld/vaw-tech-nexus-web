@@ -10,12 +10,12 @@ const CheckStorageBuckets = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkBucket = async () => {
+    const checkAndCreateBucket = async () => {
       if (checked) return;
       
       try {
         setLoading(true);
-        // Only check if the media bucket exists, don't try to create it
+        // Check if media bucket exists
         const { data: buckets, error: listError } = await supabase.storage.listBuckets();
         
         if (listError) {
@@ -26,12 +26,29 @@ const CheckStorageBuckets = () => {
         const mediaBucket = buckets?.find(bucket => bucket.name === 'media');
         
         if (!mediaBucket) {
-          // Instead of creating it (which can fail due to permissions),
-          // just inform the user that it needs to be created manually
-          console.error('Media bucket does not exist');
-          throw new Error('Media bucket does not exist in storage. Please create it manually in the Supabase dashboard.');
+          // Create the bucket if it doesn't exist
+          const { error: createError } = await supabase.storage.createBucket('media', {
+            public: true,
+            fileSizeLimit: 10485760, // 10MB
+          });
+          
+          if (createError) {
+            console.error('Error creating bucket:', createError);
+            // If we can't create it automatically, suggest manual creation
+            if (createError.message.includes('permission') || createError.message.includes('policy')) {
+              throw new Error('Media bucket does not exist in storage. Please create it manually in the Supabase dashboard.');
+            } else {
+              throw new Error(createError.message);
+            }
+          }
+          
+          console.log('Created media storage bucket');
+          toast({
+            title: "Storage bucket created",
+            description: "Media storage has been set up successfully",
+          });
         } else {
-          console.log('Media bucket exists');
+          console.log('Media bucket already exists');
           toast({
             title: "Storage ready",
             description: "Media storage is properly configured",
@@ -42,7 +59,7 @@ const CheckStorageBuckets = () => {
         setError(null);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error('Error checking storage bucket:', errorMessage);
+        console.error('Error checking/creating storage bucket:', errorMessage);
         setError(`Storage setup error: ${errorMessage}`);
         toast({
           title: "Storage setup error",
@@ -54,7 +71,7 @@ const CheckStorageBuckets = () => {
       }
     };
     
-    checkBucket();
+    checkAndCreateBucket();
   }, [checked]);
   
   if (error && !loading) {
