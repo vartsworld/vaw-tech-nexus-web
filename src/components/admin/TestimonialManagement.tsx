@@ -1,4 +1,3 @@
-
 import { useState, useEffect, FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -24,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Check, Star, Trash, Upload, PenSquare } from "lucide-react";
 import { Testimonial } from "@/types/database";
+import ImageSelector from "./ImageSelector";
 
 interface TestimonialInput {
   id?: string;
@@ -81,9 +81,8 @@ const TestimonialManagement = () => {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+  const handleImageChange = (file: File | null) => {
+    if (file) {
       if (file.size > 2 * 1024 * 1024) {
         toast({
           title: "Image too large",
@@ -95,7 +94,14 @@ const TestimonialManagement = () => {
 
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
+      setCurrentTestimonial({ ...currentTestimonial, image_url: null });
     }
+  };
+
+  const handleImageUrlChange = (url: string | null) => {
+    setImageFile(null);
+    setImagePreview(url);
+    setCurrentTestimonial({ ...currentTestimonial, image_url: url });
   };
 
   const uploadImage = async (file: File) => {
@@ -433,46 +439,12 @@ const TestimonialManagement = () => {
 
             <div className="space-y-2">
               <Label htmlFor="image">Client Image</Label>
-              <div className="flex items-center gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById("image-upload")?.click()}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  {imagePreview ? "Change Image" : "Upload Image"}
-                </Button>
-                <input
-                  id="image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-                {(imagePreview || currentTestimonial.image_url) && (
-                  <div className="relative">
-                    <img
-                      src={imagePreview || currentTestimonial.image_url!}
-                      alt="Preview"
-                      className="h-16 w-16 object-cover rounded-full"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setImagePreview(null);
-                        setImageFile(null);
-                        setCurrentTestimonial({
-                          ...currentTestimonial,
-                          image_url: null,
-                        });
-                      }}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
-                    >
-                      <Trash className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
-              </div>
+              <ImageSelector
+                currentImageUrl={currentTestimonial.image_url}
+                onImageChange={handleImageChange}
+                onImageUrlChange={handleImageUrlChange}
+                previewUrl={imagePreview}
+              />
             </div>
 
             <div className="flex items-center gap-2">
