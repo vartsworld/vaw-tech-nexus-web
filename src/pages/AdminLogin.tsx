@@ -7,14 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import ParticleBackground from "@/components/ParticleBackground";
-import { useUser } from "@/context/UserContext"; // Import useUser hook
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { isLoggedIn, setIsLoggedIn } = useUser(); // Get isLoggedIn and setIsLoggedIn from UserContext
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,9 +34,6 @@ const AdminLogin = () => {
         localStorage.setItem("admin_token", "auth_" + data.id);
         localStorage.setItem("admin_role", data.role);
         localStorage.setItem("admin_email", data.email);
-        
-        // Update the isLoggedIn state in UserContext
-        setIsLoggedIn(true);
         
         toast({
           title: "Login successful!",

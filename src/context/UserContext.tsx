@@ -6,9 +6,7 @@ type UserContextType = {
   setUserName: (name: string) => void;
   hasCompletedIntro: boolean;
   setHasCompletedIntro: (completed: boolean) => void;
-  resetIntroState: () => void;
-  isLoggedIn: boolean;
-  setIsLoggedIn: (loggedIn: boolean) => void; // Added setIsLoggedIn function
+  resetIntroState: () => void; // Add a function to reset the intro state for testing
 };
 
 const UserContext = createContext<UserContextType>({
@@ -17,8 +15,6 @@ const UserContext = createContext<UserContextType>({
   hasCompletedIntro: false,
   setHasCompletedIntro: () => {},
   resetIntroState: () => {},
-  isLoggedIn: false,
-  setIsLoggedIn: () => {}, // Added default value
 });
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
@@ -33,13 +29,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     return savedState === "true";
   });
 
-  // Add state for login status
-  const [isLoggedIn, setIsLoggedInState] = useState(() => {
-    // Check if there's a stored login state in localStorage
-    const loginState = localStorage.getItem("vaw_isLoggedIn");
-    return loginState === "true";
-  });
-
   // Persist to localStorage whenever values change
   useEffect(() => {
     localStorage.setItem("vaw_userName", userName);
@@ -49,10 +38,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("vaw_hasCompletedIntro", hasCompletedIntro.toString());
   }, [hasCompletedIntro]);
 
-  useEffect(() => {
-    localStorage.setItem("vaw_isLoggedIn", isLoggedIn.toString());
-  }, [isLoggedIn]);
-
   // Wrapper functions for setting state
   const setUserName = (name: string) => {
     setUserNameState(name);
@@ -60,11 +45,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   const setHasCompletedIntro = (completed: boolean) => {
     setHasCompletedIntroState(completed);
-  };
-  
-  // Function to set login status
-  const setIsLoggedIn = (loggedIn: boolean) => {
-    setIsLoggedInState(loggedIn);
   };
   
   // Function to reset intro state (for testing purposes)
@@ -81,8 +61,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         hasCompletedIntro,
         setHasCompletedIntro,
         resetIntroState,
-        isLoggedIn,
-        setIsLoggedIn,
       }}
     >
       {children}
