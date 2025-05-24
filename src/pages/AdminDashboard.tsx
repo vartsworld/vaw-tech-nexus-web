@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminHeader from "@/components/admin/AdminHeader";
@@ -6,6 +5,7 @@ import InquiryList from "@/components/admin/InquiryList";
 import PartnersManagement from "@/components/admin/PartnersManagement";
 import TestimonialManagement from "@/components/admin/TestimonialManagement";
 import ProjectsManagement from "@/components/admin/ProjectsManagement";
+import ClientLogosManagement from "@/components/admin/ClientLogosManagement";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +19,7 @@ const AdminDashboard = () => {
     projects: 0,
     testimonials: 0,
     partners: 0,
+    clientLogos: 0,
   });
 
   useEffect(() => {
@@ -43,15 +44,17 @@ const AdminDashboard = () => {
         projects: 0,
         testimonials: 0,
         partners: 0,
+        clientLogos: 0,
       };
       
       // Try to fetch counts from Supabase tables
       try {
-        const [inquiryCount, projectCount, testimonialCount, partnerCount] = await Promise.all([
+        const [inquiryCount, projectCount, testimonialCount, partnerCount, clientLogoCount] = await Promise.all([
           supabase.from('inquiries').select('id', { count: 'exact', head: true }),
           supabase.from('projects').select('id', { count: 'exact', head: true }),
           supabase.from('testimonials').select('id', { count: 'exact', head: true }),
           supabase.from('partners').select('id', { count: 'exact', head: true }),
+          supabase.from('client_logos').select('id', { count: 'exact', head: true }),
         ]);
 
         // Update stats with counts from Supabase when available
@@ -60,6 +63,7 @@ const AdminDashboard = () => {
           projects: projectCount.count || 0,
           testimonials: testimonialCount.count || 0,
           partners: partnerCount.count || 0,
+          clientLogos: clientLogoCount.count || 0,
         };
       } catch (error) {
         console.log('Error fetching from Supabase, using localStorage fallback');
@@ -100,7 +104,7 @@ const AdminDashboard = () => {
           </TabsList>
           
           <TabsContent value="dashboard">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
               <div className="bg-card border border-muted/20 rounded-xl p-6 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
@@ -156,6 +160,20 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               </div>
+
+              <div className="bg-card border border-muted/20 rounded-xl p-6 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-muted-foreground">Client Logos</p>
+                    <h3 className="text-3xl font-bold">{dashboardStats.clientLogos}</h3>
+                  </div>
+                  <div className="p-4 rounded-full bg-accent/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
             
             <div className="mb-8">
@@ -176,6 +194,11 @@ const AdminDashboard = () => {
             <div>
               <h2 className="text-2xl font-bold mb-4">Partners Management</h2>
               <PartnersManagement />
+            </div>
+            
+            <div className="mt-8 pt-8 border-t border-muted/20">
+              <h2 className="text-2xl font-bold mb-4">Client Logos Management</h2>
+              <ClientLogosManagement />
             </div>
             
             <div className="mt-8 pt-8 border-t border-muted/20">

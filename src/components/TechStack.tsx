@@ -9,6 +9,7 @@ import {
 import { useUser } from "@/context/UserContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TechItem {
   name: string;
@@ -17,12 +18,20 @@ interface TechItem {
   category: string;
 }
 
+interface ClientLogo {
+  id: string;
+  name: string;
+  logo_url: string;
+  display_order: number;
+  is_active: boolean;
+}
+
 interface ClientLogoProps {
   src: string;
   alt: string;
 }
 
-const ClientLogo: React.FC<ClientLogoProps> = ({ src, alt }) => {
+const ClientLogoComponent: React.FC<ClientLogoProps> = ({ src, alt }) => {
   return (
     <div className="flex items-center justify-center p-4">
       <img 
@@ -36,6 +45,7 @@ const ClientLogo: React.FC<ClientLogoProps> = ({ src, alt }) => {
 
 const TechStack = () => {
   const [animatedIndex, setAnimatedIndex] = useState(0);
+  const [clientLogos, setClientLogos] = useState<ClientLogo[]>([]);
   const { userName } = useUser();
   const isMobile = useIsMobile();
   
@@ -90,7 +100,6 @@ const TechStack = () => {
     }
   ];
 
-  // Update the techLogos array with absolute URLs to ensure images load properly
   const techLogos = [
     { name: "Angular", logo: "/angular.png" },
     { name: "WordPress", logo: "/wordpress.png" },
@@ -106,13 +115,13 @@ const TechStack = () => {
     { name: ".NET", logo: "/dotnet.png" },
   ];
 
-  const clients = [
-    { name: "Google", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1200px-Google_2015_logo.svg.png" },
-    { name: "Amazon", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/1024px-Amazon_logo.svg.png" },
-    { name: "Microsoft", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/1200px-Microsoft_logo.svg.png" },
-    { name: "Meta", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/1200px-Meta_Platforms_Inc._logo.svg.png" },
-    { name: "Apple", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/1200px-Apple_logo_black.svg.png" },
-    { name: "Tesla", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Tesla_Motors.svg/1200px-Tesla_Motors.svg.png" },
+  const fallbackClients = [
+    { name: "Google", logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1200px-Google_2015_logo.svg.png" },
+    { name: "Amazon", logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/1024px-Amazon_logo.svg.png" },
+    { name: "Microsoft", logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/1200px-Microsoft_logo.svg.png" },
+    { name: "Meta", logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/1200px-Meta_Platforms_Inc._logo.svg.png" },
+    { name: "Apple", logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/1200px-Apple_logo_black.svg.png" },
+    { name: "Tesla", logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Tesla_Motors.svg/1200px-Tesla_Motors.svg.png" },
   ];
 
   useEffect(() => {
@@ -122,6 +131,33 @@ const TechStack = () => {
     
     return () => clearInterval(interval);
   }, [techItems.length]);
+
+  useEffect(() => {
+    fetchClientLogos();
+  }, []);
+
+  const fetchClientLogos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('client_logos')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching client logos:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setClientLogos(data);
+      }
+    } catch (error) {
+      console.error('Error fetching client logos:', error);
+    }
+  };
+
+  const displayLogos = clientLogos.length > 0 ? clientLogos : fallbackClients;
 
   return (
     <section id="tech-stack" className="py-20 relative overflow-hidden">
@@ -168,7 +204,6 @@ const TechStack = () => {
           <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
             {techLogos.map((tech, index) => (
               <div key={index} className="flex flex-col items-center justify-center py-2">
-                {/* Add fallback and error handling for images */}
                 <div className="h-8 md:h-10 w-12 md:w-16 flex items-center justify-center">
                   <img
                     src={tech.logo}
@@ -188,13 +223,13 @@ const TechStack = () => {
 
         <div className="mb-10">
           <h3 className="text-2xl text-center font-bold mb-8 font-['Space_Grotesk']">
-            Trusted by <span className="text-gradient">Industry Leaders</span>
+            Loved by <span className="text-gradient">Our Clients</span>
           </h3>
           
           <div className="relative overflow-hidden py-10 before:absolute before:left-0 before:top-0 before:z-10 before:w-24 before:h-full before:bg-gradient-to-r before:from-background before:to-transparent after:absolute after:right-0 after:top-0 after:z-10 after:w-24 after:h-full after:bg-gradient-to-l after:from-background after:to-transparent">
             <div className="flex animate-[scroll_25s_linear_infinite] items-center">
-              {[...clients, ...clients].map((client, index) => (
-                <ClientLogo key={index} src={client.logo} alt={client.name} />
+              {[...displayLogos, ...displayLogos].map((client, index) => (
+                <ClientLogoComponent key={index} src={client.logo_url} alt={client.name} />
               ))}
             </div>
           </div>
