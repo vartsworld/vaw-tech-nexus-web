@@ -53,18 +53,22 @@ const ClientLogosManagement = () => {
   const fetchClientLogos = async () => {
     try {
       setLoading(true);
-      // Use type assertion to work around TypeScript limitations
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("client_logos")
         .select("*")
         .order("display_order", { ascending: true });
 
-      if (error) throw error;
-      setClientLogos((data || []) as ClientLogo[]);
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+      
+      setClientLogos(data || []);
     } catch (error) {
       console.error("Error fetching client logos:", error);
       toast({
         title: "Failed to load client logos",
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
     } finally {
@@ -164,26 +168,27 @@ const ClientLogosManagement = () => {
         is_active: currentLogo.is_active,
       };
 
-      let response;
+      let result;
 
       if (isEditing && currentLogo.id) {
-        // Use type assertion to work around TypeScript limitations
-        response = await (supabase as any)
+        result = await supabase
           .from("client_logos")
           .update({
             ...logoData,
             updated_at: new Date().toISOString(),
           })
-          .eq("id", currentLogo.id);
+          .eq("id", currentLogo.id)
+          .select();
       } else {
-        response = await (supabase as any)
+        result = await supabase
           .from("client_logos")
-          .insert([logoData]);
+          .insert([logoData])
+          .select();
       }
 
-      if (response.error) {
-        console.error("Supabase error:", response.error);
-        throw response.error;
+      if (result.error) {
+        console.error("Supabase error:", result.error);
+        throw result.error;
       }
 
       toast({
@@ -195,7 +200,7 @@ const ClientLogosManagement = () => {
 
       setDialogOpen(false);
       resetForm();
-      fetchClientLogos();
+      await fetchClientLogos();
     } catch (error) {
       console.error("Error saving client logo:", error);
       toast({
@@ -214,8 +219,10 @@ const ClientLogosManagement = () => {
     }
 
     try {
-      // Use type assertion to work around TypeScript limitations
-      const { error } = await (supabase as any).from("client_logos").delete().eq("id", id);
+      const { error } = await supabase
+        .from("client_logos")
+        .delete()
+        .eq("id", id);
 
       if (error) throw error;
 
@@ -228,6 +235,7 @@ const ClientLogosManagement = () => {
       console.error("Error deleting client logo:", error);
       toast({
         title: "Failed to delete client logo",
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
     }
@@ -265,8 +273,7 @@ const ClientLogosManagement = () => {
 
   const toggleActive = async (id: string, currentValue: boolean) => {
     try {
-      // Use type assertion to work around TypeScript limitations
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("client_logos")
         .update({ 
           is_active: !currentValue, 
@@ -287,6 +294,7 @@ const ClientLogosManagement = () => {
       console.error("Error updating client logo:", error);
       toast({
         title: "Failed to update client logo",
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
     }
