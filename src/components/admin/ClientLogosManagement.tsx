@@ -123,15 +123,45 @@ const ClientLogosManagement = () => {
     setSubmitting(true);
 
     try {
+      // Validation
+      if (!currentLogo.name.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Client name is required",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!currentLogo.logo_url && !imageFile) {
+        toast({
+          title: "Validation Error",
+          description: "Logo image is required",
+          variant: "destructive",
+        });
+        return;
+      }
+
       let logoUrl = currentLogo.logo_url;
 
       if (imageFile) {
         logoUrl = await uploadImage(imageFile);
       }
 
+      if (!logoUrl) {
+        toast({
+          title: "Error",
+          description: "Failed to get logo URL",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const logoData = {
-        ...currentLogo,
+        name: currentLogo.name.trim(),
         logo_url: logoUrl,
+        display_order: isEditing ? currentLogo.display_order : clientLogos.length,
+        is_active: currentLogo.is_active,
       };
 
       let response;
@@ -141,25 +171,20 @@ const ClientLogosManagement = () => {
         response = await (supabase as any)
           .from("client_logos")
           .update({
-            name: logoData.name,
-            logo_url: logoData.logo_url,
-            display_order: logoData.display_order,
-            is_active: logoData.is_active,
+            ...logoData,
             updated_at: new Date().toISOString(),
           })
           .eq("id", currentLogo.id);
       } else {
         response = await (supabase as any)
           .from("client_logos")
-          .insert({
-            name: logoData.name,
-            logo_url: logoData.logo_url!,
-            display_order: clientLogos.length,
-            is_active: logoData.is_active,
-          });
+          .insert([logoData]);
       }
 
-      if (response.error) throw response.error;
+      if (response.error) {
+        console.error("Supabase error:", response.error);
+        throw response.error;
+      }
 
       toast({
         title: isEditing ? "Client logo updated" : "Client logo created",
@@ -175,7 +200,7 @@ const ClientLogosManagement = () => {
       console.error("Error saving client logo:", error);
       toast({
         title: "Error",
-        description: `Failed to ${isEditing ? "update" : "create"} client logo.`,
+        description: `Failed to ${isEditing ? "update" : "create"} client logo. ${error instanceof Error ? error.message : "Unknown error"}`,
         variant: "destructive",
       });
     } finally {
@@ -209,7 +234,13 @@ const ClientLogosManagement = () => {
   };
 
   const handleEditLogo = (logo: ClientLogo) => {
-    setCurrentLogo(logo);
+    setCurrentLogo({
+      id: logo.id,
+      name: logo.name,
+      logo_url: logo.logo_url,
+      display_order: logo.display_order,
+      is_active: logo.is_active,
+    });
     setIsEditing(true);
     setImagePreview(logo.logo_url);
     setDialogOpen(true);
@@ -237,7 +268,10 @@ const ClientLogosManagement = () => {
       // Use type assertion to work around TypeScript limitations
       const { error } = await (supabase as any)
         .from("client_logos")
-        .update({ is_active: !currentValue, updated_at: new Date().toISOString() })
+        .update({ 
+          is_active: !currentValue, 
+          updated_at: new Date().toISOString() 
+        })
         .eq("id", id);
 
       if (error) throw error;
@@ -245,6 +279,10 @@ const ClientLogosManagement = () => {
       setClientLogos((prev) =>
         prev.map((logo) => (logo.id === id ? { ...logo, is_active: !currentValue } : logo))
       );
+
+      toast({
+        title: `Client logo ${!currentValue ? 'activated' : 'deactivated'}`,
+      });
     } catch (error) {
       console.error("Error updating client logo:", error);
       toast({
@@ -325,6 +363,7 @@ const ClientLogosManagement = () => {
                   setDialogOpen(false);
                   resetForm();
                 }}
+                disabled={submitting}
               >
                 Cancel
               </Button>
