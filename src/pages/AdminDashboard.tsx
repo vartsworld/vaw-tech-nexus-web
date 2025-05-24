@@ -54,7 +54,7 @@ const AdminDashboard = () => {
           supabase.from('projects').select('id', { count: 'exact', head: true }),
           supabase.from('testimonials').select('id', { count: 'exact', head: true }),
           supabase.from('partners').select('id', { count: 'exact', head: true }),
-          supabase.from('client_logos').select('id', { count: 'exact', head: true }),
+          (supabase as any).from('client_logos').select('id', { count: 'exact', head: true }),
         ]);
 
         // Update stats with counts from Supabase when available

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -10,20 +11,13 @@ import { useUser } from "@/context/UserContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { supabase } from "@/integrations/supabase/client";
+import { ClientLogo } from "@/types/client-logos";
 
 interface TechItem {
   name: string;
   icon: React.ReactNode;
   description: string;
   category: string;
-}
-
-interface ClientLogo {
-  id: string;
-  name: string;
-  logo_url: string;
-  display_order: number;
-  is_active: boolean;
 }
 
 interface ClientLogoProps {
@@ -138,7 +132,8 @@ const TechStack = () => {
 
   const fetchClientLogos = async () => {
     try {
-      const { data, error } = await supabase
+      // Use type assertion to work around TypeScript limitations
+      const { data, error } = await (supabase as any)
         .from('client_logos')
         .select('*')
         .eq('is_active', true)
@@ -150,7 +145,7 @@ const TechStack = () => {
       }
 
       if (data && data.length > 0) {
-        setClientLogos(data);
+        setClientLogos(data as ClientLogo[]);
       }
     } catch (error) {
       console.error('Error fetching client logos:', error);

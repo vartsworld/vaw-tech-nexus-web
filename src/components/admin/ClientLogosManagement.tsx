@@ -53,13 +53,14 @@ const ClientLogosManagement = () => {
   const fetchClientLogos = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      // Use type assertion to work around TypeScript limitations
+      const { data, error } = await (supabase as any)
         .from("client_logos")
         .select("*")
         .order("display_order", { ascending: true });
 
       if (error) throw error;
-      setClientLogos(data || []);
+      setClientLogos((data || []) as ClientLogo[]);
     } catch (error) {
       console.error("Error fetching client logos:", error);
       toast({
@@ -136,7 +137,8 @@ const ClientLogosManagement = () => {
       let response;
 
       if (isEditing && currentLogo.id) {
-        response = await supabase
+        // Use type assertion to work around TypeScript limitations
+        response = await (supabase as any)
           .from("client_logos")
           .update({
             name: logoData.name,
@@ -147,7 +149,7 @@ const ClientLogosManagement = () => {
           })
           .eq("id", currentLogo.id);
       } else {
-        response = await supabase
+        response = await (supabase as any)
           .from("client_logos")
           .insert({
             name: logoData.name,
@@ -187,7 +189,8 @@ const ClientLogosManagement = () => {
     }
 
     try {
-      const { error } = await supabase.from("client_logos").delete().eq("id", id);
+      // Use type assertion to work around TypeScript limitations
+      const { error } = await (supabase as any).from("client_logos").delete().eq("id", id);
 
       if (error) throw error;
 
@@ -231,7 +234,8 @@ const ClientLogosManagement = () => {
 
   const toggleActive = async (id: string, currentValue: boolean) => {
     try {
-      const { error } = await supabase
+      // Use type assertion to work around TypeScript limitations
+      const { error } = await (supabase as any)
         .from("client_logos")
         .update({ is_active: !currentValue, updated_at: new Date().toISOString() })
         .eq("id", id);
