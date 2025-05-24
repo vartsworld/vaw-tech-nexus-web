@@ -109,15 +109,6 @@ const TechStack = () => {
     { name: ".NET", logo: "/dotnet.png" },
   ];
 
-  const fallbackClients = [
-    { name: "Google", logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Google_2015_logo.svg/1200px-Google_2015_logo.svg.png" },
-    { name: "Amazon", logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Amazon_logo.svg/1024px-Amazon_logo.svg.png" },
-    { name: "Microsoft", logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Microsoft_logo.svg/1200px-Microsoft_logo.svg.png" },
-    { name: "Meta", logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Meta_Platforms_Inc._logo.svg/1200px-Meta_Platforms_Inc._logo.svg.png" },
-    { name: "Apple", logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/1200px-Apple_logo_black.svg.png" },
-    { name: "Tesla", logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Tesla_Motors.svg/1200px-Tesla_Motors.svg.png" },
-  ];
-
   useEffect(() => {
     const interval = setInterval(() => {
       setAnimatedIndex(prev => (prev + 1) % techItems.length);
@@ -132,8 +123,7 @@ const TechStack = () => {
 
   const fetchClientLogos = async () => {
     try {
-      // Use type assertion to work around TypeScript limitations
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('client_logos')
         .select('*')
         .eq('is_active', true)
@@ -151,8 +141,6 @@ const TechStack = () => {
       console.error('Error fetching client logos:', error);
     }
   };
-
-  const displayLogos = clientLogos.length > 0 ? clientLogos : fallbackClients;
 
   return (
     <section id="tech-stack" className="py-20 relative overflow-hidden">
@@ -216,19 +204,21 @@ const TechStack = () => {
           </div>
         </div>
 
-        <div className="mb-10">
-          <h3 className="text-2xl text-center font-bold mb-8 font-['Space_Grotesk']">
-            Loved by <span className="text-gradient">Our Clients</span>
-          </h3>
-          
-          <div className="relative overflow-hidden py-10 before:absolute before:left-0 before:top-0 before:z-10 before:w-24 before:h-full before:bg-gradient-to-r before:from-background before:to-transparent after:absolute after:right-0 after:top-0 after:z-10 after:w-24 after:h-full after:bg-gradient-to-l after:from-background after:to-transparent">
-            <div className="flex animate-[scroll_25s_linear_infinite] items-center">
-              {[...displayLogos, ...displayLogos].map((client, index) => (
-                <ClientLogoComponent key={index} src={client.logo_url} alt={client.name} />
-              ))}
+        {clientLogos.length > 0 && (
+          <div className="mb-10">
+            <h3 className="text-2xl text-center font-bold mb-8 font-['Space_Grotesk']">
+              Loved by <span className="text-gradient">Our Clients</span>
+            </h3>
+            
+            <div className="relative overflow-hidden py-10 before:absolute before:left-0 before:top-0 before:z-10 before:w-24 before:h-full before:bg-gradient-to-r before:from-background before:to-transparent after:absolute after:right-0 after:top-0 after:z-10 after:w-24 after:h-full after:bg-gradient-to-l after:from-background after:to-transparent">
+              <div className="flex animate-[scroll_25s_linear_infinite] items-center">
+                {[...clientLogos, ...clientLogos].map((client, index) => (
+                  <ClientLogoComponent key={index} src={client.logo_url} alt={client.name} />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

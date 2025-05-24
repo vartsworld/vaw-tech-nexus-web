@@ -1,4 +1,3 @@
-
 import { useState, useEffect, FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -53,6 +52,8 @@ const ClientLogosManagement = () => {
   const fetchClientLogos = async () => {
     try {
       setLoading(true);
+      console.log("Fetching client logos...");
+      
       const { data, error } = await supabase
         .from("client_logos")
         .select("*")
@@ -63,6 +64,7 @@ const ClientLogosManagement = () => {
         throw error;
       }
       
+      console.log("Fetched client logos:", data);
       setClientLogos(data || []);
     } catch (error) {
       console.error("Error fetching client logos:", error);
@@ -127,6 +129,10 @@ const ClientLogosManagement = () => {
     setSubmitting(true);
 
     try {
+      console.log("Starting form submission...");
+      console.log("Current logo data:", currentLogo);
+      console.log("Image file:", imageFile);
+
       // Validation
       if (!currentLogo.name.trim()) {
         toast({
@@ -134,6 +140,7 @@ const ClientLogosManagement = () => {
           description: "Client name is required",
           variant: "destructive",
         });
+        setSubmitting(false);
         return;
       }
 
@@ -143,13 +150,17 @@ const ClientLogosManagement = () => {
           description: "Logo image is required",
           variant: "destructive",
         });
+        setSubmitting(false);
         return;
       }
 
       let logoUrl = currentLogo.logo_url;
 
+      // Upload image if provided
       if (imageFile) {
+        console.log("Uploading image...");
         logoUrl = await uploadImage(imageFile);
+        console.log("Image uploaded, URL:", logoUrl);
       }
 
       if (!logoUrl) {
@@ -158,9 +169,11 @@ const ClientLogosManagement = () => {
           description: "Failed to get logo URL",
           variant: "destructive",
         });
+        setSubmitting(false);
         return;
       }
 
+      // Prepare data for database
       const logoData = {
         name: currentLogo.name.trim(),
         logo_url: logoUrl,
@@ -168,9 +181,12 @@ const ClientLogosManagement = () => {
         is_active: currentLogo.is_active,
       };
 
+      console.log("Logo data to be saved:", logoData);
+
       let result;
 
       if (isEditing && currentLogo.id) {
+        console.log("Updating existing logo with ID:", currentLogo.id);
         result = await supabase
           .from("client_logos")
           .update({
@@ -180,17 +196,21 @@ const ClientLogosManagement = () => {
           .eq("id", currentLogo.id)
           .select();
       } else {
+        console.log("Creating new logo...");
         result = await supabase
           .from("client_logos")
           .insert([logoData])
           .select();
       }
 
+      console.log("Database operation result:", result);
+
       if (result.error) {
         console.error("Supabase error:", result.error);
         throw result.error;
       }
 
+      console.log("Logo saved successfully!");
       toast({
         title: isEditing ? "Client logo updated" : "Client logo created",
         description: isEditing
