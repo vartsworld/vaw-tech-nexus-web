@@ -161,7 +161,7 @@
   z-index: 0;
 }
 
-/* Logo carousel for infinite loop */
+/* Logo carousel for infinite loop - Enhanced for seamless scrolling */
 .logo-carousel {
   display: flex;
   overflow: hidden;
@@ -172,7 +172,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  animation: scroll 20s linear infinite;
+  animation: scroll 30s linear infinite;
   min-width: 100%;
 }
 
@@ -181,7 +181,7 @@
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-100%);
+    transform: translateX(-33.333%);
   }
 }
 
@@ -373,4 +373,3 @@
 .pulse-gentle {
   animation: pulse-gentle 3s ease-in-out infinite;
 }
-

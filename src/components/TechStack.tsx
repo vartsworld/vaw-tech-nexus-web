@@ -27,11 +27,11 @@ interface ClientLogoProps {
 
 const ClientLogoComponent: React.FC<ClientLogoProps> = ({ src, alt }) => {
   return (
-    <div className="flex items-center justify-center p-4">
+    <div className="flex items-center justify-center p-6 min-w-[200px]">
       <img 
         src={src} 
         alt={alt} 
-        className="h-16 w-auto object-contain hover:opacity-100 transition-all duration-300"
+        className="h-20 w-auto object-contain hover:opacity-100 transition-all duration-300 filter grayscale hover:grayscale-0"
       />
     </div>
   );
@@ -210,10 +210,11 @@ const TechStack = () => {
               Loved by <span className="text-gradient">Our Clients</span>
             </h3>
             
-            <div className="relative overflow-hidden py-10 before:absolute before:left-0 before:top-0 before:z-10 before:w-24 before:h-full before:bg-gradient-to-r before:from-background before:to-transparent after:absolute after:right-0 after:top-0 after:z-10 after:w-24 after:h-full after:bg-gradient-to-l after:from-background after:to-transparent">
-              <div className="flex animate-[scroll_25s_linear_infinite] items-center">
-                {[...clientLogos, ...clientLogos].map((client, index) => (
-                  <ClientLogoComponent key={index} src={client.logo_url} alt={client.name} />
+            <div className="relative overflow-hidden py-12 before:absolute before:left-0 before:top-0 before:z-10 before:w-32 before:h-full before:bg-gradient-to-r before:from-background before:to-transparent after:absolute after:right-0 after:top-0 after:z-10 after:w-32 after:h-full after:bg-gradient-to-l after:from-background after:to-transparent">
+              <div className="flex animate-[scroll_30s_linear_infinite] items-center">
+                {/* Triple the logos for seamless loop */}
+                {[...clientLogos, ...clientLogos, ...clientLogos].map((client, index) => (
+                  <ClientLogoComponent key={`${client.id}-${index}`} src={client.logo_url} alt={client.name} />
                 ))}
               </div>
             </div>
