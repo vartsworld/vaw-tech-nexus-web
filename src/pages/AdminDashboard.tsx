@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminHeader from "@/components/admin/AdminHeader";
@@ -23,17 +24,27 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem("admin_token");
-    const role = localStorage.getItem("admin_role");
-    
-    if (!token || !role || !['admin', 'superadmin'].includes(role)) {
-      navigate("/admin");
-      return;
-    }
-    
-    setIsAuthorized(true);
-    fetchDashboardStats();
+    const checkAuth = async () => {
+      try {
+        // Check if user is authenticated with Supabase
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error || !session) {
+          console.log("No active session, redirecting to login");
+          navigate("/admin");
+          return;
+        }
+        
+        console.log("User authenticated:", session.user.email);
+        setIsAuthorized(true);
+        fetchDashboardStats();
+      } catch (error) {
+        console.error("Auth check error:", error);
+        navigate("/admin");
+      }
+    };
+
+    checkAuth();
   }, [navigate]);
 
   const fetchDashboardStats = async () => {
