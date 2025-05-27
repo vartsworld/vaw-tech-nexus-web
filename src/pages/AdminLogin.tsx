@@ -19,21 +19,33 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      // Query the users table to check credentials
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, email, role')
-        .eq('email', email)
-        .eq('password', password)
-        .single();
+      console.log("Attempting login with email:", email);
+      
+      // Use Supabase authentication instead of manual credential checking
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
 
-      if (error) throw error;
+      console.log("Login response:", { data, error });
 
-      if (data) {
-        // Store user info in localStorage
-        localStorage.setItem("admin_token", "auth_" + data.id);
-        localStorage.setItem("admin_role", data.role);
-        localStorage.setItem("admin_email", data.email);
+      if (error) {
+        console.error("Login error:", error);
+        toast({
+          title: "Login failed",
+          description: error.message || "Invalid email or password.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data.user) {
+        console.log("Login successful for user:", data.user.email);
+        
+        // Store auth info in localStorage for admin access
+        localStorage.setItem("admin_token", data.session?.access_token || "");
+        localStorage.setItem("admin_email", data.user.email || "");
+        localStorage.setItem("admin_user_id", data.user.id);
         
         toast({
           title: "Login successful!",
@@ -41,18 +53,12 @@ const AdminLogin = () => {
         });
         
         navigate("/admin/dashboard");
-      } else {
-        toast({
-          title: "Login failed",
-          description: "Invalid email or password.",
-          variant: "destructive",
-        });
       }
-    } catch (error) {
-      console.error("Login error:", error);
+    } catch (error: any) {
+      console.error("Unexpected login error:", error);
       toast({
         title: "Login failed",
-        description: "An error occurred during login.",
+        description: "An unexpected error occurred during login.",
         variant: "destructive",
       });
     } finally {

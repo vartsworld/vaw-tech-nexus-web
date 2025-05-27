@@ -1,16 +1,48 @@
 
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const AdminHeader = () => {
   const navigate = useNavigate();
   const adminEmail = localStorage.getItem("admin_email") || "Admin";
 
-  const handleLogout = () => {
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_role");
-    localStorage.removeItem("admin_email");
-    navigate("/admin");
+  const handleLogout = async () => {
+    try {
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Logout error:", error);
+        toast({
+          title: "Logout failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Clear localStorage
+      localStorage.removeItem("admin_token");
+      localStorage.removeItem("admin_role");
+      localStorage.removeItem("admin_email");
+      localStorage.removeItem("admin_user_id");
+      
+      toast({
+        title: "Logged out successfully",
+        description: "You have been signed out.",
+      });
+      
+      navigate("/admin");
+    } catch (error) {
+      console.error("Unexpected logout error:", error);
+      toast({
+        title: "Logout failed",
+        description: "An unexpected error occurred during logout.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
