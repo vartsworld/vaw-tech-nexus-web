@@ -120,7 +120,7 @@ const PricingInquiryForm = ({
             <div className="flex items-center justify-center gap-4">
               <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
                 <Phone className="h-4 w-4 text-primary" />
-                <span className="font-medium">+91 9876543210</span>
+                <span className="font-medium">+91 9946882478</span>
               </div>
             </div>
             
