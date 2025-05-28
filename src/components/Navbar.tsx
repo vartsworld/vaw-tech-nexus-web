@@ -10,6 +10,7 @@ const navigationItems = [
   { name: "Services", href: "/#services" },
   { name: "About", href: "/#about" },
   { name: "Portfolio", href: "/#portfolio" },
+  { name: "Pricing", href: "/pricing" },
   { name: "Contact", href: "/#contact" },
   { name: "Request Service", href: "/service-request" },
   { name: "Internship", href: "/internship" }
