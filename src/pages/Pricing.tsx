@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,6 @@ import { Check, Clock, Star, Shield, Zap, Globe, TrendingUp, Bot } from "lucide-
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ParticleBackground from "@/components/ParticleBackground";
-
 interface PricingTier {
   name: string;
   originalPrice: number;
@@ -16,7 +14,6 @@ interface PricingTier {
   features: string[];
   description: string;
 }
-
 const Pricing = () => {
   const [timeLeft, setTimeLeft] = useState({
     days: 3,
@@ -24,138 +21,67 @@ const Pricing = () => {
     minutes: 0,
     seconds: 0
   });
-
   useEffect(() => {
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + 3);
-    
     const timer = setInterval(() => {
       const now = new Date().getTime();
       const distance = targetDate.getTime() - now;
-      
       if (distance > 0) {
         setTimeLeft({
           days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-          minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-          seconds: Math.floor((distance % (1000 * 60)) / 1000)
+          hours: Math.floor(distance % (1000 * 60 * 60 * 24) / (1000 * 60 * 60)),
+          minutes: Math.floor(distance % (1000 * 60 * 60) / (1000 * 60)),
+          seconds: Math.floor(distance % (1000 * 60) / 1000)
         });
       }
     }, 1000);
-
     return () => clearInterval(timer);
   }, []);
-
-  const pricingTiers: PricingTier[] = [
-    {
-      name: "Basic Design Website",
-      originalPrice: 14999,
-      discountPrice: 7999,
-      icon: <Globe className="h-8 w-8 text-tech-blue" />,
-      description: "Perfect for small businesses and startups",
-      features: [
-        "Professional Website Design",
-        "Free Domain for 1 Year",
-        "Web Hosting Included",
-        "SSL Certificate",
-        "Mobile Responsive",
-        "SEO Optimized",
-        "Contact Form",
-        "Social Media Integration"
-      ]
-    },
-    {
-      name: "Interactive & Creative Website",
-      originalPrice: 28999,
-      discountPrice: 19999,
-      icon: <Zap className="h-8 w-8 text-tech-purple" />,
-      popular: true,
-      description: "Enhanced features for growing businesses",
-      features: [
-        "All Basic Features",
-        "Interactive Elements",
-        "Custom Animations",
-        "Advanced Design",
-        "Malware Security",
-        "Performance Optimization",
-        "Analytics Integration",
-        "Email Setup",
-        "Priority Support"
-      ]
-    },
-    {
-      name: "E-commerce Platform",
-      originalPrice: 80000,
-      discountPrice: 49999,
-      icon: <Shield className="h-8 w-8 text-tech-gold" />,
-      description: "Complete online store solution",
-      features: [
-        "Full E-commerce Setup",
-        "Product Catalog",
-        "Shopping Cart",
-        "Payment Gateway",
-        "Inventory Management",
-        "Order Management",
-        "Customer Dashboard",
-        "Advanced Security",
-        "Multi-currency Support"
-      ]
-    },
-    {
-      name: "Portfolio Showcase",
-      originalPrice: 18999,
-      discountPrice: 99999,
-      icon: <Star className="h-8 w-8 text-tech-red" />,
-      description: "Professional portfolio websites",
-      features: [
-        "Creative Portfolio Design",
-        "Gallery Management",
-        "Project Showcase",
-        "Client Testimonials",
-        "Blog Integration",
-        "Custom Branding",
-        "Performance Optimized",
-        "SEO Enhanced"
-      ]
-    },
-    {
-      name: "Crypto Trending Portal",
-      originalPrice: 500000,
-      discountPrice: 500000,
-      icon: <TrendingUp className="h-8 w-8 text-tech-purple" />,
-      description: "Advanced cryptocurrency platforms",
-      features: [
-        "Real-time Crypto Data",
-        "Trading Interface",
-        "Portfolio Tracking",
-        "News Integration",
-        "Market Analytics",
-        "User Authentication",
-        "Advanced Security",
-        "API Integrations",
-        "Custom Dashboard"
-      ]
-    },
-    {
-      name: "AI-Integrated Website",
-      originalPrice: 300000,
-      discountPrice: 199999,
-      icon: <Bot className="h-8 w-8 text-tech-gold" />,
-      description: "Cutting-edge AI-powered websites",
-      features: [
-        "AI Chatbot Integration",
-        "Machine Learning Features",
-        "Personalization Engine",
-        "Automated Content",
-        "Smart Analytics",
-        "Voice Integration",
-        "Advanced AI Tools",
-        "Custom AI Models",
-        "Future-ready Technology"
-      ]
-    }
-  ];
-
+  const pricingTiers: PricingTier[] = [{
+    name: "Basic Design Website",
+    originalPrice: 14999,
+    discountPrice: 7999,
+    icon: <Globe className="h-8 w-8 text-tech-blue" />,
+    description: "Perfect for small businesses and startups",
+    features: ["Professional Website Design", "Free Domain for 1 Year", "Web Hosting Included", "SSL Certificate", "Mobile Responsive", "SEO Optimized", "Contact Form", "Social Media Integration"]
+  }, {
+    name: "Interactive & Creative Website",
+    originalPrice: 28999,
+    discountPrice: 19999,
+    icon: <Zap className="h-8 w-8 text-tech-purple" />,
+    popular: true,
+    description: "Enhanced features for growing businesses",
+    features: ["All Basic Features", "Interactive Elements", "Custom Animations", "Advanced Design", "Malware Security", "Performance Optimization", "Analytics Integration", "Email Setup", "Priority Support"]
+  }, {
+    name: "E-commerce Platform",
+    originalPrice: 80000,
+    discountPrice: 49999,
+    icon: <Shield className="h-8 w-8 text-tech-gold" />,
+    description: "Complete online store solution",
+    features: ["Full E-commerce Setup", "Product Catalog", "Shopping Cart", "Payment Gateway", "Inventory Management", "Order Management", "Customer Dashboard", "Advanced Security", "Multi-currency Support"]
+  }, {
+    name: "Portfolio Showcase",
+    originalPrice: 18999,
+    discountPrice: 99999,
+    icon: <Star className="h-8 w-8 text-tech-red" />,
+    description: "Professional portfolio websites",
+    features: ["Creative Portfolio Design", "Gallery Management", "Project Showcase", "Client Testimonials", "Blog Integration", "Custom Branding", "Performance Optimized", "SEO Enhanced"]
+  }, {
+    name: "Crypto Trending Portal",
+    originalPrice: 500000,
+    discountPrice: 500000,
+    icon: <TrendingUp className="h-8 w-8 text-tech-purple" />,
+    description: "Advanced cryptocurrency platforms",
+    features: ["Real-time Crypto Data", "Trading Interface", "Portfolio Tracking", "News Integration", "Market Analytics", "User Authentication", "Advanced Security", "API Integrations", "Custom Dashboard"]
+  }, {
+    name: "AI-Integrated Website",
+    originalPrice: 300000,
+    discountPrice: 199999,
+    icon: <Bot className="h-8 w-8 text-tech-gold" />,
+    description: "Cutting-edge AI-powered websites",
+    features: ["AI Chatbot Integration", "Machine Learning Features", "Personalization Engine", "Automated Content", "Smart Analytics", "Voice Integration", "Advanced AI Tools", "Custom AI Models", "Future-ready Technology"]
+  }];
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -163,9 +89,7 @@ const Pricing = () => {
       maximumFractionDigits: 0
     }).format(price);
   };
-
-  return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+  return <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <ParticleBackground />
       <Navbar />
       
@@ -209,18 +133,12 @@ const Pricing = () => {
 
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {pricingTiers.map((tier, index) => (
-              <Card 
-                key={index} 
-                className={`tech-card relative ${tier.popular ? 'ring-2 ring-tech-gold/50 scale-105' : ''}`}
-              >
-                {tier.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+            {pricingTiers.map((tier, index) => <Card key={index} className={`tech-card relative ${tier.popular ? 'ring-2 ring-tech-gold/50 scale-105' : ''}`}>
+                {tier.popular && <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                     <span className="bg-gradient-to-r from-tech-gold to-tech-red text-white px-4 py-1 rounded-full text-sm font-medium">
                       Most Popular
                     </span>
-                  </div>
-                )}
+                  </div>}
                 
                 <CardHeader className="text-center pb-4">
                   <div className="flex justify-center mb-4">
@@ -232,40 +150,31 @@ const Pricing = () => {
                   <p className="text-muted-foreground text-sm">{tier.description}</p>
                   
                   <div className="py-4">
-                    {tier.originalPrice !== tier.discountPrice && (
-                      <div className="text-lg text-muted-foreground line-through">
+                    {tier.originalPrice !== tier.discountPrice && <div className="text-lg text-muted-foreground line-through">
                         {formatPrice(tier.originalPrice)}
-                      </div>
-                    )}
-                    <div className="text-3xl font-bold text-tech-gold">
+                      </div>}
+                    <div className="text-3xl font-bold text-tech-red">
                       {formatPrice(tier.discountPrice)}
                     </div>
-                    {tier.originalPrice !== tier.discountPrice && (
-                      <div className="text-sm text-tech-green font-medium">
+                    {tier.originalPrice !== tier.discountPrice && <div className="text-sm text-tech-green font-medium">
                         Save {formatPrice(tier.originalPrice - tier.discountPrice)}
-                      </div>
-                    )}
+                      </div>}
                   </div>
                 </CardHeader>
                 
                 <CardContent>
                   <ul className="space-y-3 mb-6">
-                    {tier.features.map((feature, featureIndex) => (
-                      <li key={featureIndex} className="flex items-center gap-3">
+                    {tier.features.map((feature, featureIndex) => <li key={featureIndex} className="flex items-center gap-3">
                         <Check className="h-4 w-4 text-tech-gold flex-shrink-0" />
                         <span className="text-sm">{feature}</span>
-                      </li>
-                    ))}
+                      </li>)}
                   </ul>
                   
-                  <Button 
-                    className={`w-full ${tier.popular ? 'bg-gradient-to-r from-tech-gold to-tech-red hover:shadow-lg hover:shadow-tech-gold/50' : 'bg-primary hover:bg-primary/90'} text-white`}
-                  >
+                  <Button className={`w-full ${tier.popular ? 'bg-gradient-to-r from-tech-gold to-tech-red hover:shadow-lg hover:shadow-tech-gold/50' : 'bg-primary hover:bg-primary/90'} text-white`}>
                     Get Started
                   </Button>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
 
           {/* Bottom CTA */}
@@ -284,8 +193,6 @@ const Pricing = () => {
       </section>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Pricing;
