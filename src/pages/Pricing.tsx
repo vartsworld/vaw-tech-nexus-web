@@ -5,6 +5,8 @@ import { Check, Clock, Star, Shield, Zap, Globe, TrendingUp, Bot } from "lucide-
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ParticleBackground from "@/components/ParticleBackground";
+import PricingInquiryForm from "@/components/PricingInquiryForm";
+
 interface PricingTier {
   name: string;
   originalPrice: number;
@@ -170,9 +172,14 @@ const Pricing = () => {
                       </li>)}
                   </ul>
                   
-                  <Button className={`w-full ${tier.popular ? 'bg-gradient-to-r from-tech-gold to-tech-red hover:shadow-lg hover:shadow-tech-gold/50' : 'bg-primary hover:bg-primary/90'} text-white`}>
-                    Get Started
-                  </Button>
+                  <PricingInquiryForm 
+                    packageName={tier.name}
+                    packagePrice={tier.discountPrice}
+                  >
+                    <Button className={`w-full ${tier.popular ? 'bg-gradient-to-r from-tech-gold to-tech-red hover:shadow-lg hover:shadow-tech-gold/50' : 'bg-primary hover:bg-primary/90'} text-white`}>
+                      Get Started
+                    </Button>
+                  </PricingInquiryForm>
                 </CardContent>
               </Card>)}
           </div>
@@ -185,9 +192,14 @@ const Pricing = () => {
             <p className="text-muted-foreground mb-6">
               Contact us for enterprise solutions and custom development projects
             </p>
-            <Button size="lg" className="bg-gradient-to-r from-tech-purple to-tech-blue text-white">
-              Contact Our Experts
-            </Button>
+            <PricingInquiryForm 
+              packageName="Custom Solution"
+              packagePrice={0}
+            >
+              <Button size="lg" className="bg-gradient-to-r from-tech-purple to-tech-blue text-white">
+                Contact Our Experts
+              </Button>
+            </PricingInquiryForm>
           </div>
         </div>
       </section>
