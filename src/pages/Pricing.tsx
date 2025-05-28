@@ -107,24 +107,24 @@ const Pricing = () => {
             {/* Countdown Timer */}
             <div className="bg-gradient-to-r from-tech-red/20 to-tech-gold/20 rounded-xl p-6 max-w-md mx-auto mb-8">
               <div className="flex items-center justify-center gap-2 mb-4">
-                <Clock className="h-5 w-5 text-tech-gold animate-pulse" />
-                <span className="text-lg font-semibold text-tech-gold">Limited Time Offer!</span>
+                <Clock className="h-5 w-5 text-tech-red animate-pulse" />
+                <span className="text-lg font-semibold text-tech-red">Limited Time Offer!</span>
               </div>
               <div className="flex justify-center gap-4 text-center">
                 <div className="bg-background/50 rounded-lg p-3 min-w-[60px]">
-                  <div className="text-2xl font-bold text-tech-gold">{timeLeft.days}</div>
+                  <div className="text-2xl font-bold text-tech-red">{timeLeft.days}</div>
                   <div className="text-xs text-muted-foreground">Days</div>
                 </div>
                 <div className="bg-background/50 rounded-lg p-3 min-w-[60px]">
-                  <div className="text-2xl font-bold text-tech-gold">{timeLeft.hours}</div>
+                  <div className="text-2xl font-bold text-tech-red">{timeLeft.hours}</div>
                   <div className="text-xs text-muted-foreground">Hours</div>
                 </div>
                 <div className="bg-background/50 rounded-lg p-3 min-w-[60px]">
-                  <div className="text-2xl font-bold text-tech-gold">{timeLeft.minutes}</div>
+                  <div className="text-2xl font-bold text-tech-red">{timeLeft.minutes}</div>
                   <div className="text-xs text-muted-foreground">Minutes</div>
                 </div>
                 <div className="bg-background/50 rounded-lg p-3 min-w-[60px]">
-                  <div className="text-2xl font-bold text-tech-gold">{timeLeft.seconds}</div>
+                  <div className="text-2xl font-bold text-tech-red">{timeLeft.seconds}</div>
                   <div className="text-xs text-muted-foreground">Seconds</div>
                 </div>
               </div>
