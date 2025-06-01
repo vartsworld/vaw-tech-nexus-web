@@ -10,6 +10,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import Internship from "./pages/Internship";
 import Pricing from "./pages/Pricing";
+import DigitalMarketing from "./pages/DigitalMarketing";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UserProvider } from "./context/UserContext";
@@ -30,6 +31,7 @@ const AppContent = () => {
           <Route path="/service-request" element={<ServiceRequest />} />
           <Route path="/internship" element={<Internship />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/digital-marketing" element={<DigitalMarketing />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />

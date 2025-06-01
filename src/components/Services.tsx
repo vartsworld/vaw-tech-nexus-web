@@ -11,13 +11,16 @@ interface ServiceCardProps {
   examples: string[];
   className?: string;
   style?: React.CSSProperties;
+  linkTo?: string;
 }
+
 const ServiceCard: React.FC<ServiceCardProps> = ({
   title,
   description,
   examples,
   className = "",
-  style
+  style,
+  linkTo = "/service-request"
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   return <Card className={`bg-card border-muted/20 hover:border-primary/50 transition-all duration-500 shadow-lg hover:shadow-tech-gold/20 h-full ${className} relative group overflow-hidden`} style={style} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
@@ -52,7 +55,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
       </CardContent>
       <CardFooter>
         <Button variant="ghost" className="text-accent hover:text-accent/80 hover:bg-accent/10 px-0 group" asChild>
-          <Link to="/service-request">
+          <Link to={linkTo}>
             <span>Learn more</span>
             <ArrowRight className="ml-1 h-4 w-4 transition-transform duration-300 transform group-hover:translate-x-1" />
           </Link>
@@ -60,6 +63,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
       </CardFooter>
     </Card>;
 };
+
 const Services = () => {
   const services = [{
     title: "Website Development",
@@ -80,12 +84,14 @@ const Services = () => {
   }, {
     title: "Digital Marketing",
     description: "Strategic marketing solutions to boost your online presence and drive growth.",
-    examples: ["SEO optimization", "Social media marketing", "Content marketing strategies", "Email campaigns", "Analytics and performance tracking"]
+    examples: ["SEO optimization", "Social media marketing", "Content marketing strategies", "Email campaigns", "Analytics and performance tracking"],
+    linkTo: "/digital-marketing"
   }, {
     title: "Digital Design",
     description: "Creative digital designs that captivate audience attention and strengthen brand identity.",
     examples: ["Digital posters & advertisements", "E-books & catalogues", "Digital albums", "Brand identity packages", "NFC digital card solutions"]
   }];
+
   return <section id="services" className="relative overflow-hidden py-0">
       {/* Background decorative elements */}
       <div className="absolute top-40 left-10 w-64 h-64 rounded-full bg-tech-gold/5 blur-3xl"></div>
@@ -105,7 +111,7 @@ const Services = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 staggered-fade-in">
           {services.map((service, index) => <ServiceCard key={index} title={service.title} description={service.description} examples={service.examples} className="tech-hover-card" style={{
           animationDelay: `${index * 0.1}s`
-        } as React.CSSProperties} />)}
+        } as React.CSSProperties} linkTo={service.linkTo} />)}
         </div>
       </div>
       
@@ -122,4 +128,5 @@ const Services = () => {
       <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 tech-divider w-1/2"></div>
     </section>;
 };
+
 export default Services;
