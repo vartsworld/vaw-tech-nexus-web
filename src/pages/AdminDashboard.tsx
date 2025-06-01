@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminHeader from "@/components/admin/AdminHeader";
 import InquiryList from "@/components/admin/InquiryList";
 import PricingInquiryList from "@/components/admin/PricingInquiryList";
+import InternshipApplicationsList from "@/components/admin/InternshipApplicationsList";
 import TestimonialManagement from "@/components/admin/TestimonialManagement";
 import ProjectsManagement from "@/components/admin/ProjectsManagement";
 import PartnersManagement from "@/components/admin/PartnersManagement";
@@ -49,9 +50,10 @@ const AdminDashboard = () => {
       
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="inquiries" className="space-y-6">
-          <TabsList className="grid grid-cols-6 w-full">
+          <TabsList className="grid grid-cols-7 w-full">
             <TabsTrigger value="inquiries">General Inquiries</TabsTrigger>
             <TabsTrigger value="pricing">Pricing Inquiries</TabsTrigger>
+            <TabsTrigger value="internships">Internship Applications</TabsTrigger>
             <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
             <TabsTrigger value="projects">Projects</TabsTrigger>
             <TabsTrigger value="partners">Partners</TabsTrigger>
@@ -64,6 +66,10 @@ const AdminDashboard = () => {
           
           <TabsContent value="pricing">
             <PricingInquiryList />
+          </TabsContent>
+          
+          <TabsContent value="internships">
+            <InternshipApplicationsList />
           </TabsContent>
           
           <TabsContent value="testimonials">
