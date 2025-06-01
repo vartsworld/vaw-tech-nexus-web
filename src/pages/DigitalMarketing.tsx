@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -136,12 +135,12 @@ const DigitalMarketing = () => {
       <ParticleBackground />
       <Navbar />
       
-      {/* Hero Section - Enhanced */}
+      {/* Hero Section - Enhanced with Golden Rule */}
       <section className="pt-32 pb-20 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-tech-purple/5 via-tech-blue/5 to-tech-gold/5"></div>
         <div className="container mx-auto px-4 relative">
           <motion.div 
-            className="text-center max-w-4xl mx-auto"
+            className="text-center max-w-5xl mx-auto"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
@@ -177,12 +176,6 @@ const DigitalMarketing = () => {
               <p className="text-xl md:text-2xl text-muted-foreground font-medium">
                 Virtual Arts Organization
               </p>
-              <div className="inline-block bg-gradient-to-r from-tech-gold/20 to-tech-red/20 rounded-2xl p-6 backdrop-blur-sm border border-tech-gold/30">
-                <p className="text-lg font-medium mb-2">The Golden Rule of Digital Marketing:</p>
-                <p className="text-tech-gold text-xl md:text-2xl font-bold">
-                  Right Offer • Right Person • Right Time • Right Place
-                </p>
-              </div>
             </motion.div>
 
             <motion.div 
@@ -198,6 +191,136 @@ const DigitalMarketing = () => {
                 View Our Work
               </Button>
             </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Golden Rule Section - New Prominent Section */}
+      <section className="py-20 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-tech-gold/10 via-transparent to-tech-purple/10 animate-gradient-x"></div>
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-tech-gold/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-tech-purple/5 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div className="container mx-auto px-4 relative">
+          <motion.div
+            className="text-center max-w-6xl mx-auto"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1 }}
+          >
+            <motion.div
+              className="inline-block mb-8"
+              initial={{ scale: 0 }}
+              whileInView={{ scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+            >
+              <div className="bg-gradient-to-r from-tech-gold/20 to-tech-red/20 rounded-full p-4 backdrop-blur-sm border border-tech-gold/30">
+                <Target className="h-12 w-12 text-tech-gold mx-auto" />
+              </div>
+            </motion.div>
+
+            <motion.h2 
+              className="text-3xl md:text-4xl font-bold mb-4 text-white"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+            >
+              The Most Important Rule in Digital Marketing
+            </motion.h2>
+
+            <motion.div
+              className="relative bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-lg rounded-3xl p-8 md:p-12 border border-tech-gold/30 shadow-2xl"
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.6, duration: 0.8 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-tech-gold/5 via-tech-red/5 to-tech-purple/5 rounded-3xl animate-pulse"></div>
+              
+              <div className="relative">
+                <motion.p 
+                  className="text-lg md:text-xl text-gray-300 mb-6 font-medium"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 0.8, duration: 0.6 }}
+                >
+                  To present the
+                </motion.p>
+                
+                <motion.div 
+                  className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-8 text-center"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 1, duration: 0.8 }}
+                >
+                  {[
+                    { text: "Right Offer", color: "from-tech-gold to-yellow-400" },
+                    { text: "Right Person", color: "from-tech-blue to-cyan-400" },
+                    { text: "Right Time", color: "from-tech-red to-pink-400" },
+                    { text: "Right Place", color: "from-tech-purple to-violet-400" }
+                  ].map((item, index) => (
+                    <motion.div
+                      key={index}
+                      className="group"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 1.2 + index * 0.1, duration: 0.5 }}
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <div className={`bg-gradient-to-r ${item.color} p-1 rounded-2xl group-hover:shadow-lg group-hover:shadow-current/50 transition-all duration-300`}>
+                        <div className="bg-slate-800 rounded-xl px-4 py-6">
+                          <h3 className={`text-2xl md:text-3xl font-bold bg-gradient-to-r ${item.color} bg-clip-text text-transparent mb-2`}>
+                            {item.text}
+                          </h3>
+                        </div>
+                      </div>
+                      {index < 3 && (
+                        <div className="hidden md:block absolute top-1/2 -right-4 transform -translate-y-1/2">
+                          <motion.div
+                            animate={{ x: [0, 5, 0] }}
+                            transition={{ repeat: Infinity, duration: 1.5 }}
+                          >
+                            <ArrowRight className="h-6 w-6 text-tech-gold" />
+                          </motion.div>
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </motion.div>
+
+                <motion.div
+                  className="mt-8 text-center"
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: 1.6, duration: 0.6 }}
+                >
+                  <p className="text-xl md:text-2xl font-bold text-tech-gold">
+                    at the right time, at the right place!
+                  </p>
+                </motion.div>
+              </div>
+            </motion.div>
+
+            <motion.p
+              className="text-lg text-gray-400 mt-8 max-w-3xl mx-auto leading-relaxed"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 1.8, duration: 0.6 }}
+            >
+              This fundamental principle guides every strategy we develop, every campaign we create, and every result we deliver. 
+              Our data-driven approach ensures your message reaches the perfect audience when they're most receptive.
+            </motion.p>
           </motion.div>
         </div>
       </section>
