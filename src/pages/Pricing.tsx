@@ -65,7 +65,7 @@ const Pricing = () => {
   }, {
     name: "Portfolio Showcase",
     originalPrice: 18999,
-    discountPrice: 99999,
+    discountPrice: 9999,
     icon: <Star className="h-8 w-8 text-tech-red" />,
     description: "Professional portfolio websites",
     features: ["Creative Portfolio Design", "Gallery Management", "Project Showcase", "Client Testimonials", "Blog Integration", "Custom Branding", "Performance Optimized", "SEO Enhanced"]
