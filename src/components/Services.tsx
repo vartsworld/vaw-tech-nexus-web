@@ -89,12 +89,14 @@ const Services = () => {
     {
       title: "AI Solutions",
       description: "Leveraging artificial intelligence to create smart, innovative digital products.",
-      examples: ["AI character chatbots", "Voice assistants", "Predictive analytics tools", "Content recommendation systems", "Natural language processing apps"]
+      examples: ["AI character chatbots", "Voice assistants", "Predictive analytics tools", "Content recommendation systems", "Natural language processing apps"],
+      linkTo: "/ai-solutions"
     },
     {
       title: "VR/AR Development",
       description: "Creating immersive virtual and augmented reality experiences that engage and inspire.",
-      examples: ["Virtual product showcases", "AR marketing campaigns", "Interactive training simulations", "Virtual tours and exhibitions", "AR mobile applications"]
+      examples: ["Virtual product showcases", "AR marketing campaigns", "Interactive training simulations", "Virtual tours and exhibitions", "AR mobile applications"],
+      linkTo: "/vr-ar-development"
     },
     {
       title: "Digital Marketing",
@@ -105,7 +107,8 @@ const Services = () => {
     {
       title: "Digital Design",
       description: "Creative digital designs that captivate audience attention and strengthen brand identity.",
-      examples: ["Digital posters & advertisements", "E-books & catalogues", "Digital albums", "Brand identity packages", "NFC digital card solutions"]
+      examples: ["Digital posters & advertisements", "E-books & catalogues", "Digital albums", "Brand identity packages", "NFC digital card solutions"],
+      linkTo: "/digital-design"
     }
   ];
 

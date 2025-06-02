@@ -34,6 +34,9 @@ const AppContent = () => {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/digital-marketing" element={<DigitalMarketing />} />
           <Route path="/webapp-development" element={<WebAppDevelopment />} />
+          <Route path="/ai-solutions" element={<AISolutions />} />
+          <Route path="/vr-ar-development" element={<VRARDevelopment />} />
+          <Route path="/digital-design" element={<DigitalDesign />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />
