@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Internship from "./pages/Internship";
 import Pricing from "./pages/Pricing";
 import DigitalMarketing from "./pages/DigitalMarketing";
+import WebAppDevelopment from "./pages/WebAppDevelopment";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UserProvider } from "./context/UserContext";
@@ -32,6 +33,7 @@ const AppContent = () => {
           <Route path="/internship" element={<Internship />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/digital-marketing" element={<DigitalMarketing />} />
+          <Route path="/webapp-development" element={<WebAppDevelopment />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="*" element={<NotFound />} />
