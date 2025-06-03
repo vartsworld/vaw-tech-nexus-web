@@ -218,7 +218,7 @@ const Internship = () => {
                       <span className="text-accent">📧</span> <a href="mailto:info.virtualarts@gmail.com" className="hover:text-accent">info.virtualarts@gmail.com</a>
                     </li>
                     <li className="flex items-center gap-2">
-                      <span className="text-accent">📞</span> <a href="tel:+918281543610" className="hover:text-accent">+91 82815 43610</a>
+                      <span className="text-accent">+91 994</span> <a href="tel:+918281543610" className="hover:text-accent">+91 82815 43610</a>
                     </li>
                   </ul>
                 </div>
