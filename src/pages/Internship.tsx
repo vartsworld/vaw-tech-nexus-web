@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -25,27 +24,43 @@ const formSchema = z.object({
   graduationYear: z.string().min(4, "Graduation year is required"),
   domains: z.array(z.string()).min(1, "Please select at least one domain"),
   coverLetter: z.string().min(50, "Cover letter should be at least 50 characters"),
-  resume: z.instanceof(FileList).refine((files) => files.length > 0, "Resume is required"),
+  resume: z.instanceof(FileList).refine(files => files.length > 0, "Resume is required"),
   agreeToTerms: z.boolean().refine(val => val === true, "You must agree to the terms and conditions")
 });
-
-const domains = [
-  { id: "uiux", label: "UI/UX Designing" },
-  { id: "ai", label: "AI Training" },
-  { id: "data", label: "Data Labeling" },
-  { id: "prompt", label: "Prompt Engineering" },
-  { id: "webdev", label: "Web Development" },
-  { id: "appdev", label: "App Development" },
-  { id: "graphics", label: "Graphic Design" },
-  { id: "marketing", label: "Digital Marketing" },
-  { id: "content", label: "Content Creation" },
-];
-
+const domains = [{
+  id: "uiux",
+  label: "UI/UX Designing"
+}, {
+  id: "ai",
+  label: "AI Training"
+}, {
+  id: "data",
+  label: "Data Labeling"
+}, {
+  id: "prompt",
+  label: "Prompt Engineering"
+}, {
+  id: "webdev",
+  label: "Web Development"
+}, {
+  id: "appdev",
+  label: "App Development"
+}, {
+  id: "graphics",
+  label: "Graphic Design"
+}, {
+  id: "marketing",
+  label: "Digital Marketing"
+}, {
+  id: "content",
+  label: "Content Creation"
+}];
 const Internship = () => {
-  const { hasCompletedIntro } = useUser();
+  const {
+    hasCompletedIntro
+  } = useUser();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -58,31 +73,30 @@ const Internship = () => {
       domains: [],
       coverLetter: "",
       agreeToTerms: false
-    },
+    }
   });
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
-    
     try {
       // Here you would typically send the data to your backend
       // For now, we'll just simulate a successful submission
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       // Store application in localStorage (temporary solution)
       const applications = JSON.parse(localStorage.getItem('internshipApplications') || '[]');
       applications.push({
         ...values,
         id: Date.now().toString(),
-        resume: values.resume[0].name, // Store just the file name
+        resume: values.resume[0].name,
+        // Store just the file name
         submittedAt: new Date().toISOString()
       });
       localStorage.setItem('internshipApplications', JSON.stringify(applications));
-      
       toast.success("Your application has been submitted successfully!");
       form.reset();
-      
+
       // Redirect to home page
       setTimeout(() => {
         navigate('/');
@@ -99,9 +113,7 @@ const Internship = () => {
   if (!hasCompletedIntro) {
     return null;
   }
-
-  return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+  return <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <ParticleBackground />
       <Navbar />
       
@@ -128,11 +140,9 @@ const Internship = () => {
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold">🔍 Domains Available:</h3>
                   <ul className="list-inside space-y-1 text-muted-foreground">
-                    {domains.map((domain) => (
-                      <li key={domain.id} className="flex items-center gap-2">
+                    {domains.map(domain => <li key={domain.id} className="flex items-center gap-2">
                         <span className="text-accent">•</span> {domain.label}
-                      </li>
-                    ))}
+                      </li>)}
                   </ul>
                 </div>
                 
@@ -195,7 +205,7 @@ const Internship = () => {
                 
                 <div className="space-y-2">
                   <h3 className="text-xl font-semibold">📥 Apply Now</h3>
-                  <p className="text-red-500 font-semibold">Last Date: 31st May 2025</p>
+                  <p className="text-red-500 font-semibold">Last Date: 10 Jun 2025</p>
                 </div>
                 
                 <div className="space-y-2">
@@ -222,196 +232,128 @@ const Internship = () => {
                 
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="fullName"
-                      render={({ field }) => (
-                        <FormItem>
+                    <FormField control={form.control} name="fullName" render={({
+                    field
+                  }) => <FormItem>
                           <FormLabel>Full Name*</FormLabel>
                           <FormControl>
                             <Input placeholder="Enter your full name" {...field} />
                           </FormControl>
                           <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                        </FormItem>} />
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
+                      <FormField control={form.control} name="email" render={({
+                      field
+                    }) => <FormItem>
                             <FormLabel>Email*</FormLabel>
                             <FormControl>
                               <Input placeholder="Enter your email" type="email" {...field} />
                             </FormControl>
                             <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                          </FormItem>} />
                       
-                      <FormField
-                        control={form.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
+                      <FormField control={form.control} name="phone" render={({
+                      field
+                    }) => <FormItem>
                             <FormLabel>Phone Number*</FormLabel>
                             <FormControl>
                               <Input placeholder="Enter your phone number" {...field} />
                             </FormControl>
                             <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                          </FormItem>} />
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="collegeName"
-                        render={({ field }) => (
-                          <FormItem>
+                      <FormField control={form.control} name="collegeName" render={({
+                      field
+                    }) => <FormItem>
                             <FormLabel>College/University*</FormLabel>
                             <FormControl>
                               <Input placeholder="Enter your college name" {...field} />
                             </FormControl>
                             <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                          </FormItem>} />
                       
-                      <FormField
-                        control={form.control}
-                        name="course"
-                        render={({ field }) => (
-                          <FormItem>
+                      <FormField control={form.control} name="course" render={({
+                      field
+                    }) => <FormItem>
                             <FormLabel>Course/Degree*</FormLabel>
                             <FormControl>
                               <Input placeholder="Enter your course/degree" {...field} />
                             </FormControl>
                             <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                          </FormItem>} />
                     </div>
                     
-                    <FormField
-                      control={form.control}
-                      name="graduationYear"
-                      render={({ field }) => (
-                        <FormItem>
+                    <FormField control={form.control} name="graduationYear" render={({
+                    field
+                  }) => <FormItem>
                           <FormLabel>Expected Year of Graduation*</FormLabel>
                           <FormControl>
                             <Input placeholder="YYYY" {...field} />
                           </FormControl>
                           <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                        </FormItem>} />
                     
-                    <FormField
-                      control={form.control}
-                      name="domains"
-                      render={() => (
-                        <FormItem>
+                    <FormField control={form.control} name="domains" render={() => <FormItem>
                           <div className="mb-2">
                             <FormLabel>Select Preferred Domains* (Choose one or more)</FormLabel>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {domains.map((domain) => (
-                              <FormField
-                                key={domain.id}
-                                control={form.control}
-                                name="domains"
-                                render={({ field }) => {
-                                  return (
-                                    <FormItem
-                                      key={domain.id}
-                                      className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4"
-                                    >
+                            {domains.map(domain => <FormField key={domain.id} control={form.control} name="domains" render={({
+                        field
+                      }) => {
+                        return <FormItem key={domain.id} className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                                       <FormControl>
-                                        <Checkbox
-                                          checked={field.value?.includes(domain.id)}
-                                          onCheckedChange={(checked) => {
-                                            return checked
-                                              ? field.onChange([...field.value, domain.id])
-                                              : field.onChange(
-                                                  field.value?.filter(
-                                                    (value) => value !== domain.id
-                                                  )
-                                                )
-                                          }}
-                                        />
+                                        <Checkbox checked={field.value?.includes(domain.id)} onCheckedChange={checked => {
+                              return checked ? field.onChange([...field.value, domain.id]) : field.onChange(field.value?.filter(value => value !== domain.id));
+                            }} />
                                       </FormControl>
                                       <FormLabel className="font-normal cursor-pointer">
                                         {domain.label}
                                       </FormLabel>
-                                    </FormItem>
-                                  )
-                                }}
-                              />
-                            ))}
+                                    </FormItem>;
+                      }} />)}
                           </div>
                           <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                        </FormItem>} />
                     
-                    <FormField
-                      control={form.control}
-                      name="coverLetter"
-                      render={({ field }) => (
-                        <FormItem>
+                    <FormField control={form.control} name="coverLetter" render={({
+                    field
+                  }) => <FormItem>
                           <FormLabel>Why do you want to join this internship?*</FormLabel>
                           <FormControl>
-                            <textarea
-                              className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                              placeholder="Tell us about yourself and why you're interested in this internship (min. 50 characters)"
-                              {...field}
-                            />
+                            <textarea className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" placeholder="Tell us about yourself and why you're interested in this internship (min. 50 characters)" {...field} />
                           </FormControl>
                           <FormDescription>
                             This will help us understand your motivation and fit for the program.
                           </FormDescription>
                           <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                        </FormItem>} />
                     
-                    <FormField
-                      control={form.control}
-                      name="resume"
-                      render={({ field: { onChange, value, ...rest } }) => (
-                        <FormItem>
+                    <FormField control={form.control} name="resume" render={({
+                    field: {
+                      onChange,
+                      value,
+                      ...rest
+                    }
+                  }) => <FormItem>
                           <FormLabel>Upload Your Resume* (PDF preferred)</FormLabel>
                           <FormControl>
-                            <Input 
-                              type="file" 
-                              accept=".pdf,.doc,.docx"
-                              onChange={(e) => onChange(e.target.files)} 
-                              {...rest}
-                              className="cursor-pointer"
-                            />
+                            <Input type="file" accept=".pdf,.doc,.docx" onChange={e => onChange(e.target.files)} {...rest} className="cursor-pointer" />
                           </FormControl>
                           <FormDescription>
                             Please upload your latest resume/CV in PDF or DOC format.
                           </FormDescription>
                           <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                        </FormItem>} />
                     
-                    <FormField
-                      control={form.control}
-                      name="agreeToTerms"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormField control={form.control} name="agreeToTerms" render={({
+                    field
+                  }) => <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                           <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
+                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                           </FormControl>
                           <div className="space-y-1 leading-none">
                             <FormLabel className="font-normal cursor-pointer">
@@ -422,15 +364,9 @@ const Internship = () => {
                             </FormDescription>
                           </div>
                           <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                        </FormItem>} />
                     
-                    <Button 
-                      type="submit"
-                      className="w-full mt-6"
-                      disabled={isSubmitting}
-                    >
+                    <Button type="submit" className="w-full mt-6" disabled={isSubmitting}>
                       {isSubmitting ? "Submitting Application..." : "Submit Application"}
                     </Button>
                   </form>
@@ -442,8 +378,6 @@ const Internship = () => {
       </section>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Internship;
