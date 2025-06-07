@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -226,152 +227,150 @@ const Internship = () => {
             </div>
             
             {/* Application Form Section */}
-            <div>
-              <div className="tech-card mb-8">
-                <h2 className="text-2xl font-bold mb-6">Application Form</h2>
-                
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField control={form.control} name="fullName" render={({
+            <div className="tech-card mb-8">
+              <h2 className="text-2xl font-bold mb-6">Application Form</h2>
+              
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField control={form.control} name="fullName" render={({
+                  field
+                }) => <FormItem>
+                        <FormLabel>Full Name*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter your full name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>} />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="email" render={({
                     field
                   }) => <FormItem>
-                          <FormLabel>Full Name*</FormLabel>
+                          <FormLabel>Email*</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your full name" {...field} />
+                            <Input placeholder="Enter your email" type="email" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>} />
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="email" render={({
-                      field
-                    }) => <FormItem>
-                            <FormLabel>Email*</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter your email" type="email" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>} />
-                      
-                      <FormField control={form.control} name="phone" render={({
-                      field
-                    }) => <FormItem>
-                            <FormLabel>Phone Number*</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter your phone number" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>} />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="collegeName" render={({
-                      field
-                    }) => <FormItem>
-                            <FormLabel>College/University*</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter your college name" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>} />
-                      
-                      <FormField control={form.control} name="course" render={({
-                      field
-                    }) => <FormItem>
-                            <FormLabel>Course/Degree*</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter your course/degree" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>} />
-                    </div>
-                    
-                    <FormField control={form.control} name="graduationYear" render={({
+                    <FormField control={form.control} name="phone" render={({
                     field
                   }) => <FormItem>
-                          <FormLabel>Expected Year of Graduation*</FormLabel>
+                          <FormLabel>Phone Number*</FormLabel>
                           <FormControl>
-                            <Input placeholder="YYYY" {...field} />
+                            <Input placeholder="Enter your phone number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>} />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="collegeName" render={({
+                    field
+                  }) => <FormItem>
+                          <FormLabel>College/University*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter your college name" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>} />
                     
-                    <FormField control={form.control} name="domains" render={() => <FormItem>
-                          <div className="mb-2">
-                            <FormLabel>Select Preferred Domains* (Choose one or more)</FormLabel>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {domains.map(domain => <FormField key={domain.id} control={form.control} name="domains" render={({
-                        field
-                      }) => {
-                        return <FormItem key={domain.id} className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                                      <FormControl>
-                                        <Checkbox checked={field.value?.includes(domain.id)} onCheckedChange={checked => {
-                              return checked ? field.onChange([...field.value, domain.id]) : field.onChange(field.value?.filter(value => value !== domain.id));
-                            }} />
-                                      </FormControl>
-                                      <FormLabel className="font-normal cursor-pointer">
-                                        {domain.label}
-                                      </FormLabel>
-                                    </FormItem>;
-                      }} />)}
-                          </div>
-                          <FormMessage />
-                        </FormItem>} />
-                    
-                    <FormField control={form.control} name="coverLetter" render={({
+                    <FormField control={form.control} name="course" render={({
                     field
                   }) => <FormItem>
-                          <FormLabel>Why do you want to join this internship?*</FormLabel>
+                          <FormLabel>Course/Degree*</FormLabel>
                           <FormControl>
-                            <textarea className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" placeholder="Tell us about yourself and why you're interested in this internship (min. 50 characters)" {...field} />
+                            <Input placeholder="Enter your course/degree" {...field} />
                           </FormControl>
+                          <FormMessage />
+                        </FormItem>} />
+                  </div>
+                  
+                  <FormField control={form.control} name="graduationYear" render={({
+                  field
+                }) => <FormItem>
+                        <FormLabel>Expected Year of Graduation*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="YYYY" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>} />
+                  
+                  <FormField control={form.control} name="domains" render={() => <FormItem>
+                        <div className="mb-2">
+                          <FormLabel>Select Preferred Domains* (Choose one or more)</FormLabel>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {domains.map(domain => <FormField key={domain.id} control={form.control} name="domains" render={({
+                      field
+                    }) => {
+                      return <FormItem key={domain.id} className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                    <FormControl>
+                                      <Checkbox checked={field.value?.includes(domain.id)} onCheckedChange={checked => {
+                            return checked ? field.onChange([...field.value, domain.id]) : field.onChange(field.value?.filter(value => value !== domain.id));
+                          }} />
+                                    </FormControl>
+                                    <FormLabel className="font-normal cursor-pointer">
+                                      {domain.label}
+                                    </FormLabel>
+                                  </FormItem>;
+                    }} />)}
+                        </div>
+                        <FormMessage />
+                      </FormItem>} />
+                  
+                  <FormField control={form.control} name="coverLetter" render={({
+                  field
+                }) => <FormItem>
+                        <FormLabel>Why do you want to join this internship?*</FormLabel>
+                        <FormControl>
+                          <textarea className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" placeholder="Tell us about yourself and why you're interested in this internship (min. 50 characters)" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          This will help us understand your motivation and fit for the program.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>} />
+                  
+                  <FormField control={form.control} name="resume" render={({
+                  field: {
+                    onChange,
+                    value,
+                    ...rest
+                  }
+                }) => <FormItem>
+                        <FormLabel>Upload Your Resume* (PDF preferred)</FormLabel>
+                        <FormControl>
+                          <Input type="file" accept=".pdf,.doc,.docx" onChange={e => onChange(e.target.files)} {...rest} className="cursor-pointer" />
+                        </FormControl>
+                        <FormDescription>
+                          Please upload your latest resume/CV in PDF or DOC format.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>} />
+                  
+                  <FormField control={form.control} name="agreeToTerms" render={({
+                  field
+                }) => <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="font-normal cursor-pointer">
+                            I agree to the terms and conditions, including the registration fee of ₹3,500/- which will be payable after selection.
+                          </FormLabel>
                           <FormDescription>
-                            This will help us understand your motivation and fit for the program.
+                            You will receive payment instructions after your application is reviewed and accepted.
                           </FormDescription>
-                          <FormMessage />
-                        </FormItem>} />
-                    
-                    <FormField control={form.control} name="resume" render={({
-                    field: {
-                      onChange,
-                      value,
-                      ...rest
-                    }
-                  }) => <FormItem>
-                          <FormLabel>Upload Your Resume* (PDF preferred)</FormLabel>
-                          <FormControl>
-                            <Input type="file" accept=".pdf,.doc,.docx" onChange={e => onChange(e.target.files)} {...rest} className="cursor-pointer" />
-                          </FormControl>
-                          <FormDescription>
-                            Please upload your latest resume/CV in PDF or DOC format.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>} />
-                    
-                    <FormField control={form.control} name="agreeToTerms" render={({
-                    field
-                  }) => <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                          <FormControl>
-                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel className="font-normal cursor-pointer">
-                              I agree to the terms and conditions, including the registration fee of ₹3,500/- which will be payable after selection.
-                            </FormLabel>
-                            <FormDescription>
-                              You will receive payment instructions after your application is reviewed and accepted.
-                            </FormDescription>
-                          </div>
-                          <FormMessage />
-                        </FormItem>} />
-                    
-                    <Button type="submit" className="w-full mt-6" disabled={isSubmitting}>
-                      {isSubmitting ? "Submitting Application..." : "Submit Application"}
-                    </Button>
-                  </form>
-                </Form>
-              </div>
+                        </div>
+                        <FormMessage />
+                      </FormItem>} />
+                  
+                  <Button type="submit" className="w-full mt-6" disabled={isSubmitting}>
+                    {isSubmitting ? "Submitting Application..." : "Submit Application"}
+                  </Button>
+                </form>
+              </Form>
             </div>
           </div>
         </div>
