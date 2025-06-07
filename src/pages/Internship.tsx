@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -14,8 +13,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
-// Define the form schema with Zod
+// Define the form schema with Zod - make resume optional
 const formSchema = z.object({
   fullName: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email"),
@@ -25,7 +25,7 @@ const formSchema = z.object({
   graduationYear: z.string().min(4, "Graduation year is required"),
   domains: z.array(z.string()).min(1, "Please select at least one domain"),
   coverLetter: z.string().min(50, "Cover letter should be at least 50 characters"),
-  resume: z.instanceof(FileList).refine(files => files.length > 0, "Resume is required"),
+  resume: z.instanceof(FileList).optional(),
   agreeToTerms: z.boolean().refine(val => val === true, "You must agree to the terms and conditions")
 });
 const domains = [{
@@ -77,24 +77,52 @@ const Internship = () => {
     }
   });
 
-  // Handle form submission
+  // Handle form submission with Supabase
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      // Here you would typically send the data to your backend
-      // For now, we'll just simulate a successful submission
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      let resumeUrl = null;
 
-      // Store application in localStorage (temporary solution)
-      const applications = JSON.parse(localStorage.getItem('internshipApplications') || '[]');
-      applications.push({
-        ...values,
-        id: Date.now().toString(),
-        resume: values.resume[0].name,
-        // Store just the file name
-        submittedAt: new Date().toISOString()
-      });
-      localStorage.setItem('internshipApplications', JSON.stringify(applications));
+      // Upload resume file if provided
+      if (values.resume && values.resume.length > 0) {
+        const file = values.resume[0];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('resumes')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          console.error("Error uploading resume:", uploadError);
+          toast.error("Failed to upload resume. Please try again.");
+          return;
+        }
+
+        resumeUrl = uploadData.path;
+      }
+
+      // Insert application data into Supabase
+      const { error: insertError } = await supabase
+        .from('internship_applications')
+        .insert({
+          full_name: values.fullName,
+          email: values.email,
+          phone: values.phone,
+          college_name: values.collegeName,
+          course: values.course,
+          graduation_year: values.graduationYear,
+          domains: values.domains,
+          cover_letter: values.coverLetter,
+          resume_url: resumeUrl
+        });
+
+      if (insertError) {
+        console.error("Error submitting application:", insertError);
+        toast.error("There was an error submitting your application. Please try again.");
+        return;
+      }
+
       toast.success("Your application has been submitted successfully!");
       form.reset();
 
@@ -332,22 +360,34 @@ const Internship = () => {
                         <FormMessage />
                       </FormItem>} />
                   
-                  <FormField control={form.control} name="resume" render={({
-                  field: {
-                    onChange,
-                    value,
-                    ...rest
-                  }
-                }) => <FormItem>
-                        <FormLabel>Upload Your Resume* (PDF preferred)</FormLabel>
+                  <FormField 
+                    control={form.control} 
+                    name="resume" 
+                    render={({
+                      field: {
+                        onChange,
+                        value,
+                        ...rest
+                      }
+                    }) => (
+                      <FormItem>
+                        <FormLabel>Upload Your Resume (Optional)</FormLabel>
                         <FormControl>
-                          <Input type="file" accept=".pdf,.doc,.docx" onChange={e => onChange(e.target.files)} {...rest} className="cursor-pointer" />
+                          <Input 
+                            type="file" 
+                            accept=".pdf,.doc,.docx" 
+                            onChange={e => onChange(e.target.files)} 
+                            {...rest} 
+                            className="cursor-pointer" 
+                          />
                         </FormControl>
                         <FormDescription>
-                          Please upload your latest resume/CV in PDF or DOC format.
+                          You can upload your resume in PDF or DOC format, or submit without one.
                         </FormDescription>
                         <FormMessage />
-                      </FormItem>} />
+                      </FormItem>
+                    )} 
+                  />
                   
                   <FormField control={form.control} name="agreeToTerms" render={({
                   field

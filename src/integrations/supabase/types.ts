@@ -111,6 +111,51 @@ export type Database = {
         }
         Relationships: []
       }
+      internship_applications: {
+        Row: {
+          college_name: string
+          course: string
+          cover_letter: string
+          created_at: string
+          domains: Json
+          email: string
+          full_name: string
+          graduation_year: string
+          id: string
+          phone: string
+          resume_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          college_name: string
+          course: string
+          cover_letter: string
+          created_at?: string
+          domains: Json
+          email: string
+          full_name: string
+          graduation_year: string
+          id?: string
+          phone: string
+          resume_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          college_name?: string
+          course?: string
+          cover_letter?: string
+          created_at?: string
+          domains?: Json
+          email?: string
+          full_name?: string
+          graduation_year?: string
+          id?: string
+          phone?: string
+          resume_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string | null

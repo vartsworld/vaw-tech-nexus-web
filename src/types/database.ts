@@ -1,4 +1,3 @@
-
 // Custom type definitions for our database tables
 export interface Inquiry {
   id: string;
@@ -66,6 +65,21 @@ export interface ServiceRequest {
   country: string;
   logo_path: string | null;
   status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InternshipApplication {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  college_name: string;
+  course: string;
+  graduation_year: string;
+  domains: string[];
+  cover_letter: string;
+  resume_url: string | null;
   created_at: string;
   updated_at: string;
 }

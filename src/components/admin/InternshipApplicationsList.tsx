@@ -7,20 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, Mail, Phone, Download } from "lucide-react";
 import { toast } from "sonner";
-
-interface InternshipApplication {
-  id: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  collegeName: string;
-  course: string;
-  graduationYear: string;
-  domains: string[];
-  coverLetter: string;
-  resume: string;
-  submittedAt: string;
-}
+import { supabase } from "@/integrations/supabase/client";
+import { InternshipApplication } from "@/types/database";
 
 const domains = {
   uiux: "UI/UX Designing",
@@ -37,15 +25,31 @@ const domains = {
 const InternshipApplicationsList = () => {
   const [applications, setApplications] = useState<InternshipApplication[]>([]);
   const [selectedApplication, setSelectedApplication] = useState<InternshipApplication | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadApplications();
   }, []);
 
-  const loadApplications = () => {
-    const storedApplications = localStorage.getItem('internshipApplications');
-    if (storedApplications) {
-      setApplications(JSON.parse(storedApplications));
+  const loadApplications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('internship_applications')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error loading applications:", error);
+        toast.error("Failed to load applications");
+        return;
+      }
+
+      setApplications(data || []);
+    } catch (error) {
+      console.error("Error loading applications:", error);
+      toast.error("Failed to load applications");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,6 +63,33 @@ const InternshipApplicationsList = () => {
     window.open(`tel:${phone}`);
   };
 
+  const handleDownloadResume = async (resumeUrl: string, applicantName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('resumes')
+        .download(resumeUrl);
+
+      if (error) {
+        console.error("Error downloading resume:", error);
+        toast.error("Failed to download resume");
+        return;
+      }
+
+      // Create a download link
+      const url = window.URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${applicantName}_resume.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error downloading resume:", error);
+      toast.error("Failed to download resume");
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       year: 'numeric',
@@ -68,6 +99,19 @@ const InternshipApplicationsList = () => {
       minute: '2-digit'
     });
   };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Internship Applications</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">Loading applications...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -86,6 +130,7 @@ const InternshipApplicationsList = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>College</TableHead>
                 <TableHead>Domains</TableHead>
+                <TableHead>Resume</TableHead>
                 <TableHead>Submitted</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -93,16 +138,16 @@ const InternshipApplicationsList = () => {
             <TableBody>
               {applications.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No internship applications found
                   </TableCell>
                 </TableRow>
               ) : (
                 applications.map((application) => (
                   <TableRow key={application.id}>
-                    <TableCell className="font-medium">{application.fullName}</TableCell>
+                    <TableCell className="font-medium">{application.full_name}</TableCell>
                     <TableCell>{application.email}</TableCell>
-                    <TableCell>{application.collegeName}</TableCell>
+                    <TableCell>{application.college_name}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {application.domains.slice(0, 2).map((domain) => (
@@ -117,7 +162,20 @@ const InternshipApplicationsList = () => {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>{formatDate(application.submittedAt)}</TableCell>
+                    <TableCell>
+                      {application.resume_url ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownloadResume(application.resume_url!, application.full_name)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No resume</span>
+                      )}
+                    </TableCell>
+                    <TableCell>{formatDate(application.created_at)}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Dialog>
@@ -139,7 +197,7 @@ const InternshipApplicationsList = () => {
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
                                     <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                                    <p className="font-medium">{selectedApplication.fullName}</p>
+                                    <p className="font-medium">{selectedApplication.full_name}</p>
                                   </div>
                                   <div>
                                     <label className="text-sm font-medium text-muted-foreground">Email</label>
@@ -151,11 +209,11 @@ const InternshipApplicationsList = () => {
                                   </div>
                                   <div>
                                     <label className="text-sm font-medium text-muted-foreground">Graduation Year</label>
-                                    <p>{selectedApplication.graduationYear}</p>
+                                    <p>{selectedApplication.graduation_year}</p>
                                   </div>
                                   <div>
                                     <label className="text-sm font-medium text-muted-foreground">College/University</label>
-                                    <p>{selectedApplication.collegeName}</p>
+                                    <p>{selectedApplication.college_name}</p>
                                   </div>
                                   <div>
                                     <label className="text-sm font-medium text-muted-foreground">Course/Degree</label>
@@ -177,18 +235,30 @@ const InternshipApplicationsList = () => {
                                 <div>
                                   <label className="text-sm font-medium text-muted-foreground">Cover Letter</label>
                                   <p className="mt-2 p-3 bg-muted rounded-md text-sm whitespace-pre-wrap">
-                                    {selectedApplication.coverLetter}
+                                    {selectedApplication.cover_letter}
                                   </p>
                                 </div>
                                 
                                 <div>
                                   <label className="text-sm font-medium text-muted-foreground">Resume</label>
-                                  <p className="mt-2 text-sm">📎 {selectedApplication.resume}</p>
+                                  {selectedApplication.resume_url ? (
+                                    <div className="mt-2">
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => handleDownloadResume(selectedApplication.resume_url!, selectedApplication.full_name)}
+                                      >
+                                        <Download className="h-4 w-4 mr-2" />
+                                        Download Resume
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <p className="mt-2 text-sm text-muted-foreground">No resume uploaded</p>
+                                  )}
                                 </div>
                                 
                                 <div>
                                   <label className="text-sm font-medium text-muted-foreground">Submitted At</label>
-                                  <p>{formatDate(selectedApplication.submittedAt)}</p>
+                                  <p>{formatDate(selectedApplication.created_at)}</p>
                                 </div>
                               </div>
                             )}
@@ -198,7 +268,7 @@ const InternshipApplicationsList = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleContactEmail(application.email, application.fullName)}
+                          onClick={() => handleContactEmail(application.email, application.full_name)}
                         >
                           <Mail className="h-4 w-4" />
                         </Button>
