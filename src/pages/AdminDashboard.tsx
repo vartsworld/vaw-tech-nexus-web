@@ -48,16 +48,30 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-background">
       <AdminHeader />
       
-      <div className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="inquiries" className="space-y-6">
-          <TabsList className="grid grid-cols-7 w-full">
-            <TabsTrigger value="inquiries">General Inquiries</TabsTrigger>
-            <TabsTrigger value="pricing">Pricing Inquiries</TabsTrigger>
-            <TabsTrigger value="internships">Internship Applications</TabsTrigger>
-            <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
-            <TabsTrigger value="projects">Projects</TabsTrigger>
-            <TabsTrigger value="partners">Partners</TabsTrigger>
-            <TabsTrigger value="logos">Client Logos</TabsTrigger>
+      <div className="container mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
+        <Tabs defaultValue="inquiries" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 w-full gap-1 h-auto p-1">
+            <TabsTrigger value="inquiries" className="text-xs sm:text-sm px-2 py-2 sm:px-3">
+              <span className="hidden sm:inline">General </span>Inquiries
+            </TabsTrigger>
+            <TabsTrigger value="pricing" className="text-xs sm:text-sm px-2 py-2 sm:px-3">
+              <span className="hidden sm:inline">Pricing </span>Inquiries
+            </TabsTrigger>
+            <TabsTrigger value="internships" className="text-xs sm:text-sm px-2 py-2 sm:px-3">
+              <span className="hidden sm:inline">Internship </span>Applications
+            </TabsTrigger>
+            <TabsTrigger value="testimonials" className="text-xs sm:text-sm px-2 py-2 sm:px-3">
+              Testimonials
+            </TabsTrigger>
+            <TabsTrigger value="projects" className="text-xs sm:text-sm px-2 py-2 sm:px-3">
+              Projects
+            </TabsTrigger>
+            <TabsTrigger value="partners" className="text-xs sm:text-sm px-2 py-2 sm:px-3">
+              Partners
+            </TabsTrigger>
+            <TabsTrigger value="logos" className="text-xs sm:text-sm px-2 py-2 sm:px-3">
+              <span className="hidden sm:inline">Client </span>Logos
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="inquiries">
