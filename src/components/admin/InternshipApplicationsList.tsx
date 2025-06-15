@@ -44,7 +44,13 @@ const InternshipApplicationsList = () => {
         return;
       }
 
-      setApplications(data || []);
+      // Transform the data to match our InternshipApplication interface
+      const transformedData: InternshipApplication[] = (data || []).map(item => ({
+        ...item,
+        domains: Array.isArray(item.domains) ? item.domains as string[] : []
+      }));
+
+      setApplications(transformedData);
     } catch (error) {
       console.error("Error loading applications:", error);
       toast.error("Failed to load applications");

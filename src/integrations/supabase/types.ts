@@ -9,6 +9,168 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          password_hash: string
+          role: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          password_hash: string
+          role?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          password_hash?: string
+          role?: string | null
+        }
+        Relationships: []
+      }
+      ai_tools: {
+        Row: {
+          category: string | null
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          url: string | null
+        }
+        Insert: {
+          category?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          url?: string | null
+        }
+        Update: {
+          category?: string | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      attendance: {
+        Row: {
+          date: string
+          id: string
+          intern_id: string
+          marked_at: string | null
+          status: string | null
+        }
+        Insert: {
+          date: string
+          id?: string
+          intern_id: string
+          marked_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          date?: string
+          id?: string
+          intern_id?: string
+          marked_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      class_attendance: {
+        Row: {
+          class_id: string | null
+          id: string
+          intern_id: string | null
+          marked_at: string | null
+          status: string | null
+        }
+        Insert: {
+          class_id?: string | null
+          id?: string
+          intern_id?: string | null
+          marked_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          class_id?: string | null
+          id?: string
+          intern_id?: string | null
+          marked_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_attendance_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_attendance_intern_id_fkey"
+            columns: ["intern_id"]
+            isOneToOne: false
+            referencedRelation: "interns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_time: string
+          id: string
+          instructor: string
+          meeting_link: string | null
+          start_time: string
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_time: string
+          id?: string
+          instructor: string
+          meeting_link?: string | null
+          start_time: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_time?: string
+          id?: string
+          instructor?: string
+          meeting_link?: string | null
+          start_time?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       client_logos: {
         Row: {
           created_at: string | null
@@ -36,6 +198,33 @@ export type Database = {
           logo_url?: string
           name?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      daily_quotes: {
+        Row: {
+          author: string
+          created_at: string | null
+          date: string | null
+          id: string
+          is_active: boolean | null
+          quote: string
+        }
+        Insert: {
+          author: string
+          created_at?: string | null
+          date?: string | null
+          id?: string
+          is_active?: boolean | null
+          quote: string
+        }
+        Update: {
+          author?: string
+          created_at?: string | null
+          date?: string | null
+          id?: string
+          is_active?: boolean | null
+          quote?: string
         }
         Relationships: []
       }
@@ -108,6 +297,57 @@ export type Database = {
           service?: string | null
           status?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      interns: {
+        Row: {
+          applied_at: string | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          email: string
+          field_of_interest: string | null
+          full_name: string
+          id: string
+          is_emoji_password: boolean | null
+          password_hash: string
+          phone: string | null
+          profile_photo_url: string | null
+          status: string | null
+          university: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          email: string
+          field_of_interest?: string | null
+          full_name: string
+          id?: string
+          is_emoji_password?: boolean | null
+          password_hash: string
+          phone?: string | null
+          profile_photo_url?: string | null
+          status?: string | null
+          university?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          email?: string
+          field_of_interest?: string | null
+          full_name?: string
+          id?: string
+          is_emoji_password?: boolean | null
+          password_hash?: string
+          phone?: string | null
+          profile_photo_url?: string | null
+          status?: string | null
+          university?: string | null
         }
         Relationships: []
       }
@@ -370,39 +610,71 @@ export type Database = {
       }
       projects: {
         Row: {
+          admin_feedback: string | null
           category: string
           created_at: string | null
           description: string
           display_order: number | null
+          due_date: string | null
           featured: boolean | null
           id: string
           image_url: string
+          intern_id: string | null
+          rating: number | null
+          status: string | null
+          submission_content: string | null
+          submission_date: string | null
+          submission_files: Json | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          admin_feedback?: string | null
           category: string
           created_at?: string | null
           description: string
           display_order?: number | null
+          due_date?: string | null
           featured?: boolean | null
           id?: string
           image_url: string
+          intern_id?: string | null
+          rating?: number | null
+          status?: string | null
+          submission_content?: string | null
+          submission_date?: string | null
+          submission_files?: Json | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          admin_feedback?: string | null
           category?: string
           created_at?: string | null
           description?: string
           display_order?: number | null
+          due_date?: string | null
           featured?: boolean | null
           id?: string
           image_url?: string
+          intern_id?: string | null
+          rating?: number | null
+          status?: string | null
+          submission_content?: string | null
+          submission_date?: string | null
+          submission_files?: Json | null
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_intern_id_fkey"
+            columns: ["intern_id"]
+            isOneToOne: false
+            referencedRelation: "interns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_requests: {
         Row: {
@@ -482,6 +754,42 @@ export type Database = {
           proj4text?: string | null
           srid?: number
           srtext?: string | null
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          assigned_to: string | null
+          category: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          status: string | null
+          title: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title?: string
         }
         Relationships: []
       }
