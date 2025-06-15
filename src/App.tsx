@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,6 +19,7 @@ import { ThemeProvider } from "./providers/ThemeProvider";
 import { UserProvider } from "./context/UserContext";
 import IntroScreen from "./components/IntroScreen";
 import { useUser } from "./context/UserContext";
+import StaffDashboard from "./pages/StaffDashboard";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +42,7 @@ const AppContent = () => {
           <Route path="/digital-design" element={<DigitalDesign />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/staff/dashboard" element={<StaffDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
