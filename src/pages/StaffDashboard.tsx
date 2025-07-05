@@ -21,12 +21,13 @@ import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import WorkspaceRoom from "@/components/staff/WorkspaceRoom";
 import BreakRoom from "@/components/staff/BreakRoom";
 import MeetingRoom from "@/components/staff/MeetingRoom";
+import { useStaffData } from "@/hooks/useStaffData";
 
 type RoomType = 'workspace' | 'breakroom' | 'meeting';
 
 const StaffDashboard = () => {
   const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
-  const [userName] = useState("Alex Johnson"); // This would come from auth context
+  const { profile } = useStaffData();
 
   const roomComponents = {
     workspace: <WorkspaceRoom />,
@@ -46,7 +47,7 @@ const StaffDashboard = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Virtual Office</h1>
-                <p className="text-purple-300">Welcome back, {userName}!</p>
+                <p className="text-purple-300">Welcome back, {profile?.full_name || profile?.username || 'Staff Member'}!</p>
               </div>
             </div>
             
@@ -58,7 +59,7 @@ const StaffDashboard = () => {
               
               <div className="flex items-center gap-2 bg-yellow-500/20 border border-yellow-500/30 rounded-lg px-3 py-1">
                 <Wallet className="w-4 h-4 text-yellow-300" />
-                <span className="text-yellow-300 text-sm">$247.50</span>
+                <span className="text-yellow-300 text-sm">${profile?.earnings || 0}</span>
               </div>
             </div>
           </div>

@@ -300,6 +300,74 @@ export type Database = {
         }
         Relationships: []
       }
+      intern_projects: {
+        Row: {
+          admin_feedback: string | null
+          category: string
+          created_at: string | null
+          description: string
+          display_order: number | null
+          due_date: string | null
+          featured: boolean | null
+          id: string
+          image_url: string
+          intern_id: string | null
+          rating: number | null
+          status: string | null
+          submission_content: string | null
+          submission_date: string | null
+          submission_files: Json | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          admin_feedback?: string | null
+          category: string
+          created_at?: string | null
+          description: string
+          display_order?: number | null
+          due_date?: string | null
+          featured?: boolean | null
+          id?: string
+          image_url: string
+          intern_id?: string | null
+          rating?: number | null
+          status?: string | null
+          submission_content?: string | null
+          submission_date?: string | null
+          submission_files?: Json | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          admin_feedback?: string | null
+          category?: string
+          created_at?: string | null
+          description?: string
+          display_order?: number | null
+          due_date?: string | null
+          featured?: boolean | null
+          id?: string
+          image_url?: string
+          intern_id?: string | null
+          rating?: number | null
+          status?: string | null
+          submission_content?: string | null
+          submission_date?: string | null
+          submission_files?: Json | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intern_projects_intern_id_fkey"
+            columns: ["intern_id"]
+            isOneToOne: false
+            referencedRelation: "interns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interns: {
         Row: {
           applied_at: string | null

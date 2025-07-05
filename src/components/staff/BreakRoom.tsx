@@ -1,20 +1,37 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Coffee, Gamepad2, MessageCircle, Users, Zap, Trophy } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Coffee, Gamepad2, MessageCircle, Users, Zap, Trophy, Loader2 } from "lucide-react";
+import { useStaffData } from "@/hooks/useStaffData";
 
 const BreakRoom = () => {
+  const { chatMessages, teamMembers, loading, sendChatMessage } = useStaffData();
+  const [newMessage, setNewMessage] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+
   const games = [
     { name: "Word Challenge", players: "3/4", status: "Waiting", difficulty: "Easy" },
     { name: "Quick Quiz", players: "2/6", status: "Active", difficulty: "Medium" },
     { name: "Code Puzzle", players: "1/4", status: "Starting Soon", difficulty: "Hard" }
   ];
 
-  const chatMessages = [
-    { user: "Sarah", message: "Anyone up for a quick game?", time: "2m ago" },
-    { user: "Mike", message: "Just finished my tasks! 🎉", time: "5m ago" },
-    { user: "Emily", message: "Coffee break time!", time: "10m ago" }
-  ];
+  const handleSendMessage = async () => {
+    if (!newMessage.trim()) return;
+    setSendingMessage(true);
+    await sendChatMessage(newMessage);
+    setNewMessage("");
+    setSendingMessage(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center h-full">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -77,25 +94,46 @@ const BreakRoom = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-              {chatMessages.map((msg, index) => (
-                <div key={index} className="bg-white/5 rounded-lg p-3">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="text-blue-300 font-medium text-sm">{msg.user}</span>
-                    <span className="text-gray-500 text-xs">{msg.time}</span>
-                  </div>
-                  <p className="text-white text-sm">{msg.message}</p>
+              {chatMessages.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-400 text-sm">No messages yet. Start the conversation!</p>
                 </div>
-              ))}
+              ) : (
+                chatMessages.map((msg) => (
+                  <div key={msg.id} className="bg-white/5 rounded-lg p-3">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="text-blue-300 font-medium text-sm">
+                        {msg.profiles?.full_name || msg.profiles?.username || 'Anonymous'}
+                      </span>
+                      <span className="text-gray-500 text-xs">
+                        {new Date(msg.created_at).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <p className="text-white text-sm">{msg.message}</p>
+                  </div>
+                ))
+              )}
             </div>
             
             <div className="flex gap-2">
-              <input 
-                type="text" 
-                placeholder="Type a message..." 
-                className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50"
+              <Input
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type a message..."
+                className="flex-1 bg-white/10 border-white/20 text-white placeholder-gray-400"
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               />
-              <Button size="sm" className="bg-blue-500 hover:bg-blue-600">
-                Send
+              <Button 
+                size="sm" 
+                className="bg-blue-500 hover:bg-blue-600"
+                onClick={handleSendMessage}
+                disabled={sendingMessage || !newMessage.trim()}
+              >
+                {sendingMessage ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'Send'
+                )}
               </Button>
             </div>
           </CardContent>
@@ -111,29 +149,29 @@ const BreakRoom = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {[
-                { name: "Alex Johnson", points: 1250, rank: 1 },
-                { name: "Sarah Chen", points: 1180, rank: 2 },
-                { name: "Mike Rodriguez", points: 1050, rank: 3 },
-                { name: "You", points: 980, rank: 4 }
-              ].map((player, index) => (
-                <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${
-                  player.name === "You" ? 'bg-purple-500/20 border border-purple-500/30' : 'bg-white/5'
-                }`}>
+              {teamMembers.map((member, index) => (
+                <div key={member.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
                   <div className="flex items-center gap-3">
                     <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      player.rank === 1 ? 'bg-yellow-500 text-black' :
-                      player.rank === 2 ? 'bg-gray-400 text-black' :
-                      player.rank === 3 ? 'bg-orange-500 text-black' :
+                      index === 0 ? 'bg-yellow-500 text-black' :
+                      index === 1 ? 'bg-gray-400 text-black' :
+                      index === 2 ? 'bg-orange-500 text-black' :
                       'bg-gray-600 text-white'
                     }`}>
-                      {player.rank}
+                      {index + 1}
                     </span>
-                    <span className="text-white font-medium">{player.name}</span>
+                    <span className="text-white font-medium">
+                      {member.full_name || member.username}
+                    </span>
                   </div>
-                  <span className="text-yellow-300 font-bold">{player.points}pts</span>
+                  <span className="text-yellow-300 font-bold">${member.earnings}</span>
                 </div>
               ))}
+              {teamMembers.length === 0 && (
+                <div className="text-center py-4">
+                  <p className="text-gray-400 text-sm">No team members yet</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
