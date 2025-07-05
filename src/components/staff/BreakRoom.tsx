@@ -6,16 +6,43 @@ import { Input } from "@/components/ui/input";
 import { Coffee, Gamepad2, MessageCircle, Users, Zap, Trophy, Loader2 } from "lucide-react";
 import { useStaffData } from "@/hooks/useStaffData";
 import MusicPlayer from "./MusicPlayer";
+import WordChallenge from "./games/WordChallenge";
+import QuickQuiz from "./games/QuickQuiz";
+import CodePuzzle from "./games/CodePuzzle";
+
+type ActiveGame = 'none' | 'word-challenge' | 'quick-quiz' | 'code-puzzle';
 
 const BreakRoom = () => {
   const { chatMessages, teamMembers, loading, sendChatMessage } = useStaffData();
   const [newMessage, setNewMessage] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [activeGame, setActiveGame] = useState<ActiveGame>('none');
 
   const games = [
-    { name: "Word Challenge", players: "3/4", status: "Waiting", difficulty: "Easy" },
-    { name: "Quick Quiz", players: "2/6", status: "Active", difficulty: "Medium" },
-    { name: "Code Puzzle", players: "1/4", status: "Starting Soon", difficulty: "Hard" }
+    { 
+      id: 'word-challenge' as const, 
+      name: "Word Challenge", 
+      players: "3/4", 
+      status: "Ready", 
+      difficulty: "Easy",
+      description: "Unscramble words related to programming"
+    },
+    { 
+      id: 'quick-quiz' as const, 
+      name: "Quick Quiz", 
+      players: "2/6", 
+      status: "Ready", 
+      difficulty: "Medium",
+      description: "Test your programming knowledge"
+    },
+    { 
+      id: 'code-puzzle' as const, 
+      name: "Code Puzzle", 
+      players: "1/4", 
+      status: "Ready", 
+      difficulty: "Hard",
+      description: "Fix and complete code snippets"
+    }
   ];
 
   const handleSendMessage = async () => {
@@ -30,6 +57,17 @@ const BreakRoom = () => {
     return (
       <div className="p-6 flex items-center justify-center h-full">
         <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+      </div>
+    );
+  }
+
+  // Render active game
+  if (activeGame !== 'none') {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[80vh]">
+        {activeGame === 'word-challenge' && <WordChallenge onClose={() => setActiveGame('none')} />}
+        {activeGame === 'quick-quiz' && <QuickQuiz onClose={() => setActiveGame('none')} />}
+        {activeGame === 'code-puzzle' && <CodePuzzle onClose={() => setActiveGame('none')} />}
       </div>
     );
   }
@@ -58,12 +96,9 @@ const BreakRoom = () => {
                   <div>
                     <h4 className="text-white font-medium">{game.name}</h4>
                     <p className="text-gray-400 text-sm">{game.difficulty} • {game.players} players</p>
+                    <p className="text-gray-500 text-xs mt-1">{game.description}</p>
                   </div>
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    game.status === 'Active' ? 'bg-green-500/20 text-green-300' :
-                    game.status === 'Waiting' ? 'bg-yellow-500/20 text-yellow-300' :
-                    'bg-blue-500/20 text-blue-300'
-                  }`}>
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-green-500/20 text-green-300">
                     {game.status}
                   </span>
                 </div>
@@ -72,8 +107,9 @@ const BreakRoom = () => {
                   size="sm" 
                   variant="outline" 
                   className="w-full bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30"
+                  onClick={() => setActiveGame(game.id)}
                 >
-                  {game.status === 'Active' ? 'Join Game' : 'Join Lobby'}
+                  Play Now
                 </Button>
               </div>
             ))}
