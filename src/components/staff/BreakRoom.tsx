@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Coffee, Gamepad2, MessageCircle, Users, Zap, Trophy, Loader2 } from "lucide-react";
 import { useStaffData } from "@/hooks/useStaffData";
+import MusicPlayer from "./MusicPlayer";
 
 const BreakRoom = () => {
   const { chatMessages, teamMembers, loading, sendChatMessage } = useStaffData();
@@ -41,7 +42,7 @@ const BreakRoom = () => {
         <p className="text-orange-300">Take a breather, connect with your team! ☕</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Games Section */}
         <Card className="bg-black/20 backdrop-blur-lg border-white/10">
           <CardHeader>
@@ -84,14 +85,18 @@ const BreakRoom = () => {
           </CardContent>
         </Card>
 
-        {/* Team Chat */}
-        <Card className="bg-black/20 backdrop-blur-lg border-white/10">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-blue-400" />
-              Team Chat
-            </CardTitle>
-          </CardHeader>
+        {/* Music & Chat Column */}
+        <div className="space-y-6">
+          <MusicPlayer />
+          
+          {/* Team Chat */}
+          <Card className="bg-black/20 backdrop-blur-lg border-white/10">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <MessageCircle className="w-5 h-5 text-blue-400" />
+                Team Chat
+              </CardTitle>
+            </CardHeader>
           <CardContent>
             <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
               {chatMessages.length === 0 ? (
@@ -138,6 +143,7 @@ const BreakRoom = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
 
         {/* Leaderboard */}
         <Card className="bg-black/20 backdrop-blur-lg border-white/10">

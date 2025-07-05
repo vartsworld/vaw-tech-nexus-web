@@ -16,6 +16,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useStaffData } from "@/hooks/useStaffData";
+import MusicPlayer from "./MusicPlayer";
 
 const WorkspaceRoom = () => {
   const { tasks, notes, profile, loading, updateTaskStatus, addNote } = useStaffData();
@@ -214,21 +215,7 @@ const WorkspaceRoom = () => {
             </CardContent>
           </Card>
 
-          {/* Music Player Mock */}
-          <Card className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-green-500/30">
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Play className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-white font-medium mb-1">Lo-Fi Hip Hop</p>
-                <p className="text-green-300 text-sm mb-3">Chill Beats to Work To</p>
-                <Button variant="outline" size="sm" className="bg-green-500/20 border-green-500/30 text-green-300 hover:bg-green-500/30">
-                  Connect Spotify
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <MusicPlayer />
         </div>
       </div>
     </div>
