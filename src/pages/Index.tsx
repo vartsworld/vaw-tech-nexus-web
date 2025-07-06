@@ -1,6 +1,7 @@
 
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
+import MobileHeader from "@/components/MobileHeader";
 import Hero from "@/components/Hero";
 import Services from "@/components/Services";
 import About from "@/components/About";
@@ -30,6 +31,7 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <ParticleBackground />
       <Navbar />
+      <MobileHeader />
       {/* Tight grouping of Hero and Partners with no gap */}
       <div className="flex flex-col">
         <Hero />
