@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Moon, Sun, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -50,13 +50,28 @@ const servicesItems = [{
 const MobileHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isServicesOpen, setIsServicesOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const {
     theme,
     setTheme
   } = useTheme();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   return <div className="md:hidden">
       {/* Mobile Header Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-transparent backdrop-blur-none border-b-0">
+      <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled ? "bg-card/95 backdrop-blur-md shadow-lg rounded-b-[2rem] mx-2 border border-border/50" : "bg-transparent backdrop-blur-none border-b-0"
+      }`}>
         <div className="flex items-center justify-between px-4 py-4">
           {/* Menu Button - Left */}
           <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="h-10 w-10">

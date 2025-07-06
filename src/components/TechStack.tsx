@@ -74,40 +74,40 @@ const TechStack = () => {
   }];
   const techLogos = [{
     name: "Angular",
-    logo: "/angular.png"
+    logo: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100&h=100&fit=crop"
   }, {
     name: "WordPress",
-    logo: "/wordpress.png"
+    logo: "https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=100&h=100&fit=crop"
   }, {
     name: "Flutter",
-    logo: "/flutter.png"
+    logo: "https://images.unsplash.com/photo-1526498460520-4c246339dccb?w=100&h=100&fit=crop"
   }, {
     name: "Laravel",
-    logo: "/laravel.png"
+    logo: "https://images.unsplash.com/photo-1599507593499-a3f7d7d97667?w=100&h=100&fit=crop"
   }, {
     name: "Java",
-    logo: "/java.png"
+    logo: "https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=100&h=100&fit=crop"
   }, {
     name: "Ionic",
-    logo: "/ionic.png"
+    logo: "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=100&h=100&fit=crop"
   }, {
     name: "Salesforce",
-    logo: "/salesforce.png"
+    logo: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=100&fit=crop"
   }, {
     name: "SharePoint",
-    logo: "/sharepoint.png"
+    logo: "https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?w=100&h=100&fit=crop"
   }, {
     name: "Shopify",
-    logo: "/shopify.png"
+    logo: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=100&h=100&fit=crop"
   }, {
     name: "Magento",
-    logo: "/magento.png"
+    logo: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=100&h=100&fit=crop"
   }, {
     name: "Node.js",
-    logo: "/nodejs.png"
+    logo: "https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=100&h=100&fit=crop"
   }, {
     name: ".NET",
-    logo: "/dotnet.png"
+    logo: "https://images.unsplash.com/photo-1518773553398-650c184e0bb3?w=100&h=100&fit=crop"
   }];
   useEffect(() => {
     const interval = setInterval(() => {
