@@ -16,7 +16,7 @@ const navigationItems = [
 
 const servicesItems = [
   { name: "All Our Services", href: "/pricing" },
-  { name: "Website Development", href: "/#services" },
+  { name: "Website Development", href: "/website-development" },
   { name: "WebApp Development", href: "/webapp-development" },
   { name: "AI Solutions", href: "/ai-solutions" },
   { name: "VR/AR Development", href: "/vr-ar-development" },
@@ -57,13 +57,10 @@ const Navbar = () => {
         <Link to="/" className="flex items-center gap-2">
           <div className="flex items-center">
             <img 
-              src="/lovable-uploads/8a3ad1d1-fa8e-4a28-819d-ad6fc9fd461b.png" 
-              alt="V Logo" 
-              className="h-8 w-auto mr-2"
+              src="/lovable-uploads/19a7ca2f-acf3-4596-a5c2-1a5ef9ece92b.png" 
+              alt="VAW Technologies Logo" 
+              className="h-10 w-auto"
             />
-            <span className="font-bold text-2xl font-['Space_Grotesk'] text-gradient">
-              VAW<span className="text-accent">tech</span>
-            </span>
           </div>
         </Link>
 

@@ -11,6 +11,7 @@ import Internship from "./pages/Internship";
 import Pricing from "./pages/Pricing";
 import DigitalMarketing from "./pages/DigitalMarketing";
 import WebAppDevelopment from "./pages/WebAppDevelopment";
+import WebsiteDevelopment from "./pages/WebsiteDevelopment";
 import AISolutions from "./pages/AISolutions";
 import VRARDevelopment from "./pages/VRARDevelopment";
 import DigitalDesign from "./pages/DigitalDesign";
@@ -36,6 +37,7 @@ const AppContent = () => {
           <Route path="/internship" element={<Internship />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/digital-marketing" element={<DigitalMarketing />} />
+          <Route path="/website-development" element={<WebsiteDevelopment />} />
           <Route path="/webapp-development" element={<WebAppDevelopment />} />
           <Route path="/ai-solutions" element={<AISolutions />} />
           <Route path="/vr-ar-development" element={<VRARDevelopment />} />
