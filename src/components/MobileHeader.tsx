@@ -32,8 +32,8 @@ const MobileHeader = () => {
   return (
     <div className="md:hidden">
       {/* Mobile Header Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="flex items-center justify-between px-4 py-3">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-transparent backdrop-blur-none border-b-0">
+        <div className="flex items-center justify-between px-4 py-4">
           {/* Menu Button - Left */}
           <Button
             variant="ghost"
