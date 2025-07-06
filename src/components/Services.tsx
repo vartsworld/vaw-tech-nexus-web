@@ -61,11 +61,16 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
           ))}
         </ul>
       </CardContent>
-      <CardFooter>
-        <Button variant="ghost" className="text-accent hover:text-accent/80 hover:bg-accent/10 px-0 group" asChild>
+      <CardFooter className="flex gap-2">
+        <Button variant="ghost" className="text-accent hover:text-accent/80 hover:bg-accent/10 px-0 group flex-1" asChild>
           <Link to={linkTo}>
             <span>Learn more</span>
             <ArrowRight className="ml-1 h-4 w-4 transition-transform duration-300 transform group-hover:translate-x-1" />
+          </Link>
+        </Button>
+        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground flex-1" asChild>
+          <Link to="/pricing">
+            Book now
           </Link>
         </Button>
       </CardFooter>
