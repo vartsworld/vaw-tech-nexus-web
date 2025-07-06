@@ -83,7 +83,8 @@ const Services = () => {
     {
       title: "Website Development",
       description: "Creating stunning, responsive websites that deliver exceptional user experiences.",
-      examples: ["Creative business websites", "E-commerce platforms", "Portfolio showcases", "Crypto trending portals", "AI-integrated websites"]
+      examples: ["Creative business websites", "E-commerce platforms", "Portfolio showcases", "Crypto trending portals", "AI-integrated websites"],
+      linkTo: "/pricing"
     },
     {
       title: "WebApp Development",
