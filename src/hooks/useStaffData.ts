@@ -33,6 +33,7 @@ export interface ChatMessage {
 
 export interface Profile {
   id: string;
+  user_id: string;
   full_name?: string;
   username?: string;
   avatar_url?: string;
@@ -64,6 +65,7 @@ export const useStaffData = () => {
       // Create mock profile
       const mockProfile: Profile = {
         id: mockUser.id,
+        user_id: mockUser.id,
         full_name: mockUser.full_name,
         earnings: 247.50
       };
@@ -148,9 +150,9 @@ export const useStaffData = () => {
       // Mock team members
       const mockTeam: Profile[] = [
         // Mock team members with username
-        { id: 'user-2', full_name: "Sarah Chen", username: "sarah", earnings: 320.00 },
-        { id: 'user-3', full_name: "Mike Rodriguez", username: "mike", earnings: 280.50 },
-        { id: 'user-4', full_name: "Emily Davis", username: "emily", earnings: 195.75 }
+        { id: 'user-2', user_id: 'user-2', full_name: "Sarah Chen", username: "sarah", earnings: 320.00 },
+        { id: 'user-3', user_id: 'user-3', full_name: "Mike Rodriguez", username: "mike", earnings: 280.50 },
+        { id: 'user-4', user_id: 'user-4', full_name: "Emily Davis", username: "emily", earnings: 195.75 }
       ];
 
       setTeamMembers(mockTeam);
