@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Moon, Sun } from "lucide-react";
+import { Menu, X, Moon, Sun, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
 
 const navigationItems = [
   { name: "Home", href: "/" },
-  { name: "Services", href: "/#services" },
-  { name: "All Our Services", href: "/pricing" },
   { name: "About", href: "/#about" },
   { name: "Portfolio", href: "/#portfolio" },
   { name: "Pricing", href: "/pricing" },
@@ -16,9 +14,20 @@ const navigationItems = [
   { name: "Internship", href: "/internship" }
 ];
 
+const servicesItems = [
+  { name: "All Our Services", href: "/pricing" },
+  { name: "Website Development", href: "/#services" },
+  { name: "WebApp Development", href: "/webapp-development" },
+  { name: "AI Solutions", href: "/ai-solutions" },
+  { name: "VR/AR Development", href: "/vr-ar-development" },
+  { name: "Digital Marketing", href: "/digital-marketing" },
+  { name: "Digital Design", href: "/digital-design" }
+];
+
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isServicesOpen, setIsServicesOpen] = useState(false);
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
@@ -65,6 +74,33 @@ const Navbar = () => {
               {item.name}
             </a>
           ))}
+          
+          {/* Services Dropdown */}
+          <div 
+            className="relative"
+            onMouseEnter={() => setIsServicesOpen(true)}
+            onMouseLeave={() => setIsServicesOpen(false)}
+          >
+            <button className="text-foreground/80 hover:text-accent transition-colors flex items-center gap-1">
+              Services
+              <ChevronDown size={16} className={`transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isServicesOpen && (
+              <div className="absolute top-full left-0 mt-2 w-56 bg-background/95 backdrop-blur-md border border-border rounded-lg shadow-lg py-2 z-50">
+                {servicesItems.map((service, index) => (
+                  <a
+                    key={index}
+                    href={service.href}
+                    className="block px-4 py-2 text-foreground/80 hover:text-accent hover:bg-muted/50 transition-colors"
+                  >
+                    {service.name}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+          
           <Button 
             variant="ghost" 
             size="icon" 
@@ -107,6 +143,36 @@ const Navbar = () => {
                 {item.name}
               </a>
             ))}
+            
+            {/* Mobile Services Dropdown */}
+            <div className="border-t border-border pt-4">
+              <button 
+                className="text-foreground/80 hover:text-accent transition-colors py-2 flex items-center gap-1 w-full justify-between"
+                onClick={() => setIsServicesOpen(!isServicesOpen)}
+              >
+                Services
+                <ChevronDown size={16} className={`transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isServicesOpen && (
+                <div className="pl-4 mt-2 space-y-2">
+                  {servicesItems.map((service, index) => (
+                    <a
+                      key={index}
+                      href={service.href}
+                      className="block text-foreground/70 hover:text-accent transition-colors py-1"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        setIsServicesOpen(false);
+                      }}
+                    >
+                      {service.name}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+            
             <Button className="bg-primary hover:bg-primary/80 text-primary-foreground w-full">
               Get a Quote
             </Button>
