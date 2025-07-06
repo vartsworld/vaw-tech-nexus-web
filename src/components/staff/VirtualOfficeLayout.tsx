@@ -19,9 +19,9 @@ interface VirtualOfficeLayoutProps {
 
 const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange }: VirtualOfficeLayoutProps) => {
   const rooms = [
-    { id: 'workspace' as const, name: 'Workspace', icon: Monitor, color: 'from-blue-500 to-cyan-500' },
-    { id: 'breakroom' as const, name: 'Break Room', icon: Coffee, color: 'from-orange-500 to-red-500' },
-    { id: 'meeting' as const, name: 'Meeting Room', icon: Users, color: 'from-purple-500 to-pink-500' }
+    { id: 'workspace' as const, name: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
+    { id: 'breakroom' as const, name: 'Break Room', icon: Coffee, color: 'from-red-500 to-red-600' },
+    { id: 'meeting' as const, name: 'Meeting Room', icon: Users, color: 'from-yellow-500 to-yellow-600' }
   ];
 
   return (
@@ -32,7 +32,7 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange }: VirtualOff
           {/* Room Navigation */}
           <div>
             <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-              <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded"></div>
+              <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded"></div>
               Office Rooms
             </h3>
             <div className="space-y-2">
@@ -46,7 +46,7 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange }: VirtualOff
                     variant="ghost"
                     className={`w-full justify-start p-4 h-auto transition-all duration-300 ${
                       isActive 
-                        ? `bg-gradient-to-r ${room.color} text-white shadow-lg shadow-purple-500/25` 
+                        ? `bg-gradient-to-r ${room.color} text-white shadow-lg shadow-blue-500/25` 
                         : 'text-gray-300 hover:text-white hover:bg-white/10'
                     }`}
                     onClick={() => onRoomChange(room.id)}
@@ -66,19 +66,19 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange }: VirtualOff
           <div>
             <h3 className="text-white font-semibold mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" className="bg-white/5 border-white/20 text-white hover:bg-white/10">
+              <Button variant="outline" size="sm" className="bg-blue-500/20 border-blue-500/30 text-white hover:bg-blue-500/30">
                 <Music className="w-4 h-4 mr-2" />
                 Spotify
               </Button>
-              <Button variant="outline" size="sm" className="bg-white/5 border-white/20 text-white hover:bg-white/10">
+              <Button variant="outline" size="sm" className="bg-red-500/20 border-red-500/30 text-white hover:bg-red-500/30">
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Chat
               </Button>
-              <Button variant="outline" size="sm" className="bg-white/5 border-white/20 text-white hover:bg-white/10">
+              <Button variant="outline" size="sm" className="bg-yellow-500/20 border-yellow-500/30 text-white hover:bg-yellow-500/30">
                 <Calendar className="w-4 h-4 mr-2" />
                 Schedule
               </Button>
-              <Button variant="outline" size="sm" className="bg-white/5 border-white/20 text-white hover:bg-white/10">
+              <Button variant="outline" size="sm" className="bg-green-500/20 border-green-500/30 text-white hover:bg-green-500/30">
                 <Bell className="w-4 h-4 mr-2" />
                 Alerts
               </Button>
@@ -92,9 +92,9 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange }: VirtualOff
               {['Sarah Chen', 'Mike Rodriguez', 'Emily Davis'].map((name, index) => (
                 <div key={name} className="flex items-center gap-3 p-2 rounded-lg bg-white/5">
                   <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${
-                    index === 0 ? 'from-green-400 to-blue-500' :
-                    index === 1 ? 'from-purple-400 to-pink-500' :
-                    'from-yellow-400 to-red-500'
+                    index === 0 ? 'from-blue-500 to-blue-600' :
+                    index === 1 ? 'from-red-500 to-red-600' :
+                    'from-yellow-500 to-green-500'
                   } flex items-center justify-center text-white text-sm font-medium`}>
                     {name.split(' ').map(n => n[0]).join('')}
                   </div>
