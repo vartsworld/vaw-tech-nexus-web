@@ -35,16 +35,16 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
       <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-tech-gold/0 group-hover:border-tech-gold/30 transition-all duration-500"></div>
       
       {/* Background glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-tech-gold/0 via-tech-red/0 to-tech-purple/0 group-hover:from-tech-gold/5 group-hover:via-tech-red/5 group-hover:to-tech-purple/5 transition-all duration-700 opacity-0 group-hover:opacity-100"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-tech-gold/0 via-tech-red/0 to-tech-purple/0 group-hover:from-tech-gold/5 group-hover:via-tech-red/5 group-hover:to-tech-purple/5 transition-all duration-700 opacity-0 group-hover:opacity-100 pointer-events-none"></div>
       
-      <CardHeader>
+      <CardHeader className="relative z-10">
         <CardTitle className="text-xl font-semibold relative">
           <span className="relative z-10 inline-block transform transition-transform duration-300 group-hover:translate-x-1">{title}</span>
           <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-tech-gold/30 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 delay-100"></span>
         </CardTitle>
         <CardDescription className="text-muted-foreground">{description}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-2 relative z-10">
         <ul className="list-none space-y-1">
           {examples.map((example, index) => (
             <li key={index} className="text-foreground/80 flex items-start group" style={{
@@ -61,7 +61,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
           ))}
         </ul>
       </CardContent>
-      <CardFooter className="flex gap-2">
+      <CardFooter className="flex gap-2 relative z-10">
         <Button variant="ghost" className="text-accent hover:text-accent/80 hover:bg-accent/10 px-0 group flex-1" asChild>
           <Link to={linkTo}>
             <span>Learn more</span>
