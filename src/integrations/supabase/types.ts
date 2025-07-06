@@ -93,6 +93,99 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_channels: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          department_id: string | null
+          description: string | null
+          id: string
+          is_general: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          department_id?: string | null
+          description?: string | null
+          id?: string
+          is_general?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          department_id?: string | null
+          description?: string | null
+          id?: string
+          is_general?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          channel_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          message_type: string | null
+          recipient_id: string | null
+          sender_id: string
+        }
+        Insert: {
+          channel_id?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          message_type?: string | null
+          recipient_id?: string | null
+          sender_id: string
+        }
+        Update: {
+          channel_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          message_type?: string | null
+          recipient_id?: string | null
+          sender_id?: string
+        }
+        Relationships: []
+      }
+      chess_games: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          game_state: Json | null
+          id: string
+          player1_id: string
+          player2_id: string
+          status: string | null
+          winner_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          game_state?: Json | null
+          id?: string
+          player1_id: string
+          player2_id: string
+          status?: string | null
+          winner_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          game_state?: Json | null
+          id?: string
+          player1_id?: string
+          player2_id?: string
+          status?: string | null
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
       class_attendance: {
         Row: {
           class_id: string | null
@@ -228,6 +321,30 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_quotes_staff: {
+        Row: {
+          author: string | null
+          content: string
+          created_at: string | null
+          id: string
+          is_system: boolean | null
+        }
+        Insert: {
+          author?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_system?: boolean | null
+        }
+        Update: {
+          author?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_system?: boolean | null
+        }
+        Relationships: []
+      }
       delivery_persons: {
         Row: {
           created_at: string | null
@@ -261,6 +378,36 @@ export type Database = {
           status?: Database["public"]["Enums"]["delivery_status"] | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      departments: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          head_id: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          head_id?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          head_id?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -825,6 +972,216 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_attendance: {
+        Row: {
+          check_in_time: string | null
+          created_at: string | null
+          date: string
+          id: string
+          is_late: boolean | null
+          user_id: string
+        }
+        Insert: {
+          check_in_time?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          is_late?: boolean | null
+          user_id: string
+        }
+        Update: {
+          check_in_time?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          is_late?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      staff_notifications: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string
+          department_id: string | null
+          expires_at: string | null
+          id: string
+          is_urgent: boolean | null
+          read_by: string[] | null
+          target_users: string[] | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"] | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by: string
+          department_id?: string | null
+          expires_at?: string | null
+          id?: string
+          is_urgent?: boolean | null
+          read_by?: string[] | null
+          target_users?: string[] | null
+          title: string
+          type?: Database["public"]["Enums"]["notification_type"] | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          department_id?: string | null
+          expires_at?: string | null
+          id?: string
+          is_urgent?: boolean | null
+          read_by?: string[] | null
+          target_users?: string[] | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"] | null
+        }
+        Relationships: []
+      }
+      staff_profiles: {
+        Row: {
+          attendance_streak: number | null
+          avatar_url: string | null
+          created_at: string | null
+          department_id: string | null
+          email: string
+          full_name: string
+          hire_date: string | null
+          id: string
+          is_department_head: boolean | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          total_points: number | null
+          updated_at: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          attendance_streak?: number | null
+          avatar_url?: string | null
+          created_at?: string | null
+          department_id?: string | null
+          email: string
+          full_name: string
+          hire_date?: string | null
+          id?: string
+          is_department_head?: boolean | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          total_points?: number | null
+          updated_at?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          attendance_streak?: number | null
+          avatar_url?: string | null
+          created_at?: string | null
+          department_id?: string | null
+          email?: string
+          full_name?: string
+          hire_date?: string | null
+          id?: string
+          is_department_head?: boolean | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          total_points?: number | null
+          updated_at?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      staff_projects: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          department_id: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          start_date: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          department_id?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          department_id?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      staff_tasks: {
+        Row: {
+          assigned_by: string
+          assigned_to: string
+          completed_at: string | null
+          created_at: string | null
+          department_id: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          points: number | null
+          priority: Database["public"]["Enums"]["task_priority"] | null
+          project_id: string | null
+          status: Database["public"]["Enums"]["task_status"] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_by: string
+          assigned_to: string
+          completed_at?: string | null
+          created_at?: string | null
+          department_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          points?: number | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          project_id?: string | null
+          status?: Database["public"]["Enums"]["task_status"] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_by?: string
+          assigned_to?: string
+          completed_at?: string | null
+          created_at?: string | null
+          department_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          points?: number | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
+          project_id?: string | null
+          status?: Database["public"]["Enums"]["task_status"] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           assigned_to: string | null
@@ -900,6 +1257,102 @@ export type Database = {
           message?: string
           rating?: number
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_mood_entries: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          mood: Database["public"]["Enums"]["mood_type"]
+          personal_quote: string | null
+          sentiment_score: number | null
+          share_anonymously: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          mood: Database["public"]["Enums"]["mood_type"]
+          personal_quote?: string | null
+          sentiment_score?: number | null
+          share_anonymously?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          mood?: Database["public"]["Enums"]["mood_type"]
+          personal_quote?: string | null
+          sentiment_score?: number | null
+          share_anonymously?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_points_log: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          points: number
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          points: number
+          reason: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          points?: number
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_spotify_sessions: {
+        Row: {
+          access_token: string | null
+          created_at: string | null
+          current_track: Json | null
+          expires_at: string | null
+          id: string
+          is_playing: boolean | null
+          refresh_token: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string | null
+          current_track?: Json | null
+          expires_at?: string | null
+          id?: string
+          is_playing?: boolean | null
+          refresh_token?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string | null
+          current_track?: Json | null
+          expires_at?: string | null
+          id?: string
+          is_playing?: boolean | null
+          refresh_token?: string | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -2821,6 +3274,12 @@ export type Database = {
     }
     Enums: {
       delivery_status: "available" | "busy" | "offline"
+      mood_type: "happy" | "neutral" | "sad" | "stressed" | "excited"
+      notification_type:
+        | "announcement"
+        | "task_assigned"
+        | "mood_alert"
+        | "achievement"
       order_status:
         | "pending"
         | "confirmed"
@@ -2828,6 +3287,9 @@ export type Database = {
         | "shipped"
         | "delivered"
         | "cancelled"
+      task_priority: "low" | "medium" | "high" | "urgent"
+      task_status: "pending" | "in_progress" | "completed" | "overdue"
+      user_role: "hr" | "department_head" | "staff"
       vendor_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -2953,6 +3415,13 @@ export const Constants = {
   public: {
     Enums: {
       delivery_status: ["available", "busy", "offline"],
+      mood_type: ["happy", "neutral", "sad", "stressed", "excited"],
+      notification_type: [
+        "announcement",
+        "task_assigned",
+        "mood_alert",
+        "achievement",
+      ],
       order_status: [
         "pending",
         "confirmed",
@@ -2961,6 +3430,9 @@ export const Constants = {
         "delivered",
         "cancelled",
       ],
+      task_priority: ["low", "medium", "high", "urgent"],
+      task_status: ["pending", "in_progress", "completed", "overdue"],
+      user_role: ["hr", "department_head", "staff"],
       vendor_status: ["pending", "approved", "rejected"],
     },
   },
