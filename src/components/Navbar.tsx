@@ -59,7 +59,7 @@ const Navbar = () => {
             <img 
               src="/lovable-uploads/19a7ca2f-acf3-4596-a5c2-1a5ef9ece92b.png" 
               alt="VAW Technologies Logo" 
-              className="h-10 w-auto"
+              className="h-12 w-auto"
             />
           </div>
         </Link>
