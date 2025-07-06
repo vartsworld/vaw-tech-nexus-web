@@ -25,7 +25,7 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange }: VirtualOff
   ];
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen relative z-20">
       {/* Virtual Office Navigation */}
       <aside className="w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 p-6">
         <div className="space-y-6">

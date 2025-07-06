@@ -36,9 +36,23 @@ const StaffDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800">
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background Images */}
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
+        <img 
+          src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png" 
+          alt="Modern office background" 
+          className="absolute inset-0 w-full h-full object-cover opacity-80"
+        />
+        <img 
+          src="/lovable-uploads/508d91e4-1f4c-42a4-9e98-bcb4df6e023d.png" 
+          alt="Office meeting space" 
+          className="absolute top-1/2 left-1/2 w-full h-full object-cover opacity-60 mix-blend-overlay"
+        />
+      </div>
       {/* Office Header */}
-      <header className="bg-black/20 backdrop-blur-lg border-b border-white/10">
+      <header className="relative z-20 bg-black/20 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4">
