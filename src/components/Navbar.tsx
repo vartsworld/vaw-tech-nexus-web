@@ -7,10 +7,10 @@ import { useTheme } from "@/hooks/use-theme";
 const navigationItems = [
   { name: "Home", href: "/" },
   { name: "Services", href: "/#services" },
+  { name: "All Our Services", href: "/pricing" },
   { name: "About", href: "/#about" },
   { name: "Portfolio", href: "/#portfolio" },
   { name: "Pricing", href: "/pricing" },
-  { name: "Digital Marketing", href: "/digital-marketing" },
   { name: "Contact", href: "/#contact" },
   { name: "Request Service", href: "/service-request" },
   { name: "Internship", href: "/internship" }
