@@ -69,7 +69,8 @@ const Navbar = () => {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   return <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-background/90 backdrop-blur-md shadow-lg py-3" : "bg-transparent py-5"}`}>
       <div className="container mx-auto flex justify-between items-center px-[147px]">
-        <Link to="/" className="flex items-center gap-2">
+        {/* Desktop Logo */}
+        <Link to="/" className="hidden md:flex items-center gap-2">
           <div className="flex items-center">
             <img src="/lovable-uploads/19a7ca2f-acf3-4596-a5c2-1a5ef9ece92b.png" alt="VAW Technologies Logo" className="h-28 w-auto" />
           </div>
@@ -103,14 +104,22 @@ const Navbar = () => {
           </Button>
         </div>
 
-        {/* Mobile Menu Button */}
-        <div className="md:hidden flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-            {theme === "dark" ? <Sun size={20} className="text-accent" /> : <Moon size={20} className="text-accent" />}
-          </Button>
+        {/* Mobile Layout */}
+        <div className="md:hidden flex items-center justify-between w-full">
+          {/* Menu Button - Left */}
           <button className="text-foreground" onClick={toggleMenu}>
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
+          
+          {/* Logo - Center */}
+          <Link to="/" className="flex items-center">
+            <img src="/lovable-uploads/19a7ca2f-acf3-4596-a5c2-1a5ef9ece92b.png" alt="VAW Technologies Logo" className="h-20 w-auto" />
+          </Link>
+          
+          {/* Theme Toggle - Right */}
+          <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+            {theme === "dark" ? <Sun size={20} className="text-accent" /> : <Moon size={20} className="text-accent" />}
+          </Button>
         </div>
       </div>
 
