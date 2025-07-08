@@ -55,7 +55,6 @@ const MobileHeader = () => {
     theme,
     setTheme
   } = useTheme();
-
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 50) {
@@ -69,9 +68,7 @@ const MobileHeader = () => {
   }, []);
   return <div className="md:hidden">
       {/* Mobile Header Bar */}
-      <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-card/95 backdrop-blur-md shadow-lg rounded-b-[2rem] mx-2 border border-border/50" : "bg-transparent backdrop-blur-none border-b-0"
-      }`}>
+      <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-card/95 backdrop-blur-md shadow-lg rounded-b-[2rem] mx-2 border border-border/50" : "bg-transparent backdrop-blur-none border-b-0"}`}>
         <div className="flex items-center justify-between px-4 py-4">
           {/* Menu Button - Left */}
           <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="h-10 w-10">
@@ -80,7 +77,7 @@ const MobileHeader = () => {
 
           {/* Logo - Center */}
           <Link to="/" className="flex-1 flex justify-center">
-            <img alt="VAW Technologies Logo" src="/lovable-uploads/26ada33a-814b-4e06-ac24-de677f9a36b2.png" className="h-11 w-auto" />
+            <img alt="VAW Technologies Logo" className="h-11 w-auto" src="/lovable-uploads/5e1a7792-4b59-4b67-bab7-3f15b759e7e1.png" />
           </Link>
 
           {/* Theme Toggle - Right */}
