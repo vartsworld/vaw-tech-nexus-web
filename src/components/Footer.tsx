@@ -1,7 +1,11 @@
 
 import { Link } from "react-router-dom";
+import { useTheme } from "@/hooks/use-theme";
 
 const Footer = () => {
+  const { theme } = useTheme();
+  const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  
   return (
     <footer className="bg-card border-t border-muted/20 py-12">
       <div className="container mx-auto px-4">
@@ -19,7 +23,7 @@ const Footer = () => {
               <p className="text-sm text-muted-foreground mb-2">A subsidiary of:</p>
               <div className="flex items-center gap-3">
                 <img 
-                  src="/lovable-uploads/f3a836cc-e5eb-4f70-bc65-a5d8ea72f726.png" 
+                  src={isDark ? "/lovable-uploads/ad42c093-4e75-40d3-a9e8-091de63dafcf.png" : "/lovable-uploads/ad42c093-4e75-40d3-a9e8-091de63dafcf.png"}
                   alt="V Arts World Logo" 
                   className="h-16 w-auto"
                 />
