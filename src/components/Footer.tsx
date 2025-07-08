@@ -23,7 +23,7 @@ const Footer = () => {
               <p className="text-sm text-muted-foreground mb-2">A subsidiary of:</p>
               <div className="flex items-center gap-3">
                 <img 
-                  src={isDark ? "/lovable-uploads/ad42c093-4e75-40d3-a9e8-091de63dafcf.png" : "/lovable-uploads/ad42c093-4e75-40d3-a9e8-091de63dafcf.png"}
+                  src={isDark ? "/lovable-uploads/ad42c093-4e75-40d3-a9e8-091de63dafcf.png" : "/lovable-uploads/f3a836cc-e5eb-4f70-bc65-a5d8ea72f726.png"}
                   alt="V Arts World Logo" 
                   className="h-16 w-auto"
                 />
