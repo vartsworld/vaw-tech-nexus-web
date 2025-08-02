@@ -55,6 +55,11 @@ const StaffDashboard = () => {
     setShowMoodCheck(true);
   };
 
+  const skipAttendance = () => {
+    setShowAttendanceCheck(false);
+    setShowMoodCheck(false);
+  };
+
   const handleMoodSubmitted = () => {
     setShowMoodCheck(false);
   };
@@ -73,13 +78,20 @@ const StaffDashboard = () => {
         </div>
         
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
-          <div className="w-full max-w-md">
+          <div className="w-full max-w-md space-y-4">
             {profile?.user_id && (
               <AttendanceChecker 
                 userId={profile.user_id} 
                 onAttendanceMarked={handleAttendanceMarked}
               />
             )}
+            <Button 
+              onClick={skipAttendance}
+              variant="outline"
+              className="w-full"
+            >
+              Skip to Dashboard
+            </Button>
           </div>
         </div>
       </div>
@@ -100,13 +112,20 @@ const StaffDashboard = () => {
         </div>
         
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
-          <div className="w-full max-w-lg">
+          <div className="w-full max-w-lg space-y-4">
             {profile?.user_id && (
               <MoodQuoteChecker 
                 userId={profile.user_id} 
                 onMoodSubmitted={handleMoodSubmitted}
               />
             )}
+            <Button 
+              onClick={() => setShowMoodCheck(false)}
+              variant="outline"
+              className="w-full"
+            >
+              Skip to Dashboard
+            </Button>
           </div>
         </div>
       </div>
