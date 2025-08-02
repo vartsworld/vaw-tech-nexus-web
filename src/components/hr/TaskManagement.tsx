@@ -138,12 +138,14 @@ const TaskManagement = () => {
       
       const { data, error } = await supabase
         .from('staff_tasks')
-        .insert([{
+        .insert({
           ...newTask,
-          assigned_by: user?.id || crypto.randomUUID(), // Fallback for demo
+          assigned_by: user?.id || crypto.randomUUID(),
           due_date: newTask.due_date || null,
-          project_id: newTask.project_id || null
-        }])
+          project_id: newTask.project_id || null,
+          priority: newTask.priority as 'low' | 'medium' | 'high' | 'urgent',
+          status: newTask.status as 'pending' | 'in_progress' | 'completed'
+        })
         .select(`
           *,
           assigned_to_profile:staff_profiles!staff_tasks_assigned_to_fkey(full_name, username),

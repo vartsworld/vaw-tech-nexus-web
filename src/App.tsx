@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import ServiceRequest from "./pages/ServiceRequest";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import HRDashboard from "./pages/HRDashboard";
 import Internship from "./pages/Internship";
 import Pricing from "./pages/Pricing";
 import DigitalMarketing from "./pages/DigitalMarketing";
@@ -44,6 +45,7 @@ const AppContent = () => {
           <Route path="/digital-design" element={<DigitalDesign />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/hr/dashboard" element={<HRDashboard />} />
           <Route path="/staff/dashboard" element={<StaffDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

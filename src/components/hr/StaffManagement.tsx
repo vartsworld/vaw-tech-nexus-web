@@ -115,11 +115,12 @@ const StaffManagement = () => {
     try {
       const { data, error } = await supabase
         .from('staff_profiles')
-        .insert([{
+        .insert({
           ...newStaff,
-          user_id: crypto.randomUUID(), // In real app, this would come from auth
-          department_id: newStaff.department_id || null
-        }])
+          user_id: crypto.randomUUID(),
+          department_id: newStaff.department_id || null,
+          role: newStaff.role as 'hr' | 'staff'
+        })
         .select()
         .single();
 

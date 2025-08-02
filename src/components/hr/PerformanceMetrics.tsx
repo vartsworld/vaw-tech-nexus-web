@@ -101,9 +101,9 @@ const PerformanceMetrics = () => {
 
       // Process performance data
       const performanceData = (staffData || []).map(staff => {
-        const tasks = staff.tasks_assigned || [];
-        const attendance = staff.attendance || [];
-        const points = staff.points || [];
+        const tasks = Array.isArray(staff.tasks_assigned) ? staff.tasks_assigned : [];
+        const attendance = Array.isArray(staff.attendance) ? staff.attendance : [];
+        const points = Array.isArray(staff.points) ? staff.points : [];
 
         // Filter data by date range
         const filteredTasks = tasks.filter(task => {

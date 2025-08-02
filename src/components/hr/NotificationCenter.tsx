@@ -104,10 +104,10 @@ const NotificationCenter = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      const notificationData = {
+      const notificationData: any = {
         title: newNotification.title,
         content: newNotification.content,
-        type: newNotification.type,
+        type: newNotification.type as 'announcement' | 'task_assigned' | 'mood_alert' | 'achievement',
         is_urgent: newNotification.is_urgent,
         created_by: user?.id || crypto.randomUUID(),
         expires_at: newNotification.expires_at || null
@@ -122,7 +122,7 @@ const NotificationCenter = () => {
 
       const { data, error } = await supabase
         .from('staff_notifications')
-        .insert([notificationData])
+        .insert(notificationData)
         .select(`
           *,
           created_by_profile:staff_profiles!staff_notifications_created_by_fkey(full_name, username),
