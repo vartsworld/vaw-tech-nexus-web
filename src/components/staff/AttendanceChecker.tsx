@@ -107,6 +107,8 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
           title: "Already Marked!",
           description: "You've already marked your attendance for today.",
         });
+        // If attendance was already marked, still proceed to next step
+        onAttendanceMarked();
       } else {
         toast({
           title: "Error",
