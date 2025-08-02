@@ -74,10 +74,12 @@ const StaffDashboard = () => {
         
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-md">
-            <AttendanceChecker 
-              userId={profile?.user_id || 'demo-user'} 
-              onAttendanceMarked={handleAttendanceMarked}
-            />
+            {profile?.user_id && (
+              <AttendanceChecker 
+                userId={profile.user_id} 
+                onAttendanceMarked={handleAttendanceMarked}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -99,10 +101,12 @@ const StaffDashboard = () => {
         
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-lg">
-            <MoodQuoteChecker 
-              userId={profile?.user_id || 'demo-user'} 
-              onMoodSubmitted={handleMoodSubmitted}
-            />
+            {profile?.user_id && (
+              <MoodQuoteChecker 
+                userId={profile.user_id} 
+                onMoodSubmitted={handleMoodSubmitted}
+              />
+            )}
           </div>
         </div>
       </div>

@@ -55,18 +55,26 @@ export const useStaffData = () => {
 
   const fetchStaffData = async () => {
     try {
-      // Mock user for demo purposes
-      const mockUser = {
-        id: 'demo-user-1',
-        email: 'demo@example.com',
-        full_name: 'Alex Johnson'
-      };
+      // Get current authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.log('No authenticated user found');
+        return;
+      }
 
-      // Create mock profile
+      // Try to get actual staff profile, fallback to mock if not found
+      const { data: staffProfile } = await supabase
+        .from('staff_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
       const mockProfile: Profile = {
-        id: mockUser.id,
-        user_id: mockUser.id,
-        full_name: mockUser.full_name,
+        id: user.id,
+        user_id: user.id,
+        full_name: staffProfile?.full_name || user.user_metadata?.full_name || 'Staff Member',
+        username: staffProfile?.username || 'staff',
         earnings: 247.50
       };
 
@@ -82,7 +90,7 @@ export const useStaffData = () => {
           status: "In Progress", 
           due_date: new Date().toISOString(),
           created_at: new Date().toISOString(),
-          assigned_to: mockUser.id,
+          assigned_to: user.id,
           category: "Design"
         },
         { 
@@ -93,7 +101,7 @@ export const useStaffData = () => {
           status: "Pending", 
           due_date: new Date(Date.now() + 86400000).toISOString(),
           created_at: new Date().toISOString(),
-          assigned_to: mockUser.id,
+          assigned_to: user.id,
           category: "Review"
         },
         { 
@@ -104,7 +112,7 @@ export const useStaffData = () => {
           status: "Pending", 
           due_date: new Date(Date.now() + 604800000).toISOString(),
           created_at: new Date().toISOString(),
-          assigned_to: mockUser.id,
+          assigned_to: user.id,
           category: "Documentation"
         }
       ];
@@ -229,9 +237,9 @@ export const useStaffData = () => {
       const newMessage: ChatMessage = {
         id: Date.now().toString(),
         message,
-        user_id: 'demo-user-1',
+        user_id: profile?.user_id || '',
         created_at: new Date().toISOString(),
-        profiles: { full_name: "Alex Johnson", username: "alex" }
+        profiles: { full_name: profile?.full_name || "Staff Member", username: profile?.username || "staff" }
       };
 
       setChatMessages(prev => [newMessage, ...prev]);
