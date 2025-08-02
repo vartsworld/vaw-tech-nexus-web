@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,15 +41,56 @@ const StaffDashboard = () => {
 
   useEffect(() => {
     checkDailyRequirements();
-  }, []);
+  }, [profile?.user_id]);
 
   const checkDailyRequirements = async () => {
-    // This would check if user has marked attendance and mood for today
-    // For demo, we'll show them briefly
-    setShowAttendanceCheck(true);
+    if (!profile?.user_id) return;
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Check if user has marked attendance today
+      const { data: attendanceData, error: attendanceError } = await supabase
+        .from('staff_attendance')
+        .select('*')
+        .eq('user_id', profile.user_id)
+        .eq('date', today)
+        .single();
+
+      // Check if user has submitted mood today
+      const { data: moodData, error: moodError } = await supabase
+        .from('user_mood_entries')
+        .select('*')
+        .eq('user_id', profile.user_id)
+        .eq('date', today)
+        .single();
+
+      console.log('Attendance today:', attendanceData);
+      console.log('Mood today:', moodData);
+
+      if (!attendanceData) {
+        // No attendance marked - show attendance checker
+        setShowAttendanceCheck(true);
+        setShowMoodCheck(false);
+      } else if (!moodData) {
+        // Attendance marked but no mood - show mood checker
+        setShowAttendanceCheck(false);
+        setShowMoodCheck(true);
+      } else {
+        // Both completed - go to dashboard
+        setShowAttendanceCheck(false);
+        setShowMoodCheck(false);
+      }
+    } catch (error) {
+      console.error('Error checking daily requirements:', error);
+      // On error, just show attendance check
+      setShowAttendanceCheck(true);
+      setShowMoodCheck(false);
+    }
   };
 
   const handleAttendanceMarked = () => {
+    console.log('Attendance marked, now showing mood check');
     setShowAttendanceCheck(false);
     setShowMoodCheck(true);
   };
@@ -61,6 +101,7 @@ const StaffDashboard = () => {
   };
 
   const handleMoodSubmitted = () => {
+    console.log('Mood submitted, going to dashboard');
     setShowMoodCheck(false);
   };
 
@@ -79,6 +120,10 @@ const StaffDashboard = () => {
         
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-md space-y-4">
+            <div className="text-center mb-4">
+              <h2 className="text-2xl font-bold text-white mb-2">Step 1: Mark Attendance</h2>
+              <p className="text-white/80">Please mark your attendance to continue</p>
+            </div>
             {profile?.user_id && (
               <AttendanceChecker 
                 userId={profile.user_id} 
@@ -113,6 +158,10 @@ const StaffDashboard = () => {
         
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-lg space-y-4">
+            <div className="text-center mb-4">
+              <h2 className="text-2xl font-bold text-white mb-2">Step 2: Daily Mood & Quote</h2>
+              <p className="text-white/80">Share how you're feeling today and get inspired!</p>
+            </div>
             {profile?.user_id && (
               <MoodQuoteChecker 
                 userId={profile.user_id} 
