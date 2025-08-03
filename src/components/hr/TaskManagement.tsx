@@ -60,12 +60,7 @@ const TaskManagement = () => {
     try {
       const { data, error } = await supabase
         .from('staff_tasks')
-        .select(`
-          *,
-          assigned_to_profile:staff_profiles!staff_tasks_assigned_to_fkey(full_name, username),
-          assigned_by_profile:staff_profiles!staff_tasks_assigned_by_fkey(full_name, username),
-          staff_projects(name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -146,12 +141,7 @@ const TaskManagement = () => {
           priority: newTask.priority as 'low' | 'medium' | 'high' | 'urgent',
           status: newTask.status as 'pending' | 'in_progress' | 'completed'
         })
-        .select(`
-          *,
-          assigned_to_profile:staff_profiles!staff_tasks_assigned_to_fkey(full_name, username),
-          assigned_by_profile:staff_profiles!staff_tasks_assigned_by_fkey(full_name, username),
-          staff_projects(name)
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;
@@ -199,12 +189,7 @@ const TaskManagement = () => {
         .from('staff_tasks')
         .update(updateData)
         .eq('id', taskId)
-        .select(`
-          *,
-          assigned_to_profile:staff_profiles!staff_tasks_assigned_to_fkey(full_name, username),
-          assigned_by_profile:staff_profiles!staff_tasks_assigned_by_fkey(full_name, username),
-          staff_projects(name)
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;

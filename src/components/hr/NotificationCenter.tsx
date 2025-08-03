@@ -53,11 +53,7 @@ const NotificationCenter = () => {
     try {
       const { data, error } = await supabase
         .from('staff_notifications')
-        .select(`
-          *,
-          created_by_profile:staff_profiles!staff_notifications_created_by_fkey(full_name, username),
-          departments(name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -123,11 +119,7 @@ const NotificationCenter = () => {
       const { data, error } = await supabase
         .from('staff_notifications')
         .insert(notificationData)
-        .select(`
-          *,
-          created_by_profile:staff_profiles!staff_notifications_created_by_fkey(full_name, username),
-          departments(name)
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;

@@ -42,11 +42,7 @@ const DepartmentManagement = () => {
     try {
       const { data, error } = await supabase
         .from('departments')
-        .select(`
-          *,
-          head_profile:staff_profiles!departments_head_id_fkey(full_name, username),
-          staff_count:staff_profiles(count)
-        `)
+        .select('*')
         .order('name');
 
       if (error) throw error;
@@ -100,10 +96,7 @@ const DepartmentManagement = () => {
           created_by: user?.id || crypto.randomUUID(),
           head_id: newDepartment.head_id || null
         }])
-        .select(`
-          *,
-          head_profile:staff_profiles!departments_head_id_fkey(full_name, username)
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;
@@ -147,10 +140,7 @@ const DepartmentManagement = () => {
         .from('departments')
         .update(updates)
         .eq('id', deptId)
-        .select(`
-          *,
-          head_profile:staff_profiles!departments_head_id_fkey(full_name, username)
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;

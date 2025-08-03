@@ -63,7 +63,7 @@ const AttendanceReports = () => {
         .from('staff_attendance')
         .select(`
           *,
-          staff_profiles!staff_attendance_user_id_fkey(
+          staff_profiles!inner(
             full_name,
             username
           )
