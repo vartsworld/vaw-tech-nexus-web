@@ -186,7 +186,7 @@ const TaskManagement = () => {
 
   const updateTaskStatus = async (taskId, newStatus) => {
     try {
-      const updateData = {
+      const updateData: any = {
         status: newStatus,
         updated_at: new Date().toISOString()
       };

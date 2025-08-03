@@ -172,11 +172,11 @@ const RealChessEngine = ({ userId, userProfile }) => {
       }
     } else {
       // Select a piece
-      const piece = chess.get(square);
+      const piece = chess.get(square as any);
       if (piece && piece.color === chess.turn()) {
         setSelectedSquare(square);
-        const moves = chess.moves({ square, verbose: true });
-        setPossibleMoves(moves.map(move => move.to));
+        const moves = chess.moves({ square: square as any, verbose: true });
+        setPossibleMoves(moves.map((move: any) => move.to));
       }
     }
   }, [selectedSquare, chess, gameHistory, gameState, currentGameId]);
@@ -283,10 +283,11 @@ const RealChessEngine = ({ userId, userProfile }) => {
       if (error) throw error;
 
       // Load game state
-      if (data.game_state) {
-        chess.load(data.game_state.fen);
+      if (data.game_state && typeof data.game_state === 'object') {
+        const gameState = data.game_state as any;
+        chess.load(gameState.fen);
         setBoard(chess.board());
-        setGameHistory(data.game_state.history || []);
+        setGameHistory(gameState.history || []);
         setGameState({
           turn: chess.turn(),
           inCheck: chess.inCheck(),

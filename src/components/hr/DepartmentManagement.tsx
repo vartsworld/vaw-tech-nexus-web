@@ -79,7 +79,7 @@ const DepartmentManagement = () => {
       const { data, error } = await supabase
         .from('staff_profiles')
         .select('id, full_name, username, role')
-        .in('role', ['manager', 'lead', 'hr'])
+        .in('role', ['hr', 'department_head'])
         .order('full_name');
 
       if (error) throw error;

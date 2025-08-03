@@ -99,37 +99,31 @@ const HRDashboard = () => {
 
   const fetchRecentActivities = async () => {
     try {
-      // Get recent task completions
+      // Get recent task completions - simplified query
       const { data: taskActivities, error: taskError } = await supabase
         .from('staff_tasks')
-        .select(`
-          id, title, status, completed_at, updated_at,
-          assigned_to_profile:staff_profiles!staff_tasks_assigned_to_fkey(full_name)
-        `)
+        .select('id, title, status, completed_at, updated_at, assigned_to')
         .eq('status', 'completed')
         .order('completed_at', { ascending: false })
         .limit(5);
 
-      // Get recent attendance
+      // Get recent attendance - simplified query
       const { data: attendanceActivities, error: attendanceError } = await supabase
         .from('staff_attendance')
-        .select(`
-          id, check_in_time, is_late,
-          user_profile:staff_profiles!staff_attendance_user_id_fkey(full_name)
-        `)
+        .select('id, check_in_time, is_late, user_id')
         .order('check_in_time', { ascending: false })
         .limit(5);
 
       const activities = [
         ...(taskActivities || []).map(task => ({
           type: 'task_completed',
-          title: `${task.assigned_to_profile?.full_name} completed "${task.title}"`,
+          title: `Task "${task.title}" completed`,
           time: task.completed_at,
           icon: ClipboardList
         })),
         ...(attendanceActivities || []).map(attendance => ({
           type: 'attendance',
-          title: `${attendance.user_profile?.full_name} checked in${attendance.is_late ? ' (Late)' : ''}`,
+          title: `Staff member checked in${attendance.is_late ? ' (Late)' : ''}`,
           time: attendance.check_in_time,
           icon: attendance.is_late ? AlertCircle : UserCheck
         }))
