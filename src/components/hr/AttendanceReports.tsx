@@ -133,7 +133,7 @@ const AttendanceReports = () => {
       ...attendanceData.map(record => [
         record.date,
         record.staff_profiles?.full_name || 'Unknown',
-        format(new Date(record.check_in_time), 'HH:mm:ss'),
+        record.check_in_time ? format(new Date(record.check_in_time), 'HH:mm:ss') : 'N/A',
         record.is_late ? 'Late' : 'On Time',
         'Unassigned'
       ].join(','))
@@ -303,7 +303,7 @@ const AttendanceReports = () => {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <CalendarIcon className="h-4 w-4 text-gray-400" />
-                      {format(new Date(record.date), 'MMM dd, yyyy')}
+                      {record.date ? format(new Date(record.date), 'MMM dd, yyyy') : 'N/A'}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -315,7 +315,7 @@ const AttendanceReports = () => {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-gray-400" />
-                      {format(new Date(record.check_in_time), 'HH:mm:ss')}
+                      {record.check_in_time ? format(new Date(record.check_in_time), 'HH:mm:ss') : 'N/A'}
                     </div>
                   </TableCell>
                   <TableCell>
