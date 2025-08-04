@@ -77,14 +77,14 @@ const PerformanceMetrics = () => {
         .from('staff_profiles')
         .select(`
           *,
-          departments(name),
-          tasks_assigned:staff_tasks!staff_tasks_assigned_to_fkey(
+          departments!fk_staff_profiles_department(name),
+          tasks_assigned:staff_tasks!fk_staff_tasks_assigned_to(
             id, status, points, completed_at, created_at
           ),
-          attendance:staff_attendance(
+          attendance:staff_attendance!fk_staff_attendance_user(
             id, date, is_late, check_in_time
           ),
-          points:user_points_log(
+          points:user_points_log!fk_user_points_log_user(
             id, points, created_at
           )
         `);
@@ -97,7 +97,10 @@ const PerformanceMetrics = () => {
       }
 
       const { data: staffData, error: staffError } = await staffQuery;
-      if (staffError) throw staffError;
+      if (staffError) {
+        console.error('Error fetching staff:', staffError);
+        throw staffError;
+      }
 
       // Process performance data
       const performanceData = (staffData || []).map(staff => {
@@ -183,7 +186,23 @@ const PerformanceMetrics = () => {
 
       // Calculate department stats
       const deptStats = departments.map(dept => {
-        const deptStaff = performanceData.filter(staff => staff.departments?.name === dept.name);
+         const deptStaff = performanceData.filter(staff => {
+          // Safely access departments property
+          const staffDept = staff.departments;
+          if (!staffDept) return false;
+          
+          // Handle array format
+          if (Array.isArray(staffDept)) {
+            return staffDept[0]?.name === dept.name;
+          }
+          
+          // Handle object format - check if it has name property
+          if (typeof staffDept === 'object' && staffDept !== null && 'name' in staffDept) {
+            return (staffDept as { name: string }).name === dept.name;
+          }
+          
+          return false;
+        });
         const avgScore = deptStaff.length > 0 ?
           deptStaff.reduce((sum, staff) => sum + staff.metrics.overallScore, 0) / deptStaff.length : 0;
 
@@ -387,7 +406,13 @@ const PerformanceMetrics = () => {
                         </Avatar>
                         <div>
                           <div className="font-medium">{staff.full_name}</div>
-                          <div className="text-sm text-gray-500">{staff.departments?.name || 'Unassigned'}</div>
+                          <div className="text-sm text-gray-500">
+                            {Array.isArray(staff.departments) 
+                              ? staff.departments[0]?.name 
+                               : (staff.departments && typeof staff.departments === 'object' && 'name' in staff.departments) 
+                                 ? (staff.departments as { name: string }).name
+                                : 'Unassigned'}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
