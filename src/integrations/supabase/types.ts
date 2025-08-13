@@ -126,7 +126,22 @@ export type Database = {
           is_general?: boolean | null
           name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_chat_channels_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_chat_channels_department"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_messages: {
         Row: {
@@ -156,7 +171,29 @@ export type Database = {
           recipient_id?: string | null
           sender_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_chat_messages_channel"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_chat_messages_recipient"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_chat_messages_sender"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       chess_games: {
         Row: {
@@ -189,7 +226,29 @@ export type Database = {
           status?: string | null
           winner_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_chess_games_player1"
+            columns: ["player1_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_chess_games_player2"
+            columns: ["player2_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_chess_games_winner"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       class_attendance: {
         Row: {
@@ -1010,7 +1069,15 @@ export type Database = {
           is_late?: boolean | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_staff_attendance_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       staff_notifications: {
         Row: {
@@ -1052,7 +1119,22 @@ export type Database = {
           title?: string
           type?: Database["public"]["Enums"]["notification_type"] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_staff_notifications_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_staff_notifications_department"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       staff_profiles: {
         Row: {
@@ -1106,6 +1188,13 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fk_department"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_staff_profiles_department"
             columns: ["department_id"]
             isOneToOne: false
             referencedRelation: "departments"
@@ -1201,7 +1290,22 @@ export type Database = {
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_staff_tasks_assigned_by"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_staff_tasks_assigned_to"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       tasks: {
         Row: {
@@ -1312,7 +1416,15 @@ export type Database = {
           share_anonymously?: boolean | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_mood_entries_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       user_points_log: {
         Row: {
@@ -1339,7 +1451,15 @@ export type Database = {
           reason?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_points_log_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       user_spotify_sessions: {
         Row: {
@@ -1375,7 +1495,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_spotify_sessions_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       users: {
         Row: {

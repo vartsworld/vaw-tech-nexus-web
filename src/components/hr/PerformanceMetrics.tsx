@@ -186,7 +186,7 @@ const PerformanceMetrics = () => {
 
       // Calculate department stats
       const deptStats = departments.map(dept => {
-         const deptStaff = performanceData.filter(staff => {
+        const deptStaff = performanceData.filter(staff => {
           // Safely access departments property
           const staffDept = staff.departments;
           if (!staffDept) return false;
@@ -197,7 +197,7 @@ const PerformanceMetrics = () => {
           }
           
           // Handle object format - check if it has name property
-          if (typeof staffDept === 'object' && staffDept !== null && 'name' in staffDept) {
+          if (typeof staffDept === 'object' && 'name' in staffDept) {
             return (staffDept as { name: string }).name === dept.name;
           }
           
