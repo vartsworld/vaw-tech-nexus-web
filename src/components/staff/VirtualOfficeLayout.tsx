@@ -25,9 +25,36 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange }: VirtualOff
   ];
 
   return (
-    <div className="flex h-screen relative z-20">
-      {/* Virtual Office Navigation */}
-      <aside className="w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 p-6">
+    <div className="flex flex-col lg:flex-row h-screen relative z-20">
+      {/* Mobile Navigation */}
+      <div className="lg:hidden bg-black/20 backdrop-blur-lg border-b border-white/10 p-4">
+        <div className="flex gap-2 overflow-x-auto">
+          {rooms.map((room) => {
+            const Icon = room.icon;
+            const isActive = currentRoom === room.id;
+            
+            return (
+              <Button
+                key={room.id}
+                variant="ghost"
+                size="sm"
+                className={`flex-shrink-0 p-3 transition-all duration-300 ${
+                  isActive 
+                    ? `bg-gradient-to-r ${room.color} text-white shadow-lg` 
+                    : 'text-gray-300 hover:text-white hover:bg-white/10'
+                }`}
+                onClick={() => onRoomChange(room.id)}
+              >
+                <Icon className="w-4 h-4 mr-2" />
+                <span className="text-sm font-medium">{room.name}</span>
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:block w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 p-6">
         <div className="space-y-6">
           {/* Room Navigation */}
           <div>

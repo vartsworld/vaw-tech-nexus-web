@@ -217,9 +217,9 @@ const StaffDashboard = () => {
       {/* Office Header */}
       <header className="relative z-20 bg-black/20 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center p-2">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center p-2">
                 <img 
                   src="/lovable-uploads/3268a3ac-c0c1-40de-8ba7-8f1b1099460e.png" 
                   alt="VAW Technologies Logo" 
@@ -227,24 +227,26 @@ const StaffDashboard = () => {
                 />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">VAW Technologies</h1>
-                <p className="text-blue-300">Welcome back, {profile?.full_name || profile?.username || 'Staff Member'}!</p>
+                <h1 className="text-lg sm:text-xl font-bold text-white">VAW Technologies</h1>
+                <p className="text-blue-300 text-sm sm:text-base">Welcome back, {profile?.full_name || profile?.username || 'Staff Member'}!</p>
               </div>
             </div>
             
-              <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+              <div className="order-3 sm:order-1">
                 <NotificationsBar userId={profile?.user_id || 'demo-user'} />
-                
-                <div className="flex items-center gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-3 py-1">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-green-300 text-sm">Online</span>
-                </div>
-                
-                <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-3 py-1">
-                  <Wallet className="w-4 h-4 text-yellow-300" />
-                  <span className="text-yellow-300 text-sm">${profile?.earnings || 0}</span>
-                </div>
               </div>
+              
+              <div className="flex items-center gap-1 sm:gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-2 sm:px-3 py-1">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-green-300 text-xs sm:text-sm">Online</span>
+              </div>
+              
+              <div className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2 sm:px-3 py-1">
+                <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-300" />
+                <span className="text-yellow-300 text-xs sm:text-sm">${profile?.earnings || 0}</span>
+              </div>
+            </div>
           </div>
         </div>
       </header>
