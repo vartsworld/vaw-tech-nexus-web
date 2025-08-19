@@ -23,10 +23,7 @@ import MeetingRoom from "@/components/staff/MeetingRoom";
 import AttendanceChecker from "@/components/staff/AttendanceChecker";
 import MoodQuoteChecker from "@/components/staff/MoodQuoteChecker";
 import NotificationsBar from "@/components/staff/NotificationsBar";
-import TeamChat from "@/components/staff/TeamChat";
-import TasksManager from "@/components/staff/TasksManager";
-import MiniChess from "@/components/staff/MiniChess";
-import SpotifyWidget from "@/components/staff/SpotifyWidget";
+import DraggableWorkspace from "@/components/staff/DraggableWorkspace";
 import { useStaffData } from "@/hooks/useStaffData";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -182,18 +179,7 @@ const StaffDashboard = () => {
   }
 
   const roomComponents = {
-    workspace: (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
-        <div className="lg:col-span-2 space-y-6">
-          <TasksManager userId={profile?.user_id || 'demo-user'} userProfile={profile} />
-        </div>
-        <div className="space-y-6">
-          <TeamChat userId={profile?.user_id || 'demo-user'} userProfile={profile} />
-          <MiniChess userId={profile?.user_id || 'demo-user'} userProfile={profile} />
-          <SpotifyWidget userId={profile?.user_id || 'demo-user'} />
-        </div>
-      </div>
-    ),
+    workspace: <DraggableWorkspace userId={profile?.user_id || 'demo-user'} userProfile={profile} />,
     breakroom: <BreakRoom />,
     meeting: <MeetingRoom />
   };
