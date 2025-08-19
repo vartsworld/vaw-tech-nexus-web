@@ -212,7 +212,7 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
         </div>
 
         {/* Messages Area */}
-        <ScrollArea className="flex-1 px-4">
+        <ScrollArea className="flex-1 px-4 scroll-auto">
           <div className="space-y-3">
             {messages.map((message) => {
               const isOwnMessage = message.sender_id === userId;

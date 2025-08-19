@@ -223,7 +223,7 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
         </div>
 
         {/* Tasks List */}
-        <ScrollArea className="flex-1 px-4">
+        <ScrollArea className="flex-1 px-4 scroll-smooth">
           <div className="space-y-3">
             {filteredTasks.length === 0 ? (
               <div className="text-center py-8">
