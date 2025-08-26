@@ -2,7 +2,9 @@
 import { useState, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Card, CardContent } from '@/components/ui/card';
-import { GripVertical } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { GripVertical, X, Plus } from 'lucide-react';
 import TasksManager from './TasksManager';
 import TeamChat from './TeamChat';
 import MiniChess from './MiniChess';
@@ -18,15 +20,24 @@ interface WorkspaceItem {
   component: string;
   title: string;
   span?: 'full' | 'half';
+  removable?: boolean;
 }
+
+const availableWidgets = [
+  { component: 'TeamChat', title: 'Team Chat', span: 'half' as const, removable: true },
+  { component: 'MiniChess', title: 'Mini Chess', span: 'half' as const, removable: true },
+  { component: 'SpotifyWidget', title: 'Spotify Widget', span: 'half' as const, removable: true },
+];
 
 const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) => {
   const [items, setItems] = useState<WorkspaceItem[]>([
-    { id: 'tasks', component: 'TasksManager', title: 'Tasks Manager', span: 'full' },
-    { id: 'chat', component: 'TeamChat', title: 'Team Chat', span: 'half' },
-    { id: 'chess', component: 'MiniChess', title: 'Mini Chess', span: 'half' },
-    { id: 'spotify', component: 'SpotifyWidget', title: 'Spotify Widget', span: 'half' },
+    { id: 'tasks', component: 'TasksManager', title: 'Tasks Manager', span: 'full', removable: false },
+    { id: 'chat', component: 'TeamChat', title: 'Team Chat', span: 'half', removable: true },
+    { id: 'chess', component: 'MiniChess', title: 'Mini Chess', span: 'half', removable: true },
+    { id: 'spotify', component: 'SpotifyWidget', title: 'Spotify Widget', span: 'half', removable: true },
   ]);
+
+  const [selectedWidget, setSelectedWidget] = useState<string>('');
 
   const onDragEnd = useCallback((result: DropResult) => {
     if (!result.destination) {
@@ -38,6 +49,34 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
     newItems.splice(result.destination.index, 0, reorderedItem);
 
     setItems(newItems);
+  }, [items]);
+
+  const addWidget = useCallback(() => {
+    if (!selectedWidget) return;
+    
+    const widget = availableWidgets.find(w => w.component === selectedWidget);
+    if (!widget) return;
+
+    const newId = `${widget.component.toLowerCase()}-${Date.now()}`;
+    const newItem: WorkspaceItem = {
+      id: newId,
+      component: widget.component,
+      title: widget.title,
+      span: widget.span,
+      removable: widget.removable,
+    };
+
+    setItems(prev => [...prev, newItem]);
+    setSelectedWidget('');
+  }, [selectedWidget]);
+
+  const removeWidget = useCallback((id: string) => {
+    setItems(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  const getAvailableWidgets = useCallback(() => {
+    const currentComponents = items.map(item => item.component);
+    return availableWidgets.filter(widget => !currentComponents.includes(widget.component));
   }, [items]);
 
   const renderComponent = (item: WorkspaceItem) => {
@@ -56,7 +95,38 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 space-y-6">
+      {/* Widget Controls */}
+      <Card className="bg-black/10 backdrop-blur-lg border-white/10 p-4">
+        <div className="flex items-center gap-4">
+          <Select value={selectedWidget} onValueChange={setSelectedWidget}>
+            <SelectTrigger className="w-48 bg-black/20 border-white/20 text-white">
+              <SelectValue placeholder="Add a widget..." />
+            </SelectTrigger>
+            <SelectContent className="bg-black/90 border-white/20">
+              {getAvailableWidgets().map((widget) => (
+                <SelectItem 
+                  key={widget.component} 
+                  value={widget.component}
+                  className="text-white hover:bg-white/10"
+                >
+                  {widget.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button 
+            onClick={addWidget} 
+            disabled={!selectedWidget}
+            className="bg-primary/20 hover:bg-primary/30 text-white border-primary/30"
+            size="sm"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Widget
+          </Button>
+        </div>
+      </Card>
+
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="workspace">
           {(provided) => (
@@ -80,12 +150,23 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
                       } transition-all duration-200`}
                     >
                       <Card className="bg-black/20 backdrop-blur-lg border-white/10 h-full relative group">
-                        {/* Drag Handle */}
-                        <div
-                          {...provided.dragHandleProps}
-                          className="absolute top-2 right-2 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing z-10"
-                        >
-                          <GripVertical className="w-4 h-4 text-white/60 hover:text-white/80" />
+                        {/* Controls */}
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                          {item.removable && (
+                            <Button
+                              onClick={() => removeWidget(item.id)}
+                              className="p-1 h-6 w-6 bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 border-red-500/30"
+                              size="sm"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                          <div
+                            {...provided.dragHandleProps}
+                            className="p-1 h-6 w-6 cursor-grab active:cursor-grabbing bg-white/10 hover:bg-white/20 rounded flex items-center justify-center"
+                          >
+                            <GripVertical className="w-3 h-3 text-white/60 hover:text-white/80" />
+                          </div>
                         </div>
                         
                         <CardContent className="p-0 h-full">
