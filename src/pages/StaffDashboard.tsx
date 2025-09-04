@@ -16,6 +16,7 @@ import {
   Target,
   TrendingUp
 } from "lucide-react";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import WorkspaceRoom from "@/components/staff/WorkspaceRoom";
 import BreakRoom from "@/components/staff/BreakRoom";
@@ -24,6 +25,7 @@ import AttendanceChecker from "@/components/staff/AttendanceChecker";
 import MoodQuoteChecker from "@/components/staff/MoodQuoteChecker";
 import NotificationsBar from "@/components/staff/NotificationsBar";
 import DraggableWorkspace from "@/components/staff/DraggableWorkspace";
+import StaffSidebar from "@/components/staff/StaffSidebar";
 import { useStaffData } from "@/hooks/useStaffData";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -185,62 +187,72 @@ const StaffDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Background Images */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
-        <img 
-          src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png" 
-          alt="Modern office background" 
-          className="absolute inset-0 w-full h-full object-cover opacity-80"
-        />
-        <img 
-          src="/lovable-uploads/508d91e4-1f4c-42a4-9e98-bcb4df6e023d.png" 
-          alt="Office meeting space" 
-          className="absolute top-1/2 left-1/2 w-full h-full object-cover opacity-60 mix-blend-overlay"
-        />
-      </div>
-      {/* Office Header */}
-      <header className="relative z-20 bg-black/20 backdrop-blur-lg border-b border-white/10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center p-2">
-                <img 
-                  src="/lovable-uploads/3268a3ac-c0c1-40de-8ba7-8f1b1099460e.png" 
-                  alt="VAW Technologies Logo" 
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <div>
-                <h1 className="text-lg sm:text-xl font-bold text-white">VAW Technologies</h1>
-                <p className="text-blue-300 text-sm sm:text-base">Welcome back, {profile?.full_name || profile?.username || 'Staff Member'}!</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-              <div className="order-3 sm:order-1">
-                <NotificationsBar userId={profile?.user_id || 'demo-user'} />
+    <SidebarProvider>
+      <div className="min-h-screen relative overflow-hidden w-full">
+        {/* Background Images */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
+          <img 
+            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png" 
+            alt="Modern office background" 
+            className="absolute inset-0 w-full h-full object-cover opacity-80"
+          />
+          <img 
+            src="/lovable-uploads/508d91e4-1f4c-42a4-9e98-bcb4df6e023d.png" 
+            alt="Office meeting space" 
+            className="absolute top-1/2 left-1/2 w-full h-full object-cover opacity-60 mix-blend-overlay"
+          />
+        </div>
+        
+        {/* Office Header */}
+        <header className="relative z-20 bg-black/20 backdrop-blur-lg border-b border-white/10">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <SidebarTrigger className="mr-2 text-white hover:bg-white/10" />
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center p-2">
+                  <img 
+                    src="/lovable-uploads/3268a3ac-c0c1-40de-8ba7-8f1b1099460e.png" 
+                    alt="VAW Technologies Logo" 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div>
+                  <h1 className="text-lg sm:text-xl font-bold text-white">VAW Technologies</h1>
+                  <p className="text-blue-300 text-sm sm:text-base">Welcome back, {profile?.full_name || profile?.username || 'Staff Member'}!</p>
+                </div>
               </div>
               
-              <div className="flex items-center gap-1 sm:gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-2 sm:px-3 py-1">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-green-300 text-xs sm:text-sm">Online</span>
-              </div>
-              
-              <div className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2 sm:px-3 py-1">
-                <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-300" />
-                <span className="text-yellow-300 text-xs sm:text-sm">${profile?.earnings || 0}</span>
+              <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+                <div className="order-3 sm:order-1">
+                  <NotificationsBar userId={profile?.user_id || 'demo-user'} />
+                </div>
+                
+                <div className="flex items-center gap-1 sm:gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-2 sm:px-3 py-1">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-green-300 text-xs sm:text-sm">Online</span>
+                </div>
+                
+                <div className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2 sm:px-3 py-1">
+                  <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-300" />
+                  <span className="text-yellow-300 text-xs sm:text-sm">${profile?.earnings || 0}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      <VirtualOfficeLayout currentRoom={currentRoom} onRoomChange={setCurrentRoom}>
-        {roomComponents[currentRoom]}
-      </VirtualOfficeLayout>
-    </div>
+        <div className="flex w-full">
+          <StaffSidebar userId={profile?.user_id || 'demo-user'} userProfile={profile} />
+          
+          <main className="flex-1">
+            <VirtualOfficeLayout currentRoom={currentRoom} onRoomChange={setCurrentRoom}>
+              {roomComponents[currentRoom]}
+            </VirtualOfficeLayout>
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 };
 
