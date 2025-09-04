@@ -37,6 +37,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
   const defaultItems: WorkspaceItem[] = [
     { id: 'tasks', component: 'TasksManager', title: 'Tasks Manager', span: 'full', removable: false },
     { id: 'chat', component: 'TeamChat', title: 'Team Chat', span: 'half', removable: true },
+    { id: 'chess', component: 'MiniChess', title: 'Mini Chess', span: 'half', removable: true },
     { id: 'timebox', component: 'TimeboxWidget', title: 'Focus Timer', span: 'half', removable: true },
     { id: 'spotify', component: 'SpotifyWidget', title: 'Spotify Widget', span: 'half', removable: true },
   ];
