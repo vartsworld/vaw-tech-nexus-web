@@ -11,6 +11,7 @@ import TasksManager from './TasksManager';
 import TeamChat from './TeamChat';
 import MiniChess from './MiniChess';
 import SpotifyWidget from './SpotifyWidget';
+import TimeboxWidget from './TimeboxWidget';
 
 interface DraggableWorkspaceProps {
   userId: string;
@@ -29,6 +30,7 @@ const availableWidgets = [
   { component: 'TeamChat', title: 'Team Chat', span: 'half' as const, removable: true },
   { component: 'MiniChess', title: 'Mini Chess', span: 'half' as const, removable: true },
   { component: 'SpotifyWidget', title: 'Spotify Widget', span: 'half' as const, removable: true },
+  { component: 'TimeboxWidget', title: 'Focus Timer', span: 'half' as const, removable: true },
 ];
 
 const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) => {
@@ -36,6 +38,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
     { id: 'tasks', component: 'TasksManager', title: 'Tasks Manager', span: 'full', removable: false },
     { id: 'chat', component: 'TeamChat', title: 'Team Chat', span: 'half', removable: true },
     { id: 'chess', component: 'MiniChess', title: 'Mini Chess', span: 'half', removable: true },
+    { id: 'timebox', component: 'TimeboxWidget', title: 'Focus Timer', span: 'half', removable: true },
     { id: 'spotify', component: 'SpotifyWidget', title: 'Spotify Widget', span: 'half', removable: true },
   ];
 
@@ -178,6 +181,8 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
         return <MiniChess userId={userId} userProfile={userProfile} />;
       case 'SpotifyWidget':
         return <SpotifyWidget userId={userId} />;
+      case 'TimeboxWidget':
+        return <TimeboxWidget userId={userId} userProfile={userProfile} />;
       default:
         return null;
     }
