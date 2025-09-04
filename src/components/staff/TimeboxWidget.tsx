@@ -2,168 +2,187 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Play, Pause, RotateCcw, Clock } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Calendar, Plus, X, Clock4 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TimeboxWidgetProps {
   userId: string;
   userProfile: any;
 }
 
+interface Priority {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+interface TimeBlock {
+  id: string;
+  time: string;
+  task: string;
+  completed: boolean;
+}
+
 const TimeboxWidget = ({ userId, userProfile }: TimeboxWidgetProps) => {
-  const [minutes, setMinutes] = useState(25);
-  const [seconds, setSeconds] = useState(0);
-  const [isActive, setIsActive] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(25 * 60); // Default 25 minutes in seconds
-  const [totalTime, setTotalTime] = useState(25 * 60);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft(timeLeft => timeLeft - 1);
-      }, 1000);
-    } else if (timeLeft === 0 && isActive) {
-      setIsActive(false);
-      toast({
-        title: "Time's Up!",
-        description: "Your focus session has completed.",
+  const [currentDate, setCurrentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [priorities, setPriorities] = useState<Priority[]>([
+    { id: '1', text: '', completed: false },
+    { id: '2', text: '', completed: false },
+    { id: '3', text: '', completed: false }
+  ]);
+  const [brainDump, setBrainDump] = useState('');
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>(() => {
+    const blocks: TimeBlock[] = [];
+    for (let hour = 5; hour <= 23; hour++) {
+      const times = [`${hour}:00`, `${hour}:30`];
+      times.forEach(time => {
+        blocks.push({
+          id: `${time}`,
+          time: time,
+          task: '',
+          completed: false
+        });
       });
     }
+    return blocks;
+  });
+  const { toast } = useToast();
 
-    return () => clearInterval(interval);
-  }, [isActive, timeLeft, toast]);
+  // Auto-save data periodically
+  useEffect(() => {
+    const saveData = async () => {
+      try {
+        const plannerData = {
+          date: currentDate,
+          priorities,
+          brain_dump: brainDump,
+          time_blocks: timeBlocks
+        };
 
-  const handleStart = () => {
-    if (!isActive && timeLeft === totalTime) {
-      // Starting new session
-      const newTotalTime = minutes * 60 + seconds;
-      setTotalTime(newTotalTime);
-      setTimeLeft(newTotalTime);
-    }
-    setIsActive(!isActive);
+        await supabase
+          .from('workspace_layouts')
+          .upsert({
+            user_id: userId,
+            layout_data: plannerData as any // Type cast for JSON storage
+          });
+      } catch (error) {
+        console.error('Error saving planner data:', error);
+      }
+    };
+
+    const timeoutId = setTimeout(saveData, 2000);
+    return () => clearTimeout(timeoutId);
+  }, [priorities, brainDump, timeBlocks, currentDate, userId]);
+
+  const updatePriority = (id: string, text: string) => {
+    setPriorities(prev => prev.map(p => p.id === id ? { ...p, text } : p));
   };
 
-  const handleReset = () => {
-    setIsActive(false);
-    const newTotalTime = minutes * 60 + seconds;
-    setTotalTime(newTotalTime);
-    setTimeLeft(newTotalTime);
+  const togglePriorityComplete = (id: string) => {
+    setPriorities(prev => prev.map(p => p.id === id ? { ...p, completed: !p.completed } : p));
   };
 
-  const handleTimeChange = () => {
-    if (!isActive) {
-      const newTotalTime = minutes * 60 + seconds;
-      setTotalTime(newTotalTime);
-      setTimeLeft(newTotalTime);
-    }
+  const updateTimeBlock = (id: string, task: string) => {
+    setTimeBlocks(prev => prev.map(tb => tb.id === id ? { ...tb, task } : tb));
   };
 
-  const formatTime = (time: number) => {
-    const mins = Math.floor(time / 60);
-    const secs = time % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const toggleTimeBlockComplete = (id: string) => {
+    setTimeBlocks(prev => prev.map(tb => tb.id === id ? { ...tb, completed: !tb.completed } : tb));
   };
-
-  const progress = totalTime > 0 ? ((totalTime - timeLeft) / totalTime) * 100 : 0;
 
   return (
-    <Card className="bg-black/20 backdrop-blur-lg border-white/10 h-full">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-white flex items-center gap-2">
-          <Clock className="w-5 h-5" />
-          Focus Timer
+    <Card className="bg-black/20 backdrop-blur-lg border-white/10 h-full overflow-hidden">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-white flex items-center gap-2 text-lg">
+          <Clock4 className="w-5 h-5" />
+          Timeboxing Planner
         </CardTitle>
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-white/60" />
+          <Input
+            type="date"
+            value={currentDate}
+            onChange={(e) => setCurrentDate(e.target.value)}
+            className="bg-black/20 border-white/20 text-white text-sm w-auto"
+          />
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Time Display */}
-        <div className="text-center">
-          <div className="text-4xl font-mono text-white mb-2">
-            {formatTime(timeLeft)}
-          </div>
-          <div className="w-full bg-white/10 rounded-full h-2 mb-4">
-            <div 
-              className="bg-primary h-2 rounded-full transition-all duration-1000 ease-linear"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Time Input */}
-        <div className="flex gap-2 items-center justify-center">
-          <div className="flex items-center gap-1">
-            <Input
-              type="number"
-              value={minutes}
-              onChange={(e) => setMinutes(Math.max(0, Math.min(99, parseInt(e.target.value) || 0)))}
-              onBlur={handleTimeChange}
-              className="w-16 bg-black/20 border-white/20 text-white text-center"
-              min="0"
-              max="99"
-              disabled={isActive}
-            />
-            <span className="text-white text-sm">m</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Input
-              type="number"
-              value={seconds}
-              onChange={(e) => setSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
-              onBlur={handleTimeChange}
-              className="w-16 bg-black/20 border-white/20 text-white text-center"
-              min="0"
-              max="59"
-              disabled={isActive}
-            />
-            <span className="text-white text-sm">s</span>
+      
+      <CardContent className="p-4 space-y-6 max-h-[600px] overflow-y-auto">
+        {/* Top Priorities */}
+        <div className="space-y-2">
+          <h3 className="text-white font-medium text-sm">Top Priorities</h3>
+          <div className="space-y-1">
+            {priorities.map((priority, index) => (
+              <div key={priority.id} className="flex items-center gap-2">
+                <Button
+                  onClick={() => togglePriorityComplete(priority.id)}
+                  className={`w-4 h-4 p-0 rounded ${
+                    priority.completed
+                      ? 'bg-green-500/30 text-green-400'
+                      : 'bg-white/10 hover:bg-white/20'
+                  }`}
+                  size="sm"
+                >
+                  {priority.completed && '✓'}
+                </Button>
+                <Input
+                  placeholder={`Priority ${index + 1}`}
+                  value={priority.text}
+                  onChange={(e) => updatePriority(priority.id, e.target.value)}
+                  className={`bg-black/20 border-white/20 text-white text-sm ${
+                    priority.completed ? 'line-through opacity-60' : ''
+                  }`}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="flex gap-2 justify-center">
-          <Button
-            onClick={handleStart}
-            className={`${
-              isActive 
-                ? 'bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 border-yellow-500/30' 
-                : 'bg-green-500/20 hover:bg-green-500/30 text-green-400 border-green-500/30'
-            }`}
-            size="sm"
-          >
-            {isActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-          </Button>
-          <Button
-            onClick={handleReset}
-            className="bg-gray-500/20 hover:bg-gray-500/30 text-gray-400 border-gray-500/30"
-            size="sm"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </Button>
+        {/* Brain Dump */}
+        <div className="space-y-2">
+          <h3 className="text-white font-medium text-sm">Brain Dump</h3>
+          <Textarea
+            placeholder="Jot down all ideas, tasks, or distractions that pop into your head..."
+            value={brainDump}
+            onChange={(e) => setBrainDump(e.target.value)}
+            className="bg-black/20 border-white/20 text-white text-sm min-h-[80px] resize-none"
+          />
         </div>
 
-        {/* Quick Presets */}
-        <div className="flex gap-1 justify-center flex-wrap">
-          {[5, 15, 25, 45].map((preset) => (
-            <Button
-              key={preset}
-              onClick={() => {
-                if (!isActive) {
-                  setMinutes(preset);
-                  setSeconds(0);
-                  const newTotalTime = preset * 60;
-                  setTotalTime(newTotalTime);
-                  setTimeLeft(newTotalTime);
-                }
-              }}
-              className="bg-white/5 hover:bg-white/10 text-white/70 text-xs px-2 py-1 h-auto"
-              disabled={isActive}
-              size="sm"
-            >
-              {preset}m
-            </Button>
-          ))}
+        {/* Time Blocks */}
+        <div className="space-y-2">
+          <h3 className="text-white font-medium text-sm">Hourly Blocks (30-min intervals)</h3>
+          <div className="space-y-1 max-h-[300px] overflow-y-auto">
+            {timeBlocks.map((block) => (
+              <div key={block.id} className="flex items-center gap-2">
+                <Button
+                  onClick={() => toggleTimeBlockComplete(block.id)}
+                  className={`w-4 h-4 p-0 rounded flex-shrink-0 ${
+                    block.completed
+                      ? 'bg-green-500/30 text-green-400'
+                      : 'bg-white/10 hover:bg-white/20'
+                  }`}
+                  size="sm"
+                >
+                  {block.completed && '✓'}
+                </Button>
+                <span className="text-white/70 text-sm font-mono w-12 flex-shrink-0">
+                  {block.time}
+                </span>
+                <Input
+                  placeholder="Task or activity..."
+                  value={block.task}
+                  onChange={(e) => updateTimeBlock(block.id, e.target.value)}
+                  className={`bg-black/20 border-white/20 text-white text-sm ${
+                    block.completed ? 'line-through opacity-60' : ''
+                  }`}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </CardContent>
     </Card>
