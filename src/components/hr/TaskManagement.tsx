@@ -137,7 +137,7 @@ const TaskManagement = () => {
           ...newTask,
           assigned_by: user?.id || crypto.randomUUID(),
           due_date: newTask.due_date || null,
-          project_id: newTask.project_id || null,
+          project_id: newTask.project_id === "no-project" ? null : newTask.project_id,
           priority: newTask.priority as 'low' | 'medium' | 'high' | 'urgent',
           status: newTask.status as 'pending' | 'in_progress' | 'completed'
         })
@@ -306,7 +306,7 @@ const TaskManagement = () => {
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Project</SelectItem>
+                    <SelectItem value="no-project">No Project</SelectItem>
                     {projects.map(project => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}

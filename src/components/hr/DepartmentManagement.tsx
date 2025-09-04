@@ -94,7 +94,7 @@ const DepartmentManagement = () => {
         .insert([{
           ...newDepartment,
           created_by: user?.id || crypto.randomUUID(),
-          head_id: newDepartment.head_id || null
+          head_id: newDepartment.head_id === "no-head" ? null : newDepartment.head_id
         }])
         .select('*')
         .single();
@@ -102,7 +102,7 @@ const DepartmentManagement = () => {
       if (error) throw error;
 
       // Update staff member to be department head
-      if (newDepartment.head_id) {
+      if (newDepartment.head_id && newDepartment.head_id !== "no-head") {
         await supabase
           .from('staff_profiles')
           .update({ 
@@ -272,7 +272,7 @@ const DepartmentManagement = () => {
                     <SelectValue placeholder="Select department head" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No Head Assigned</SelectItem>
+                    <SelectItem value="no-head">No Head Assigned</SelectItem>
                     {staff.map(member => (
                       <SelectItem key={member.id} value={member.id}>
                         {member.full_name} ({member.role})
