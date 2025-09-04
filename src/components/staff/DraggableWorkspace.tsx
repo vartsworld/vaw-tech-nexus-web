@@ -1,10 +1,12 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GripVertical, X, Plus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 import TasksManager from './TasksManager';
 import TeamChat from './TeamChat';
 import MiniChess from './MiniChess';
@@ -30,14 +32,88 @@ const availableWidgets = [
 ];
 
 const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) => {
-  const [items, setItems] = useState<WorkspaceItem[]>([
+  const defaultItems: WorkspaceItem[] = [
     { id: 'tasks', component: 'TasksManager', title: 'Tasks Manager', span: 'full', removable: false },
     { id: 'chat', component: 'TeamChat', title: 'Team Chat', span: 'half', removable: true },
     { id: 'chess', component: 'MiniChess', title: 'Mini Chess', span: 'half', removable: true },
     { id: 'spotify', component: 'SpotifyWidget', title: 'Spotify Widget', span: 'half', removable: true },
-  ]);
+  ];
 
+  const [items, setItems] = useState<WorkspaceItem[]>(defaultItems);
   const [selectedWidget, setSelectedWidget] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  // Load saved layout on mount
+  useEffect(() => {
+    const loadWorkspaceLayout = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('workspace_layouts')
+          .select('layout_data')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error loading workspace layout:', error);
+          return;
+        }
+
+        if (data?.layout_data) {
+          // Type-safe parsing of the JSON data
+          try {
+            const layoutData = data.layout_data as any[];
+            if (Array.isArray(layoutData)) {
+              const validatedItems: WorkspaceItem[] = layoutData.map(item => ({
+                id: item.id,
+                component: item.component,
+                title: item.title,
+                span: item.span || 'half',
+                removable: item.removable !== false,
+              }));
+              setItems(validatedItems);
+            }
+          } catch (parseError) {
+            console.error('Error parsing layout data:', parseError);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading workspace layout:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (userId) {
+      loadWorkspaceLayout();
+    }
+  }, [userId]);
+
+  // Auto-save layout changes (debounced)
+  useEffect(() => {
+    if (isLoading) return;
+
+    const saveLayout = async () => {
+      try {
+        const { error } = await supabase
+          .from('workspace_layouts')
+          .upsert({
+            user_id: userId,
+            layout_data: items as any, // Type cast for JSON storage
+          });
+
+        if (error) {
+          console.error('Error saving workspace layout:', error);
+        }
+      } catch (error) {
+        console.error('Error saving workspace layout:', error);
+      }
+    };
+
+    const timeoutId = setTimeout(saveLayout, 1000); // Debounce for 1 second
+
+    return () => clearTimeout(timeoutId);
+  }, [items, userId, isLoading]);
 
   const onDragEnd = useCallback((result: DropResult) => {
     if (!result.destination) {
@@ -68,11 +144,24 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
 
     setItems(prev => [...prev, newItem]);
     setSelectedWidget('');
-  }, [selectedWidget]);
+    
+    toast({
+      title: "Widget Added",
+      description: `${widget.title} has been added to your workspace.`,
+    });
+  }, [selectedWidget, toast]);
 
   const removeWidget = useCallback((id: string) => {
+    const removedWidget = items.find(item => item.id === id);
     setItems(prev => prev.filter(item => item.id !== id));
-  }, []);
+    
+    if (removedWidget) {
+      toast({
+        title: "Widget Removed",
+        description: `${removedWidget.title} has been removed from your workspace.`,
+      });
+    }
+  }, [items, toast]);
 
   const getAvailableWidgets = useCallback(() => {
     const currentComponents = items.map(item => item.component);
@@ -93,6 +182,17 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
         return null;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white/80">Loading your workspace...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
