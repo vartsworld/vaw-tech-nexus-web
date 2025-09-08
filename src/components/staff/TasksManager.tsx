@@ -86,7 +86,7 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
       const { error } = await supabase
         .from('staff_tasks')
         .update({ 
-          status: newStatus,
+          status: newStatus as any,
           completed_at: newStatus === 'completed' ? new Date().toISOString() : null
         })
         .eq('id', taskId);

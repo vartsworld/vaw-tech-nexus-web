@@ -3461,7 +3461,12 @@ export type Database = {
         | "delivered"
         | "cancelled"
       task_priority: "low" | "medium" | "high" | "urgent"
-      task_status: "pending" | "in_progress" | "completed" | "overdue"
+      task_status:
+        | "pending"
+        | "in_progress"
+        | "completed"
+        | "overdue"
+        | "handover"
       user_role: "hr" | "department_head" | "staff"
       vendor_status: "pending" | "approved" | "rejected"
     }
@@ -3616,7 +3621,13 @@ export const Constants = {
         "cancelled",
       ],
       task_priority: ["low", "medium", "high", "urgent"],
-      task_status: ["pending", "in_progress", "completed", "overdue"],
+      task_status: [
+        "pending",
+        "in_progress",
+        "completed",
+        "overdue",
+        "handover",
+      ],
       user_role: ["hr", "department_head", "staff"],
       vendor_status: ["pending", "approved", "rejected"],
     },
