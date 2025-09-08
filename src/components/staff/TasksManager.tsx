@@ -20,7 +20,7 @@ interface Task {
   id: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'overdue';
+  status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date?: string;
   points: number;
@@ -38,7 +38,7 @@ interface TasksManagerProps {
 
 const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'handover'>('all');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -145,6 +145,8 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
     switch (status) {
       case 'completed':
         return 'text-green-400';
+      case 'handover':
+        return 'text-purple-400';
       case 'in_progress':
         return 'text-blue-400';  
       case 'overdue':
@@ -158,6 +160,8 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
     switch (status) {
       case 'completed':
         return <CheckCircle className="w-4 h-4" />;
+      case 'handover':
+        return <User className="w-4 h-4" />;
       case 'in_progress':
         return <Clock className="w-4 h-4" />;
       case 'overdue':
@@ -200,7 +204,8 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
             { key: 'all', label: 'All', count: tasks.length },
             { key: 'pending', label: 'Pending', count: tasks.filter(t => t.status === 'pending').length },
             { key: 'in_progress', label: 'In Progress', count: tasks.filter(t => t.status === 'in_progress').length },
-            { key: 'completed', label: 'Completed', count: tasks.filter(t => t.status === 'completed').length }
+            { key: 'completed', label: 'Completed', count: tasks.filter(t => t.status === 'completed').length },
+            { key: 'handover', label: 'Handover', count: tasks.filter(t => t.status === 'handover').length }
           ].map((filterOption) => (
             <Button
               key={filterOption.key}
@@ -286,7 +291,7 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
                       </div>
                       
                       {/* Action Button */}
-                      {task.status !== 'completed' && (
+                      {task.status !== 'handover' && (
                         <div className="flex flex-col gap-1">
                           {task.status === 'pending' && (
                             <Button
@@ -309,6 +314,18 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
                               disabled={isLoading}
                             >
                               Complete
+                            </Button>
+                          )}
+                          
+                          {task.status === 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30"
+                              onClick={() => updateTaskStatus(task.id, 'handover')}
+                              disabled={isLoading}
+                            >
+                              Handover
                             </Button>
                           )}
                         </div>
