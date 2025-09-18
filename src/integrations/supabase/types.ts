@@ -519,6 +519,66 @@ export type Database = {
         }
         Relationships: []
       }
+      intern_experiences: {
+        Row: {
+          address: string | null
+          certificate_requested: boolean | null
+          created_at: string
+          email: string
+          experience_rating: number | null
+          id: string
+          intern_name: string
+          internship_domain: string
+          mentor_feedback: string | null
+          overall_experience: string
+          phone: string | null
+          project_highlights: string | null
+          skills_learned: string | null
+          status: string | null
+          suggestions_for_improvement: string | null
+          updated_at: string
+          would_recommend: boolean | null
+        }
+        Insert: {
+          address?: string | null
+          certificate_requested?: boolean | null
+          created_at?: string
+          email: string
+          experience_rating?: number | null
+          id?: string
+          intern_name: string
+          internship_domain: string
+          mentor_feedback?: string | null
+          overall_experience: string
+          phone?: string | null
+          project_highlights?: string | null
+          skills_learned?: string | null
+          status?: string | null
+          suggestions_for_improvement?: string | null
+          updated_at?: string
+          would_recommend?: boolean | null
+        }
+        Update: {
+          address?: string | null
+          certificate_requested?: boolean | null
+          created_at?: string
+          email?: string
+          experience_rating?: number | null
+          id?: string
+          intern_name?: string
+          internship_domain?: string
+          mentor_feedback?: string | null
+          overall_experience?: string
+          phone?: string | null
+          project_highlights?: string | null
+          skills_learned?: string | null
+          status?: string | null
+          suggestions_for_improvement?: string | null
+          updated_at?: string
+          would_recommend?: boolean | null
+        }
+        Relationships: []
+      }
       intern_projects: {
         Row: {
           admin_feedback: string | null
@@ -1340,6 +1400,60 @@ export type Database = {
           priority?: string | null
           status?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+      team_applications: {
+        Row: {
+          created_at: string
+          current_position: string | null
+          email: string
+          experience_years: number | null
+          full_name: string
+          id: string
+          linkedin_url: string | null
+          phone: string
+          portfolio_url: string | null
+          preferred_role: string | null
+          resume_url: string | null
+          skills: string
+          status: string | null
+          updated_at: string
+          why_join_team: string
+        }
+        Insert: {
+          created_at?: string
+          current_position?: string | null
+          email: string
+          experience_years?: number | null
+          full_name: string
+          id?: string
+          linkedin_url?: string | null
+          phone: string
+          portfolio_url?: string | null
+          preferred_role?: string | null
+          resume_url?: string | null
+          skills: string
+          status?: string | null
+          updated_at?: string
+          why_join_team: string
+        }
+        Update: {
+          created_at?: string
+          current_position?: string | null
+          email?: string
+          experience_years?: number | null
+          full_name?: string
+          id?: string
+          linkedin_url?: string | null
+          phone?: string
+          portfolio_url?: string | null
+          preferred_role?: string | null
+          resume_url?: string | null
+          skills?: string
+          status?: string | null
+          updated_at?: string
+          why_join_team?: string
         }
         Relationships: []
       }

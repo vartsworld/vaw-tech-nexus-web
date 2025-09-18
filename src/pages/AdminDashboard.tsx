@@ -7,6 +7,8 @@ import AdminHeader from "@/components/admin/AdminHeader";
 import InquiryList from "@/components/admin/InquiryList";
 import PricingInquiryList from "@/components/admin/PricingInquiryList";
 import InternshipApplicationsList from "@/components/admin/InternshipApplicationsList";
+import InternExperiencesList from "@/components/admin/InternExperiencesList";
+import TeamApplicationsList from "@/components/admin/TeamApplicationsList";
 import TestimonialManagement from "@/components/admin/TestimonialManagement";
 import ProjectsManagement from "@/components/admin/ProjectsManagement";
 import PartnersManagement from "@/components/admin/PartnersManagement";
@@ -60,6 +62,12 @@ const AdminDashboard = () => {
             <TabsTrigger value="internships" className="text-xs sm:text-sm px-2 py-2 sm:px-3">
               <span className="hidden sm:inline">Internship </span>Applications
             </TabsTrigger>
+            <TabsTrigger value="experiences" className="text-xs sm:text-sm px-2 py-2 sm:px-3">
+              <span className="hidden sm:inline">Intern </span>Experiences
+            </TabsTrigger>
+            <TabsTrigger value="team-applications" className="text-xs sm:text-sm px-2 py-2 sm:px-3">
+              <span className="hidden sm:inline">Team </span>Applications
+            </TabsTrigger>
             <TabsTrigger value="testimonials" className="text-xs sm:text-sm px-2 py-2 sm:px-3">
               Testimonials
             </TabsTrigger>
@@ -84,6 +92,14 @@ const AdminDashboard = () => {
           
           <TabsContent value="internships">
             <InternshipApplicationsList />
+          </TabsContent>
+          
+          <TabsContent value="experiences">
+            <InternExperiencesList />
+          </TabsContent>
+          
+          <TabsContent value="team-applications">
+            <TeamApplicationsList />
           </TabsContent>
           
           <TabsContent value="testimonials">
