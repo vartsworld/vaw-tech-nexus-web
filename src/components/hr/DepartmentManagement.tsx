@@ -31,6 +31,7 @@ const DepartmentManagement = () => {
     description: "",
     head_id: ""
   });
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -94,7 +95,7 @@ const DepartmentManagement = () => {
         .insert([{
           ...newDepartment,
           created_by: user?.id || crypto.randomUUID(),
-          head_id: newDepartment.head_id === "no-head" ? null : newDepartment.head_id
+          head_id: newDepartment.head_id === "no-head" || newDepartment.head_id === "" ? null : newDepartment.head_id
         }])
         .select('*')
         .single();
@@ -102,7 +103,7 @@ const DepartmentManagement = () => {
       if (error) throw error;
 
       // Update staff member to be department head
-      if (newDepartment.head_id && newDepartment.head_id !== "no-head") {
+      if (newDepartment.head_id && newDepartment.head_id !== "no-head" && newDepartment.head_id !== "") {
         await supabase
           .from('staff_profiles')
           .update({ 
@@ -292,6 +293,88 @@ const DepartmentManagement = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Department Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Department</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-name">Department Name</Label>
+                <Input
+                  id="edit-name"
+                  value={newDepartment.name}
+                  onChange={(e) => setNewDepartment({...newDepartment, name: e.target.value})}
+                  placeholder="Enter department name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={newDepartment.description}
+                  onChange={(e) => setNewDepartment({...newDepartment, description: e.target.value})}
+                  placeholder="Enter department description"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-head">Department Head</Label>
+                <Select value={newDepartment.head_id} onValueChange={(value) => setNewDepartment({...newDepartment, head_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department head" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no-head">No Head Assigned</SelectItem>
+                    {staff.map(member => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.full_name} ({member.role})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingDepartment(null);
+                  setNewDepartment({ name: "", description: "", head_id: "" });
+                }}>
+                  Cancel
+                </Button>
+                <Button onClick={async () => {
+                  if (editingDepartment) {
+                    const updateData = {
+                      ...newDepartment,
+                      head_id: newDepartment.head_id === "no-head" || newDepartment.head_id === "" ? null : newDepartment.head_id
+                    };
+                    await handleUpdateDepartment(editingDepartment.id, updateData);
+                    
+                    // Update department head if changed
+                    if (newDepartment.head_id && newDepartment.head_id !== "no-head" && newDepartment.head_id !== "") {
+                      await supabase
+                        .from('staff_profiles')
+                        .update({ 
+                          is_department_head: true,
+                          department_id: editingDepartment.id 
+                        })
+                        .eq('id', newDepartment.head_id);
+                    }
+                    
+                    setIsEditDialogOpen(false);
+                    setEditingDepartment(null);
+                    setNewDepartment({ name: "", description: "", head_id: "" });
+                    fetchDepartments(); // Refresh the data
+                  }
+                }}>
+                  Update Department
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Department Cards */}
@@ -311,7 +394,15 @@ const DepartmentManagement = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setEditingDepartment(dept)}
+                    onClick={() => {
+                      setEditingDepartment(dept);
+                      setNewDepartment({
+                        name: dept.name,
+                        description: dept.description || "",
+                        head_id: dept.head_id || ""
+                      });
+                      setIsEditDialogOpen(true);
+                    }}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>

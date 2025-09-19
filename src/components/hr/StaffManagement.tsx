@@ -33,6 +33,7 @@ const StaffManagement = () => {
   const [filterRole, setFilterRole] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newStaff, setNewStaff] = useState({
     full_name: "",
     email: "",
@@ -312,6 +313,121 @@ const StaffManagement = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Staff Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Staff Member</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-full_name">Full Name</Label>
+                <Input
+                  id="edit-full_name"
+                  value={newStaff.full_name}
+                  onChange={(e) => setNewStaff({...newStaff, full_name: e.target.value})}
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={newStaff.email}
+                  onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-username">Username</Label>
+                <Input
+                  id="edit-username"
+                  value={newStaff.username}
+                  onChange={(e) => setNewStaff({...newStaff, username: e.target.value})}
+                  placeholder="Enter username"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-role">Role</Label>
+                <Select value={newStaff.role} onValueChange={(value) => setNewStaff({...newStaff, role: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="lead">Team Lead</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="hr">HR</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-department">Department</Label>
+                <Select value={newStaff.department_id} onValueChange={(value) => setNewStaff({...newStaff, department_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map(dept => (
+                      <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-hire_date">Hire Date</Label>
+                <Input
+                  id="edit-hire_date"
+                  type="date"
+                  value={newStaff.hire_date}
+                  onChange={(e) => setNewStaff({...newStaff, hire_date: e.target.value})}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingStaff(null);
+                  setNewStaff({
+                    full_name: "",
+                    email: "",
+                    username: "",
+                    role: "staff",
+                    department_id: "",
+                    hire_date: "",
+                    is_department_head: false
+                  });
+                }}>
+                  Cancel
+                </Button>
+                <Button onClick={async () => {
+                  if (editingStaff) {
+                    const updateData = {
+                      ...newStaff,
+                      department_id: newStaff.department_id === "" ? null : newStaff.department_id,
+                      hire_date: newStaff.hire_date === "" ? null : newStaff.hire_date
+                    };
+                    await handleUpdateStaff(editingStaff.id, updateData);
+                    setIsEditDialogOpen(false);
+                    setEditingStaff(null);
+                    setNewStaff({
+                      full_name: "",
+                      email: "",
+                      username: "",
+                      role: "staff",
+                      department_id: "",
+                      hire_date: "",
+                      is_department_head: false
+                    });
+                  }
+                }}>
+                  Update Staff
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Filters */}
@@ -438,7 +554,19 @@ const StaffManagement = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setEditingStaff(member)}
+                        onClick={() => {
+                          setEditingStaff(member);
+                          setNewStaff({
+                            full_name: member.full_name,
+                            email: member.email,
+                            username: member.username,
+                            role: member.role,
+                            department_id: member.department_id || "",
+                            hire_date: member.hire_date || "",
+                            is_department_head: member.is_department_head
+                          });
+                          setIsEditDialogOpen(true);
+                        }}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
