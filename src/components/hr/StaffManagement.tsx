@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import EnhancedStaffForm from "./EnhancedStaffForm";
 
 const StaffManagement = () => {
   const [staff, setStaff] = useState([]);
@@ -41,7 +42,20 @@ const StaffManagement = () => {
     role: "staff",
     department_id: "",
     hire_date: "",
-    is_department_head: false
+    is_department_head: false,
+    gender: "",
+    date_of_birth: "",
+    cv_url: "",
+    about_me: "",
+    profile_photo_url: "",
+    father_name: "",
+    mother_name: "",
+    siblings: "",
+    relationship_status: "",
+    marriage_preference: "",
+    work_confidence_level: "",
+    reference_person_name: "",
+    reference_person_number: ""
   });
   const { toast } = useToast();
 
@@ -136,7 +150,20 @@ const StaffManagement = () => {
         role: "staff",
         department_id: "",
         hire_date: "",
-        is_department_head: false
+        is_department_head: false,
+        gender: "",
+        date_of_birth: "",
+        cv_url: "",
+        about_me: "",
+        profile_photo_url: "",
+        father_name: "",
+        mother_name: "",
+        siblings: "",
+        relationship_status: "",
+        marriage_preference: "",
+        work_confidence_level: "",
+        reference_person_name: "",
+        reference_person_number: ""
       });
 
       toast({
@@ -233,160 +260,39 @@ const StaffManagement = () => {
               Add Staff Member
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Staff Member</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="full_name">Full Name</Label>
-                <Input
-                  id="full_name"
-                  value={newStaff.full_name}
-                  onChange={(e) => setNewStaff({...newStaff, full_name: e.target.value})}
-                  placeholder="Enter full name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newStaff.email}
-                  onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div>
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={newStaff.username}
-                  onChange={(e) => setNewStaff({...newStaff, username: e.target.value})}
-                  placeholder="Enter username"
-                />
-              </div>
-              <div>
-                <Label htmlFor="role">Role</Label>
-                <Select value={newStaff.role} onValueChange={(value) => setNewStaff({...newStaff, role: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="staff">Staff</SelectItem>
-                    <SelectItem value="lead">Team Lead</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="hr">HR</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="department">Department</Label>
-                <Select value={newStaff.department_id} onValueChange={(value) => setNewStaff({...newStaff, department_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map(dept => (
-                      <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="hire_date">Hire Date</Label>
-                <Input
-                  id="hire_date"
-                  type="date"
-                  value={newStaff.hire_date}
-                  onChange={(e) => setNewStaff({...newStaff, hire_date: e.target.value})}
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddStaff}>
-                  Add Staff
-                </Button>
-              </div>
-            </div>
+            <EnhancedStaffForm
+              departments={departments}
+              newStaff={newStaff}
+              setNewStaff={setNewStaff}
+              onSubmit={handleAddStaff}
+              onCancel={() => setIsAddDialogOpen(false)}
+            />
           </DialogContent>
         </Dialog>
 
         {/* Edit Staff Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Staff Member</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-full_name">Full Name</Label>
-                <Input
-                  id="edit-full_name"
-                  value={newStaff.full_name}
-                  onChange={(e) => setNewStaff({...newStaff, full_name: e.target.value})}
-                  placeholder="Enter full name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-email">Email</Label>
-                <Input
-                  id="edit-email"
-                  type="email"
-                  value={newStaff.email}
-                  onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-username">Username</Label>
-                <Input
-                  id="edit-username"
-                  value={newStaff.username}
-                  onChange={(e) => setNewStaff({...newStaff, username: e.target.value})}
-                  placeholder="Enter username"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-role">Role</Label>
-                <Select value={newStaff.role} onValueChange={(value) => setNewStaff({...newStaff, role: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="staff">Staff</SelectItem>
-                    <SelectItem value="lead">Team Lead</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="hr">HR</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="edit-department">Department</Label>
-                <Select value={newStaff.department_id} onValueChange={(value) => setNewStaff({...newStaff, department_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map(dept => (
-                      <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="edit-hire_date">Hire Date</Label>
-                <Input
-                  id="edit-hire_date"
-                  type="date"
-                  value={newStaff.hire_date}
-                  onChange={(e) => setNewStaff({...newStaff, hire_date: e.target.value})}
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => {
+            <EnhancedStaffForm
+              departments={departments}
+              newStaff={newStaff}
+              setNewStaff={setNewStaff}
+              onSubmit={async () => {
+                if (editingStaff) {
+                  const updateData = {
+                    ...newStaff,
+                    department_id: newStaff.department_id === "" ? null : newStaff.department_id,
+                    hire_date: newStaff.hire_date === "" ? null : newStaff.hire_date,
+                    date_of_birth: newStaff.date_of_birth === "" ? null : newStaff.date_of_birth
+                  };
+                  await handleUpdateStaff(editingStaff.id, updateData);
                   setIsEditDialogOpen(false);
                   setEditingStaff(null);
                   setNewStaff({
@@ -396,36 +302,51 @@ const StaffManagement = () => {
                     role: "staff",
                     department_id: "",
                     hire_date: "",
-                    is_department_head: false
+                    is_department_head: false,
+                    gender: "",
+                    date_of_birth: "",
+                    cv_url: "",
+                    about_me: "",
+                    profile_photo_url: "",
+                    father_name: "",
+                    mother_name: "",
+                    siblings: "",
+                    relationship_status: "",
+                    marriage_preference: "",
+                    work_confidence_level: "",
+                    reference_person_name: "",
+                    reference_person_number: ""
                   });
-                }}>
-                  Cancel
-                </Button>
-                <Button onClick={async () => {
-                  if (editingStaff) {
-                    const updateData = {
-                      ...newStaff,
-                      department_id: newStaff.department_id === "" ? null : newStaff.department_id,
-                      hire_date: newStaff.hire_date === "" ? null : newStaff.hire_date
-                    };
-                    await handleUpdateStaff(editingStaff.id, updateData);
-                    setIsEditDialogOpen(false);
-                    setEditingStaff(null);
-                    setNewStaff({
-                      full_name: "",
-                      email: "",
-                      username: "",
-                      role: "staff",
-                      department_id: "",
-                      hire_date: "",
-                      is_department_head: false
-                    });
-                  }
-                }}>
-                  Update Staff
-                </Button>
-              </div>
-            </div>
+                }
+              }}
+              onCancel={() => {
+                setIsEditDialogOpen(false);
+                setEditingStaff(null);
+                setNewStaff({
+                  full_name: "",
+                  email: "",
+                  username: "",
+                  role: "staff",
+                  department_id: "",
+                  hire_date: "",
+                  is_department_head: false,
+                  gender: "",
+                  date_of_birth: "",
+                  cv_url: "",
+                  about_me: "",
+                  profile_photo_url: "",
+                  father_name: "",
+                  mother_name: "",
+                  siblings: "",
+                  relationship_status: "",
+                  marriage_preference: "",
+                  work_confidence_level: "",
+                  reference_person_name: "",
+                  reference_person_number: ""
+                });
+              }}
+              isEdit={true}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -556,15 +477,28 @@ const StaffManagement = () => {
                         size="sm"
                         onClick={() => {
                           setEditingStaff(member);
-                          setNewStaff({
-                            full_name: member.full_name,
-                            email: member.email,
-                            username: member.username,
-                            role: member.role,
-                            department_id: member.department_id || "",
-                            hire_date: member.hire_date || "",
-                            is_department_head: member.is_department_head
-                          });
+                           setNewStaff({
+                             full_name: member.full_name,
+                             email: member.email,
+                             username: member.username,
+                             role: member.role,
+                             department_id: member.department_id || "",
+                             hire_date: member.hire_date || "",
+                             is_department_head: member.is_department_head,
+                             gender: member.gender || "",
+                             date_of_birth: member.date_of_birth || "",
+                             cv_url: member.cv_url || "",
+                             about_me: member.about_me || "",
+                             profile_photo_url: member.profile_photo_url || "",
+                             father_name: member.father_name || "",
+                             mother_name: member.mother_name || "",
+                             siblings: member.siblings || "",
+                             relationship_status: member.relationship_status || "",
+                             marriage_preference: member.marriage_preference || "",
+                             work_confidence_level: member.work_confidence_level || "",
+                             reference_person_name: member.reference_person_name || "",
+                             reference_person_number: member.reference_person_number || ""
+                           });
                           setIsEditDialogOpen(true);
                         }}
                       >

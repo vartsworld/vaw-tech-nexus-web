@@ -26,6 +26,7 @@ import TaskManagement from "@/components/hr/TaskManagement";
 import DepartmentManagement from "@/components/hr/DepartmentManagement";
 import PerformanceMetrics from "@/components/hr/PerformanceMetrics";
 import NotificationCenter from "@/components/hr/NotificationCenter";
+import TeamApplicationsList from "@/components/hr/TeamApplicationsList";
 
 const HRDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -171,7 +172,7 @@ const HRDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="staff">Staff</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
@@ -179,6 +180,7 @@ const HRDashboard = () => {
             <TabsTrigger value="departments">Departments</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="applications">Applications</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -304,6 +306,10 @@ const HRDashboard = () => {
 
           <TabsContent value="notifications">
             <NotificationCenter />
+          </TabsContent>
+
+          <TabsContent value="applications">
+            <TeamApplicationsList />
           </TabsContent>
         </Tabs>
       </div>

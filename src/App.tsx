@@ -10,6 +10,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import HRDashboard from "./pages/HRDashboard";
 import Internship from "./pages/Internship";
 import InternExperience from "./pages/InternExperience";
+import TeamApplication from "./pages/TeamApplication";
 import Pricing from "./pages/Pricing";
 import DigitalMarketing from "./pages/DigitalMarketing";
 import WebAppDevelopment from "./pages/WebAppDevelopment";
@@ -39,6 +40,7 @@ const AppContent = () => {
           <Route path="/service-request" element={<ServiceRequest />} />
           <Route path="/internship" element={<Internship />} />
           <Route path="/intern-experience" element={<InternExperience />} />
+          <Route path="/team-application" element={<TeamApplication />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/digital-marketing" element={<DigitalMarketing />} />
           <Route path="/website-development" element={<WebsiteDevelopment />} />
