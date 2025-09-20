@@ -1198,52 +1198,97 @@ export type Database = {
       }
       staff_profiles: {
         Row: {
+          about_me: string | null
+          application_status: string | null
+          applied_via_link: boolean | null
           attendance_streak: number | null
           avatar_url: string | null
           created_at: string | null
+          cv_url: string | null
+          date_of_birth: string | null
           department_id: string | null
           email: string
+          father_name: string | null
           full_name: string
+          gender: string | null
           hire_date: string | null
           id: string
           is_department_head: boolean | null
+          marriage_preference: string | null
+          mother_name: string | null
+          profile_photo_url: string | null
+          reference_person_name: string | null
+          reference_person_number: string | null
+          relationship_status: string | null
           role: Database["public"]["Enums"]["user_role"] | null
+          siblings: string | null
           total_points: number | null
           updated_at: string | null
           user_id: string
           username: string
+          work_confidence_level: string | null
         }
         Insert: {
+          about_me?: string | null
+          application_status?: string | null
+          applied_via_link?: boolean | null
           attendance_streak?: number | null
           avatar_url?: string | null
           created_at?: string | null
+          cv_url?: string | null
+          date_of_birth?: string | null
           department_id?: string | null
           email: string
+          father_name?: string | null
           full_name: string
+          gender?: string | null
           hire_date?: string | null
           id?: string
           is_department_head?: boolean | null
+          marriage_preference?: string | null
+          mother_name?: string | null
+          profile_photo_url?: string | null
+          reference_person_name?: string | null
+          reference_person_number?: string | null
+          relationship_status?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          siblings?: string | null
           total_points?: number | null
           updated_at?: string | null
           user_id: string
           username: string
+          work_confidence_level?: string | null
         }
         Update: {
+          about_me?: string | null
+          application_status?: string | null
+          applied_via_link?: boolean | null
           attendance_streak?: number | null
           avatar_url?: string | null
           created_at?: string | null
+          cv_url?: string | null
+          date_of_birth?: string | null
           department_id?: string | null
           email?: string
+          father_name?: string | null
           full_name?: string
+          gender?: string | null
           hire_date?: string | null
           id?: string
           is_department_head?: boolean | null
+          marriage_preference?: string | null
+          mother_name?: string | null
+          profile_photo_url?: string | null
+          reference_person_name?: string | null
+          reference_person_number?: string | null
+          relationship_status?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          siblings?: string | null
           total_points?: number | null
           updated_at?: string | null
           user_id?: string
           username?: string
+          work_confidence_level?: string | null
         }
         Relationships: [
           {
@@ -1454,6 +1499,90 @@ export type Database = {
           status?: string | null
           updated_at?: string
           why_join_team?: string
+        }
+        Relationships: []
+      }
+      team_applications_staff: {
+        Row: {
+          about_me: string | null
+          created_at: string | null
+          cv_url: string | null
+          date_of_birth: string | null
+          email: string
+          father_name: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          marriage_preference: string | null
+          mother_name: string | null
+          phone: string | null
+          preferred_department_id: string | null
+          preferred_role: Database["public"]["Enums"]["user_role"] | null
+          profile_photo_url: string | null
+          reference_person_name: string | null
+          reference_person_number: string | null
+          relationship_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          siblings: string | null
+          status: string | null
+          updated_at: string | null
+          username: string | null
+          work_confidence_level: string | null
+        }
+        Insert: {
+          about_me?: string | null
+          created_at?: string | null
+          cv_url?: string | null
+          date_of_birth?: string | null
+          email: string
+          father_name?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          marriage_preference?: string | null
+          mother_name?: string | null
+          phone?: string | null
+          preferred_department_id?: string | null
+          preferred_role?: Database["public"]["Enums"]["user_role"] | null
+          profile_photo_url?: string | null
+          reference_person_name?: string | null
+          reference_person_number?: string | null
+          relationship_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          siblings?: string | null
+          status?: string | null
+          updated_at?: string | null
+          username?: string | null
+          work_confidence_level?: string | null
+        }
+        Update: {
+          about_me?: string | null
+          created_at?: string | null
+          cv_url?: string | null
+          date_of_birth?: string | null
+          email?: string
+          father_name?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          marriage_preference?: string | null
+          mother_name?: string | null
+          phone?: string | null
+          preferred_department_id?: string | null
+          preferred_role?: Database["public"]["Enums"]["user_role"] | null
+          profile_photo_url?: string | null
+          reference_person_name?: string | null
+          reference_person_number?: string | null
+          relationship_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          siblings?: string | null
+          status?: string | null
+          updated_at?: string | null
+          username?: string | null
+          work_confidence_level?: string | null
         }
         Relationships: []
       }
