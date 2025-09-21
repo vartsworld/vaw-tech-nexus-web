@@ -128,13 +128,18 @@ const StaffManagement = () => {
 
   const handleAddStaff = async () => {
     try {
+      // Generate a random first-time passcode
+      const firstTimePasscode = Math.random().toString(36).substring(2, 10);
+      
       const { data, error } = await supabase
         .from('staff_profiles')
         .insert({
           ...newStaff,
           user_id: crypto.randomUUID(),
           department_id: newStaff.department_id || null,
-          role: newStaff.role as 'hr' | 'staff'
+          role: newStaff.role as 'hr' | 'staff',
+          first_time_passcode: firstTimePasscode,
+          application_status: 'approved'
         })
         .select()
         .single();
@@ -168,7 +173,7 @@ const StaffManagement = () => {
 
       toast({
         title: "Success",
-        description: "Staff member added successfully.",
+        description: `Staff member added successfully. First-time passcode: ${firstTimePasscode}`,
       });
     } catch (error) {
       console.error('Error adding staff:', error);
@@ -414,6 +419,7 @@ const StaffManagement = () => {
                 <TableHead>Contact</TableHead>
                 <TableHead>Hire Date</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Login Info</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -469,6 +475,25 @@ const StaffManagement = () => {
                       <UserCheck className="h-3 w-3 mr-1" />
                       Active
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1 text-sm">
+                      {member.first_time_passcode && !member.passcode_used && (
+                        <div className="text-orange-600 font-medium">
+                          Passcode: {member.first_time_passcode}
+                        </div>
+                      )}
+                      {member.is_emoji_password && (
+                        <div className="text-green-600">
+                          ✓ Emoji Setup
+                        </div>
+                      )}
+                      {!member.first_time_passcode && !member.is_emoji_password && (
+                        <div className="text-gray-500">
+                          Pending Setup
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">

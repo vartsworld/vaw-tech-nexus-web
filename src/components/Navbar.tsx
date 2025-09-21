@@ -12,7 +12,8 @@ const navigationItems = [
   { name: "Contact", href: "/#contact" },
   { name: "Request Service", href: "/service-request" },
   { name: "Internship", href: "/internship" },
-  { name: "Intern Experience", href: "/intern-experience" }
+  { name: "Intern Experience", href: "/intern-experience" },
+  { name: "Staff Login", href: "/staff/login" }
 ];
 
 const servicesItems = [

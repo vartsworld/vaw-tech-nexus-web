@@ -24,6 +24,7 @@ import { UserProvider } from "./context/UserContext";
 import IntroScreen from "./components/IntroScreen";
 import { useUser } from "./context/UserContext";
 import StaffDashboard from "./pages/StaffDashboard";
+import StaffLogin from "./pages/StaffLogin";
 import TeamHeadDashboard from "./pages/TeamHeadDashboard";
 
 const queryClient = new QueryClient();
@@ -51,7 +52,8 @@ const AppContent = () => {
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/hr/dashboard" element={<HRDashboard />} />
-          <Route path="/staff/dashboard" element={<StaffDashboard />} />
+        <Route path="/staff/login" element={<StaffLogin />} />
+        <Route path="/staff/dashboard" element={<StaffDashboard />} />
           <Route path="/team-head/dashboard" element={<TeamHeadDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
