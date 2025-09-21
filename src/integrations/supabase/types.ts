@@ -1208,14 +1208,20 @@ export type Database = {
           date_of_birth: string | null
           department_id: string | null
           email: string
+          emoji_password: string | null
           father_name: string | null
+          first_time_passcode: string | null
           full_name: string
           gender: string | null
           hire_date: string | null
           id: string
           is_department_head: boolean | null
+          is_emoji_password: boolean | null
+          last_login_attempt: string | null
+          login_attempts: number | null
           marriage_preference: string | null
           mother_name: string | null
+          passcode_used: boolean | null
           profile_photo_url: string | null
           reference_person_name: string | null
           reference_person_number: string | null
@@ -1239,14 +1245,20 @@ export type Database = {
           date_of_birth?: string | null
           department_id?: string | null
           email: string
+          emoji_password?: string | null
           father_name?: string | null
+          first_time_passcode?: string | null
           full_name: string
           gender?: string | null
           hire_date?: string | null
           id?: string
           is_department_head?: boolean | null
+          is_emoji_password?: boolean | null
+          last_login_attempt?: string | null
+          login_attempts?: number | null
           marriage_preference?: string | null
           mother_name?: string | null
+          passcode_used?: boolean | null
           profile_photo_url?: string | null
           reference_person_name?: string | null
           reference_person_number?: string | null
@@ -1270,14 +1282,20 @@ export type Database = {
           date_of_birth?: string | null
           department_id?: string | null
           email?: string
+          emoji_password?: string | null
           father_name?: string | null
+          first_time_passcode?: string | null
           full_name?: string
           gender?: string | null
           hire_date?: string | null
           id?: string
           is_department_head?: boolean | null
+          is_emoji_password?: boolean | null
+          last_login_attempt?: string | null
+          login_attempts?: number | null
           marriage_preference?: string | null
           mother_name?: string | null
+          passcode_used?: boolean | null
           profile_photo_url?: string | null
           reference_person_name?: string | null
           reference_person_number?: string | null
@@ -2113,6 +2131,10 @@ export type Database = {
       equals: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: boolean
+      }
+      generate_first_time_passcode: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       geography: {
         Args: { "": string } | { "": unknown }
