@@ -3732,7 +3732,7 @@ export type Database = {
         | "completed"
         | "overdue"
         | "handover"
-      user_role: "hr" | "department_head" | "staff"
+      user_role: "hr" | "department_head" | "staff" | "lead" | "manager"
       vendor_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -3893,7 +3893,7 @@ export const Constants = {
         "overdue",
         "handover",
       ],
-      user_role: ["hr", "department_head", "staff"],
+      user_role: ["hr", "department_head", "staff", "lead", "manager"],
       vendor_status: ["pending", "approved", "rejected"],
     },
   },
