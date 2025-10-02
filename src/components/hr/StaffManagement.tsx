@@ -19,7 +19,9 @@ import {
   Calendar,
   UserCheck,
   Crown,
-  Building2
+  Building2,
+  Copy,
+  Check
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +37,7 @@ const StaffManagement = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [copiedPasscode, setCopiedPasscode] = useState(null);
   const [newStaff, setNewStaff] = useState({
     full_name: "",
     email: "",
@@ -248,6 +251,16 @@ const StaffManagement = () => {
       case 'lead': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const copyPasscode = (passcode, memberId) => {
+    navigator.clipboard.writeText(passcode);
+    setCopiedPasscode(memberId);
+    toast({
+      title: "Copied!",
+      description: "Passcode copied to clipboard",
+    });
+    setTimeout(() => setCopiedPasscode(null), 2000);
   };
 
   return (
@@ -479,13 +492,30 @@ const StaffManagement = () => {
                   <TableCell>
                     <div className="space-y-1 text-sm">
                       {member.first_time_passcode && !member.passcode_used && (
-                        <div className="text-orange-600 font-medium">
-                          Passcode: {member.first_time_passcode}
+                        <div className="flex items-center gap-2">
+                          <div className="bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-md">
+                            <span className="text-orange-700 font-mono font-semibold">
+                              {member.first_time_passcode}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyPasscode(member.first_time_passcode, member.id)}
+                            className="h-7 w-7 p-0"
+                          >
+                            {copiedPasscode === member.id ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
                         </div>
                       )}
                       {member.is_emoji_password && (
-                        <div className="text-green-600">
-                          ✓ Emoji Setup
+                        <div className="text-green-600 flex items-center gap-1">
+                          <Check className="h-4 w-4" />
+                          Emoji Setup
                         </div>
                       )}
                       {!member.first_time_passcode && !member.is_emoji_password && (
