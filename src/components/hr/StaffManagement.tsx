@@ -21,7 +21,8 @@ import {
   Crown,
   Building2,
   Copy,
-  Check
+  Check,
+  KeyRound
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -263,6 +264,46 @@ const StaffManagement = () => {
     setTimeout(() => setCopiedPasscode(null), 2000);
   };
 
+  const generatePasscode = async (staffId) => {
+    try {
+      // Generate a new random passcode
+      const newPasscode = Math.random().toString(36).substring(2, 10);
+      
+      const { error } = await supabase
+        .from('staff_profiles')
+        .update({ 
+          first_time_passcode: newPasscode,
+          passcode_used: false,
+          is_emoji_password: false
+        })
+        .eq('id', staffId);
+
+      if (error) throw error;
+
+      // Update local state
+      setStaff(staff.map(member => 
+        member.id === staffId 
+          ? { ...member, first_time_passcode: newPasscode, passcode_used: false, is_emoji_password: false }
+          : member
+      ));
+
+      // Copy to clipboard automatically
+      navigator.clipboard.writeText(newPasscode);
+
+      toast({
+        title: "Passcode Generated!",
+        description: `New passcode: ${newPasscode} (copied to clipboard)`,
+      });
+    } catch (error) {
+      console.error('Error generating passcode:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate passcode.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -490,11 +531,11 @@ const StaffManagement = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="space-y-1 text-sm">
+                    <div className="space-y-2">
                       {member.first_time_passcode && !member.passcode_used && (
                         <div className="flex items-center gap-2">
                           <div className="bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-md">
-                            <span className="text-orange-700 font-mono font-semibold">
+                            <span className="text-orange-700 font-mono font-semibold text-sm">
                               {member.first_time_passcode}
                             </span>
                           </div>
@@ -503,6 +544,7 @@ const StaffManagement = () => {
                             size="sm"
                             onClick={() => copyPasscode(member.first_time_passcode, member.id)}
                             className="h-7 w-7 p-0"
+                            title="Copy passcode"
                           >
                             {copiedPasscode === member.id ? (
                               <Check className="h-4 w-4 text-green-600" />
@@ -513,16 +555,25 @@ const StaffManagement = () => {
                         </div>
                       )}
                       {member.is_emoji_password && (
-                        <div className="text-green-600 flex items-center gap-1">
+                        <div className="text-green-600 flex items-center gap-1 text-sm">
                           <Check className="h-4 w-4" />
                           Emoji Setup
                         </div>
                       )}
                       {!member.first_time_passcode && !member.is_emoji_password && (
-                        <div className="text-gray-500">
-                          Pending Setup
+                        <div className="text-gray-500 text-sm">
+                          No Login Set
                         </div>
                       )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => generatePasscode(member.id)}
+                        className="h-7 text-xs gap-1"
+                      >
+                        <KeyRound className="h-3 w-3" />
+                        {member.first_time_passcode || member.is_emoji_password ? 'Reset' : 'Generate'} Passcode
+                      </Button>
                     </div>
                   </TableCell>
                   <TableCell>
