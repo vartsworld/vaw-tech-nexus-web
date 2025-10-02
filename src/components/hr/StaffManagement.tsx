@@ -483,7 +483,7 @@ const StaffManagement = () => {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={member.avatar_url} />
+                        <AvatarImage src={member.profile_photo_url || member.avatar_url} />
                         <AvatarFallback>
                           {member.full_name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>
