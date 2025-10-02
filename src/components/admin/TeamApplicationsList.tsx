@@ -13,16 +13,27 @@ interface TeamApplication {
   id: string;
   full_name: string;
   email: string;
-  phone: string;
-  current_position?: string;
-  experience_years?: number;
-  skills: string;
-  why_join_team: string;
-  preferred_role?: string;
-  portfolio_url?: string;
-  linkedin_url?: string;
+  phone: string | null;
+  username: string | null;
+  gender: string | null;
+  date_of_birth: string | null;
+  cv_url: string | null;
+  about_me: string | null;
+  profile_photo_url: string | null;
+  father_name: string | null;
+  mother_name: string | null;
+  siblings: string | null;
+  relationship_status: string | null;
+  marriage_preference: string | null;
+  work_confidence_level: string | null;
+  reference_person_name: string | null;
+  reference_person_number: string | null;
+  preferred_role: string | null;
+  preferred_department_id: string | null;
   status: string;
   created_at: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
 }
 
 const TeamApplicationsList = () => {
@@ -33,7 +44,7 @@ const TeamApplicationsList = () => {
   const fetchApplications = async () => {
     try {
       const { data, error } = await supabase
-        .from('team_applications')
+        .from('team_applications_staff')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -55,7 +66,7 @@ const TeamApplicationsList = () => {
   const updateStatus = async (id: string, newStatus: string) => {
     try {
       const { error } = await supabase
-        .from('team_applications')
+        .from('team_applications_staff')
         .update({ status: newStatus })
         .eq('id', id);
 
@@ -117,8 +128,7 @@ const TeamApplicationsList = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Current Position</TableHead>
-                <TableHead>Experience</TableHead>
+                <TableHead>Username</TableHead>
                 <TableHead>Preferred Role</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
@@ -134,10 +144,7 @@ const TeamApplicationsList = () => {
                       <div className="text-sm text-muted-foreground">{application.email}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{application.current_position || "Not specified"}</TableCell>
-                  <TableCell>
-                    {application.experience_years ? `${application.experience_years} years` : "Not specified"}
-                  </TableCell>
+                  <TableCell>{application.username || "Not specified"}</TableCell>
                   <TableCell>{application.preferred_role || "Not specified"}</TableCell>
                   <TableCell>
                     <Select
@@ -187,63 +194,84 @@ const TeamApplicationsList = () => {
                                 </h4>
                                 <div className="text-sm space-y-1">
                                   <p><strong>Name:</strong> {selectedApplication.full_name}</p>
+                                  <p><strong>Username:</strong> {selectedApplication.username || "Not specified"}</p>
                                   <p className="flex items-center gap-1">
                                     <Mail className="w-3 h-3" />
                                     {selectedApplication.email}
                                   </p>
-                                  <p className="flex items-center gap-1">
-                                    <Phone className="w-3 h-3" />
-                                    {selectedApplication.phone}
-                                  </p>
-                                  <p><strong>Current Position:</strong> {selectedApplication.current_position || "Not specified"}</p>
-                                  <p><strong>Experience:</strong> {selectedApplication.experience_years ? `${selectedApplication.experience_years} years` : "Not specified"}</p>
+                                  {selectedApplication.phone && (
+                                    <p className="flex items-center gap-1">
+                                      <Phone className="w-3 h-3" />
+                                      {selectedApplication.phone}
+                                    </p>
+                                  )}
+                                  <p><strong>Gender:</strong> {selectedApplication.gender || "Not specified"}</p>
+                                  <p><strong>Date of Birth:</strong> {selectedApplication.date_of_birth ? new Date(selectedApplication.date_of_birth).toLocaleDateString() : "Not specified"}</p>
                                   <p><strong>Preferred Role:</strong> {selectedApplication.preferred_role || "Not specified"}</p>
                                 </div>
                               </div>
                               
                               <div className="space-y-2">
-                                <h4 className="font-semibold">Links</h4>
+                                <h4 className="font-semibold">Family Information</h4>
                                 <div className="text-sm space-y-1">
-                                  {selectedApplication.portfolio_url && (
-                                    <p>
-                                      <a 
-                                        href={selectedApplication.portfolio_url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-1 text-blue-500 hover:underline"
-                                      >
-                                        <ExternalLink className="w-3 h-3" />
-                                        Portfolio
-                                      </a>
-                                    </p>
+                                  {selectedApplication.father_name && (
+                                    <p><strong>Father:</strong> {selectedApplication.father_name}</p>
                                   )}
-                                  {selectedApplication.linkedin_url && (
-                                    <p>
-                                      <a 
-                                        href={selectedApplication.linkedin_url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-1 text-blue-500 hover:underline"
-                                      >
-                                        <ExternalLink className="w-3 h-3" />
-                                        LinkedIn
-                                      </a>
-                                    </p>
+                                  {selectedApplication.mother_name && (
+                                    <p><strong>Mother:</strong> {selectedApplication.mother_name}</p>
+                                  )}
+                                  {selectedApplication.siblings && (
+                                    <p><strong>Siblings:</strong> {selectedApplication.siblings}</p>
+                                  )}
+                                  {selectedApplication.relationship_status && (
+                                    <p><strong>Relationship Status:</strong> {selectedApplication.relationship_status}</p>
+                                  )}
+                                  {selectedApplication.marriage_preference && (
+                                    <p><strong>Marriage Preference:</strong> {selectedApplication.marriage_preference}</p>
                                   )}
                                 </div>
                               </div>
                             </div>
 
                             <div className="space-y-4">
-                              <div>
-                                <h4 className="font-semibold mb-2">Skills</h4>
-                                <p className="text-sm bg-muted p-3 rounded">{selectedApplication.skills}</p>
-                              </div>
+                              {selectedApplication.about_me && (
+                                <div>
+                                  <h4 className="font-semibold mb-2">About Me</h4>
+                                  <p className="text-sm bg-muted p-3 rounded">{selectedApplication.about_me}</p>
+                                </div>
+                              )}
 
-                              <div>
-                                <h4 className="font-semibold mb-2">Why Join Our Team</h4>
-                                <p className="text-sm bg-muted p-3 rounded">{selectedApplication.why_join_team}</p>
-                              </div>
+                              {selectedApplication.work_confidence_level && (
+                                <div>
+                                  <h4 className="font-semibold mb-2">Work Confidence Level</h4>
+                                  <p className="text-sm bg-muted p-3 rounded">{selectedApplication.work_confidence_level}</p>
+                                </div>
+                              )}
+
+                              {selectedApplication.reference_person_name && (
+                                <div>
+                                  <h4 className="font-semibold mb-2">Reference</h4>
+                                  <p className="text-sm bg-muted p-3 rounded">
+                                    {selectedApplication.reference_person_name}
+                                    {selectedApplication.reference_person_number && ` - ${selectedApplication.reference_person_number}`}
+                                  </p>
+                                </div>
+                              )}
+
+                              {selectedApplication.cv_url && (
+                                <div>
+                                  <h4 className="font-semibold mb-2">CV</h4>
+                                  <a 
+                                    href={selectedApplication.cv_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-blue-500 hover:underline"
+                                  >
+                                    <ExternalLink className="w-3 h-3" />
+                                    View CV
+                                  </a>
+                                </div>
+                              )}
                             </div>
 
                             <div className="flex items-center justify-between pt-4 border-t">
