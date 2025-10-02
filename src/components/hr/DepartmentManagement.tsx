@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 const DepartmentManagement = () => {
   const [departments, setDepartments] = useState([]);
   const [staff, setStaff] = useState([]);
+  const [departmentMetrics, setDepartmentMetrics] = useState({});
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingDepartment, setEditingDepartment] = useState(null);
   const [newDepartment, setNewDepartment] = useState({
@@ -37,6 +38,7 @@ const DepartmentManagement = () => {
   useEffect(() => {
     fetchDepartments();
     fetchStaff();
+    fetchDepartmentMetrics();
   }, []);
 
   const fetchDepartments = async () => {
@@ -83,6 +85,49 @@ const DepartmentManagement = () => {
       setStaff(data || []);
     } catch (error) {
       console.error('Error fetching staff:', error);
+    }
+  };
+
+  const fetchDepartmentMetrics = async () => {
+    try {
+      // Get all departments
+      const { data: deptData } = await supabase
+        .from('departments')
+        .select('id');
+
+      if (!deptData) return;
+
+      // Calculate metrics for each department
+      const metrics = {};
+      
+      for (const dept of deptData) {
+        // Get active tasks count (pending, in_progress)
+        const { data: tasks } = await supabase
+          .from('staff_tasks')
+          .select('status')
+          .eq('department_id', dept.id);
+
+        const activeTasks = tasks?.filter(t => 
+          t.status === 'pending' || t.status === 'in_progress'
+        ).length || 0;
+
+        const completedTasks = tasks?.filter(t => t.status === 'completed').length || 0;
+        const totalTasks = tasks?.length || 0;
+
+        // Calculate performance percentage (completed tasks / total tasks)
+        const performance = totalTasks > 0 
+          ? Math.round((completedTasks / totalTasks) * 100) 
+          : 0;
+
+        metrics[dept.id] = {
+          activeTasks,
+          performance
+        };
+      }
+
+      setDepartmentMetrics(metrics);
+    } catch (error) {
+      console.error('Error fetching department metrics:', error);
     }
   };
 
@@ -212,6 +257,7 @@ const DepartmentManagement = () => {
 
       // Refresh departments to update counts
       fetchDepartments();
+      fetchDepartmentMetrics();
 
       toast({
         title: "Success",
@@ -450,14 +496,22 @@ const DepartmentManagement = () => {
                       <ClipboardList className="h-3 w-3" />
                       Active Tasks
                     </div>
-                    <div className="font-bold text-lg">12</div>
+                    <div className="font-bold text-lg">
+                      {departmentMetrics[dept.id]?.activeTasks || 0}
+                    </div>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-1 text-xs text-gray-500">
                       <TrendingUp className="h-3 w-3" />
                       Performance
                     </div>
-                    <div className="font-bold text-lg text-green-600">85%</div>
+                    <div className={`font-bold text-lg ${
+                      (departmentMetrics[dept.id]?.performance || 0) >= 70 ? 'text-green-600' : 
+                      (departmentMetrics[dept.id]?.performance || 0) >= 50 ? 'text-yellow-600' : 
+                      'text-red-600'
+                    }`}>
+                      {departmentMetrics[dept.id]?.performance || 0}%
+                    </div>
                   </div>
                 </div>
               </div>
