@@ -65,18 +65,70 @@ const TeamApplicationsList = () => {
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
-      const { error } = await supabase
+      // Update the application status
+      const { error: updateError } = await supabase
         .from('team_applications_staff')
         .update({ status: newStatus })
         .eq('id', id);
 
-      if (error) {
-        console.error('Error updating status:', error);
+      if (updateError) {
+        console.error('Error updating status:', updateError);
         toast.error('Failed to update status');
         return;
       }
 
-      toast.success('Status updated successfully');
+      // If status is 'accepted', create staff profile with passcode
+      if (newStatus === 'accepted') {
+        const application = applications.find(app => app.id === id);
+        if (application) {
+          // Generate a random passcode
+          const firstTimePasscode = Math.random().toString(36).substring(2, 10);
+          
+          const newStaffProfile: any = {
+            user_id: crypto.randomUUID(),
+            username: application.username || application.email.split('@')[0],
+            full_name: application.full_name,
+            email: application.email,
+            role: (application.preferred_role as 'hr' | 'staff') || 'staff',
+            application_status: 'approved',
+            first_time_passcode: firstTimePasscode,
+            passcode_used: false,
+            applied_via_link: true
+          };
+
+          // Add optional fields if they exist
+          if (application.phone) newStaffProfile.phone = application.phone;
+          if (application.gender) newStaffProfile.gender = application.gender;
+          if (application.date_of_birth) newStaffProfile.date_of_birth = application.date_of_birth;
+          if (application.cv_url) newStaffProfile.cv_url = application.cv_url;
+          if (application.about_me) newStaffProfile.about_me = application.about_me;
+          if (application.profile_photo_url) newStaffProfile.profile_photo_url = application.profile_photo_url;
+          if (application.father_name) newStaffProfile.father_name = application.father_name;
+          if (application.mother_name) newStaffProfile.mother_name = application.mother_name;
+          if (application.siblings) newStaffProfile.siblings = application.siblings;
+          if (application.relationship_status) newStaffProfile.relationship_status = application.relationship_status;
+          if (application.marriage_preference) newStaffProfile.marriage_preference = application.marriage_preference;
+          if (application.work_confidence_level) newStaffProfile.work_confidence_level = application.work_confidence_level;
+          if (application.reference_person_name) newStaffProfile.reference_person_name = application.reference_person_name;
+          if (application.reference_person_number) newStaffProfile.reference_person_number = application.reference_person_number;
+          if (application.preferred_department_id) newStaffProfile.department_id = application.preferred_department_id;
+
+          const { error: staffError } = await supabase
+            .from('staff_profiles')
+            .insert(newStaffProfile);
+
+          if (staffError) {
+            console.error('Error creating staff profile:', staffError);
+            toast.error('Status updated but failed to create staff profile');
+            return;
+          }
+
+          toast.success(`Application approved! Passcode: ${firstTimePasscode}`);
+        }
+      } else {
+        toast.success('Status updated successfully');
+      }
+
       fetchApplications();
     } catch (error) {
       console.error('Error:', error);
