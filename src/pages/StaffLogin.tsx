@@ -298,7 +298,7 @@ const StaffLogin = () => {
                   key={index}
                   variant="ghost"
                   className="p-2 h-10 text-xl hover:bg-blue-100"
-                  onClick={() => addEmojiToPassword(emoji, confirmEmojiPassword.length >= newEmojiPassword.length && newEmojiPassword.length > 0)}
+                  onClick={() => addEmojiToPassword(emoji, newEmojiPassword.length >= 4 && confirmEmojiPassword.length < newEmojiPassword.length)}
                 >
                   {emoji}
                 </Button>
