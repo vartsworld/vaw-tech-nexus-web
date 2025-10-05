@@ -219,66 +219,71 @@ const StaffDashboard = () => {
       </div>
       {/* Office Header */}
       <header className="relative z-20 bg-black/20 backdrop-blur-lg border-b border-white/10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center p-2">
-                <img 
-                  src="/lovable-uploads/3268a3ac-c0c1-40de-8ba7-8f1b1099460e.png" 
-                  alt="VAW Technologies Logo" 
-                  className="w-full h-full object-contain"
-                />
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex flex-col gap-3">
+            {/* Top Row: Logo and Main Info */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 backdrop-blur-sm rounded-lg flex items-center justify-center p-1.5 flex-shrink-0">
+                  <img 
+                    src="/lovable-uploads/3268a3ac-c0c1-40de-8ba7-8f1b1099460e.png" 
+                    alt="VAW Technologies Logo" 
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-base sm:text-lg font-bold text-white truncate">VAW Technologies</h1>
+                  <p className="text-blue-300 text-xs sm:text-sm truncate">Welcome, {profile?.full_name || profile?.username || 'Staff'}!</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-lg sm:text-xl font-bold text-white">VAW Technologies</h1>
-                <p className="text-blue-300 text-sm sm:text-base">Welcome back, {profile?.full_name || profile?.username || 'Staff Member'}!</p>
+              
+              {/* Actions: Profile & Logout */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 h-9 px-2 sm:px-3"
+                  onClick={() => navigate("/staff/profile")}
+                >
+                  <Avatar className="w-6 h-6 sm:mr-2">
+                    <AvatarImage src={(profile as any)?.profile_photo_url || (profile as any)?.avatar_url} />
+                    <AvatarFallback className="text-xs">
+                      {(profile as any)?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden sm:inline">Profile</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 h-9 px-2 sm:px-3"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Logout</span>
+                </Button>
               </div>
             </div>
-            
-            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-              <div className="order-3 sm:order-1">
-                <NotificationsBar userId={profile?.user_id || 'demo-user'} />
-              </div>
+
+            {/* Bottom Row: Stats & Notifications */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <NotificationsBar userId={profile?.user_id || 'demo-user'} />
               
-              <div className="flex items-center gap-1 sm:gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-2 sm:px-3 py-1">
+              <div className="flex items-center gap-1.5 bg-green-500/20 border border-green-500/30 rounded-lg px-2.5 py-1.5">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-green-300 text-xs sm:text-sm">Online</span>
+                <span className="text-green-300 text-xs font-medium">Online</span>
               </div>
               
-              <div className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg px-2 sm:px-3 py-1">
-                <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-purple-300" />
-                <span className="text-purple-300 text-xs sm:text-sm font-medium">{(profile as any)?.total_points || 0} pts</span>
+              <div className="flex items-center gap-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg px-2.5 py-1.5">
+                <Trophy className="w-3.5 h-3.5 text-purple-300" />
+                <span className="text-purple-300 text-xs font-medium">{(profile as any)?.total_points || 0} pts</span>
               </div>
               
-              <div className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2 sm:px-3 py-1">
-                <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-300" />
-                <span className="text-yellow-300 text-xs sm:text-sm">${(profile as any)?.earnings || 0}</span>
+              <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2.5 py-1.5">
+                <Wallet className="w-3.5 h-3.5 text-yellow-300" />
+                <span className="text-yellow-300 text-xs font-medium">${(profile as any)?.earnings || 0}</span>
               </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
-                onClick={() => navigate("/staff/profile")}
-              >
-                <Avatar className="w-6 h-6 sm:w-7 sm:h-7 mr-2">
-                  <AvatarImage src={(profile as any)?.profile_photo_url || (profile as any)?.avatar_url} />
-                  <AvatarFallback className="text-xs">
-                    {(profile as any)?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="hidden sm:inline">Profile</span>
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30"
-                onClick={handleLogout}
-              >
-                <LogOut className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">Logout</span>
-              </Button>
             </div>
           </div>
         </div>
