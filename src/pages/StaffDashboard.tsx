@@ -195,8 +195,17 @@ const StaffDashboard = () => {
     );
   }
 
+  // Don't render dashboard until profile is loaded
+  if (!profile?.user_id) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
+        <div className="text-white text-lg">Loading your workspace...</div>
+      </div>
+    );
+  }
+
   const roomComponents = {
-    workspace: <DraggableWorkspace userId={profile?.user_id || 'demo-user'} userProfile={profile} />,
+    workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} />,
     breakroom: <BreakRoom />,
     meeting: <MeetingRoom />
   };
@@ -268,7 +277,7 @@ const StaffDashboard = () => {
 
             {/* Bottom Row: Stats & Notifications */}
             <div className="flex items-center gap-2 flex-wrap">
-              <NotificationsBar userId={profile?.user_id || 'demo-user'} />
+              <NotificationsBar userId={profile.user_id} />
               
               <div className="flex items-center gap-1.5 bg-green-500/20 border border-green-500/30 rounded-lg px-2.5 py-1.5">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
