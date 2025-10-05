@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Coffee, 
   Users, 
@@ -14,7 +16,10 @@ import {
   Calendar,
   Clock,
   Target,
-  TrendingUp
+  TrendingUp,
+  LogOut,
+  User,
+  Trophy
 } from "lucide-react";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import WorkspaceRoom from "@/components/staff/WorkspaceRoom";
@@ -26,15 +31,27 @@ import NotificationsBar from "@/components/staff/NotificationsBar";
 import DraggableWorkspace from "@/components/staff/DraggableWorkspace";
 import { useStaffData } from "@/hooks/useStaffData";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type RoomType = 'workspace' | 'breakroom' | 'meeting';
 
 const StaffDashboard = () => {
+  const navigate = useNavigate();
   const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const { profile } = useStaffData();
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success("Logged out successfully");
+      navigate("/staff/login");
+    } catch (error) {
+      toast.error("Error logging out");
+    }
+  };
 
   useEffect(() => {
     checkDailyRequirements();
@@ -228,10 +245,40 @@ const StaffDashboard = () => {
                 <span className="text-green-300 text-xs sm:text-sm">Online</span>
               </div>
               
+              <div className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg px-2 sm:px-3 py-1">
+                <Trophy className="w-3 h-3 sm:w-4 sm:h-4 text-purple-300" />
+                <span className="text-purple-300 text-xs sm:text-sm font-medium">{(profile as any)?.total_points || 0} pts</span>
+              </div>
+              
               <div className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2 sm:px-3 py-1">
                 <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-300" />
-                <span className="text-yellow-300 text-xs sm:text-sm">${profile?.earnings || 0}</span>
+                <span className="text-yellow-300 text-xs sm:text-sm">${(profile as any)?.earnings || 0}</span>
               </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                onClick={() => navigate("/staff/profile")}
+              >
+                <Avatar className="w-6 h-6 sm:w-7 sm:h-7 mr-2">
+                  <AvatarImage src={(profile as any)?.profile_photo_url || (profile as any)?.avatar_url} />
+                  <AvatarFallback className="text-xs">
+                    {(profile as any)?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden sm:inline">Profile</span>
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30"
+                onClick={handleLogout}
+              >
+                <LogOut className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
             </div>
           </div>
         </div>
