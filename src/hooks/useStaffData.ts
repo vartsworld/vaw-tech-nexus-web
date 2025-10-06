@@ -60,6 +60,7 @@ export const useStaffData = () => {
       
       if (!user) {
         console.log('No authenticated user found');
+        setLoading(false);
         return;
       }
 

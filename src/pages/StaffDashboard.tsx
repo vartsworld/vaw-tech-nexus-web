@@ -41,7 +41,18 @@ const StaffDashboard = () => {
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const { profile } = useStaffData();
+  const { profile, loading } = useStaffData();
+
+  // Check authentication
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user && !loading) {
+        navigate("/staff/login");
+      }
+    };
+    checkAuth();
+  }, [loading, navigate]);
 
   const handleLogout = async () => {
     try {
