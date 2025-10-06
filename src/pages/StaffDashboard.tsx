@@ -266,9 +266,9 @@ const StaffDashboard = () => {
                   onClick={() => navigate("/staff/profile")}
                 >
                   <Avatar className="w-6 h-6 sm:mr-2">
-                    <AvatarImage src={(profile as any)?.profile_photo_url || (profile as any)?.avatar_url} />
+                    <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
                     <AvatarFallback className="text-xs">
-                      {(profile as any)?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+                      {profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <span className="hidden sm:inline">Profile</span>
@@ -297,12 +297,12 @@ const StaffDashboard = () => {
               
               <div className="flex items-center gap-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg px-2.5 py-1.5">
                 <Trophy className="w-3.5 h-3.5 text-purple-300" />
-                <span className="text-purple-300 text-xs font-medium">{(profile as any)?.total_points || 0} pts</span>
+                <span className="text-purple-300 text-xs font-medium">{profile?.total_points || 0} pts</span>
               </div>
               
               <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2.5 py-1.5">
                 <Wallet className="w-3.5 h-3.5 text-yellow-300" />
-                <span className="text-yellow-300 text-xs font-medium">${(profile as any)?.earnings || 0}</span>
+                <span className="text-yellow-300 text-xs font-medium">${profile?.earnings?.toFixed(2) || '0.00'}</span>
               </div>
             </div>
           </div>

@@ -1207,6 +1207,7 @@ export type Database = {
           cv_url: string | null
           date_of_birth: string | null
           department_id: string | null
+          earnings: number | null
           email: string
           emoji_password: string | null
           father_name: string | null
@@ -1244,6 +1245,7 @@ export type Database = {
           cv_url?: string | null
           date_of_birth?: string | null
           department_id?: string | null
+          earnings?: number | null
           email: string
           emoji_password?: string | null
           father_name?: string | null
@@ -1281,6 +1283,7 @@ export type Database = {
           cv_url?: string | null
           date_of_birth?: string | null
           department_id?: string | null
+          earnings?: number | null
           email?: string
           emoji_password?: string | null
           father_name?: string | null

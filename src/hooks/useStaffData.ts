@@ -37,7 +37,10 @@ export interface Profile {
   full_name?: string;
   username?: string;
   avatar_url?: string;
+  profile_photo_url?: string;
   earnings: number;
+  total_points: number;
+  attendance_streak?: number;
 }
 
 export const useStaffData = () => {
@@ -64,22 +67,32 @@ export const useStaffData = () => {
         return;
       }
 
-      // Try to get actual staff profile, fallback to mock if not found
-      const { data: staffProfile } = await supabase
+      // Get actual staff profile
+      const { data: staffProfile, error: profileError } = await supabase
         .from('staff_profiles')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      const mockProfile: Profile = {
-        id: user.id,
-        user_id: user.id,
-        full_name: staffProfile?.full_name || user.user_metadata?.full_name || 'Staff Member',
-        username: staffProfile?.username || 'staff',
-        earnings: 247.50
+      if (profileError) {
+        console.error('Error fetching staff profile:', profileError);
+        setLoading(false);
+        return;
+      }
+
+      const userProfile: Profile = {
+        id: staffProfile.id,
+        user_id: staffProfile.user_id,
+        full_name: staffProfile.full_name || 'Staff Member',
+        username: staffProfile.username || 'staff',
+        avatar_url: staffProfile.avatar_url,
+        profile_photo_url: staffProfile.profile_photo_url,
+        earnings: Number(staffProfile.earnings) || 0,
+        total_points: staffProfile.total_points || 0,
+        attendance_streak: staffProfile.attendance_streak || 0
       };
 
-      setProfile(mockProfile);
+      setProfile(userProfile);
 
       // Mock tasks data
       const mockTasks: Task[] = [
@@ -158,10 +171,9 @@ export const useStaffData = () => {
 
       // Mock team members
       const mockTeam: Profile[] = [
-        // Mock team members with username
-        { id: 'user-2', user_id: 'user-2', full_name: "Sarah Chen", username: "sarah", earnings: 320.00 },
-        { id: 'user-3', user_id: 'user-3', full_name: "Mike Rodriguez", username: "mike", earnings: 280.50 },
-        { id: 'user-4', user_id: 'user-4', full_name: "Emily Davis", username: "emily", earnings: 195.75 }
+        { id: 'user-2', user_id: 'user-2', full_name: "Sarah Chen", username: "sarah", earnings: 320.00, total_points: 850 },
+        { id: 'user-3', user_id: 'user-3', full_name: "Mike Rodriguez", username: "mike", earnings: 280.50, total_points: 720 },
+        { id: 'user-4', user_id: 'user-4', full_name: "Emily Davis", username: "emily", earnings: 195.75, total_points: 540 }
       ];
 
       setTeamMembers(mockTeam);
