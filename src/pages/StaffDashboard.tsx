@@ -224,8 +224,8 @@ const StaffDashboard = () => {
   return (
     <div className="min-h-screen h-screen flex flex-col relative overflow-hidden">
       {/* Background Images */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
+      <div className="fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60"></div>
         <img 
           src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png" 
           alt="Modern office background" 
@@ -238,7 +238,7 @@ const StaffDashboard = () => {
         />
       </div>
       {/* Office Header */}
-      <header className="relative z-20 bg-black/20 backdrop-blur-lg border-b border-white/10 flex-shrink-0">
+      <header className="relative z-30 bg-black/20 backdrop-blur-lg border-b border-white/10 flex-shrink-0">
         <div className="container mx-auto px-4 py-3">
           <div className="flex flex-col gap-3">
             {/* Top Row: Logo and Main Info */}
@@ -309,7 +309,7 @@ const StaffDashboard = () => {
         </div>
       </header>
 
-      <div className="flex-1 overflow-hidden relative z-20">
+      <div className="flex-1 overflow-hidden relative z-10">
         <VirtualOfficeLayout currentRoom={currentRoom} onRoomChange={setCurrentRoom}>
           {roomComponents[currentRoom]}
         </VirtualOfficeLayout>
