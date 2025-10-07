@@ -135,11 +135,27 @@ const StaffManagement = () => {
       // Generate a random first-time passcode
       const firstTimePasscode = Math.random().toString(36).substring(2, 10);
       
+      // Create Supabase Auth user first
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: newStaff.email,
+        password: firstTimePasscode,
+        options: {
+          data: {
+            full_name: newStaff.full_name,
+            username: newStaff.username
+          }
+        }
+      });
+
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Failed to create auth user');
+
+      // Create staff profile with the auth user's ID
       const { data, error } = await supabase
         .from('staff_profiles')
         .insert({
           ...newStaff,
-          user_id: crypto.randomUUID(),
+          user_id: authData.user.id,
           department_id: newStaff.department_id || null,
           role: newStaff.role as 'hr' | 'staff',
           first_time_passcode: firstTimePasscode,
@@ -183,7 +199,7 @@ const StaffManagement = () => {
       console.error('Error adding staff:', error);
       toast({
         title: "Error",
-        description: "Failed to add staff member.",
+        description: error.message || "Failed to add staff member.",
         variant: "destructive",
       });
     }
@@ -266,15 +282,32 @@ const StaffManagement = () => {
 
   const generatePasscode = async (staffId) => {
     try {
+      // Find the staff member
+      const staffMember = staff.find(s => s.id === staffId);
+      if (!staffMember) throw new Error('Staff member not found');
+
       // Generate a new random passcode
       const newPasscode = Math.random().toString(36).substring(2, 10);
       
+      // Update the auth user's password via edge function
+      const { data: resetData, error: resetError } = await supabase.functions.invoke(
+        'reset-staff-password',
+        {
+          body: { userId: staffMember.user_id, newPassword: newPasscode }
+        }
+      );
+
+      if (resetError) throw resetError;
+      if (resetData?.error) throw new Error(resetData.error);
+
+      // Update staff_profiles
       const { error } = await supabase
         .from('staff_profiles')
         .update({ 
           first_time_passcode: newPasscode,
           passcode_used: false,
-          is_emoji_password: false
+          is_emoji_password: false,
+          emoji_password: null
         })
         .eq('id', staffId);
 
@@ -283,7 +316,7 @@ const StaffManagement = () => {
       // Update local state
       setStaff(staff.map(member => 
         member.id === staffId 
-          ? { ...member, first_time_passcode: newPasscode, passcode_used: false, is_emoji_password: false }
+          ? { ...member, first_time_passcode: newPasscode, passcode_used: false, is_emoji_password: false, emoji_password: null }
           : member
       ));
 
@@ -291,7 +324,7 @@ const StaffManagement = () => {
       navigator.clipboard.writeText(newPasscode);
 
       toast({
-        title: "Passcode Generated!",
+        title: "Passcode Reset!",
         description: `New passcode: ${newPasscode} (copied to clipboard)`,
       });
     } catch (error) {
