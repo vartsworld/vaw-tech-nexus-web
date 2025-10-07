@@ -63,9 +63,21 @@ const StaffLogin = () => {
         return;
       }
 
-      // Store user session
-      localStorage.setItem('staff_user_id', data.user_id);
-      localStorage.setItem('staff_profile', JSON.stringify(data));
+      // Sign in with Supabase auth using email and passcode
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: passcode,
+      });
+
+      if (authError) {
+        console.error('Auth error:', authError);
+        toast({
+          title: "Authentication Error",
+          description: "Failed to authenticate. Please contact HR.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       if (!data.emoji_password) {
         setIsSettingEmoji(true);
@@ -117,9 +129,22 @@ const StaffLogin = () => {
         return;
       }
 
-      // Store user session
-      localStorage.setItem('staff_user_id', data.user_id);
-      localStorage.setItem('staff_profile', JSON.stringify(data));
+      // Sign in with Supabase auth using email and emoji password
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: emojiPassword.join(''),
+      });
+
+      if (authError) {
+        console.error('Auth error:', authError);
+        toast({
+          title: "Authentication Error",
+          description: "Failed to authenticate. Please contact HR.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       navigate('/staff/dashboard');
     } catch (error) {
       console.error('Login error:', error);
@@ -154,17 +179,37 @@ const StaffLogin = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      // Get current user info
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "Not authenticated. Please try logging in again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const emojiPass = newEmojiPassword.join('');
+
+      // Update emoji password in database
+      const { error: updateError } = await supabase
         .from('staff_profiles')
         .update({
-          emoji_password: newEmojiPassword.join(''),
+          emoji_password: emojiPass,
           is_emoji_password: true,
           passcode_used: true
         })
-        .eq('username', username)
-        .eq('first_time_passcode', passcode);
+        .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Update auth password to emoji password
+      const { error: passwordError } = await supabase.auth.updateUser({
+        password: emojiPass
+      });
+
+      if (passwordError) throw passwordError;
 
       toast({
         title: "Success",
