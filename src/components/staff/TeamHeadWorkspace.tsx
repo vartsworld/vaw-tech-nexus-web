@@ -25,8 +25,14 @@ import {
   StickyNote,
   Play,
   Pause,
-  Loader2
+  Loader2,
+  Paperclip,
+  Edit,
+  Trash2,
+  Download,
+  X
 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +48,7 @@ interface Task {
   due_date?: string;
   due_time?: string;
   trial_period?: boolean;
+  attachments?: any[];
   points: number;
   assigned_to: string;
   assigned_by: string;
@@ -74,8 +81,11 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
   const [loading, setLoading] = useState(true);
   const { notes, addNote } = useStaffData();
   const [newNote, setNewNote] = useState("");
@@ -90,7 +100,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     due_date: "",
     due_time: "",
     trial_period: false,
-    points: 10
+    points: 10,
+    attachments: [] as File[]
   });
 
   const [handoverData, setHandoverData] = useState({
@@ -119,7 +130,14 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTasks(data || []);
+      
+      // Cast attachments from Json to any[]
+      const tasksWithAttachments = (data || []).map(task => ({
+        ...task,
+        attachments: task.attachments ? (task.attachments as any) : []
+      }));
+      
+      setTasks(tasksWithAttachments as Task[]);
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {
@@ -157,7 +175,9 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const handleCreateTask = async () => {
     try {
-      // Prepare task data, converting empty strings to null for date fields
+      setUploadingFiles(true);
+      
+      // First create the task
       const taskData = {
         title: newTask.title,
         description: newTask.description,
@@ -168,10 +188,11 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         trial_period: newTask.trial_period,
         points: newTask.points,
         assigned_by: userId,
-        status: 'pending' as const
+        status: 'pending' as const,
+        attachments: []
       };
 
-      const { data, error } = await supabase
+      const { data: taskResponse, error: taskError } = await supabase
         .from('staff_tasks')
         .insert(taskData)
         .select(`
@@ -183,9 +204,50 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         `)
         .single();
 
-      if (error) throw error;
+      if (taskError) throw taskError;
 
-      setTasks([data, ...tasks]);
+      // Cast and add to tasks
+      const newTaskData = {
+        ...taskResponse,
+        attachments: taskResponse.attachments ? (taskResponse.attachments as any) : []
+      } as Task;
+
+      // Upload files if any
+      const attachmentData = [];
+      if (newTask.attachments.length > 0) {
+        for (const file of newTask.attachments) {
+          const fileExt = file.name.split('.').pop();
+          const filePath = `${taskResponse.id}/${Date.now()}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('task-attachments')
+            .upload(filePath, file);
+
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage
+              .from('task-attachments')
+              .getPublicUrl(filePath);
+
+            attachmentData.push({
+              name: file.name,
+              url: filePath,
+              publicUrl: publicUrl,
+              size: file.size,
+              type: file.type
+            });
+          }
+        }
+
+        // Update task with attachment info
+        await supabase
+          .from('staff_tasks')
+          .update({ attachments: attachmentData })
+          .eq('id', taskResponse.id);
+
+        newTaskData.attachments = attachmentData;
+      }
+
+      setTasks([newTaskData, ...tasks]);
       setIsCreateTaskOpen(false);
       setNewTask({
         title: "",
@@ -195,7 +257,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         due_date: "",
         due_time: "",
         trial_period: false,
-        points: 10
+        points: 10,
+        attachments: []
       });
 
       toast({
@@ -207,6 +270,83 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       toast({
         title: "Error",
         description: "Failed to create task.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingFiles(false);
+    }
+  };
+
+  const handleUpdateTask = async () => {
+    if (!selectedTask) return;
+    
+    try {
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({
+          title: selectedTask.title,
+          description: selectedTask.description,
+          priority: selectedTask.priority,
+          due_date: selectedTask.due_date || null,
+          due_time: selectedTask.due_time || null,
+          trial_period: selectedTask.trial_period,
+          points: selectedTask.points
+        })
+        .eq('id', selectedTask.id);
+
+      if (error) throw error;
+
+      setTasks(tasks.map(t => t.id === selectedTask.id ? selectedTask : t));
+      setIsEditTaskOpen(false);
+      setSelectedTask(null);
+
+      toast({
+        title: "Success",
+        description: "Task updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update task.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!selectedTask) return;
+
+    try {
+      // Delete attachments from storage
+      if (selectedTask.attachments && selectedTask.attachments.length > 0) {
+        const filePaths = selectedTask.attachments.map((att: any) => att.url);
+        await supabase.storage
+          .from('task-attachments')
+          .remove(filePaths);
+      }
+
+      // Delete task
+      const { error } = await supabase
+        .from('staff_tasks')
+        .delete()
+        .eq('id', selectedTask.id);
+
+      if (error) throw error;
+
+      setTasks(tasks.filter(t => t.id !== selectedTask.id));
+      setIsDeleteDialogOpen(false);
+      setSelectedTask(null);
+
+      toast({
+        title: "Success",
+        description: "Task deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task.",
         variant: "destructive",
       });
     }
@@ -238,7 +378,12 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
       if (error) throw error;
 
-      setTasks(tasks.map(task => task.id === taskId ? data : task));
+      const updatedTask = {
+        ...data,
+        attachments: data.attachments ? (data.attachments as any) : []
+      } as Task;
+
+      setTasks(tasks.map(task => task.id === taskId ? updatedTask : task));
 
       toast({
         title: "Success",
@@ -477,12 +622,59 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                   />
                 </div>
               </div>
+              <div>
+                <Label htmlFor="attachments">Attachments (Optional)</Label>
+                <div className="space-y-2">
+                  <Input
+                    id="attachments"
+                    type="file"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setNewTask({...newTask, attachments: files});
+                    }}
+                    className="cursor-pointer"
+                  />
+                  {newTask.attachments.length > 0 && (
+                    <div className="space-y-1">
+                      {newTask.attachments.map((file, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Paperclip className="h-3 w-3" />
+                            <span className="truncate max-w-[200px]">{file.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              ({(file.size / 1024).toFixed(1)} KB)
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const newFiles = newTask.attachments.filter((_, i) => i !== idx);
+                              setNewTask({...newTask, attachments: newFiles});
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setIsCreateTaskOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleCreateTask}>
-                  Create Task
+                <Button onClick={handleCreateTask} disabled={uploadingFiles}>
+                  {uploadingFiles ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    "Create Task"
+                  )}
                 </Button>
               </div>
             </div>
@@ -509,7 +701,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       <TableHead className="text-white/80">Assigned To</TableHead>
                       <TableHead className="text-white/80">Status</TableHead>
                       <TableHead className="text-white/80">Priority</TableHead>
-                      <TableHead className="text-white/80">Actions</TableHead>
+                      <TableHead className="text-white/80 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -535,6 +727,12 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                                 {task.due_time && ` at ${task.due_time}`}
                               </div>
                             )}
+                            {task.attachments && task.attachments.length > 0 && (
+                              <div className="flex items-center gap-1 mt-1 text-xs text-blue-300">
+                                <Paperclip className="h-3 w-3" />
+                                {task.attachments.length} file(s)
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -557,7 +755,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                           {getPriorityBadge(task.priority)}
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 justify-end">
                             <Select
                               value={task.status}
                               onValueChange={(value) => handleTaskStatusUpdate(task.id, value)}
@@ -571,6 +769,29 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                                 <SelectItem value="completed">Completed</SelectItem>
                               </SelectContent>
                             </Select>
+                            
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setSelectedTask(task);
+                                setIsEditTaskOpen(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setSelectedTask(task);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-400" />
+                            </Button>
+
                             {task.status !== 'handover' && (
                               <Button
                                 size="sm"
@@ -652,6 +873,158 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       </div>
 
       {/* Handover Dialog */}
+      {/* Edit Task Dialog */}
+      <Dialog open={isEditTaskOpen} onOpenChange={setIsEditTaskOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          {selectedTask && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit_title">Task Title</Label>
+                <Input
+                  id="edit_title"
+                  value={selectedTask.title}
+                  onChange={(e) => setSelectedTask({...selectedTask, title: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_description">Description</Label>
+                <Textarea
+                  id="edit_description"
+                  value={selectedTask.description}
+                  onChange={(e) => setSelectedTask({...selectedTask, description: e.target.value})}
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_priority">Priority</Label>
+                  <Select 
+                    value={selectedTask.priority} 
+                    onValueChange={(value) => setSelectedTask({...selectedTask, priority: value as any})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit_points">Points</Label>
+                  <Input
+                    id="edit_points"
+                    type="number"
+                    value={selectedTask.points}
+                    onChange={(e) => setSelectedTask({...selectedTask, points: parseInt(e.target.value) || 10})}
+                    min="1"
+                    max="100"
+                    disabled={selectedTask.trial_period}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                <div className="space-y-0.5">
+                  <Label htmlFor="edit_trial" className="text-sm font-medium">Trial Period</Label>
+                  <p className="text-xs text-muted-foreground">Staff won't earn points</p>
+                </div>
+                <Switch
+                  id="edit_trial"
+                  checked={selectedTask.trial_period}
+                  onCheckedChange={(checked) => setSelectedTask({...selectedTask, trial_period: checked})}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_due_date">Due Date</Label>
+                  <Input
+                    id="edit_due_date"
+                    type="date"
+                    value={selectedTask.due_date || ''}
+                    onChange={(e) => setSelectedTask({...selectedTask, due_date: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit_due_time">Due Time</Label>
+                  <Input
+                    id="edit_due_time"
+                    type="time"
+                    value={selectedTask.due_time || ''}
+                    onChange={(e) => setSelectedTask({...selectedTask, due_time: e.target.value})}
+                  />
+                </div>
+              </div>
+              {selectedTask.attachments && selectedTask.attachments.length > 0 && (
+                <div>
+                  <Label>Attachments</Label>
+                  <div className="space-y-1 mt-2">
+                    {selectedTask.attachments.map((att: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10 text-sm">
+                        <div className="flex items-center gap-2 truncate">
+                          <Paperclip className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{att.name}</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            const { data } = await supabase.storage
+                              .from('task-attachments')
+                              .download(att.url);
+                            if (data) {
+                              const url = URL.createObjectURL(data);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = att.name;
+                              a.click();
+                            }
+                          }}
+                        >
+                          <Download className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsEditTaskOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateTask}>
+                  Update Task
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{selectedTask?.title}"? This action cannot be undone and will also delete all attached files.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTask} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Handover Task Dialog */}
       <Dialog open={isHandoverOpen} onOpenChange={setIsHandoverOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
