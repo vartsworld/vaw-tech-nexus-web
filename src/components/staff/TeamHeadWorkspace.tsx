@@ -30,7 +30,9 @@ import {
   Edit,
   Trash2,
   Download,
-  X
+  X,
+  Eye,
+  FileText
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
@@ -38,6 +40,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useStaffData } from "@/hooks/useStaffData";
 import MusicPlayer from "./MusicPlayer";
+
+interface Subtask {
+  id: string;
+  task_id: string;
+  title: string;
+  description?: string;
+  assigned_to: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  points: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string;
+  staff_profiles?: any;
+}
 
 interface Task {
   id: string;
@@ -84,9 +102,20 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isViewTaskOpen, setIsViewTaskOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [subtasks, setSubtasks] = useState<Subtask[]>([]);
+  const [loadingSubtasks, setLoadingSubtasks] = useState(false);
+  const [newSubtask, setNewSubtask] = useState({
+    title: "",
+    description: "",
+    assigned_to: "",
+    priority: "medium" as 'low' | 'medium' | 'high' | 'urgent',
+    points: 5
+  });
+  const [documentTitle, setDocumentTitle] = useState("");
   const { notes, addNote } = useStaffData();
   const [newNote, setNewNote] = useState("");
   const [addingNote, setAddingNote] = useState(false);
@@ -101,7 +130,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     due_time: "",
     trial_period: false,
     points: 10,
-    attachments: [] as File[]
+    attachments: [] as Array<{ file: File; title: string }>
   });
 
   const [handoverData, setHandoverData] = useState({
@@ -173,6 +202,129 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     }
   };
 
+  const fetchSubtasks = async (taskId: string) => {
+    try {
+      setLoadingSubtasks(true);
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .select(`
+          *,
+          staff_profiles:assigned_to (
+            full_name,
+            username
+          )
+        `)
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSubtasks(data || []);
+    } catch (error) {
+      console.error('Error fetching subtasks:', error);
+    } finally {
+      setLoadingSubtasks(false);
+    }
+  };
+
+  const handleCreateSubtask = async (taskId: string) => {
+    if (!newSubtask.title || !newSubtask.assigned_to) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .insert({
+          task_id: taskId,
+          title: newSubtask.title,
+          description: newSubtask.description,
+          assigned_to: newSubtask.assigned_to,
+          priority: newSubtask.priority,
+          points: newSubtask.points,
+          created_by: userId,
+          status: 'pending'
+        })
+        .select(`
+          *,
+          staff_profiles:assigned_to (
+            full_name,
+            username
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+
+      setSubtasks([data, ...subtasks]);
+      setNewSubtask({
+        title: "",
+        description: "",
+        assigned_to: "",
+        priority: "medium",
+        points: 5
+      });
+
+      toast({
+        title: "Success",
+        description: "Subtask created successfully.",
+      });
+    } catch (error) {
+      console.error('Error creating subtask:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create subtask.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSubtaskStatusUpdate = async (subtaskId: string, newStatus: string) => {
+    try {
+      const updateData: any = {
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      };
+
+      if (newStatus === 'completed') {
+        updateData.completed_at = new Date().toISOString();
+      }
+
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .update(updateData)
+        .eq('id', subtaskId)
+        .select(`
+          *,
+          staff_profiles:assigned_to (
+            full_name,
+            username
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+
+      setSubtasks(subtasks.map(st => st.id === subtaskId ? data : st));
+
+      toast({
+        title: "Success",
+        description: "Subtask status updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating subtask:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update subtask status.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCreateTask = async () => {
     try {
       setUploadingFiles(true);
@@ -215,13 +367,13 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       // Upload files if any
       const attachmentData = [];
       if (newTask.attachments.length > 0) {
-        for (const file of newTask.attachments) {
-          const fileExt = file.name.split('.').pop();
+        for (const attachment of newTask.attachments) {
+          const fileExt = attachment.file.name.split('.').pop();
           const filePath = `${taskResponse.id}/${Date.now()}.${fileExt}`;
           
           const { error: uploadError } = await supabase.storage
             .from('task-attachments')
-            .upload(filePath, file);
+            .upload(filePath, attachment.file);
 
           if (!uploadError) {
             const { data: { publicUrl } } = supabase.storage
@@ -229,11 +381,12 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               .getPublicUrl(filePath);
 
             attachmentData.push({
-              name: file.name,
+              title: attachment.title || attachment.file.name,
+              name: attachment.file.name,
               url: filePath,
               publicUrl: publicUrl,
-              size: file.size,
-              type: file.type
+              size: attachment.file.size,
+              type: attachment.file.type
             });
           }
         }
@@ -631,31 +784,52 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                     multiple
                     onChange={(e) => {
                       const files = Array.from(e.target.files || []);
-                      setNewTask({...newTask, attachments: files});
+                      const attachmentsWithTitles = files.map(file => ({
+                        file,
+                        title: file.name.split('.')[0] // Default title is filename without extension
+                      }));
+                      setNewTask({...newTask, attachments: [...newTask.attachments, ...attachmentsWithTitles]});
+                      e.target.value = ''; // Reset input
                     }}
                     className="cursor-pointer"
                   />
                   {newTask.attachments.length > 0 && (
-                    <div className="space-y-1">
-                      {newTask.attachments.map((file, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Paperclip className="h-3 w-3" />
-                            <span className="truncate max-w-[200px]">{file.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              ({(file.size / 1024).toFixed(1)} KB)
-                            </span>
+                    <div className="space-y-2">
+                      {newTask.attachments.map((attachment, idx) => (
+                        <div key={idx} className="p-3 bg-white/5 rounded border border-white/10 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 flex-1">
+                              <Paperclip className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate text-sm">{attachment.file.name}</span>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                ({(attachment.file.size / 1024).toFixed(1)} KB)
+                              </span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newFiles = newTask.attachments.filter((_, i) => i !== idx);
+                                setNewTask({...newTask, attachments: newFiles});
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              const newFiles = newTask.attachments.filter((_, i) => i !== idx);
-                              setNewTask({...newTask, attachments: newFiles});
-                            }}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
+                          <div>
+                            <Label htmlFor={`title-${idx}`} className="text-xs">Document Title</Label>
+                            <Input
+                              id={`title-${idx}`}
+                              value={attachment.title}
+                              onChange={(e) => {
+                                const updatedAttachments = [...newTask.attachments];
+                                updatedAttachments[idx].title = e.target.value;
+                                setNewTask({...newTask, attachments: updatedAttachments});
+                              }}
+                              placeholder="Enter document title"
+                              className="h-8 text-sm"
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -769,6 +943,19 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                                 <SelectItem value="completed">Completed</SelectItem>
                               </SelectContent>
                             </Select>
+                            
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={async () => {
+                                setSelectedTask(task);
+                                await fetchSubtasks(task.id);
+                                setIsViewTaskOpen(true);
+                              }}
+                              title="View details and subtasks"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
                             
                             <Button
                               size="sm"
@@ -1071,6 +1258,225 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Task Details Dialog */}
+      <Dialog open={isViewTaskOpen} onOpenChange={setIsViewTaskOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Task Details</DialogTitle>
+          </DialogHeader>
+          {selectedTask && (
+            <div className="space-y-6">
+              {/* Task Info */}
+              <div className="space-y-3">
+                <div>
+                  <h3 className="font-semibold text-lg">{selectedTask.title}</h3>
+                  {selectedTask.description && (
+                    <p className="text-sm text-muted-foreground mt-1">{selectedTask.description}</p>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {getStatusBadge(selectedTask.status)}
+                  {getPriorityBadge(selectedTask.priority)}
+                  {selectedTask.trial_period && (
+                    <Badge variant="outline" className="bg-yellow-500/20 border-yellow-500/30 text-yellow-300">
+                      Trial Period
+                    </Badge>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Assigned to:</span>{' '}
+                    <span className="font-medium">{selectedTask.staff_profiles?.full_name}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Points:</span>{' '}
+                    <span className="font-medium">{selectedTask.points}</span>
+                  </div>
+                  {selectedTask.due_date && (
+                    <div>
+                      <span className="text-muted-foreground">Due Date:</span>{' '}
+                      <span className="font-medium">{format(new Date(selectedTask.due_date), 'MMM dd, yyyy')}</span>
+                      {selectedTask.due_time && <span> at {selectedTask.due_time}</span>}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Attachments */}
+              {selectedTask.attachments && selectedTask.attachments.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Attachments
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedTask.attachments.map((att: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{att.title || att.name}</div>
+                          <div className="text-xs text-muted-foreground">{att.name} ({(att.size / 1024).toFixed(1)} KB)</div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            const { data } = await supabase.storage
+                              .from('task-attachments')
+                              .download(att.url);
+                            if (data) {
+                              const url = URL.createObjectURL(data);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = att.name;
+                              a.click();
+                            }
+                          }}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Subtasks Section */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Subtasks
+                    {subtasks.length > 0 && (
+                      <Badge variant="outline" className="ml-2">
+                        {subtasks.filter(st => st.status === 'completed').length}/{subtasks.length} Completed
+                      </Badge>
+                    )}
+                  </h4>
+                </div>
+
+                {/* Create Subtask Form */}
+                <div className="mb-4 p-4 bg-white/5 rounded-lg border border-white/10 space-y-3">
+                  <h5 className="font-medium text-sm">Create Subtask</h5>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <Input
+                        placeholder="Subtask title"
+                        value={newSubtask.title}
+                        onChange={(e) => setNewSubtask({...newSubtask, title: e.target.value})}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Textarea
+                        placeholder="Description (optional)"
+                        value={newSubtask.description}
+                        onChange={(e) => setNewSubtask({...newSubtask, description: e.target.value})}
+                        rows={2}
+                      />
+                    </div>
+                    <Select 
+                      value={newSubtask.assigned_to} 
+                      onValueChange={(value) => setNewSubtask({...newSubtask, assigned_to: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Assign to" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {staff.map(member => (
+                          <SelectItem key={member.id} value={member.user_id}>
+                            {member.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select 
+                      value={newSubtask.priority} 
+                      onValueChange={(value) => setNewSubtask({...newSubtask, priority: value as any})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      placeholder="Points"
+                      value={newSubtask.points}
+                      onChange={(e) => setNewSubtask({...newSubtask, points: parseInt(e.target.value) || 5})}
+                      min="1"
+                      max="50"
+                    />
+                    <Button 
+                      onClick={() => handleCreateSubtask(selectedTask.id)}
+                      className="col-span-1"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Subtask
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Subtasks List */}
+                {loadingSubtasks ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : subtasks.length > 0 ? (
+                  <div className="space-y-2">
+                    {subtasks.map((subtask) => (
+                      <div key={subtask.id} className="p-3 bg-white/5 rounded-lg border border-white/10">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium">{subtask.title}</span>
+                              {getPriorityBadge(subtask.priority)}
+                            </div>
+                            {subtask.description && (
+                              <p className="text-sm text-muted-foreground mb-2">{subtask.description}</p>
+                            )}
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              <span>Assigned to: {subtask.staff_profiles?.full_name}</span>
+                              <span>Points: {subtask.points}</span>
+                            </div>
+                          </div>
+                          <Select
+                            value={subtask.status}
+                            onValueChange={(value) => handleSubtaskStatusUpdate(subtask.id, value)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="in_progress">In Progress</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No subtasks yet. Create one above to get started.
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={() => setIsViewTaskOpen(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
