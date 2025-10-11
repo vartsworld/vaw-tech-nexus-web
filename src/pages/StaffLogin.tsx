@@ -35,8 +35,9 @@ const StaffLogin = () => {
   const navigate = useNavigate();
 
   const getDashboardRoute = (staffProfile: any) => {
-    // Check if user is HR, team lead, or department head
+    // Check if user is HR, manager, team lead, or department head
     if (staffProfile.role === 'hr' || 
+        staffProfile.role === 'manager' || 
         staffProfile.role === 'team_head' || 
         staffProfile.is_department_head) {
       return '/team-head/dashboard';
