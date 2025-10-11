@@ -1370,6 +1370,7 @@ export type Database = {
       staff_subtasks: {
         Row: {
           assigned_to: string
+          attachments: Json | null
           completed_at: string | null
           created_at: string | null
           created_by: string
@@ -1386,6 +1387,7 @@ export type Database = {
         }
         Insert: {
           assigned_to: string
+          attachments?: Json | null
           completed_at?: string | null
           created_at?: string | null
           created_by: string
@@ -1402,6 +1404,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string
+          attachments?: Json | null
           completed_at?: string | null
           created_at?: string | null
           created_by?: string

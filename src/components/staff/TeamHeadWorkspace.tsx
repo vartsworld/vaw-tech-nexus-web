@@ -59,6 +59,7 @@ interface Subtask {
   created_at: string;
   updated_at: string;
   completed_at?: string;
+  attachments?: any;
   staff_profiles?: any;
 }
 
@@ -1535,6 +1536,27 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                                 </span>
                               )}
                             </div>
+                            {subtask.attachments && subtask.attachments.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {subtask.attachments.map((attachment: any, idx: number) => (
+                                  <Button
+                                    key={idx}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 text-xs"
+                                    onClick={async () => {
+                                      const { data } = supabase.storage
+                                        .from('task-attachments')
+                                        .getPublicUrl(attachment.url);
+                                      window.open(data.publicUrl, '_blank');
+                                    }}
+                                  >
+                                    <FileText className="h-3 w-3 mr-1" />
+                                    {attachment.title || attachment.name}
+                                  </Button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             <Select
