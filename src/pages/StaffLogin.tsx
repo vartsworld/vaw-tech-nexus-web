@@ -34,6 +34,16 @@ const StaffLogin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const getDashboardRoute = (staffProfile: any) => {
+    // Check if user is HR, team lead, or department head
+    if (staffProfile.role === 'hr' || 
+        staffProfile.role === 'team_head' || 
+        staffProfile.is_department_head) {
+      return '/team-head/dashboard';
+    }
+    return '/staff/dashboard';
+  };
+
   const handleFirstTimeLogin = async () => {
     if (!username || !passcode) {
       toast({
@@ -86,7 +96,8 @@ const StaffLogin = () => {
           description: "Please set up your emoji password for future logins",
         });
       } else {
-        navigate('/staff/dashboard');
+        const dashboardRoute = getDashboardRoute(data);
+        navigate(dashboardRoute);
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -145,7 +156,8 @@ const StaffLogin = () => {
         return;
       }
 
-      navigate('/staff/dashboard');
+      const dashboardRoute = getDashboardRoute(data);
+      navigate(dashboardRoute);
     } catch (error) {
       console.error('Login error:', error);
       toast({
@@ -211,12 +223,20 @@ const StaffLogin = () => {
 
       if (passwordError) throw passwordError;
 
+      // Get updated staff profile to determine dashboard route
+      const { data: staffProfile } = await supabase
+        .from('staff_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
       toast({
         title: "Success",
         description: "Emoji password set successfully!",
       });
 
-      navigate('/staff/dashboard');
+      const dashboardRoute = staffProfile ? getDashboardRoute(staffProfile) : '/staff/dashboard';
+      navigate(dashboardRoute);
     } catch (error) {
       console.error('Error setting emoji password:', error);
       toast({
