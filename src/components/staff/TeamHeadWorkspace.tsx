@@ -50,6 +50,8 @@ interface Subtask {
   status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   points: number;
+  due_date?: string;
+  due_time?: string;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -113,7 +115,9 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     description: "",
     assigned_to: "",
     priority: "medium" as 'low' | 'medium' | 'high' | 'urgent',
-    points: 5
+    points: 0,
+    due_date: "",
+    due_time: ""
   });
   const [documentTitle, setDocumentTitle] = useState("");
   const { notes, addNote } = useStaffData();
@@ -230,7 +234,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     if (!newSubtask.title || !newSubtask.assigned_to) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields.",
+        description: "Please fill in title and assignee.",
         variant: "destructive",
       });
       return;
@@ -245,7 +249,9 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
           description: newSubtask.description,
           assigned_to: newSubtask.assigned_to,
           priority: newSubtask.priority,
-          points: newSubtask.points,
+          points: newSubtask.points || 0,
+          due_date: newSubtask.due_date || null,
+          due_time: newSubtask.due_time || null,
           created_by: userId,
           status: 'pending'
         })
@@ -266,7 +272,9 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         description: "",
         assigned_to: "",
         priority: "medium",
-        points: 5
+        points: 0,
+        due_date: "",
+        due_time: ""
       });
 
       toast({
@@ -278,6 +286,31 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       toast({
         title: "Error",
         description: "Failed to create subtask.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('staff_subtasks')
+        .delete()
+        .eq('id', subtaskId);
+
+      if (error) throw error;
+
+      setSubtasks(subtasks.filter(st => st.id !== subtaskId));
+
+      toast({
+        title: "Success",
+        description: "Subtask deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting subtask:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete subtask.",
         variant: "destructive",
       });
     }
@@ -1363,7 +1396,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2">
                       <Input
-                        placeholder="Subtask title"
+                        placeholder="Subtask title *"
                         value={newSubtask.title}
                         onChange={(e) => setNewSubtask({...newSubtask, title: e.target.value})}
                       />
@@ -1381,7 +1414,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       onValueChange={(value) => setNewSubtask({...newSubtask, assigned_to: value})}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Assign to" />
+                        <SelectValue placeholder="Assign to *" />
                       </SelectTrigger>
                       <SelectContent>
                         {staff.map(member => (
@@ -1407,15 +1440,28 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                     </Select>
                     <Input
                       type="number"
-                      placeholder="Points"
-                      value={newSubtask.points}
-                      onChange={(e) => setNewSubtask({...newSubtask, points: parseInt(e.target.value) || 5})}
-                      min="1"
+                      placeholder="Points (optional)"
+                      value={newSubtask.points === 0 ? "" : newSubtask.points}
+                      onChange={(e) => setNewSubtask({...newSubtask, points: parseInt(e.target.value) || 0})}
+                      min="0"
                       max="50"
+                    />
+                    <div></div>
+                    <Input
+                      type="date"
+                      placeholder="Due Date (optional)"
+                      value={newSubtask.due_date}
+                      onChange={(e) => setNewSubtask({...newSubtask, due_date: e.target.value})}
+                    />
+                    <Input
+                      type="time"
+                      placeholder="Due Time (optional)"
+                      value={newSubtask.due_time}
+                      onChange={(e) => setNewSubtask({...newSubtask, due_time: e.target.value})}
                     />
                     <Button 
                       onClick={() => handleCreateSubtask(selectedTask.id)}
-                      className="col-span-1"
+                      className="col-span-2"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Add Subtask
@@ -1432,7 +1478,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                   <div className="space-y-2">
                     {subtasks.map((subtask) => (
                       <div key={subtask.id} className="p-3 bg-white/5 rounded-lg border border-white/10">
-                        <div className="flex items-start justify-between">
+                        <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="font-medium">{subtask.title}</span>
@@ -1441,24 +1487,41 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                             {subtask.description && (
                               <p className="text-sm text-muted-foreground mb-2">{subtask.description}</p>
                             )}
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                               <span>Assigned to: {subtask.staff_profiles?.full_name}</span>
-                              <span>Points: {subtask.points}</span>
+                              {subtask.points > 0 && <span>Points: {subtask.points}</span>}
+                              {subtask.due_date && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {format(new Date(subtask.due_date), 'MMM dd, yyyy')}
+                                  {subtask.due_time && ` at ${subtask.due_time}`}
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <Select
-                            value={subtask.status}
-                            onValueChange={(value) => handleSubtaskStatusUpdate(subtask.id, value)}
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="in_progress">In Progress</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={subtask.status}
+                              onValueChange={(value) => handleSubtaskStatusUpdate(subtask.id, value)}
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="in_progress">In Progress</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteSubtask(subtask.id)}
+                              title="Delete subtask"
+                            >
+                              <X className="h-4 w-4 text-red-400" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
