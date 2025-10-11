@@ -1371,6 +1371,7 @@ export type Database = {
         Row: {
           assigned_to: string
           attachments: Json | null
+          comments: Json | null
           completed_at: string | null
           created_at: string | null
           created_by: string
@@ -1388,6 +1389,7 @@ export type Database = {
         Insert: {
           assigned_to: string
           attachments?: Json | null
+          comments?: Json | null
           completed_at?: string | null
           created_at?: string | null
           created_by: string
@@ -1405,6 +1407,7 @@ export type Database = {
         Update: {
           assigned_to?: string
           attachments?: Json | null
+          comments?: Json | null
           completed_at?: string | null
           created_at?: string | null
           created_by?: string
@@ -1448,6 +1451,7 @@ export type Database = {
           assigned_by: string
           assigned_to: string
           attachments: Json | null
+          comments: Json | null
           completed_at: string | null
           created_at: string | null
           department_id: string | null
@@ -1467,6 +1471,7 @@ export type Database = {
           assigned_by: string
           assigned_to: string
           attachments?: Json | null
+          comments?: Json | null
           completed_at?: string | null
           created_at?: string | null
           department_id?: string | null
@@ -1486,6 +1491,7 @@ export type Database = {
           assigned_by?: string
           assigned_to?: string
           attachments?: Json | null
+          comments?: Json | null
           completed_at?: string | null
           created_at?: string | null
           department_id?: string | null

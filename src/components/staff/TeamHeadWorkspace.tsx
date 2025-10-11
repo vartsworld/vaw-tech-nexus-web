@@ -35,7 +35,8 @@ import {
   Download,
   X,
   Eye,
-  FileText
+  FileText,
+  Send
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
@@ -60,6 +61,7 @@ interface Subtask {
   updated_at: string;
   completed_at?: string;
   attachments?: any;
+  comments?: any;
   staff_profiles?: any;
 }
 
@@ -73,6 +75,7 @@ interface Task {
   due_time?: string;
   trial_period?: boolean;
   attachments?: any[];
+  comments?: any;
   points: number;
   assigned_to: string;
   assigned_by: string;
@@ -112,6 +115,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [uploadingSubtaskAttachment, setUploadingSubtaskAttachment] = useState<string | null>(null);
+  const [newMessageTask, setNewMessageTask] = useState("");
+  const [newMessageSubtask, setNewMessageSubtask] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
@@ -363,138 +368,156 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     }
   };
 
-  const handleAttachToSubtask = async (subtaskId: string, file: File) => {
+  const handleSendSubtaskMessage = async (subtaskId: string, includeAttachment: boolean = false, file?: File) => {
+    const message = newMessageSubtask[subtaskId] || "";
+    if (!message.trim() && !includeAttachment) return;
+    
     try {
       setUploadingSubtaskAttachment(subtaskId);
-
-      const subtask = subtasks.find(st => st.id === subtaskId);
-      if (!subtask) throw new Error('Subtask not found');
-
-      const fileExt = file.name.split('.').pop();
-      const filePath = `subtasks/${subtaskId}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('task-attachments')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('task-attachments')
-        .getPublicUrl(filePath);
-
-      const newAttachment = {
-        name: file.name,
-        url: filePath,
-        publicUrl: publicUrl,
-        size: file.size,
-        type: file.type
-      };
-
-      const updatedAttachments = [...(subtask.attachments || []), newAttachment];
-
-      const { data, error } = await supabase
-        .from('staff_subtasks')
-        .update({ attachments: updatedAttachments })
-        .eq('id', subtaskId)
-        .select(`
-          *,
-          staff_profiles:assigned_to (
-            full_name,
-            username
-          )
-        `)
+      
+      let attachmentUrl = null;
+      let attachmentName = null;
+      
+      if (includeAttachment && file) {
+        const fileExt = file.name.split('.').pop();
+        const filePath = `subtasks/${subtaskId}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('task-attachments')
+          .upload(filePath, file);
+          
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('task-attachments')
+          .getPublicUrl(filePath);
+          
+        attachmentUrl = publicUrl;
+        attachmentName = file.name;
+      }
+      
+      const currentUser = await supabase.auth.getUser();
+      const userProfile = await supabase
+        .from('staff_profiles')
+        .select('full_name, avatar_url')
+        .eq('user_id', currentUser.data.user?.id)
         .single();
-
+      
+      const newComment = {
+        user_id: currentUser.data.user?.id,
+        user_name: userProfile.data?.full_name || 'Unknown',
+        user_avatar: userProfile.data?.avatar_url,
+        message: message.trim(),
+        timestamp: new Date().toISOString(),
+        ...(attachmentUrl && { attachment_url: attachmentUrl, attachment_name: attachmentName })
+      };
+      
+      const { data: subtaskData } = await supabase
+        .from('staff_subtasks')
+        .select('comments')
+        .eq('id', subtaskId)
+        .single();
+      
+      const existingComments = (subtaskData?.comments as any[]) || [];
+      const updatedComments = [...existingComments, newComment];
+      
+      const { error } = await supabase
+        .from('staff_subtasks')
+        .update({ comments: updatedComments })
+        .eq('id', subtaskId);
+        
       if (error) throw error;
-
-      setSubtasks(subtasks.map(st => st.id === subtaskId ? data : st));
-
-      toast({
-        title: "Success",
-        description: "Attachment added successfully.",
-      });
+      
+      setSubtasks(subtasks.map(st => st.id === subtaskId ? { ...st, comments: updatedComments } : st));
+      setNewMessageSubtask({ ...newMessageSubtask, [subtaskId]: "" });
+      
+      toast({ title: "Success", description: "Message sent successfully" });
     } catch (error) {
-      console.error('Error adding attachment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add attachment.",
-        variant: "destructive",
-      });
+      console.error('Error sending message:', error);
+      toast({ title: "Error", description: "Failed to send message", variant: "destructive" });
     } finally {
       setUploadingSubtaskAttachment(null);
     }
   };
 
-  const handleAttachToTask = async (taskId: string, file: File) => {
+  const handleAttachToSubtask = async (subtaskId: string, file: File) => {
+    handleSendSubtaskMessage(subtaskId, true, file);
+  };
+
+  const handleSendTaskMessage = async (taskId: string, includeAttachment: boolean = false, file?: File) => {
+    if (!selectedTask || (!newMessageTask.trim() && !includeAttachment)) return;
+    
     try {
       setUploadingFiles(true);
-
-      const task = tasks.find(t => t.id === taskId);
-      if (!task) throw new Error('Task not found');
-
-      const fileExt = file.name.split('.').pop();
-      const filePath = `tasks/${taskId}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('task-attachments')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('task-attachments')
-        .getPublicUrl(filePath);
-
-      const newAttachment = {
-        name: file.name,
-        url: filePath,
-        publicUrl: publicUrl,
-        size: file.size,
-        type: file.type
-      };
-
-      const updatedAttachments = [...(task.attachments || []), newAttachment];
-
-      const { data, error } = await supabase
-        .from('staff_tasks')
-        .update({ attachments: updatedAttachments })
-        .eq('id', taskId)
-        .select(`
-          *,
-          staff_profiles:assigned_to (
-            full_name,
-            username
-          )
-        `)
-        .single();
-
-      if (error) throw error;
-
-      const taskData = {
-        ...data,
-        attachments: data.attachments as any[]
-      } as Task;
-
-      setTasks(tasks.map(t => t.id === taskId ? taskData : t));
-      if (selectedTask && selectedTask.id === taskId) {
-        setSelectedTask(taskData);
+      
+      let attachmentUrl = null;
+      let attachmentName = null;
+      
+      if (includeAttachment && file) {
+        const fileExt = file.name.split('.').pop();
+        const filePath = `tasks/${taskId}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('task-attachments')
+          .upload(filePath, file);
+          
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('task-attachments')
+          .getPublicUrl(filePath);
+          
+        attachmentUrl = publicUrl;
+        attachmentName = file.name;
       }
-
-      toast({
-        title: "Success",
-        description: "Attachment added to task successfully.",
-      });
+      
+      const currentUser = await supabase.auth.getUser();
+      const userProfile = await supabase
+        .from('staff_profiles')
+        .select('full_name, avatar_url')
+        .eq('user_id', currentUser.data.user?.id)
+        .single();
+      
+      const newComment = {
+        user_id: currentUser.data.user?.id,
+        user_name: userProfile.data?.full_name || 'Unknown',
+        user_avatar: userProfile.data?.avatar_url,
+        message: newMessageTask.trim(),
+        timestamp: new Date().toISOString(),
+        ...(attachmentUrl && { attachment_url: attachmentUrl, attachment_name: attachmentName })
+      };
+      
+      const { data: taskData } = await supabase
+        .from('staff_tasks')
+        .select('comments')
+        .eq('id', taskId)
+        .single();
+      
+      const existingComments = (taskData?.comments as any[]) || [];
+      const updatedComments = [...existingComments, newComment];
+      
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({ comments: updatedComments })
+        .eq('id', taskId);
+        
+      if (error) throw error;
+      
+      setSelectedTask({ ...selectedTask, comments: updatedComments as any });
+      setTasks(tasks.map(t => t.id === taskId ? { ...t, comments: updatedComments as any } : t));
+      setNewMessageTask("");
+      
+      toast({ title: "Success", description: "Message sent successfully" });
     } catch (error) {
-      console.error('Error adding task attachment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add task attachment.",
-        variant: "destructive",
-      });
+      console.error('Error sending message:', error);
+      toast({ title: "Error", description: "Failed to send message", variant: "destructive" });
     } finally {
       setUploadingFiles(false);
     }
+  };
+
+  const handleAttachToTask = async (taskId: string, file: File) => {
+    handleSendTaskMessage(taskId, true, file);
   };
 
   const handleCreateTask = async () => {
@@ -1477,14 +1500,65 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                 </div>
               </div>
 
-              {/* Attachments */}
+              {/* Messages & Attachments */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Attachments
-                  </h4>
-                  <div>
+                <h4 className="font-semibold flex items-center gap-2 mb-3">
+                  <FileText className="h-4 w-4" />
+                  Messages & Attachments
+                </h4>
+                
+                {selectedTask.comments && selectedTask.comments.length > 0 && (
+                  <div className="space-y-3 mb-4 max-h-[400px] overflow-y-auto">
+                    {selectedTask.comments.map((comment: any, idx: number) => (
+                      <div key={idx} className="bg-white/5 p-3 rounded-lg border border-white/10 space-y-2">
+                        <div className="flex items-start gap-2">
+                          {comment.user_avatar && (
+                            <img src={comment.user_avatar} alt="" className="w-6 h-6 rounded-full" />
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">{comment.user_name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(comment.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+                            {comment.message && (
+                              <p className="text-sm mt-1">{comment.message}</p>
+                            )}
+                            {comment.attachment_url && (
+                              <a
+                                href={comment.attachment_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-sm text-primary hover:underline mt-2"
+                              >
+                                <Paperclip className="h-4 w-4" />
+                                {comment.attachment_name}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="flex gap-2">
+                  <Textarea
+                    placeholder="Type a message..."
+                    value={newMessageTask}
+                    onChange={(e) => setNewMessageTask(e.target.value)}
+                    className="flex-1"
+                    rows={2}
+                  />
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      size="icon"
+                      onClick={() => selectedTask && handleSendTaskMessage(selectedTask.id, false)}
+                      disabled={!newMessageTask.trim() || uploadingFiles}
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
                     <input
                       type="file"
                       id="task-attachment"
@@ -1498,52 +1572,19 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       }}
                     />
                     <Button
+                      size="icon"
                       variant="outline"
-                      size="sm"
                       onClick={() => document.getElementById('task-attachment')?.click()}
                       disabled={uploadingFiles}
                     >
                       {uploadingFiles ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <Paperclip className="h-4 w-4 mr-2" />
+                        <Paperclip className="h-4 w-4" />
                       )}
-                      Add Attachment
                     </Button>
                   </div>
                 </div>
-                {selectedTask.attachments && selectedTask.attachments.length > 0 ? (
-                  <div className="space-y-2">
-                    {selectedTask.attachments.map((att: any, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10">
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{att.title || att.name}</div>
-                          <div className="text-xs text-muted-foreground">{att.name} ({(att.size / 1024).toFixed(1)} KB)</div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={async () => {
-                            const { data } = await supabase.storage
-                              .from('task-attachments')
-                              .download(att.url);
-                            if (data) {
-                              const url = URL.createObjectURL(data);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = att.name;
-                              a.click();
-                            }
-                          }}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground py-2">No attachments yet</div>
-                )}
               </div>
 
               {/* Subtasks Section */}
@@ -1702,52 +1743,76 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                                 </span>
                               )}
                             </div>
-                            {subtask.attachments && subtask.attachments.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                {subtask.attachments.map((attachment: any, idx: number) => (
-                                  <Button
-                                    key={idx}
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-7 text-xs"
-                                    onClick={async () => {
-                                      const { data } = supabase.storage
-                                        .from('task-attachments')
-                                        .getPublicUrl(attachment.url);
-                                      window.open(data.publicUrl, '_blank');
-                                    }}
-                                  >
-                                    <FileText className="h-3 w-3 mr-1" />
-                                    {attachment.title || attachment.name}
-                                  </Button>
+                            {subtask.comments && subtask.comments.length > 0 && (
+                              <div className="mt-2 space-y-2">
+                                {subtask.comments.map((comment: any, idx: number) => (
+                                  <div key={idx} className="bg-muted/50 p-2 rounded text-xs space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">{comment.user_name}</span>
+                                      <span className="text-muted-foreground">
+                                        {new Date(comment.timestamp).toLocaleString()}
+                                      </span>
+                                    </div>
+                                    {comment.message && <p>{comment.message}</p>}
+                                    {comment.attachment_url && (
+                                      <a
+                                        href={comment.attachment_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1 text-primary hover:underline"
+                                      >
+                                        <Paperclip className="h-3 w-3" />
+                                        {comment.attachment_name}
+                                      </a>
+                                    )}
+                                  </div>
                                 ))}
                               </div>
                             )}
+                            
+                            <div className="mt-2 flex gap-2">
+                              <Textarea
+                                placeholder="Type a message..."
+                                value={newMessageSubtask[subtask.id] || ""}
+                                onChange={(e) => setNewMessageSubtask({ ...newMessageSubtask, [subtask.id]: e.target.value })}
+                                className="flex-1 text-sm"
+                                rows={1}
+                              />
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                onClick={() => handleSendSubtaskMessage(subtask.id, false)}
+                                disabled={!newMessageSubtask[subtask.id]?.trim() || uploadingSubtaskAttachment === subtask.id}
+                              >
+                                <Send className="h-3 w-3" />
+                              </Button>
+                              <input
+                                type="file"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleAttachToSubtask(subtask.id, file);
+                                  e.target.value = '';
+                                }}
+                                className="hidden"
+                                id={`subtask-file-${subtask.id}`}
+                              />
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                onClick={() => document.getElementById(`subtask-file-${subtask.id}`)?.click()}
+                                disabled={uploadingSubtaskAttachment === subtask.id}
+                              >
+                                {uploadingSubtaskAttachment === subtask.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Paperclip className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <input
-                              type="file"
-                              id={`file-${subtask.id}`}
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleAttachToSubtask(subtask.id, file);
-                                e.target.value = '';
-                              }}
-                            />
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => document.getElementById(`file-${subtask.id}`)?.click()}
-                              disabled={uploadingSubtaskAttachment === subtask.id}
-                              title="Attach file"
-                            >
-                              {uploadingSubtaskAttachment === subtask.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Paperclip className="h-4 w-4" />
-                              )}
-                            </Button>
                             <Select
                               value={subtask.status}
                               onValueChange={(value) => handleSubtaskStatusUpdate(subtask.id, value)}
