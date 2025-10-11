@@ -99,14 +99,17 @@ const TeamApplicationsList = () => {
 
   const approveAndCreateStaff = async (application) => {
     try {
-      // First update application status
-      await updateApplicationStatus(application.id, 'approved');
+      // Generate first-time passcode
+      const firstTimePasscode = Math.random().toString(36).substring(2, 10);
 
-      // Create staff profile
+      // Create a temporary UUID that will be replaced when the edge function creates the real auth user
+      const tempUserId = crypto.randomUUID();
+
+      // Create staff profile with temp user_id
       const { error: staffError } = await supabase
         .from('staff_profiles')
         .insert({
-          user_id: crypto.randomUUID(),
+          user_id: tempUserId,
           full_name: application.full_name,
           email: application.email,
           username: application.username,
@@ -126,14 +129,19 @@ const TeamApplicationsList = () => {
           reference_person_name: application.reference_person_name,
           reference_person_number: application.reference_person_number,
           applied_via_link: true,
-          application_status: 'approved'
+          application_status: 'approved',
+          first_time_passcode: firstTimePasscode,
+          passcode_used: false
         });
 
       if (staffError) throw staffError;
 
+      // Update application status to approved
+      await updateApplicationStatus(application.id, 'approved');
+
       toast({
         title: "Success",
-        description: "Application approved and staff member created.",
+        description: `Application approved! Passcode: ${firstTimePasscode}`,
       });
     } catch (error) {
       console.error('Error approving application:', error);
