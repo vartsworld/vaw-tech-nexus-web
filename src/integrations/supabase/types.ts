@@ -1418,6 +1418,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "staff_subtasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "staff_subtasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "staff_subtasks_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
