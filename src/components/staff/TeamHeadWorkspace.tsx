@@ -1473,15 +1473,29 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                         />
                       </PopoverContent>
                     </Popover>
-                    <div>
-                      <Input
-                        type="time"
-                        placeholder="Due Time (optional)"
-                        value={newSubtask.due_time}
-                        onChange={(e) => setNewSubtask({...newSubtask, due_time: e.target.value})}
-                        className="w-full"
-                      />
-                    </div>
+                    <Select
+                      value={newSubtask.due_time}
+                      onValueChange={(value) => setNewSubtask({...newSubtask, due_time: value})}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select time (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <ScrollArea className="h-60">
+                          {Array.from({ length: 24 * 4 }, (_, i) => {
+                            const hour = Math.floor(i / 4);
+                            const minute = (i % 4) * 15;
+                            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                            const displayTime = new Date(2000, 0, 1, hour, minute).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                            return (
+                              <SelectItem key={timeString} value={timeString}>
+                                {displayTime}
+                              </SelectItem>
+                            );
+                          })}
+                        </ScrollArea>
+                      </SelectContent>
+                    </Select>
                     <Button 
                       onClick={() => handleCreateSubtask(selectedTask.id)}
                       className="col-span-2"
