@@ -1376,12 +1376,14 @@ export type Database = {
           department_id: string | null
           description: string | null
           due_date: string | null
+          due_time: string | null
           id: string
           points: number | null
           priority: Database["public"]["Enums"]["task_priority"] | null
           project_id: string | null
           status: Database["public"]["Enums"]["task_status"] | null
           title: string
+          trial_period: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -1392,12 +1394,14 @@ export type Database = {
           department_id?: string | null
           description?: string | null
           due_date?: string | null
+          due_time?: string | null
           id?: string
           points?: number | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           project_id?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           title: string
+          trial_period?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -1408,12 +1412,14 @@ export type Database = {
           department_id?: string | null
           description?: string | null
           due_date?: string | null
+          due_time?: string | null
           id?: string
           points?: number | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           project_id?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           title?: string
+          trial_period?: boolean | null
           updated_at?: string | null
         }
         Relationships: [

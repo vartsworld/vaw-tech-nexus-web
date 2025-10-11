@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import { 
   CheckCircle,
   Clock,
@@ -39,6 +40,8 @@ interface Task {
   status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date?: string;
+  due_time?: string;
+  trial_period?: boolean;
   points: number;
   assigned_to: string;
   assigned_by: string;
@@ -85,6 +88,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     assigned_to: "",
     priority: "medium" as 'low' | 'medium' | 'high' | 'urgent',
     due_date: "",
+    due_time: "",
+    trial_period: false,
     points: 10
   });
 
@@ -152,13 +157,23 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const handleCreateTask = async () => {
     try {
+      // Prepare task data, converting empty strings to null for date fields
+      const taskData = {
+        title: newTask.title,
+        description: newTask.description,
+        assigned_to: newTask.assigned_to,
+        priority: newTask.priority,
+        due_date: newTask.due_date || null,
+        due_time: newTask.due_time || null,
+        trial_period: newTask.trial_period,
+        points: newTask.points,
+        assigned_by: userId,
+        status: 'pending' as const
+      };
+
       const { data, error } = await supabase
         .from('staff_tasks')
-        .insert({
-          ...newTask,
-          assigned_by: userId,
-          status: 'pending'
-        })
+        .insert(taskData)
         .select(`
           *,
           staff_profiles:assigned_to (
@@ -178,6 +193,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         assigned_to: "",
         priority: "medium",
         due_date: "",
+        due_time: "",
+        trial_period: false,
         points: 10
       });
 
@@ -420,17 +437,45 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                     onChange={(e) => setNewTask({...newTask, points: parseInt(e.target.value) || 10})}
                     min="1"
                     max="100"
+                    disabled={newTask.trial_period}
+                    className={newTask.trial_period ? 'opacity-50' : ''}
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="due_date">Due Date (Optional)</Label>
-                <Input
-                  id="due_date"
-                  type="date"
-                  value={newTask.due_date}
-                  onChange={(e) => setNewTask({...newTask, due_date: e.target.value})}
+              <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
+                <div className="space-y-0.5">
+                  <Label htmlFor="trial_period" className="text-sm font-medium">
+                    Trial Period
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Staff won't earn points for this task
+                  </p>
+                </div>
+                <Switch
+                  id="trial_period"
+                  checked={newTask.trial_period}
+                  onCheckedChange={(checked) => setNewTask({...newTask, trial_period: checked})}
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="due_date">Due Date (Optional)</Label>
+                  <Input
+                    id="due_date"
+                    type="date"
+                    value={newTask.due_date}
+                    onChange={(e) => setNewTask({...newTask, due_date: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="due_time">Due Time (Optional)</Label>
+                  <Input
+                    id="due_time"
+                    type="time"
+                    value={newTask.due_time}
+                    onChange={(e) => setNewTask({...newTask, due_time: e.target.value})}
+                  />
+                </div>
               </div>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setIsCreateTaskOpen(false)}>
@@ -478,10 +523,16 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                                 {task.description}
                               </div>
                             )}
-                            {task.due_date && (
+                            {task.trial_period && (
+                              <Badge variant="outline" className="text-xs mt-1 bg-yellow-500/20 border-yellow-500/30 text-yellow-300">
+                                Trial Period
+                              </Badge>
+                            )}
+                            {(task.due_date || task.due_time) && (
                               <div className="text-xs text-white/50 flex items-center gap-1 mt-1">
                                 <Calendar className="h-3 w-3" />
-                                {format(new Date(task.due_date), 'MMM dd, yyyy')}
+                                {task.due_date && format(new Date(task.due_date), 'MMM dd, yyyy')}
+                                {task.due_time && ` at ${task.due_time}`}
                               </div>
                             )}
                           </div>
