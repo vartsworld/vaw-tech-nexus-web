@@ -34,6 +34,18 @@ const StaffLogin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const checkTodayAttendance = async (userId: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    const { data, error } = await supabase
+      .from('staff_attendance')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('date', today)
+      .maybeSingle();
+    
+    return !error && data !== null;
+  };
+
   const getDashboardRoute = (staffProfile: any) => {
     // Check if user is HR, manager, team lead, or department head
     if (staffProfile.role === 'hr' || 
@@ -157,8 +169,19 @@ const StaffLogin = () => {
         return;
       }
 
-      const dashboardRoute = getDashboardRoute(data);
-      navigate(dashboardRoute);
+      // Get current user after successful login
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (authUser) {
+        // Check if attendance is marked for today
+        const hasMarkedAttendance = await checkTodayAttendance(authUser.id);
+        const dashboardRoute = getDashboardRoute(data);
+        if (!hasMarkedAttendance) {
+          navigate(dashboardRoute, { state: { requireAttendance: true } });
+        } else {
+          navigate(dashboardRoute);
+        }
+      }
     } catch (error) {
       console.error('Login error:', error);
       toast({
@@ -236,8 +259,18 @@ const StaffLogin = () => {
         description: "Emoji password set successfully!",
       });
 
-      const dashboardRoute = staffProfile ? getDashboardRoute(staffProfile) : '/staff/dashboard';
-      navigate(dashboardRoute);
+      if (staffProfile) {
+        // Check if attendance is marked for today
+        const hasMarkedAttendance = await checkTodayAttendance(user.id);
+        const dashboardRoute = getDashboardRoute(staffProfile);
+        if (!hasMarkedAttendance) {
+          navigate(dashboardRoute, { state: { requireAttendance: true } });
+        } else {
+          navigate(dashboardRoute);
+        }
+      } else {
+        navigate('/staff/dashboard', { state: { requireAttendance: true } });
+      }
     } catch (error) {
       console.error('Error setting emoji password:', error);
       toast({

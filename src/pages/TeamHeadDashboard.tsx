@@ -92,10 +92,6 @@ const TeamHeadDashboard = () => {
     setShowMoodCheck(true);
   };
 
-  const skipAttendance = () => {
-    setShowAttendanceCheck(false);
-    setShowMoodCheck(false);
-  };
 
   const handleMoodSubmitted = () => {
     console.log('Mood submitted, going to dashboard');
@@ -127,13 +123,6 @@ const TeamHeadDashboard = () => {
                 onAttendanceMarked={handleAttendanceMarked}
               />
             )}
-            <Button 
-              onClick={skipAttendance}
-              variant="outline"
-              className="w-full"
-            >
-              Skip to Dashboard
-            </Button>
           </div>
         </div>
       </div>
@@ -165,13 +154,6 @@ const TeamHeadDashboard = () => {
                 onMoodSubmitted={handleMoodSubmitted}
               />
             )}
-            <Button 
-              onClick={() => setShowMoodCheck(false)}
-              variant="outline"
-              className="w-full"
-            >
-              Skip to Dashboard
-            </Button>
           </div>
         </div>
       </div>
