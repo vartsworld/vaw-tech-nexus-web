@@ -111,6 +111,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   const [isViewTaskOpen, setIsViewTaskOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [uploadingSubtaskAttachment, setUploadingSubtaskAttachment] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
@@ -359,6 +360,140 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         description: "Failed to update subtask status.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleAttachToSubtask = async (subtaskId: string, file: File) => {
+    try {
+      setUploadingSubtaskAttachment(subtaskId);
+
+      const subtask = subtasks.find(st => st.id === subtaskId);
+      if (!subtask) throw new Error('Subtask not found');
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `subtasks/${subtaskId}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('task-attachments')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('task-attachments')
+        .getPublicUrl(filePath);
+
+      const newAttachment = {
+        name: file.name,
+        url: filePath,
+        publicUrl: publicUrl,
+        size: file.size,
+        type: file.type
+      };
+
+      const updatedAttachments = [...(subtask.attachments || []), newAttachment];
+
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .update({ attachments: updatedAttachments })
+        .eq('id', subtaskId)
+        .select(`
+          *,
+          staff_profiles:assigned_to (
+            full_name,
+            username
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+
+      setSubtasks(subtasks.map(st => st.id === subtaskId ? data : st));
+
+      toast({
+        title: "Success",
+        description: "Attachment added successfully.",
+      });
+    } catch (error) {
+      console.error('Error adding attachment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add attachment.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingSubtaskAttachment(null);
+    }
+  };
+
+  const handleAttachToTask = async (taskId: string, file: File) => {
+    try {
+      setUploadingFiles(true);
+
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) throw new Error('Task not found');
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `tasks/${taskId}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('task-attachments')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('task-attachments')
+        .getPublicUrl(filePath);
+
+      const newAttachment = {
+        name: file.name,
+        url: filePath,
+        publicUrl: publicUrl,
+        size: file.size,
+        type: file.type
+      };
+
+      const updatedAttachments = [...(task.attachments || []), newAttachment];
+
+      const { data, error } = await supabase
+        .from('staff_tasks')
+        .update({ attachments: updatedAttachments })
+        .eq('id', taskId)
+        .select(`
+          *,
+          staff_profiles:assigned_to (
+            full_name,
+            username
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+
+      const taskData = {
+        ...data,
+        attachments: data.attachments as any[]
+      } as Task;
+
+      setTasks(tasks.map(t => t.id === taskId ? taskData : t));
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask(taskData);
+      }
+
+      toast({
+        title: "Success",
+        description: "Attachment added to task successfully.",
+      });
+    } catch (error) {
+      console.error('Error adding task attachment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add task attachment.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingFiles(false);
     }
   };
 
@@ -1343,12 +1478,41 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               </div>
 
               {/* Attachments */}
-              {selectedTask.attachments && selectedTask.attachments.length > 0 && (
-                <div>
-                  <h4 className="font-semibold mb-2 flex items-center gap-2">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold flex items-center gap-2">
                     <FileText className="h-4 w-4" />
                     Attachments
                   </h4>
+                  <div>
+                    <input
+                      type="file"
+                      id="task-attachment"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file && selectedTask) {
+                          handleAttachToTask(selectedTask.id, file);
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById('task-attachment')?.click()}
+                      disabled={uploadingFiles}
+                    >
+                      {uploadingFiles ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      ) : (
+                        <Paperclip className="h-4 w-4 mr-2" />
+                      )}
+                      Add Attachment
+                    </Button>
+                  </div>
+                </div>
+                {selectedTask.attachments && selectedTask.attachments.length > 0 ? (
                   <div className="space-y-2">
                     {selectedTask.attachments.map((att: any, idx: number) => (
                       <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10">
@@ -1377,8 +1541,10 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="text-sm text-muted-foreground py-2">No attachments yet</div>
+                )}
+              </div>
 
               {/* Subtasks Section */}
               <div>
@@ -1559,6 +1725,29 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                             )}
                           </div>
                           <div className="flex items-center gap-2">
+                            <input
+                              type="file"
+                              id={`file-${subtask.id}`}
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleAttachToSubtask(subtask.id, file);
+                                e.target.value = '';
+                              }}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => document.getElementById(`file-${subtask.id}`)?.click()}
+                              disabled={uploadingSubtaskAttachment === subtask.id}
+                              title="Attach file"
+                            >
+                              {uploadingSubtaskAttachment === subtask.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Paperclip className="h-4 w-4" />
+                              )}
+                            </Button>
                             <Select
                               value={subtask.status}
                               onValueChange={(value) => handleSubtaskStatusUpdate(subtask.id, value)}
