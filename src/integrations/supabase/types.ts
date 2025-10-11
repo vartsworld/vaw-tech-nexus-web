@@ -1369,6 +1369,8 @@ export type Database = {
       }
       staff_subtasks: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           assigned_to: string
           attachments: Json | null
           comments: Json | null
@@ -1387,6 +1389,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_to: string
           attachments?: Json | null
           comments?: Json | null
@@ -1405,6 +1409,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_to?: string
           attachments?: Json | null
           comments?: Json | null
@@ -1448,6 +1454,8 @@ export type Database = {
       }
       staff_tasks: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           assigned_by: string
           assigned_to: string
           attachments: Json | null
@@ -1468,6 +1476,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_by: string
           assigned_to: string
           attachments?: Json | null
@@ -1488,6 +1498,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_by?: string
           assigned_to?: string
           attachments?: Json | null
@@ -3826,6 +3838,7 @@ export type Database = {
         | "completed"
         | "overdue"
         | "handover"
+        | "pending_approval"
       user_role: "hr" | "department_head" | "staff" | "lead" | "manager"
       vendor_status: "pending" | "approved" | "rejected"
     }
@@ -3986,6 +3999,7 @@ export const Constants = {
         "completed",
         "overdue",
         "handover",
+        "pending_approval",
       ],
       user_role: ["hr", "department_head", "staff", "lead", "manager"],
       vendor_status: ["pending", "approved", "rejected"],

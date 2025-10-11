@@ -51,7 +51,7 @@ interface Subtask {
   title: string;
   description?: string;
   assigned_to: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue';
+  status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue' | 'pending_approval';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   points: number;
   due_date?: string;
@@ -69,7 +69,7 @@ interface Task {
   id: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue';
+  status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue' | 'pending_approval';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date?: string;
   due_time?: string;
@@ -328,12 +328,15 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const handleSubtaskStatusUpdate = async (subtaskId: string, newStatus: string) => {
     try {
+      // If staff is trying to mark as completed, change to pending_approval instead
+      const finalStatus = newStatus === 'completed' ? 'pending_approval' : newStatus;
+      
       const updateData: any = {
-        status: newStatus,
+        status: finalStatus,
         updated_at: new Date().toISOString()
       };
 
-      if (newStatus === 'completed') {
+      if (finalStatus === 'completed') {
         updateData.completed_at = new Date().toISOString();
       }
 
@@ -356,7 +359,9 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
       toast({
         title: "Success",
-        description: "Subtask status updated successfully.",
+        description: finalStatus === 'pending_approval' 
+          ? "Subtask submitted for admin approval" 
+          : "Subtask status updated successfully.",
       });
     } catch (error) {
       console.error('Error updating subtask:', error);
@@ -702,12 +707,15 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const handleTaskStatusUpdate = async (taskId: string, newStatus: string) => {
     try {
+      // If staff is trying to mark as completed, change to pending_approval instead
+      const finalStatus = newStatus === 'completed' ? 'pending_approval' : newStatus;
+      
       const updateData: any = {
-        status: newStatus,
+        status: finalStatus,
         updated_at: new Date().toISOString()
       };
 
-      if (newStatus === 'completed') {
+      if (finalStatus === 'completed') {
         updateData.completed_at = new Date().toISOString();
       }
 
@@ -735,7 +743,9 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
       toast({
         title: "Success",
-        description: "Task status updated successfully.",
+        description: finalStatus === 'pending_approval' 
+          ? "Task submitted for admin approval" 
+          : "Task status updated successfully.",
       });
     } catch (error) {
       console.error('Error updating task:', error);
@@ -814,7 +824,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
       in_progress: { color: 'bg-blue-100 text-blue-800', icon: Target },
       completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      handover: { color: 'bg-purple-100 text-purple-800', icon: ArrowRight }
+      handover: { color: 'bg-purple-100 text-purple-800', icon: ArrowRight },
+      pending_approval: { color: 'bg-orange-100 text-orange-800', icon: AlertCircle }
     };
 
     const config = statusConfig[status] || statusConfig.pending;

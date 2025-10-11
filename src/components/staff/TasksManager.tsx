@@ -20,7 +20,7 @@ interface Task {
   id: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue';
+  status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue' | 'pending_approval';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date?: string;
   points: number;
