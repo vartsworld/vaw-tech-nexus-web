@@ -7,6 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
@@ -1447,18 +1450,38 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       max="50"
                     />
                     <div></div>
-                    <Input
-                      type="date"
-                      placeholder="Due Date (optional)"
-                      value={newSubtask.due_date}
-                      onChange={(e) => setNewSubtask({...newSubtask, due_date: e.target.value})}
-                    />
-                    <Input
-                      type="time"
-                      placeholder="Due Time (optional)"
-                      value={newSubtask.due_time}
-                      onChange={(e) => setNewSubtask({...newSubtask, due_time: e.target.value})}
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !newSubtask.due_date && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {newSubtask.due_date ? format(new Date(newSubtask.due_date), "PPP") : <span>Pick due date (optional)</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={newSubtask.due_date ? new Date(newSubtask.due_date) : undefined}
+                          onSelect={(date) => setNewSubtask({...newSubtask, due_date: date ? format(date, "yyyy-MM-dd") : ""})}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <div>
+                      <Input
+                        type="time"
+                        placeholder="Due Time (optional)"
+                        value={newSubtask.due_time}
+                        onChange={(e) => setNewSubtask({...newSubtask, due_time: e.target.value})}
+                        className="w-full"
+                      />
+                    </div>
                     <Button 
                       onClick={() => handleCreateSubtask(selectedTask.id)}
                       className="col-span-2"
