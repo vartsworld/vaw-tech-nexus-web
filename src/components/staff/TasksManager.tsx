@@ -11,10 +11,12 @@ import {
   Filter,
   Calendar,
   User,
-  Target
+  Target,
+  Eye
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { TaskDetailDialog } from "./TaskDetailDialog";
 
 interface Task {
   id: string;
@@ -40,6 +42,8 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'handover'>('all');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -51,7 +55,8 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
       const { data, error } = await supabase
         .from('staff_tasks')
         .select(`
-          *
+          *,
+          due_time
         `)
         .eq('assigned_to', userId)
         .order('created_at', { ascending: false });
@@ -290,46 +295,61 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
                         </div>
                       </div>
                       
-                      {/* Action Button */}
-                      {task.status !== 'handover' && (
-                        <div className="flex flex-col gap-1">
-                          {task.status === 'pending' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30"
-                              onClick={() => updateTaskStatus(task.id, 'in_progress')}
-                              disabled={isLoading}
-                            >
-                              Start
-                            </Button>
-                          )}
-                          
-                          {task.status === 'in_progress' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="bg-green-500/20 border-green-500/30 text-green-300 hover:bg-green-500/30"
-                              onClick={() => updateTaskStatus(task.id, 'completed')}
-                              disabled={isLoading}
-                            >
-                              Complete
-                            </Button>
-                          )}
-                          
-                          {task.status === 'completed' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30"
-                              onClick={() => updateTaskStatus(task.id, 'handover')}
-                              disabled={isLoading}
-                            >
-                              Handover
-                            </Button>
-                          )}
-                        </div>
-                      )}
+                      {/* Action Buttons */}
+                      <div className="flex flex-col gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30"
+                          onClick={() => {
+                            setSelectedTask(task);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="w-3 h-3 mr-1" />
+                          Open Task
+                        </Button>
+
+                        {task.status !== 'handover' && task.status !== 'completed' && (
+                          <>
+                            {task.status === 'pending' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="bg-green-500/20 border-green-500/30 text-green-300 hover:bg-green-500/30"
+                                onClick={() => updateTaskStatus(task.id, 'in_progress')}
+                                disabled={isLoading}
+                              >
+                                Start
+                              </Button>
+                            )}
+                            
+                            {task.status === 'in_progress' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30"
+                                onClick={() => updateTaskStatus(task.id, 'completed')}
+                                disabled={isLoading}
+                              >
+                                Complete
+                              </Button>
+                            )}
+                          </>
+                        )}
+
+                        {task.status === 'completed' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="bg-orange-500/20 border-orange-500/30 text-orange-300 hover:bg-orange-500/30"
+                            onClick={() => updateTaskStatus(task.id, 'handover')}
+                            disabled={isLoading}
+                          >
+                            Handover
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -338,6 +358,13 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
           </div>
         </ScrollArea>
       </CardContent>
+
+      <TaskDetailDialog
+        task={selectedTask}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onStatusUpdate={updateTaskStatus}
+      />
     </Card>
   );
 };
