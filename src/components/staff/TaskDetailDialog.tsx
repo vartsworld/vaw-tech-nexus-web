@@ -18,7 +18,7 @@ import {
   User,
   Target,
   Play,
-  Pause,
+  Coffee,
   CheckCircle,
   AlertCircle,
   FileText,
@@ -74,6 +74,9 @@ export const TaskDetailDialog = ({
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [breaksTaken, setBreaksTaken] = useState(0);
+  const [isOnBreak, setIsOnBreak] = useState(false);
+  const [breakTimeRemaining, setBreakTimeRemaining] = useState(0);
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<any[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
@@ -87,6 +90,9 @@ export const TaskDetailDialog = ({
     if (!open || !task) {
       setIsTimerRunning(false);
       setElapsedSeconds(0);
+      setBreaksTaken(0);
+      setIsOnBreak(false);
+      setBreakTimeRemaining(0);
       setComments([]);
       setUploadedFiles([]);
       setFileNames({});
@@ -110,20 +116,37 @@ export const TaskDetailDialog = ({
   }, [open, task]);
 
   useEffect(() => {
-    if (!isTimerRunning) return;
+    if (!isTimerRunning && !isOnBreak) return;
 
     const interval = setInterval(() => {
-      if (task?.due_date) {
-        // Countdown mode
-        setRemainingSeconds((prev) => Math.max(0, prev - 1));
-      } else {
-        // Timer mode
-        setElapsedSeconds((prev) => prev + 1);
+      if (isOnBreak) {
+        // Break countdown
+        setBreakTimeRemaining((prev) => {
+          if (prev <= 1) {
+            // Break is over, resume work
+            setIsOnBreak(false);
+            setIsTimerRunning(true);
+            toast({
+              title: "Break over!",
+              description: "Time to get back to work",
+            });
+            return 0;
+          }
+          return prev - 1;
+        });
+      } else if (isTimerRunning) {
+        if (task?.due_date) {
+          // Countdown mode
+          setRemainingSeconds((prev) => Math.max(0, prev - 1));
+        } else {
+          // Timer mode
+          setElapsedSeconds((prev) => prev + 1);
+        }
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isTimerRunning, task?.due_date]);
+  }, [isTimerRunning, isOnBreak, task?.due_date]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -139,8 +162,25 @@ export const TaskDetailDialog = ({
     setIsTimerRunning(true);
   };
 
-  const handlePause = () => {
+  const handleStartBreak = () => {
+    if (breaksTaken >= 2) {
+      toast({
+        title: "No breaks left",
+        description: "You've already taken 2 breaks for this task",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsTimerRunning(false);
+    setIsOnBreak(true);
+    setBreakTimeRemaining(300); // 5 minutes = 300 seconds
+    setBreaksTaken(prev => prev + 1);
+    
+    toast({
+      title: "Break started",
+      description: "You have 5 minutes. Timer will resume automatically",
+    });
   };
 
   const handleComplete = () => {
@@ -502,8 +542,23 @@ export const TaskDetailDialog = ({
                 </div>
               )}
 
-              <div className="flex items-center justify-center gap-2">
-                {!isTimerRunning ? (
+              {isOnBreak && (
+                <div className="mb-4 bg-orange-500/20 border border-orange-500/30 rounded-lg p-4">
+                  <div className="flex items-center justify-center gap-2 text-orange-300 mb-2">
+                    <Coffee className="w-5 h-5" />
+                    <span className="font-semibold">On Break</span>
+                  </div>
+                  <div className="text-3xl font-mono font-bold text-orange-400 text-center">
+                    {formatTime(breakTimeRemaining)}
+                  </div>
+                  <p className="text-white/70 text-sm text-center mt-2">
+                    Task will resume automatically
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                {!isTimerRunning && !isOnBreak ? (
                   <Button
                     onClick={handleStart}
                     className="bg-green-500 hover:bg-green-600 text-white"
@@ -511,18 +566,19 @@ export const TaskDetailDialog = ({
                     <Play className="w-4 h-4 mr-2" />
                     {task.status === 'pending' ? 'Start Task' : 'Resume'}
                   </Button>
-                ) : (
+                ) : isTimerRunning && !isOnBreak ? (
                   <Button
-                    onClick={handlePause}
+                    onClick={handleStartBreak}
                     variant="outline"
                     className="border-orange-400/50 text-orange-300 hover:bg-orange-500/20"
+                    disabled={breaksTaken >= 2}
                   >
-                    <Pause className="w-4 h-4 mr-2" />
-                    Pause
+                    <Coffee className="w-4 h-4 mr-2" />
+                    Take Break ({2 - breaksTaken} left)
                   </Button>
-                )}
+                ) : null}
 
-                {task.status === 'in_progress' && (
+                {task.status === 'in_progress' && !isOnBreak && (
                   <Button
                     onClick={handleComplete}
                     className="bg-blue-500 hover:bg-blue-600 text-white"
