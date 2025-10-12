@@ -67,7 +67,7 @@ const AttendanceReports = () => {
             full_name,
             username,
             department_id,
-            departments(name)
+            departments!fk_staff_profiles_department(name)
           )
         `)
         .gte('date', format(dateRange.from, 'yyyy-MM-dd'))
