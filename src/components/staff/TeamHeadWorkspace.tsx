@@ -130,7 +130,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     due_time: ""
   });
   const [documentTitle, setDocumentTitle] = useState("");
-  const { notes, addNote } = useStaffData();
+  const [notes, setNotes] = useState<Array<{ id: string; content: string; created_at: string }>>([]);
   const [newNote, setNewNote] = useState("");
   const [addingNote, setAddingNote] = useState(false);
   const { toast } = useToast();
@@ -156,6 +156,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     fetchTasks();
     fetchStaff();
     fetchDepartments();
+    fetchNotes();
   }, [userId]);
 
   const fetchTasks = async () => {
@@ -797,18 +798,45 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     }
   };
 
+  const fetchNotes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('quick_notes')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setNotes(data || []);
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
+  };
+
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
     
     setAddingNote(true);
     try {
-      await addNote(newNote);
+      const { error } = await supabase
+        .from('quick_notes')
+        .insert([
+          {
+            user_id: userId,
+            content: newNote.trim()
+          }
+        ]);
+
+      if (error) throw error;
+
       setNewNote("");
+      await fetchNotes();
       toast({
         title: "Success",
         description: "Note added successfully.",
       });
     } catch (error) {
+      console.error('Error adding note:', error);
       toast({
         title: "Error",
         description: "Failed to add note.",
@@ -816,6 +844,30 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       });
     } finally {
       setAddingNote(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('quick_notes')
+        .delete()
+        .eq('id', noteId);
+
+      if (error) throw error;
+
+      await fetchNotes();
+      toast({
+        title: "Success",
+        description: "Note deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete note.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1244,8 +1296,16 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               <ScrollArea className="h-40">
                 <div className="space-y-2">
                   {notes.map((note) => (
-                    <div key={note.id} className="p-2 bg-white/5 rounded-lg border border-white/10">
-                      <p className="text-sm text-white/80">{note.content}</p>
+                    <div key={note.id} className="p-2 bg-white/5 rounded-lg border border-white/10 group relative">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDeleteNote(note.id)}
+                      >
+                        <X className="h-3 w-3 text-white/70" />
+                      </Button>
+                      <p className="text-sm text-white/80 pr-6">{note.content}</p>
                       <p className="text-xs text-white/50 mt-1">
                         {format(new Date(note.created_at), 'MMM dd, HH:mm')}
                       </p>
