@@ -574,6 +574,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         trial_period: newTask.trial_period,
         points: newTask.points,
         assigned_by: userId,
+        department_id: userProfile?.department_id || null,
         status: 'pending' as const,
         attachments: []
       };
