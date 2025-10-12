@@ -180,7 +180,7 @@ export const TaskDetailDialog = ({
           status: 'in_progress',
           timer_started_at: new Date().toISOString(),
           breaks_taken: 0
-        })
+        } as any)
         .eq('id', task.id);
 
       if (error) throw error;
@@ -215,7 +215,7 @@ export const TaskDetailDialog = ({
       // Save break count to database
       const { error } = await supabase
         .from('staff_tasks')
-        .update({ breaks_taken: newBreakCount })
+        .update({ breaks_taken: newBreakCount } as any)
         .eq('id', task.id);
 
       if (error) throw error;

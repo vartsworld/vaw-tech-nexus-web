@@ -1483,6 +1483,7 @@ export type Database = {
           assigned_by: string
           assigned_to: string
           attachments: Json | null
+          breaks_taken: number | null
           comments: Json | null
           completed_at: string | null
           created_at: string | null
@@ -1495,6 +1496,7 @@ export type Database = {
           priority: Database["public"]["Enums"]["task_priority"] | null
           project_id: string | null
           status: Database["public"]["Enums"]["task_status"] | null
+          timer_started_at: string | null
           title: string
           trial_period: boolean | null
           updated_at: string | null
@@ -1505,6 +1507,7 @@ export type Database = {
           assigned_by: string
           assigned_to: string
           attachments?: Json | null
+          breaks_taken?: number | null
           comments?: Json | null
           completed_at?: string | null
           created_at?: string | null
@@ -1517,6 +1520,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["task_priority"] | null
           project_id?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
+          timer_started_at?: string | null
           title: string
           trial_period?: boolean | null
           updated_at?: string | null
@@ -1527,6 +1531,7 @@ export type Database = {
           assigned_by?: string
           assigned_to?: string
           attachments?: Json | null
+          breaks_taken?: number | null
           comments?: Json | null
           completed_at?: string | null
           created_at?: string | null
@@ -1539,6 +1544,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["task_priority"] | null
           project_id?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
+          timer_started_at?: string | null
           title?: string
           trial_period?: boolean | null
           updated_at?: string | null
