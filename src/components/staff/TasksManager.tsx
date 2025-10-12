@@ -25,9 +25,12 @@ interface Task {
   status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue' | 'pending_approval';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date?: string;
+  due_time?: string;
   points: number;
   assigned_by: string;
   created_at: string;
+  trial_period?: boolean;
+  attachments?: any;
   assignedBy?: {
     full_name: string;
   };
@@ -56,7 +59,9 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
         .from('staff_tasks')
         .select(`
           *,
-          due_time
+          due_time,
+          trial_period,
+          attachments
         `)
         .eq('assigned_to', userId)
         .order('created_at', { ascending: false });
@@ -288,10 +293,17 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
                             </div>
                           )}
                           
-                          <div className="flex items-center gap-1">
-                            <Target className="w-3 h-3" />
-                            <span>{task.points} pts</span>
-                          </div>
+                          {task.trial_period ? (
+                            <div className="flex items-center gap-1 text-yellow-400">
+                              <Target className="w-3 h-3" />
+                              <span>Trial Period</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <Target className="w-3 h-3" />
+                              <span>{task.points} pts</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       

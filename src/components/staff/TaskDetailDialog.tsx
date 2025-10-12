@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Clock,
   Calendar,
@@ -17,8 +18,13 @@ import {
   Pause,
   CheckCircle,
   AlertCircle,
+  FileText,
+  Download,
+  Award,
 } from "lucide-react";
-import { format, differenceInSeconds, isPast } from "date-fns";
+import { format, differenceInSeconds } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface Task {
   id: string;
@@ -31,6 +37,13 @@ interface Task {
   points: number;
   assigned_by: string;
   created_at: string;
+  trial_period?: boolean;
+  attachments?: Array<{
+    name: string;
+    url: string;
+    type?: string;
+    size?: number;
+  }>;
   assignedBy?: {
     full_name: string;
   };
@@ -52,6 +65,7 @@ export const TaskDetailDialog = ({
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!open || !task) {
@@ -112,6 +126,38 @@ export const TaskDetailDialog = ({
     }
   };
 
+  const handleDownloadAttachment = async (attachment: { name: string; url: string }) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('task_attachments')
+        .download(attachment.url);
+
+      if (error) throw error;
+
+      // Create a download link
+      const url = window.URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.name;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Download started",
+        description: `Downloading ${attachment.name}`,
+      });
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast({
+        title: "Download failed",
+        description: "Could not download the file",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent':
@@ -134,7 +180,7 @@ export const TaskDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-gradient-to-br from-slate-900 to-slate-800 border-white/20 text-white">
+      <DialogContent className="max-w-2xl max-h-[90vh] bg-gradient-to-br from-slate-900 to-slate-800 border-white/20 text-white">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <Target className="w-6 h-6 text-blue-400" />
@@ -142,18 +188,26 @@ export const TaskDetailDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <ScrollArea className="max-h-[calc(90vh-100px)] pr-4">
+          <div className="space-y-6">
           {/* Status and Priority Badges */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline" className="border-blue-400/50 text-blue-300">
               {task.status.replace('_', ' ').toUpperCase()}
             </Badge>
             <Badge className={getPriorityColor(task.priority)}>
               {task.priority.toUpperCase()} PRIORITY
             </Badge>
-            <Badge variant="outline" className="border-purple-400/50 text-purple-300">
-              {task.points} Points
-            </Badge>
+            {task.trial_period ? (
+              <Badge variant="outline" className="border-yellow-400/50 text-yellow-300 flex items-center gap-1">
+                <Award className="w-3 h-3" />
+                Trial Period
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="border-purple-400/50 text-purple-300">
+                {task.points} Points
+              </Badge>
+            )}
           </div>
 
           <Separator className="bg-white/10" />
@@ -205,6 +259,51 @@ export const TaskDetailDialog = ({
           </div>
 
           <Separator className="bg-white/10" />
+
+          {/* Attachments Section */}
+          {task.attachments && task.attachments.length > 0 && (
+            <>
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-white/90 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-400" />
+                  Attachments ({task.attachments.length})
+                </h3>
+                <div className="space-y-2">
+                  {task.attachments.map((attachment, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-black/30 rounded-lg p-3 border border-white/10 hover:bg-black/40 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <FileText className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-white text-sm font-medium truncate">
+                            {attachment.name}
+                          </p>
+                          {attachment.size && (
+                            <p className="text-white/50 text-xs">
+                              {(attachment.size / 1024).toFixed(2)} KB
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-blue-400/50 text-blue-300 hover:bg-blue-500/20 flex-shrink-0"
+                        onClick={() => handleDownloadAttachment(attachment)}
+                      >
+                        <Download className="w-4 h-4 mr-1" />
+                        Download
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Separator className="bg-white/10" />
+            </>
+          )}
 
           {/* Timer/Countdown Section */}
           {task.status !== 'completed' && task.status !== 'handover' && (
@@ -268,12 +367,21 @@ export const TaskDetailDialog = ({
             <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4 text-center">
               <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-2" />
               <p className="text-green-300 font-semibold">Task Completed!</p>
-              <p className="text-white/70 text-sm mt-1">
-                You earned {task.points} points
-              </p>
+              {!task.trial_period && (
+                <p className="text-white/70 text-sm mt-1">
+                  You earned {task.points} points
+                </p>
+              )}
+              {task.trial_period && (
+                <p className="text-yellow-300 text-sm mt-1 flex items-center justify-center gap-1">
+                  <Award className="w-4 h-4" />
+                  Trial Period Task
+                </p>
+              )}
             </div>
           )}
         </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
