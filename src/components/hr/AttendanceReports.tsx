@@ -65,7 +65,9 @@ const AttendanceReports = () => {
           *,
           staff_profiles!inner(
             full_name,
-            username
+            username,
+            department_id,
+            departments(name)
           )
         `)
         .gte('date', format(dateRange.from, 'yyyy-MM-dd'))
@@ -135,7 +137,7 @@ const AttendanceReports = () => {
         record.staff_profiles?.full_name || 'Unknown',
         record.check_in_time ? format(new Date(record.check_in_time), 'HH:mm:ss') : 'N/A',
         record.is_late ? 'Late' : 'On Time',
-        'Unassigned'
+        record.staff_profiles?.departments?.name || 'Unassigned'
       ].join(','))
     ].join('\n');
 
@@ -332,7 +334,7 @@ const AttendanceReports = () => {
                     )}
                   </TableCell>
                    <TableCell>
-                     Unassigned
+                     {record.staff_profiles?.departments?.name || 'Unassigned'}
                    </TableCell>
                 </TableRow>
               ))}
