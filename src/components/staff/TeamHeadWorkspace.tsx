@@ -133,6 +133,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   const [notes, setNotes] = useState<Array<{ id: string; content: string; created_at: string }>>([]);
   const [newNote, setNewNote] = useState("");
   const [addingNote, setAddingNote] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({});
   const { toast } = useToast();
 
   const [newTask, setNewTask] = useState({
@@ -158,6 +159,38 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     fetchDepartments();
     fetchNotes();
   }, [userId]);
+
+  // Set up presence tracking for online users
+  useEffect(() => {
+    const channel = supabase.channel('team-presence');
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        setOnlineUsers(state);
+      })
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        console.log('User joined:', key, newPresences);
+      })
+      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        console.log('User left:', key, leftPresences);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          // Track current user's presence
+          await channel.track({
+            user_id: userId,
+            full_name: userProfile?.full_name || 'Unknown',
+            username: userProfile?.username || 'unknown',
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [userId, userProfile]);
 
   const fetchTasks = async () => {
     try {
@@ -1451,6 +1484,51 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       </p>
                     </div>
                   ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* Team Online */}
+          <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-green-400" />
+                Team Online
+                <Badge variant="outline" className="ml-auto bg-green-500/20 border-green-500/30 text-green-300">
+                  {Object.keys(onlineUsers).length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-60">
+                <div className="space-y-2">
+                  {Object.entries(onlineUsers).map(([key, presences]: [string, any]) => {
+                    const presence = Array.isArray(presences) ? presences[0] : presences;
+                    return (
+                      <div key={key} className="flex items-center gap-3 p-2 bg-white/5 rounded-lg border border-white/10">
+                        <div className="relative">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-semibold">
+                            {presence.full_name?.charAt(0) || '?'}
+                          </div>
+                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-black/20 rounded-full"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white truncate">
+                            {presence.full_name || 'Unknown'}
+                          </p>
+                          <p className="text-xs text-white/50 truncate">
+                            @{presence.username || 'unknown'}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {Object.keys(onlineUsers).length === 0 && (
+                    <div className="text-center py-8 text-white/50 text-sm">
+                      No team members online
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
             </CardContent>
