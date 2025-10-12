@@ -104,6 +104,20 @@ export const TaskDetailDialog = ({
       setComments(Array.isArray(task.comments) ? task.comments : []);
     }
 
+    // Restore timer state if task is in progress
+    if (task.status === 'in_progress' && (task as any).timer_started_at) {
+      const startTime = new Date((task as any).timer_started_at).getTime();
+      const now = new Date().getTime();
+      const elapsed = Math.floor((now - startTime) / 1000);
+      setElapsedSeconds(elapsed);
+      setIsTimerRunning(true);
+      
+      // Restore breaks taken
+      if ((task as any).breaks_taken) {
+        setBreaksTaken((task as any).breaks_taken);
+      }
+    }
+
     // Calculate remaining time if due date exists
     if (task.due_date) {
       const dueDateTime = task.due_time 
@@ -155,14 +169,37 @@ export const TaskDetailDialog = ({
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleStart = () => {
-    if (task?.status === 'pending') {
+  const handleStart = async () => {
+    if (!task) return;
+    
+    try {
+      // Update task status and save timer start time
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({
+          status: 'in_progress',
+          timer_started_at: new Date().toISOString(),
+          breaks_taken: 0
+        })
+        .eq('id', task.id);
+
+      if (error) throw error;
+
       onStatusUpdate(task.id, 'in_progress');
+      setIsTimerRunning(true);
+    } catch (error) {
+      console.error('Error starting task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start task timer",
+        variant: "destructive",
+      });
     }
-    setIsTimerRunning(true);
   };
 
-  const handleStartBreak = () => {
+  const handleStartBreak = async () => {
+    if (!task) return;
+    
     if (breaksTaken >= 2) {
       toast({
         title: "No breaks left",
@@ -172,15 +209,34 @@ export const TaskDetailDialog = ({
       return;
     }
 
-    setIsTimerRunning(false);
-    setIsOnBreak(true);
-    setBreakTimeRemaining(300); // 5 minutes = 300 seconds
-    setBreaksTaken(prev => prev + 1);
-    
-    toast({
-      title: "Break started",
-      description: "You have 5 minutes. Timer will resume automatically",
-    });
+    try {
+      const newBreakCount = breaksTaken + 1;
+      
+      // Save break count to database
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({ breaks_taken: newBreakCount })
+        .eq('id', task.id);
+
+      if (error) throw error;
+
+      setIsTimerRunning(false);
+      setIsOnBreak(true);
+      setBreakTimeRemaining(300); // 5 minutes = 300 seconds
+      setBreaksTaken(newBreakCount);
+      
+      toast({
+        title: "Break started",
+        description: "You have 5 minutes. Timer will resume automatically",
+      });
+    } catch (error) {
+      console.error('Error starting break:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start break",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleComplete = () => {
