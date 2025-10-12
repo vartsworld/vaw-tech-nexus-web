@@ -125,7 +125,35 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
         }
       }
 
-      fetchTasks();
+      await fetchTasks();
+      
+      // Update selected task if it's the same one
+      if (selectedTask?.id === taskId) {
+        const { data: updatedTask } = await supabase
+          .from('staff_tasks')
+          .select(`
+            *,
+            due_time,
+            trial_period,
+            attachments,
+            comments
+          `)
+          .eq('id', taskId)
+          .single();
+          
+        if (updatedTask) {
+          const { data: assignerData } = await supabase
+            .from('staff_profiles')
+            .select('full_name')
+            .eq('user_id', updatedTask.assigned_by)
+            .single();
+            
+          setSelectedTask({
+            ...updatedTask,
+            assignedBy: assignerData
+          } as Task);
+        }
+      }
     } catch (error) {
       console.error('Error updating task:', error);
       toast({
