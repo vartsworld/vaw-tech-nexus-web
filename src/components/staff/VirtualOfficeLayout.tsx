@@ -117,30 +117,46 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange, onlineUsers 
           <div>
             <h3 className="text-white font-semibold mb-4">Team Online</h3>
             <div className="space-y-3">
-              {Object.entries(onlineUsers).map(([key, presences]: [string, any]) => {
-                const presence = Array.isArray(presences) ? presences[0] : presences;
-                const initials = presence.full_name?.split(' ').map((n: string) => n[0]).join('') || '?';
-                
-                return (
-                  <div key={key} className="flex items-center gap-3 p-2 rounded-lg bg-white/5">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
-                      {initials}
+              {(() => {
+                // Extract all presences and deduplicate by user_id
+                const uniqueUsers = new Map();
+                Object.values(onlineUsers).forEach((presences: any) => {
+                  const presenceArray = Array.isArray(presences) ? presences : [presences];
+                  presenceArray.forEach((presence: any) => {
+                    // Skip demo-user and invalid entries
+                    if (presence.user_id && presence.user_id !== 'demo-user' && presence.full_name && presence.full_name !== 'Unknown') {
+                      uniqueUsers.set(presence.user_id, presence);
+                    }
+                  });
+                });
+
+                if (uniqueUsers.size === 0) {
+                  return (
+                    <div className="text-center py-4 text-white/50 text-sm">
+                      No team members online
                     </div>
-                    <div>
-                      <p className="text-white text-sm font-medium">{presence.full_name || 'Unknown'}</p>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                        <p className="text-green-300 text-xs">Available</p>
+                  );
+                }
+
+                return Array.from(uniqueUsers.values()).map((presence: any) => {
+                  const initials = presence.full_name?.split(' ').map((n: string) => n[0]).join('') || '?';
+                  
+                  return (
+                    <div key={presence.user_id} className="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
+                        {initials}
+                      </div>
+                      <div>
+                        <p className="text-white text-sm font-medium">{presence.full_name}</p>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                          <p className="text-green-300 text-xs">Available</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-              {Object.keys(onlineUsers).length === 0 && (
-                <div className="text-center py-4 text-white/50 text-sm">
-                  No team members online
-                </div>
-              )}
+                  );
+                });
+              })()}
             </div>
           </div>
         </div>
