@@ -871,6 +871,146 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     }
   };
 
+  const handleDeleteTaskAttachment = async (attachmentUrl: string, attachmentIndex: number) => {
+    if (!selectedTask) return;
+    
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('task-attachments')
+        .remove([attachmentUrl]);
+
+      if (storageError) throw storageError;
+
+      // Update task attachments
+      const updatedAttachments = selectedTask.attachments?.filter((_, idx) => idx !== attachmentIndex) || [];
+      
+      const { error: dbError } = await supabase
+        .from('staff_tasks')
+        .update({ attachments: updatedAttachments })
+        .eq('id', selectedTask.id);
+
+      if (dbError) throw dbError;
+
+      setSelectedTask({ ...selectedTask, attachments: updatedAttachments });
+      setTasks(tasks.map(t => t.id === selectedTask.id ? { ...t, attachments: updatedAttachments } : t));
+
+      toast({
+        title: "Success",
+        description: "Attachment deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting attachment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete attachment.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteTaskCommentAttachment = async (commentIndex: number) => {
+    if (!selectedTask) return;
+    
+    try {
+      const comments = selectedTask.comments || [];
+      const comment = comments[commentIndex];
+      
+      if (!comment.attachment_url) return;
+
+      // Extract storage path from public URL
+      const urlParts = comment.attachment_url.split('/task-attachments/');
+      if (urlParts.length > 1) {
+        const storagePath = urlParts[1];
+        
+        // Delete from storage
+        await supabase.storage
+          .from('task-attachments')
+          .remove([storagePath]);
+      }
+
+      // Update comment to remove attachment
+      const updatedComments = comments.map((c, idx) => 
+        idx === commentIndex 
+          ? { ...c, attachment_url: null, attachment_name: null }
+          : c
+      );
+
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({ comments: updatedComments })
+        .eq('id', selectedTask.id);
+
+      if (error) throw error;
+
+      setSelectedTask({ ...selectedTask, comments: updatedComments as any });
+      setTasks(tasks.map(t => t.id === selectedTask.id ? { ...t, comments: updatedComments as any } : t));
+
+      toast({
+        title: "Success",
+        description: "Attachment deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting comment attachment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete attachment.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSubtaskCommentAttachment = async (subtaskId: string, commentIndex: number) => {
+    try {
+      const subtask = subtasks.find(st => st.id === subtaskId);
+      if (!subtask) return;
+      
+      const comments = subtask.comments || [];
+      const comment = comments[commentIndex];
+      
+      if (!comment.attachment_url) return;
+
+      // Extract storage path from public URL
+      const urlParts = comment.attachment_url.split('/task-attachments/');
+      if (urlParts.length > 1) {
+        const storagePath = urlParts[1];
+        
+        // Delete from storage
+        await supabase.storage
+          .from('task-attachments')
+          .remove([storagePath]);
+      }
+
+      // Update comment to remove attachment
+      const updatedComments = comments.map((c, idx) => 
+        idx === commentIndex 
+          ? { ...c, attachment_url: null, attachment_name: null }
+          : c
+      );
+
+      const { error } = await supabase
+        .from('staff_subtasks')
+        .update({ comments: updatedComments })
+        .eq('id', subtaskId);
+
+      if (error) throw error;
+
+      setSubtasks(subtasks.map(st => st.id === subtaskId ? { ...st, comments: updatedComments } : st));
+
+      toast({
+        title: "Success",
+        description: "Attachment deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting subtask comment attachment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete attachment.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
@@ -1423,24 +1563,33 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                           <Paperclip className="h-3 w-3 flex-shrink-0" />
                           <span className="truncate">{att.name}</span>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={async () => {
-                            const { data } = await supabase.storage
-                              .from('task-attachments')
-                              .download(att.url);
-                            if (data) {
-                              const url = URL.createObjectURL(data);
-                              const a = document.createElement('a');
-                              a.href = url;
-                              a.download = att.name;
-                              a.click();
-                            }
-                          }}
-                        >
-                          <Download className="h-3 w-3" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              const { data } = await supabase.storage
+                                .from('task-attachments')
+                                .download(att.url);
+                              if (data) {
+                                const url = URL.createObjectURL(data);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = att.name;
+                                a.click();
+                              }
+                            }}
+                          >
+                            <Download className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteTaskAttachment(att.url, idx)}
+                          >
+                            <X className="h-3 w-3 text-red-400" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1597,15 +1746,24 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                               <p className="text-sm mt-1">{comment.message}</p>
                             )}
                             {comment.attachment_url && (
-                              <a
-                                href={comment.attachment_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-sm text-primary hover:underline mt-2"
-                              >
-                                <Paperclip className="h-4 w-4" />
-                                {comment.attachment_name}
-                              </a>
+                              <div className="flex items-center justify-between mt-2 p-2 bg-white/5 rounded border border-white/10">
+                                <a
+                                  href={comment.attachment_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-sm text-primary hover:underline"
+                                >
+                                  <Paperclip className="h-4 w-4" />
+                                  {comment.attachment_name}
+                                </a>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteTaskCommentAttachment(idx)}
+                                >
+                                  <X className="h-3 w-3 text-red-400" />
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -1826,15 +1984,25 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                                     </div>
                                     {comment.message && <p>{comment.message}</p>}
                                     {comment.attachment_url && (
-                                      <a
-                                        href={comment.attachment_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-1 text-primary hover:underline"
-                                      >
-                                        <Paperclip className="h-3 w-3" />
-                                        {comment.attachment_name}
-                                      </a>
+                                      <div className="flex items-center justify-between p-1 bg-white/5 rounded border border-white/10">
+                                        <a
+                                          href={comment.attachment_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-1 text-primary hover:underline"
+                                        >
+                                          <Paperclip className="h-3 w-3" />
+                                          {comment.attachment_name}
+                                        </a>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-5 w-5 p-0"
+                                          onClick={() => handleDeleteSubtaskCommentAttachment(subtask.id, idx)}
+                                        >
+                                          <X className="h-3 w-3 text-red-400" />
+                                        </Button>
+                                      </div>
                                     )}
                                   </div>
                                 ))}
