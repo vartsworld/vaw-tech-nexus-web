@@ -43,13 +43,14 @@ const TeamHeadDashboard = () => {
 
   // Set up presence tracking for online users
   useEffect(() => {
-    if (!profile?.user_id) return;
+    if (!profile?.user_id || !profile?.full_name) return;
 
     const channel = supabase.channel('team-presence');
 
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
+        console.log('Presence state:', state);
         setOnlineUsers(state);
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
@@ -60,10 +61,11 @@ const TeamHeadDashboard = () => {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
+          console.log('Tracking presence for:', profile.full_name);
           await channel.track({
             user_id: profile.user_id,
-            full_name: profile.full_name || 'Unknown',
-            username: profile.username || 'unknown',
+            full_name: profile.full_name,
+            username: profile.username || 'user',
             online_at: new Date().toISOString(),
           });
         }
