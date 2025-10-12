@@ -34,11 +34,45 @@ const TeamHeadDashboard = () => {
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({});
   const { profile } = useStaffData();
 
   useEffect(() => {
     checkDailyRequirements();
   }, [profile?.user_id]);
+
+  // Set up presence tracking for online users
+  useEffect(() => {
+    if (!profile?.user_id) return;
+
+    const channel = supabase.channel('team-presence');
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        setOnlineUsers(state);
+      })
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        console.log('User joined:', key, newPresences);
+      })
+      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        console.log('User left:', key, leftPresences);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            user_id: profile.user_id,
+            full_name: profile.full_name || 'Unknown',
+            username: profile.username || 'unknown',
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [profile?.user_id, profile?.full_name, profile?.username]);
 
   const checkDailyRequirements = async () => {
     if (!profile?.user_id) return;
@@ -227,7 +261,11 @@ const TeamHeadDashboard = () => {
         </div>
       </header>
 
-      <VirtualOfficeLayout currentRoom={currentRoom} onRoomChange={setCurrentRoom}>
+      <VirtualOfficeLayout 
+        currentRoom={currentRoom} 
+        onRoomChange={setCurrentRoom}
+        onlineUsers={onlineUsers}
+      >
         {roomComponents[currentRoom]}
       </VirtualOfficeLayout>
     </div>

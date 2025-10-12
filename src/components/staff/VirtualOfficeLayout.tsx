@@ -15,9 +15,10 @@ interface VirtualOfficeLayoutProps {
   children: ReactNode;
   currentRoom: 'workspace' | 'breakroom' | 'meeting';
   onRoomChange: (room: 'workspace' | 'breakroom' | 'meeting') => void;
+  onlineUsers?: Record<string, any>;
 }
 
-const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange }: VirtualOfficeLayoutProps) => {
+const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange, onlineUsers = {} }: VirtualOfficeLayoutProps) => {
   const rooms = [
     { id: 'workspace' as const, name: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
     { id: 'breakroom' as const, name: 'Break Room', icon: Coffee, color: 'from-red-500 to-red-600' },
@@ -116,24 +117,30 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange }: VirtualOff
           <div>
             <h3 className="text-white font-semibold mb-4">Team Online</h3>
             <div className="space-y-3">
-              {['Sarah Chen', 'Mike Rodriguez', 'Emily Davis'].map((name, index) => (
-                <div key={name} className="flex items-center gap-3 p-2 rounded-lg bg-white/5">
-                  <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${
-                    index === 0 ? 'from-blue-500 to-blue-600' :
-                    index === 1 ? 'from-red-500 to-red-600' :
-                    'from-yellow-500 to-green-500'
-                  } flex items-center justify-center text-white text-sm font-medium`}>
-                    {name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div>
-                    <p className="text-white text-sm font-medium">{name}</p>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      <p className="text-green-300 text-xs">Available</p>
+              {Object.entries(onlineUsers).map(([key, presences]: [string, any]) => {
+                const presence = Array.isArray(presences) ? presences[0] : presences;
+                const initials = presence.full_name?.split(' ').map((n: string) => n[0]).join('') || '?';
+                
+                return (
+                  <div key={key} className="flex items-center gap-3 p-2 rounded-lg bg-white/5">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
+                      {initials}
+                    </div>
+                    <div>
+                      <p className="text-white text-sm font-medium">{presence.full_name || 'Unknown'}</p>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <p className="text-green-300 text-xs">Available</p>
+                      </div>
                     </div>
                   </div>
+                );
+              })}
+              {Object.keys(onlineUsers).length === 0 && (
+                <div className="text-center py-4 text-white/50 text-sm">
+                  No team members online
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>

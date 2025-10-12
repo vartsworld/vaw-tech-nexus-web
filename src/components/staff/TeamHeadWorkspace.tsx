@@ -1489,51 +1489,6 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
             </CardContent>
           </Card>
 
-          {/* Team Online */}
-          <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-green-400" />
-                Team Online
-                <Badge variant="outline" className="ml-auto bg-green-500/20 border-green-500/30 text-green-300">
-                  {Object.keys(onlineUsers).length}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-60">
-                <div className="space-y-2">
-                  {Object.entries(onlineUsers).map(([key, presences]: [string, any]) => {
-                    const presence = Array.isArray(presences) ? presences[0] : presences;
-                    return (
-                      <div key={key} className="flex items-center gap-3 p-2 bg-white/5 rounded-lg border border-white/10">
-                        <div className="relative">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-semibold">
-                            {presence.full_name?.charAt(0) || '?'}
-                          </div>
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-black/20 rounded-full"></div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-white truncate">
-                            {presence.full_name || 'Unknown'}
-                          </p>
-                          <p className="text-xs text-white/50 truncate">
-                            @{presence.username || 'unknown'}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {Object.keys(onlineUsers).length === 0 && (
-                    <div className="text-center py-8 text-white/50 text-sm">
-                      No team members online
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-
           {/* Music Player */}
           <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white">
             <CardContent className="pt-6">
