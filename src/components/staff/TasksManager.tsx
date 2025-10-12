@@ -30,6 +30,7 @@ interface Task {
   assigned_by: string;
   created_at: string;
   trial_period?: boolean;
+  comments?: any[];
   attachments?: any;
   assignedBy?: {
     full_name: string;
@@ -61,7 +62,8 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
           *,
           due_time,
           trial_period,
-          attachments
+          attachments,
+          comments
         `)
         .eq('assigned_to', userId)
         .order('created_at', { ascending: false });
@@ -84,7 +86,7 @@ const TasksManager = ({ userId, userProfile }: TasksManagerProps) => {
         })
       );
 
-      setTasks(tasksWithAssigner);
+      setTasks(tasksWithAssigner as Task[]);
     } catch (error) {
       console.error('Error fetching tasks:', error);
     }

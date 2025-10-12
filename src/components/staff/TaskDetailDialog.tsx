@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Clock,
   Calendar,
@@ -21,6 +24,11 @@ import {
   FileText,
   Download,
   Award,
+  MessageSquare,
+  Upload,
+  Send,
+  X,
+  Loader2,
 } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +46,7 @@ interface Task {
   assigned_by: string;
   created_at: string;
   trial_period?: boolean;
+  comments?: any[];
   attachments?: Array<{
     name: string;
     url: string;
@@ -65,13 +74,28 @@ export const TaskDetailDialog = ({
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [comment, setComment] = useState("");
+  const [comments, setComments] = useState<any[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<any[]>([]);
+  const [fileNames, setFileNames] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     if (!open || !task) {
       setIsTimerRunning(false);
       setElapsedSeconds(0);
+      setComments([]);
+      setUploadedFiles([]);
+      setFileNames({});
       return;
+    }
+
+    // Load existing comments
+    if (task.comments) {
+      setComments(Array.isArray(task.comments) ? task.comments : []);
     }
 
     // Calculate remaining time if due date exists
@@ -126,15 +150,163 @@ export const TaskDetailDialog = ({
     }
   };
 
+  const handleAddComment = async () => {
+    if (!comment.trim() || !task) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const newComment = {
+        text: comment,
+        user_id: user.id,
+        created_at: new Date().toISOString(),
+      };
+
+      const updatedComments = [...comments, newComment];
+
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({ comments: updatedComments })
+        .eq('id', task.id);
+
+      if (error) throw error;
+
+      setComments(updatedComments);
+      setComment("");
+
+      toast({
+        title: "Comment added",
+        description: "Your comment has been added to the task",
+      });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add comment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || !task) return;
+
+    setIsUploading(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${task.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('task-attachments')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('task-attachments')
+          .getPublicUrl(fileName);
+
+        return {
+          url: fileName,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          publicUrl,
+          uploadedBy: user.id,
+        };
+      });
+
+      const newFiles = await Promise.all(uploadPromises);
+      setUploadedFiles([...uploadedFiles, ...newFiles]);
+
+      toast({
+        title: "Files uploaded",
+        description: `${files.length} file(s) uploaded successfully`,
+      });
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload files",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleSubmitForReview = async () => {
+    if (!task) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Prepare submission data
+      const submissionAttachments = uploadedFiles.map((file, index) => ({
+        ...file,
+        title: fileNames[index] || file.name,
+      }));
+
+      // Merge with existing attachments
+      const allAttachments = [
+        ...(task.attachments || []),
+        ...submissionAttachments,
+      ];
+
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({
+          status: 'pending_approval',
+          attachments: allAttachments,
+          comments: comments,
+        })
+        .eq('id', task.id);
+
+      if (error) throw error;
+
+      onStatusUpdate(task.id, 'pending_approval');
+      setUploadedFiles([]);
+      setFileNames({});
+
+      toast({
+        title: "Submitted for review",
+        description: "Your task has been submitted to the team head for review",
+      });
+
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error submitting task:', error);
+      toast({
+        title: "Submission failed",
+        description: "Failed to submit task for review",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleDownloadAttachment = async (attachment: { name: string; url: string }) => {
     try {
       const { data, error } = await supabase.storage
-        .from('task_attachments')
+        .from('task-attachments')
         .download(attachment.url);
 
       if (error) throw error;
 
-      // Create a download link
       const url = window.URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
@@ -360,6 +532,152 @@ export const TaskDetailDialog = ({
                   </Button>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Comments Section */}
+          {task.status === 'in_progress' && (
+            <>
+              <Separator className="bg-white/10" />
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-white/90 flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-blue-400" />
+                  Comments & Updates
+                </h3>
+                
+                {comments.length > 0 && (
+                  <div className="space-y-2 mb-4 max-h-40 overflow-y-auto">
+                    {comments.map((c, idx) => (
+                      <div key={idx} className="bg-black/30 rounded-lg p-3 border border-white/10">
+                        <p className="text-white/90 text-sm">{c.text}</p>
+                        <p className="text-white/50 text-xs mt-1">
+                          {format(new Date(c.created_at), 'MMM dd, yyyy HH:mm')}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Add a comment or update..."
+                    className="bg-black/30 border-white/20 text-white resize-none"
+                    rows={3}
+                  />
+                  <Button
+                    onClick={handleAddComment}
+                    size="sm"
+                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                    disabled={!comment.trim()}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Add Comment
+                  </Button>
+                </div>
+              </div>
+
+              <Separator className="bg-white/10" />
+
+              {/* File Upload Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-white/90 flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-green-400" />
+                  Upload Work Files
+                </h3>
+
+                {uploadedFiles.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    {uploadedFiles.map((file, index) => (
+                      <div key={index} className="bg-black/30 rounded-lg p-3 border border-white/10">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <Input
+                                value={fileNames[index] || file.name}
+                                onChange={(e) => setFileNames({ ...fileNames, [index]: e.target.value })}
+                                placeholder="File name/description"
+                                className="bg-white/10 border-white/20 text-white text-sm h-8"
+                              />
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
+                              const newFileNames = { ...fileNames };
+                              delete newFileNames[index];
+                              setFileNames(newFileNames);
+                            }}
+                            className="text-red-400 hover:bg-red-500/20"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    size="sm"
+                    variant="outline"
+                    className="border-green-400/50 text-green-300 hover:bg-green-500/20"
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4 mr-2" />
+                    )}
+                    Upload Files
+                  </Button>
+                </div>
+              </div>
+
+              <Separator className="bg-white/10" />
+
+              {/* Submit for Review Button */}
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <p className="text-white/70 text-sm mb-3">
+                  Once you're done with your work, submit the task for review by your team head.
+                </p>
+                <Button
+                  onClick={handleSubmitForReview}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 mr-2" />
+                  )}
+                  Submit for Review
+                </Button>
+              </div>
+            </>
+          )}
+
+          {task.status === 'pending_approval' && (
+            <div className="bg-orange-500/20 border border-orange-500/30 rounded-lg p-4 text-center">
+              <Clock className="w-12 h-12 text-orange-400 mx-auto mb-2" />
+              <p className="text-orange-300 font-semibold">Pending Approval</p>
+              <p className="text-white/70 text-sm mt-1">
+                Your task is being reviewed by the team head
+              </p>
             </div>
           )}
 

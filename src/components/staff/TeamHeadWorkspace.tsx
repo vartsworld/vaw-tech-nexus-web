@@ -44,6 +44,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useStaffData } from "@/hooks/useStaffData";
 import MusicPlayer from "./MusicPlayer";
+import { TaskApprovalDialog } from "./TaskApprovalDialog";
 
 interface Subtask {
   id: string;
@@ -112,6 +113,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewTaskOpen, setIsViewTaskOpen] = useState(false);
+  const [isApprovalOpen, setIsApprovalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [uploadingSubtaskAttachment, setUploadingSubtaskAttachment] = useState<string | null>(null);
@@ -1290,7 +1292,64 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Tasks Management */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
+          {/* Pending Approval Tasks */}
+          {tasks.filter(t => t.status === 'pending_approval').length > 0 && (
+            <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-lg border-orange-500/30 text-white">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 h-5 text-orange-400" />
+                  Pending Approval ({tasks.filter(t => t.status === 'pending_approval').length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {tasks.filter(t => t.status === 'pending_approval').map((task) => (
+                    <div key={task.id} className="bg-black/30 border border-orange-500/30 rounded-lg p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-white mb-1">{task.title}</h4>
+                          {task.description && (
+                            <p className="text-white/70 text-sm line-clamp-2 mb-2">{task.description}</p>
+                          )}
+                          <div className="flex items-center gap-3 text-xs text-white/60">
+                            <div className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {task.staff_profiles?.full_name || 'Unknown'}
+                            </div>
+                            {task.due_date && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {format(new Date(task.due_date), 'MMM dd, yyyy')}
+                              </div>
+                            )}
+                            {task.attachments && task.attachments.length > 0 && (
+                              <div className="flex items-center gap-1">
+                                <FileText className="h-3 w-3" />
+                                {task.attachments.length} file(s)
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="bg-green-500 hover:bg-green-600 text-white flex-shrink-0"
+                          onClick={() => {
+                            setSelectedTask(task);
+                            setIsApprovalOpen(true);
+                          }}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Review
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -2128,6 +2187,16 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
           )}
         </DialogContent>
       </Dialog>
+
+      <TaskApprovalDialog
+        task={selectedTask}
+        open={isApprovalOpen}
+        onOpenChange={setIsApprovalOpen}
+        onApproved={() => {
+          fetchTasks();
+          setSelectedTask(null);
+        }}
+      />
     </div>
   );
 };
