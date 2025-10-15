@@ -580,6 +580,15 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   };
 
   const handleCreateTask = async () => {
+    if (!newTask.title || !newTask.assigned_to || !newTask.client_id) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields including client selection.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setUploadingFiles(true);
       
@@ -588,7 +597,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         title: newTask.title,
         description: newTask.description,
         assigned_to: newTask.assigned_to,
-        client_id: newTask.client_id === "no-client" ? null : newTask.client_id || null,
+        client_id: newTask.client_id,
         priority: newTask.priority,
         due_date: newTask.due_date || null,
         due_time: newTask.due_time || null,
@@ -1166,13 +1175,12 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="client">Client (Optional)</Label>
+                <Label htmlFor="client">Client *</Label>
                 <Select value={newTask.client_id} onValueChange={(value) => setNewTask({...newTask, client_id: value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select client" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="no-client">No Client</SelectItem>
                     {clients.map(client => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.company_name} - {client.contact_person}
