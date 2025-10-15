@@ -358,6 +358,48 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          address: string | null
+          company_name: string
+          contact_person: string
+          created_at: string | null
+          created_by: string
+          email: string
+          id: string
+          notes: string | null
+          phone: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          company_name: string
+          contact_person: string
+          created_at?: string | null
+          created_by: string
+          email: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          company_name?: string
+          contact_person?: string
+          created_at?: string | null
+          created_by?: string
+          email?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       daily_quotes: {
         Row: {
           author: string
@@ -1484,6 +1526,7 @@ export type Database = {
           assigned_to: string
           attachments: Json | null
           breaks_taken: number | null
+          client_id: string | null
           comments: Json | null
           completed_at: string | null
           created_at: string | null
@@ -1508,6 +1551,7 @@ export type Database = {
           assigned_to: string
           attachments?: Json | null
           breaks_taken?: number | null
+          client_id?: string | null
           comments?: Json | null
           completed_at?: string | null
           created_at?: string | null
@@ -1532,6 +1576,7 @@ export type Database = {
           assigned_to?: string
           attachments?: Json | null
           breaks_taken?: number | null
+          client_id?: string | null
           comments?: Json | null
           completed_at?: string | null
           created_at?: string | null
@@ -1563,6 +1608,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "staff_profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "staff_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2532,6 +2584,10 @@ export type Database = {
         Args: { check_email: string }
         Returns: boolean
       }
+      is_sales_department_head: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       json: {
         Args: { "": unknown }
         Returns: Json
@@ -2604,7 +2660,7 @@ export type Database = {
         Args:
           | { tbl_oid: unknown; use_typmod?: boolean }
           | { use_typmod?: boolean }
-        Returns: number
+        Returns: string
       }
       postgis_addbbox: {
         Args: { "": unknown }

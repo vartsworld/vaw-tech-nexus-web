@@ -28,6 +28,7 @@ const TaskManagement = () => {
   const [tasks, setTasks] = useState([]);
   const [staff, setStaff] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [clients, setClients] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -39,6 +40,7 @@ const TaskManagement = () => {
     assigned_to: "",
     assigned_by: "",
     project_id: "",
+    client_id: "",
     status: "pending",
     priority: "medium",
     due_date: "",
@@ -50,6 +52,7 @@ const TaskManagement = () => {
     fetchTasks();
     fetchStaff();
     fetchProjects();
+    fetchClients();
   }, []);
 
   useEffect(() => {
@@ -104,6 +107,21 @@ const TaskManagement = () => {
     }
   };
 
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, company_name, contact_person')
+        .eq('status', 'active')
+        .order('company_name');
+
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+    }
+  };
+
   const filterTasks = () => {
     let filtered = tasks;
 
@@ -138,6 +156,7 @@ const TaskManagement = () => {
           assigned_by: user?.id || crypto.randomUUID(),
           due_date: newTask.due_date || null,
           project_id: newTask.project_id === "no-project" ? null : newTask.project_id,
+          client_id: newTask.client_id === "no-client" ? null : newTask.client_id,
           priority: newTask.priority as 'low' | 'medium' | 'high' | 'urgent',
           status: newTask.status as 'pending' | 'in_progress' | 'completed'
         })
@@ -154,6 +173,7 @@ const TaskManagement = () => {
         assigned_to: "",
         assigned_by: "",
         project_id: "",
+        client_id: "",
         status: "pending",
         priority: "medium",
         due_date: "",
@@ -311,6 +331,22 @@ const TaskManagement = () => {
                     {projects.map(project => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="client">Client (Optional)</Label>
+                <Select value={newTask.client_id} onValueChange={(value) => setNewTask({...newTask, client_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no-client">No Client</SelectItem>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.company_name} - {client.contact_person}
                       </SelectItem>
                     ))}
                   </SelectContent>
