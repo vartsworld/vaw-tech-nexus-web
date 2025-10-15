@@ -108,6 +108,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
@@ -142,6 +143,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     title: "",
     description: "",
     assigned_to: "",
+    client_id: "",
     priority: "medium" as 'low' | 'medium' | 'high' | 'urgent',
     due_date: "",
     due_time: "",
@@ -159,6 +161,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     fetchTasks();
     fetchStaff();
     fetchDepartments();
+    fetchClients();
     fetchNotes();
   }, [userId]);
 
@@ -249,6 +252,21 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       setDepartments(data || []);
     } catch (error) {
       console.error('Error fetching departments:', error);
+    }
+  };
+
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('id, company_name, contact_person')
+        .eq('status', 'active')
+        .order('company_name');
+
+      if (error) throw error;
+      setClients(data || []);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
     }
   };
 
@@ -570,6 +588,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         title: newTask.title,
         description: newTask.description,
         assigned_to: newTask.assigned_to,
+        client_id: newTask.client_id === "no-client" ? null : newTask.client_id || null,
         priority: newTask.priority,
         due_date: newTask.due_date || null,
         due_time: newTask.due_time || null,
@@ -643,6 +662,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         title: "",
         description: "",
         assigned_to: "",
+        client_id: "",
         priority: "medium",
         due_date: "",
         due_time: "",
@@ -1140,6 +1160,22 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                     {staff.map(member => (
                       <SelectItem key={member.id} value={member.user_id}>
                         {member.full_name} (@{member.username})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="client">Client (Optional)</Label>
+                <Select value={newTask.client_id} onValueChange={(value) => setNewTask({...newTask, client_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no-client">No Client</SelectItem>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.company_name} - {client.contact_person}
                       </SelectItem>
                     ))}
                   </SelectContent>
