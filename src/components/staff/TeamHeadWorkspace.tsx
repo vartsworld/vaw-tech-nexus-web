@@ -229,9 +229,16 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const fetchStaff = async () => {
     try {
+      if (!userProfile?.department_id) {
+        console.log('No department_id found for team head');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('staff_profiles')
         .select('id, user_id, full_name, username, department_id')
+        .eq('department_id', userProfile.department_id)
+        .neq('id', userProfile.id)
         .order('full_name');
 
       if (error) throw error;
