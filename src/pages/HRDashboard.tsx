@@ -156,36 +156,36 @@ const HRDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-3 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 md:space-y-8">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">HR Management Dashboard</h1>
-            <p className="text-gray-600">Comprehensive staff and department management</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">HR Management Dashboard</h1>
+            <p className="text-sm md:text-base text-gray-600">Comprehensive staff and department management</p>
           </div>
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="px-3 py-1">
-              <Clock className="h-4 w-4 mr-1" />
-              Last updated: {new Date().toLocaleTimeString()}
+          <div className="flex items-center gap-2 md:gap-4">
+            <Badge variant="outline" className="px-2 md:px-3 py-1 text-xs md:text-sm">
+              <Clock className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+              <span className="hidden sm:inline">Last updated: </span>{new Date().toLocaleTimeString()}
             </Badge>
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="staff">Staff</TabsTrigger>
-            <TabsTrigger value="attendance">Attendance</TabsTrigger>
-            <TabsTrigger value="tasks">Tasks</TabsTrigger>
-            <TabsTrigger value="clients">Clients</TabsTrigger>
-            <TabsTrigger value="departments">Departments</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="applications">Applications</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+          <TabsList className="w-full overflow-x-auto flex md:grid md:grid-cols-9 justify-start md:justify-center h-auto p-1">
+            <TabsTrigger value="overview" className="whitespace-nowrap">Overview</TabsTrigger>
+            <TabsTrigger value="staff" className="whitespace-nowrap">Staff</TabsTrigger>
+            <TabsTrigger value="attendance" className="whitespace-nowrap">Attendance</TabsTrigger>
+            <TabsTrigger value="tasks" className="whitespace-nowrap">Tasks</TabsTrigger>
+            <TabsTrigger value="clients" className="whitespace-nowrap">Clients</TabsTrigger>
+            <TabsTrigger value="departments" className="whitespace-nowrap">Departments</TabsTrigger>
+            <TabsTrigger value="performance" className="whitespace-nowrap">Performance</TabsTrigger>
+            <TabsTrigger value="notifications" className="whitespace-nowrap">Notifications</TabsTrigger>
+            <TabsTrigger value="applications" className="whitespace-nowrap">Applications</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-4 md:space-y-6">
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
               <StatCard
@@ -230,21 +230,21 @@ const HRDashboard = () => {
             </div>
 
             {/* Recent Activities */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <AlertCircle className="h-4 w-4 md:h-5 md:w-5" />
                     Recent Activities
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-4">
                     {recentActivities.map((activity, index) => (
-                      <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                        <activity.icon className="h-4 w-4 text-blue-600" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{activity.title}</p>
+                      <div key={index} className="flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg bg-gray-50">
+                        <activity.icon className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs md:text-sm font-medium truncate">{activity.title}</p>
                           <p className="text-xs text-gray-500">
                             {new Date(activity.time).toLocaleString()}
                           </p>
@@ -257,28 +257,28 @@ const HRDashboard = () => {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    <TrendingUp className="h-4 w-4 md:h-5 md:w-5" />
                     Performance Insights
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-3 md:space-y-4">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Task Completion Rate</span>
-                      <Badge variant="outline">85%</Badge>
+                      <span className="text-xs md:text-sm">Task Completion Rate</span>
+                      <Badge variant="outline" className="text-xs">85%</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Average Response Time</span>
-                      <Badge variant="outline">2.4h</Badge>
+                      <span className="text-xs md:text-sm">Average Response Time</span>
+                      <Badge variant="outline" className="text-xs">2.4h</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Attendance Rate</span>
-                      <Badge variant="outline">{stats.avgAttendance}%</Badge>
+                      <span className="text-xs md:text-sm">Attendance Rate</span>
+                      <Badge variant="outline" className="text-xs">{stats.avgAttendance}%</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm">Employee Satisfaction</span>
-                      <Badge variant="outline">4.2/5</Badge>
+                      <span className="text-xs md:text-sm">Employee Satisfaction</span>
+                      <Badge variant="outline" className="text-xs">4.2/5</Badge>
                     </div>
                   </div>
                 </CardContent>
