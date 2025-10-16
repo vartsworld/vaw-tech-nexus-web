@@ -82,16 +82,30 @@ const ClientManagement = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      if (!user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to create a client.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Creating client with user:', user.id);
+      
       const { data, error } = await supabase
         .from('clients')
         .insert({
           ...newClient,
-          created_by: user?.id
+          created_by: user.id
         })
         .select('*')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Client creation error:', error);
+        throw error;
+      }
 
       setClients([data, ...clients]);
       setIsAddDialogOpen(false);
@@ -113,7 +127,7 @@ const ClientManagement = () => {
       console.error('Error adding client:', error);
       toast({
         title: "Error",
-        description: "Failed to create client.",
+        description: error.message || "Failed to create client. Check if you have proper permissions.",
         variant: "destructive",
       });
     }
