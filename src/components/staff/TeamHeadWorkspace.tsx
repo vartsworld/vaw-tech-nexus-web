@@ -229,22 +229,45 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const fetchStaff = async () => {
     try {
+      console.log('Fetching staff - userProfile:', {
+        id: userProfile?.id,
+        department_id: userProfile?.department_id,
+        role: userProfile?.role,
+        full_name: userProfile?.full_name
+      });
+
       if (!userProfile?.department_id) {
-        console.log('No department_id found for team head');
+        console.error('No department_id found for team head - userProfile:', userProfile);
+        toast({
+          title: "Department Not Assigned",
+          description: "You don't have a department assigned. Please contact HR.",
+          variant: "destructive",
+        });
         return;
       }
 
       const { data, error } = await supabase
         .from('staff_profiles')
-        .select('id, user_id, full_name, username, department_id')
+        .select('id, user_id, full_name, username, department_id, role')
         .eq('department_id', userProfile.department_id)
         .neq('id', userProfile.id)
         .order('full_name');
 
+      console.log('Staff fetch result:', { data, error, count: data?.length });
+
       if (error) throw error;
       setStaff(data || []);
+      
+      if (!data || data.length === 0) {
+        console.warn('No staff members found in department:', userProfile.department_id);
+      }
     } catch (error) {
       console.error('Error fetching staff:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load staff members",
+        variant: "destructive",
+      });
     }
   };
 

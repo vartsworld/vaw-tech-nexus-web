@@ -41,6 +41,9 @@ export interface Profile {
   earnings: number;
   total_points: number;
   attendance_streak?: number;
+  department_id?: string;
+  role?: string;
+  is_department_head?: boolean;
 }
 
 export const useStaffData = () => {
@@ -89,8 +92,18 @@ export const useStaffData = () => {
         profile_photo_url: staffProfile.profile_photo_url,
         earnings: Number(staffProfile.earnings) || 0,
         total_points: staffProfile.total_points || 0,
-        attendance_streak: staffProfile.attendance_streak || 0
+        attendance_streak: staffProfile.attendance_streak || 0,
+        department_id: staffProfile.department_id,
+        role: staffProfile.role,
+        is_department_head: staffProfile.is_department_head
       };
+
+      console.log('Staff profile loaded:', {
+        id: userProfile.id,
+        department_id: userProfile.department_id,
+        role: userProfile.role,
+        is_department_head: userProfile.is_department_head
+      });
 
       setProfile(userProfile);
 
