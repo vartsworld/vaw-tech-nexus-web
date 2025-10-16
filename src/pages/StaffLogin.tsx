@@ -30,6 +30,7 @@ const StaffLogin = () => {
   const [isSettingEmoji, setIsSettingEmoji] = useState(false);
   const [newEmojiPassword, setNewEmojiPassword] = useState<string[]>([]);
   const [confirmEmojiPassword, setConfirmEmojiPassword] = useState<string[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -103,14 +104,25 @@ const StaffLogin = () => {
       }
 
       if (!data.emoji_password) {
+        // Store staff profile data for later use
+        setUserProfile(data);
         setIsSettingEmoji(true);
         toast({
           title: "Welcome!",
           description: "Please set up your emoji password for future logins",
         });
       } else {
-        const dashboardRoute = getDashboardRoute(data);
-        navigate(dashboardRoute);
+        // Check attendance and navigate to appropriate dashboard
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          const hasMarkedAttendance = await checkTodayAttendance(authUser.id);
+          const dashboardRoute = getDashboardRoute(data);
+          if (!hasMarkedAttendance) {
+            navigate(dashboardRoute, { state: { requireAttendance: true } });
+          } else {
+            navigate(dashboardRoute);
+          }
+        }
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -259,16 +271,20 @@ const StaffLogin = () => {
         description: "Emoji password set successfully!",
       });
 
-      if (staffProfile) {
+      // Use stored userProfile or fetch new one
+      const profileToUse = userProfile || staffProfile;
+      
+      if (profileToUse) {
         // Check if attendance is marked for today
         const hasMarkedAttendance = await checkTodayAttendance(user.id);
-        const dashboardRoute = getDashboardRoute(staffProfile);
+        const dashboardRoute = getDashboardRoute(profileToUse);
         if (!hasMarkedAttendance) {
           navigate(dashboardRoute, { state: { requireAttendance: true } });
         } else {
           navigate(dashboardRoute);
         }
       } else {
+        // Fallback - shouldn't happen
         navigate('/staff/dashboard', { state: { requireAttendance: true } });
       }
     } catch (error) {
