@@ -298,9 +298,7 @@ const TasksManager = ({
                         </Button>
 
                         {task.status !== 'handover' && task.status !== 'completed' && <>
-                            {task.status === 'pending' && <Button size="sm" variant="outline" className="bg-green-500/20 border-green-500/30 text-green-300 hover:bg-green-500/30" onClick={() => updateTaskStatus(task.id, 'in_progress')} disabled={isLoading}>
-                                Start
-                              </Button>}
+                            {task.status === 'pending'}
                             
                             {task.status === 'in_progress'}
                           </>}
