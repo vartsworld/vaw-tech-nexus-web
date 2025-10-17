@@ -159,11 +159,17 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   useEffect(() => {
     fetchTasks();
-    fetchStaff();
     fetchDepartments();
     fetchClients();
     fetchNotes();
   }, [userId]);
+
+  // Fetch staff only when userProfile is loaded
+  useEffect(() => {
+    if (userProfile?.department_id) {
+      fetchStaff();
+    }
+  }, [userId, userProfile?.department_id]);
 
   // Set up presence tracking for online users
   useEffect(() => {
@@ -213,6 +219,12 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
       if (error) throw error;
       
+      console.log('Fetched tasks with attachments:', data?.map(t => ({ 
+        id: t.id, 
+        title: t.title, 
+        attachments: t.attachments 
+      })));
+      
       // Cast attachments from Json to any[]
       const tasksWithAttachments = (data || []).map(task => ({
         ...task,
@@ -236,13 +248,9 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         full_name: userProfile?.full_name
       });
 
+      // Guard clause - don't show error if userProfile not loaded yet
       if (!userProfile?.department_id) {
-        console.error('No department_id found for team head - userProfile:', userProfile);
-        toast({
-          title: "Department Not Assigned",
-          description: "You don't have a department assigned. Please contact HR.",
-          variant: "destructive",
-        });
+        console.log('Waiting for userProfile to load...');
         return;
       }
 
@@ -662,19 +670,29 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       // Upload files if any
       const attachmentData = [];
       if (newTask.attachments.length > 0) {
+        console.log('Uploading attachments:', newTask.attachments.length, 'files');
         for (const attachment of newTask.attachments) {
           const fileExt = attachment.file.name.split('.').pop();
           const filePath = `${taskResponse.id}/${Date.now()}.${fileExt}`;
           
+          console.log('Uploading file:', attachment.file.name, 'to:', filePath);
           const { error: uploadError } = await supabase.storage
             .from('task-attachments')
             .upload(filePath, attachment.file);
 
-          if (!uploadError) {
+          if (uploadError) {
+            console.error('Upload error for', attachment.file.name, ':', uploadError);
+            toast({
+              title: "Warning",
+              description: `Failed to upload ${attachment.file.name}`,
+              variant: "destructive",
+            });
+          } else {
             const { data: { publicUrl } } = supabase.storage
               .from('task-attachments')
               .getPublicUrl(filePath);
 
+            console.log('File uploaded successfully:', publicUrl);
             attachmentData.push({
               title: attachment.title || attachment.file.name,
               name: attachment.file.name,
@@ -686,13 +704,22 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
           }
         }
 
-        // Update task with attachment info
-        await supabase
-          .from('staff_tasks')
-          .update({ attachments: attachmentData })
-          .eq('id', taskResponse.id);
+        if (attachmentData.length > 0) {
+          console.log('Updating task with attachments:', attachmentData);
+          // Update task with attachment info
+          const { error: updateError } = await supabase
+            .from('staff_tasks')
+            .update({ attachments: attachmentData })
+            .eq('id', taskResponse.id);
 
-        newTaskData.attachments = attachmentData;
+          if (updateError) {
+            console.error('Error updating task with attachments:', updateError);
+          }
+
+          newTaskData.attachments = attachmentData;
+        }
+      } else {
+        console.log('No attachments to upload');
       }
 
       setTasks([newTaskData, ...tasks]);
