@@ -1898,11 +1898,41 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                 </div>
               </div>
 
+              {/* Task Attachments */}
+              {selectedTask.attachments && selectedTask.attachments.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="font-semibold flex items-center gap-2 mb-3">
+                    <Paperclip className="h-4 w-4" />
+                    Task Attachments
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {selectedTask.attachments.map((attachment: any, idx: number) => (
+                      <a
+                        key={idx}
+                        href={attachment.publicUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors"
+                      >
+                        <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{attachment.title || attachment.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {(attachment.size / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                        <Download className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Messages & Attachments */}
               <div>
                 <h4 className="font-semibold flex items-center gap-2 mb-3">
                   <FileText className="h-4 w-4" />
-                  Messages & Attachments
+                  Messages & Comments
                 </h4>
                 
                 {selectedTask.comments && selectedTask.comments.length > 0 && (
