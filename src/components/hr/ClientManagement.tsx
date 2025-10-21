@@ -26,6 +26,8 @@ const ClientManagement = () => {
   const [filteredClients, setFilteredClients] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState(null);
   const [newClient, setNewClient] = useState({
     company_name: "",
     contact_person: "",
@@ -128,6 +130,43 @@ const ClientManagement = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to create client. Check if you have proper permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditClient = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .update({
+          company_name: editingClient.company_name,
+          contact_person: editingClient.contact_person,
+          email: editingClient.email,
+          phone: editingClient.phone,
+          address: editingClient.address,
+          notes: editingClient.notes,
+          status: editingClient.status
+        })
+        .eq('id', editingClient.id)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      setClients(clients.map(c => c.id === data.id ? data : c));
+      setIsEditDialogOpen(false);
+      setEditingClient(null);
+
+      toast({
+        title: "Success",
+        description: "Client updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating client:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update client.",
         variant: "destructive",
       });
     }
@@ -331,6 +370,16 @@ const ClientManagement = () => {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => {
+                          setEditingClient(client);
+                          setIsEditDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => handleDeleteClient(client.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -350,6 +399,98 @@ const ClientManagement = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Client Dialog */}
+      {editingClient && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Client</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit_company_name">Company Name</Label>
+                <Input
+                  id="edit_company_name"
+                  value={editingClient.company_name}
+                  onChange={(e) => setEditingClient({...editingClient, company_name: e.target.value})}
+                  placeholder="Enter company name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_contact_person">Contact Person</Label>
+                <Input
+                  id="edit_contact_person"
+                  value={editingClient.contact_person}
+                  onChange={(e) => setEditingClient({...editingClient, contact_person: e.target.value})}
+                  placeholder="Enter contact person name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_email">Email</Label>
+                <Input
+                  id="edit_email"
+                  type="email"
+                  value={editingClient.email}
+                  onChange={(e) => setEditingClient({...editingClient, email: e.target.value})}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_phone">Phone (Optional)</Label>
+                <Input
+                  id="edit_phone"
+                  value={editingClient.phone || ""}
+                  onChange={(e) => setEditingClient({...editingClient, phone: e.target.value})}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_address">Address (Optional)</Label>
+                <Input
+                  id="edit_address"
+                  value={editingClient.address || ""}
+                  onChange={(e) => setEditingClient({...editingClient, address: e.target.value})}
+                  placeholder="Enter address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_notes">Notes (Optional)</Label>
+                <Textarea
+                  id="edit_notes"
+                  value={editingClient.notes || ""}
+                  onChange={(e) => setEditingClient({...editingClient, notes: e.target.value})}
+                  placeholder="Enter any additional notes"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_status">Status</Label>
+                <Select value={editingClient.status} onValueChange={(value) => setEditingClient({...editingClient, status: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => {
+                  setIsEditDialogOpen(false);
+                  setEditingClient(null);
+                }}>
+                  Cancel
+                </Button>
+                <Button onClick={handleEditClient}>
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
