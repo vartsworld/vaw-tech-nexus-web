@@ -137,7 +137,7 @@ const ClientManagement = () => {
 
   const handleEditClient = async () => {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('clients')
         .update({
           company_name: editingClient.company_name,
@@ -148,29 +148,28 @@ const ClientManagement = () => {
           notes: editingClient.notes,
           status: editingClient.status
         })
-        .eq('id', editingClient.id)
-        .select('*')
-        .maybeSingle();
+        .eq('id', editingClient.id);
 
-      if (error) throw error;
-
-      if (data) {
-        setClients(clients.map(c => c.id === data.id ? data : c));
-        setIsEditDialogOpen(false);
-        setEditingClient(null);
-
-        toast({
-          title: "Success",
-          description: "Client updated successfully.",
-        });
-      } else {
-        throw new Error("Client not found or update failed.");
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
       }
+
+      // Refresh client list from database
+      await fetchClients();
+      
+      setIsEditDialogOpen(false);
+      setEditingClient(null);
+
+      toast({
+        title: "Success",
+        description: "Client updated successfully.",
+      });
     } catch (error) {
       console.error('Error updating client:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update client.",
+        description: error.message || "Failed to update client. Please check your permissions.",
         variant: "destructive",
       });
     }
