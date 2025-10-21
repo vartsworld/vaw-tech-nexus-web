@@ -150,18 +150,22 @@ const ClientManagement = () => {
         })
         .eq('id', editingClient.id)
         .select('*')
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
-      setClients(clients.map(c => c.id === data.id ? data : c));
-      setIsEditDialogOpen(false);
-      setEditingClient(null);
+      if (data) {
+        setClients(clients.map(c => c.id === data.id ? data : c));
+        setIsEditDialogOpen(false);
+        setEditingClient(null);
 
-      toast({
-        title: "Success",
-        description: "Client updated successfully.",
-      });
+        toast({
+          title: "Success",
+          description: "Client updated successfully.",
+        });
+      } else {
+        throw new Error("Client not found or update failed.");
+      }
     } catch (error) {
       console.error('Error updating client:', error);
       toast({
