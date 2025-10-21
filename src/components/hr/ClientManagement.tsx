@@ -146,7 +146,8 @@ const ClientManagement = () => {
           phone: editingClient.phone,
           address: editingClient.address,
           notes: editingClient.notes,
-          status: editingClient.status
+          status: editingClient.status,
+          updated_at: new Date().toISOString()
         })
         .eq('id', editingClient.id);
 
