@@ -18,7 +18,11 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  Target
+  Target,
+  Eye,
+  Download,
+  FileText,
+  MessageSquare
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +38,8 @@ const TaskManagement = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -63,7 +69,13 @@ const TaskManagement = () => {
     try {
       const { data, error } = await supabase
         .from('staff_tasks')
-        .select('*')
+        .select(`
+          *,
+          assigned_to_profile:staff_profiles!staff_tasks_assigned_to_fkey(id, full_name, username, avatar_url, role),
+          assigned_by_profile:staff_profiles!staff_tasks_assigned_by_fkey(id, full_name, username),
+          staff_projects(id, name, status),
+          clients(id, company_name, contact_person, email, phone)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -264,6 +276,32 @@ const TaskManagement = () => {
         {priority.toUpperCase()}
       </Badge>
     );
+  };
+
+  const handleDownloadAttachment = async (attachment: any) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('task-attachments')
+        .download(attachment.url);
+      
+      if (error) throw error;
+
+      const url = window.URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.name || 'attachment';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading attachment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to download attachment.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -467,6 +505,7 @@ const TaskManagement = () => {
                 <TableHead>Due Date</TableHead>
                 <TableHead>Points</TableHead>
                 <TableHead>Actions</TableHead>
+                <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -536,6 +575,18 @@ const TaskManagement = () => {
                       </SelectContent>
                     </Select>
                   </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedTask(task);
+                        setIsDetailDialogOpen(true);
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -547,6 +598,196 @@ const TaskManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Task Detail Dialog */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Task Details</DialogTitle>
+          </DialogHeader>
+          {selectedTask && (
+            <div className="space-y-6">
+              {/* Basic Info */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">{selectedTask.title}</h3>
+                  <p className="text-muted-foreground">{selectedTask.description || 'No description provided'}</p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Status</Label>
+                    <div className="mt-1">{getStatusBadge(selectedTask.status)}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Priority</Label>
+                    <div className="mt-1">{getPriorityBadge(selectedTask.priority)}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Points</Label>
+                    <div className="mt-1">
+                      <Badge variant="outline">{selectedTask.points} pts</Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Due Date</Label>
+                    <div className="mt-1 text-sm">
+                      {selectedTask.due_date ? format(new Date(selectedTask.due_date), 'MMM dd, yyyy') : 'No due date'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assignment Info */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Assignment Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Assigned To</Label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <div>
+                        <div className="font-medium">{selectedTask.assigned_to_profile?.full_name}</div>
+                        <div className="text-sm text-muted-foreground">@{selectedTask.assigned_to_profile?.username}</div>
+                        <Badge variant="outline" className="mt-1 text-xs">{selectedTask.assigned_to_profile?.role}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Assigned By</Label>
+                    <div className="mt-1">
+                      <div className="font-medium">{selectedTask.assigned_by_profile?.full_name}</div>
+                      <div className="text-sm text-muted-foreground">@{selectedTask.assigned_by_profile?.username}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Project & Client Info */}
+              {(selectedTask.staff_projects || selectedTask.clients) && (
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Project & Client Information
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedTask.staff_projects && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Project</Label>
+                        <div className="mt-1">
+                          <div className="font-medium">{selectedTask.staff_projects.name}</div>
+                          <Badge variant="outline" className="mt-1 text-xs">{selectedTask.staff_projects.status}</Badge>
+                        </div>
+                      </div>
+                    )}
+                    {selectedTask.clients && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Client</Label>
+                        <div className="mt-1">
+                          <div className="font-medium">{selectedTask.clients.company_name}</div>
+                          <div className="text-sm text-muted-foreground">{selectedTask.clients.contact_person}</div>
+                          {selectedTask.clients.email && (
+                            <div className="text-xs text-muted-foreground mt-1">{selectedTask.clients.email}</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Timeline */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Timeline
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Created At</Label>
+                    <div className="mt-1">{format(new Date(selectedTask.created_at), 'MMM dd, yyyy HH:mm')}</div>
+                  </div>
+                  {selectedTask.updated_at && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Last Updated</Label>
+                      <div className="mt-1">{format(new Date(selectedTask.updated_at), 'MMM dd, yyyy HH:mm')}</div>
+                    </div>
+                  )}
+                  {selectedTask.completed_at && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Completed At</Label>
+                      <div className="mt-1">{format(new Date(selectedTask.completed_at), 'MMM dd, yyyy HH:mm')}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Comments */}
+              {selectedTask.comments && selectedTask.comments.length > 0 && (
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Comments ({selectedTask.comments.length})
+                  </h4>
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {selectedTask.comments.map((comment: any, index: number) => (
+                      <div key={index} className="border rounded p-3 bg-muted/50">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="font-medium text-sm">{comment.user_name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(comment.created_at), 'MMM dd, yyyy HH:mm')}
+                          </div>
+                        </div>
+                        <p className="text-sm">{comment.content}</p>
+                        {comment.attachment_url && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="mt-2"
+                            onClick={() => handleDownloadAttachment({ url: comment.attachment_url, name: comment.attachment_name })}
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            {comment.attachment_name || 'Download'}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Attachments */}
+              {selectedTask.attachments && selectedTask.attachments.length > 0 && (
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Attachments ({selectedTask.attachments.length})
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {selectedTask.attachments.map((attachment: any, index: number) => (
+                      <div key={index} className="border rounded p-3 flex items-center justify-between bg-muted/50">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <div className="text-sm font-medium truncate">{attachment.name || `Attachment ${index + 1}`}</div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDownloadAttachment(attachment)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
