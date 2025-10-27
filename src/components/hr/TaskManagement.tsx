@@ -67,19 +67,47 @@ const TaskManagement = () => {
 
   const fetchTasks = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch tasks
+      const { data: tasksData, error: tasksError } = await supabase
         .from('staff_tasks')
-        .select(`
-          *,
-          assigned_to_profile:staff_profiles!assigned_to(id, full_name, username, avatar_url, role),
-          assigned_by_profile:staff_profiles!assigned_by(id, full_name, username),
-          staff_projects(id, name, status),
-          clients(id, company_name, contact_person, email, phone)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setTasks(data || []);
+      if (tasksError) throw tasksError;
+
+      if (!tasksData || tasksData.length === 0) {
+        setTasks([]);
+        return;
+      }
+
+      // Get unique IDs for batch fetching
+      const assignedToIds = [...new Set(tasksData.map(t => t.assigned_to).filter(Boolean))];
+      const assignedByIds = [...new Set(tasksData.map(t => t.assigned_by).filter(Boolean))];
+      const projectIds = [...new Set(tasksData.map(t => t.project_id).filter(Boolean))];
+      const clientIds = [...new Set(tasksData.map(t => t.client_id).filter(Boolean))];
+
+      // Fetch related data in parallel
+      const [profilesData, projectsData, clientsData] = await Promise.all([
+        supabase.from('staff_profiles').select('id, full_name, username, avatar_url, role').in('id', [...assignedToIds, ...assignedByIds]),
+        projectIds.length > 0 ? supabase.from('staff_projects').select('id, name, status').in('id', projectIds) : { data: [] },
+        clientIds.length > 0 ? supabase.from('clients').select('id, company_name, contact_person, email, phone').in('id', clientIds) : { data: [] }
+      ]);
+
+      // Create lookup maps
+      const profilesMap = (profilesData.data || []).reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+      const projectsMap = (projectsData.data || []).reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+      const clientsMap = (clientsData.data || []).reduce((acc, c) => ({ ...acc, [c.id]: c }), {});
+
+      // Merge data
+      const enrichedTasks = tasksData.map(task => ({
+        ...task,
+        assigned_to_profile: profilesMap[task.assigned_to] || null,
+        assigned_by_profile: profilesMap[task.assigned_by] || null,
+        staff_projects: task.project_id ? projectsMap[task.project_id] || null : null,
+        clients: task.client_id ? clientsMap[task.client_id] || null : null
+      }));
+
+      setTasks(enrichedTasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
       toast({
