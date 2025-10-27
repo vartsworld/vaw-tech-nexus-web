@@ -88,13 +88,13 @@ const TaskManagement = () => {
 
       // Fetch related data in parallel
       const [profilesData, projectsData, clientsData] = await Promise.all([
-        supabase.from('staff_profiles').select('id, full_name, username, avatar_url, role').in('id', [...assignedToIds, ...assignedByIds]),
+        supabase.from('staff_profiles').select('id, user_id, full_name, username, avatar_url, role').in('user_id', [...assignedToIds, ...assignedByIds]),
         projectIds.length > 0 ? supabase.from('staff_projects').select('id, name, status').in('id', projectIds) : { data: [] },
         clientIds.length > 0 ? supabase.from('clients').select('id, company_name, contact_person, email, phone').in('id', clientIds) : { data: [] }
       ]);
 
-      // Create lookup maps
-      const profilesMap = (profilesData.data || []).reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
+      // Create lookup maps using user_id
+      const profilesMap = (profilesData.data || []).reduce((acc, p) => ({ ...acc, [p.user_id]: p }), {});
       const projectsMap = (projectsData.data || []).reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
       const clientsMap = (clientsData.data || []).reduce((acc, c) => ({ ...acc, [c.id]: c }), {});
 
