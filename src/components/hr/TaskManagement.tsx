@@ -71,8 +71,8 @@ const TaskManagement = () => {
         .from('staff_tasks')
         .select(`
           *,
-          assigned_to_profile:staff_profiles!staff_tasks_assigned_to_fkey(id, full_name, username, avatar_url, role),
-          assigned_by_profile:staff_profiles!staff_tasks_assigned_by_fkey(id, full_name, username),
+          assigned_to_profile:staff_profiles!assigned_to(id, full_name, username, avatar_url, role),
+          assigned_by_profile:staff_profiles!assigned_by(id, full_name, username),
           staff_projects(id, name, status),
           clients(id, company_name, contact_person, email, phone)
         `)
