@@ -60,6 +60,7 @@ const TeamHeadDashboard = () => {
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({});
+  const [departmentName, setDepartmentName] = useState<string>("");
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showEmojiDialog, setShowEmojiDialog] = useState(false);
   const [newEmojiPassword, setNewEmojiPassword] = useState<string[]>([]);
@@ -69,13 +70,32 @@ const TeamHeadDashboard = () => {
 
   useEffect(() => {
     checkDailyRequirements();
+    fetchDepartment();
     if (profile) {
       setProfileForm({
         full_name: profile.full_name || "",
         about_me: (profile as any).about_me || "",
       });
     }
-  }, [profile?.user_id, profile?.full_name]);
+  }, [profile?.user_id, profile?.full_name, profile?.department_id]);
+
+  const fetchDepartment = async () => {
+    if (!profile?.department_id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('departments')
+        .select('name')
+        .eq('id', profile.department_id)
+        .single();
+      
+      if (data && !error) {
+        setDepartmentName(data.name);
+      }
+    } catch (error) {
+      console.error('Error fetching department:', error);
+    }
+  };
 
   // Set up presence tracking for online users
   useEffect(() => {
@@ -351,6 +371,9 @@ const TeamHeadDashboard = () => {
                   <Settings className="inline w-4 h-4 mr-1" />
                   Team Head: {profile?.full_name || profile?.username || 'Team Leader'}
                 </p>
+                {departmentName && (
+                  <p className="text-purple-300 text-xs sm:text-sm">{departmentName} Department</p>
+                )}
               </div>
             </div>
             

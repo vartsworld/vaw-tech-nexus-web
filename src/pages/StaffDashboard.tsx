@@ -41,6 +41,7 @@ const StaffDashboard = () => {
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [departmentName, setDepartmentName] = useState<string>("");
   const { profile, loading } = useStaffData();
 
   // Check authentication
@@ -66,7 +67,26 @@ const StaffDashboard = () => {
 
   useEffect(() => {
     checkDailyRequirements();
-  }, [profile?.user_id]);
+    fetchDepartment();
+  }, [profile?.user_id, profile?.department_id]);
+
+  const fetchDepartment = async () => {
+    if (!profile?.department_id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('departments')
+        .select('name')
+        .eq('id', profile.department_id)
+        .single();
+      
+      if (data && !error) {
+        setDepartmentName(data.name);
+      }
+    } catch (error) {
+      console.error('Error fetching department:', error);
+    }
+  };
 
   const checkDailyRequirements = async () => {
     if (!profile?.user_id) return;
@@ -236,6 +256,9 @@ const StaffDashboard = () => {
                 <div className="min-w-0">
                   <h1 className="text-base sm:text-lg font-bold text-white truncate">VAW Technologies</h1>
                   <p className="text-blue-300 text-xs sm:text-sm truncate">Welcome, {profile?.full_name || profile?.username || 'Staff'}!</p>
+                  {departmentName && (
+                    <p className="text-purple-300 text-xs truncate">{departmentName} Department</p>
+                  )}
                 </div>
               </div>
               

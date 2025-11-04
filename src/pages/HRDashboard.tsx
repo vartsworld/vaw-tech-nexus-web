@@ -31,6 +31,8 @@ import ClientManagement from "@/components/hr/ClientManagement";
 
 const HRDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [hrProfile, setHrProfile] = useState<any>(null);
+  const [departmentName, setDepartmentName] = useState<string>("");
   const [stats, setStats] = useState({
     totalStaff: 0,
     presentToday: 0,
@@ -43,9 +45,40 @@ const HRDashboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    fetchHRProfile();
     fetchDashboardStats();
     fetchRecentActivities();
   }, []);
+
+  const fetchHRProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile, error } = await supabase
+        .from('staff_profiles')
+        .select('*, departments(name)')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+      setHrProfile(profile);
+      
+      if (profile?.department_id) {
+        const { data: dept } = await supabase
+          .from('departments')
+          .select('name')
+          .eq('id', profile.department_id)
+          .single();
+        
+        if (dept) {
+          setDepartmentName(dept.name);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching HR profile:', error);
+    }
+  };
 
   const fetchDashboardStats = async () => {
     try {
@@ -162,7 +195,11 @@ const HRDashboard = () => {
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">HR Management Dashboard</h1>
-            <p className="text-sm md:text-base text-gray-600">Comprehensive staff and department management</p>
+            <p className="text-sm md:text-base text-gray-600">
+              Comprehensive staff and department management
+              {hrProfile?.full_name && ` • ${hrProfile.full_name}`}
+              {departmentName && ` • ${departmentName} Department`}
+            </p>
           </div>
           <div className="flex items-center gap-2 md:gap-4">
             <Badge variant="outline" className="px-2 md:px-3 py-1 text-xs md:text-sm">
