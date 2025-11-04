@@ -67,6 +67,14 @@ const TaskManagement = () => {
 
   const fetchTasks = async () => {
     try {
+      // Get current user profile to check role and department
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: currentUserProfile } = await supabase
+        .from('staff_profiles')
+        .select('role, department_id, is_department_head')
+        .eq('user_id', user?.id)
+        .single();
+
       // Fetch tasks
       const { data: tasksData, error: tasksError } = await supabase
         .from('staff_tasks')
@@ -99,13 +107,33 @@ const TaskManagement = () => {
       const clientsMap = (clientsData.data || []).reduce((acc, c) => ({ ...acc, [c.id]: c }), {});
 
       // Merge data
-      const enrichedTasks = tasksData.map(task => ({
+      let enrichedTasks = tasksData.map(task => ({
         ...task,
         assigned_to_profile: profilesMap[task.assigned_to] || null,
         assigned_by_profile: profilesMap[task.assigned_by] || null,
         staff_projects: task.project_id ? projectsMap[task.project_id] || null : null,
         clients: task.client_id ? clientsMap[task.client_id] || null : null
       }));
+
+      // Filter handover tasks: show to department heads and managers in same department
+      if (currentUserProfile && currentUserProfile.role !== 'hr') {
+        enrichedTasks = enrichedTasks.filter(task => {
+          // Always show tasks assigned to or by the current user
+          if (task.assigned_to === user?.id || task.assigned_by === user?.id) {
+            return true;
+          }
+          
+          // Show handover tasks to department heads and managers in the same department
+          if (task.status === 'handover') {
+            const isManagerOrHead = currentUserProfile.role === 'manager' || currentUserProfile.is_department_head;
+            const sameDepartment = task.department_id === currentUserProfile.department_id;
+            return isManagerOrHead && sameDepartment;
+          }
+          
+          // For non-handover tasks, only show if assigned to/by current user
+          return false;
+        });
+      }
 
       setTasks(enrichedTasks);
     } catch (error) {
