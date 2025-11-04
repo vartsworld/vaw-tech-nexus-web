@@ -33,6 +33,7 @@ const TaskManagement = () => {
   const [staff, setStaff] = useState([]);
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -40,6 +41,9 @@ const TaskManagement = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isHandoverDialogOpen, setIsHandoverDialogOpen] = useState(false);
+  const [handoverTaskId, setHandoverTaskId] = useState<string | null>(null);
+  const [handoverDepartmentId, setHandoverDepartmentId] = useState("");
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -59,6 +63,7 @@ const TaskManagement = () => {
     fetchStaff();
     fetchProjects();
     fetchClients();
+    fetchDepartments();
   }, []);
 
   useEffect(() => {
@@ -190,6 +195,20 @@ const TaskManagement = () => {
     }
   };
 
+  const fetchDepartments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('departments')
+        .select('id, name, description')
+        .order('name');
+
+      if (error) throw error;
+      setDepartments(data || []);
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
+  };
+
   const filterTasks = () => {
     let filtered = tasks;
 
@@ -262,7 +281,7 @@ const TaskManagement = () => {
     }
   };
 
-  const updateTaskStatus = async (taskId, newStatus) => {
+  const updateTaskStatus = async (taskId, newStatus, departmentId?: string) => {
     try {
       const updateData: any = {
         status: newStatus,
@@ -271,6 +290,10 @@ const TaskManagement = () => {
 
       if (newStatus === 'completed') {
         updateData.completed_at = new Date().toISOString();
+      }
+
+      if (newStatus === 'handover' && departmentId) {
+        updateData.department_id = departmentId;
       }
 
       const { data, error } = await supabase
@@ -282,11 +305,13 @@ const TaskManagement = () => {
 
       if (error) throw error;
 
-      setTasks(tasks.map(task => task.id === taskId ? data : task));
+      await fetchTasks(); // Refresh tasks to get updated data
 
       toast({
         title: "Success",
-        description: "Task status updated successfully.",
+        description: newStatus === 'handover' 
+          ? "Task handed over successfully." 
+          : "Task status updated successfully.",
       });
     } catch (error) {
       console.error('Error updating task:', error);
@@ -296,6 +321,32 @@ const TaskManagement = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleStatusChange = (taskId: string, newStatus: string) => {
+    if (newStatus === 'handover') {
+      setHandoverTaskId(taskId);
+      setHandoverDepartmentId("");
+      setIsHandoverDialogOpen(true);
+    } else {
+      updateTaskStatus(taskId, newStatus);
+    }
+  };
+
+  const handleHandoverConfirm = async () => {
+    if (!handoverTaskId || !handoverDepartmentId) {
+      toast({
+        title: "Error",
+        description: "Please select a department to hand over to.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await updateTaskStatus(handoverTaskId, 'handover', handoverDepartmentId);
+    setIsHandoverDialogOpen(false);
+    setHandoverTaskId(null);
+    setHandoverDepartmentId("");
   };
 
   const getStatusBadge = (status) => {
@@ -617,7 +668,7 @@ const TaskManagement = () => {
                   <TableCell>
                     <Select
                       value={task.status}
-                      onValueChange={(value) => updateTaskStatus(task.id, value)}
+                      onValueChange={(value) => handleStatusChange(task.id, value)}
                     >
                       <SelectTrigger className="w-32">
                         <SelectValue />
@@ -654,6 +705,43 @@ const TaskManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Handover Dialog */}
+      <Dialog open={isHandoverDialogOpen} onOpenChange={setIsHandoverDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Handover Task to Department</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="handover-department">Select Target Department</Label>
+              <Select value={handoverDepartmentId} onValueChange={setHandoverDepartmentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map(dept => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground mt-2">
+                The task will be handed over to this department's team lead and managers.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsHandoverDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleHandoverConfirm}>
+                Confirm Handover
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Task Detail Dialog */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
