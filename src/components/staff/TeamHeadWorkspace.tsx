@@ -158,11 +158,13 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   });
 
   useEffect(() => {
-    fetchTasks();
+    if (userProfile?.department_id) {
+      fetchTasks();
+    }
     fetchDepartments();
     fetchClients();
     fetchNotes();
-  }, [userId]);
+  }, [userId, userProfile?.department_id]);
 
   // Fetch staff only when userProfile is loaded
   useEffect(() => {
@@ -205,6 +207,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const fetchTasks = async () => {
     try {
+      // Fetch tasks assigned by/to team head OR tasks in their department
       const { data, error } = await supabase
         .from('staff_tasks')
         .select(`
@@ -214,7 +217,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
             username
           )
         `)
-        .or(`assigned_by.eq.${userId},assigned_to.eq.${userId}`)
+        .or(`assigned_by.eq.${userId},assigned_to.eq.${userId},department_id.eq.${userProfile?.department_id}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -222,7 +225,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       console.log('Fetched tasks with attachments:', data?.map(t => ({ 
         id: t.id, 
         title: t.title, 
-        attachments: t.attachments 
+        attachments: t.attachments,
+        department_id: t.department_id
       })));
       
       // Cast attachments from Json to any[]
