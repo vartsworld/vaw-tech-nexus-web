@@ -343,10 +343,87 @@ const TaskManagement = () => {
       return;
     }
 
-    await updateTaskStatus(handoverTaskId, 'handover', handoverDepartmentId);
-    setIsHandoverDialogOpen(false);
-    setHandoverTaskId(null);
-    setHandoverDepartmentId("");
+    try {
+      // Get current user info
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: currentUserProfile } = await supabase
+        .from('staff_profiles')
+        .select('full_name, avatar_url')
+        .eq('user_id', user?.id)
+        .single();
+
+      // Get the task
+      const { data: task } = await supabase
+        .from('staff_tasks')
+        .select('*')
+        .eq('id', handoverTaskId)
+        .single();
+
+      // Get current department name if exists
+      let fromDeptName = 'Unknown';
+      if (task?.department_id) {
+        const { data: fromDept } = await supabase
+          .from('departments')
+          .select('name')
+          .eq('id', task.department_id)
+          .single();
+        fromDeptName = fromDept?.name || 'Unknown';
+      }
+
+      // Get target department name
+      const { data: targetDept } = await supabase
+        .from('departments')
+        .select('name')
+        .eq('id', handoverDepartmentId)
+        .single();
+
+      // Create handover history comment
+      const handoverComment = {
+        type: 'handover',
+        user_name: currentUserProfile?.full_name || 'Unknown',
+        user_avatar: currentUserProfile?.avatar_url || null,
+        timestamp: new Date().toISOString(),
+        message: 'Task handed over',
+        from_department: fromDeptName,
+        to_department: targetDept?.name || 'Unknown',
+        from_department_id: task?.department_id,
+        to_department_id: handoverDepartmentId
+      };
+
+      // Update task with handover history
+      const existingComments = Array.isArray(task?.comments) ? task.comments : [];
+      const updatedComments = [...existingComments, handoverComment];
+
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({
+          status: 'handover',
+          department_id: handoverDepartmentId,
+          comments: updatedComments,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', handoverTaskId);
+
+      if (error) throw error;
+
+      await fetchTasks();
+
+      toast({
+        title: "Success",
+        description: "Task handed over successfully.",
+      });
+
+      setIsHandoverDialogOpen(false);
+      setHandoverTaskId(null);
+      setHandoverDepartmentId("");
+    } catch (error) {
+      console.error('Error handing over task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to handover task.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -868,23 +945,68 @@ const TaskManagement = () => {
                 </div>
               </div>
 
+              {/* Handover History */}
+              {selectedTask.comments && selectedTask.comments.some((c: any) => c.type === 'handover') && (
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Handover History
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedTask.comments
+                      .filter((c: any) => c.type === 'handover')
+                      .map((handover: any, idx: number) => (
+                        <div key={idx} className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-start gap-2">
+                            <Target className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-medium">{handover.user_name}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(handover.timestamp), 'MMM dd, yyyy HH:mm')}
+                                </span>
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-muted-foreground">From:</span>{' '}
+                                <Badge variant="outline" className="text-xs">
+                                  {handover.from_department}
+                                </Badge>
+                                {' → '}
+                                <span className="text-muted-foreground">To:</span>{' '}
+                                <Badge variant="outline" className="text-xs">
+                                  {handover.to_department}
+                                </Badge>
+                              </div>
+                              {handover.message && handover.message !== 'Task handed over' && (
+                                <p className="text-sm text-muted-foreground italic">
+                                  Note: {handover.message}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
               {/* Comments */}
-              {selectedTask.comments && selectedTask.comments.length > 0 && (
+              {selectedTask.comments && selectedTask.comments.filter((c: any) => c.type !== 'handover').length > 0 && (
                 <div className="border rounded-lg p-4 space-y-3">
                   <h4 className="font-semibold flex items-center gap-2">
                     <MessageSquare className="h-4 w-4" />
-                    Comments ({selectedTask.comments.length})
+                    Comments ({selectedTask.comments.filter((c: any) => c.type !== 'handover').length})
                   </h4>
                   <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {selectedTask.comments.map((comment: any, index: number) => (
+                    {selectedTask.comments.filter((c: any) => c.type !== 'handover').map((comment: any, index: number) => (
                       <div key={index} className="border rounded p-3 bg-muted/50">
                         <div className="flex items-start justify-between mb-2">
                           <div className="font-medium text-sm">{comment.user_name}</div>
                           <div className="text-xs text-muted-foreground">
-                            {format(new Date(comment.created_at), 'MMM dd, yyyy HH:mm')}
+                            {format(new Date(comment.created_at || comment.timestamp), 'MMM dd, yyyy HH:mm')}
                           </div>
                         </div>
-                        <p className="text-sm">{comment.content}</p>
+                        <p className="text-sm">{comment.content || comment.message}</p>
                         {comment.attachment_url && (
                           <Button
                             size="sm"

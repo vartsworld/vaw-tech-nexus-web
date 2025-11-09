@@ -889,11 +889,35 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     if (!selectedTask) return;
 
     try {
+      // Get target department name
+      const targetDept = departments.find(d => d.id === handoverData.target_department);
+      
+      // Get current department name
+      const currentDept = departments.find(d => d.id === selectedTask.department_id);
+      
+      // Create handover history comment
+      const handoverComment = {
+        type: 'handover',
+        user_name: userProfile?.full_name || 'Unknown',
+        user_avatar: userProfile?.avatar_url || null,
+        timestamp: new Date().toISOString(),
+        message: handoverData.notes || 'Task handed over',
+        from_department: currentDept?.name || 'Unknown',
+        to_department: targetDept?.name || 'Unknown',
+        from_department_id: selectedTask.department_id,
+        to_department_id: handoverData.target_department
+      };
+
+      // Get existing comments and add handover history
+      const existingComments = selectedTask.comments || [];
+      const updatedComments = [...existingComments, handoverComment];
+
       const { error } = await supabase
         .from('staff_tasks')
         .update({
           status: 'handover',
           department_id: handoverData.target_department,
+          comments: updatedComments,
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedTask.id);
@@ -903,7 +927,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       // Update local state
       setTasks(tasks.map(task => 
         task.id === selectedTask.id 
-          ? { ...task, status: 'handover' as const, department_id: handoverData.target_department }
+          ? { ...task, status: 'handover' as const, department_id: handoverData.target_department, comments: updatedComments }
           : task
       ));
 
@@ -1978,6 +2002,51 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                 </div>
               )}
 
+              {/* Handover History */}
+              {selectedTask.comments && selectedTask.comments.some((c: any) => c.type === 'handover') && (
+                <div className="mb-6">
+                  <h4 className="font-semibold flex items-center gap-2 mb-3">
+                    <ArrowRight className="h-4 w-4" />
+                    Handover History
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedTask.comments
+                      .filter((c: any) => c.type === 'handover')
+                      .map((handover: any, idx: number) => (
+                        <div key={idx} className="bg-blue-500/10 p-3 rounded-lg border border-blue-500/30">
+                          <div className="flex items-start gap-2">
+                            <ArrowRight className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-medium">{handover.user_name}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(handover.timestamp).toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="text-sm">
+                                <span className="text-muted-foreground">From:</span>{' '}
+                                <Badge variant="outline" className="text-xs">
+                                  {handover.from_department}
+                                </Badge>
+                                {' → '}
+                                <span className="text-muted-foreground">To:</span>{' '}
+                                <Badge variant="outline" className="text-xs">
+                                  {handover.to_department}
+                                </Badge>
+                              </div>
+                              {handover.message && handover.message !== 'Task handed over' && (
+                                <p className="text-sm text-muted-foreground italic">
+                                  Note: {handover.message}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
               {/* Messages & Attachments */}
               <div>
                 <h4 className="font-semibold flex items-center gap-2 mb-3">
@@ -1985,48 +2054,50 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                   Messages & Comments
                 </h4>
                 
-                {selectedTask.comments && selectedTask.comments.length > 0 && (
+                {selectedTask.comments && selectedTask.comments.filter((c: any) => c.type !== 'handover').length > 0 && (
                   <div className="space-y-3 mb-4 max-h-[400px] overflow-y-auto">
-                    {selectedTask.comments.map((comment: any, idx: number) => (
-                      <div key={idx} className="bg-white/5 p-3 rounded-lg border border-white/10 space-y-2">
-                        <div className="flex items-start gap-2">
-                          {comment.user_avatar && (
-                            <img src={comment.user_avatar} alt="" className="w-6 h-6 rounded-full" />
-                          )}
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">{comment.user_name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(comment.timestamp).toLocaleString()}
-                              </span>
-                            </div>
-                            {comment.message && (
-                              <p className="text-sm mt-1">{comment.message}</p>
+                    {selectedTask.comments
+                      .filter((c: any) => c.type !== 'handover')
+                      .map((comment: any, idx: number) => (
+                        <div key={idx} className="bg-white/5 p-3 rounded-lg border border-white/10 space-y-2">
+                          <div className="flex items-start gap-2">
+                            {comment.user_avatar && (
+                              <img src={comment.user_avatar} alt="" className="w-6 h-6 rounded-full" />
                             )}
-                            {comment.attachment_url && (
-                              <div className="flex items-center justify-between mt-2 p-2 bg-white/5 rounded border border-white/10">
-                                <a
-                                  href={comment.attachment_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 text-sm text-primary hover:underline"
-                                >
-                                  <Paperclip className="h-4 w-4" />
-                                  {comment.attachment_name}
-                                </a>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteTaskCommentAttachment(idx)}
-                                >
-                                  <X className="h-3 w-3 text-red-400" />
-                                </Button>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{comment.user_name}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(comment.timestamp).toLocaleString()}
+                                </span>
                               </div>
-                            )}
+                              {comment.message && (
+                                <p className="text-sm mt-1">{comment.message}</p>
+                              )}
+                              {comment.attachment_url && (
+                                <div className="flex items-center justify-between mt-2 p-2 bg-white/5 rounded border border-white/10">
+                                  <a
+                                    href={comment.attachment_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 text-sm text-primary hover:underline"
+                                  >
+                                    <Paperclip className="h-4 w-4" />
+                                    {comment.attachment_name}
+                                  </a>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteTaskCommentAttachment(idx)}
+                                  >
+                                    <X className="h-3 w-3 text-red-400" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 )}
                 
