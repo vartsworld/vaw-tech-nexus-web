@@ -766,6 +766,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         .update({
           title: selectedTask.title,
           description: selectedTask.description,
+          assigned_to: selectedTask.assigned_to,
           priority: selectedTask.priority,
           due_date: selectedTask.due_date || null,
           due_time: selectedTask.due_time || null,
@@ -1699,6 +1700,24 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                   onChange={(e) => setSelectedTask({...selectedTask, description: e.target.value})}
                   rows={3}
                 />
+              </div>
+              <div>
+                <Label htmlFor="edit_assigned_to">Reassign To</Label>
+                <Select 
+                  value={selectedTask.assigned_to} 
+                  onValueChange={(value) => setSelectedTask({...selectedTask, assigned_to: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select staff member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {staff.map((s) => (
+                      <SelectItem key={s.user_id} value={s.user_id}>
+                        {s.full_name} (@{s.username})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
