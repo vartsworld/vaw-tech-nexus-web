@@ -528,7 +528,25 @@ const TaskManagement = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="assigned_to">Assign To</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="assigned_to">Assign To</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto py-1 px-2 text-xs"
+                    onClick={async () => {
+                      const { data: { user } } = await supabase.auth.getUser();
+                      const currentUser = staff.find(s => s.user_id === user?.id);
+                      if (currentUser) {
+                        setNewTask({...newTask, assigned_to: currentUser.id});
+                      }
+                    }}
+                  >
+                    <User className="h-3 w-3 mr-1" />
+                    Assign to myself
+                  </Button>
+                </div>
                 <Select value={newTask.assigned_to} onValueChange={(value) => setNewTask({...newTask, assigned_to: value})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select staff member" />
