@@ -110,6 +110,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -150,6 +151,15 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     trial_period: false,
     points: 10,
     attachments: [] as Array<{ file: File; title: string }>
+  });
+  
+  const [newClient, setNewClient] = useState({
+    company_name: "",
+    contact_person: "",
+    email: "",
+    phone: "",
+    address: "",
+    notes: ""
   });
 
   const [handoverData, setHandoverData] = useState({
@@ -619,6 +629,125 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const handleAttachToTask = async (taskId: string, file: File) => {
     handleSendTaskMessage(taskId, true, file);
+  };
+
+  const handleAddClient = async () => {
+    // Validate required fields
+    if (!newClient.company_name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Company name is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!newClient.contact_person.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Contact person is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!newClient.email.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Email is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newClient.email.trim())) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate lengths
+    if (newClient.company_name.trim().length > 200) {
+      toast({
+        title: "Validation Error",
+        description: "Company name must be less than 200 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newClient.contact_person.trim().length > 200) {
+      toast({
+        title: "Validation Error",
+        description: "Contact person must be less than 200 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newClient.email.trim().length > 255) {
+      toast({
+        title: "Validation Error",
+        description: "Email must be less than 255 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .insert({
+          company_name: newClient.company_name.trim(),
+          contact_person: newClient.contact_person.trim(),
+          email: newClient.email.trim().toLowerCase(),
+          phone: newClient.phone.trim() || null,
+          address: newClient.address.trim() || null,
+          notes: newClient.notes.trim() || null,
+          created_by: userId,
+          status: 'active'
+        })
+        .select('id, company_name, contact_person')
+        .single();
+
+      if (error) throw error;
+
+      // Add to clients list
+      setClients([...clients, data]);
+      
+      // Reset form
+      setNewClient({
+        company_name: "",
+        contact_person: "",
+        email: "",
+        phone: "",
+        address: "",
+        notes: ""
+      });
+      
+      setIsAddClientOpen(false);
+
+      toast({
+        title: "Success",
+        description: "Client added successfully.",
+      });
+
+      // Auto-select the newly created client in the task form
+      setNewTask({...newTask, client_id: data.id});
+
+    } catch (error: any) {
+      console.error('Error adding client:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add client.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCreateTask = async () => {
@@ -1274,7 +1403,19 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="client">Client *</Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="client">Client *</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto py-1 px-2 text-xs"
+                      onClick={() => setIsAddClientOpen(true)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add New Client
+                    </Button>
+                  </div>
                   <Select value={newTask.client_id} onValueChange={(value) => setNewTask({...newTask, client_id: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select client" />
@@ -2433,6 +2574,89 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Client Dialog */}
+      <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Client</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="company_name">Company Name *</Label>
+              <Input
+                id="company_name"
+                value={newClient.company_name}
+                onChange={(e) => setNewClient({...newClient, company_name: e.target.value})}
+                placeholder="Enter company name"
+                maxLength={200}
+              />
+            </div>
+            <div>
+              <Label htmlFor="contact_person">Contact Person *</Label>
+              <Input
+                id="contact_person"
+                value={newClient.contact_person}
+                onChange={(e) => setNewClient({...newClient, contact_person: e.target.value})}
+                placeholder="Enter contact person name"
+                maxLength={200}
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={newClient.email}
+                onChange={(e) => setNewClient({...newClient, email: e.target.value})}
+                placeholder="Enter email address"
+                maxLength={255}
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={newClient.phone}
+                onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
+                placeholder="Enter phone number"
+                maxLength={20}
+              />
+            </div>
+            <div>
+              <Label htmlFor="address">Address</Label>
+              <Textarea
+                id="address"
+                value={newClient.address}
+                onChange={(e) => setNewClient({...newClient, address: e.target.value})}
+                placeholder="Enter address"
+                rows={2}
+                maxLength={500}
+              />
+            </div>
+            <div>
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={newClient.notes}
+                onChange={(e) => setNewClient({...newClient, notes: e.target.value})}
+                placeholder="Enter any additional notes"
+                rows={2}
+                maxLength={1000}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAddClientOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddClient}>
+                Add Client
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
