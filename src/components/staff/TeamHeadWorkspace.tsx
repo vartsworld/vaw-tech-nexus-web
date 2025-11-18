@@ -356,6 +356,18 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     }
 
     try {
+      // Get authenticated user from Supabase Auth
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to create subtasks.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data, error } = await supabase
         .from('staff_subtasks')
         .insert({
@@ -367,7 +379,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
           points: newSubtask.points || 0,
           due_date: newSubtask.due_date || null,
           due_time: newSubtask.due_time || null,
-          created_by: userId,
+          created_by: user.id,
           status: 'pending'
         })
         .select(`
@@ -731,6 +743,18 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     }
 
     try {
+      // Get authenticated user from Supabase Auth
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to add clients.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data, error } = await supabase
         .from('clients')
         .insert({
@@ -740,7 +764,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
           phone: newClient.phone.trim() || null,
           address: newClient.address.trim() || null,
           notes: newClient.notes.trim() || null,
-          created_by: userId,
+          created_by: user.id,
           status: 'active'
         })
         .select('id, company_name, contact_person')
@@ -794,6 +818,19 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     try {
       setUploadingFiles(true);
       
+      // Get authenticated user from Supabase Auth
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to create tasks.",
+          variant: "destructive",
+        });
+        setUploadingFiles(false);
+        return;
+      }
+      
       // First create the task
       const taskData = {
         title: newTask.title,
@@ -805,7 +842,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         due_time: newTask.due_time || null,
         trial_period: newTask.trial_period,
         points: newTask.points,
-        assigned_by: userId,
+        assigned_by: user.id,
         department_id: userProfile?.department_id || null,
         status: 'pending' as const,
         attachments: []
