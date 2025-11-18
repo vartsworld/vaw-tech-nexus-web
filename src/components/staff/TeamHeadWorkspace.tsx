@@ -431,7 +431,14 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         .delete()
         .eq('id', subtaskId);
 
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Error deleting subtask",
+          description: `${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
 
       setSubtasks(subtasks.filter(st => st.id !== subtaskId));
 
@@ -439,11 +446,11 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         title: "Success",
         description: "Subtask deleted successfully.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting subtask:', error);
       toast({
         title: "Error",
-        description: "Failed to delete subtask.",
+        description: error?.message || "Failed to delete subtask.",
         variant: "destructive",
       });
     }
@@ -476,7 +483,14 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        toast({
+          title: "Error updating subtask",
+          description: `${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
 
       setSubtasks(subtasks.map(st => st.id === subtaskId ? data : st));
 
@@ -486,11 +500,11 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
           ? "Subtask submitted for admin approval" 
           : "Subtask status updated successfully.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating subtask:', error);
       toast({
         title: "Error",
-        description: "Failed to update subtask status.",
+        description: error?.message || "Failed to update subtask status.",
         variant: "destructive",
       });
     }
