@@ -272,7 +272,6 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         .from('staff_profiles')
         .select('id, user_id, full_name, username, department_id, role')
         .eq('department_id', userProfile.department_id)
-        .neq('id', userProfile.id)
         .order('full_name');
 
       console.log('Staff fetch result:', { data, error, count: data?.length });
