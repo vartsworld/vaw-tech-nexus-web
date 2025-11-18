@@ -356,6 +356,15 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     }
 
     try {
+      console.log('Creating subtask with data:', {
+        task_id: taskId,
+        title: newSubtask.title,
+        assigned_to: newSubtask.assigned_to,
+        created_by: userId,
+        userIdType: typeof userId,
+        assignedToType: typeof newSubtask.assigned_to
+      });
+
       const { data, error } = await supabase
         .from('staff_subtasks')
         .insert({
@@ -379,7 +388,10 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Subtask creation error:', error);
+        throw error;
+      }
 
       setSubtasks([data, ...subtasks]);
       setNewSubtask({
@@ -396,11 +408,11 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         title: "Success",
         description: "Subtask created successfully.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating subtask:', error);
       toast({
         title: "Error",
-        description: "Failed to create subtask.",
+        description: error.message || "Failed to create subtask.",
         variant: "destructive",
       });
     }
