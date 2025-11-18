@@ -356,15 +356,6 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     }
 
     try {
-      console.log('Creating subtask with data:', {
-        task_id: taskId,
-        title: newSubtask.title,
-        assigned_to: newSubtask.assigned_to,
-        created_by: userId,
-        userIdType: typeof userId,
-        assignedToType: typeof newSubtask.assigned_to
-      });
-
       const { data, error } = await supabase
         .from('staff_subtasks')
         .insert({
@@ -410,9 +401,24 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       });
     } catch (error: any) {
       console.error('Error creating subtask:', error);
+      
+      let errorMessage = "Failed to create subtask.";
+      
+      if (error.message) {
+        if (error.message.includes('uuid')) {
+          errorMessage = "Cannot save subtask: Invalid user ID format.";
+        } else if (error.message.includes('foreign key')) {
+          errorMessage = "Cannot save subtask: Invalid reference to task or user.";
+        } else if (error.message.includes('violates')) {
+          errorMessage = `Cannot save subtask: ${error.message}`;
+        } else {
+          errorMessage = `Cannot save subtask: ${error.message}`;
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: error.message || "Failed to create subtask.",
+        title: "Error Creating Subtask",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -1622,10 +1628,18 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                               <User className="h-3 w-3" />
                               {task.staff_profiles?.full_name || 'Unknown'}
                             </div>
-                            {task.due_date && (
+                            {task.due_date && task.due_date.trim() !== '' && (
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
-                                {format(new Date(task.due_date), 'MMM dd, yyyy')}
+                                {(() => {
+                                  try {
+                                    const date = new Date(task.due_date);
+                                    if (isNaN(date.getTime())) return 'Invalid date';
+                                    return format(date, 'MMM dd, yyyy');
+                                  } catch {
+                                    return 'Invalid date';
+                                  }
+                                })()}
                               </div>
                             )}
                             {task.attachments && task.attachments.length > 0 && (
@@ -1693,7 +1707,15 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                             {(task.due_date || task.due_time) && (
                               <div className="text-xs text-white/50 flex items-center gap-1 mt-1">
                                 <Calendar className="h-3 w-3" />
-                                {task.due_date && format(new Date(task.due_date), 'MMM dd, yyyy')}
+                                {task.due_date && task.due_date.trim() !== '' && (() => {
+                                  try {
+                                    const date = new Date(task.due_date);
+                                    if (isNaN(date.getTime())) return 'Invalid date';
+                                    return format(date, 'MMM dd, yyyy');
+                                  } catch {
+                                    return 'Invalid date';
+                                  }
+                                })()}
                                 {task.due_time && ` at ${task.due_time}`}
                               </div>
                             )}
@@ -2126,10 +2148,20 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                     <span className="text-muted-foreground">Points:</span>{' '}
                     <span className="font-medium">{selectedTask.points}</span>
                   </div>
-                  {selectedTask.due_date && (
+                  {selectedTask.due_date && selectedTask.due_date.trim() !== '' && (
                     <div>
                       <span className="text-muted-foreground">Due Date:</span>{' '}
-                      <span className="font-medium">{format(new Date(selectedTask.due_date), 'MMM dd, yyyy')}</span>
+                      <span className="font-medium">
+                        {(() => {
+                          try {
+                            const date = new Date(selectedTask.due_date);
+                            if (isNaN(date.getTime())) return 'Invalid date';
+                            return format(date, 'MMM dd, yyyy');
+                          } catch {
+                            return 'Invalid date';
+                          }
+                        })()}
+                      </span>
                       {selectedTask.due_time && <span> at {selectedTask.due_time}</span>}
                     </div>
                   )}
@@ -2390,13 +2422,33 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                           )}
                         >
                           <Calendar className="mr-2 h-4 w-4" />
-                          {newSubtask.due_date ? format(new Date(newSubtask.due_date), "PPP") : <span>Pick due date (optional)</span>}
+                          {newSubtask.due_date && newSubtask.due_date.trim() !== '' ? (
+                            (() => {
+                              try {
+                                const date = new Date(newSubtask.due_date);
+                                if (isNaN(date.getTime())) return <span>Pick due date (optional)</span>;
+                                return format(date, "PPP");
+                              } catch {
+                                return <span>Pick due date (optional)</span>;
+                              }
+                            })()
+                          ) : (
+                            <span>Pick due date (optional)</span>
+                          )}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <CalendarComponent
                           mode="single"
-                          selected={newSubtask.due_date ? new Date(newSubtask.due_date) : undefined}
+                          selected={(() => {
+                            if (!newSubtask.due_date || newSubtask.due_date.trim() === '') return undefined;
+                            try {
+                              const date = new Date(newSubtask.due_date);
+                              return isNaN(date.getTime()) ? undefined : date;
+                            } catch {
+                              return undefined;
+                            }
+                          })()}
                           onSelect={(date) => setNewSubtask({...newSubtask, due_date: date ? format(date, "yyyy-MM-dd") : ""})}
                           initialFocus
                           className="pointer-events-auto"
@@ -2457,10 +2509,18 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                             <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                               <span>Assigned to: {subtask.staff_profiles?.full_name}</span>
                               {subtask.points > 0 && <span>Points: {subtask.points}</span>}
-                              {subtask.due_date && (
+                              {subtask.due_date && subtask.due_date.trim() !== '' && (
                                 <span className="flex items-center gap-1">
                                   <Calendar className="h-3 w-3" />
-                                  {format(new Date(subtask.due_date), 'MMM dd, yyyy')}
+                                  {(() => {
+                                    try {
+                                      const date = new Date(subtask.due_date);
+                                      if (isNaN(date.getTime())) return 'Invalid date';
+                                      return format(date, 'MMM dd, yyyy');
+                                    } catch {
+                                      return 'Invalid date';
+                                    }
+                                  })()}
                                   {subtask.due_time && ` at ${subtask.due_time}`}
                                 </span>
                               )}
