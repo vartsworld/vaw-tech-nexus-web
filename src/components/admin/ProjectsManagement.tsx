@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Project } from '@/types/database';
+import { Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 const ProjectsManagement = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -53,6 +55,8 @@ const ProjectsManagement = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [editSelectedFile, setEditSelectedFile] = useState<File | null>(null);
   const [editPreviewUrl, setEditPreviewUrl] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Predefined categories
   const predefinedCategories = [
@@ -149,21 +153,45 @@ const ProjectsManagement = () => {
   };
 
   const uploadFile = async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `project-media/${fileName}`;
+    setIsUploading(true);
+    setUploadProgress(0);
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `project-media/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('project-assets')
-      .upload(filePath, file);
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
 
-    if (uploadError) throw uploadError;
+      const { error: uploadError } = await supabase.storage
+        .from('project-assets')
+        .upload(filePath, file);
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('project-assets')
-      .getPublicUrl(filePath);
+      clearInterval(progressInterval);
+      setUploadProgress(100);
 
-    return publicUrl;
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('project-assets')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } finally {
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 500);
+    }
   };
 
   const toggleFeatured = (id: string) => {
@@ -382,6 +410,15 @@ const ProjectsManagement = () => {
               onImageUrlChange={handleImageUrlChange}
               previewUrl={previewUrl}
             />
+            {isUploading && (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Uploading... {uploadProgress}%</span>
+                </div>
+                <Progress value={uploadProgress} className="h-2" />
+              </div>
+            )}
           </div>
           <div>
             <Label htmlFor="display_order">Display Order</Label>
@@ -395,7 +432,16 @@ const ProjectsManagement = () => {
             <Checkbox id="featured" name="featured" checked={newProject.featured} onCheckedChange={(checked) => setNewProject(prev => ({ ...prev, featured: !!checked }))} />
             <Label htmlFor="featured">Featured</Label>
           </div>
-          <Button type="submit">Add Project</Button>
+          <Button type="submit" disabled={isUploading}>
+            {isUploading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              'Add Project'
+            )}
+          </Button>
         </form>
       </div>
 
@@ -426,9 +472,23 @@ const ProjectsManagement = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label htmlFor="image_url">Image URL</Label>
-              <Input type="text" id="image_url" name="image_url" value={editProject.image_url} onChange={handleEditInputChange} />
+            <div className="md:col-span-2">
+              <Label>Image/Video</Label>
+              <ImageSelector
+                currentImageUrl={editProject.image_url}
+                onImageChange={handleEditImageChange}
+                onImageUrlChange={handleEditImageUrlChange}
+                previewUrl={editPreviewUrl}
+              />
+              {isUploading && (
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Uploading... {uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="h-2" />
+                </div>
+              )}
             </div>
             <div>
               <Label htmlFor="display_order">Display Order</Label>
@@ -443,7 +503,16 @@ const ProjectsManagement = () => {
               <Label htmlFor="featured">Featured</Label>
             </div>
             <div className="flex justify-between md:col-span-2">
-              <Button type="submit">Update Project</Button>
+              <Button type="submit" disabled={isUploading}>
+                {isUploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  'Update Project'
+                )}
+              </Button>
               <Button type="button" variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
             </div>
           </form>
