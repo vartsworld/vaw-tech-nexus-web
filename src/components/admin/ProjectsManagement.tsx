@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import ImageSelector from "./ImageSelector";
 import {
   Table,
   TableBody,
@@ -48,6 +49,10 @@ const ProjectsManagement = () => {
     featured: false,
     display_order: 0
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [editSelectedFile, setEditSelectedFile] = useState<File | null>(null);
+  const [editPreviewUrl, setEditPreviewUrl] = useState<string | null>(null);
 
   // Predefined categories
   const predefinedCategories = [
@@ -113,6 +118,54 @@ const ProjectsManagement = () => {
     }));
   };
 
+  const handleImageChange = (file: File | null) => {
+    setSelectedFile(file);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleImageUrlChange = (url: string | null) => {
+    setNewProject(prev => ({ ...prev, image_url: url || '' }));
+    if (url) {
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleEditImageChange = (file: File | null) => {
+    setEditSelectedFile(file);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setEditPreviewUrl(url);
+    }
+  };
+
+  const handleEditImageUrlChange = (url: string | null) => {
+    setEditProject(prev => ({ ...prev, image_url: url || '' }));
+    if (url) {
+      setEditPreviewUrl(url);
+    }
+  };
+
+  const uploadFile = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `project-media/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('project-assets')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('project-assets')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const toggleFeatured = (id: string) => {
     const project = projects.find(project => project.id === id);
     if (project) {
@@ -135,16 +188,40 @@ const ProjectsManagement = () => {
 
   const addProject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!validateProjectForm()) return;
 
     try {
+      let imageUrl = newProject.image_url;
+      
+      // Upload file if selected
+      if (selectedFile) {
+        imageUrl = await uploadFile(selectedFile);
+      }
+      
+      if (!imageUrl) {
+        toast({
+          title: 'Error',
+          description: 'Please provide an image or video',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!newProject.title || !newProject.description || !newProject.category) {
+        toast({
+          title: 'Error',
+          description: 'Please fill in all fields.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const { data, error } = await (supabase as any)
         .from('projects')
         .insert({
           title: newProject.title,
           category: newProject.category,
           description: newProject.description,
-          image_url: newProject.image_url,
+          image_url: imageUrl,
           featured: newProject.featured,
           display_order: newProject.display_order || 0
         })
@@ -177,24 +254,35 @@ const ProjectsManagement = () => {
       featured: false,
       display_order: 0
     });
+    setSelectedFile(null);
+    setPreviewUrl(null);
   };
 
   const handleEdit = (project: Project) => {
     setIsEditing(true);
     setEditProject({ ...project });
+    setEditPreviewUrl(project.image_url);
+    setEditSelectedFile(null);
   };
 
   const updateProject = async (id: string) => {
     if (!validateProjectForm(true)) return;
 
     try {
+      let imageUrl = editProject.image_url;
+      
+      // Upload new file if selected
+      if (editSelectedFile) {
+        imageUrl = await uploadFile(editSelectedFile);
+      }
+
       const { error } = await (supabase as any)
         .from('projects')
         .update({
           title: editProject.title,
           category: editProject.category,
           description: editProject.description,
-          image_url: editProject.image_url,
+          image_url: imageUrl,
           featured: editProject.featured,
           display_order: editProject.display_order
         })
@@ -202,12 +290,15 @@ const ProjectsManagement = () => {
 
       if (error) throw error;
 
+      const updatedProject = { ...editProject, image_url: imageUrl };
       setProjects(projects.map(project =>
-        project.id === id ? { ...project, ...editProject } : project
+        project.id === id ? { ...project, ...updatedProject } : project
       ));
       
       setIsEditing(false);
       setEditProject({ id: '', title: '', category: '', description: '', image_url: '', featured: false, display_order: 0 });
+      setEditPreviewUrl(null);
+      setEditSelectedFile(null);
       
       toast({
         title: 'Success',
@@ -283,9 +374,14 @@ const ProjectsManagement = () => {
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label htmlFor="image_url">Image URL</Label>
-            <Input type="text" id="image_url" name="image_url" value={newProject.image_url} onChange={handleInputChange} />
+          <div className="md:col-span-2">
+            <Label>Image/Video</Label>
+            <ImageSelector
+              currentImageUrl={newProject.image_url}
+              onImageChange={handleImageChange}
+              onImageUrlChange={handleImageUrlChange}
+              previewUrl={previewUrl}
+            />
           </div>
           <div>
             <Label htmlFor="display_order">Display Order</Label>
