@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Moon, Sun, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
+import vawLogoDark from "@/assets/vaw-logo-dark.png";
 
 const navigationItems = [
   { name: "Home", href: "/" },
@@ -50,7 +51,7 @@ const Navbar = () => {
         <Link to="/" className="flex items-center gap-2">
           <div className="flex items-center">
             <img 
-              src="/lovable-uploads/19a7ca2f-acf3-4596-a5c2-1a5ef9ece92b.png" 
+              src={theme === "dark" ? vawLogoDark : "/lovable-uploads/19a7ca2f-acf3-4596-a5c2-1a5ef9ece92b.png"}
               alt="VAW Technologies Logo" 
               className="h-28 w-auto" 
             />
