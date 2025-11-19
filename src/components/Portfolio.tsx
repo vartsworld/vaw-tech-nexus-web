@@ -5,6 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Project } from "@/types/database";
 
+const isVideoFile = (url: string) => {
+  return /\.(mp4|webm|ogg|mov)$/i.test(url);
+};
+
 const Portfolio = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
@@ -114,11 +118,22 @@ const Portfolio = () => {
                 >
                   <div className="bg-card overflow-hidden rounded-xl shadow-lg border border-muted/20">
                     <div className="relative aspect-[16/9] overflow-hidden">
-                      <img
-                        src={project.image_url}
-                        alt={project.title}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
-                      />
+                      {isVideoFile(project.image_url) ? (
+                        <video
+                          src={project.image_url}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img
+                          src={project.image_url}
+                          alt={project.title}
+                          className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                        />
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
                         <div className="p-6 text-white">
                           <h3 className="text-xl font-bold mb-2">{project.title}</h3>

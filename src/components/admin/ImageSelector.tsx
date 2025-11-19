@@ -12,6 +12,10 @@ interface ImageSelectorProps {
   previewUrl: string | null;
 }
 
+const isVideoFile = (url: string) => {
+  return /\.(mp4|webm|ogg|mov)$/i.test(url);
+};
+
 const ImageSelector = ({
   currentImageUrl,
   onImageChange,
@@ -67,12 +71,12 @@ const ImageSelector = ({
               onClick={() => document.getElementById("image-upload")?.click()}
             >
               <Upload className="mr-2 h-4 w-4" />
-              {previewUrl ? "Change Image" : "Upload Image"}
+              {previewUrl ? "Change Media" : "Upload Image/Video"}
             </Button>
             <input
               id="image-upload"
               type="file"
-              accept="image/*"
+              accept="image/*,video/mp4,video/webm,video/ogg"
               onChange={handleFileChange}
               className="hidden"
             />
@@ -92,7 +96,7 @@ const ImageSelector = ({
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Enter a direct link to an image (JPG, PNG, etc.)
+              Enter a direct link to an image or video (JPG, PNG, MP4, WEBM, etc.)
             </p>
           </div>
         </TabsContent>
@@ -100,11 +104,22 @@ const ImageSelector = ({
 
       {previewUrl && (
         <div className="relative inline-block">
-          <img
-            src={previewUrl}
-            alt="Preview"
-            className="h-16 w-16 object-contain border rounded"
-          />
+          {isVideoFile(previewUrl) ? (
+            <video
+              src={previewUrl}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="h-32 w-auto object-contain border rounded"
+            />
+          ) : (
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="h-16 w-16 object-contain border rounded"
+            />
+          )}
           <button
             type="button"
             onClick={handleClearImage}
