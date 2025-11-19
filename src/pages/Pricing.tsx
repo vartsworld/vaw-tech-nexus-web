@@ -83,6 +83,13 @@ const Pricing = () => {
     icon: <Bot className="h-8 w-8 text-tech-gold" />,
     description: "Cutting-edge AI-powered websites",
     features: ["AI Chatbot Integration", "Machine Learning Features", "Personalization Engine", "Automated Content", "Smart Analytics", "Voice Integration", "Advanced AI Tools", "Custom AI Models", "Future-ready Technology"]
+  }, {
+    name: "Social Media-Based News Website",
+    originalPrice: 15999,
+    discountPrice: 7999,
+    icon: <Globe className="h-8 w-8 text-tech-blue" />,
+    description: "Perfect for news channels, vlogs & social media platforms",
+    features: ["7 Days Development - Go Live Fast!", "Automatic Content Fetching", "1 Year Hosting Included", "Free Domain (.com / .in)", "SSL Certificate for Security", "Malware Protection & Security Suite", "Fully Managed Setup", "Social Media Integration"]
   }];
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-IN', {
