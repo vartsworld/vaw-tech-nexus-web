@@ -571,7 +571,6 @@ const ProjectsManagement = () => {
                 <TableHead>Title</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Featured</TableHead>
-                <TableHead>Display Order</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -598,7 +597,6 @@ const ProjectsManagement = () => {
                               id={`featured-${project.id}`}
                             />
                           </TableCell>
-                          <TableCell>{project.display_order}</TableCell>
                           <TableCell className="text-right space-x-2">
                             <Button variant="secondary" size="sm" onClick={() => handleEdit(project)}>
                               Edit
