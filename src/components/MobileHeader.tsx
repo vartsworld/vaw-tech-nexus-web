@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Moon, Sun, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
+import vawLogoDark from "@/assets/vaw-logo-dark.png";
 const navigationItems = [{
   name: "Home",
   href: "/"
@@ -80,7 +81,11 @@ const MobileHeader = () => {
 
           {/* Logo - Center */}
           <Link to="/" className="flex-1 flex justify-center">
-            <img alt="VAW Technologies Logo" src="/lovable-uploads/26ada33a-814b-4e06-ac24-de677f9a36b2.png" className="h-11 w-auto" />
+            <img 
+              alt="VAW Technologies Logo" 
+              src={theme === "dark" ? vawLogoDark : "/lovable-uploads/26ada33a-814b-4e06-ac24-de677f9a36b2.png"} 
+              className="h-11 w-auto" 
+            />
           </Link>
 
           {/* Theme Toggle - Right */}
@@ -98,7 +103,11 @@ const MobileHeader = () => {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">
-            <img src="/lovable-uploads/19a7ca2f-acf3-4596-a5c2-1a5ef9ece92b.png" alt="VAW Technologies Logo" className="h-10 w-auto" />
+            <img 
+              src={theme === "dark" ? vawLogoDark : "/lovable-uploads/19a7ca2f-acf3-4596-a5c2-1a5ef9ece92b.png"} 
+              alt="VAW Technologies Logo" 
+              className="h-10 w-auto" 
+            />
             <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(false)} className="h-8 w-8">
               <X size={16} />
             </Button>
