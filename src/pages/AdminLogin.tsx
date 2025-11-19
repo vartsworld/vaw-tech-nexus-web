@@ -21,39 +21,52 @@ const AdminLogin = () => {
     try {
       console.log("Attempting login with email:", email);
       
-      // Use Supabase authentication instead of manual credential checking
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
+      // Query admin_users table directly
+      const { data: adminUser, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('email', email)
+        .single();
 
-      console.log("Login response:", { data, error });
+      console.log("Admin user query result:", { adminUser, error });
 
-      if (error) {
+      if (error || !adminUser) {
         console.error("Login error:", error);
         toast({
           title: "Login failed",
-          description: error.message || "Invalid email or password.",
+          description: "Invalid email or password.",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
-      if (data.user) {
-        console.log("Login successful for user:", data.user.email);
-        
-        // Store auth info in localStorage for admin access
-        localStorage.setItem("admin_token", data.session?.access_token || "");
-        localStorage.setItem("admin_email", data.user.email || "");
-        localStorage.setItem("admin_user_id", data.user.id);
-        
+      // SECURITY WARNING: This compares plain text passwords
+      // In production, use proper password hashing (bcrypt) with an edge function
+      if (adminUser.password_hash !== password) {
         toast({
-          title: "Login successful!",
-          description: "Welcome to the admin dashboard.",
+          title: "Login failed",
+          description: "Invalid email or password.",
+          variant: "destructive",
         });
-        
-        navigate("/admin/dashboard");
+        setIsLoading(false);
+        return;
       }
+
+      console.log("Login successful for admin:", adminUser.email);
+      
+      // Store admin info in localStorage
+      localStorage.setItem("admin_token", "admin_authenticated");
+      localStorage.setItem("admin_email", adminUser.email);
+      localStorage.setItem("admin_user_id", adminUser.id);
+      localStorage.setItem("admin_full_name", adminUser.full_name);
+      
+      toast({
+        title: "Login successful!",
+        description: `Welcome back, ${adminUser.full_name}!`,
+      });
+      
+      navigate("/admin/dashboard");
     } catch (error: any) {
       console.error("Unexpected login error:", error);
       toast({
