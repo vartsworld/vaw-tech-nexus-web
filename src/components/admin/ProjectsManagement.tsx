@@ -26,8 +26,9 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Project } from '@/types/database';
-import { Loader2 } from "lucide-react";
+import { Loader2, GripVertical } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 
 const ProjectsManagement = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -368,6 +369,46 @@ const ProjectsManagement = () => {
     }
   };
 
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(projects);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    // Update display_order for all projects
+    const updatedProjects = items.map((project, index) => ({
+      ...project,
+      display_order: index
+    }));
+
+    setProjects(updatedProjects);
+
+    // Update in database
+    try {
+      for (const project of updatedProjects) {
+        await supabase
+          .from('projects')
+          .update({ display_order: project.display_order })
+          .eq('id', project.id);
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Project order updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating project order:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update project order',
+        variant: 'destructive',
+      });
+      // Revert on error
+      fetchProjects();
+    }
+  };
+
   if (loading) {
     return <p>Loading projects...</p>;
   }
@@ -521,42 +562,61 @@ const ProjectsManagement = () => {
 
       {/* Projects Table */}
       <div className="overflow-x-auto">
-        <Table>
-          <TableCaption>A list of your projects.</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Featured</TableHead>
-              <TableHead>Display Order</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {projects.map((project) => (
-              <TableRow key={project.id}>
-                <TableCell>{project.title}</TableCell>
-                <TableCell>{project.category}</TableCell>
-                <TableCell>
-                  <Checkbox
-                    checked={project.featured}
-                    onCheckedChange={() => toggleFeatured(project.id)}
-                    id={`featured-${project.id}`}
-                  />
-                </TableCell>
-                <TableCell>{project.display_order}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="secondary" size="sm" onClick={() => handleEdit(project)}>
-                    Edit
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => deleteProject(project.id)}>
-                    Delete
-                  </Button>
-                </TableCell>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Table>
+            <TableCaption>Drag rows to reorder projects. Display order will be saved automatically.</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12"></TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Featured</TableHead>
+                <TableHead>Display Order</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <Droppable droppableId="projects">
+              {(provided) => (
+                <TableBody {...provided.droppableProps} ref={provided.innerRef}>
+                  {projects.map((project, index) => (
+                    <Draggable key={project.id} draggableId={project.id} index={index}>
+                      {(provided, snapshot) => (
+                        <TableRow
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={snapshot.isDragging ? "bg-muted" : ""}
+                        >
+                          <TableCell {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing">
+                            <GripVertical className="h-5 w-5 text-muted-foreground" />
+                          </TableCell>
+                          <TableCell>{project.title}</TableCell>
+                          <TableCell>{project.category}</TableCell>
+                          <TableCell>
+                            <Checkbox
+                              checked={project.featured}
+                              onCheckedChange={() => toggleFeatured(project.id)}
+                              id={`featured-${project.id}`}
+                            />
+                          </TableCell>
+                          <TableCell>{project.display_order}</TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button variant="secondary" size="sm" onClick={() => handleEdit(project)}>
+                              Edit
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => deleteProject(project.id)}>
+                              Delete
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </TableBody>
+              )}
+            </Droppable>
+          </Table>
+        </DragDropContext>
       </div>
     </div>
   );
