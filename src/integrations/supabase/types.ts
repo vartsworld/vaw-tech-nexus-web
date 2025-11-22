@@ -1834,6 +1834,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_log: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          duration_minutes: number | null
+          id: string
+          metadata: Json | null
+          timestamp: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          metadata?: Json | null
+          timestamp?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          metadata?: Json | null
+          timestamp?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_activity_log_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_mood_entries: {
         Row: {
           created_at: string | null
@@ -1905,6 +1943,41 @@ export type Database = {
             foreignKeyName: "fk_user_points_log_user"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_presence_status: {
+        Row: {
+          current_status: string
+          last_activity_at: string | null
+          reactivation_code: number | null
+          session_start_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          current_status?: string
+          last_activity_at?: string | null
+          reactivation_code?: number | null
+          session_start_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          current_status?: string
+          last_activity_at?: string | null
+          reactivation_code?: number | null
+          session_start_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_presence_status_user"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "staff_profiles"
             referencedColumns: ["user_id"]
           },

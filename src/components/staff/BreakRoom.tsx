@@ -10,6 +10,7 @@ import WordChallenge from "./games/WordChallenge";
 import QuickQuiz from "./games/QuickQuiz";
 import CodePuzzle from "./games/CodePuzzle";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type ActiveGame = 'none' | 'word-challenge' | 'quick-quiz' | 'code-puzzle';
 
@@ -21,6 +22,8 @@ interface BreakRoomProps {
   setIsBreakActive: (value: boolean) => void;
   breakDuration: number;
   setBreakDuration: (value: number) => void;
+  userId: string;
+  onStatusChange?: (status: string) => void;
 }
 
 const BreakRoom = ({ 
@@ -30,7 +33,9 @@ const BreakRoom = ({
   isBreakActive,
   setIsBreakActive,
   breakDuration,
-  setBreakDuration
+  setBreakDuration,
+  userId,
+  onStatusChange
 }: BreakRoomProps) => {
   const { chatMessages, teamMembers, loading, sendChatMessage } = useStaffData();
   const [newMessage, setNewMessage] = useState("");
@@ -96,8 +101,26 @@ const BreakRoom = ({
     };
   }, [isBreakActive, breakTimeRemaining, breakDuration]);
 
-  const startBreak = () => {
+  const startBreak = async () => {
     setIsBreakActive(true);
+    
+    // Update status to coffee_break
+    await supabase
+      .from('user_presence_status')
+      .update({ current_status: 'coffee_break' })
+      .eq('user_id', userId);
+    
+    // Log break start
+    await supabase
+      .from('user_activity_log')
+      .insert({
+        user_id: userId,
+        activity_type: 'break_start',
+        timestamp: new Date().toISOString(),
+        duration_minutes: breakDuration
+      });
+    
+    if (onStatusChange) onStatusChange('coffee_break');
     toast.success(`Break started! Enjoy your ${breakDuration}-minute break ☕`);
   };
 
@@ -106,9 +129,26 @@ const BreakRoom = ({
     toast.info("Break paused");
   };
 
-  const resetBreak = () => {
+  const resetBreak = async () => {
     setIsBreakActive(false);
     setBreakTimeRemaining(breakDuration * 60);
+    
+    // Update status back to online
+    await supabase
+      .from('user_presence_status')
+      .update({ current_status: 'online' })
+      .eq('user_id', userId);
+    
+    // Log break end
+    await supabase
+      .from('user_activity_log')
+      .insert({
+        user_id: userId,
+        activity_type: 'break_end',
+        timestamp: new Date().toISOString()
+      });
+    
+    if (onStatusChange) onStatusChange('online');
     toast.success("Back to work! 💼");
   };
 
