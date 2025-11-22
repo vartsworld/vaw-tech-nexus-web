@@ -32,6 +32,7 @@ import VAWCups from "./pages/VAWCups";
 import VAWVendor from "./pages/VAWVendor";
 import VAWSponsor from "./pages/VAWSponsor";
 import VAWAdmin from "./pages/VAWAdmin";
+import MyCoins from "./pages/MyCoins";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const AppContent = () => {
           <Route path="/staff/login" element={<StaffLogin />} />
           <Route path="/staff/dashboard" element={<StaffDashboard />} />
           <Route path="/team-head/dashboard" element={<TeamHeadDashboard />} />
+          <Route path="/mycoins" element={<MyCoins />} />
           <Route path="/account" element={<AccountDashboard />} />
           <Route path="/client-portal" element={<ClientPortal />} />
           <Route path="/vaw-cups" element={<VAWCups />} />

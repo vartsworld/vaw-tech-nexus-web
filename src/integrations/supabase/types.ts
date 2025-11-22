@@ -923,6 +923,76 @@ export type Database = {
         }
         Relationships: []
       }
+      points_redemptions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          completion_notes: string | null
+          created_at: string | null
+          delivery_address: string | null
+          id: string
+          points_spent: number
+          redemption_date: string | null
+          rejection_reason: string | null
+          reward_id: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          completion_notes?: string | null
+          created_at?: string | null
+          delivery_address?: string | null
+          id?: string
+          points_spent: number
+          redemption_date?: string | null
+          rejection_reason?: string | null
+          reward_id: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          completion_notes?: string | null
+          created_at?: string | null
+          delivery_address?: string | null
+          id?: string
+          points_spent?: number
+          redemption_date?: string | null
+          rejection_reason?: string | null
+          reward_id?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_redemptions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "points_redemptions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "points_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string | null
@@ -1088,6 +1158,65 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      rewards_catalog: {
+        Row: {
+          category: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          monetary_value: number | null
+          points_cost: number
+          redemption_limit: number | null
+          stock_quantity: number | null
+          terms_conditions: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          monetary_value?: number | null
+          points_cost: number
+          redemption_limit?: number | null
+          stock_quantity?: number | null
+          terms_conditions?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          monetary_value?: number | null
+          points_cost?: number
+          redemption_limit?: number | null
+          stock_quantity?: number | null
+          terms_conditions?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rewards_catalog_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       service_requests: {
         Row: {
