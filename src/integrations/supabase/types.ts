@@ -1984,6 +1984,321 @@ export type Database = {
         }
         Relationships: []
       }
+      vaw_campaigns: {
+        Row: {
+          campaign_name: string
+          created_at: string | null
+          cup_design_url: string | null
+          end_date: string | null
+          id: string
+          impressions: number | null
+          qr_code_link: string | null
+          quantity: number | null
+          sponsor_id: string
+          start_date: string | null
+          status: string | null
+          target_location: string | null
+          tissue_design_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          campaign_name: string
+          created_at?: string | null
+          cup_design_url?: string | null
+          end_date?: string | null
+          id?: string
+          impressions?: number | null
+          qr_code_link?: string | null
+          quantity?: number | null
+          sponsor_id: string
+          start_date?: string | null
+          status?: string | null
+          target_location?: string | null
+          tissue_design_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          campaign_name?: string
+          created_at?: string | null
+          cup_design_url?: string | null
+          end_date?: string | null
+          id?: string
+          impressions?: number | null
+          qr_code_link?: string | null
+          quantity?: number | null
+          sponsor_id?: string
+          start_date?: string | null
+          status?: string | null
+          target_location?: string | null
+          tissue_design_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vaw_campaigns_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "vaw_sponsors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vaw_orders: {
+        Row: {
+          created_at: string | null
+          cups_quantity: number | null
+          delivery_date: string | null
+          id: string
+          status: string | null
+          tissues_quantity: number | null
+          updated_at: string | null
+          vendor_id: string
+          waste_bin_requested: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          cups_quantity?: number | null
+          delivery_date?: string | null
+          id?: string
+          status?: string | null
+          tissues_quantity?: number | null
+          updated_at?: string | null
+          vendor_id: string
+          waste_bin_requested?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          cups_quantity?: number | null
+          delivery_date?: string | null
+          id?: string
+          status?: string | null
+          tissues_quantity?: number | null
+          updated_at?: string | null
+          vendor_id?: string
+          waste_bin_requested?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vaw_orders_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vaw_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vaw_recycling_log: {
+        Row: {
+          created_at: string | null
+          id: string
+          image_url: string | null
+          points_earned: number
+          qr_code: string | null
+          vendor_id: string
+          weight_kg: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          points_earned: number
+          qr_code?: string | null
+          vendor_id: string
+          weight_kg: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          points_earned?: number
+          qr_code?: string | null
+          vendor_id?: string
+          weight_kg?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vaw_recycling_log_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vaw_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vaw_redemptions: {
+        Row: {
+          created_at: string | null
+          id: string
+          points_spent: number
+          reward_id: string
+          status: string | null
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          points_spent: number
+          reward_id: string
+          status?: string | null
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          points_spent?: number
+          reward_id?: string
+          status?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vaw_redemptions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "vaw_rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vaw_redemptions_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vaw_vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vaw_rewards: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          points_required: number
+          reward_description: string | null
+          reward_name: string
+          reward_type: string
+          stock_quantity: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          points_required: number
+          reward_description?: string | null
+          reward_name: string
+          reward_type: string
+          stock_quantity?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          points_required?: number
+          reward_description?: string | null
+          reward_name?: string
+          reward_type?: string
+          stock_quantity?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      vaw_sponsors: {
+        Row: {
+          business_category: string | null
+          company_name: string
+          contact_name: string
+          created_at: string | null
+          email: string
+          gst_number: string | null
+          id: string
+          phone: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          business_category?: string | null
+          company_name: string
+          contact_name: string
+          created_at?: string | null
+          email: string
+          gst_number?: string | null
+          id?: string
+          phone: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          business_category?: string | null
+          company_name?: string
+          contact_name?: string
+          created_at?: string | null
+          email?: string
+          gst_number?: string | null
+          id?: string
+          phone?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      vaw_vendors: {
+        Row: {
+          address: string
+          created_at: string | null
+          email: string
+          gst_certificate_url: string | null
+          id: string
+          kyc_document_url: string | null
+          password: string
+          phone: string
+          shop_name: string
+          status: string | null
+          total_cups_used: number | null
+          total_points: number | null
+          total_recycled_cups: number | null
+          total_tissues_used: number | null
+          updated_at: string | null
+          vendor_name: string
+        }
+        Insert: {
+          address: string
+          created_at?: string | null
+          email: string
+          gst_certificate_url?: string | null
+          id?: string
+          kyc_document_url?: string | null
+          password: string
+          phone: string
+          shop_name: string
+          status?: string | null
+          total_cups_used?: number | null
+          total_points?: number | null
+          total_recycled_cups?: number | null
+          total_tissues_used?: number | null
+          updated_at?: string | null
+          vendor_name: string
+        }
+        Update: {
+          address?: string
+          created_at?: string | null
+          email?: string
+          gst_certificate_url?: string | null
+          id?: string
+          kyc_document_url?: string | null
+          password?: string
+          phone?: string
+          shop_name?: string
+          status?: string | null
+          total_cups_used?: number | null
+          total_points?: number | null
+          total_recycled_cups?: number | null
+          total_tissues_used?: number | null
+          updated_at?: string | null
+          vendor_name?: string
+        }
+        Relationships: []
+      }
       vendors: {
         Row: {
           address: string
