@@ -106,37 +106,41 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
   }
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="text-sm flex items-center gap-2">
-          <Clock className="h-4 w-4" />
+    <Card className={`bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl ${className}`}>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-white text-base flex items-center gap-2">
+          <Clock className="h-5 w-5 text-blue-400" />
           Today's Activity Log
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[300px] pr-4">
+        <ScrollArea className="h-[400px] pr-4">
           {logs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No activity recorded today
-            </p>
+            <div className="text-center py-12">
+              <Clock className="h-12 w-12 text-white/20 mx-auto mb-3" />
+              <p className="text-sm text-white/50">No activity recorded today</p>
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {logs.map((log) => {
                 const config = getActivityConfig(log.activity_type);
                 const Icon = config.icon;
                 
                 return (
-                  <div key={log.id} className="flex items-start gap-3">
-                    <div className={`mt-0.5 rounded-full p-2 bg-background border ${config.color}`}>
-                      <Icon className="h-3.5 w-3.5" />
+                  <div 
+                    key={log.id} 
+                    className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
+                  >
+                    <div className={`mt-0.5 rounded-full p-2 bg-black/20 backdrop-blur-sm border border-white/10 ${config.color}`}>
+                      <Icon className="h-4 w-4" />
                     </div>
-                    <div className="flex-1 space-y-1">
-                      <p className="text-sm font-medium">{config.label}</p>
-                      <p className="text-xs text-muted-foreground">
+                    <div className="flex-1 space-y-1 min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{config.label}</p>
+                      <p className="text-xs text-white/50">
                         {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
                       </p>
                       {log.duration_minutes && (
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-blue-300/70">
                           Duration: {log.duration_minutes} minutes
                         </p>
                       )}
