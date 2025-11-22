@@ -2,6 +2,7 @@
 import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 import { 
   Monitor, 
   Coffee, 
@@ -11,7 +12,8 @@ import {
   Calendar,
   Bell,
   ClipboardList,
-  X
+  X,
+  Coins
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import { ActivityLogPanel } from "./ActivityLogPanel";
@@ -26,6 +28,7 @@ interface VirtualOfficeLayoutProps {
 
 const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange, onlineUsers = {}, userId }: VirtualOfficeLayoutProps) => {
   const [showActivityLog, setShowActivityLog] = useState(false);
+  const navigate = useNavigate();
   
   const rooms = [
     { id: 'workspace' as const, name: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
@@ -117,6 +120,17 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange, onlineUsers 
               <Button variant="outline" size="sm" className="bg-green-500/20 border-green-500/30 text-white hover:bg-green-500/30">
                 <Bell className="w-4 h-4 mr-2" />
                 Alerts
+              </Button>
+              
+              {/* My Coins Button */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="col-span-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/30 text-white hover:from-amber-500/30 hover:to-yellow-500/30"
+                onClick={() => navigate('/mycoins')}
+              >
+                <Coins className="w-4 h-4 mr-2" />
+                My Coins
               </Button>
               
               {/* Activity Log Dialog */}
