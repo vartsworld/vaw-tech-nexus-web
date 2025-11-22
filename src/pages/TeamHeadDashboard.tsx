@@ -442,7 +442,10 @@ const TeamHeadDashboard = () => {
                 />
               </div>
               
-              <div className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2 sm:px-3 py-1">
+              <div 
+                onClick={() => navigate('/mycoins')}
+                className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2 sm:px-3 py-1 cursor-pointer hover:from-yellow-500/30 hover:to-blue-500/30 transition-all"
+              >
                 <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-300" />
                 <span className="text-yellow-300 text-xs sm:text-sm">${profile?.earnings || 0}</span>
               </div>
