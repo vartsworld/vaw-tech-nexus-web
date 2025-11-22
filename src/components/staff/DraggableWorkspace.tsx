@@ -10,9 +10,9 @@ import { useToast } from '@/components/ui/use-toast';
 import TasksManager from './TasksManager';
 import TeamChat from './TeamChat';
 import MiniChess from './MiniChess';
-import SpotifyWidget from './SpotifyWidget';
 import TimeboxWidget from './TimeboxWidget';
 import WidgetManager from './WidgetManager';
+import { ActivityLogPanel } from './ActivityLogPanel';
 
 interface DraggableWorkspaceProps {
   userId: string;
@@ -31,7 +31,7 @@ interface WorkspaceItem {
 const availableWidgets = [
   { component: 'TeamChat', title: 'Team Chat', span: 'half' as const, removable: true },
   { component: 'MiniChess', title: 'Mini Chess', span: 'half' as const, removable: true },
-  { component: 'SpotifyWidget', title: 'Spotify Widget', span: 'half' as const, removable: true },
+  { component: 'ActivityLogPanel', title: 'Activity Logger', span: 'half' as const, removable: true },
   { component: 'TimeboxWidget', title: 'Focus Timer', span: 'half' as const, removable: true },
 ];
 
@@ -41,7 +41,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
     { id: 'chat', component: 'TeamChat', title: 'Team Chat', span: 'half', removable: true, isVisible: true },
     { id: 'chess', component: 'MiniChess', title: 'Mini Chess', span: 'half', removable: true, isVisible: true },
     { id: 'timebox', component: 'TimeboxWidget', title: 'Focus Timer', span: 'half', removable: true, isVisible: true },
-    { id: 'spotify', component: 'SpotifyWidget', title: 'Spotify Widget', span: 'half', removable: true, isVisible: true },
+    { id: 'activity', component: 'ActivityLogPanel', title: 'Activity Logger', span: 'half', removable: true, isVisible: true },
   ];
 
   const [items, setItems] = useState<WorkspaceItem[]>(defaultItems);
@@ -205,8 +205,8 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
         return <TeamChat userId={userId} userProfile={userProfile} />;
       case 'MiniChess':
         return <MiniChess userId={userId} userProfile={userProfile} />;
-      case 'SpotifyWidget':
-        return <SpotifyWidget userId={userId} />;
+      case 'ActivityLogPanel':
+        return <ActivityLogPanel userId={userId} className="bg-transparent border-0" />;
       case 'TimeboxWidget':
         return <TimeboxWidget userId={userId} userProfile={userProfile} />;
       default:
