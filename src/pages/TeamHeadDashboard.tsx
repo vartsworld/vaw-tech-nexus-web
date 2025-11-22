@@ -36,7 +36,12 @@ import AttendanceChecker from "@/components/staff/AttendanceChecker";
 import MoodQuoteChecker from "@/components/staff/MoodQuoteChecker";
 import NotificationsBar from "@/components/staff/NotificationsBar";
 import TeamHeadWorkspace from "@/components/staff/TeamHeadWorkspace";
+import { UserStatusBadge } from "@/components/staff/UserStatusBadge";
+import { ActivityLogPanel } from "@/components/staff/ActivityLogPanel";
+import { ReactivationDialog } from "@/components/staff/ReactivationDialog";
 import { useStaffData } from "@/hooks/useStaffData";
+import { useActivityTracker } from "@/hooks/useActivityTracker";
+import { useUserStatus } from "@/hooks/useUserStatus";
 import { supabase } from "@/integrations/supabase/client";
 
 type RoomType = 'workspace' | 'breakroom' | 'meeting';
@@ -75,6 +80,34 @@ const TeamHeadDashboard = () => {
   const [breakDuration, setBreakDuration] = useState(15);
   
   const { profile } = useStaffData();
+  
+  // Activity tracking and status
+  const { status, reactivationCode, updateStatus, reactivate } = useUserStatus(profile?.user_id || '');
+  useActivityTracker({ 
+    userId: profile?.user_id || '',
+    onStatusChange: (newStatus) => {
+      // Status change handled automatically
+    }
+  });
+  
+  const [showReactivationDialog, setShowReactivationDialog] = useState(false);
+
+  useEffect(() => {
+    // Show reactivation dialog for AFK/Resting/Sleeping states
+    if (['afk', 'resting', 'sleeping'].includes(status) && reactivationCode) {
+      setShowReactivationDialog(true);
+    } else {
+      setShowReactivationDialog(false);
+    }
+  }, [status, reactivationCode]);
+
+  const handleReactivate = async (code: number) => {
+    const success = await reactivate(code);
+    if (success) {
+      setShowReactivationDialog(false);
+    }
+    return success;
+  };
 
   useEffect(() => {
     checkDailyRequirements();
@@ -349,6 +382,8 @@ const TeamHeadDashboard = () => {
         setIsBreakActive={setIsBreakActive}
         breakDuration={breakDuration}
         setBreakDuration={setBreakDuration}
+        userId={profile?.user_id || ''}
+        onStatusChange={updateStatus}
       />
     ),
     meeting: <MeetingRoom />
@@ -401,8 +436,11 @@ const TeamHeadDashboard = () => {
               </div>
               
               <div className="flex items-center gap-1 sm:gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-2 sm:px-3 py-1">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-green-300 text-xs sm:text-sm">Online</span>
+                <UserStatusBadge 
+                  status={status}
+                  isBreakActive={isBreakActive}
+                  breakTimeRemaining={breakTimeRemaining}
+                />
               </div>
               
               <div className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2 sm:px-3 py-1">
@@ -586,6 +624,23 @@ const TeamHeadDashboard = () => {
           breakTimeRemaining={breakTimeRemaining}
           unreadChatCount={0}
         />
+      )}
+      
+      {/* Reactivation Dialog */}
+      {showReactivationDialog && reactivationCode && (
+        <ReactivationDialog
+          open={showReactivationDialog}
+          reactivationCode={reactivationCode}
+          status={status}
+          onReactivate={handleReactivate}
+        />
+      )}
+      
+      {/* Activity Log Panel */}
+      {profile?.user_id && (
+        <div className="fixed bottom-4 left-4 z-30 w-80 max-h-[400px]">
+          <ActivityLogPanel userId={profile.user_id} />
+        </div>
       )}
     </div>
   );
