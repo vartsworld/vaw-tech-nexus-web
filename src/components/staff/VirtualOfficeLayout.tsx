@@ -1,6 +1,7 @@
 
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { 
   Monitor, 
   Coffee, 
@@ -8,17 +9,24 @@ import {
   Music,
   MessageCircle,
   Calendar,
-  Bell
+  Bell,
+  ClipboardList,
+  X
 } from "lucide-react";
+import TeamStatusSidebar from "./TeamStatusSidebar";
+import { ActivityLogPanel } from "./ActivityLogPanel";
 
 interface VirtualOfficeLayoutProps {
   children: ReactNode;
   currentRoom: 'workspace' | 'breakroom' | 'meeting';
   onRoomChange: (room: 'workspace' | 'breakroom' | 'meeting') => void;
   onlineUsers?: Record<string, any>;
+  userId?: string;
 }
 
-const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange, onlineUsers = {} }: VirtualOfficeLayoutProps) => {
+const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange, onlineUsers = {}, userId }: VirtualOfficeLayoutProps) => {
+  const [showActivityLog, setShowActivityLog] = useState(false);
+  
   const rooms = [
     { id: 'workspace' as const, name: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
     { id: 'breakroom' as const, name: 'Break Room', icon: Coffee, color: 'from-red-500 to-red-600' },
@@ -110,54 +118,40 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange, onlineUsers 
                 <Bell className="w-4 h-4 mr-2" />
                 Alerts
               </Button>
+              
+              {/* Activity Log Dialog */}
+              {userId && (
+                <Dialog open={showActivityLog} onOpenChange={setShowActivityLog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="col-span-2 bg-purple-500/20 border-purple-500/30 text-white hover:bg-purple-500/30">
+                      <ClipboardList className="w-4 h-4 mr-2" />
+                      Today's Activity
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[500px] max-h-[600px]">
+                    <DialogHeader>
+                      <div className="flex items-center justify-between">
+                        <DialogTitle>Today's Activity Log</DialogTitle>
+                        <DialogClose asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </DialogClose>
+                      </div>
+                    </DialogHeader>
+                    <div className="overflow-y-auto max-h-[500px]">
+                      <ActivityLogPanel userId={userId} />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </div>
 
           {/* Team Status */}
           <div>
-            <h3 className="text-white font-semibold mb-4">Team Online</h3>
-            <div className="space-y-3">
-              {(() => {
-                // Extract all presences and deduplicate by user_id
-                const uniqueUsers = new Map();
-                Object.values(onlineUsers).forEach((presences: any) => {
-                  const presenceArray = Array.isArray(presences) ? presences : [presences];
-                  presenceArray.forEach((presence: any) => {
-                    // Skip demo-user and invalid entries
-                    if (presence.user_id && presence.user_id !== 'demo-user' && presence.full_name && presence.full_name !== 'Unknown') {
-                      uniqueUsers.set(presence.user_id, presence);
-                    }
-                  });
-                });
-
-                if (uniqueUsers.size === 0) {
-                  return (
-                    <div className="text-center py-4 text-white/50 text-sm">
-                      No team members online
-                    </div>
-                  );
-                }
-
-                return Array.from(uniqueUsers.values()).map((presence: any) => {
-                  const initials = presence.full_name?.split(' ').map((n: string) => n[0]).join('') || '?';
-                  
-                  return (
-                    <div key={presence.user_id} className="flex items-center gap-3 p-2 rounded-lg bg-white/5">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
-                        {initials}
-                      </div>
-                      <div>
-                        <p className="text-white text-sm font-medium">{presence.full_name}</p>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                          <p className="text-green-300 text-xs">Available</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
+            <h3 className="text-white font-semibold mb-4">Team Status</h3>
+            <TeamStatusSidebar onlineUsers={onlineUsers} />
           </div>
         </div>
       </aside>

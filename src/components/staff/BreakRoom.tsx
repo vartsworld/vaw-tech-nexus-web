@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Coffee, Gamepad2, MessageCircle, Users, Zap, Trophy, Loader2 } from "lucide-react";
+import { Coffee, Gamepad2, MessageCircle, Zap, Trophy, Loader2 } from "lucide-react";
 import { useStaffData } from "@/hooks/useStaffData";
 import MusicPlayer from "./MusicPlayer";
 import WordChallenge from "./games/WordChallenge";
@@ -122,9 +121,17 @@ const BreakRoom = ({
     toast.success(`Break started! Enjoy your ${breakDuration}-minute break ☕`);
   };
 
-  const pauseBreak = () => {
+  const pauseBreak = async () => {
     setIsBreakActive(false);
-    toast.info("Break paused");
+    
+    // Update status back to online when paused
+    await supabase
+      .from('user_presence_status')
+      .update({ current_status: 'online' })
+      .eq('user_id', userId);
+    
+    if (onStatusChange) onStatusChange('online');
+    toast.info("Break paused - Returned to work mode");
   };
 
   const resetBreak = async () => {
@@ -190,58 +197,14 @@ const BreakRoom = ({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Games Section */}
+        {/* 1. Team Chat */}
         <Card className="bg-black/20 backdrop-blur-lg border-white/10">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
-              <Gamepad2 className="w-5 h-5 text-purple-400" />
-              Team Games
+              <MessageCircle className="w-5 h-5 text-blue-400" />
+              Team Chat
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {games.map((game, index) => (
-              <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h4 className="text-white font-medium">{game.name}</h4>
-                    <p className="text-gray-400 text-sm">{game.difficulty} • {game.players} players</p>
-                    <p className="text-gray-500 text-xs mt-1">{game.description}</p>
-                  </div>
-                  <span className="px-2 py-1 rounded text-xs font-medium bg-green-500/20 text-green-300">
-                    {game.status}
-                  </span>
-                </div>
-                
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="w-full bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30"
-                  onClick={() => setActiveGame(game.id)}
-                >
-                  Play Now
-                </Button>
-              </div>
-            ))}
-            
-            <Button className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600">
-              <Zap className="w-4 h-4 mr-2" />
-              Create New Game
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Music & Chat Column */}
-        <div className="space-y-6">
-          <MusicPlayer />
-          
-          {/* Team Chat */}
-          <Card className="bg-black/20 backdrop-blur-lg border-white/10">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <MessageCircle className="w-5 h-5 text-blue-400" />
-                Team Chat
-              </CardTitle>
-            </CardHeader>
           <CardContent>
             <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
               {chatMessages.length === 0 ? (
@@ -288,46 +251,8 @@ const BreakRoom = ({
             </div>
           </CardContent>
         </Card>
-        </div>
 
-        {/* Leaderboard */}
-        <Card className="bg-black/20 backdrop-blur-lg border-white/10">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-yellow-400" />
-              Weekly Leaderboard
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {teamMembers.map((member, index) => (
-                <div key={member.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
-                  <div className="flex items-center gap-3">
-                    <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      index === 0 ? 'bg-yellow-500 text-black' :
-                      index === 1 ? 'bg-gray-400 text-black' :
-                      index === 2 ? 'bg-orange-500 text-black' :
-                      'bg-gray-600 text-white'
-                    }`}>
-                      {index + 1}
-                    </span>
-                    <span className="text-white font-medium">
-                      {member.full_name || member.username}
-                    </span>
-                  </div>
-                  <span className="text-yellow-300 font-bold">${member.earnings}</span>
-                </div>
-              ))}
-              {teamMembers.length === 0 && (
-                <div className="text-center py-4">
-                  <p className="text-gray-400 text-sm">No team members yet</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions - Coffee Break Timer */}
+        {/* 2. Coffee Break Timer */}
         <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 border-orange-500/30">
           <CardContent className="p-6">
             <div className="text-center space-y-4">
@@ -364,31 +289,29 @@ const BreakRoom = ({
               )}
               
               {/* Control Buttons */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-2">
                 {!isBreakActive ? (
                   <Button 
                     onClick={startBreak}
-                    className="col-span-2 bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600"
+                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600"
                   >
                     Start Break
                   </Button>
                 ) : (
                   <>
                     <Button 
+                      onClick={resetBreak}
+                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+                    >
+                      Back to Work
+                    </Button>
+                    <Button 
                       onClick={pauseBreak}
                       variant="outline" 
                       size="sm" 
-                      className="bg-orange-500/20 border-orange-500/30 text-orange-300 hover:bg-orange-500/30"
+                      className="w-full bg-orange-500/20 border-orange-500/30 text-orange-300 hover:bg-orange-500/30"
                     >
-                      Pause
-                    </Button>
-                    <Button 
-                      onClick={resetBreak}
-                      variant="outline" 
-                      size="sm" 
-                      className="bg-orange-500/20 border-orange-500/30 text-orange-300 hover:bg-orange-500/30"
-                    >
-                      Back to Work
+                      Pause & Return
                     </Button>
                   </>
                 )}
@@ -408,7 +331,89 @@ const BreakRoom = ({
             </div>
           </CardContent>
         </Card>
+
+        {/* 3. Lofi Music Player */}
+        <MusicPlayer />
       </div>
+
+      {/* 4. Team Games - Second Row */}
+      <Card className="bg-black/20 backdrop-blur-lg border-white/10">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Gamepad2 className="w-5 h-5 text-purple-400" />
+            Team Games
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {games.map((game, index) => (
+              <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h4 className="text-white font-medium">{game.name}</h4>
+                    <p className="text-gray-400 text-sm">{game.difficulty} • {game.players} players</p>
+                    <p className="text-gray-500 text-xs mt-1">{game.description}</p>
+                  </div>
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-green-500/20 text-green-300">
+                    {game.status}
+                  </span>
+                </div>
+                
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="w-full bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30"
+                  onClick={() => setActiveGame(game.id)}
+                >
+                  Play Now
+                </Button>
+              </div>
+            ))}
+          </div>
+          
+          <Button className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600">
+            <Zap className="w-4 h-4 mr-2" />
+            Create New Game
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* 5. Weekly Leaderboard - Third Row */}
+      <Card className="bg-black/20 backdrop-blur-lg border-white/10">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-yellow-400" />
+            Weekly Leaderboard
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {teamMembers.map((member, index) => (
+              <div key={member.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
+                <div className="flex items-center gap-3">
+                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    index === 0 ? 'bg-yellow-500 text-black' :
+                    index === 1 ? 'bg-gray-400 text-black' :
+                    index === 2 ? 'bg-orange-500 text-black' :
+                    'bg-gray-600 text-white'
+                  }`}>
+                    {index + 1}
+                  </span>
+                  <span className="text-white font-medium text-sm">
+                    {member.full_name || member.username}
+                  </span>
+                </div>
+                <span className="text-yellow-300 font-bold">${member.earnings}</span>
+              </div>
+            ))}
+            {teamMembers.length === 0 && (
+              <div className="text-center py-4 col-span-full">
+                <p className="text-gray-400 text-sm">No team members yet</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -47,6 +47,7 @@ const StaffDashboard = () => {
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({});
   const [departmentName, setDepartmentName] = useState<string>("");
   const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
   
@@ -370,7 +371,12 @@ const StaffDashboard = () => {
       </header>
 
       <div className="flex-1 overflow-hidden relative z-10">
-        <VirtualOfficeLayout currentRoom={currentRoom} onRoomChange={setCurrentRoom}>
+        <VirtualOfficeLayout 
+          currentRoom={currentRoom} 
+          onRoomChange={setCurrentRoom}
+          onlineUsers={onlineUsers}
+          userId={profile.user_id}
+        >
           {roomComponents[currentRoom]}
         </VirtualOfficeLayout>
       </div>
@@ -396,13 +402,6 @@ const StaffDashboard = () => {
           status={status}
           onReactivate={handleReactivate}
         />
-      )}
-      
-      {/* Activity Log Panel */}
-      {profile?.user_id && (
-        <div className="fixed bottom-4 left-4 z-30 w-80 max-h-[400px]">
-          <ActivityLogPanel userId={profile.user_id} />
-        </div>
       )}
     </div>
   );

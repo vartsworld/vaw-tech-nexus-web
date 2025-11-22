@@ -487,6 +487,7 @@ const TeamHeadDashboard = () => {
         currentRoom={currentRoom} 
         onRoomChange={setCurrentRoom}
         onlineUsers={onlineUsers}
+        userId={profile?.user_id}
       >
         {roomComponents[currentRoom]}
       </VirtualOfficeLayout>
@@ -633,13 +634,6 @@ const TeamHeadDashboard = () => {
           status={status}
           onReactivate={handleReactivate}
         />
-      )}
-      
-      {/* Activity Log Panel */}
-      {profile?.user_id && (
-        <div className="fixed bottom-4 left-4 z-30 w-80 max-h-[400px]">
-          <ActivityLogPanel userId={profile.user_id} />
-        </div>
       )}
     </div>
   );
