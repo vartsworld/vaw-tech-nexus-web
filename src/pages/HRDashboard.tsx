@@ -28,6 +28,7 @@ import PerformanceMetrics from "@/components/hr/PerformanceMetrics";
 import NotificationCenter from "@/components/hr/NotificationCenter";
 import TeamApplicationsList from "@/components/hr/TeamApplicationsList";
 import ClientManagement from "@/components/hr/ClientManagement";
+import PointsMonitoring from "@/components/hr/PointsMonitoring";
 
 const HRDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -210,7 +211,7 @@ const HRDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
-          <TabsList className="w-full overflow-x-auto flex md:grid md:grid-cols-9 justify-start md:justify-center h-auto p-1">
+          <TabsList className="w-full overflow-x-auto flex md:grid md:grid-cols-10 justify-start md:justify-center h-auto p-1">
             <TabsTrigger value="overview" className="whitespace-nowrap">Overview</TabsTrigger>
             <TabsTrigger value="staff" className="whitespace-nowrap">Staff</TabsTrigger>
             <TabsTrigger value="attendance" className="whitespace-nowrap">Attendance</TabsTrigger>
@@ -218,6 +219,7 @@ const HRDashboard = () => {
             <TabsTrigger value="clients" className="whitespace-nowrap">Clients</TabsTrigger>
             <TabsTrigger value="departments" className="whitespace-nowrap">Departments</TabsTrigger>
             <TabsTrigger value="performance" className="whitespace-nowrap">Performance</TabsTrigger>
+            <TabsTrigger value="points" className="whitespace-nowrap">Points</TabsTrigger>
             <TabsTrigger value="notifications" className="whitespace-nowrap">Notifications</TabsTrigger>
             <TabsTrigger value="applications" className="whitespace-nowrap">Applications</TabsTrigger>
           </TabsList>
@@ -345,6 +347,10 @@ const HRDashboard = () => {
 
           <TabsContent value="performance">
             <PerformanceMetrics />
+          </TabsContent>
+
+          <TabsContent value="points">
+            <PointsMonitoring />
           </TabsContent>
 
           <TabsContent value="notifications">

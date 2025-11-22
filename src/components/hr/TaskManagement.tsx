@@ -305,14 +305,49 @@ const TaskManagement = () => {
 
       if (error) throw error;
 
-      await fetchTasks(); // Refresh tasks to get updated data
+      // Award points if task is completed
+      if (newStatus === 'completed' && data) {
+        const pointsToAward = data.points || 10;
+        
+        // Get current staff profile points
+        const { data: staffProfile } = await supabase
+          .from('staff_profiles')
+          .select('total_points')
+          .eq('user_id', data.assigned_to)
+          .single();
 
-      toast({
-        title: "Success",
-        description: newStatus === 'handover' 
-          ? "Task handed over successfully." 
-          : "Task status updated successfully.",
-      });
+        // Update staff total points
+        await supabase
+          .from('staff_profiles')
+          .update({ 
+            total_points: (staffProfile?.total_points || 0) + pointsToAward 
+          })
+          .eq('user_id', data.assigned_to);
+
+        // Log points
+        await supabase
+          .from('user_points_log')
+          .insert({
+            user_id: data.assigned_to,
+            points: pointsToAward,
+            reason: `Task completed: ${data.title}`,
+            category: 'task'
+          });
+
+        toast({
+          title: "Success",
+          description: `Task completed! +${pointsToAward} points awarded.`,
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: newStatus === 'handover' 
+            ? "Task handed over successfully." 
+            : "Task status updated successfully.",
+        });
+      }
+
+      await fetchTasks(); // Refresh tasks to get updated data
     } catch (error) {
       console.error('Error updating task:', error);
       toast({
