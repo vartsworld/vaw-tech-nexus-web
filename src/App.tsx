@@ -28,6 +28,10 @@ import StaffLogin from "./pages/StaffLogin";
 import TeamHeadDashboard from "./pages/TeamHeadDashboard";
 import AccountDashboard from "./pages/AccountDashboard";
 import ClientPortal from "./pages/ClientPortal";
+import VAWCups from "./pages/VAWCups";
+import VAWVendor from "./pages/VAWVendor";
+import VAWSponsor from "./pages/VAWSponsor";
+import VAWAdmin from "./pages/VAWAdmin";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +63,10 @@ const AppContent = () => {
           <Route path="/team-head/dashboard" element={<TeamHeadDashboard />} />
           <Route path="/account" element={<AccountDashboard />} />
           <Route path="/client-portal" element={<ClientPortal />} />
+          <Route path="/vaw-cups" element={<VAWCups />} />
+          <Route path="/vaw-cups/vendor" element={<VAWVendor />} />
+          <Route path="/vaw-cups/sponsor" element={<VAWSponsor />} />
+          <Route path="/vaw-cups/admin" element={<VAWAdmin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
