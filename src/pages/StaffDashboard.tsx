@@ -262,7 +262,6 @@ const StaffDashboard = () => {
     workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} />,
     breakroom: isBreakRoomMinimized ? null : (
       <BreakRoom 
-        onMinimize={() => setIsBreakRoomMinimized(true)}
         breakTimeRemaining={breakTimeRemaining}
         setBreakTimeRemaining={setBreakTimeRemaining}
         isBreakActive={isBreakActive}

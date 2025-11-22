@@ -375,7 +375,6 @@ const TeamHeadDashboard = () => {
     workspace: <TeamHeadWorkspace userId={profile?.user_id || 'demo-user'} userProfile={profile} />,
     breakroom: isBreakRoomMinimized ? null : (
       <BreakRoom 
-        onMinimize={() => setIsBreakRoomMinimized(true)}
         breakTimeRemaining={breakTimeRemaining}
         setBreakTimeRemaining={setBreakTimeRemaining}
         isBreakActive={isBreakActive}
