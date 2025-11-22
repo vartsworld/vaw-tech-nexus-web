@@ -30,6 +30,7 @@ import {
 import { toast } from "sonner";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import BreakRoom from "@/components/staff/BreakRoom";
+import BreakRoomWidget from "@/components/staff/BreakRoomWidget";
 import MeetingRoom from "@/components/staff/MeetingRoom";
 import AttendanceChecker from "@/components/staff/AttendanceChecker";
 import MoodQuoteChecker from "@/components/staff/MoodQuoteChecker";
@@ -66,6 +67,13 @@ const TeamHeadDashboard = () => {
   const [newEmojiPassword, setNewEmojiPassword] = useState<string[]>([]);
   const [confirmEmojiPassword, setConfirmEmojiPassword] = useState<string[]>([]);
   const [profileForm, setProfileForm] = useState({ full_name: "", about_me: "" });
+  const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
+  
+  // Break timer state (lifted up to persist when minimized)
+  const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
+  const [isBreakActive, setIsBreakActive] = useState(false);
+  const [breakDuration, setBreakDuration] = useState(15);
+  
   const { profile } = useStaffData();
 
   useEffect(() => {
@@ -332,7 +340,17 @@ const TeamHeadDashboard = () => {
 
   const roomComponents = {
     workspace: <TeamHeadWorkspace userId={profile?.user_id || 'demo-user'} userProfile={profile} />,
-    breakroom: <BreakRoom />,
+    breakroom: isBreakRoomMinimized ? null : (
+      <BreakRoom 
+        onMinimize={() => setIsBreakRoomMinimized(true)}
+        breakTimeRemaining={breakTimeRemaining}
+        setBreakTimeRemaining={setBreakTimeRemaining}
+        isBreakActive={isBreakActive}
+        setIsBreakActive={setIsBreakActive}
+        breakDuration={breakDuration}
+        setBreakDuration={setBreakDuration}
+      />
+    ),
     meeting: <MeetingRoom />
   };
 
@@ -556,6 +574,19 @@ const TeamHeadDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Break Room Widget (when minimized) */}
+      {isBreakRoomMinimized && (
+        <BreakRoomWidget
+          onMaximize={() => {
+            setIsBreakRoomMinimized(false);
+            setCurrentRoom('breakroom');
+          }}
+          isBreakActive={isBreakActive}
+          breakTimeRemaining={breakTimeRemaining}
+          unreadChatCount={0}
+        />
+      )}
     </div>
   );
 };

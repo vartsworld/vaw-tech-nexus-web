@@ -24,6 +24,7 @@ import {
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import WorkspaceRoom from "@/components/staff/WorkspaceRoom";
 import BreakRoom from "@/components/staff/BreakRoom";
+import BreakRoomWidget from "@/components/staff/BreakRoomWidget";
 import MeetingRoom from "@/components/staff/MeetingRoom";
 import AttendanceChecker from "@/components/staff/AttendanceChecker";
 import MoodQuoteChecker from "@/components/staff/MoodQuoteChecker";
@@ -42,6 +43,13 @@ const StaffDashboard = () => {
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [departmentName, setDepartmentName] = useState<string>("");
+  const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
+  
+  // Break timer state
+  const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
+  const [isBreakActive, setIsBreakActive] = useState(false);
+  const [breakDuration, setBreakDuration] = useState(15);
+  
   const { profile, loading } = useStaffData();
 
   // Check authentication
@@ -219,7 +227,17 @@ const StaffDashboard = () => {
 
   const roomComponents = {
     workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} />,
-    breakroom: <BreakRoom />,
+    breakroom: isBreakRoomMinimized ? null : (
+      <BreakRoom 
+        onMinimize={() => setIsBreakRoomMinimized(true)}
+        breakTimeRemaining={breakTimeRemaining}
+        setBreakTimeRemaining={setBreakTimeRemaining}
+        isBreakActive={isBreakActive}
+        setIsBreakActive={setIsBreakActive}
+        breakDuration={breakDuration}
+        setBreakDuration={setBreakDuration}
+      />
+    ),
     meeting: <MeetingRoom />
   };
 
@@ -319,6 +337,19 @@ const StaffDashboard = () => {
           {roomComponents[currentRoom]}
         </VirtualOfficeLayout>
       </div>
+      
+      {/* Break Room Widget (when minimized) */}
+      {isBreakRoomMinimized && (
+        <BreakRoomWidget
+          onMaximize={() => {
+            setIsBreakRoomMinimized(false);
+            setCurrentRoom('breakroom');
+          }}
+          isBreakActive={isBreakActive}
+          breakTimeRemaining={breakTimeRemaining}
+          unreadChatCount={0}
+        />
+      )}
     </div>
   );
 };
