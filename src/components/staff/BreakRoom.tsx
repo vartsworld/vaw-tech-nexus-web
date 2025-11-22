@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Coffee, Gamepad2, MessageCircle, Users, Zap, Trophy, Loader2, Minimize2, X } from "lucide-react";
+import { Coffee, Gamepad2, MessageCircle, Users, Zap, Trophy, Loader2 } from "lucide-react";
 import { useStaffData } from "@/hooks/useStaffData";
 import MusicPlayer from "./MusicPlayer";
 import WordChallenge from "./games/WordChallenge";
@@ -15,7 +15,6 @@ import { supabase } from "@/integrations/supabase/client";
 type ActiveGame = 'none' | 'word-challenge' | 'quick-quiz' | 'code-puzzle';
 
 interface BreakRoomProps {
-  onMinimize?: () => void;
   breakTimeRemaining: number;
   setBreakTimeRemaining: (value: number | ((prev: number) => number)) => void;
   isBreakActive: boolean;
@@ -27,7 +26,6 @@ interface BreakRoomProps {
 }
 
 const BreakRoom = ({ 
-  onMinimize,
   breakTimeRemaining,
   setBreakTimeRemaining,
   isBreakActive,
@@ -185,22 +183,10 @@ const BreakRoom = ({
 
   return (
     <div className="p-6 space-y-6">
-      {/* Break Room Header with Minimize Button */}
-      <div className="flex justify-between items-center">
-        <div className="text-center flex-1">
-          <h2 className="text-3xl font-bold text-white mb-2">Break Room</h2>
-          <p className="text-orange-300">Take a breather, connect with your team! ☕</p>
-        </div>
-        {onMinimize && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onMinimize}
-            className="text-white/70 hover:text-white hover:bg-white/10"
-          >
-            <Minimize2 className="w-5 h-5" />
-          </Button>
-        )}
+      {/* Break Room Header */}
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-white mb-2">Break Room</h2>
+        <p className="text-orange-300">Take a breather, connect with your team! ☕</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

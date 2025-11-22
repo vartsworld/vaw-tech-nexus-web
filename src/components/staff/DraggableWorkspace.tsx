@@ -4,7 +4,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautif
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GripVertical, X, Plus } from 'lucide-react';
+import { GripVertical, X, Plus, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import TasksManager from './TasksManager';
@@ -12,6 +12,7 @@ import TeamChat from './TeamChat';
 import MiniChess from './MiniChess';
 import SpotifyWidget from './SpotifyWidget';
 import TimeboxWidget from './TimeboxWidget';
+import WidgetManager from './WidgetManager';
 
 interface DraggableWorkspaceProps {
   userId: string;
@@ -24,6 +25,7 @@ interface WorkspaceItem {
   title: string;
   span?: 'full' | 'half';
   removable?: boolean;
+  isVisible?: boolean;
 }
 
 const availableWidgets = [
@@ -35,11 +37,11 @@ const availableWidgets = [
 
 const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) => {
   const defaultItems: WorkspaceItem[] = [
-    { id: 'tasks', component: 'TasksManager', title: 'Tasks Manager', span: 'full', removable: false },
-    { id: 'chat', component: 'TeamChat', title: 'Team Chat', span: 'half', removable: true },
-    { id: 'chess', component: 'MiniChess', title: 'Mini Chess', span: 'half', removable: true },
-    { id: 'timebox', component: 'TimeboxWidget', title: 'Focus Timer', span: 'half', removable: true },
-    { id: 'spotify', component: 'SpotifyWidget', title: 'Spotify Widget', span: 'half', removable: true },
+    { id: 'tasks', component: 'TasksManager', title: 'Tasks Manager', span: 'full', removable: false, isVisible: true },
+    { id: 'chat', component: 'TeamChat', title: 'Team Chat', span: 'half', removable: true, isVisible: true },
+    { id: 'chess', component: 'MiniChess', title: 'Mini Chess', span: 'half', removable: true, isVisible: true },
+    { id: 'timebox', component: 'TimeboxWidget', title: 'Focus Timer', span: 'half', removable: true, isVisible: true },
+    { id: 'spotify', component: 'SpotifyWidget', title: 'Spotify Widget', span: 'half', removable: true, isVisible: true },
   ];
 
   const [items, setItems] = useState<WorkspaceItem[]>(defaultItems);
@@ -67,12 +69,13 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
           try {
             const layoutData = data.layout_data as any[];
             if (Array.isArray(layoutData)) {
-              const validatedItems: WorkspaceItem[] = layoutData.map(item => ({
+            const validatedItems: WorkspaceItem[] = layoutData.map(item => ({
                 id: item.id,
                 component: item.component,
                 title: item.title,
                 span: item.span || 'half',
                 removable: item.removable !== false,
+                isVisible: item.isVisible !== false,
               }));
               setItems(validatedItems);
             }
@@ -143,6 +146,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
       title: widget.title,
       span: widget.span,
       removable: widget.removable,
+      isVisible: true,
     };
 
     setItems(prev => [...prev, newItem]);
@@ -153,6 +157,28 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
       description: `${widget.title} has been added to your workspace.`,
     });
   }, [selectedWidget, toast]);
+
+  const toggleWidgetVisibility = useCallback((id: string) => {
+    setItems(prev => prev.map(item => 
+      item.id === id ? { ...item, isVisible: !item.isVisible } : item
+    ));
+  }, []);
+
+  const showAllWidgets = useCallback(() => {
+    setItems(prev => prev.map(item => ({ ...item, isVisible: true })));
+    toast({
+      title: "All Widgets Shown",
+      description: "All widgets are now visible.",
+    });
+  }, [toast]);
+
+  const hideAllWidgets = useCallback(() => {
+    setItems(prev => prev.map(item => ({ ...item, isVisible: false })));
+    toast({
+      title: "All Widgets Hidden",
+      description: "All widgets are now collapsed.",
+    });
+  }, [toast]);
 
   const removeWidget = useCallback((id: string) => {
     const removedWidget = items.find(item => item.id === id);
@@ -229,6 +255,19 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
             <Plus className="w-4 h-4 mr-2" />
             Add Widget
           </Button>
+          <div className="ml-auto">
+            <WidgetManager
+              widgets={items.map(item => ({
+                id: item.id,
+                name: item.title,
+                description: `${item.component} widget`,
+                isVisible: item.isVisible ?? true,
+              }))}
+              onToggleWidget={toggleWidgetVisibility}
+              onShowAll={showAllWidgets}
+              onHideAll={hideAllWidgets}
+            />
+          </div>
         </div>
       </Card>
 
@@ -257,6 +296,14 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
                       <Card className="bg-black/20 backdrop-blur-lg border-white/10 h-full relative group">
                         {/* Controls */}
                         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                          <Button
+                            onClick={() => toggleWidgetVisibility(item.id)}
+                            className="p-1 h-6 w-6 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 hover:text-blue-300 border-blue-500/30"
+                            size="sm"
+                            title={item.isVisible ? 'Hide widget' : 'Show widget'}
+                          >
+                            {item.isVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                          </Button>
                           {item.removable && (
                             <Button
                               onClick={() => removeWidget(item.id)}
@@ -274,8 +321,17 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
                           </div>
                         </div>
                         
-                        <CardContent className="p-0 h-full">
-                          {renderComponent(item)}
+                        <CardContent className={`p-0 h-full transition-all duration-300 ${!item.isVisible ? 'max-h-12 overflow-hidden' : ''}`}>
+                          {!item.isVisible ? (
+                            <div className="p-4 cursor-pointer hover:bg-white/5" onClick={() => toggleWidgetVisibility(item.id)}>
+                              <div className="flex items-center justify-between">
+                                <h3 className="text-white font-medium">{item.title}</h3>
+                                <EyeOff className="w-4 h-4 text-white/40" />
+                              </div>
+                            </div>
+                          ) : (
+                            renderComponent(item)
+                          )}
                         </CardContent>
                       </Card>
                     </div>
