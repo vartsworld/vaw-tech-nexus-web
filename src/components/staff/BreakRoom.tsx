@@ -1,18 +1,37 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Coffee, Gamepad2, MessageCircle, Users, Zap, Trophy, Loader2 } from "lucide-react";
+import { Coffee, Gamepad2, MessageCircle, Users, Zap, Trophy, Loader2, Minimize2, X } from "lucide-react";
 import { useStaffData } from "@/hooks/useStaffData";
 import MusicPlayer from "./MusicPlayer";
 import WordChallenge from "./games/WordChallenge";
 import QuickQuiz from "./games/QuickQuiz";
 import CodePuzzle from "./games/CodePuzzle";
+import { toast } from "sonner";
 
 type ActiveGame = 'none' | 'word-challenge' | 'quick-quiz' | 'code-puzzle';
 
-const BreakRoom = () => {
+interface BreakRoomProps {
+  onMinimize?: () => void;
+  breakTimeRemaining: number;
+  setBreakTimeRemaining: (value: number | ((prev: number) => number)) => void;
+  isBreakActive: boolean;
+  setIsBreakActive: (value: boolean) => void;
+  breakDuration: number;
+  setBreakDuration: (value: number) => void;
+}
+
+const BreakRoom = ({ 
+  onMinimize,
+  breakTimeRemaining,
+  setBreakTimeRemaining,
+  isBreakActive,
+  setIsBreakActive,
+  breakDuration,
+  setBreakDuration
+}: BreakRoomProps) => {
   const { chatMessages, teamMembers, loading, sendChatMessage } = useStaffData();
   const [newMessage, setNewMessage] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -53,6 +72,58 @@ const BreakRoom = () => {
     setSendingMessage(false);
   };
 
+  // Break timer logic
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (isBreakActive && breakTimeRemaining > 0) {
+      interval = setInterval(() => {
+        setBreakTimeRemaining(prev => {
+          if (prev <= 1) {
+            setIsBreakActive(false);
+            toast.success("Break time is over! Time to get back to work 💪", {
+              duration: 5000,
+            });
+            return breakDuration * 60;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isBreakActive, breakTimeRemaining, breakDuration]);
+
+  const startBreak = () => {
+    setIsBreakActive(true);
+    toast.success(`Break started! Enjoy your ${breakDuration}-minute break ☕`);
+  };
+
+  const pauseBreak = () => {
+    setIsBreakActive(false);
+    toast.info("Break paused");
+  };
+
+  const resetBreak = () => {
+    setIsBreakActive(false);
+    setBreakTimeRemaining(breakDuration * 60);
+    toast.success("Back to work! 💼");
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getTimerColor = () => {
+    if (!isBreakActive) return 'text-green-300';
+    if (breakTimeRemaining <= 120) return 'text-red-400';
+    return 'text-orange-300';
+  };
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center h-full">
@@ -74,10 +145,22 @@ const BreakRoom = () => {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Break Room Header */}
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-white mb-2">Break Room</h2>
-        <p className="text-orange-300">Take a breather, connect with your team! ☕</p>
+      {/* Break Room Header with Minimize Button */}
+      <div className="flex justify-between items-center">
+        <div className="text-center flex-1">
+          <h2 className="text-3xl font-bold text-white mb-2">Break Room</h2>
+          <p className="text-orange-300">Take a breather, connect with your team! ☕</p>
+        </div>
+        {onMinimize && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onMinimize}
+            className="text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <Minimize2 className="w-5 h-5" />
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -218,22 +301,84 @@ const BreakRoom = () => {
           </CardContent>
         </Card>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - Coffee Break Timer */}
         <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 border-orange-500/30">
           <CardContent className="p-6">
-            <div className="text-center">
-              <Coffee className="w-16 h-16 text-orange-400 mx-auto mb-4" />
-              <h3 className="text-white font-bold text-lg mb-2">Coffee Break Timer</h3>
-              <p className="text-orange-300 text-sm mb-4">Take a 15-minute break</p>
+            <div className="text-center space-y-4">
+              <Coffee className={`w-16 h-16 mx-auto mb-2 transition-colors ${isBreakActive ? 'text-orange-400 animate-pulse' : 'text-orange-400'}`} />
+              <h3 className="text-white font-bold text-lg">Coffee Break Timer</h3>
               
-              <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" size="sm" className="bg-orange-500/20 border-orange-500/30 text-orange-300 hover:bg-orange-500/30">
-                  Start Break
-                </Button>
-                <Button variant="outline" size="sm" className="bg-orange-500/20 border-orange-500/30 text-orange-300 hover:bg-orange-500/30">
-                  Back to Work
-                </Button>
+              {/* Timer Display */}
+              <div className={`text-5xl font-bold ${getTimerColor()} transition-colors`}>
+                {formatTime(breakTimeRemaining)}
               </div>
+              
+              {/* Duration Selection */}
+              {!isBreakActive && (
+                <div className="flex gap-2 justify-center">
+                  {[5, 10, 15, 20].map((mins) => (
+                    <Button
+                      key={mins}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setBreakDuration(mins);
+                        setBreakTimeRemaining(mins * 60);
+                      }}
+                      className={`${
+                        breakDuration === mins
+                          ? 'bg-orange-500/40 border-orange-400 text-white'
+                          : 'bg-orange-500/10 border-orange-500/30 text-orange-300'
+                      } hover:bg-orange-500/30`}
+                    >
+                      {mins}m
+                    </Button>
+                  ))}
+                </div>
+              )}
+              
+              {/* Control Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                {!isBreakActive ? (
+                  <Button 
+                    onClick={startBreak}
+                    className="col-span-2 bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600"
+                  >
+                    Start Break
+                  </Button>
+                ) : (
+                  <>
+                    <Button 
+                      onClick={pauseBreak}
+                      variant="outline" 
+                      size="sm" 
+                      className="bg-orange-500/20 border-orange-500/30 text-orange-300 hover:bg-orange-500/30"
+                    >
+                      Pause
+                    </Button>
+                    <Button 
+                      onClick={resetBreak}
+                      variant="outline" 
+                      size="sm" 
+                      className="bg-orange-500/20 border-orange-500/30 text-orange-300 hover:bg-orange-500/30"
+                    >
+                      Back to Work
+                    </Button>
+                  </>
+                )}
+              </div>
+              
+              {/* Progress Bar */}
+              {isBreakActive && (
+                <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-orange-400 to-red-400 h-full transition-all duration-1000"
+                    style={{ 
+                      width: `${((breakDuration * 60 - breakTimeRemaining) / (breakDuration * 60)) * 100}%` 
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
