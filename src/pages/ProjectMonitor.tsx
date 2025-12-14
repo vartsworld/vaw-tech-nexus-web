@@ -38,7 +38,9 @@ const ProjectMonitor = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isRenewalDialogOpen, setIsRenewalDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectMonitor | null>(null);
+  const [renewalProject, setRenewalProject] = useState<ProjectMonitor | null>(null);
   const [websiteStatuses, setWebsiteStatuses] = useState<Record<string, 'checking' | 'online' | 'offline' | 'error'>>({});
   
   const [formData, setFormData] = useState({
@@ -48,6 +50,11 @@ const ProjectMonitor = () => {
     domain_renewal_date: "",
     server_renewal_date: "",
     notes: ""
+  });
+
+  const [renewalFormData, setRenewalFormData] = useState({
+    domain_renewal_date: "",
+    server_renewal_date: ""
   });
 
   useEffect(() => {
@@ -202,6 +209,38 @@ const ProjectMonitor = () => {
       server_renewal_date: "",
       notes: ""
     });
+  };
+
+  const handleUpdateRenewal = (project: ProjectMonitor) => {
+    setRenewalProject(project);
+    setRenewalFormData({
+      domain_renewal_date: project.domain_renewal_date || "",
+      server_renewal_date: project.server_renewal_date || ""
+    });
+    setIsRenewalDialogOpen(true);
+  };
+
+  const handleRenewalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!renewalProject) return;
+
+    try {
+      const { error } = await supabase
+        .from('project_monitors')
+        .update({
+          domain_renewal_date: renewalFormData.domain_renewal_date || null,
+          server_renewal_date: renewalFormData.server_renewal_date || null
+        })
+        .eq('id', renewalProject.id);
+
+      if (error) throw error;
+      toast.success('Renewal dates updated');
+      setIsRenewalDialogOpen(false);
+      setRenewalProject(null);
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update renewal dates');
+    }
   };
 
   const getRenewalStatus = (date: string | null) => {
@@ -451,14 +490,24 @@ const ProjectMonitor = () => {
                       <span className="text-xs text-muted-foreground">
                         Added {format(new Date(project.created_at), 'MMM dd, yyyy')}
                       </span>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => checkWebsiteStatus(project.id, project.website_url)}
-                      >
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleUpdateRenewal(project)}
+                        >
+                          <Calendar className="w-3 h-3 mr-1" />
+                          Update Renewal
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => checkWebsiteStatus(project.id, project.website_url)}
+                        >
                         <RefreshCw className="w-3 h-3 mr-1" />
                         Refresh
-                      </Button>
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -466,6 +515,47 @@ const ProjectMonitor = () => {
             })}
           </div>
         )}
+
+        {/* Renewal Update Dialog */}
+        <Dialog open={isRenewalDialogOpen} onOpenChange={setIsRenewalDialogOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Update Renewal Dates</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleRenewalSubmit} className="space-y-4">
+              <div>
+                <Label className="flex items-center gap-2">
+                  <Globe className="w-4 h-4" />
+                  Domain Renewal Date
+                </Label>
+                <Input
+                  type="date"
+                  value={renewalFormData.domain_renewal_date}
+                  onChange={(e) => setRenewalFormData(prev => ({ ...prev, domain_renewal_date: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="flex items-center gap-2">
+                  <Server className="w-4 h-4" />
+                  Server Renewal Date
+                </Label>
+                <Input
+                  type="date"
+                  value={renewalFormData.server_renewal_date}
+                  onChange={(e) => setRenewalFormData(prev => ({ ...prev, server_renewal_date: e.target.value }))}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button type="button" variant="outline" onClick={() => setIsRenewalDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  Update
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
