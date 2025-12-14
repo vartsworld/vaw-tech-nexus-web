@@ -1072,10 +1072,12 @@ export type Database = {
           client_id: string | null
           created_at: string
           created_by: string
+          domain_renewal_cycle: string | null
           domain_renewal_date: string | null
           id: string
           notes: string | null
           project_name: string
+          server_renewal_cycle: string | null
           server_renewal_date: string | null
           status: string | null
           updated_at: string
@@ -1085,10 +1087,12 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           created_by: string
+          domain_renewal_cycle?: string | null
           domain_renewal_date?: string | null
           id?: string
           notes?: string | null
           project_name: string
+          server_renewal_cycle?: string | null
           server_renewal_date?: string | null
           status?: string | null
           updated_at?: string
@@ -1098,10 +1102,12 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           created_by?: string
+          domain_renewal_cycle?: string | null
           domain_renewal_date?: string | null
           id?: string
           notes?: string | null
           project_name?: string
+          server_renewal_cycle?: string | null
           server_renewal_date?: string | null
           status?: string | null
           updated_at?: string
