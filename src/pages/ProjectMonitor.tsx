@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, Globe, Server, Calendar, ExternalLink, RefreshCw, Trash2, Edit, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
-import { format, differenceInDays, isPast } from "date-fns";
+import { format, differenceInDays, isPast, addMonths, addYears } from "date-fns";
 
 interface Client {
   id: string;
@@ -26,6 +26,8 @@ interface ProjectMonitor {
   website_url: string;
   domain_renewal_date: string | null;
   server_renewal_date: string | null;
+  domain_renewal_cycle: string | null;
+  server_renewal_cycle: string | null;
   status: string;
   notes: string | null;
   created_at: string;
@@ -54,7 +56,9 @@ const ProjectMonitor = () => {
 
   const [renewalFormData, setRenewalFormData] = useState({
     domain_renewal_date: "",
-    server_renewal_date: ""
+    server_renewal_date: "",
+    domain_renewal_cycle: "yearly",
+    server_renewal_cycle: "yearly"
   });
 
   useEffect(() => {
@@ -211,11 +215,42 @@ const ProjectMonitor = () => {
     });
   };
 
+  const calculateNextRenewalDate = (currentDate: string | null, cycle: string) => {
+    const baseDate = currentDate ? new Date(currentDate) : new Date();
+    let nextDate = baseDate;
+    
+    // If current date is in past, calculate from today
+    if (currentDate && isPast(new Date(currentDate))) {
+      nextDate = new Date();
+    }
+    
+    switch (cycle) {
+      case 'monthly':
+        nextDate = addMonths(nextDate, 1);
+        break;
+      case 'quarterly':
+        nextDate = addMonths(nextDate, 3);
+        break;
+      case 'yearly':
+      default:
+        nextDate = addYears(nextDate, 1);
+        break;
+    }
+    
+    return format(nextDate, 'yyyy-MM-dd');
+  };
+
   const handleUpdateRenewal = (project: ProjectMonitor) => {
     setRenewalProject(project);
+    
+    const domainCycle = project.domain_renewal_cycle || 'yearly';
+    const serverCycle = project.server_renewal_cycle || 'yearly';
+    
     setRenewalFormData({
-      domain_renewal_date: project.domain_renewal_date || "",
-      server_renewal_date: project.server_renewal_date || ""
+      domain_renewal_date: calculateNextRenewalDate(project.domain_renewal_date, domainCycle),
+      server_renewal_date: calculateNextRenewalDate(project.server_renewal_date, serverCycle),
+      domain_renewal_cycle: domainCycle,
+      server_renewal_cycle: serverCycle
     });
     setIsRenewalDialogOpen(true);
   };
@@ -229,7 +264,9 @@ const ProjectMonitor = () => {
         .from('project_monitors')
         .update({
           domain_renewal_date: renewalFormData.domain_renewal_date || null,
-          server_renewal_date: renewalFormData.server_renewal_date || null
+          server_renewal_date: renewalFormData.server_renewal_date || null,
+          domain_renewal_cycle: renewalFormData.domain_renewal_cycle,
+          server_renewal_cycle: renewalFormData.server_renewal_cycle
         })
         .eq('id', renewalProject.id);
 
@@ -518,34 +555,90 @@ const ProjectMonitor = () => {
 
         {/* Renewal Update Dialog */}
         <Dialog open={isRenewalDialogOpen} onOpenChange={setIsRenewalDialogOpen}>
-          <DialogContent className="max-w-sm">
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Update Renewal Dates</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleRenewalSubmit} className="space-y-4">
-              <div>
-                <Label className="flex items-center gap-2">
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2 font-medium">
                   <Globe className="w-4 h-4" />
-                  Domain Renewal Date
+                  Domain Renewal
                 </Label>
-                <Input
-                  type="date"
-                  value={renewalFormData.domain_renewal_date}
-                  onChange={(e) => setRenewalFormData(prev => ({ ...prev, domain_renewal_date: e.target.value }))}
-                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Cycle</Label>
+                    <Select 
+                      value={renewalFormData.domain_renewal_cycle} 
+                      onValueChange={(v) => {
+                        setRenewalFormData(prev => ({ 
+                          ...prev, 
+                          domain_renewal_cycle: v,
+                          domain_renewal_date: calculateNextRenewalDate(renewalProject?.domain_renewal_date || null, v)
+                        }));
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Next Date</Label>
+                    <Input
+                      type="date"
+                      value={renewalFormData.domain_renewal_date}
+                      onChange={(e) => setRenewalFormData(prev => ({ ...prev, domain_renewal_date: e.target.value }))}
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <Label className="flex items-center gap-2">
+              
+              <div className="space-y-3">
+                <Label className="flex items-center gap-2 font-medium">
                   <Server className="w-4 h-4" />
-                  Server Renewal Date
+                  Server Renewal
                 </Label>
-                <Input
-                  type="date"
-                  value={renewalFormData.server_renewal_date}
-                  onChange={(e) => setRenewalFormData(prev => ({ ...prev, server_renewal_date: e.target.value }))}
-                />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Cycle</Label>
+                    <Select 
+                      value={renewalFormData.server_renewal_cycle} 
+                      onValueChange={(v) => {
+                        setRenewalFormData(prev => ({ 
+                          ...prev, 
+                          server_renewal_cycle: v,
+                          server_renewal_date: calculateNextRenewalDate(renewalProject?.server_renewal_date || null, v)
+                        }));
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Next Date</Label>
+                    <Input
+                      type="date"
+                      value={renewalFormData.server_renewal_date}
+                      onChange={(e) => setRenewalFormData(prev => ({ ...prev, server_renewal_date: e.target.value }))}
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="flex gap-2 justify-end">
+
+              <div className="flex gap-2 justify-end pt-2">
                 <Button type="button" variant="outline" onClick={() => setIsRenewalDialogOpen(false)}>
                   Cancel
                 </Button>
