@@ -33,6 +33,7 @@ import VAWVendor from "./pages/VAWVendor";
 import VAWSponsor from "./pages/VAWSponsor";
 import VAWAdmin from "./pages/VAWAdmin";
 import MyCoins from "./pages/MyCoins";
+import ProjectMonitor from "./pages/ProjectMonitor";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +70,7 @@ const AppContent = () => {
           <Route path="/vaw-cups/vendor" element={<VAWVendor />} />
           <Route path="/vaw-cups/sponsor" element={<VAWSponsor />} />
           <Route path="/vaw-cups/admin" element={<VAWAdmin />} />
+          <Route path="/project-monitor" element={<ProjectMonitor />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
