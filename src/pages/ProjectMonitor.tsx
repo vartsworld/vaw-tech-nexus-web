@@ -52,6 +52,8 @@ const ProjectMonitor = () => {
     website_url: "",
     domain_renewal_date: "",
     server_renewal_date: "",
+    domain_renewal_cycle: "yearly",
+    server_renewal_cycle: "yearly",
     notes: ""
   });
 
@@ -146,6 +148,8 @@ const ProjectMonitor = () => {
         website_url: formData.website_url.startsWith('http') ? formData.website_url : `https://${formData.website_url}`,
         domain_renewal_date: formData.domain_renewal_date || null,
         server_renewal_date: formData.server_renewal_date || null,
+        domain_renewal_cycle: formData.domain_renewal_cycle,
+        server_renewal_cycle: formData.server_renewal_cycle,
         notes: formData.notes || null,
         created_by: user.id
       };
@@ -184,6 +188,8 @@ const ProjectMonitor = () => {
       website_url: project.website_url,
       domain_renewal_date: project.domain_renewal_date || "",
       server_renewal_date: project.server_renewal_date || "",
+      domain_renewal_cycle: project.domain_renewal_cycle || "yearly",
+      server_renewal_cycle: project.server_renewal_cycle || "yearly",
       notes: project.notes || ""
     });
     setIsDialogOpen(true);
@@ -214,6 +220,8 @@ const ProjectMonitor = () => {
       website_url: "",
       domain_renewal_date: "",
       server_renewal_date: "",
+      domain_renewal_cycle: "yearly",
+      server_renewal_cycle: "yearly",
       notes: ""
     });
   };
@@ -403,28 +411,58 @@ const ProjectMonitor = () => {
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="flex items-center gap-2">
-                      <Globe className="w-4 h-4" />
-                      Domain Renewal
-                    </Label>
-                    <Input
-                      type="date"
-                      value={formData.domain_renewal_date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, domain_renewal_date: e.target.value }))}
-                    />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        Domain Renewal
+                      </Label>
+                      <Input
+                        type="date"
+                        value={formData.domain_renewal_date}
+                        onChange={(e) => setFormData(prev => ({ ...prev, domain_renewal_date: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>Domain Cycle</Label>
+                      <Select value={formData.domain_renewal_cycle} onValueChange={(v) => setFormData(prev => ({ ...prev, domain_renewal_cycle: v }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div>
-                    <Label className="flex items-center gap-2">
-                      <Server className="w-4 h-4" />
-                      Server Renewal
-                    </Label>
-                    <Input
-                      type="date"
-                      value={formData.server_renewal_date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, server_renewal_date: e.target.value }))}
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="flex items-center gap-2">
+                        <Server className="w-4 h-4" />
+                        Server Renewal
+                      </Label>
+                      <Input
+                        type="date"
+                        value={formData.server_renewal_date}
+                        onChange={(e) => setFormData(prev => ({ ...prev, server_renewal_date: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>Server Cycle</Label>
+                      <Select value={formData.server_renewal_cycle} onValueChange={(v) => setFormData(prev => ({ ...prev, server_renewal_cycle: v }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                          <SelectItem value="yearly">Yearly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
                 
