@@ -1074,6 +1074,8 @@ export type Database = {
           created_by: string
           domain_renewal_cycle: string | null
           domain_renewal_date: string | null
+          facebook_token_renewal_cycle: string | null
+          facebook_token_renewal_date: string | null
           id: string
           notes: string | null
           project_name: string
@@ -1089,6 +1091,8 @@ export type Database = {
           created_by: string
           domain_renewal_cycle?: string | null
           domain_renewal_date?: string | null
+          facebook_token_renewal_cycle?: string | null
+          facebook_token_renewal_date?: string | null
           id?: string
           notes?: string | null
           project_name: string
@@ -1104,6 +1108,8 @@ export type Database = {
           created_by?: string
           domain_renewal_cycle?: string | null
           domain_renewal_date?: string | null
+          facebook_token_renewal_cycle?: string | null
+          facebook_token_renewal_date?: string | null
           id?: string
           notes?: string | null
           project_name?: string

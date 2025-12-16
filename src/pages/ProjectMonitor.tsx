@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Globe, Server, Calendar, ExternalLink, RefreshCw, Trash2, Edit, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plus, Globe, Server, Calendar, ExternalLink, RefreshCw, Trash2, Edit, CheckCircle, XCircle, AlertTriangle, Facebook } from "lucide-react";
+import { addDays } from "date-fns";
 import { format, differenceInDays, isPast, addMonths, addYears } from "date-fns";
 
 interface Client {
@@ -29,6 +30,8 @@ interface ProjectMonitor {
   server_renewal_date: string | null;
   domain_renewal_cycle: string | null;
   server_renewal_cycle: string | null;
+  facebook_token_renewal_date: string | null;
+  facebook_token_renewal_cycle: string | null;
   status: string;
   notes: string | null;
   created_at: string;
@@ -54,6 +57,8 @@ const ProjectMonitor = () => {
     server_renewal_date: "",
     domain_renewal_cycle: "yearly",
     server_renewal_cycle: "yearly",
+    facebook_token_renewal_date: "",
+    facebook_token_renewal_cycle: "90days",
     notes: ""
   });
 
@@ -62,8 +67,11 @@ const ProjectMonitor = () => {
     server_renewal_date: "",
     domain_renewal_cycle: "yearly",
     server_renewal_cycle: "yearly",
-    update_domain: true,
-    update_server: true
+    facebook_token_renewal_date: "",
+    facebook_token_renewal_cycle: "90days",
+    update_domain: false,
+    update_server: false,
+    update_facebook: false
   });
 
   useEffect(() => {
@@ -150,6 +158,8 @@ const ProjectMonitor = () => {
         server_renewal_date: formData.server_renewal_date || null,
         domain_renewal_cycle: formData.domain_renewal_cycle,
         server_renewal_cycle: formData.server_renewal_cycle,
+        facebook_token_renewal_date: formData.facebook_token_renewal_date || null,
+        facebook_token_renewal_cycle: formData.facebook_token_renewal_cycle,
         notes: formData.notes || null,
         created_by: user.id
       };
@@ -190,6 +200,8 @@ const ProjectMonitor = () => {
       server_renewal_date: project.server_renewal_date || "",
       domain_renewal_cycle: project.domain_renewal_cycle || "yearly",
       server_renewal_cycle: project.server_renewal_cycle || "yearly",
+      facebook_token_renewal_date: project.facebook_token_renewal_date || "",
+      facebook_token_renewal_cycle: project.facebook_token_renewal_cycle || "90days",
       notes: project.notes || ""
     });
     setIsDialogOpen(true);
@@ -222,6 +234,8 @@ const ProjectMonitor = () => {
       server_renewal_date: "",
       domain_renewal_cycle: "yearly",
       server_renewal_cycle: "yearly",
+      facebook_token_renewal_date: "",
+      facebook_token_renewal_cycle: "90days",
       notes: ""
     });
   };
@@ -242,6 +256,9 @@ const ProjectMonitor = () => {
       case 'quarterly':
         nextDate = addMonths(nextDate, 3);
         break;
+      case '90days':
+        nextDate = addDays(nextDate, 90);
+        break;
       case 'yearly':
       default:
         nextDate = addYears(nextDate, 1);
@@ -256,14 +273,18 @@ const ProjectMonitor = () => {
     
     const domainCycle = project.domain_renewal_cycle || 'yearly';
     const serverCycle = project.server_renewal_cycle || 'yearly';
+    const facebookCycle = project.facebook_token_renewal_cycle || '90days';
     
     setRenewalFormData({
       domain_renewal_date: calculateNextRenewalDate(project.domain_renewal_date, domainCycle),
       server_renewal_date: calculateNextRenewalDate(project.server_renewal_date, serverCycle),
       domain_renewal_cycle: domainCycle,
       server_renewal_cycle: serverCycle,
+      facebook_token_renewal_date: calculateNextRenewalDate(project.facebook_token_renewal_date, facebookCycle),
+      facebook_token_renewal_cycle: facebookCycle,
       update_domain: false,
-      update_server: false
+      update_server: false,
+      update_facebook: false
     });
     setIsRenewalDialogOpen(true);
   };
@@ -272,7 +293,7 @@ const ProjectMonitor = () => {
     e.preventDefault();
     if (!renewalProject) return;
 
-    if (!renewalFormData.update_domain && !renewalFormData.update_server) {
+    if (!renewalFormData.update_domain && !renewalFormData.update_server && !renewalFormData.update_facebook) {
       toast.error('Please select at least one renewal to update');
       return;
     }
@@ -288,6 +309,11 @@ const ProjectMonitor = () => {
       if (renewalFormData.update_server) {
         updatePayload.server_renewal_date = renewalFormData.server_renewal_date || null;
         updatePayload.server_renewal_cycle = renewalFormData.server_renewal_cycle;
+      }
+
+      if (renewalFormData.update_facebook) {
+        updatePayload.facebook_token_renewal_date = renewalFormData.facebook_token_renewal_date || null;
+        updatePayload.facebook_token_renewal_cycle = renewalFormData.facebook_token_renewal_cycle;
       }
 
       const { error } = await supabase
@@ -464,6 +490,32 @@ const ProjectMonitor = () => {
                       </Select>
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="flex items-center gap-2">
+                        <Facebook className="w-4 h-4" />
+                        Facebook Token
+                      </Label>
+                      <Input
+                        type="date"
+                        value={formData.facebook_token_renewal_date}
+                        onChange={(e) => setFormData(prev => ({ ...prev, facebook_token_renewal_date: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>Token Cycle</Label>
+                      <Select value={formData.facebook_token_renewal_cycle} onValueChange={(v) => setFormData(prev => ({ ...prev, facebook_token_renewal_cycle: v }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="90days">90 Days</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
                 
                 <div>
@@ -505,6 +557,7 @@ const ProjectMonitor = () => {
             {projects.map(project => {
               const domainStatus = getRenewalStatus(project.domain_renewal_date);
               const serverStatus = getRenewalStatus(project.server_renewal_date);
+              const facebookStatus = getRenewalStatus(project.facebook_token_renewal_date);
               
               return (
                 <Card key={project.id} className="overflow-hidden">
@@ -570,6 +623,12 @@ const ProjectMonitor = () => {
                         <Badge variant="secondary" className={`${serverStatus.color} flex items-center gap-1`}>
                           <Server className="w-3 h-3" />
                           Server: {serverStatus.label}
+                        </Badge>
+                      )}
+                      {facebookStatus && (
+                        <Badge variant="secondary" className={`${facebookStatus.color} flex items-center gap-1`}>
+                          <Facebook className="w-3 h-3" />
+                          FB Token: {facebookStatus.label}
                         </Badge>
                       )}
                     </div>
@@ -705,6 +764,54 @@ const ProjectMonitor = () => {
                         type="date"
                         value={renewalFormData.server_renewal_date}
                         onChange={(e) => setRenewalFormData(prev => ({ ...prev, server_renewal_date: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="update_facebook"
+                    checked={renewalFormData.update_facebook}
+                    onCheckedChange={(checked) => setRenewalFormData(prev => ({ ...prev, update_facebook: !!checked }))}
+                  />
+                  <Label htmlFor="update_facebook" className="flex items-center gap-2 font-medium cursor-pointer">
+                    <Facebook className="w-4 h-4" />
+                    Facebook Token Renewal
+                  </Label>
+                </div>
+                {renewalFormData.update_facebook && (
+                  <div className="grid grid-cols-2 gap-2 pl-6">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Cycle</Label>
+                      <Select 
+                        value={renewalFormData.facebook_token_renewal_cycle} 
+                        onValueChange={(v) => {
+                          setRenewalFormData(prev => ({ 
+                            ...prev, 
+                            facebook_token_renewal_cycle: v,
+                            facebook_token_renewal_date: calculateNextRenewalDate(renewalProject?.facebook_token_renewal_date || null, v)
+                          }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="90days">90 Days</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Next Date</Label>
+                      <Input
+                        type="date"
+                        value={renewalFormData.facebook_token_renewal_date}
+                        onChange={(e) => setRenewalFormData(prev => ({ ...prev, facebook_token_renewal_date: e.target.value }))}
                       />
                     </div>
                   </div>
