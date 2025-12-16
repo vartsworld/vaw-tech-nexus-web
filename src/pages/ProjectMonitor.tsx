@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Globe, Server, Calendar, ExternalLink, RefreshCw, Trash2, Edit, CheckCircle, XCircle, AlertTriangle, Facebook } from "lucide-react";
+import { ArrowLeft, Plus, Globe, Server, Calendar, ExternalLink, RefreshCw, Trash2, Edit, CheckCircle, XCircle, AlertTriangle, Facebook, Filter, ArrowUpDown, Search } from "lucide-react";
 import { addDays } from "date-fns";
 import { format, differenceInDays, isPast, addMonths, addYears } from "date-fns";
 
@@ -49,6 +49,11 @@ const ProjectMonitor = () => {
   const [renewalProject, setRenewalProject] = useState<ProjectMonitor | null>(null);
   const [websiteStatuses, setWebsiteStatuses] = useState<Record<string, 'checking' | 'online' | 'offline' | 'error'>>({});
   
+  // Filter and Sort states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterClient, setFilterClient] = useState("all");
+  const [filterUrgency, setFilterUrgency] = useState("all");
+  const [sortBy, setSortBy] = useState("created_desc");
   const [formData, setFormData] = useState({
     client_id: "",
     project_name: "",
@@ -363,6 +368,74 @@ const ProjectMonitor = () => {
     }
   };
 
+  // Get urgency level for a project (based on closest renewal)
+  const getProjectUrgency = (project: ProjectMonitor) => {
+    const dates = [
+      project.domain_renewal_date,
+      project.server_renewal_date,
+      project.facebook_token_renewal_date
+    ].filter(Boolean);
+    
+    if (dates.length === 0) return 'none';
+    
+    const closestDays = Math.min(...dates.map(d => differenceInDays(new Date(d!), new Date())));
+    
+    if (closestDays < 0) return 'expired';
+    if (closestDays <= 7) return 'critical';
+    if (closestDays <= 30) return 'warning';
+    return 'ok';
+  };
+
+  // Filter and sort projects
+  const filteredProjects = projects
+    .filter(project => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = project.project_name.toLowerCase().includes(query);
+        const matchesUrl = project.website_url.toLowerCase().includes(query);
+        const matchesClient = project.clients?.company_name.toLowerCase().includes(query);
+        if (!matchesName && !matchesUrl && !matchesClient) return false;
+      }
+      
+      // Client filter
+      if (filterClient !== "all" && project.client_id !== filterClient) return false;
+      
+      // Urgency filter
+      if (filterUrgency !== "all") {
+        const urgency = getProjectUrgency(project);
+        if (filterUrgency === "expiring" && urgency !== "warning" && urgency !== "critical") return false;
+        if (filterUrgency === "expired" && urgency !== "expired") return false;
+      }
+      
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "name_asc":
+          return a.project_name.localeCompare(b.project_name);
+        case "name_desc":
+          return b.project_name.localeCompare(a.project_name);
+        case "created_asc":
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "created_desc":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "domain_renewal":
+          const aDomain = a.domain_renewal_date ? new Date(a.domain_renewal_date).getTime() : Infinity;
+          const bDomain = b.domain_renewal_date ? new Date(b.domain_renewal_date).getTime() : Infinity;
+          return aDomain - bDomain;
+        case "server_renewal":
+          const aServer = a.server_renewal_date ? new Date(a.server_renewal_date).getTime() : Infinity;
+          const bServer = b.server_renewal_date ? new Date(b.server_renewal_date).getTime() : Infinity;
+          return aServer - bServer;
+        case "urgency":
+          const urgencyOrder = { expired: 0, critical: 1, warning: 2, ok: 3, none: 4 };
+          return urgencyOrder[getProjectUrgency(a)] - urgencyOrder[getProjectUrgency(b)];
+        default:
+          return 0;
+      }
+    });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -541,6 +614,69 @@ const ProjectMonitor = () => {
           </Dialog>
         </div>
 
+        {/* Filter and Sort Bar */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search projects..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <Select value={filterClient} onValueChange={setFilterClient}>
+              <SelectTrigger className="w-[160px]">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="All Clients" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Clients</SelectItem>
+                {clients.map(client => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.company_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={filterUrgency} onValueChange={setFilterUrgency}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="expiring">Expiring Soon</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[180px]">
+                <ArrowUpDown className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_desc">Newest First</SelectItem>
+                <SelectItem value="created_asc">Oldest First</SelectItem>
+                <SelectItem value="name_asc">Name A-Z</SelectItem>
+                <SelectItem value="name_desc">Name Z-A</SelectItem>
+                <SelectItem value="urgency">Most Urgent</SelectItem>
+                <SelectItem value="domain_renewal">Domain Renewal</SelectItem>
+                <SelectItem value="server_renewal">Server Renewal</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Results count */}
+        {projects.length > 0 && (
+          <p className="text-sm text-muted-foreground mb-4">
+            Showing {filteredProjects.length} of {projects.length} projects
+          </p>
+        )}
+
         {/* Projects Grid */}
         {projects.length === 0 ? (
           <Card className="p-12 text-center">
@@ -552,9 +688,18 @@ const ProjectMonitor = () => {
               Add Project
             </Button>
           </Card>
+        ) : filteredProjects.length === 0 ? (
+          <Card className="p-12 text-center">
+            <Search className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No matching projects</h3>
+            <p className="text-muted-foreground mb-4">Try adjusting your search or filters</p>
+            <Button variant="outline" onClick={() => { setSearchQuery(""); setFilterClient("all"); setFilterUrgency("all"); }}>
+              Clear Filters
+            </Button>
+          </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map(project => {
+            {filteredProjects.map(project => {
               const domainStatus = getRenewalStatus(project.domain_renewal_date);
               const serverStatus = getRenewalStatus(project.server_renewal_date);
               const facebookStatus = getRenewalStatus(project.facebook_token_renewal_date);
