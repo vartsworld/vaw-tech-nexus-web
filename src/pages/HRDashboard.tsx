@@ -31,6 +31,7 @@ import ClientManagement from "@/components/hr/ClientManagement";
 import PointsMonitoring from "@/components/hr/PointsMonitoring";
 import RewardsManagement from "@/components/hr/RewardsManagement";
 import RedemptionApprovals from "@/components/hr/RedemptionApprovals";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 const HRDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -372,6 +373,7 @@ const HRDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <PWAInstallPrompt />
     </div>
   );
 };

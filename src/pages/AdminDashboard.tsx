@@ -13,6 +13,7 @@ import TestimonialManagement from "@/components/admin/TestimonialManagement";
 import ProjectsManagement from "@/components/admin/ProjectsManagement";
 import PartnersManagement from "@/components/admin/PartnersManagement";
 import ClientLogosManagement from "@/components/admin/ClientLogosManagement";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -119,6 +120,7 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <PWAInstallPrompt />
     </div>
   );
 };
