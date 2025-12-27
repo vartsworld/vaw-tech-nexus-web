@@ -25,7 +25,8 @@ import {
   Settings,
   User,
   Lock,
-  LogOut
+  LogOut,
+  Layout
 } from "lucide-react";
 import { toast } from "sonner";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
@@ -39,6 +40,10 @@ import TeamHeadWorkspace from "@/components/staff/TeamHeadWorkspace";
 import { UserStatusBadge } from "@/components/staff/UserStatusBadge";
 import { ActivityLogPanel } from "@/components/staff/ActivityLogPanel";
 import { ReactivationDialog } from "@/components/staff/ReactivationDialog";
+import MiniChess from "@/components/staff/MiniChess";
+import TeamChat from "@/components/staff/TeamChat";
+import TimeboxWidget from "@/components/staff/TimeboxWidget";
+import WidgetManager from "@/components/staff/WidgetManager";
 import { useStaffData } from "@/hooks/useStaffData";
 import { useActivityTracker } from "@/hooks/useActivityTracker";
 import { useUserStatus } from "@/hooks/useUserStatus";
@@ -79,6 +84,14 @@ const TeamHeadDashboard = () => {
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
   const [isBreakActive, setIsBreakActive] = useState(false);
   const [breakDuration, setBreakDuration] = useState(15);
+  
+  // Widgets state
+  const [widgets, setWidgets] = useState([
+    { id: 'chess', name: 'Mini Chess', description: 'Play chess with colleagues', isVisible: true },
+    { id: 'chat', name: 'Team Chat', description: 'Chat with your team', isVisible: true },
+    { id: 'timer', name: 'Focus Timer', description: 'Pomodoro-style focus timer', isVisible: true },
+    { id: 'activity', name: 'Activity Log', description: 'Track your daily activities', isVisible: false },
+  ]);
   
   const { profile } = useStaffData();
   
@@ -372,8 +385,52 @@ const TeamHeadDashboard = () => {
     );
   }
 
+  const toggleWidget = (widgetId: string) => {
+    setWidgets(prev => prev.map(w => 
+      w.id === widgetId ? { ...w, isVisible: !w.isVisible } : w
+    ));
+  };
+
+  const showAllWidgets = () => {
+    setWidgets(prev => prev.map(w => ({ ...w, isVisible: true })));
+  };
+
+  const hideAllWidgets = () => {
+    setWidgets(prev => prev.map(w => ({ ...w, isVisible: false })));
+  };
+
+  const renderWidgets = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      {widgets.find(w => w.id === 'chess')?.isVisible && (
+        <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
+      )}
+      {widgets.find(w => w.id === 'chat')?.isVisible && (
+        <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
+      )}
+      {widgets.find(w => w.id === 'timer')?.isVisible && (
+        <TimeboxWidget userId={profile?.user_id || ''} userProfile={profile} />
+      )}
+      {widgets.find(w => w.id === 'activity')?.isVisible && (
+        <ActivityLogPanel userId={profile?.user_id || ''} className="bg-white/10 backdrop-blur-sm border-white/20" />
+      )}
+    </div>
+  );
+
   const roomComponents = {
-    workspace: <TeamHeadWorkspace userId={profile?.user_id || 'demo-user'} userProfile={profile} />,
+    workspace: (
+      <div className="space-y-4">
+        <div className="flex justify-end mb-2">
+          <WidgetManager 
+            widgets={widgets}
+            onToggleWidget={toggleWidget}
+            onShowAll={showAllWidgets}
+            onHideAll={hideAllWidgets}
+          />
+        </div>
+        <TeamHeadWorkspace userId={profile?.user_id || 'demo-user'} userProfile={profile} />
+        {renderWidgets()}
+      </div>
+    ),
     breakroom: isBreakRoomMinimized ? null : (
       <BreakRoom 
         breakTimeRemaining={breakTimeRemaining}
