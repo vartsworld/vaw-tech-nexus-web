@@ -38,6 +38,7 @@ import { useActivityTracker } from "@/hooks/useActivityTracker";
 import { useUserStatus } from "@/hooks/useUserStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 type RoomType = 'workspace' | 'breakroom' | 'meeting';
 
@@ -403,6 +404,8 @@ const StaffDashboard = () => {
           onReactivate={handleReactivate}
         />
       )}
+
+      <PWAInstallPrompt />
     </div>
   );
 };
