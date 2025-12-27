@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import ParticleBackground from "@/components/ParticleBackground";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -83,6 +84,7 @@ const AdminLogin = () => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-tech-purple/10 via-background to-tech-blue/10 z-0"></div>
       <ParticleBackground />
+      <PWAInstallPrompt />
       
       <Card className="w-full max-w-md bg-card/80 backdrop-blur-sm border border-muted/30 shadow-xl z-10">
         <CardHeader className="space-y-1 text-center">

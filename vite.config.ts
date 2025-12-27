@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => ({
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
-        start_url: '/',
+        start_url: '/staff/login',
         icons: [
           {
             src: '/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png',
