@@ -37,7 +37,7 @@ const Portfolio = () => {
         const projectsData = data as Project[];
         setProjects(projectsData);
         setFilteredProjects(projectsData);
-        
+
         // Extract unique categories
         const uniqueCategories = [...new Set(projectsData.map((project) => project.category))];
         setCategories(uniqueCategories);
@@ -116,16 +116,20 @@ const Portfolio = () => {
                   transition={{ duration: 0.5 }}
                   className="group"
                 >
-                  <div className="bg-card overflow-hidden rounded-xl shadow-lg border border-muted/20">
+                  <div className="bg-card overflow-hidden rounded-xl shadow-lg border border-muted/20 hover:shadow-2xl transition-shadow duration-300">
                     <div className="relative aspect-[16/9] overflow-hidden">
                       {isVideoFile(project.image_url) ? (
                         <video
                           src={project.image_url}
-                          autoPlay
                           loop
                           muted
                           playsInline
                           className="w-full h-full object-cover"
+                          onMouseEnter={(e) => e.currentTarget.play()}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.pause();
+                            e.currentTarget.currentTime = 0;
+                          }}
                         />
                       ) : (
                         <img
@@ -134,12 +138,6 @@ const Portfolio = () => {
                           className="w-full h-full object-cover transition-transform group-hover:scale-110"
                         />
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
-                        <div className="p-6 text-white">
-                          <h3 className="text-xl font-bold mb-2">{project.title}</h3>
-                          <p className="text-sm line-clamp-2">{project.description}</p>
-                        </div>
-                      </div>
                       {project.featured && (
                         <div className="absolute top-2 right-2 bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full font-medium">
                           Featured
