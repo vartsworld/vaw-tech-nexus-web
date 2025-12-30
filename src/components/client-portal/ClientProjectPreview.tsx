@@ -27,9 +27,10 @@ export interface ClientProjectData {
 
 interface ClientProjectPreviewProps {
     project?: ClientProjectData;
+    onNavigate?: (tab: string) => void;
 }
 
-export const ClientProjectPreview = ({ project }: ClientProjectPreviewProps) => {
+export const ClientProjectPreview = ({ project, onNavigate }: ClientProjectPreviewProps) => {
     if (!project) {
         return (
             <Card className="bg-muted/30 border-dashed animate-fade-in">
@@ -40,7 +41,7 @@ export const ClientProjectPreview = ({ project }: ClientProjectPreviewProps) => 
                         We couldn't find an active project linked to your account.
                         If you have recently submitted a request, it might still be under review.
                     </p>
-                    <Button variant="outline" className="mt-6">Contact Support</Button>
+                    <Button variant="outline" className="mt-6" onClick={() => onNavigate?.('support')}>Contact Support</Button>
                 </CardContent>
             </Card>
         );
@@ -216,8 +217,11 @@ export const ClientProjectPreview = ({ project }: ClientProjectPreviewProps) => 
                                 <Button
                                     className="w-full bg-green-600 hover:bg-green-700 hover:shadow-lg transition-all"
                                     onClick={() => {
-                                        // Mailto link for now, or trigger a toast if no logic
-                                        window.location.href = `mailto:billing@vawtech.com?subject=Payment Inquiry for ${project.name}`;
+                                        if (onNavigate) {
+                                            onNavigate('payments');
+                                        } else {
+                                            window.location.href = `mailto:billing@vawtech.com?subject=Payment Inquiry for ${project.name}`;
+                                        }
                                     }}
                                 >
                                     <CreditCard className="w-4 h-4 mr-2" />
@@ -225,11 +229,19 @@ export const ClientProjectPreview = ({ project }: ClientProjectPreviewProps) => 
                                 </Button>
                             )}
 
-                            <Button className="w-full" variant="outline" asChild>
-                                <a href={`mailto:support@vawtech.com?subject=Issue Report: ${project.name}`}>
-                                    <AlertCircle className="w-4 h-4 mr-2" />
-                                    Report an Issue
-                                </a>
+                            <Button
+                                className="w-full"
+                                variant="outline"
+                                onClick={() => {
+                                    if (onNavigate) {
+                                        onNavigate('support');
+                                    } else {
+                                        window.location.href = `mailto:support@vawtech.com?subject=Issue Report: ${project.name}`;
+                                    }
+                                }}
+                            >
+                                <AlertCircle className="w-4 h-4 mr-2" />
+                                Report an Issue
                             </Button>
                         </CardFooter>
                     </Card>

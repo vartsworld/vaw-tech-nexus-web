@@ -67,6 +67,7 @@ const AppContent = () => {
           <Route path="/mycoins" element={<MyCoins />} />
           <Route path="/account" element={<AccountDashboard />} />
           <Route path="/client-portal" element={<ClientPortal />} />
+          <Route path="/client-portal/:uniqueId" element={<ClientPortal />} />
           <Route path="/vaw-cups" element={<VAWCups />} />
           <Route path="/vaw-cups/vendor" element={<VAWVendor />} />
           <Route path="/vaw-cups/sponsor" element={<VAWSponsor />} />
