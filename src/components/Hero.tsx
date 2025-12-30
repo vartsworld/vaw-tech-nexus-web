@@ -1,7 +1,9 @@
 
+
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { useUser } from "@/context/UserContext";
 const Hero = () => {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -33,92 +35,82 @@ const Hero = () => {
       window.removeEventListener("mousemove", handleMouseMove);
     };
   }, []);
-  return <section ref={heroRef} className="relative min-h-screen flex items-center pt-16 md:pt-20 pb-0 overflow-hidden">
-      {/* Background blur effects */}
-      <div className="absolute -left-20 -top-20 w-64 h-64 rounded-full bg-tech-gold/10 filter blur-3xl opacity-70 parallax-element" data-speed="0.08"></div>
-      <div className="absolute -right-10 top-40 w-80 h-80 rounded-full bg-tech-red/10 filter blur-3xl opacity-70 parallax-element" data-speed="0.06"></div>
-      <div className="absolute right-40 bottom-20 w-60 h-60 rounded-full bg-tech-purple/10 filter blur-3xl opacity-70 parallax-element" data-speed="0.04"></div>
-      
-      <div className="container mx-auto px-4 z-10 relative">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="mb-6 relative">
-            <div className="absolute inset-0 flex items-center justify-center scale-110 opacity-30 blur-sm parallax-element" data-speed="0.03">
-              <h1 className="text-4xl md:text-7xl font-bold leading-tight font-['Space_Grotesk']">
-                <span className="text-gradient">Transforming Ideas</span>
-              </h1>
+  return <section ref={heroRef} className="relative min-h-screen flex items-center pt-32 md:pt-40 pb-20 overflow-hidden">
+
+    <div className="container mx-auto px-4 z-10 relative">
+      <div className="max-w-4xl mx-auto text-center">
+        {/* Welcome Badge/Chip */}
+        {userName && (
+          <div className="inline-flex items-center justify-center mb-6">
+            <div className="px-6 py-3 bg-gradient-to-r from-tech-gold/20 via-tech-red/20 to-tech-purple/20 backdrop-blur-sm border border-tech-gold/30 rounded-full">
+              <span className="text-xl md:text-2xl font-bold text-gradient font-['Space_Grotesk']">
+                Welcome, {userName}
+              </span>
             </div>
-            <h1 className="text-4xl md:text-7xl font-bold mb-2 leading-tight font-['Space_Grotesk'] relative z-10">
-              <span className="text-gradient">
-                {userName ? `Welcome, ${userName}` : 'Transforming Ideas'}
-              </span>
-            </h1>
           </div>
-          
-          <div className="relative">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight font-['Space_Grotesk'] relative z-10">
-              Into Digital <span className="relative inline-block">
-                <span className="relative z-10">Excellence</span>
-                <span className="absolute -bottom-2 left-0 right-0 h-3 bg-tech-gold/30 skew-x-12 z-0 parallax-element" data-speed="0.02"></span>
-              </span>
-            </h1>
-          </div>
-          
-          <p className="text-xl md:text-2xl text-foreground/80 mb-10 max-w-3xl mx-auto font-['Outfit'] neo-border p-6 glass-panel">
-            {userName ? `${userName}, we deliver premium digital solutions that merge innovation with creativity, crafted just for you.` : `VAW Technologies delivers premium digital solutions that merge innovation with creativity, 
-              from stunning websites to immersive AR/VR experiences.`}
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-primary hover:bg-primary/80 text-primary-foreground group relative overflow-hidden">
+        )}
+
+        {/* Main Hero Text */}
+        <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight font-['Space_Grotesk']">
+          <span className="text-gradient">Transforming Ideas</span>
+          <br />
+          <span className="relative inline-block mt-2">
+            <span className="relative z-10">Into Digital Excellence</span>
+            <span className="absolute -bottom-2 left-0 right-0 h-3 bg-tech-gold/30 skew-x-12 z-0"></span>
+          </span>
+        </h1>
+
+        {/* Description */}
+        <p className="text-lg md:text-xl text-foreground/80 mb-12 max-w-3xl mx-auto font-['Outfit'] p-8 glass-panel rounded-2xl">
+          {userName
+            ? `${userName}, we deliver premium digital solutions that merge innovation with creativity, crafted just for you.`
+            : `VAW Technologies delivers premium digital solutions that merge innovation with creativity, from stunning websites to immersive AR/VR experiences.`}
+        </p>
+
+        {/* CTA Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
+          <Link to="/pricing">
+            <Button size="lg" className="bg-primary hover:bg-primary/80 text-primary-foreground group relative overflow-hidden px-8">
               <span className="relative z-10 flex items-center">
-                Our Services 
+                Our Services
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </span>
               <span className="absolute inset-0 bg-tech-red/90 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></span>
             </Button>
-            <Button size="lg" variant="outline" className="border-accent text-accent hover:bg-accent/10 relative overflow-hidden group">
+          </Link>
+          <Link to="/#contact">
+            <Button size="lg" variant="outline" className="border-accent text-accent hover:bg-accent/10 relative overflow-hidden group px-8">
               <span className="relative z-10">Get in Touch</span>
               <span className="absolute inset-0 bg-accent/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></span>
             </Button>
+          </Link>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-6">
+          <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default p-4">
+            <span className="text-4xl md:text-5xl font-bold text-gradient mb-2">150+</span>
+            <span className="text-sm md:text-base text-muted-foreground">Projects Delivered</span>
           </div>
-          
-          <div className="mt-20 grid grid-cols-2 md:grid-cols-5 gap-8">
-            <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
-              <span className="text-4xl font-bold text-gradient">150+</span>
-              <span className="text-muted-foreground">Projects Delivered</span>
-            </div>
-            <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
-              <span className="text-4xl font-bold text-gradient">95%</span>
-              <span className="text-muted-foreground">Client Satisfaction</span>
-            </div>
-            <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
-              <span className="text-4xl font-bold text-gradient">10+</span>
-              <span className="text-muted-foreground">Industries Served</span>
-            </div>
-            <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default">
-              <span className="text-4xl font-bold text-gradient">5+</span>
-              <span className="text-muted-foreground">Countries Served</span>
-            </div>
-            <div className="flex flex-col items-center col-span-2 md:col-span-1 transform hover:scale-110 transition-transform duration-300 cursor-default">
-              <span className="text-4xl font-bold text-gradient">24/7</span>
-              <span className="text-muted-foreground">Support</span>
-            </div>
+          <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default p-4">
+            <span className="text-4xl md:text-5xl font-bold text-gradient mb-2">95%</span>
+            <span className="text-sm md:text-base text-muted-foreground">Client Satisfaction</span>
+          </div>
+          <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default p-4">
+            <span className="text-4xl md:text-5xl font-bold text-gradient mb-2">10+</span>
+            <span className="text-sm md:text-base text-muted-foreground">Industries Served</span>
+          </div>
+          <div className="flex flex-col items-center transform hover:scale-110 transition-transform duration-300 cursor-default p-4">
+            <span className="text-4xl md:text-5xl font-bold text-gradient mb-2">5+</span>
+            <span className="text-sm md:text-base text-muted-foreground">Countries Served</span>
+          </div>
+          <div className="flex flex-col items-center col-span-2 md:col-span-1 transform hover:scale-110 transition-transform duration-300 cursor-default p-4">
+            <span className="text-4xl md:text-5xl font-bold text-gradient mb-2">24/7</span>
+            <span className="text-sm md:text-base text-muted-foreground">Support</span>
           </div>
         </div>
       </div>
-      
-      
-      
-      {/* Animated geometric elements */}
-      <div className="absolute left-10 top-1/3 w-16 h-16 border-2 border-tech-gold/30 animate-float opacity-40 parallax-element" data-speed="0.07" style={{
-      animationDelay: '0.5s'
-    }}></div>
-      <div className="absolute right-10 top-1/4 w-12 h-12 border-2 border-tech-red/30 rotate-45 animate-float opacity-40 parallax-element" data-speed="0.05" style={{
-      animationDelay: '1s'
-    }}></div>
-      <div className="absolute left-1/4 bottom-1/4 w-20 h-20 border-2 border-tech-purple/30 rounded-full animate-float opacity-40 parallax-element" data-speed="0.06" style={{
-      animationDelay: '1.5s'
-    }}></div>
-    </section>;
+    </div>
+  </section>;
 };
 export default Hero;
