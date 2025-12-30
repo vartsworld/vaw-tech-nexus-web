@@ -14,11 +14,11 @@ interface Particle {
 const ParticleBackground: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particles: Particle[] = [];
-  const particleCount = 80;
+  const particleCount = 40; // Reduced from 80 for better performance
   const colors = ["#FFD700", "#ea384c", "#9b87f5"];
   const mousePosition = useRef({ x: 0, y: 0 });
   const animationFrameId = useRef<number>();
-  
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -35,20 +35,18 @@ const ParticleBackground: React.FC = () => {
     const handleMouseMove = (e: MouseEvent) => {
       mousePosition.current.x = e.clientX;
       mousePosition.current.y = e.clientY;
-      
-      // Create a small burst of particles when mouse moves
-      if (Math.random() > 0.92) {
-        for (let i = 0; i < 3; i++) {
-          particles.push({
-            x: mousePosition.current.x,
-            y: mousePosition.current.y,
-            size: Math.random() * 3 + 1,
-            speedX: (Math.random() - 0.5) * 2,
-            speedY: (Math.random() - 0.5) * 2,
-            color: colors[Math.floor(Math.random() * colors.length)],
-            opacity: 0.8,
-          });
-        }
+
+      // Reduced particle generation to prevent clustering
+      if (Math.random() > 0.97) { // Increased threshold from 0.92
+        particles.push({
+          x: mousePosition.current.x,
+          y: mousePosition.current.y,
+          size: Math.random() * 2 + 1,
+          speedX: (Math.random() - 0.5) * 1.5,
+          speedY: (Math.random() - 0.5) * 1.5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          opacity: 0.6,
+        });
       }
     };
 
@@ -69,33 +67,33 @@ const ParticleBackground: React.FC = () => {
 
     const drawParticles = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
+
       particles.forEach((particle, i) => {
         // Update position
         particle.x += particle.speedX;
         particle.y += particle.speedY;
-        
+
         // Bounce on edges
         if (particle.x < 0 || particle.x > canvas.width) {
           particle.speedX = -particle.speedX;
         }
-        
+
         if (particle.y < 0 || particle.y > canvas.height) {
           particle.speedY = -particle.speedY;
         }
-        
+
         // Mouse interaction
         const dx = particle.x - mousePosition.current.x;
         const dy = particle.y - mousePosition.current.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        
+
         if (distance < 120) {
           const angle = Math.atan2(dy, dx);
           const force = (120 - distance) / 120;
-          
+
           particle.speedX += Math.cos(angle) * force * 0.2;
           particle.speedY += Math.sin(angle) * force * 0.2;
-          
+
           // Limit max speed
           const speed = Math.sqrt(particle.speedX * particle.speedX + particle.speedY * particle.speedY);
           if (speed > 3) {
@@ -103,30 +101,34 @@ const ParticleBackground: React.FC = () => {
             particle.speedY = (particle.speedY / speed) * 3;
           }
         }
-        
+
         // Slowly normalize speed
         particle.speedX *= 0.99;
         particle.speedY *= 0.99;
-        
+
         // Draw particle
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
         ctx.fillStyle = particle.color;
         ctx.globalAlpha = particle.opacity;
         ctx.fill();
-        
-        // Draw connections
+
+        // Draw connections (optimized)
         particles.forEach((otherParticle, j) => {
           if (i === j) return;
-          
+
           const dx = particle.x - otherParticle.x;
           const dy = particle.y - otherParticle.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          
-          if (distance < 100) {
+
+          // Early distance check to avoid expensive sqrt
+          const distanceSquared = dx * dx + dy * dy;
+          const maxDistance = 80; // Reduced from 100 for better performance
+
+          if (distanceSquared < maxDistance * maxDistance) {
+            const distance = Math.sqrt(distanceSquared);
             ctx.beginPath();
             ctx.strokeStyle = particle.color;
-            ctx.globalAlpha = 0.1 * (1 - distance / 100);
+            ctx.globalAlpha = 0.08 * (1 - distance / maxDistance);
             ctx.lineWidth = 0.5;
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(otherParticle.x, otherParticle.y);
@@ -134,21 +136,21 @@ const ParticleBackground: React.FC = () => {
           }
         });
       });
-      
+
       // Remove extra particles if we have too many
-      while (particles.length > particleCount + 20) {
+      while (particles.length > particleCount + 10) { // Reduced from 20
         particles.shift();
       }
-      
+
       animationFrameId.current = requestAnimationFrame(drawParticles);
     };
 
     window.addEventListener("resize", handleResize);
     window.addEventListener("mousemove", handleMouseMove);
-    
+
     handleResize();
     drawParticles();
-    
+
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousemove", handleMouseMove);
@@ -157,7 +159,7 @@ const ParticleBackground: React.FC = () => {
       }
     };
   }, []);
-  
+
   return (
     <canvas
       ref={canvasRef}

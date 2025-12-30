@@ -185,18 +185,23 @@
   }
 }
 
-/* Luxury Scrollbar */
+/* Thin, Styled Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-background/50;
+  @apply bg-background/30;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gradient-to-b from-tech-gold/30 via-tech-red/30 to-tech-gold/30 rounded-full hover:bg-tech-gold/50 transition-colors;
+  @apply bg-tech-gold/40 rounded-full;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-tech-gold/60;
 }
 
 /* Glow effect for interactive elements */
