@@ -66,20 +66,22 @@ const PWAInstallPrompt = () => {
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-sm z-50 animate-in slide-in-from-bottom-4 duration-300">
       <div className="bg-card border border-border rounded-lg shadow-lg p-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-            <Smartphone className="w-5 h-5 text-primary" />
-          </div>
+          <img
+            src="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png"
+            alt="App Icon"
+            className="w-10 h-10 rounded-lg object-cover shrink-0"
+          />
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-sm">Install VAW Tech App</h4>
             <p className="text-xs text-muted-foreground mt-1">
-              {isIOS 
+              {isIOS
                 ? "Tap Share → Add to Home Screen for quick access"
                 : "Install for quick access and offline support"
               }
             </p>
             {!isIOS && deferredPrompt && (
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 className="mt-2 h-8 text-xs gap-1.5"
                 onClick={handleInstall}
               >

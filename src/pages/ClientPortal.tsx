@@ -19,18 +19,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
-// Mock Data for Payments (since table doesn't exist yet)
-const MOCK_PAYMENTS = [
-  { id: "INV-001", date: "2024-01-15", amount: "$500.00", status: "Paid", description: "Initial Deposit" },
-  { id: "INV-002", date: "2024-02-01", amount: "$1,200.00", status: "Paid", description: "Design Phase Milestone" },
-  { id: "INV-003", date: "2024-03-10", amount: "$850.00", status: "Pending", description: "Development Phase 1" },
-];
+// Mock data removed
 
-const MOCK_DOCS = [
-  { id: 1, name: "Project Proposal.pdf", date: "2023-12-20", size: "2.4 MB", type: "PDF" },
-  { id: 2, name: "Design Assets.zip", date: "2024-01-10", size: "45 MB", type: "ZIP" },
-  { id: 3, name: "Contract Agreement.pdf", date: "2023-12-15", size: "1.1 MB", type: "PDF" },
-];
+// ... existing imports ...
 
 const ClientPortal = () => {
   const { uniqueId } = useParams();
@@ -39,6 +30,8 @@ const ClientPortal = () => {
   const [searchEmail, setSearchEmail] = useState("");
   const [serviceRequests, setServiceRequests] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [projectData, setProjectData] = useState<ClientProjectData | undefined>(undefined);
@@ -49,15 +42,68 @@ const ClientPortal = () => {
   const [supportMessage, setSupportMessage] = useState("");
   const [isSubmittingSupport, setIsSubmittingSupport] = useState(false);
 
+  // Permission States
+  const [permissions, setPermissions] = useState({
+    camera: 'prompt',
+    microphone: 'prompt',
+    notifications: 'prompt',
+    geolocation: 'prompt'
+  });
+
   useEffect(() => {
     if (uniqueId) {
       handleAutoLogin(uniqueId);
     }
+    checkPermissions();
   }, [uniqueId]);
+
+  const checkPermissions = async () => {
+    // Simple permission check - browser dependent
+    const checkName = async (name: string) => {
+      try {
+        // @ts-ignore
+        const result = await navigator.permissions.query({ name });
+        return result.state;
+      } catch (e) {
+        return 'unknown';
+      }
+    };
+
+    setPermissions({
+      camera: await checkName('camera'),
+      microphone: await checkName('microphone'),
+      notifications: await checkName('notifications'),
+      geolocation: await checkName('geolocation')
+    });
+  };
+
+  const requestPermission = async (type: string) => {
+    try {
+      switch (type) {
+        case 'camera':
+          await navigator.mediaDevices.getUserMedia({ video: true });
+          toast.success("Camera access granted");
+          break;
+        case 'microphone':
+          await navigator.mediaDevices.getUserMedia({ audio: true });
+          toast.success("Microphone access granted");
+          break;
+        case 'geolocation':
+          navigator.geolocation.getCurrentPosition(() => toast.success("Location access granted"));
+          break;
+        case 'notifications':
+          await Notification.requestPermission();
+          toast.success("Notification settings updated");
+          break;
+      }
+      checkPermissions();
+    } catch (e) {
+      toast.error(`Could not access ${type}`);
+    }
+  };
 
   const handleAutoLogin = async (id: string) => {
     setLoading(true);
-    // Determine if ID is email or UUID. Simple check: if it contains '@', it's email.
     const isEmail = id.includes("@");
 
     try {
@@ -67,7 +113,7 @@ const ClientPortal = () => {
         query = query.eq("email", id.toLowerCase());
         setSearchEmail(id);
       } else {
-        query = query.eq("id", id); // Assuming ID matches a service request ID
+        query = query.eq("id", id);
       }
 
       const { data, error } = await query;
@@ -75,15 +121,10 @@ const ClientPortal = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        // Found user via ID. Now assume authenticated.
         const email = data[0].email;
-        if (!isEmail) setSearchEmail(email); // Set email for other fetches
-
-        // Fetch full data using the email found
+        if (!isEmail) setSearchEmail(email);
         await fetchData(email);
       } else {
-        // If not found in service_requests, try inquiries ?? or just fail
-        // For now, let's treat it as invalid if no service request matches
         toast.error("Invalid Client Link");
         navigate("/client-portal");
       }
@@ -115,27 +156,36 @@ const ClientPortal = () => {
 
       if (inquiriesError) throw inquiriesError;
 
-      const requests = servicesData || [];
-      const userInquiries = inquiriesData || [];
+      // Attempt fetch payments (handle if table missing gracefully)
 
-      setServiceRequests(requests);
-      setInquiries(userInquiries);
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("email", email.trim().toLowerCase())
+        .order("date", { ascending: false });
 
-      if (requests.length === 0 && userInquiries.length === 0) {
+      // Attempt fetch documents
+
+      const { data: docsData, error: docsError } = await supabase
+        .from("project_documents")
+        .select("*")
+        .eq("email", email.trim().toLowerCase())
+        .order("created_at", { ascending: false });
+
+      setServiceRequests(servicesData || []);
+      setInquiries(inquiriesData || []);
+      setPayments(paymentsData || []); // If error, just empty
+      setDocuments(docsData || []); // If error, just empty
+
+      if ((!servicesData || servicesData.length === 0) && (!inquiriesData || inquiriesData.length === 0)) {
         toast.error("No records found for this email");
         setIsAuthenticated(false);
         setProjectData(undefined);
-        return;
       } else {
         if (!uniqueId) toast.success("Welcome back!");
         setIsAuthenticated(true);
-
-        // Transform the latest service request into Project Data
-        if (requests.length > 0) {
-          const latestRequest = requests[0];
-          mapRequestToProject(latestRequest);
-        } else {
-          setProjectData(undefined);
+        if (servicesData && servicesData.length > 0) {
+          mapRequestToProject(servicesData[0]);
         }
       }
 
@@ -156,7 +206,6 @@ const ClientPortal = () => {
   };
 
   const mapRequestToProject = (request: any) => {
-    // Logic to map service request status to project milestones and progress
     let progress = 0;
     let milestones: ProjectMilestone[] = [];
     const createdDate = new Date(request.created_at).toLocaleDateString();
@@ -192,7 +241,7 @@ const ClientPortal = () => {
           { id: '5', title: 'Deployment', status: 'completed', date: new Date(request.updated_at || Date.now()).toLocaleDateString() }
         ];
         break;
-      default: // cancelled or other
+      default:
         progress = 0;
         milestones = [
           { id: '1', title: 'Request Submission', status: 'completed', date: createdDate },
@@ -220,10 +269,7 @@ const ClientPortal = () => {
       toast.error("Please fill in all fields");
       return;
     }
-
     setIsSubmittingSupport(true);
-
-    // Simulate API call
     setTimeout(() => {
       toast.success("Ticket submitted successfully! We'll be in touch shortly.");
       setIsSubmittingSupport(false);
@@ -231,9 +277,6 @@ const ClientPortal = () => {
       setSupportMessage("");
       setSupportType("bug");
     }, 1500);
-
-    // In real implementation:
-    // await supabase.from('support_tickets').insert({ ... })
   };
 
   const getStatusBadge = (status: string) => {
@@ -243,36 +286,28 @@ const ClientPortal = () => {
       completed: { label: "Completed", variant: "outline" },
       cancelled: { label: "Cancelled", variant: "destructive" },
     };
-
     const statusInfo = statusMap[status] || { label: status, variant: "secondary" };
     return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "completed":
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case "in_progress":
-        return <Clock className="h-5 w-5 text-blue-500" />;
-      case "cancelled":
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return <Package className="h-5 w-5 text-yellow-500" />;
+      case "completed": return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case "in_progress": return <Clock className="h-5 w-5 text-blue-500" />;
+      case "cancelled": return <XCircle className="h-5 w-5 text-red-500" />;
+      default: return <Package className="h-5 w-5 text-yellow-500" />;
     }
   };
 
   if (!isAuthenticated && !loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        {/* Background decoration */}
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-
         <div className="w-full max-w-md space-y-8 z-10">
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-bold tracking-tight">Client Portal</h1>
             <p className="text-muted-foreground">Access your project dashboard, requests, and timeline.</p>
           </div>
-
           <Card className="border-primary/10 shadow-xl bg-card/80 backdrop-blur">
             <CardHeader>
               <CardTitle>Client Access</CardTitle>
@@ -289,11 +324,7 @@ const ClientPortal = () => {
                   className="flex-1"
                 />
                 <Button onClick={handleSearch} disabled={loading}>
-                  {loading ? (
-                    <Clock className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="h-4 w-4" />
-                  )}
+                  {loading ? <Clock className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </Button>
               </div>
             </CardContent>
@@ -319,9 +350,11 @@ const ClientPortal = () => {
       <div className="border-b bg-card/50 backdrop-blur sticky top-0 z-50">
         <div className="container max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="font-bold text-xl flex items-center gap-2">
-            <div className="w-8 h-8 rounded bg-primary flex items-center justify-center text-primary-foreground">
-              V
-            </div>
+            <img
+              src="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png"
+              alt="VAW Tech Logo"
+              className="w-8 h-8 rounded object-cover"
+            />
             <span>VAW Tech Nexus</span>
             <Badge variant="outline" className="ml-2 hidden sm:flex">Client Access</Badge>
           </div>
@@ -337,33 +370,34 @@ const ClientPortal = () => {
 
       <div className="container max-w-7xl mx-auto p-4 sm:p-6 space-y-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-auto p-1 bg-muted/50">
-            <TabsTrigger value="dashboard" className="data-[state=active]:bg-background py-2.5">
-              <LayoutDashboard className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Overview</span>
-              <span className="sm:hidden">Home</span>
-            </TabsTrigger>
-            <TabsTrigger value="services" className="data-[state=active]:bg-background py-2.5">
-              <Package className="h-4 w-4 mr-2 hidden sm:inline" />
-              <span>Projects</span>
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="data-[state=active]:bg-background py-2.5">
-              <CreditCard className="h-4 w-4 mr-2 hidden sm:inline" />
-              <span>Payments</span>
-            </TabsTrigger>
-            <TabsTrigger value="docs" className="data-[state=active]:bg-background py-2.5">
-              <File className="h-4 w-4 mr-2 hidden sm:inline" />
-              <span>Docs</span>
-            </TabsTrigger>
-            <TabsTrigger value="support" className="data-[state=active]:bg-background py-2.5">
-              <HelpCircle className="h-4 w-4 mr-2 hidden sm:inline" />
-              <span>Support</span>
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-background py-2.5">
-              <Settings className="h-4 w-4 mr-2 hidden sm:inline" />
-              <span>Settings</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="w-full overflow-x-auto pb-2 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted/50 hover:[&::-webkit-scrollbar-thumb]:bg-muted">
+            <TabsList className="inline-flex w-auto min-w-full justify-start p-1 bg-muted/50">
+              <TabsTrigger value="dashboard" className="data-[state=active]:bg-background py-2.5 px-6 min-w-[100px]">
+                <LayoutDashboard className="h-4 w-4 mr-2" />
+                <span>Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="services" className="data-[state=active]:bg-background py-2.5 px-6 min-w-[100px]">
+                <Package className="h-4 w-4 mr-2" />
+                <span>Projects</span>
+              </TabsTrigger>
+              <TabsTrigger value="payments" className="data-[state=active]:bg-background py-2.5 px-6 min-w-[100px]">
+                <CreditCard className="h-4 w-4 mr-2" />
+                <span>Payments</span>
+              </TabsTrigger>
+              <TabsTrigger value="docs" className="data-[state=active]:bg-background py-2.5 px-6 min-w-[100px]">
+                <File className="h-4 w-4 mr-2" />
+                <span>Docs</span>
+              </TabsTrigger>
+              <TabsTrigger value="support" className="data-[state=active]:bg-background py-2.5 px-6 min-w-[100px]">
+                <HelpCircle className="h-4 w-4 mr-2" />
+                <span>Support</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="data-[state=active]:bg-background py-2.5 px-6 min-w-[100px]">
+                <Settings className="h-4 w-4 mr-2" />
+                <span>Settings</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="dashboard" className="animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
             <ClientProjectPreview
@@ -430,38 +464,43 @@ const ClientPortal = () => {
                 <CardDescription>View and download your past invoices</CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Invoice ID</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {MOCK_PAYMENTS.map((payment) => (
-                      <TableRow key={payment.id}>
-                        <TableCell className="font-medium">{payment.id}</TableCell>
-                        <TableCell>{payment.date}</TableCell>
-                        <TableCell>{payment.description}</TableCell>
-                        <TableCell>{payment.amount}</TableCell>
-                        <TableCell>
-                          <Badge variant={payment.status === "Paid" ? "default" : "secondary"}>
-                            {payment.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button size="icon" variant="ghost">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
+                {payments.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <CreditCard className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p>No payment history available.</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {payments.map((payment) => (
+                        <TableRow key={payment.id}>
+                          <TableCell>{new Date(payment.date).toLocaleDateString()}</TableCell>
+                          <TableCell>{payment.description}</TableCell>
+                          <TableCell>{payment.amount}</TableCell>
+                          <TableCell>
+                            <Badge variant={payment.status === "Paid" ? "default" : "secondary"}>
+                              {payment.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button size="icon" variant="ghost">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -473,24 +512,31 @@ const ClientPortal = () => {
                 <CardDescription>Files shared with you for your project</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {MOCK_DOCS.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg bg-card/50 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center text-primary">
-                          <FileText className="h-5 w-5" />
+                {documents.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <File className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p>No documents found.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {documents.map((doc) => (
+                      <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg bg-card/50 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center text-primary">
+                            <FileText className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{doc.name}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(doc.created_at).toLocaleDateString()}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-sm">{doc.name}</p>
-                          <p className="text-xs text-muted-foreground">{doc.date} • {doc.size}</p>
-                        </div>
+                        <Button size="icon" variant="ghost">
+                          <Download className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button size="icon" variant="ghost">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -590,31 +636,82 @@ const ClientPortal = () => {
           </TabsContent>
 
           <TabsContent value="settings">
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>Manage your profile and preferences</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Email Notifications</Label>
-                  <div className="flex items-center justify-between border p-3 rounded bg-card/50">
-                    <span className="text-sm">Receive project updates</span>
-                    <Badge>Enabled</Badge>
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account Settings</CardTitle>
+                  <CardDescription>Manage your profile and preferences</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Email Notifications</Label>
+                    <div className="flex items-center justify-between border p-3 rounded bg-card/50">
+                      <span className="text-sm">Receive project updates</span>
+                      <Badge>Enabled</Badge>
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Theme Preference</Label>
-                  <div className="flex items-center justify-between border p-3 rounded bg-card/50">
-                    <span className="text-sm">Current Theme</span>
-                    <Badge variant="outline">Dark</Badge>
+                  <div className="space-y-2">
+                    <Label>Theme Preference</Label>
+                    <div className="flex items-center justify-between border p-3 rounded bg-card/50">
+                      <span className="text-sm">Current Theme</span>
+                      <Badge variant="outline">Dark</Badge>
+                    </div>
                   </div>
-                </div>
-                <div className="pt-4">
-                  <Button variant="destructive" size="sm">Sign Out Everywhere</Button>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="pt-4">
+                    <Button variant="destructive" size="sm">Sign Out Everywhere</Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Device Permissions</CardTitle>
+                  <CardDescription>Manage application access to your device capabilities.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex items-center justify-between p-3 border rounded bg-card/50">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-muted rounded-full"><span className="text-xl">📷</span></div>
+                      <div>
+                        <p className="font-medium text-sm">Camera</p>
+                        <p className="text-xs text-muted-foreground capitalize">{permissions.camera}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => requestPermission('camera')}>Request</Button>
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded bg-card/50">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-muted rounded-full"><span className="text-xl">🎤</span></div>
+                      <div>
+                        <p className="font-medium text-sm">Microphone</p>
+                        <p className="text-xs text-muted-foreground capitalize">{permissions.microphone}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => requestPermission('microphone')}>Request</Button>
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded bg-card/50">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-muted rounded-full"><span className="text-xl">📍</span></div>
+                      <div>
+                        <p className="font-medium text-sm">Location</p>
+                        <p className="text-xs text-muted-foreground capitalize">{permissions.geolocation}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => requestPermission('geolocation')}>Request</Button>
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded bg-card/50">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-muted rounded-full"><span className="text-xl">🔔</span></div>
+                      <div>
+                        <p className="font-medium text-sm">Notifications</p>
+                        <p className="text-xs text-muted-foreground capitalize">{permissions.notifications}</p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => requestPermission('notifications')}>Request</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
