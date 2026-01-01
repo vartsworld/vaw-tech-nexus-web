@@ -447,7 +447,7 @@ const TeamHeadDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="h-screen flex flex-col relative overflow-hidden">
       {/* Background Images */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
