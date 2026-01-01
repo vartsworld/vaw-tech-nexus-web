@@ -156,26 +156,15 @@ const ClientPortal = () => {
 
       if (inquiriesError) throw inquiriesError;
 
-      // Attempt fetch payments (handle if table missing gracefully)
-
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from("payments")
-        .select("*")
-        .eq("email", email.trim().toLowerCase())
-        .order("date", { ascending: false });
-
-      // Attempt fetch documents
-
-      const { data: docsData, error: docsError } = await supabase
-        .from("project_documents")
-        .select("*")
-        .eq("email", email.trim().toLowerCase())
-        .order("created_at", { ascending: false });
+      // Note: payments and project_documents tables don't exist in the schema
+      // These features can be enabled once the tables are created
+      const paymentsData: any[] = [];
+      const docsData: any[] = [];
 
       setServiceRequests(servicesData || []);
       setInquiries(inquiriesData || []);
-      setPayments(paymentsData || []); // If error, just empty
-      setDocuments(docsData || []); // If error, just empty
+      setPayments(paymentsData);
+      setDocuments(docsData);
 
       if ((!servicesData || servicesData.length === 0) && (!inquiriesData || inquiriesData.length === 0)) {
         toast.error("No records found for this email");
