@@ -171,7 +171,7 @@ const VirtualOfficeLayout = ({
           {/* Team Status */}
           <div>
             <h3 className="text-white font-semibold mb-4">Team Status</h3>
-            <TeamStatusSidebar onlineUsers={onlineUsers} />
+            <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
           </div>
         </div>
       </aside>
