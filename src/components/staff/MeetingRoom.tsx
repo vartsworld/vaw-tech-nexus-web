@@ -50,11 +50,13 @@ const MeetingRoom = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-8 relative z-10">
       {/* Meeting Room Header */}
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-white mb-2">Meeting Room</h2>
-        <p className="text-purple-300">Collaborate and connect with your team! 📹</p>
+      <div className="text-center space-y-2">
+        <h2 className="text-4xl sm:text-5xl font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] tracking-tight uppercase">MEETING <span className="text-green-500">ROOM</span></h2>
+        <p className="text-white/90 font-semibold bg-green-600/30 backdrop-blur-md inline-block px-4 py-1 rounded-full border border-green-500/30">
+          Collaborate and connect with your team! 📹
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -80,10 +82,10 @@ const MeetingRoom = () => {
                     <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
                     <div className="text-center relative z-10">
                       <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r shadow-lg ${index === 0 ? 'from-blue-400 to-cyan-500' :
-                          index === 1 ? 'from-green-400 to-blue-500' :
-                            index === 2 ? 'from-purple-400 to-pink-500' :
-                              index === 3 ? 'from-yellow-400 to-red-500' :
-                                'from-indigo-400 to-purple-500'
+                        index === 1 ? 'from-green-400 to-blue-500' :
+                          index === 2 ? 'from-purple-400 to-pink-500' :
+                            index === 3 ? 'from-yellow-400 to-red-500' :
+                              'from-indigo-400 to-purple-500'
                         } flex items-center justify-center text-white font-bold mx-auto mb-2 text-sm sm:text-base`}>
                         {participant[0]}
                       </div>

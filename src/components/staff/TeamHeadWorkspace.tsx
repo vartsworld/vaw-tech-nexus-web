@@ -1404,12 +1404,17 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   }
 
   return (
-    <div className="px-1 py-4 space-y-6 max-w-7xl mx-auto">
+    <div className="px-1 py-4 space-y-8 max-w-7xl mx-auto relative z-10">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Settings className="h-6 w-6 text-purple-600" />
-          <h2 className="text-2xl font-bold text-white">Team Head Workspace</h2>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-white/10">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30">
+            <Settings className="h-8 w-8 text-purple-400 animate-spin-slow" />
+          </div>
+          <div>
+            <h2 className="text-3xl sm:text-4xl font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] tracking-tight uppercase">TEAM HEAD <span className="text-purple-500">WORKSPACE</span></h2>
+            <p className="text-purple-300 font-bold tracking-widest text-xs uppercase">Management Hub v2.0</p>
+          </div>
         </div>
         <Dialog open={isCreateTaskOpen} onOpenChange={setIsCreateTaskOpen}>
           <DialogTrigger asChild>

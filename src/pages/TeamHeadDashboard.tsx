@@ -448,27 +448,22 @@ const TeamHeadDashboard = () => {
 
   return (
     <div className="h-screen flex flex-col relative overflow-hidden">
-      {/* Background Images */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
+      {/* Background Layer */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-black/60 z-10"></div>
         <img
           src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
           alt="Modern office background"
-          className="absolute inset-0 w-full h-full object-cover opacity-80"
-        />
-        <img
-          src="/lovable-uploads/508d91e4-1f4c-42a4-9e98-bcb4df6e023d.png"
-          alt="Office meeting space"
-          className="absolute top-1/2 left-1/2 w-full h-full object-cover opacity-60 mix-blend-overlay"
+          className="w-full h-full object-cover"
         />
       </div>
 
       {/* Office Header */}
-      <header className="relative z-20 bg-black/20 backdrop-blur-lg border-b border-white/10">
-        <div className="container mx-auto px-4 py-4">
+      <header className="relative z-30 bg-black/80 backdrop-blur-xl border-b border-white/20 shadow-2xl">
+        <div className="container mx-auto px-4 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center p-2">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center p-1.5 border border-white/20">
                 <img
                   src="/lovable-uploads/3268a3ac-c0c1-40de-8ba7-8f1b1099460e.png"
                   alt="VAW Technologies Logo"
@@ -476,14 +471,16 @@ const TeamHeadDashboard = () => {
                 />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-white">VAW Technologies</h1>
-                <p className="text-blue-300 text-sm sm:text-base">
-                  <Settings className="inline w-4 h-4 mr-1" />
-                  Team Head: {profile?.full_name || profile?.username || 'Team Leader'}
-                </p>
-                {departmentName && (
-                  <p className="text-purple-300 text-xs sm:text-sm">{departmentName} Department</p>
-                )}
+                <h1 className="text-lg sm:text-2xl font-black text-white tracking-tight">VAW <span className="text-blue-500">TECHNOLOGIES</span></h1>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white border-none text-[10px] uppercase font-bold px-2 py-0">
+                    Team Head
+                  </Badge>
+                  <p className="text-white/80 text-xs sm:text-sm font-medium flex items-center">
+                    <User className="inline w-3 h-3 mr-1 text-blue-400" />
+                    {profile?.full_name || profile?.username || 'Team Leader'}
+                  </p>
+                </div>
               </div>
             </div>
 

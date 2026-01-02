@@ -189,149 +189,159 @@ const BreakRoom = ({
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-8 relative z-10">
       {/* Break Room Header */}
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-white mb-2">Break Room</h2>
-        <p className="text-orange-300">Take a breather, connect with your team! ☕</p>
+      <div className="text-center space-y-2">
+        <h2 className="text-4xl sm:text-5xl font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] tracking-tight">BREAK <span className="text-orange-500">ROOM</span></h2>
+        <p className="text-white/90 font-semibold bg-orange-600/30 backdrop-blur-md inline-block px-4 py-1 rounded-full border border-orange-500/30">
+          Take a breather, connect with your team! ☕
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
         {/* 1. Team Chat */}
-        <Card className="bg-black/20 backdrop-blur-lg border-white/10">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-blue-400" />
-              Team Chat
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-              {chatMessages.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-gray-400 text-sm">No messages yet. Start the conversation!</p>
-                </div>
-              ) : (
-                chatMessages.map((msg) => (
-                  <div key={msg.id} className="bg-white/5 rounded-lg p-3">
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="text-blue-300 font-medium text-sm">
-                        {msg.profiles?.full_name || msg.profiles?.username || 'Anonymous'}
-                      </span>
-                      <span className="text-gray-500 text-xs">
-                        {new Date(msg.created_at).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    <p className="text-white text-sm">{msg.message}</p>
+        <div className="xl:col-span-5 h-full">
+          <Card className="bg-black/60 backdrop-blur-xl border-white/20 h-full shadow-2xl flex flex-col">
+            <CardHeader className="border-b border-white/10">
+              <CardTitle className="text-white flex items-center gap-2 text-xl">
+                <MessageCircle className="w-5 h-5 text-blue-400" />
+                Team Chat
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 flex flex-col flex-1 min-h-[400px]">
+              <div className="flex-1 space-y-3 mb-4 overflow-y-auto pr-2 custom-scrollbar max-h-[450px]">
+                {chatMessages.length === 0 ? (
+                  <div className="text-center py-10">
+                    <p className="text-gray-400 text-sm">No messages yet. Start the conversation!</p>
                   </div>
-                ))
-              )}
-            </div>
-
-            <div className="flex gap-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 bg-white/10 border-white/20 text-white placeholder-gray-400"
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              />
-              <Button
-                size="sm"
-                className="bg-blue-500 hover:bg-blue-600"
-                onClick={handleSendMessage}
-                disabled={sendingMessage || !newMessage.trim()}
-              >
-                {sendingMessage ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  'Send'
+                  chatMessages.map((msg) => (
+                    <div key={msg.id} className="bg-white/5 rounded-xl p-3 border border-white/5 hover:border-white/10 transition-colors">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-blue-400 font-bold text-xs uppercase tracking-wider">
+                          {msg.profiles?.full_name || msg.profiles?.username || 'Anonymous'}
+                        </span>
+                        <span className="text-white/40 text-[10px] font-mono">
+                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-white/90 text-sm leading-relaxed">{msg.message}</p>
+                    </div>
+                  ))
                 )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t border-white/10">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 bg-white/10 border-white/20 text-white placeholder-gray-500 focus:ring-blue-500/50"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                />
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20"
+                  onClick={handleSendMessage}
+                  disabled={sendingMessage || !newMessage.trim()}
+                >
+                  {sendingMessage ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* 2. Coffee Break Timer */}
-        <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 border-orange-500/30">
-          <CardContent className="p-6">
-            <div className="text-center space-y-4">
-              <Coffee className={`w-16 h-16 mx-auto mb-2 transition-colors ${isBreakActive ? 'text-orange-400 animate-pulse' : 'text-orange-400'}`} />
-              <h3 className="text-white font-bold text-lg">Coffee Break Timer</h3>
-
-              {/* Timer Display */}
-              <div className={`text-5xl font-bold ${getTimerColor()} transition-colors`}>
-                {formatTime(breakTimeRemaining)}
-              </div>
-
-              {/* Duration Selection */}
-              {!isBreakActive && (
-                <div className="flex gap-2 justify-center">
-                  {[5, 10, 15, 20].map((mins) => (
-                    <Button
-                      key={mins}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setBreakDuration(mins);
-                        setBreakTimeRemaining(mins * 60);
-                      }}
-                      className={`${breakDuration === mins
-                          ? 'bg-orange-500/40 border-orange-400 text-white'
-                          : 'bg-orange-500/10 border-orange-500/30 text-orange-300'
-                        } hover:bg-orange-500/30`}
-                    >
-                      {mins}m
-                    </Button>
-                  ))}
+        <div className="xl:col-span-7 h-full">
+          <Card className="bg-zinc-900 border-orange-500/50 shadow-2xl overflow-hidden relative group h-full">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent pointer-events-none"></div>
+            <CardContent className="p-8 relative z-10 h-full flex flex-col justify-center">
+              <div className="text-center space-y-6">
+                <div className="relative inline-block">
+                  <div className="absolute inset-0 bg-orange-500/20 blur-2xl rounded-full"></div>
+                  <Coffee className={`w-24 h-24 mx-auto transition-all relative z-10 ${isBreakActive ? 'text-orange-400 animate-bounce' : 'text-orange-500'}`} />
                 </div>
-              )}
 
-              {/* Control Buttons */}
-              <div className="flex flex-col gap-2">
-                {!isBreakActive ? (
-                  <Button
-                    onClick={startBreak}
-                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600"
-                  >
-                    Start Break
-                  </Button>
-                ) : (
-                  <>
+                <div>
+                  <h3 className="text-white font-black text-3xl uppercase tracking-tighter italic">COFFEE BREAK</h3>
+                  <p className="text-orange-400/80 text-sm font-bold tracking-widest uppercase mt-1">Status: {isBreakActive ? 'Active' : 'Idle'}</p>
+                </div>
+
+                {/* Timer Display */}
+                <div className={`text-8xl font-black font-mono tracking-tighter ${getTimerColor()} drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]`}>
+                  {formatTime(breakTimeRemaining)}
+                </div>
+
+                {/* Duration Selection */}
+                {!isBreakActive && (
+                  <div className="flex gap-3 justify-center">
+                    {[5, 10, 15, 20].map((mins) => (
+                      <Button
+                        key={mins}
+                        variant="outline"
+                        size="lg"
+                        onClick={() => {
+                          setBreakDuration(mins);
+                          setBreakTimeRemaining(mins * 60);
+                        }}
+                        className={`h-12 w-16 rounded-xl font-bold transition-all text-lg ${breakDuration === mins
+                          ? 'bg-orange-500 border-orange-400 text-white shadow-lg shadow-orange-500/40'
+                          : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-white'
+                          }`}
+                      >
+                        {mins}m
+                      </Button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Control Buttons */}
+                <div className="flex flex-col gap-3 pt-2 max-w-sm mx-auto w-full">
+                  {!isBreakActive ? (
                     <Button
-                      onClick={resetBreak}
-                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
+                      onClick={startBreak}
+                      className="w-full h-14 text-xl font-black uppercase tracking-widest bg-orange-500 hover:bg-orange-600 text-white shadow-xl shadow-orange-500/20"
                     >
-                      Back to Work
+                      START BREAK
                     </Button>
-                    <Button
-                      onClick={pauseBreak}
-                      variant="outline"
-                      size="sm"
-                      className="w-full bg-orange-500/20 border-orange-500/30 text-orange-300 hover:bg-orange-500/30"
-                    >
-                      Pause & Return
-                    </Button>
-                  </>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={resetBreak}
+                        className="w-full h-14 text-xl font-black uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/20"
+                      >
+                        BACK TO WORK
+                      </Button>
+                      <Button
+                        onClick={pauseBreak}
+                        variant="outline"
+                        className="w-full h-12 font-bold uppercase tracking-widest border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
+                      >
+                        PAUSE TIMER
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {/* Progress Bar */}
+                {isBreakActive && (
+                  <div className="w-full max-w-md mx-auto bg-black/40 rounded-full h-4 border border-white/5 p-1 mt-4">
+                    <div
+                      className="bg-gradient-to-r from-orange-400 to-red-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(249,115,22,0.5)]"
+                      style={{
+                        width: `${((breakDuration * 60 - breakTimeRemaining) / (breakDuration * 60)) * 100}%`
+                      }}
+                    />
+                  </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
-              {/* Progress Bar */}
-              {isBreakActive && (
-                <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-orange-400 to-red-400 h-full transition-all duration-1000"
-                    style={{
-                      width: `${((breakDuration * 60 - breakTimeRemaining) / (breakDuration * 60)) * 100}%`
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 3. Lofi Music Player */}
+      {/* 3. Lofi Music Player - Full Width Section */}
+      <div className="w-full">
         <MusicPlayer />
       </div>
 
@@ -391,9 +401,9 @@ const BreakRoom = ({
               <div key={member.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
                 <div className="flex items-center gap-3">
                   <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${index === 0 ? 'bg-yellow-500 text-black' :
-                      index === 1 ? 'bg-gray-400 text-black' :
-                        index === 2 ? 'bg-orange-500 text-black' :
-                          'bg-gray-600 text-white'
+                    index === 1 ? 'bg-gray-400 text-black' :
+                      index === 2 ? 'bg-orange-500 text-black' :
+                        'bg-gray-600 text-white'
                     }`}>
                     {index + 1}
                   </span>
