@@ -24,7 +24,7 @@ interface BreakRoomProps {
   onStatusChange?: (status: string) => void;
 }
 
-const BreakRoom = ({ 
+const BreakRoom = ({
   breakTimeRemaining,
   setBreakTimeRemaining,
   isBreakActive,
@@ -40,27 +40,27 @@ const BreakRoom = ({
   const [activeGame, setActiveGame] = useState<ActiveGame>('none');
 
   const games = [
-    { 
-      id: 'word-challenge' as const, 
-      name: "Word Challenge", 
-      players: "3/4", 
-      status: "Ready", 
+    {
+      id: 'word-challenge' as const,
+      name: "Word Challenge",
+      players: "3/4",
+      status: "Ready",
       difficulty: "Easy",
       description: "Unscramble words related to programming"
     },
-    { 
-      id: 'quick-quiz' as const, 
-      name: "Quick Quiz", 
-      players: "2/6", 
-      status: "Ready", 
+    {
+      id: 'quick-quiz' as const,
+      name: "Quick Quiz",
+      players: "2/6",
+      status: "Ready",
       difficulty: "Medium",
       description: "Test your programming knowledge"
     },
-    { 
-      id: 'code-puzzle' as const, 
-      name: "Code Puzzle", 
-      players: "1/4", 
-      status: "Ready", 
+    {
+      id: 'code-puzzle' as const,
+      name: "Code Puzzle",
+      players: "1/4",
+      status: "Ready",
       difficulty: "Hard",
       description: "Fix and complete code snippets"
     }
@@ -77,7 +77,7 @@ const BreakRoom = ({
   // Break timer logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
+
     if (isBreakActive && breakTimeRemaining > 0) {
       interval = setInterval(() => {
         setBreakTimeRemaining(prev => {
@@ -92,7 +92,7 @@ const BreakRoom = ({
         });
       }, 1000);
     }
-    
+
     return () => {
       if (interval) clearInterval(interval);
     };
@@ -100,13 +100,13 @@ const BreakRoom = ({
 
   const startBreak = async () => {
     setIsBreakActive(true);
-    
+
     // Update status to coffee_break
     await supabase
       .from('user_presence_status')
       .update({ current_status: 'coffee_break' })
       .eq('user_id', userId);
-    
+
     // Log break start
     await supabase
       .from('user_activity_log')
@@ -116,20 +116,20 @@ const BreakRoom = ({
         timestamp: new Date().toISOString(),
         duration_minutes: breakDuration
       });
-    
+
     if (onStatusChange) onStatusChange('coffee_break');
     toast.success(`Break started! Enjoy your ${breakDuration}-minute break ☕`);
   };
 
   const pauseBreak = async () => {
     setIsBreakActive(false);
-    
+
     // Update status back to online when paused
     await supabase
       .from('user_presence_status')
       .update({ current_status: 'online' })
       .eq('user_id', userId);
-    
+
     if (onStatusChange) onStatusChange('online');
     toast.info("Break paused - Returned to work mode");
   };
@@ -137,13 +137,13 @@ const BreakRoom = ({
   const resetBreak = async () => {
     setIsBreakActive(false);
     setBreakTimeRemaining(breakDuration * 60);
-    
+
     // Update status back to online
     await supabase
       .from('user_presence_status')
       .update({ current_status: 'online' })
       .eq('user_id', userId);
-    
+
     // Log break end
     await supabase
       .from('user_activity_log')
@@ -152,7 +152,7 @@ const BreakRoom = ({
         activity_type: 'break_end',
         timestamp: new Date().toISOString()
       });
-    
+
     if (onStatusChange) onStatusChange('online');
     toast.success("Back to work! 💼");
   };
@@ -227,7 +227,7 @@ const BreakRoom = ({
                 ))
               )}
             </div>
-            
+
             <div className="flex gap-2">
               <Input
                 value={newMessage}
@@ -236,8 +236,8 @@ const BreakRoom = ({
                 className="flex-1 bg-white/10 border-white/20 text-white placeholder-gray-400"
                 onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               />
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 className="bg-blue-500 hover:bg-blue-600"
                 onClick={handleSendMessage}
                 disabled={sendingMessage || !newMessage.trim()}
@@ -258,12 +258,12 @@ const BreakRoom = ({
             <div className="text-center space-y-4">
               <Coffee className={`w-16 h-16 mx-auto mb-2 transition-colors ${isBreakActive ? 'text-orange-400 animate-pulse' : 'text-orange-400'}`} />
               <h3 className="text-white font-bold text-lg">Coffee Break Timer</h3>
-              
+
               {/* Timer Display */}
               <div className={`text-5xl font-bold ${getTimerColor()} transition-colors`}>
                 {formatTime(breakTimeRemaining)}
               </div>
-              
+
               {/* Duration Selection */}
               {!isBreakActive && (
                 <div className="flex gap-2 justify-center">
@@ -276,22 +276,21 @@ const BreakRoom = ({
                         setBreakDuration(mins);
                         setBreakTimeRemaining(mins * 60);
                       }}
-                      className={`${
-                        breakDuration === mins
+                      className={`${breakDuration === mins
                           ? 'bg-orange-500/40 border-orange-400 text-white'
                           : 'bg-orange-500/10 border-orange-500/30 text-orange-300'
-                      } hover:bg-orange-500/30`}
+                        } hover:bg-orange-500/30`}
                     >
                       {mins}m
                     </Button>
                   ))}
                 </div>
               )}
-              
+
               {/* Control Buttons */}
               <div className="flex flex-col gap-2">
                 {!isBreakActive ? (
-                  <Button 
+                  <Button
                     onClick={startBreak}
                     className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600"
                   >
@@ -299,16 +298,16 @@ const BreakRoom = ({
                   </Button>
                 ) : (
                   <>
-                    <Button 
+                    <Button
                       onClick={resetBreak}
                       className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600"
                     >
                       Back to Work
                     </Button>
-                    <Button 
+                    <Button
                       onClick={pauseBreak}
-                      variant="outline" 
-                      size="sm" 
+                      variant="outline"
+                      size="sm"
                       className="w-full bg-orange-500/20 border-orange-500/30 text-orange-300 hover:bg-orange-500/30"
                     >
                       Pause & Return
@@ -316,14 +315,14 @@ const BreakRoom = ({
                   </>
                 )}
               </div>
-              
+
               {/* Progress Bar */}
               {isBreakActive && (
                 <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
-                  <div 
+                  <div
                     className="bg-gradient-to-r from-orange-400 to-red-400 h-full transition-all duration-1000"
-                    style={{ 
-                      width: `${((breakDuration * 60 - breakTimeRemaining) / (breakDuration * 60)) * 100}%` 
+                    style={{
+                      width: `${((breakDuration * 60 - breakTimeRemaining) / (breakDuration * 60)) * 100}%`
                     }}
                   />
                 </div>
@@ -344,25 +343,25 @@ const BreakRoom = ({
             Team Games
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {games.map((game, index) => (
-              <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h4 className="text-white font-medium">{game.name}</h4>
-                    <p className="text-gray-400 text-sm">{game.difficulty} • {game.players} players</p>
-                    <p className="text-gray-500 text-xs mt-1">{game.description}</p>
+              <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10 flex flex-col justify-between">
+                <div className="mb-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="text-white font-medium text-base sm:text-lg">{game.name}</h4>
+                    <span className="px-2 py-1 rounded text-[10px] font-medium bg-green-500/20 text-green-300">
+                      {game.status}
+                    </span>
                   </div>
-                  <span className="px-2 py-1 rounded text-xs font-medium bg-green-500/20 text-green-300">
-                    {game.status}
-                  </span>
+                  <p className="text-gray-400 text-xs sm:text-sm">{game.difficulty} • {game.players} players</p>
+                  <p className="text-gray-500 text-xs mt-2 line-clamp-2">{game.description}</p>
                 </div>
-                
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="w-full bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30"
+
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30 font-medium"
                   onClick={() => setActiveGame(game.id)}
                 >
                   Play Now
@@ -370,8 +369,8 @@ const BreakRoom = ({
               </div>
             ))}
           </div>
-          
-          <Button className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600">
+
+          <Button className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/20">
             <Zap className="w-4 h-4 mr-2" />
             Create New Game
           </Button>
@@ -391,12 +390,11 @@ const BreakRoom = ({
             {teamMembers.map((member, index) => (
               <div key={member.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
                 <div className="flex items-center gap-3">
-                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                    index === 0 ? 'bg-yellow-500 text-black' :
-                    index === 1 ? 'bg-gray-400 text-black' :
-                    index === 2 ? 'bg-orange-500 text-black' :
-                    'bg-gray-600 text-white'
-                  }`}>
+                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${index === 0 ? 'bg-yellow-500 text-black' :
+                      index === 1 ? 'bg-gray-400 text-black' :
+                        index === 2 ? 'bg-orange-500 text-black' :
+                          'bg-gray-600 text-white'
+                    }`}>
                     {index + 1}
                   </span>
                   <span className="text-white font-medium text-sm">

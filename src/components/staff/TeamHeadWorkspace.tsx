@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { 
+import {
   CheckCircle,
   Clock,
   Plus,
@@ -152,7 +152,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     points: 10,
     attachments: [] as Array<{ file: File; title: string }>
   });
-  
+
   const [newClient, setNewClient] = useState({
     company_name: "",
     contact_person: "",
@@ -231,20 +231,20 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      console.log('Fetched tasks with attachments:', data?.map(t => ({ 
-        id: t.id, 
-        title: t.title, 
+
+      console.log('Fetched tasks with attachments:', data?.map(t => ({
+        id: t.id,
+        title: t.title,
         attachments: t.attachments,
         department_id: t.department_id
       })));
-      
+
       // Cast attachments from Json to any[]
       const tasksWithAttachments = (data || []).map(task => ({
         ...task,
         attachments: task.attachments ? (task.attachments as any) : []
       }));
-      
+
       setTasks(tasksWithAttachments as Task[]);
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -278,7 +278,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
       if (error) throw error;
       setStaff(data || []);
-      
+
       if (!data || data.length === 0) {
         console.warn('No staff members found in department:', userProfile.department_id);
       }
@@ -358,7 +358,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     try {
       // Get authenticated user from Supabase Auth
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
+
       if (authError || !user) {
         toast({
           title: "Authentication Error",
@@ -413,9 +413,9 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       });
     } catch (error: any) {
       console.error('Error creating subtask:', error);
-      
+
       let errorMessage = "Failed to create subtask.";
-      
+
       if (error.message) {
         if (error.message.includes('uuid')) {
           errorMessage = "Cannot save subtask: Invalid user ID format.";
@@ -427,7 +427,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
           errorMessage = `Cannot save subtask: ${error.message}`;
         }
       }
-      
+
       toast({
         title: "Error Creating Subtask",
         description: errorMessage,
@@ -472,7 +472,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     try {
       // If staff is trying to mark as completed, change to pending_approval instead
       const finalStatus = newStatus === 'completed' ? 'pending_approval' : newStatus;
-      
+
       const updateData: any = {
         status: finalStatus,
         updated_at: new Date().toISOString()
@@ -508,8 +508,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
       toast({
         title: "Success",
-        description: finalStatus === 'pending_approval' 
-          ? "Subtask submitted for admin approval" 
+        description: finalStatus === 'pending_approval'
+          ? "Subtask submitted for admin approval"
           : "Subtask status updated successfully.",
       });
     } catch (error: any) {
@@ -525,38 +525,38 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   const handleSendSubtaskMessage = async (subtaskId: string, includeAttachment: boolean = false, file?: File) => {
     const message = newMessageSubtask[subtaskId] || "";
     if (!message.trim() && !includeAttachment) return;
-    
+
     try {
       setUploadingSubtaskAttachment(subtaskId);
-      
+
       let attachmentUrl = null;
       let attachmentName = null;
-      
+
       if (includeAttachment && file) {
         const fileExt = file.name.split('.').pop();
         const filePath = `subtasks/${subtaskId}/${Date.now()}.${fileExt}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('task-attachments')
           .upload(filePath, file);
-          
+
         if (uploadError) throw uploadError;
-        
+
         const { data: { publicUrl } } = supabase.storage
           .from('task-attachments')
           .getPublicUrl(filePath);
-          
+
         attachmentUrl = publicUrl;
         attachmentName = file.name;
       }
-      
+
       const currentUser = await supabase.auth.getUser();
       const userProfile = await supabase
         .from('staff_profiles')
         .select('full_name, avatar_url')
         .eq('user_id', currentUser.data.user?.id)
         .single();
-      
+
       const newComment = {
         user_id: currentUser.data.user?.id,
         user_name: userProfile.data?.full_name || 'Unknown',
@@ -565,26 +565,26 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         timestamp: new Date().toISOString(),
         ...(attachmentUrl && { attachment_url: attachmentUrl, attachment_name: attachmentName })
       };
-      
+
       const { data: subtaskData } = await supabase
         .from('staff_subtasks')
         .select('comments')
         .eq('id', subtaskId)
         .single();
-      
+
       const existingComments = (subtaskData?.comments as any[]) || [];
       const updatedComments = [...existingComments, newComment];
-      
+
       const { error } = await supabase
         .from('staff_subtasks')
         .update({ comments: updatedComments })
         .eq('id', subtaskId);
-        
+
       if (error) throw error;
-      
+
       setSubtasks(subtasks.map(st => st.id === subtaskId ? { ...st, comments: updatedComments } : st));
       setNewMessageSubtask({ ...newMessageSubtask, [subtaskId]: "" });
-      
+
       toast({ title: "Success", description: "Message sent successfully" });
     } catch (error) {
       console.error('Error sending message:', error);
@@ -600,38 +600,38 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const handleSendTaskMessage = async (taskId: string, includeAttachment: boolean = false, file?: File) => {
     if (!selectedTask || (!newMessageTask.trim() && !includeAttachment)) return;
-    
+
     try {
       setUploadingFiles(true);
-      
+
       let attachmentUrl = null;
       let attachmentName = null;
-      
+
       if (includeAttachment && file) {
         const fileExt = file.name.split('.').pop();
         const filePath = `tasks/${taskId}/${Date.now()}.${fileExt}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('task-attachments')
           .upload(filePath, file);
-          
+
         if (uploadError) throw uploadError;
-        
+
         const { data: { publicUrl } } = supabase.storage
           .from('task-attachments')
           .getPublicUrl(filePath);
-          
+
         attachmentUrl = publicUrl;
         attachmentName = file.name;
       }
-      
+
       const currentUser = await supabase.auth.getUser();
       const userProfile = await supabase
         .from('staff_profiles')
         .select('full_name, avatar_url')
         .eq('user_id', currentUser.data.user?.id)
         .single();
-      
+
       const newComment = {
         user_id: currentUser.data.user?.id,
         user_name: userProfile.data?.full_name || 'Unknown',
@@ -640,27 +640,27 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         timestamp: new Date().toISOString(),
         ...(attachmentUrl && { attachment_url: attachmentUrl, attachment_name: attachmentName })
       };
-      
+
       const { data: taskData } = await supabase
         .from('staff_tasks')
         .select('comments')
         .eq('id', taskId)
         .single();
-      
+
       const existingComments = (taskData?.comments as any[]) || [];
       const updatedComments = [...existingComments, newComment];
-      
+
       const { error } = await supabase
         .from('staff_tasks')
         .update({ comments: updatedComments })
         .eq('id', taskId);
-        
+
       if (error) throw error;
-      
+
       setSelectedTask({ ...selectedTask, comments: updatedComments as any });
       setTasks(tasks.map(t => t.id === taskId ? { ...t, comments: updatedComments as any } : t));
       setNewMessageTask("");
-      
+
       toast({ title: "Success", description: "Message sent successfully" });
     } catch (error) {
       console.error('Error sending message:', error);
@@ -684,7 +684,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       });
       return;
     }
-    
+
     if (!newClient.contact_person.trim()) {
       toast({
         title: "Validation Error",
@@ -693,7 +693,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       });
       return;
     }
-    
+
     if (!newClient.email.trim()) {
       toast({
         title: "Validation Error",
@@ -745,7 +745,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     try {
       // Get authenticated user from Supabase Auth
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
+
       if (authError || !user) {
         toast({
           title: "Authentication Error",
@@ -774,7 +774,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
       // Add to clients list
       setClients([...clients, data]);
-      
+
       // Reset form
       setNewClient({
         company_name: "",
@@ -784,7 +784,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         address: "",
         notes: ""
       });
-      
+
       setIsAddClientOpen(false);
 
       toast({
@@ -793,7 +793,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       });
 
       // Auto-select the newly created client in the task form
-      setNewTask({...newTask, client_id: data.id});
+      setNewTask({ ...newTask, client_id: data.id });
 
     } catch (error: any) {
       console.error('Error adding client:', error);
@@ -817,10 +817,10 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
     try {
       setUploadingFiles(true);
-      
+
       // Get authenticated user from Supabase Auth
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
+
       if (authError || !user) {
         toast({
           title: "Authentication Error",
@@ -830,7 +830,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         setUploadingFiles(false);
         return;
       }
-      
+
       // First create the task
       const taskData = {
         title: newTask.title,
@@ -875,7 +875,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         for (const attachment of newTask.attachments) {
           const fileExt = attachment.file.name.split('.').pop();
           const filePath = `${taskResponse.id}/${Date.now()}.${fileExt}`;
-          
+
           console.log('Uploading file:', attachment.file.name, 'to:', filePath);
           const { error: uploadError } = await supabase.storage
             .from('task-attachments')
@@ -956,7 +956,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const handleUpdateTask = async () => {
     if (!selectedTask) return;
-    
+
     try {
       const { error } = await supabase
         .from('staff_tasks')
@@ -1034,7 +1034,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     try {
       // If staff is trying to mark as completed, change to pending_approval instead
       const finalStatus = newStatus === 'completed' ? 'pending_approval' : newStatus;
-      
+
       const updateData: any = {
         status: finalStatus,
         updated_at: new Date().toISOString()
@@ -1068,8 +1068,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
       toast({
         title: "Success",
-        description: finalStatus === 'pending_approval' 
-          ? "Task submitted for admin approval" 
+        description: finalStatus === 'pending_approval'
+          ? "Task submitted for admin approval"
           : "Task status updated successfully.",
       });
     } catch (error) {
@@ -1088,10 +1088,10 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     try {
       // Get target department name
       const targetDept = departments.find(d => d.id === handoverData.target_department);
-      
+
       // Get current department name
       const currentDept = departments.find(d => d.id === selectedTask.department_id);
-      
+
       // Create handover history comment
       const handoverComment = {
         type: 'handover',
@@ -1122,8 +1122,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       if (error) throw error;
 
       // Update local state
-      setTasks(tasks.map(task => 
-        task.id === selectedTask.id 
+      setTasks(tasks.map(task =>
+        task.id === selectedTask.id
           ? { ...task, status: 'handover' as const, department_id: handoverData.target_department, comments: updatedComments }
           : task
       ));
@@ -1163,7 +1163,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
-    
+
     setAddingNote(true);
     try {
       const { error } = await supabase
@@ -1221,7 +1221,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const handleDeleteTaskAttachment = async (attachmentUrl: string, attachmentIndex: number) => {
     if (!selectedTask) return;
-    
+
     try {
       // Delete from storage
       const { error: storageError } = await supabase.storage
@@ -1232,7 +1232,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
       // Update task attachments
       const updatedAttachments = selectedTask.attachments?.filter((_, idx) => idx !== attachmentIndex) || [];
-      
+
       const { error: dbError } = await supabase
         .from('staff_tasks')
         .update({ attachments: updatedAttachments })
@@ -1259,18 +1259,18 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
 
   const handleDeleteTaskCommentAttachment = async (commentIndex: number) => {
     if (!selectedTask) return;
-    
+
     try {
       const comments = selectedTask.comments || [];
       const comment = comments[commentIndex];
-      
+
       if (!comment.attachment_url) return;
 
       // Extract storage path from public URL
       const urlParts = comment.attachment_url.split('/task-attachments/');
       if (urlParts.length > 1) {
         const storagePath = urlParts[1];
-        
+
         // Delete from storage
         await supabase.storage
           .from('task-attachments')
@@ -1278,8 +1278,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       }
 
       // Update comment to remove attachment
-      const updatedComments = comments.map((c, idx) => 
-        idx === commentIndex 
+      const updatedComments = comments.map((c, idx) =>
+        idx === commentIndex
           ? { ...c, attachment_url: null, attachment_name: null }
           : c
       );
@@ -1312,17 +1312,17 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
     try {
       const subtask = subtasks.find(st => st.id === subtaskId);
       if (!subtask) return;
-      
+
       const comments = subtask.comments || [];
       const comment = comments[commentIndex];
-      
+
       if (!comment.attachment_url) return;
 
       // Extract storage path from public URL
       const urlParts = comment.attachment_url.split('/task-attachments/');
       if (urlParts.length > 1) {
         const storagePath = urlParts[1];
-        
+
         // Delete from storage
         await supabase.storage
           .from('task-attachments')
@@ -1330,8 +1330,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
       }
 
       // Update comment to remove attachment
-      const updatedComments = comments.map((c, idx) => 
-        idx === commentIndex 
+      const updatedComments = comments.map((c, idx) =>
+        idx === commentIndex
           ? { ...c, attachment_url: null, attachment_name: null }
           : c
       );
@@ -1404,7 +1404,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   }
 
   return (
-    <div className="p-4 space-y-6 max-w-7xl mx-auto">
+    <div className="px-1 py-4 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -1429,7 +1429,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                   <Input
                     id="title"
                     value={newTask.title}
-                    onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                     placeholder="Enter task title"
                   />
                 </div>
@@ -1438,7 +1438,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                   <Textarea
                     id="description"
                     value={newTask.description}
-                    onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                     placeholder="Enter task description"
                     rows={3}
                   />
@@ -1451,13 +1451,13 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       variant="ghost"
                       size="sm"
                       className="h-auto py-1 px-2 text-xs"
-                      onClick={() => setNewTask({...newTask, assigned_to: userId})}
+                      onClick={() => setNewTask({ ...newTask, assigned_to: userId })}
                     >
                       <User className="h-3 w-3 mr-1" />
                       Assign to myself
                     </Button>
                   </div>
-                  <Select value={newTask.assigned_to} onValueChange={(value) => setNewTask({...newTask, assigned_to: value})}>
+                  <Select value={newTask.assigned_to} onValueChange={(value) => setNewTask({ ...newTask, assigned_to: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select staff member" />
                     </SelectTrigger>
@@ -1484,7 +1484,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       Add New Client
                     </Button>
                   </div>
-                  <Select value={newTask.client_id} onValueChange={(value) => setNewTask({...newTask, client_id: value})}>
+                  <Select value={newTask.client_id} onValueChange={(value) => setNewTask({ ...newTask, client_id: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select client" />
                     </SelectTrigger>
@@ -1500,7 +1500,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="priority">Priority</Label>
-                    <Select value={newTask.priority} onValueChange={(value) => setNewTask({...newTask, priority: value as any})}>
+                    <Select value={newTask.priority} onValueChange={(value) => setNewTask({ ...newTask, priority: value as any })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -1518,7 +1518,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       id="points"
                       type="number"
                       value={newTask.points}
-                      onChange={(e) => setNewTask({...newTask, points: parseInt(e.target.value) || 10})}
+                      onChange={(e) => setNewTask({ ...newTask, points: parseInt(e.target.value) || 10 })}
                       min="1"
                       max="100"
                       disabled={newTask.trial_period}
@@ -1538,7 +1538,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                   <Switch
                     id="trial_period"
                     checked={newTask.trial_period}
-                    onCheckedChange={(checked) => setNewTask({...newTask, trial_period: checked})}
+                    onCheckedChange={(checked) => setNewTask({ ...newTask, trial_period: checked })}
                   />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1548,7 +1548,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       id="due_date"
                       type="date"
                       value={newTask.due_date}
-                      onChange={(e) => setNewTask({...newTask, due_date: e.target.value})}
+                      onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
                     />
                   </div>
                   <div>
@@ -1557,7 +1557,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       id="due_time"
                       type="time"
                       value={newTask.due_time}
-                      onChange={(e) => setNewTask({...newTask, due_time: e.target.value})}
+                      onChange={(e) => setNewTask({ ...newTask, due_time: e.target.value })}
                     />
                   </div>
                 </div>
@@ -1574,7 +1574,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                           file,
                           title: file.name.split('.')[0] // Default title is filename without extension
                         }));
-                        setNewTask({...newTask, attachments: [...newTask.attachments, ...attachmentsWithTitles]});
+                        setNewTask({ ...newTask, attachments: [...newTask.attachments, ...attachmentsWithTitles] });
                         e.target.value = ''; // Reset input
                       }}
                       className="cursor-pointer"
@@ -1596,7 +1596,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                                 size="sm"
                                 onClick={() => {
                                   const newFiles = newTask.attachments.filter((_, i) => i !== idx);
-                                  setNewTask({...newTask, attachments: newFiles});
+                                  setNewTask({ ...newTask, attachments: newFiles });
                                 }}
                                 className="self-end sm:self-auto"
                               >
@@ -1611,7 +1611,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                                 onChange={(e) => {
                                   const updatedAttachments = [...newTask.attachments];
                                   updatedAttachments[idx].title = e.target.value;
-                                  setNewTask({...newTask, attachments: updatedAttachments});
+                                  setNewTask({ ...newTask, attachments: updatedAttachments });
                                 }}
                                 placeholder="Enter document title"
                                 className="h-8 text-sm"
@@ -1626,15 +1626,15 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               </div>
             </ScrollArea>
             <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t border-white/10">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setIsCreateTaskOpen(false)}
                 className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button 
-                onClick={handleCreateTask} 
+              <Button
+                onClick={handleCreateTask}
                 disabled={uploadingFiles}
                 className="w-full sm:w-auto"
               >
@@ -1720,152 +1720,134 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
             </Card>
           )}
 
-          <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <Target className="h-5 w-5 text-purple-400" />
                 Team Tasks
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-96">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-white/10 hover:bg-white/5">
-                      <TableHead className="text-white/80">Task</TableHead>
-                      <TableHead className="text-white/80">Assigned To</TableHead>
-                      <TableHead className="text-white/80">Status</TableHead>
-                      <TableHead className="text-white/80">Priority</TableHead>
-                      <TableHead className="text-white/80 text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tasks.map((task) => (
-                      <TableRow key={task.id} className="border-white/10 hover:bg-white/5">
-                        <TableCell>
-                          <div>
-                            <div className="font-medium text-white">{task.title}</div>
-                            {task.description && (
-                              <div className="text-sm text-white/60 truncate max-w-xs">
-                                {task.description}
-                              </div>
-                            )}
-                            {task.trial_period && (
-                              <Badge variant="outline" className="text-xs mt-1 bg-yellow-500/20 border-yellow-500/30 text-yellow-300">
-                                Trial Period
-                              </Badge>
-                            )}
-                            {(task.due_date || task.due_time) && (
-                              <div className="text-xs text-white/50 flex items-center gap-1 mt-1">
-                                <Calendar className="h-3 w-3" />
-                                {task.due_date && task.due_date.trim() !== '' && (() => {
-                                  try {
-                                    const date = new Date(task.due_date);
-                                    if (isNaN(date.getTime())) return 'Invalid date';
-                                    return format(date, 'MMM dd, yyyy');
-                                  } catch {
-                                    return 'Invalid date';
-                                  }
-                                })()}
-                                {task.due_time && ` at ${task.due_time}`}
-                              </div>
-                            )}
-                            {task.attachments && task.attachments.length > 0 && (
-                              <div className="flex items-center gap-1 mt-1 text-xs text-blue-300">
-                                <Paperclip className="h-3 w-3" />
-                                {task.attachments.length} file(s)
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-white/40" />
+              <ScrollArea className="h-[500px] sm:h-[600px] w-full">
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[800px]">
+                    <TableHeader>
+                      <TableRow className="border-white/10 hover:bg-white/5">
+                        <TableHead className="text-white/80 w-[30%]">Task</TableHead>
+                        <TableHead className="text-white/80 w-[20%]">Assigned To</TableHead>
+                        <TableHead className="text-white/80 w-[15%]">Status</TableHead>
+                        <TableHead className="text-white/80 w-[15%]">Priority</TableHead>
+                        <TableHead className="text-white/80 text-right w-[20%]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tasks.map((task) => (
+                        <TableRow key={task.id} className="border-white/10 hover:bg-white/5">
+                          <TableCell className="align-top">
                             <div>
-                              <div className="font-medium text-white/90">
-                                {task.staff_profiles?.full_name || 'Unknown'}
-                              </div>
-                              <div className="text-sm text-white/50">
-                                @{task.staff_profiles?.username || 'unknown'}
+                              <div className="font-medium text-white text-sm sm:text-base">{task.title}</div>
+                              {task.description && (
+                                <div className="text-xs sm:text-sm text-white/60 truncate max-w-[200px] sm:max-w-xs">
+                                  {task.description}
+                                </div>
+                              )}
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {task.trial_period && (
+                                  <Badge variant="outline" className="text-[10px] sm:text-xs bg-yellow-500/20 border-yellow-500/30 text-yellow-300">
+                                    Trial
+                                  </Badge>
+                                )}
+                                {(task.due_date || task.due_time) && (
+                                  <div className="text-[10px] sm:text-xs text-white/50 flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {task.due_date && task.due_date.trim() !== '' && (() => {
+                                      try {
+                                        const date = new Date(task.due_date);
+                                        if (isNaN(date.getTime())) return 'Invalid date';
+                                        return format(date, 'MMM dd');
+                                      } catch {
+                                        return 'Invalid date';
+                                      }
+                                    })()}
+                                    {task.due_time && ` ${task.due_time}`}
+                                  </div>
+                                )}
                               </div>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(task.status)}
-                        </TableCell>
-                        <TableCell>
-                          {getPriorityBadge(task.priority)}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2 justify-end">
-                            <Select
-                              value={task.status}
-                              onValueChange={(value) => handleTaskStatusUpdate(task.id, value)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="in_progress">In Progress</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={async () => {
-                                setSelectedTask(task);
-                                await fetchSubtasks(task.id);
-                                setIsViewTaskOpen(true);
-                              }}
-                              title="View details and subtasks"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setSelectedTask(task);
-                                setIsEditTaskOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setSelectedTask(task);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-400" />
-                            </Button>
-
-                            {task.status !== 'handover' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setSelectedTask(task);
-                                  setIsHandoverOpen(true);
-                                }}
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-white/40 hidden sm:block" />
+                              <div className="min-w-0">
+                                <div className="font-medium text-white/90 text-sm truncate">
+                                  {task.staff_profiles?.full_name || 'Unknown'}
+                                </div>
+                                <div className="text-xs text-white/50 truncate">
+                                  @{task.staff_profiles?.username || 'unknown'}
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="scale-90 origin-left">
+                              {getStatusBadge(task.status)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <div className="scale-90 origin-left">
+                              {getPriorityBadge(task.priority)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right align-top">
+                            <div className="flex gap-1 justify-end flex-wrap sm:flex-nowrap">
+                              <Select
+                                value={task.status}
+                                onValueChange={(value) => handleTaskStatusUpdate(task.id, value)}
                               >
-                                <ArrowRight className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                                <SelectTrigger className="w-24 sm:w-32 h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="in_progress">In Progress</SelectItem>
+                                  <SelectItem value="completed">Completed</SelectItem>
+                                </SelectContent>
+                              </Select>
+
+                              <div className="flex gap-0.5">
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8"
+                                  onClick={async () => {
+                                    setSelectedTask(task);
+                                    await fetchSubtasks(task.id);
+                                    setIsViewTaskOpen(true);
+                                  }}
+                                  title="View details"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    setSelectedTask(task);
+                                    setIsEditTaskOpen(true);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </ScrollArea>
             </CardContent>
           </Card>
@@ -1890,8 +1872,8 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                   rows={3}
                   className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
                 />
-                <Button 
-                  onClick={handleAddNote} 
+                <Button
+                  onClick={handleAddNote}
                   disabled={!newNote.trim() || addingNote}
                   size="sm"
                   className="w-full"
@@ -1950,7 +1932,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                 <Input
                   id="edit_title"
                   value={selectedTask.title}
-                  onChange={(e) => setSelectedTask({...selectedTask, title: e.target.value})}
+                  onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })}
                 />
               </div>
               <div>
@@ -1958,15 +1940,15 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                 <Textarea
                   id="edit_description"
                   value={selectedTask.description}
-                  onChange={(e) => setSelectedTask({...selectedTask, description: e.target.value})}
+                  onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })}
                   rows={3}
                 />
               </div>
               <div>
                 <Label htmlFor="edit_assigned_to">Reassign To</Label>
-                <Select 
-                  value={selectedTask.assigned_to} 
-                  onValueChange={(value) => setSelectedTask({...selectedTask, assigned_to: value})}
+                <Select
+                  value={selectedTask.assigned_to}
+                  onValueChange={(value) => setSelectedTask({ ...selectedTask, assigned_to: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select staff member" />
@@ -1983,9 +1965,9 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit_priority">Priority</Label>
-                  <Select 
-                    value={selectedTask.priority} 
-                    onValueChange={(value) => setSelectedTask({...selectedTask, priority: value as any})}
+                  <Select
+                    value={selectedTask.priority}
+                    onValueChange={(value) => setSelectedTask({ ...selectedTask, priority: value as any })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -2004,7 +1986,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                     id="edit_points"
                     type="number"
                     value={selectedTask.points}
-                    onChange={(e) => setSelectedTask({...selectedTask, points: parseInt(e.target.value) || 10})}
+                    onChange={(e) => setSelectedTask({ ...selectedTask, points: parseInt(e.target.value) || 10 })}
                     min="1"
                     max="100"
                     disabled={selectedTask.trial_period}
@@ -2019,7 +2001,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                 <Switch
                   id="edit_trial"
                   checked={selectedTask.trial_period}
-                  onCheckedChange={(checked) => setSelectedTask({...selectedTask, trial_period: checked})}
+                  onCheckedChange={(checked) => setSelectedTask({ ...selectedTask, trial_period: checked })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -2029,7 +2011,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                     id="edit_due_date"
                     type="date"
                     value={selectedTask.due_date || ''}
-                    onChange={(e) => setSelectedTask({...selectedTask, due_date: e.target.value})}
+                    onChange={(e) => setSelectedTask({ ...selectedTask, due_date: e.target.value })}
                   />
                 </div>
                 <div>
@@ -2038,7 +2020,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                     id="edit_due_time"
                     type="time"
                     value={selectedTask.due_time || ''}
-                    onChange={(e) => setSelectedTask({...selectedTask, due_time: e.target.value})}
+                    onChange={(e) => setSelectedTask({ ...selectedTask, due_time: e.target.value })}
                   />
                 </div>
               </div>
@@ -2127,9 +2109,9 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
             </div>
             <div>
               <Label htmlFor="target_department">Target Department</Label>
-              <Select 
-                value={handoverData.target_department} 
-                onValueChange={(value) => setHandoverData({...handoverData, target_department: value})}
+              <Select
+                value={handoverData.target_department}
+                onValueChange={(value) => setHandoverData({ ...handoverData, target_department: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select department" />
@@ -2148,7 +2130,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               <Textarea
                 id="notes"
                 value={handoverData.notes}
-                onChange={(e) => setHandoverData({...handoverData, notes: e.target.value})}
+                onChange={(e) => setHandoverData({ ...handoverData, notes: e.target.value })}
                 placeholder="Add any notes for the receiving department..."
                 rows={3}
               />
@@ -2300,7 +2282,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                   <FileText className="h-4 w-4" />
                   Messages & Comments
                 </h4>
-                
+
                 {selectedTask.comments && selectedTask.comments.filter((c: any) => c.type !== 'handover').length > 0 && (
                   <div className="space-y-3 mb-4 max-h-[400px] overflow-y-auto">
                     {selectedTask.comments
@@ -2347,7 +2329,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       ))}
                   </div>
                 )}
-                
+
                 <div className="flex gap-2">
                   <Textarea
                     placeholder="Type a message..."
@@ -2414,20 +2396,20 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       <Input
                         placeholder="Subtask title *"
                         value={newSubtask.title}
-                        onChange={(e) => setNewSubtask({...newSubtask, title: e.target.value})}
+                        onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
                       />
                     </div>
                     <div className="col-span-2">
                       <Textarea
                         placeholder="Description (optional)"
                         value={newSubtask.description}
-                        onChange={(e) => setNewSubtask({...newSubtask, description: e.target.value})}
+                        onChange={(e) => setNewSubtask({ ...newSubtask, description: e.target.value })}
                         rows={2}
                       />
                     </div>
-                    <Select 
-                      value={newSubtask.assigned_to} 
-                      onValueChange={(value) => setNewSubtask({...newSubtask, assigned_to: value})}
+                    <Select
+                      value={newSubtask.assigned_to}
+                      onValueChange={(value) => setNewSubtask({ ...newSubtask, assigned_to: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Assign to *" />
@@ -2440,9 +2422,9 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select 
-                      value={newSubtask.priority} 
-                      onValueChange={(value) => setNewSubtask({...newSubtask, priority: value as any})}
+                    <Select
+                      value={newSubtask.priority}
+                      onValueChange={(value) => setNewSubtask({ ...newSubtask, priority: value as any })}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -2458,7 +2440,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                       type="number"
                       placeholder="Points (optional)"
                       value={newSubtask.points === 0 ? "" : newSubtask.points}
-                      onChange={(e) => setNewSubtask({...newSubtask, points: parseInt(e.target.value) || 0})}
+                      onChange={(e) => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
                       min="0"
                       max="50"
                     />
@@ -2500,7 +2482,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                               return undefined;
                             }
                           })()}
-                          onSelect={(date) => setNewSubtask({...newSubtask, due_date: date ? format(date, "yyyy-MM-dd") : ""})}
+                          onSelect={(date) => setNewSubtask({ ...newSubtask, due_date: date ? format(date, "yyyy-MM-dd") : "" })}
                           initialFocus
                           className="pointer-events-auto"
                         />
@@ -2508,7 +2490,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                     </Popover>
                     <Select
                       value={newSubtask.due_time}
-                      onValueChange={(value) => setNewSubtask({...newSubtask, due_time: value})}
+                      onValueChange={(value) => setNewSubtask({ ...newSubtask, due_time: value })}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select time (optional)" />
@@ -2529,7 +2511,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                         </ScrollArea>
                       </SelectContent>
                     </Select>
-                    <Button 
+                    <Button
                       onClick={() => handleCreateSubtask(selectedTask.id)}
                       className="col-span-2"
                     >
@@ -2612,7 +2594,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                                 ))}
                               </div>
                             )}
-                            
+
                             <div className="mt-2 flex gap-2">
                               <Textarea
                                 placeholder="Type a message..."
@@ -2711,7 +2693,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               <Input
                 id="company_name"
                 value={newClient.company_name}
-                onChange={(e) => setNewClient({...newClient, company_name: e.target.value})}
+                onChange={(e) => setNewClient({ ...newClient, company_name: e.target.value })}
                 placeholder="Enter company name"
                 maxLength={200}
               />
@@ -2721,7 +2703,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               <Input
                 id="contact_person"
                 value={newClient.contact_person}
-                onChange={(e) => setNewClient({...newClient, contact_person: e.target.value})}
+                onChange={(e) => setNewClient({ ...newClient, contact_person: e.target.value })}
                 placeholder="Enter contact person name"
                 maxLength={200}
               />
@@ -2732,7 +2714,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                 id="email"
                 type="email"
                 value={newClient.email}
-                onChange={(e) => setNewClient({...newClient, email: e.target.value})}
+                onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
                 placeholder="Enter email address"
                 maxLength={255}
               />
@@ -2743,7 +2725,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
                 id="phone"
                 type="tel"
                 value={newClient.phone}
-                onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
+                onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
                 placeholder="Enter phone number"
                 maxLength={20}
               />
@@ -2753,7 +2735,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               <Textarea
                 id="address"
                 value={newClient.address}
-                onChange={(e) => setNewClient({...newClient, address: e.target.value})}
+                onChange={(e) => setNewClient({ ...newClient, address: e.target.value })}
                 placeholder="Enter address"
                 rows={2}
                 maxLength={500}
@@ -2764,7 +2746,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               <Textarea
                 id="notes"
                 value={newClient.notes}
-                onChange={(e) => setNewClient({...newClient, notes: e.target.value})}
+                onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
                 placeholder="Enter any additional notes"
                 rows={2}
                 maxLength={1000}

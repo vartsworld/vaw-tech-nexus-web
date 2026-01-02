@@ -2,41 +2,41 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Video, 
-  Users, 
-  Calendar, 
-  Clock, 
-  Mic, 
-  MicOff, 
-  VideoOff, 
+import {
+  Video,
+  Users,
+  Calendar,
+  Clock,
+  Mic,
+  MicOff,
+  VideoOff,
   ScreenShare,
   FileText
 } from "lucide-react";
 
 const MeetingRoom = () => {
   const upcomingMeetings = [
-    { 
-      title: "Daily Standup", 
-      time: "10:00 AM", 
-      duration: "15 min", 
-      attendees: 6, 
+    {
+      title: "Daily Standup",
+      time: "10:00 AM",
+      duration: "15 min",
+      attendees: 6,
       status: "Starting Soon",
       type: "Team Meeting"
     },
-    { 
-      title: "Project Review", 
-      time: "2:00 PM", 
-      duration: "45 min", 
-      attendees: 4, 
+    {
+      title: "Project Review",
+      time: "2:00 PM",
+      duration: "45 min",
+      attendees: 4,
       status: "Scheduled",
       type: "Review"
     },
-    { 
-      title: "Client Presentation", 
-      time: "4:00 PM", 
-      duration: "60 min", 
-      attendees: 8, 
+    {
+      title: "Client Presentation",
+      time: "4:00 PM",
+      duration: "60 min",
+      attendees: 8,
       status: "Scheduled",
       type: "Client Call"
     }
@@ -72,31 +72,33 @@ const MeetingRoom = () => {
                 </Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               {/* Video Grid */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-6">
                 {activeMeeting.participants.slice(0, 6).map((participant, index) => (
-                  <div key={index} className="aspect-video bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg border border-purple-500/30 flex items-center justify-center relative">
-                    <div className="text-center">
-                      <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${
-                        index === 0 ? 'from-blue-400 to-cyan-500' :
-                        index === 1 ? 'from-green-400 to-blue-500' :
-                        index === 2 ? 'from-purple-400 to-pink-500' :
-                        index === 3 ? 'from-yellow-400 to-red-500' :
-                        'from-indigo-400 to-purple-500'
-                      } flex items-center justify-center text-white font-bold mx-auto mb-2`}>
+                  <div key={index} className="aspect-video bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl border border-white/10 flex items-center justify-center relative group overflow-hidden">
+                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors"></div>
+                    <div className="text-center relative z-10">
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r shadow-lg ${index === 0 ? 'from-blue-400 to-cyan-500' :
+                          index === 1 ? 'from-green-400 to-blue-500' :
+                            index === 2 ? 'from-purple-400 to-pink-500' :
+                              index === 3 ? 'from-yellow-400 to-red-500' :
+                                'from-indigo-400 to-purple-500'
+                        } flex items-center justify-center text-white font-bold mx-auto mb-2 text-sm sm:text-base`}>
                         {participant[0]}
                       </div>
-                      <p className="text-white text-xs">{participant}</p>
+                      <p className="text-white text-xs sm:text-sm font-medium">{participant}</p>
                     </div>
-                    
+
                     {/* Mic indicator */}
-                    <div className="absolute bottom-2 left-2">
-                      {index < 3 ? (
-                        <Mic className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <MicOff className="w-4 h-4 text-red-400" />
-                      )}
+                    <div className="absolute bottom-2 left-2 z-20">
+                      <div className={`p-1 rounded-full ${index < 3 ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                        {index < 3 ? (
+                          <Mic className="w-3 h-3 text-green-400" />
+                        ) : (
+                          <MicOff className="w-3 h-3 text-red-400" />
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -163,7 +165,7 @@ const MeetingRoom = () => {
                       {meeting.status}
                     </Badge>
                   </div>
-                  
+
                   <div className="space-y-2 text-xs text-gray-400">
                     <div className="flex items-center gap-2">
                       <Clock className="w-3 h-3" />
@@ -175,10 +177,10 @@ const MeetingRoom = () => {
                     </div>
                     <p className="text-purple-300">{meeting.type}</p>
                   </div>
-                  
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
+
+                  <Button
+                    size="sm"
+                    variant="outline"
                     className="w-full mt-3 bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30"
                   >
                     {meeting.status === 'Starting Soon' ? 'Join Now' : 'Set Reminder'}
@@ -194,11 +196,11 @@ const MeetingRoom = () => {
               <Video className="w-12 h-12 text-green-400 mx-auto mb-4" />
               <h3 className="text-white font-bold mb-2">Quick Join</h3>
               <p className="text-green-300 text-sm mb-4">Enter meeting ID or start instant meeting</p>
-              
+
               <div className="space-y-3">
-                <input 
-                  type="text" 
-                  placeholder="Meeting ID..." 
+                <input
+                  type="text"
+                  placeholder="Meeting ID..."
                   className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-green-500/50 text-sm"
                 />
                 <div className="grid grid-cols-2 gap-2">

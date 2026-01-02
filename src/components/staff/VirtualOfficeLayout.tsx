@@ -3,10 +3,10 @@ import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
-import { 
-  Monitor, 
-  Coffee, 
-  Users, 
+import {
+  Monitor,
+  Coffee,
+  Users,
   Music,
   MessageCircle,
   Calendar,
@@ -24,12 +24,20 @@ interface VirtualOfficeLayoutProps {
   onRoomChange: (room: 'workspace' | 'breakroom' | 'meeting') => void;
   onlineUsers?: Record<string, any>;
   userId?: string;
+  className?: string;
 }
 
-const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange, onlineUsers = {}, userId }: VirtualOfficeLayoutProps) => {
+const VirtualOfficeLayout = ({
+  children,
+  currentRoom,
+  onRoomChange,
+  onlineUsers = {},
+  userId,
+  className
+}: VirtualOfficeLayoutProps) => {
   const [showActivityLog, setShowActivityLog] = useState(false);
   const navigate = useNavigate();
-  
+
   const rooms = [
     { id: 'workspace' as const, name: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
     { id: 'breakroom' as const, name: 'Break Room', icon: Coffee, color: 'from-red-500 to-red-600' },
@@ -37,24 +45,23 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange, onlineUsers 
   ];
 
   return (
-    <div className="flex flex-col lg:flex-row h-full overflow-hidden">
+    <div className={`flex flex-col lg:flex-row h-full w-full overflow-hidden ${className || ""}`}>
       {/* Mobile Navigation */}
       <div className="lg:hidden bg-black/20 backdrop-blur-lg border-b border-white/10 p-4">
         <div className="flex gap-2 overflow-x-auto">
           {rooms.map((room) => {
             const Icon = room.icon;
             const isActive = currentRoom === room.id;
-            
+
             return (
               <Button
                 key={room.id}
                 variant="ghost"
                 size="sm"
-                className={`flex-shrink-0 p-3 transition-all duration-300 ${
-                  isActive 
-                    ? `bg-gradient-to-r ${room.color} text-white shadow-lg` 
+                className={`flex-shrink-0 p-3 transition-all duration-300 ${isActive
+                    ? `bg-gradient-to-r ${room.color} text-white shadow-lg`
                     : 'text-gray-300 hover:text-white hover:bg-white/10'
-                }`}
+                  }`}
                 onClick={() => onRoomChange(room.id)}
               >
                 <Icon className="w-4 h-4 mr-2" />
@@ -78,16 +85,15 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange, onlineUsers 
               {rooms.map((room) => {
                 const Icon = room.icon;
                 const isActive = currentRoom === room.id;
-                
+
                 return (
                   <Button
                     key={room.id}
                     variant="ghost"
-                    className={`w-full justify-start p-4 h-auto transition-all duration-300 ${
-                      isActive 
-                        ? `bg-gradient-to-r ${room.color} text-white shadow-lg shadow-blue-500/25` 
+                    className={`w-full justify-start p-4 h-auto transition-all duration-300 ${isActive
+                        ? `bg-gradient-to-r ${room.color} text-white shadow-lg shadow-blue-500/25`
                         : 'text-gray-300 hover:text-white hover:bg-white/10'
-                    }`}
+                      }`}
                     onClick={() => onRoomChange(room.id)}
                   >
                     <Icon className="w-5 h-5 mr-3" />
@@ -121,18 +127,18 @@ const VirtualOfficeLayout = ({ children, currentRoom, onRoomChange, onlineUsers 
                 <Bell className="w-4 h-4 mr-2" />
                 Alerts
               </Button>
-              
+
               {/* My Coins Button */}
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="col-span-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/30 text-white hover:from-amber-500/30 hover:to-yellow-500/30"
                 onClick={() => navigate('/mycoins')}
               >
                 <Coins className="w-4 h-4 mr-2" />
                 My Coins
               </Button>
-              
+
               {/* Activity Log Dialog */}
               {userId && (
                 <Dialog open={showActivityLog} onOpenChange={setShowActivityLog}>

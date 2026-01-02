@@ -9,14 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Coffee, 
-  Users, 
-  Briefcase, 
-  Music, 
-  Wallet, 
-  Gamepad2, 
-  StickyNote, 
+import {
+  Coffee,
+  Users,
+  Briefcase,
+  Music,
+  Wallet,
+  Gamepad2,
+  StickyNote,
   MessageCircle,
   Calendar,
   Clock,
@@ -79,12 +79,12 @@ const TeamHeadDashboard = () => {
   const [confirmEmojiPassword, setConfirmEmojiPassword] = useState<string[]>([]);
   const [profileForm, setProfileForm] = useState({ full_name: "", about_me: "" });
   const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
-  
+
   // Break timer state (lifted up to persist when minimized)
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
   const [isBreakActive, setIsBreakActive] = useState(false);
   const [breakDuration, setBreakDuration] = useState(15);
-  
+
   // Widgets state
   const [widgets, setWidgets] = useState([
     { id: 'chess', name: 'Mini Chess', description: 'Play chess with colleagues', isVisible: true },
@@ -92,18 +92,18 @@ const TeamHeadDashboard = () => {
     { id: 'timer', name: 'Focus Timer', description: 'Pomodoro-style focus timer', isVisible: true },
     { id: 'activity', name: 'Activity Log', description: 'Track your daily activities', isVisible: false },
   ]);
-  
+
   const { profile } = useStaffData();
-  
+
   // Activity tracking and status
   const { status, reactivationCode, updateStatus, reactivate } = useUserStatus(profile?.user_id || '');
-  useActivityTracker({ 
+  useActivityTracker({
     userId: profile?.user_id || '',
     onStatusChange: (newStatus) => {
       // Status change handled automatically
     }
   });
-  
+
   const [showReactivationDialog, setShowReactivationDialog] = useState(false);
 
   useEffect(() => {
@@ -136,14 +136,14 @@ const TeamHeadDashboard = () => {
 
   const fetchDepartment = async () => {
     if (!profile?.department_id) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('departments')
         .select('name')
         .eq('id', profile.department_id)
         .single();
-      
+
       if (data && !error) {
         setDepartmentName(data.name);
       }
@@ -192,7 +192,7 @@ const TeamHeadDashboard = () => {
 
     try {
       const today = new Date().toISOString().split('T')[0];
-      
+
       // Check if user has marked attendance today
       const { data: attendanceData, error: attendanceError } = await supabase
         .from('staff_attendance')
@@ -296,7 +296,7 @@ const TeamHeadDashboard = () => {
 
     try {
       const emojiPasswordString = newEmojiPassword.join("");
-      
+
       const { error: updateError } = await supabase
         .from('staff_profiles')
         .update({
@@ -329,13 +329,13 @@ const TeamHeadDashboard = () => {
       <div className="min-h-screen relative overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
-          <img 
-            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png" 
-            alt="Modern office background" 
+          <img
+            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
+            alt="Modern office background"
             className="absolute inset-0 w-full h-full object-cover opacity-80"
           />
         </div>
-        
+
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-md space-y-4">
             <div className="text-center mb-4">
@@ -343,8 +343,8 @@ const TeamHeadDashboard = () => {
               <p className="text-white/80">Please mark your attendance to continue</p>
             </div>
             {profile?.user_id && (
-              <AttendanceChecker 
-                userId={profile.user_id} 
+              <AttendanceChecker
+                userId={profile.user_id}
                 onAttendanceMarked={handleAttendanceMarked}
               />
             )}
@@ -360,13 +360,13 @@ const TeamHeadDashboard = () => {
       <div className="min-h-screen relative overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
-          <img 
-            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png" 
-            alt="Modern office background" 
+          <img
+            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
+            alt="Modern office background"
             className="absolute inset-0 w-full h-full object-cover opacity-80"
           />
         </div>
-        
+
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-lg space-y-4">
             <div className="text-center mb-4">
@@ -374,8 +374,8 @@ const TeamHeadDashboard = () => {
               <p className="text-white/80">Share how you're feeling today and get inspired!</p>
             </div>
             {profile?.user_id && (
-              <MoodQuoteChecker 
-                userId={profile.user_id} 
+              <MoodQuoteChecker
+                userId={profile.user_id}
                 onMoodSubmitted={handleMoodSubmitted}
               />
             )}
@@ -386,7 +386,7 @@ const TeamHeadDashboard = () => {
   }
 
   const toggleWidget = (widgetId: string) => {
-    setWidgets(prev => prev.map(w => 
+    setWidgets(prev => prev.map(w =>
       w.id === widgetId ? { ...w, isVisible: !w.isVisible } : w
     ));
   };
@@ -420,7 +420,7 @@ const TeamHeadDashboard = () => {
     workspace: (
       <div className="space-y-4">
         <div className="flex justify-end mb-2">
-          <WidgetManager 
+          <WidgetManager
             widgets={widgets}
             onToggleWidget={toggleWidget}
             onShowAll={showAllWidgets}
@@ -432,7 +432,7 @@ const TeamHeadDashboard = () => {
       </div>
     ),
     breakroom: isBreakRoomMinimized ? null : (
-      <BreakRoom 
+      <BreakRoom
         breakTimeRemaining={breakTimeRemaining}
         setBreakTimeRemaining={setBreakTimeRemaining}
         isBreakActive={isBreakActive}
@@ -451,27 +451,27 @@ const TeamHeadDashboard = () => {
       {/* Background Images */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
-        <img 
-          src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png" 
-          alt="Modern office background" 
+        <img
+          src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
+          alt="Modern office background"
           className="absolute inset-0 w-full h-full object-cover opacity-80"
         />
-        <img 
-          src="/lovable-uploads/508d91e4-1f4c-42a4-9e98-bcb4df6e023d.png" 
-          alt="Office meeting space" 
+        <img
+          src="/lovable-uploads/508d91e4-1f4c-42a4-9e98-bcb4df6e023d.png"
+          alt="Office meeting space"
           className="absolute top-1/2 left-1/2 w-full h-full object-cover opacity-60 mix-blend-overlay"
         />
       </div>
-      
+
       {/* Office Header */}
       <header className="relative z-20 bg-black/20 backdrop-blur-lg border-b border-white/10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-2 sm:gap-4">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center p-2">
-                <img 
-                  src="/lovable-uploads/3268a3ac-c0c1-40de-8ba7-8f1b1099460e.png" 
-                  alt="VAW Technologies Logo" 
+                <img
+                  src="/lovable-uploads/3268a3ac-c0c1-40de-8ba7-8f1b1099460e.png"
+                  alt="VAW Technologies Logo"
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -486,28 +486,28 @@ const TeamHeadDashboard = () => {
                 )}
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
               <div className="order-3 sm:order-1">
                 <NotificationsBar userId={profile?.user_id || 'demo-user'} />
               </div>
-              
+
               <div className="flex items-center gap-1 sm:gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-2 sm:px-3 py-1">
-                <UserStatusBadge 
+                <UserStatusBadge
                   status={status}
                   isBreakActive={isBreakActive}
                   breakTimeRemaining={breakTimeRemaining}
                 />
               </div>
-              
-              <div 
+
+              <div
                 onClick={() => navigate('/mycoins')}
                 className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2 sm:px-3 py-1 cursor-pointer hover:from-yellow-500/30 hover:to-blue-500/30 transition-all"
               >
                 <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-300" />
                 <span className="text-yellow-300 text-xs sm:text-sm">${profile?.earnings || 0}</span>
               </div>
-              
+
               <Badge className="bg-purple-500/20 border-purple-500/30 text-purple-300">
                 Team Head
               </Badge>
@@ -544,11 +544,12 @@ const TeamHeadDashboard = () => {
         </div>
       </header>
 
-      <VirtualOfficeLayout 
-        currentRoom={currentRoom} 
+      <VirtualOfficeLayout
+        currentRoom={currentRoom}
         onRoomChange={setCurrentRoom}
         onlineUsers={onlineUsers}
         userId={profile?.user_id}
+        className="flex-1"
       >
         {roomComponents[currentRoom]}
       </VirtualOfficeLayout>
@@ -663,8 +664,8 @@ const TeamHeadDashboard = () => {
               ))}
             </div>
 
-            <Button 
-              onClick={handleSetEmojiPassword} 
+            <Button
+              onClick={handleSetEmojiPassword}
               className="w-full"
               disabled={newEmojiPassword.length !== 6 || confirmEmojiPassword.length !== 6}
             >
@@ -673,7 +674,7 @@ const TeamHeadDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
-      
+
       {/* Break Room Widget (when minimized) */}
       {isBreakRoomMinimized && (
         <BreakRoomWidget
@@ -686,7 +687,7 @@ const TeamHeadDashboard = () => {
           unreadChatCount={0}
         />
       )}
-      
+
       {/* Reactivation Dialog */}
       {showReactivationDialog && reactivationCode && (
         <ReactivationDialog
