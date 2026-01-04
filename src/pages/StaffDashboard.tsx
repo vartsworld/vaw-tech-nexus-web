@@ -108,6 +108,44 @@ const StaffDashboard = () => {
     }
   };
 
+  // Subscribe to real-time presence for online users
+  useEffect(() => {
+    if (!profile?.user_id) return;
+
+    const presenceChannel = supabase.channel('online-users', {
+      config: { presence: { key: profile.user_id } }
+    });
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        setOnlineUsers(state);
+      })
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        setOnlineUsers(prev => ({ ...prev, [key]: newPresences }));
+      })
+      .on('presence', { event: 'leave' }, ({ key }) => {
+        setOnlineUsers(prev => {
+          const updated = { ...prev };
+          delete updated[key];
+          return updated;
+        });
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            user_id: profile.user_id,
+            full_name: profile.full_name,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [profile?.user_id, profile?.full_name]);
+
   useEffect(() => {
     checkDailyRequirements();
     fetchDepartment();

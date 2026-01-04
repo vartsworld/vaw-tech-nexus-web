@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -9,17 +9,16 @@ import {
   SkipBack,
   SkipForward,
   Volume2,
-  Shuffle,
-  Repeat,
   Music,
   Search,
-  Loader2
+  Loader2,
+  ExternalLink,
+  RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-
-const SPOTIFY_TOKEN = 'BQAMvAVielEOOCS2BdwabtzthdbCixyq6MxFtA-5NwjhjVnMRnT18V8REF5bFEeAGPeBhbkvRTt7qXyQxD5fLJjxX4TNtOyTY5LSaCxtaElEKwrDvanFL0pTChhEp82jzwWQKkkXMwYoc3uqTssmSb57VwnBfHc7236Nacr08ZE-AosBgZNm0wlx_SP5kwC4iHrFUDvGXtC42iOHpnY-jYfLnoVY8mcpDHuDZk05ocT2ZGk96CpSLUDMP-AqlnMm37XdoQdakCsuOZOpSc3Nx9YzWwJrwVMThUs_vnY1fmnHpKD0u7eJAVa5bTy5gKx2drDi';
+import { supabase } from "@/integrations/supabase/client";
 
 interface Track {
   id: string;
@@ -32,26 +31,96 @@ interface Track {
   duration_ms: number;
 }
 
-const MusicPlayer = () => {
+interface SpotifySession {
+  access_token: string | null;
+  refresh_token: string | null;
+  expires_at: string | null;
+}
+
+interface MusicPlayerProps {
+  userId?: string;
+}
+
+const MusicPlayer = ({ userId }: MusicPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [volume, setVolume] = useState([75]);
   const [progress, setProgress] = useState([0]);
-  const [isShuffled, setIsShuffled] = useState(false);
-  const [isRepeating, setIsRepeating] = useState(false);
+
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Track[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
+  const [spotifyToken, setSpotifyToken] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Check for Spotify session
+  useEffect(() => {
+    const checkSpotifySession = async () => {
+      setIsLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setIsLoading(false);
+          return;
+        }
+
+        setCurrentUserId(user.id);
+
+        const { data: session, error } = await supabase
+          .from('user_spotify_sessions')
+          .select('access_token, refresh_token, expires_at')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching Spotify session:', error);
+          setIsLoading(false);
+          return;
+        }
+
+        if (session?.access_token) {
+          // Check if token is expired
+          const expiresAt = session.expires_at ? new Date(session.expires_at) : null;
+          const now = new Date();
+
+          if (expiresAt && expiresAt > now) {
+            setSpotifyToken(session.access_token);
+            setIsConnected(true);
+          } else if (session.refresh_token) {
+            // Token expired, need to refresh - for now just show as disconnected
+            setIsConnected(false);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking Spotify session:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkSpotifySession();
+  }, []);
 
   const fetchDevices = useCallback(async () => {
+    if (!spotifyToken) return null;
+
     try {
       const response = await fetch('https://api.spotify.com/v1/me/player/devices', {
         headers: {
-          'Authorization': `Bearer ${SPOTIFY_TOKEN}`
+          'Authorization': `Bearer ${spotifyToken}`
         }
       });
+
+      if (response.status === 401) {
+        setIsConnected(false);
+        setSpotifyToken(null);
+        return null;
+      }
+
       const data = await response.json();
       if (data.devices && data.devices.length > 0) {
         const active = data.devices.find((d: any) => d.is_active) || data.devices[0];
@@ -63,34 +132,45 @@ const MusicPlayer = () => {
       console.error("Error fetching Spotify devices:", error);
       return null;
     }
-  }, []);
+  }, [spotifyToken]);
 
   useEffect(() => {
-    fetchDevices();
-  }, [fetchDevices]);
+    if (isConnected && spotifyToken) {
+      fetchDevices();
+    }
+  }, [fetchDevices, isConnected, spotifyToken]);
 
   // Sync volume with Spotify
   useEffect(() => {
-    if (!activeDeviceId) return;
+    if (!activeDeviceId || !spotifyToken) return;
     const syncVolume = async () => {
       try {
         await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${volume[0]}&device_id=${activeDeviceId}`, {
           method: 'PUT',
-          headers: { 'Authorization': `Bearer ${SPOTIFY_TOKEN}` }
+          headers: { 'Authorization': `Bearer ${spotifyToken}` }
         });
       } catch (error) { }
     };
     const debounce = setTimeout(syncVolume, 500);
     return () => clearTimeout(debounce);
-  }, [volume, activeDeviceId]);
+  }, [volume, activeDeviceId, spotifyToken]);
 
   // Polling for playback state
   useEffect(() => {
+    if (!isConnected || !spotifyToken) return;
+
     const pollPlayback = async () => {
       try {
         const response = await fetch('https://api.spotify.com/v1/me/player', {
-          headers: { 'Authorization': `Bearer ${SPOTIFY_TOKEN}` }
+          headers: { 'Authorization': `Bearer ${spotifyToken}` }
         });
+
+        if (response.status === 401) {
+          setIsConnected(false);
+          setSpotifyToken(null);
+          return;
+        }
+
         if (response.status === 200) {
           const data = await response.json();
           setIsPlaying(data.is_playing);
@@ -119,10 +199,10 @@ const MusicPlayer = () => {
     const interval = setInterval(pollPlayback, 5000);
     pollPlayback();
     return () => clearInterval(interval);
-  }, []);
+  }, [isConnected, spotifyToken]);
 
   const searchTracks = async (query: string) => {
-    if (!query.trim()) {
+    if (!query.trim() || !spotifyToken) {
       setSearchResults([]);
       return;
     }
@@ -131,14 +211,16 @@ const MusicPlayer = () => {
     try {
       const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=15`, {
         headers: {
-          'Authorization': `Bearer ${SPOTIFY_TOKEN}`
+          'Authorization': `Bearer ${spotifyToken}`
         }
       });
       const data = await response.json();
 
       if (data.error) {
         if (data.error.status === 401) {
-          toast.error("Spotify token expired. Please update the token.");
+          toast.error("Spotify session expired. Please reconnect.");
+          setIsConnected(false);
+          setSpotifyToken(null);
         }
         return;
       }
@@ -155,12 +237,15 @@ const MusicPlayer = () => {
       }));
       setSearchResults(tracks);
     } catch (error) {
+      console.error('Search error:', error);
     } finally {
       setIsSearching(false);
     }
   };
 
   const playTrack = async (track: Track) => {
+    if (!spotifyToken) return;
+
     let deviceId = activeDeviceId;
     if (!deviceId) {
       deviceId = await fetchDevices();
@@ -170,7 +255,7 @@ const MusicPlayer = () => {
       const response = await fetch(`https://api.spotify.com/v1/me/player/play${deviceId ? `?device_id=${deviceId}` : ''}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${SPOTIFY_TOKEN}`,
+          'Authorization': `Bearer ${spotifyToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -194,31 +279,33 @@ const MusicPlayer = () => {
   };
 
   const togglePlay = async () => {
-    if (!currentTrack) return;
+    if (!currentTrack || !spotifyToken) return;
     const endpoint = isPlaying ? 'pause' : 'play';
     try {
       const response = await fetch(`https://api.spotify.com/v1/me/player/${endpoint}${activeDeviceId ? `?device_id=${activeDeviceId}` : ''}`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${SPOTIFY_TOKEN}` }
+        headers: { 'Authorization': `Bearer ${spotifyToken}` }
       });
       if (response.status === 204) setIsPlaying(!isPlaying);
     } catch (error) { }
   };
 
   const nextTrack = async () => {
+    if (!spotifyToken) return;
     try {
       await fetch(`https://api.spotify.com/v1/me/player/next${activeDeviceId ? `?device_id=${activeDeviceId}` : ''}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${SPOTIFY_TOKEN}` }
+        headers: { 'Authorization': `Bearer ${spotifyToken}` }
       });
     } catch (error) { }
   };
 
   const prevTrack = async () => {
+    if (!spotifyToken) return;
     try {
       await fetch(`https://api.spotify.com/v1/me/player/previous${activeDeviceId ? `?device_id=${activeDeviceId}` : ''}`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${SPOTIFY_TOKEN}` }
+        headers: { 'Authorization': `Bearer ${spotifyToken}` }
       });
     } catch (error) { }
   };
@@ -228,6 +315,59 @@ const MusicPlayer = () => {
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  const handleConnectSpotify = () => {
+    // Open Spotify in a new tab - users can listen there while working
+    window.open('https://open.spotify.com', '_blank');
+    toast.info("Listen on Spotify while you work! Full integration coming soon.");
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="bg-zinc-900 border-white/5 shadow-2xl">
+        <CardContent className="p-8 flex items-center justify-center min-h-[300px]">
+          <Loader2 className="w-8 h-8 text-green-500 animate-spin" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Not connected - show connect UI
+  if (!isConnected) {
+    return (
+      <Card className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-green-950/30 border-white/5 shadow-2xl overflow-hidden">
+        <CardContent className="p-8 flex flex-col items-center justify-center min-h-[400px] text-center space-y-6">
+          <div className="relative">
+            <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/30">
+              <Music className="w-12 h-12 text-white" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center border-2 border-zinc-900">
+              <span className="text-lg">🎧</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-2xl font-bold text-white">Spotify Music</h3>
+            <p className="text-zinc-400 max-w-[300px]">
+              Listen to your favorite music while you work
+            </p>
+          </div>
+
+          <Button
+            onClick={handleConnectSpotify}
+            className="bg-green-500 hover:bg-green-600 text-white font-bold px-8 py-6 rounded-full shadow-lg shadow-green-500/30 transition-all hover:scale-105"
+          >
+            <ExternalLink className="w-5 h-5 mr-2" />
+            Open Spotify
+          </Button>
+
+          <p className="text-xs text-zinc-600">
+            🎵 Play music on Spotify while staying productive!
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="lg:col-span-1 xl:col-span-8 flex flex-col lg:flex-row gap-6">
