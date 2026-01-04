@@ -447,14 +447,14 @@ const TeamHeadDashboard = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col relative overflow-hidden">
-      {/* Background Layer */}
-      <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-black/60 z-10"></div>
+    <div className="min-h-screen h-screen flex flex-col relative overflow-hidden bg-zinc-950">
+      {/* Background Layer - Fixed to viewport */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-black/70 z-10 transition-opacity duration-700"></div>
         <img
           src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
           alt="Modern office background"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover scale-105"
         />
       </div>
 

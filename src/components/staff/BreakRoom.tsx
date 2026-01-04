@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Coffee, Gamepad2, MessageCircle, Zap, Trophy, Loader2 } from "lucide-react";
+import { Coffee, Gamepad2, MessageCircle, Zap, Trophy, Loader2, Star } from "lucide-react";
 import { useStaffData } from "@/hooks/useStaffData";
 import MusicPlayer from "./MusicPlayer";
 import WordChallenge from "./games/WordChallenge";
@@ -171,8 +171,11 @@ const BreakRoom = ({
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center h-full">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-orange-500 mx-auto" />
+          <p className="text-white/60 font-bold uppercase tracking-widest animate-pulse">Entering Break Room...</p>
+        </div>
       </div>
     );
   }
@@ -180,7 +183,7 @@ const BreakRoom = ({
   // Render active game
   if (activeGame !== 'none') {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[80vh]">
+      <div className="flex-1 flex items-center justify-center min-h-[80vh]">
         {activeGame === 'word-challenge' && <WordChallenge onClose={() => setActiveGame('none')} />}
         {activeGame === 'quick-quiz' && <QuickQuiz onClose={() => setActiveGame('none')} />}
         {activeGame === 'code-puzzle' && <CodePuzzle onClose={() => setActiveGame('none')} />}
@@ -189,43 +192,47 @@ const BreakRoom = ({
   }
 
   return (
-    <div className="p-6 space-y-8 relative z-10">
+    <div className="p-6 space-y-10 relative z-10 flex flex-col min-h-full">
       {/* Break Room Header */}
-      <div className="text-center space-y-2">
-        <h2 className="text-4xl sm:text-5xl font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] tracking-tight">BREAK <span className="text-orange-500">ROOM</span></h2>
-        <p className="text-white/90 font-semibold bg-orange-600/30 backdrop-blur-md inline-block px-4 py-1 rounded-full border border-orange-500/30">
-          Take a breather, connect with your team! ☕
-        </p>
+      <div className="text-center space-y-2 py-4">
+        <h2 className="text-4xl sm:text-6xl font-black text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] tracking-tight uppercase">BREAK <span className="text-orange-500">ROOM</span></h2>
+        <div className="inline-block relative">
+          <div className="absolute inset-0 bg-orange-500/20 blur-lg rounded-full"></div>
+          <p className="relative text-white font-bold bg-black/40 backdrop-blur-md px-6 py-2 rounded-full border border-orange-500/30 shadow-xl">
+            Take a breather, connect with your team! ☕
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-stretch flex-1">
         {/* 1. Team Chat */}
-        <div className="xl:col-span-5 h-full">
-          <Card className="bg-black/60 backdrop-blur-xl border-white/20 h-full shadow-2xl flex flex-col">
-            <CardHeader className="border-b border-white/10">
-              <CardTitle className="text-white flex items-center gap-2 text-xl">
-                <MessageCircle className="w-5 h-5 text-blue-400" />
-                Team Chat
+        <div className="xl:col-span-5 h-full flex flex-col min-h-[500px]">
+          <Card className="bg-black/60 backdrop-blur-xl border-white/10 h-full shadow-2xl flex flex-col overflow-hidden">
+            <CardHeader className="bg-white/5 border-b border-white/10 py-4">
+              <CardTitle className="text-white flex items-center gap-2 text-xl font-black italic">
+                <MessageCircle className="w-6 h-6 text-blue-500" />
+                TEAM MESSAGES
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 flex flex-col flex-1 min-h-[400px]">
-              <div className="flex-1 space-y-3 mb-4 overflow-y-auto pr-2 custom-scrollbar max-h-[450px]">
-                {chatMessages.length === 0 ? (
-                  <div className="text-center py-10">
-                    <p className="text-gray-400 text-sm">No messages yet. Start the conversation!</p>
+            <CardContent className="p-4 flex flex-col flex-1">
+              <div className="flex-1 space-y-4 mb-4 overflow-y-auto pr-2 custom-scrollbar min-h-[350px]">
+                {!chatMessages || chatMessages.length === 0 ? (
+                  <div className="text-center py-20">
+                    <MessageCircle className="w-12 h-12 text-white/10 mx-auto mb-4" />
+                    <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">No signals yet...</p>
                   </div>
                 ) : (
                   chatMessages.map((msg) => (
-                    <div key={msg.id} className="bg-white/5 rounded-xl p-3 border border-white/5 hover:border-white/10 transition-colors">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="text-blue-400 font-bold text-xs uppercase tracking-wider">
-                          {msg.profiles?.full_name || msg.profiles?.username || 'Anonymous'}
+                    <div key={msg.id} className="bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/20 transition-all group">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-blue-500 font-black text-xs uppercase tracking-tighter">
+                          {msg.profiles?.full_name || msg.profiles?.username || 'ANONYMOUS'}
                         </span>
-                        <span className="text-white/40 text-[10px] font-mono">
+                        <span className="text-white/20 text-[10px] font-mono font-bold">
                           {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
-                      <p className="text-white/90 text-sm leading-relaxed">{msg.message}</p>
+                      <p className="text-white/80 text-sm leading-relaxed font-medium">{msg.message}</p>
                     </div>
                   ))
                 )}
@@ -235,16 +242,16 @@ const BreakRoom = ({
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1 bg-white/10 border-white/20 text-white placeholder-gray-500 focus:ring-blue-500/50"
+                  placeholder="Broadcast a message..."
+                  className="flex-1 bg-white/5 border-white/10 text-white placeholder-gray-600 focus:ring-blue-500/50 h-12 rounded-xl"
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                 />
                 <Button
-                  className="bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20"
+                  className="bg-blue-600 hover:bg-blue-700 h-12 px-6 rounded-xl shadow-lg shadow-blue-500/20 font-black"
                   onClick={handleSendMessage}
                   disabled={sendingMessage || !newMessage.trim()}
                 >
-                  {sendingMessage ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send'}
+                  {sendingMessage ? <Loader2 className="w-5 h-5 animate-spin" /> : 'SEND'}
                 </Button>
               </div>
             </CardContent>
@@ -253,22 +260,25 @@ const BreakRoom = ({
 
         {/* 2. Coffee Break Timer */}
         <div className="xl:col-span-7 h-full">
-          <Card className="bg-zinc-900 border-orange-500/50 shadow-2xl overflow-hidden relative group h-full">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent pointer-events-none"></div>
-            <CardContent className="p-8 relative z-10 h-full flex flex-col justify-center">
-              <div className="text-center space-y-6">
+          <Card className="bg-zinc-900 border-orange-500/20 shadow-2xl overflow-hidden relative group h-full min-h-[500px]">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-red-500/10 pointer-events-none"></div>
+            <CardContent className="p-10 relative z-10 h-full flex flex-col justify-center">
+              <div className="text-center space-y-8">
                 <div className="relative inline-block">
-                  <div className="absolute inset-0 bg-orange-500/20 blur-2xl rounded-full"></div>
-                  <Coffee className={`w-24 h-24 mx-auto transition-all relative z-10 ${isBreakActive ? 'text-orange-400 animate-bounce' : 'text-orange-500'}`} />
+                  <div className="absolute inset-0 bg-orange-500/30 blur-3xl rounded-full scale-150 animate-pulse"></div>
+                  <Coffee className={`w-32 h-32 mx-auto transition-all relative z-10 ${isBreakActive ? 'text-orange-400 animate-bounce' : 'text-orange-500'}`} />
                 </div>
 
                 <div>
-                  <h3 className="text-white font-black text-3xl uppercase tracking-tighter italic">COFFEE BREAK</h3>
-                  <p className="text-orange-400/80 text-sm font-bold tracking-widest uppercase mt-1">Status: {isBreakActive ? 'Active' : 'Idle'}</p>
+                  <h3 className="text-white font-black text-5xl tracking-tighter italic leading-none">COFFEE <span className="text-orange-500 underline decoration-orange-500/50">BREAK</span></h3>
+                  <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10">
+                    <div className={`w-2 h-2 rounded-full ${isBreakActive ? 'bg-orange-500 animate-ping' : 'bg-gray-600'}`}></div>
+                    <span className="text-orange-400/80 text-[10px] font-bold tracking-[0.2em] uppercase">{isBreakActive ? 'Active Session' : 'Standby'}</span>
+                  </div>
                 </div>
 
                 {/* Timer Display */}
-                <div className={`text-8xl font-black font-mono tracking-tighter ${getTimerColor()} drop-shadow-[0_4px_4px_rgba(0,0,0,0.5)]`}>
+                <div className={`text-9xl font-black font-mono tracking-tighter ${getTimerColor()} drop-shadow-[0_8px_8px_rgba(0,0,0,0.6)] leading-none select-none`}>
                   {formatTime(breakTimeRemaining)}
                 </div>
 
@@ -284,40 +294,40 @@ const BreakRoom = ({
                           setBreakDuration(mins);
                           setBreakTimeRemaining(mins * 60);
                         }}
-                        className={`h-12 w-16 rounded-xl font-bold transition-all text-lg ${breakDuration === mins
-                          ? 'bg-orange-500 border-orange-400 text-white shadow-lg shadow-orange-500/40'
-                          : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10 hover:text-white'
+                        className={`h-14 w-20 rounded-2xl font-black transition-all text-xl border-2 ${breakDuration === mins
+                          ? 'bg-orange-500 border-orange-400 text-white shadow-2xl shadow-orange-500/50 scale-110'
+                          : 'bg-white/5 border-white/10 text-white/30 hover:bg-white/10 hover:text-white'
                           }`}
                       >
-                        {mins}m
+                        {mins}
                       </Button>
                     ))}
                   </div>
                 )}
 
                 {/* Control Buttons */}
-                <div className="flex flex-col gap-3 pt-2 max-w-sm mx-auto w-full">
+                <div className="flex flex-col gap-4 pt-4 max-w-sm mx-auto w-full">
                   {!isBreakActive ? (
                     <Button
                       onClick={startBreak}
-                      className="w-full h-14 text-xl font-black uppercase tracking-widest bg-orange-500 hover:bg-orange-600 text-white shadow-xl shadow-orange-500/20"
+                      className="w-full h-16 text-2xl font-black uppercase tracking-widest bg-orange-500 hover:bg-orange-600 text-white shadow-[0_0_30px_rgba(249,115,22,0.3)] hover:shadow-[0_0_40px_rgba(249,115,22,0.5)] transition-all rounded-2xl"
                     >
-                      START BREAK
+                      IGNITE BREAK
                     </Button>
                   ) : (
                     <>
                       <Button
                         onClick={resetBreak}
-                        className="w-full h-14 text-xl font-black uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/20"
+                        className="w-full h-16 text-2xl font-black uppercase tracking-widest bg-emerald-500 hover:bg-emerald-600 text-white shadow-[0_0_30px_rgba(16,185,129,0.3)] rounded-2xl"
                       >
                         BACK TO WORK
                       </Button>
                       <Button
                         onClick={pauseBreak}
                         variant="outline"
-                        className="w-full h-12 font-bold uppercase tracking-widest border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
+                        className="w-full h-12 font-bold uppercase tracking-widest border-orange-500/30 text-orange-400 hover:bg-orange-500/10 rounded-2xl"
                       >
-                        PAUSE TIMER
+                        TEMP PAUSE
                       </Button>
                     </>
                   )}
@@ -325,11 +335,13 @@ const BreakRoom = ({
 
                 {/* Progress Bar */}
                 {isBreakActive && (
-                  <div className="w-full max-w-md mx-auto bg-black/40 rounded-full h-4 border border-white/5 p-1 mt-4">
+                  <div className="w-full max-w-md mx-auto bg-black/60 rounded-full h-5 border-2 border-white/5 p-1 mt-6 overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-orange-400 to-red-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(249,115,22,0.5)]"
+                      className="bg-gradient-to-r from-orange-400 via-red-500 to-orange-400 h-full rounded-full transition-all duration-1000 shadow-[0_0_20px_rgba(249,115,22,0.6)]"
                       style={{
-                        width: `${((breakDuration * 60 - breakTimeRemaining) / (breakDuration * 60)) * 100}%`
+                        width: `${((breakDuration * 60 - breakTimeRemaining) / (breakDuration * 60)) * 100}%`,
+                        backgroundSize: '200% 100%',
+                        animation: 'gradient-move 2s linear infinite'
                       }}
                     />
                   </div>
@@ -341,87 +353,113 @@ const BreakRoom = ({
       </div>
 
       {/* 3. Lofi Music Player - Full Width Section */}
-      <div className="w-full">
+      <div className="w-full py-6">
         <MusicPlayer />
       </div>
 
-      {/* 4. Team Games - Second Row */}
-      <Card className="bg-black/20 backdrop-blur-lg border-white/10">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Gamepad2 className="w-5 h-5 text-purple-400" />
-            Team Games
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {games.map((game, index) => (
-              <div key={index} className="bg-white/5 rounded-lg p-4 border border-white/10 flex flex-col justify-between">
-                <div className="mb-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-white font-medium text-base sm:text-lg">{game.name}</h4>
-                    <span className="px-2 py-1 rounded text-[10px] font-medium bg-green-500/20 text-green-300">
-                      {game.status}
-                    </span>
+      {/* 4. Team Games & Leaderboard Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-10">
+        <Card className="bg-black/40 backdrop-blur-xl border-white/10 shadow-2xl overflow-hidden">
+          <CardHeader className="bg-white/5 border-b border-white/10">
+            <CardTitle className="text-white flex items-center gap-3 text-xl font-bold uppercase tracking-tight">
+              <Gamepad2 className="w-6 h-6 text-purple-500" />
+              TEAM CHALLENGES
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {games.map((game, index) => (
+                <div key={index} className="bg-white/5 rounded-2xl p-4 border border-white/5 flex flex-col justify-between hover:bg-white/10 transition-all group">
+                  <div className="mb-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <h4 className="text-white font-black text-lg group-hover:text-purple-400 transition-colors uppercase">{game.name}</h4>
+                      <div className="px-2 py-0.5 rounded-full text-[9px] font-black bg-green-500/10 text-green-400 border border-green-500/20 uppercase">
+                        {game.status}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mb-3">
+                      <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded font-bold uppercase">{game.difficulty}</span>
+                      <span className="text-[10px] bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded font-bold uppercase">{game.players}</span>
+                    </div>
+                    <p className="text-gray-500 text-xs leading-relaxed font-medium">{game.description}</p>
                   </div>
-                  <p className="text-gray-400 text-xs sm:text-sm">{game.difficulty} • {game.players} players</p>
-                  <p className="text-gray-500 text-xs mt-2 line-clamp-2">{game.description}</p>
+
+                  <Button
+                    size="sm"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl shadow-lg shadow-purple-500/20"
+                    onClick={() => setActiveGame(game.id)}
+                  >
+                    PLAY NOW
+                  </Button>
                 </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-full bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30 font-medium"
-                  onClick={() => setActiveGame(game.id)}
-                >
-                  Play Now
-                </Button>
-              </div>
-            ))}
-          </div>
-
-          <Button className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/20">
-            <Zap className="w-4 h-4 mr-2" />
-            Create New Game
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* 5. Weekly Leaderboard - Third Row */}
-      <Card className="bg-black/20 backdrop-blur-lg border-white/10">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-yellow-400" />
-            Weekly Leaderboard
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            {teamMembers.map((member, index) => (
-              <div key={member.id} className="flex items-center justify-between p-3 rounded-lg bg-white/5">
-                <div className="flex items-center gap-3">
-                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${index === 0 ? 'bg-yellow-500 text-black' :
-                    index === 1 ? 'bg-gray-400 text-black' :
-                      index === 2 ? 'bg-orange-500 text-black' :
-                        'bg-gray-600 text-white'
-                    }`}>
-                    {index + 1}
-                  </span>
-                  <span className="text-white font-medium text-sm">
-                    {member.full_name || member.username}
-                  </span>
+        <Card className="bg-black/40 backdrop-blur-xl border-white/10 shadow-2xl overflow-hidden">
+          <CardHeader className="bg-white/5 border-b border-white/10">
+            <CardTitle className="text-white flex items-center gap-3 text-xl font-bold uppercase tracking-tight">
+              <Trophy className="w-6 h-6 text-yellow-500" />
+              HALL OF FAME
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              {(!teamMembers || teamMembers.length === 0) ? (
+                <div className="text-center py-10 opacity-20">
+                  <Trophy className="w-12 h-12 mx-auto mb-2" />
+                  <p className="font-bold text-xs uppercase tracking-widest">Awaiting legends...</p>
                 </div>
-                <span className="text-yellow-300 font-bold">${member.earnings}</span>
-              </div>
-            ))}
-            {teamMembers.length === 0 && (
-              <div className="text-center py-4 col-span-full">
-                <p className="text-gray-400 text-sm">No team members yet</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              ) : (
+                teamMembers.map((member, index) => (
+                  <div key={member.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/20 transition-all hover:translate-x-1 duration-300">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black shadow-lg ${index === 0 ? 'bg-yellow-500 text-black scale-110 ring-4 ring-yellow-500/20' :
+                          index === 1 ? 'bg-zinc-400 text-black' :
+                            index === 2 ? 'bg-orange-600 text-white' :
+                              'bg-zinc-800 text-white'
+                        }`}>
+                        {index + 1}
+                      </div>
+                      <div>
+                        <span className="text-white font-black text-sm uppercase tracking-tight">
+                          {member.full_name || member.username || 'RECRUIT'}
+                        </span>
+                        <div className="flex gap-2 mt-0.5">
+                          <Star className="w-3 h-3 text-yellow-500 fill-current" />
+                          <span className="text-[9px] text-zinc-500 font-bold uppercase">Points: {member.total_points || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-yellow-500 font-black text-lg leading-none">${member.earnings || 0}</span>
+                      <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">Total Earned</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <style>{`
+        @keyframes gradient-move {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+      `}</style>
     </div>
   );
 };

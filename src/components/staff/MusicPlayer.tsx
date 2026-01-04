@@ -39,7 +39,7 @@ const MusicPlayer = () => {
   const [progress, setProgress] = useState([0]);
   const [isShuffled, setIsShuffled] = useState(false);
   const [isRepeating, setIsRepeating] = useState(false);
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Track[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -78,7 +78,7 @@ const MusicPlayer = () => {
           method: 'PUT',
           headers: { 'Authorization': `Bearer ${SPOTIFY_TOKEN}` }
         });
-      } catch (error) {}
+      } catch (error) { }
     };
     const debounce = setTimeout(syncVolume, 500);
     return () => clearTimeout(debounce);
@@ -95,20 +95,25 @@ const MusicPlayer = () => {
           const data = await response.json();
           setIsPlaying(data.is_playing);
           if (data.item) {
+            const durationMs = data.item.duration_ms || 1;
+            const progressMs = data.progress_ms || 0;
+
             setCurrentTrack({
               id: data.item.id,
               title: data.item.name,
               artist: data.item.artists.map((a: any) => a.name).join(", "),
-              duration: formatTime(Math.floor(data.item.duration_ms / 1000)),
+              duration: formatTime(Math.floor(durationMs / 1000)),
               album: data.item.album.name,
               uri: data.item.uri,
               image: data.item.album.images[0]?.url,
-              duration_ms: data.item.duration_ms
+              duration_ms: durationMs
             });
-            setProgress([Math.floor((data.progress_ms / data.item.duration_ms) * 100)]);
+
+            const progressVal = Math.min(100, Math.max(0, Math.floor((progressMs / durationMs) * 100)));
+            setProgress([progressVal]);
           }
         }
-      } catch (error) {}
+      } catch (error) { }
     };
 
     const interval = setInterval(pollPlayback, 5000);
@@ -130,7 +135,7 @@ const MusicPlayer = () => {
         }
       });
       const data = await response.json();
-      
+
       if (data.error) {
         if (data.error.status === 401) {
           toast.error("Spotify token expired. Please update the token.");
@@ -197,7 +202,7 @@ const MusicPlayer = () => {
         headers: { 'Authorization': `Bearer ${SPOTIFY_TOKEN}` }
       });
       if (response.status === 204) setIsPlaying(!isPlaying);
-    } catch (error) {}
+    } catch (error) { }
   };
 
   const nextTrack = async () => {
@@ -206,7 +211,7 @@ const MusicPlayer = () => {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${SPOTIFY_TOKEN}` }
       });
-    } catch (error) {}
+    } catch (error) { }
   };
 
   const prevTrack = async () => {
@@ -215,7 +220,7 @@ const MusicPlayer = () => {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${SPOTIFY_TOKEN}` }
       });
-    } catch (error) {}
+    } catch (error) { }
   };
 
   const formatTime = (seconds: number) => {
@@ -230,13 +235,13 @@ const MusicPlayer = () => {
       <Card className="flex-1 bg-zinc-900 border-white/5 shadow-2xl overflow-hidden relative min-w-[320px]">
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 z-0"></div>
         {currentTrack?.image && (
-          <img 
-            src={currentTrack.image} 
+          <img
+            src={currentTrack.image}
             className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-20 scale-150 rotate-12"
             alt=""
           />
         )}
-        
+
         <CardContent className="p-8 relative z-10 h-full flex flex-col justify-between min-h-[450px]">
           <div className="flex justify-between items-start mb-4">
             <Badge className="bg-green-500/20 text-green-400 border-green-500/30 font-bold tracking-widest px-3 py-1">SPOTIFY CONNECTED</Badge>
@@ -289,9 +294,8 @@ const MusicPlayer = () => {
               <Button
                 onClick={togglePlay}
                 disabled={!currentTrack}
-                className={`w-16 h-16 rounded-full shadow-2xl transition-all transform hover:scale-105 active:scale-95 ${
-                  isPlaying ? 'bg-white text-black' : 'bg-green-500 text-white'
-                }`}
+                className={`w-16 h-16 rounded-full shadow-2xl transition-all transform hover:scale-105 active:scale-95 ${isPlaying ? 'bg-white text-black' : 'bg-green-500 text-white'
+                  }`}
               >
                 {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 ml-1 fill-current" />}
               </Button>
@@ -364,7 +368,7 @@ const MusicPlayer = () => {
               </div>
             )}
           </ScrollArea>
-          
+
           <div className="p-4 bg-black/40 border-t border-white/5 text-center">
             <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em]">Powered by Spotify API v1</p>
           </div>
