@@ -427,7 +427,7 @@ const TeamHeadDashboard = () => {
             onHideAll={hideAllWidgets}
           />
         </div>
-        <TeamHeadWorkspace userId={profile?.user_id || 'demo-user'} userProfile={profile} />
+        <TeamHeadWorkspace userId={profile?.user_id || ''} userProfile={profile} />
         {renderWidgets()}
       </div>
     ),
@@ -486,7 +486,7 @@ const TeamHeadDashboard = () => {
 
             <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
               <div className="order-3 sm:order-1">
-                <NotificationsBar userId={profile?.user_id || 'demo-user'} />
+                <NotificationsBar userId={profile?.user_id || ''} />
               </div>
 
               <div className="flex items-center gap-1 sm:gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-2 sm:px-3 py-1">

@@ -7,7 +7,6 @@ import {
   Monitor,
   Coffee,
   Users,
-  Music,
   MessageCircle,
   Calendar,
   Bell,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import { ActivityLogPanel } from "./ActivityLogPanel";
+import MusicPlayer from "./MusicPlayer";
 
 interface VirtualOfficeLayoutProps {
   children: ReactNode;
@@ -59,8 +59,8 @@ const VirtualOfficeLayout = ({
                 variant="ghost"
                 size="sm"
                 className={`flex-shrink-0 p-3 transition-all duration-300 ${isActive
-                    ? `bg-gradient-to-r ${room.color} text-white shadow-lg`
-                    : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  ? `bg-gradient-to-r ${room.color} text-white shadow-lg`
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
                   }`}
                 onClick={() => onRoomChange(room.id)}
               >
@@ -91,8 +91,8 @@ const VirtualOfficeLayout = ({
                     key={room.id}
                     variant="ghost"
                     className={`w-full justify-start p-4 h-auto transition-all duration-300 ${isActive
-                        ? `bg-gradient-to-r ${room.color} text-white shadow-lg shadow-blue-500/25`
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                      ? `bg-gradient-to-r ${room.color} text-white shadow-lg shadow-blue-500/25`
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
                       }`}
                     onClick={() => onRoomChange(room.id)}
                   >
@@ -111,10 +111,9 @@ const VirtualOfficeLayout = ({
           <div>
             <h3 className="text-white font-semibold mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" className="bg-blue-500/20 border-blue-500/30 text-white hover:bg-blue-500/30">
-                <Music className="w-4 h-4 mr-2" />
-                Spotify
-              </Button>
+              <div className="col-span-2 mb-2">
+                <MusicPlayer variant="sidebar" userId={userId} />
+              </div>
               <Button variant="outline" size="sm" className="bg-red-500/20 border-red-500/30 text-white hover:bg-red-500/30">
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Chat

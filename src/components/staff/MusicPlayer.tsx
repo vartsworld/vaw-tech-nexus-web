@@ -39,9 +39,10 @@ interface SpotifySession {
 
 interface MusicPlayerProps {
   userId?: string;
+  variant?: 'full' | 'sidebar';
 }
 
-const MusicPlayer = ({ userId }: MusicPlayerProps) => {
+const MusicPlayer = ({ userId, variant = 'full' }: MusicPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [volume, setVolume] = useState([75]);
@@ -334,6 +335,27 @@ const MusicPlayer = ({ userId }: MusicPlayerProps) => {
 
   // Not connected - show connect UI
   if (!isConnected) {
+    if (variant === 'sidebar') {
+      return (
+        <div className="bg-black/20 rounded-xl p-4 border border-white/5 text-center space-y-3">
+          <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center mx-auto">
+            <Music className="w-5 h-5 text-green-500" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-white">Spotify</h4>
+            <p className="text-xs text-zinc-500">Connect to play</p>
+          </div>
+          <Button 
+            onClick={handleConnectSpotify}
+            size="sm"
+            className="w-full bg-green-500 hover:bg-green-600 h-8 text-xs font-bold"
+          >
+            Connect
+          </Button>
+        </div>
+      );
+    }
+
     return (
       <Card className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-green-950/30 border-white/5 shadow-2xl overflow-hidden">
         <CardContent className="p-8 flex flex-col items-center justify-center min-h-[400px] text-center space-y-6">
@@ -366,6 +388,125 @@ const MusicPlayer = ({ userId }: MusicPlayerProps) => {
           </p>
         </CardContent>
       </Card>
+    );
+  }
+
+  if (variant === 'sidebar') {
+    return (
+        <div className="bg-black/40 backdrop-blur-md rounded-xl border border-white/10 overflow-hidden">
+             {/* Compact Player Header */}
+            <div className="p-3 border-b border-white/5 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-md overflow-hidden bg-zinc-800 flex-shrink-0 relative group">
+                    {currentTrack?.image ? (
+                        <img src={currentTrack.image} alt={currentTrack.album} className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                            <Music className="w-5 h-5 text-zinc-600" />
+                        </div>
+                    )}
+                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="flex gap-1">
+                            <span className="w-1 h-3 bg-green-500 animate-pulse"></span>
+                            <span className="w-1 h-2 bg-green-500 animate-pulse delay-75"></span>
+                             <span className="w-1 h-4 bg-green-500 animate-pulse delay-150"></span>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-bold text-white truncate">{currentTrack?.title || "Not Playing"}</h4>
+                    <p className="text-xs text-zinc-400 truncate">{currentTrack?.artist || "Select a track"}</p>
+                </div>
+            </div>
+
+            {/* Compact Controls */}
+             <div className="p-3 space-y-3">
+                 <div className="flex items-center justify-center gap-4">
+                     <Button variant="ghost" size="icon" onClick={prevTrack} className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-white/5">
+                         <SkipBack className="w-4 h-4" />
+                     </Button>
+                     <Button 
+                        size="icon" 
+                        onClick={togglePlay}
+                        className={`h-10 w-10 rounded-full shadow-lg ${isPlaying ? 'bg-white text-black' : 'bg-green-500 text-white hover:bg-green-600'}`}
+                     >
+                         {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 ml-0.5 fill-current" />}
+                     </Button>
+                    <Button variant="ghost" size="icon" onClick={nextTrack} className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-white/5">
+                         <SkipForward className="w-4 h-4" />
+                     </Button>
+                 </div>
+                 
+                {/* Progress Bar */}
+                 <div className="space-y-1">
+                    <Slider
+                        value={progress}
+                        onValueChange={setProgress}
+                        max={100}
+                        className="music-slider-redesign h-1.5"
+                    />
+                    <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
+                        <span>{formatTime(Math.floor((progress[0] / 100) * (currentTrack?.duration_ms || 0) / 1000))}</span>
+                        <span>{currentTrack?.duration || "0:00"}</span>
+                    </div>
+                 </div>
+                 
+                  {/* Search Input Trigger (Simplified) */}
+                 <div className="relative">
+                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+                     <Input 
+                        placeholder="Search songs..." 
+                        className="h-8 pl-8 text-xs bg-black/20 border-white/10"
+                        value={searchQuery}
+                         onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            searchTracks(e.target.value);
+                          }}
+                     />
+                 </div>
+                 
+                 {/* Mini Search Results Overlay */}
+                 {searchQuery && (
+                     <div className="absolute left-0 right-0 bottom-full mb-2 bg-zinc-900 border border-white/10 rounded-lg shadow-xl overflow-hidden max-h-[300px] z-50 mx-2">
+                        <ScrollArea className="h-full max-h-[300px]">
+                            {isSearching ? (
+                                <div className="p-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-green-500"/></div>
+                            ) : searchResults.length > 0 ? (
+                                <div className="p-1">
+                                    {searchResults.map(track => (
+                                        <button
+                                            key={track.id}
+                                            onClick={() => {
+                                                playTrack(track);
+                                                setSearchQuery("");
+                                                setSearchResults([]);
+                                            }}
+                                            className="w-full flex items-center gap-2 p-2 hover:bg-white/10 rounded text-left"
+                                        >
+                                            <div className="w-8 h-8 rounded bg-zinc-800 flex-shrink-0 overflow-hidden">
+                                                <img src={track.image} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                 <p className="text-xs font-bold text-white truncate">{track.title}</p>
+                                                 <p className="text-[10px] text-zinc-400 truncate">{track.artist}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-4 text-center text-xs text-zinc-500">No results found</div>
+                            )}
+                        </ScrollArea>
+                     </div>
+                 )}
+
+             </div>
+             
+             <style>{`
+                .music-slider-redesign [role="slider"] { width: 0px; height: 0px; }
+                .music-slider-redesign .relative { height: 4px; background: rgba(255,255,255,0.05); border-radius: 99px; }
+                .music-slider-redesign [style*="width"] { background: #22c55e; }
+             `}</style>
+        </div>
     );
   }
 
