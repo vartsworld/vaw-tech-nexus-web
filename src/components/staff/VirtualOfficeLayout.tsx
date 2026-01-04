@@ -131,7 +131,7 @@ const VirtualOfficeLayout = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="col-span-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/30 text-white hover:from-amber-500/30 hover:to-yellow-500/30"
+                className="col-span-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/30 text-white hover:from-amber-500/30 hover:to-yellow-500/30"
                 onClick={() => navigate('/mycoins')}
               >
                 <Coins className="w-4 h-4 mr-2" />
