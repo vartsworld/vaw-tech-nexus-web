@@ -4,19 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  CheckCircle, 
-  Clock, 
-  Target, 
-  TrendingUp, 
-  StickyNote, 
+import {
+  CheckCircle,
+  Clock,
+  Target,
+  TrendingUp,
+  StickyNote,
   Plus,
   Play,
   Pause,
   Loader2
 } from "lucide-react";
 import { useStaffData } from "@/hooks/useStaffData";
-import MusicPlayer from "./MusicPlayer";
+
 
 const WorkspaceRoom = () => {
   const { tasks, notes, profile, loading, updateTaskStatus, addNote } = useStaffData();
@@ -38,8 +38,8 @@ const WorkspaceRoom = () => {
 
   const completedTasks = tasks.filter(task => task.status === 'Completed').length;
   const todayEarnings = tasks
-    .filter(task => 
-      task.status === 'Completed' && 
+    .filter(task =>
+      task.status === 'Completed' &&
       new Date(task.created_at).toDateString() === new Date().toDateString()
     )
     .reduce((sum, task) => {
@@ -64,7 +64,7 @@ const WorkspaceRoom = () => {
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Your Workspace</h2>
           <p className="text-purple-300 text-sm sm:text-base">Focus zone - Let's get things done! 💪</p>
         </div>
-        
+
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="bg-green-500/20 border border-green-500/30 rounded-lg px-3 sm:px-4 py-2">
             <div className="flex items-center gap-2">
@@ -104,7 +104,7 @@ const WorkspaceRoom = () => {
                         {task.priority}
                       </Badge>
                     </div>
-                    
+
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 text-sm">
                       <div className="flex flex-wrap items-center gap-2">
                         {task.due_date && (
@@ -118,15 +118,15 @@ const WorkspaceRoom = () => {
                           {task.status}
                         </Badge>
                       </div>
-                      
+
                       <div className="flex items-center justify-between sm:justify-end gap-2">
                         <span className="text-green-400 font-medium">
                           ${task.category === 'Design' ? 45 : task.category === 'Review' ? 25 : 30}
                         </span>
                         {task.status !== 'Completed' && (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
+                          <Button
+                            size="sm"
+                            variant="outline"
                             className="bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30"
                             onClick={() => handleTaskAction(task.id, task.status)}
                           >
@@ -153,7 +153,7 @@ const WorkspaceRoom = () => {
                 <p className="text-blue-300 text-xs sm:text-sm">Tasks Completed</p>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-green-500/30">
               <CardContent className="p-4 text-center">
                 <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-400 mx-auto mb-2" />
@@ -161,7 +161,7 @@ const WorkspaceRoom = () => {
                 <p className="text-green-300 text-xs sm:text-sm">Today's Earnings</p>
               </CardContent>
             </Card>
-            
+
             <Card className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 border-purple-500/30">
               <CardContent className="p-4 text-center">
                 <Target className="w-6 h-6 sm:w-8 sm:h-8 text-purple-400 mx-auto mb-2" />
@@ -200,9 +200,9 @@ const WorkspaceRoom = () => {
                   className="bg-white/10 border-white/20 text-white placeholder-gray-400"
                   onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
                 />
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="w-full bg-white/5 border-white/20 text-white hover:bg-white/10"
                   onClick={handleAddNote}
                   disabled={addingNote || !newNote.trim()}
@@ -218,7 +218,7 @@ const WorkspaceRoom = () => {
             </CardContent>
           </Card>
 
-          <MusicPlayer />
+
         </div>
       </div>
     </div>

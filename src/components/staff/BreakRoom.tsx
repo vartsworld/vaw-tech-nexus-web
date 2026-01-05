@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Coffee, Gamepad2, MessageCircle, Zap, Trophy, Loader2, Star } from "lucide-react";
 import { useStaffData } from "@/hooks/useStaffData";
-import MusicPlayer from "./MusicPlayer";
+
 import WordChallenge from "./games/WordChallenge";
 import QuickQuiz from "./games/QuickQuiz";
 import CodePuzzle from "./games/CodePuzzle";
@@ -352,10 +352,7 @@ const BreakRoom = ({
         </div>
       </div>
 
-      {/* 3. Lofi Music Player - Full Width Section */}
-      <div className="w-full py-6">
-        <MusicPlayer />
-      </div>
+
 
       {/* 4. Team Games & Leaderboard Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-10">
@@ -416,9 +413,9 @@ const BreakRoom = ({
                   <div key={member.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/20 transition-all hover:translate-x-1 duration-300">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black shadow-lg ${index === 0 ? 'bg-yellow-500 text-black scale-110 ring-4 ring-yellow-500/20' :
-                          index === 1 ? 'bg-zinc-400 text-black' :
-                            index === 2 ? 'bg-orange-600 text-white' :
-                              'bg-zinc-800 text-white'
+                        index === 1 ? 'bg-zinc-400 text-black' :
+                          index === 2 ? 'bg-orange-600 text-white' :
+                            'bg-zinc-800 text-white'
                         }`}>
                         {index + 1}
                       </div>

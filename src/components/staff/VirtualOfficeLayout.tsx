@@ -112,7 +112,7 @@ const VirtualOfficeLayout = ({
             <h3 className="text-white font-semibold mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-2">
               <div className="col-span-2 mb-2">
-                <MusicPlayer variant="sidebar" userId={userId} />
+  
               </div>
               <Button variant="outline" size="sm" className="bg-red-500/20 border-red-500/30 text-white hover:bg-red-500/30">
                 <MessageCircle className="w-4 h-4 mr-2" />
