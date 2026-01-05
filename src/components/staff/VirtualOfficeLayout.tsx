@@ -73,7 +73,7 @@ const VirtualOfficeLayout = ({
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 p-6 overflow-y-auto flex-shrink-0">
+      <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 p-6 overflow-y-auto flex-shrink-0 z-20">
         <div className="space-y-6">
           {/* Room Navigation */}
           <div>

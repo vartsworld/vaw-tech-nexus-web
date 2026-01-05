@@ -1396,7 +1396,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   };
 
   return (
-    <div className="px-1 py-4 space-y-8 max-w-7xl mx-auto relative z-10">
+    <div className="px-1 py-4 space-y-8 max-w-7xl mx-auto min-h-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-white/10">
         <div className="flex items-center gap-4">
