@@ -1906,12 +1906,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
             </CardContent>
           </Card>
 
-          {/* Music Player */}
-          <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white">
-            <CardContent className="pt-6">
-              <MusicPlayer />
-            </CardContent>
-          </Card>
+
         </div>
       </div>
 
