@@ -400,12 +400,16 @@ const TeamHeadDashboard = () => {
   };
 
   const renderWidgets = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <div className="space-y-6">
       {widgets.find(w => w.id === 'chess')?.isVisible && (
-        <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
+        <div className="w-full">
+          <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
+        </div>
       )}
       {widgets.find(w => w.id === 'chat')?.isVisible && (
-        <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
+        <div className="h-[500px]">
+          <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
+        </div>
       )}
       {widgets.find(w => w.id === 'timer')?.isVisible && (
         <TimeboxWidget userId={profile?.user_id || ''} userProfile={profile} />
@@ -418,8 +422,8 @@ const TeamHeadDashboard = () => {
 
   const roomComponents = {
     workspace: (
-      <div className="space-y-4">
-        <div className="flex justify-end mb-2">
+      <div className="flex flex-col h-full space-y-4">
+        <div className="flex justify-end">
           <WidgetManager
             widgets={widgets}
             onToggleWidget={toggleWidget}
@@ -427,8 +431,18 @@ const TeamHeadDashboard = () => {
             onHideAll={hideAllWidgets}
           />
         </div>
-        <TeamHeadWorkspace userId={profile?.user_id || ''} userProfile={profile} />
-        {renderWidgets()}
+
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
+          {/* Main Workspace Area */}
+          <div className="xl:col-span-3 min-w-0">
+            <TeamHeadWorkspace userId={profile?.user_id || ''} userProfile={profile} />
+          </div>
+
+          {/* Right Sidebar / Widgets */}
+          <div className="xl:col-span-1 min-w-0">
+            {renderWidgets()}
+          </div>
+        </div>
       </div>
     ),
     breakroom: isBreakRoomMinimized ? null : (

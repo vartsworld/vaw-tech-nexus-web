@@ -5,11 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Crown, 
-  Users, 
-  Trophy, 
-  Play, 
+import {
+  Crown,
+  Users,
+  Trophy,
+  Play,
   Bot,
   Shuffle,
   Send,
@@ -52,7 +52,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
   const [isVsBot, setIsVsBot] = useState(false);
   const [opponentId, setOpponentId] = useState<string | null>(null);
   const [opponentName, setOpponentName] = useState<string>('');
-  
+
   // Chess game state
   const [chess] = useState(new Chess());
   const [board, setBoard] = useState(chess.board());
@@ -61,13 +61,13 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
   const [gameHistory, setGameHistory] = useState<string[]>([]);
   const [isGameOver, setIsGameOver] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
-  
+
   // Team & invites
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [pendingInvites, setPendingInvites] = useState<ChessInvite[]>([]);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [isLookingForMatch, setIsLookingForMatch] = useState(false);
-  
+
   // Stats
   const [stats, setStats] = useState({ wins: 0, games: 0, rating: 1200 });
 
@@ -118,7 +118,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
             avatar_url: profile.avatar_url
           };
         }).filter(m => m.status === 'online' || m.status === 'active');
-        
+
         setTeamMembers(members);
       }
     } catch (error) {
@@ -217,7 +217,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
       if (waitingGames && waitingGames.length > 0) {
         // Join existing game
         const game = waitingGames[0];
-        
+
         // Get opponent name
         const { data: opponentProfile } = await supabase
           .from('staff_profiles')
@@ -227,8 +227,8 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
         await supabase
           .from('chess_games')
-          .update({ 
-            player2_id: userId, 
+          .update({
+            player2_id: userId,
             status: 'active',
             game_state: { fen: chess.fen(), history: [], turn: 'w' }
           })
@@ -258,7 +258,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
         let matched = false;
         for (let i = 0; i < 20; i++) { // 20 seconds timeout
           await new Promise(resolve => setTimeout(resolve, 1000));
-          
+
           const { data: updatedGame } = await supabase
             .from('chess_games')
             .select('status, player2_id')
@@ -336,7 +336,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
       setIsGameOver(false);
       setWinner(null);
       setGameMode('playing');
-      
+
       toast.success(`Game started with ${invite.from_profile?.full_name}!`);
       fetchPendingInvites();
     } catch (error) {
@@ -361,12 +361,12 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
   const handleSquareClick = useCallback((row: number, col: number) => {
     if (isGameOver) return;
-    
+
     // Only allow moves when it's player's turn (white for now)
     if (!isVsBot && chess.turn() !== 'w') return;
 
     const square = String.fromCharCode(97 + col) + (8 - row);
-    
+
     if (selectedSquare) {
       const move = {
         from: selectedSquare,
@@ -419,7 +419,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
     // Simple bot: prioritize captures, then random
     const captures = moves.filter((m: any) => m.captured);
-    const selectedMove = captures.length > 0 
+    const selectedMove = captures.length > 0
       ? captures[Math.floor(Math.random() * captures.length)]
       : moves[Math.floor(Math.random() * moves.length)];
 
@@ -455,7 +455,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
   const getPieceSymbol = (piece: any) => {
     if (!piece) return null;
-    
+
     // Use stylized piece representations
     const pieceMap: Record<string, { symbol: string; isWhite: boolean }> = {
       'wk': { symbol: '♔', isWhite: true },
@@ -471,7 +471,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
       'bn': { symbol: '♞', isWhite: false },
       'bp': { symbol: '♟', isWhite: false },
     };
-    
+
     const key = piece.color + piece.type;
     return pieceMap[key] || null;
   };
@@ -498,11 +498,11 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
         <div className="absolute inset-0 opacity-5">
           <div className="grid grid-cols-8 h-full">
             {[...Array(64)].map((_, i) => (
-              <div key={i} className={`${(Math.floor(i/8) + i) % 2 === 0 ? 'bg-white' : 'bg-transparent'}`} />
+              <div key={i} className={`${(Math.floor(i / 8) + i) % 2 === 0 ? 'bg-white' : 'bg-transparent'}`} />
             ))}
           </div>
         </div>
-        
+
         <CardHeader className="pb-3 relative">
           <CardTitle className="text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -540,17 +540,17 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                     <span className="text-sm text-white font-medium">{invite.from_profile?.full_name}</span>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      className="h-8 px-3 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-lg shadow-emerald-500/30" 
+                    <Button
+                      size="sm"
+                      className="h-8 px-3 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-lg shadow-emerald-500/30"
                       onClick={() => acceptInvite(invite)}
                     >
                       <Play className="w-3 h-3 mr-1" /> Accept
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-8 px-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10" 
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
                       onClick={() => declineInvite(invite.id)}
                     >
                       <X className="w-4 h-4" />
@@ -576,7 +576,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
             </TabsList>
 
             <TabsContent value="play" className="space-y-3 mt-4">
-              <Button 
+              <Button
                 onClick={startBotGame}
                 className="w-full h-14 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 hover:from-emerald-600 hover:via-green-600 hover:to-teal-600 shadow-lg shadow-emerald-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
@@ -590,7 +590,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                   </div>
                 </div>
               </Button>
-              <Button 
+              <Button
                 onClick={findRandomMatch}
                 className="w-full h-14 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 hover:from-violet-600 hover:via-purple-600 hover:to-fuchsia-600 shadow-lg shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
@@ -629,8 +629,8 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                             <span className="text-[10px] text-emerald-400">Online</span>
                           </div>
                         </div>
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           className="h-8 px-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/20"
                           onClick={() => sendInvite(member.user_id, member.full_name)}
                         >
@@ -682,8 +682,8 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
           <Loader2 className="w-12 h-12 text-blue-400 mx-auto mb-4 animate-spin" />
           <p className="text-white font-medium">Finding opponent...</p>
           <p className="text-white/50 text-sm mt-2">This may take a few seconds</p>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="mt-4 text-white/70"
             onClick={resetGame}
           >
@@ -708,11 +708,10 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
             </span>
           </CardTitle>
           <div className="flex items-center gap-2">
-            <div className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-              chess.turn() === 'w' 
-                ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/30' 
+            <div className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${chess.turn() === 'w'
+                ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/30'
                 : 'bg-slate-700 text-slate-400'
-            }`}>
+              }`}>
               {chess.turn() === 'w' ? '⚪ Your Turn' : '⚫ Waiting'}
             </div>
             <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-700" onClick={resetGame}>
@@ -728,14 +727,14 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
           {/* Board frame/border */}
           <div className="absolute -inset-2 bg-gradient-to-br from-amber-900 via-amber-800 to-amber-900 rounded-xl shadow-2xl" />
           <div className="absolute -inset-1.5 bg-gradient-to-br from-amber-700 to-amber-800 rounded-lg" />
-          
+
           {/* Actual board */}
-          <div className="relative aspect-square rounded-lg overflow-hidden shadow-inner">
+          <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-inner">
             {/* File labels (a-h) */}
             <div className="absolute -bottom-5 left-0 right-0 flex justify-around text-[10px] font-bold text-amber-400/70">
               {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map(f => <span key={f}>{f}</span>)}
             </div>
-            
+
             {/* Rank labels (8-1) */}
             <div className="absolute -left-4 top-0 bottom-0 flex flex-col justify-around text-[10px] font-bold text-amber-400/70">
               {[8, 7, 6, 5, 4, 3, 2, 1].map(r => <span key={r}>{r}</span>)}
@@ -749,14 +748,14 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                   const canMove = isPossibleMove(rowIndex, colIndex);
                   const pieceData = getPieceSymbol(piece);
                   const hasPiece = pieceData !== null;
-                  
+
                   return (
                     <div
                       key={`${rowIndex}-${colIndex}`}
                       className={`
                         relative flex items-center justify-center cursor-pointer transition-all duration-150
-                        ${isLight 
-                          ? 'bg-gradient-to-br from-amber-100 via-amber-50 to-amber-100' 
+                        ${isLight
+                          ? 'bg-gradient-to-br from-amber-100 via-amber-50 to-amber-100'
                           : 'bg-gradient-to-br from-amber-700 via-amber-600 to-amber-700'
                         }
                         ${isSelected ? 'ring-2 ring-inset ring-cyan-400 shadow-[inset_0_0_20px_rgba(34,211,238,0.4)]' : ''}
@@ -767,18 +766,18 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                       onClick={() => handleSquareClick(rowIndex, colIndex)}
                     >
                       {pieceData && (
-                        <span 
+                        <span
                           className={`
                             text-2xl sm:text-3xl transition-transform duration-150 select-none
-                            ${pieceData.isWhite 
-                              ? 'text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]' 
+                            ${pieceData.isWhite
+                              ? 'text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]'
                               : 'text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]'
                             }
                             ${isSelected ? 'scale-110 animate-pulse' : 'hover:scale-105'}
                           `}
                           style={{
-                            textShadow: pieceData.isWhite 
-                              ? '0 2px 4px rgba(0,0,0,0.5), 0 0 10px rgba(255,255,255,0.3)' 
+                            textShadow: pieceData.isWhite
+                              ? '0 2px 4px rgba(0,0,0,0.5), 0 0 10px rgba(255,255,255,0.3)'
                               : '0 1px 2px rgba(255,255,255,0.2), 0 0 8px rgba(0,0,0,0.3)'
                           }}
                         >
@@ -826,13 +825,12 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
             <ScrollArea className="h-14">
               <div className="flex flex-wrap gap-1">
                 {gameHistory.map((move, i) => (
-                  <span 
-                    key={i} 
-                    className={`px-2 py-0.5 rounded text-xs font-mono ${
-                      i % 2 === 0 
-                        ? 'bg-slate-700 text-slate-300' 
+                  <span
+                    key={i}
+                    className={`px-2 py-0.5 rounded text-xs font-mono ${i % 2 === 0
+                        ? 'bg-slate-700 text-slate-300'
                         : 'bg-slate-600 text-slate-200'
-                    }`}
+                      }`}
                   >
                     {i % 2 === 0 ? `${Math.floor(i / 2) + 1}. ` : ''}{move}
                   </span>

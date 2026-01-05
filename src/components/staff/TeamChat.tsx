@@ -65,7 +65,7 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
       if (error) throw error;
 
       setChannels(data || []);
-      
+
       // Set general channel as default
       const generalChannel = data?.find(c => c.is_general);
       if (generalChannel) {
@@ -99,7 +99,7 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
             .select('full_name, avatar_url')
             .eq('user_id', msg.sender_id)
             .single();
-            
+
           return {
             ...msg,
             sender_name: senderData?.full_name || 'Unknown User',
@@ -198,11 +198,10 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
               key={channel.id}
               variant={activeChannelId === channel.id ? "default" : "ghost"}
               size="sm"
-              className={`flex items-center gap-1 whitespace-nowrap ${
-                activeChannelId === channel.id
+              className={`flex items-center gap-1 whitespace-nowrap ${activeChannelId === channel.id
                   ? "bg-blue-500 text-white"
                   : "text-white/70 hover:text-white"
-              }`}
+                }`}
               onClick={() => setActiveChannelId(channel.id)}
             >
               {channel.is_general ? <Hash className="w-3 h-3" /> : <Users className="w-3 h-3" />}
@@ -216,18 +215,17 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
           <div className="space-y-3">
             {messages.map((message) => {
               const isOwnMessage = message.sender_id === userId;
-              
+
               return (
                 <div
                   key={message.id}
                   className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[70%] rounded-lg p-3 ${
-                      isOwnMessage
+                    className={`max-w-[70%] rounded-lg p-3 ${isOwnMessage
                         ? 'bg-blue-500/80 text-white'
                         : 'bg-white/10 text-white border border-white/20'
-                    }`}
+                      }`}
                   >
                     {!isOwnMessage && (
                       <div className="flex items-center gap-2 mb-1">
@@ -240,9 +238,8 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
                       </div>
                     )}
                     <p className="text-sm">{message.content}</p>
-                    <p className={`text-xs mt-1 ${
-                      isOwnMessage ? 'text-white/70' : 'text-white/50'
-                    }`}>
+                    <p className={`text-xs mt-1 ${isOwnMessage ? 'text-white/70' : 'text-white/50'
+                      }`}>
                       {new Date(message.created_at).toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit'
@@ -262,7 +259,7 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder="Type a message..."
               className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
               disabled={isLoading}
@@ -276,7 +273,7 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
               <Send className="w-4 h-4" />
             </Button>
           </div>
-          
+
           <div className="flex items-center justify-between mt-2 text-xs text-white/50">
             <span>Press Enter to send</span>
             <span>+2 points per message</span>
