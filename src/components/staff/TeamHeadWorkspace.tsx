@@ -102,9 +102,10 @@ interface Staff {
 interface TeamHeadWorkspaceProps {
   userId: string;
   userProfile: any;
+  widgetManager?: React.ReactNode;
 }
 
-const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
+const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorkspaceProps) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -1398,255 +1399,258 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   return (
     <div className="px-1 py-4 space-y-8 max-w-7xl mx-auto min-h-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-black/40 backdrop-blur-md p-6 rounded-2xl border border-white/10">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-purple-500/20 rounded-xl border border-purple-500/30">
-            <Settings className="h-8 w-8 text-purple-400 animate-spin-slow" />
+      <div className="flex items-center justify-between gap-4 bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/10">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="p-2 bg-purple-500/20 rounded-lg border border-purple-500/30 flex-shrink-0">
+            <Settings className="h-5 w-5 text-purple-400" />
           </div>
-          <div>
-            <h2 className="text-3xl sm:text-4xl font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] tracking-tight uppercase">TEAM HEAD <span className="text-purple-500">WORKSPACE</span></h2>
-            <p className="text-purple-300 font-bold tracking-widest text-xs uppercase">Management Hub v2.0</p>
-          </div>
+          <h2 className="text-xl sm:text-2xl font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] tracking-tight uppercase truncate">
+            TEAM HEAD <span className="text-purple-500">WORKSPACE</span>
+          </h2>
         </div>
-        <Dialog open={isCreateTaskOpen} onOpenChange={setIsCreateTaskOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Create Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Task</DialogTitle>
-            </DialogHeader>
-            <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Task Title</Label>
-                  <Input
-                    id="title"
-                    value={newTask.title}
-                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                    placeholder="Enter task title"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={newTask.description}
-                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                    placeholder="Enter task description"
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="assigned_to">Assign To</Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto py-1 px-2 text-xs"
-                      onClick={() => setNewTask({ ...newTask, assigned_to: userId })}
-                    >
-                      <User className="h-3 w-3 mr-1" />
-                      Assign to myself
-                    </Button>
-                  </div>
-                  <Select value={newTask.assigned_to} onValueChange={(value) => setNewTask({ ...newTask, assigned_to: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select staff member" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {staff.map(member => (
-                        <SelectItem key={member.id} value={member.user_id}>
-                          {member.full_name} (@{member.username})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="client">Client *</Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto py-1 px-2 text-xs"
-                      onClick={() => setIsAddClientOpen(true)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add New Client
-                    </Button>
-                  </div>
-                  <Select value={newTask.client_id} onValueChange={(value) => setNewTask({ ...newTask, client_id: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map(client => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.company_name} - {client.contact_person}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {widgetManager}
+          <Dialog open={isCreateTaskOpen} onOpenChange={setIsCreateTaskOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Create Task</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create New Task</DialogTitle>
+              </DialogHeader>
+              <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
+                <div className="space-y-4">
                   <div>
-                    <Label htmlFor="priority">Priority</Label>
-                    <Select value={newTask.priority} onValueChange={(value) => setNewTask({ ...newTask, priority: value as any })}>
+                    <Label htmlFor="title">Task Title</Label>
+                    <Input
+                      id="title"
+                      value={newTask.title}
+                      onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                      placeholder="Enter task title"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea
+                      id="description"
+                      value={newTask.description}
+                      onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                      placeholder="Enter task description"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="assigned_to">Assign To</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto py-1 px-2 text-xs"
+                        onClick={() => setNewTask({ ...newTask, assigned_to: userId })}
+                      >
+                        <User className="h-3 w-3 mr-1" />
+                        Assign to myself
+                      </Button>
+                    </div>
+                    <Select value={newTask.assigned_to} onValueChange={(value) => setNewTask({ ...newTask, assigned_to: value })}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select staff member" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
+                        {staff.map(member => (
+                          <SelectItem key={member.id} value={member.user_id}>
+                            {member.full_name} (@{member.username})
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="points">Points</Label>
-                    <Input
-                      id="points"
-                      type="number"
-                      value={newTask.points}
-                      onChange={(e) => setNewTask({ ...newTask, points: parseInt(e.target.value) || 10 })}
-                      min="1"
-                      max="100"
-                      disabled={newTask.trial_period}
-                      className={newTask.trial_period ? 'opacity-50' : ''}
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-white/5 rounded-lg border border-white/10">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="trial_period" className="text-sm font-medium">
-                      Trial Period
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Staff won't earn points for this task
-                    </p>
-                  </div>
-                  <Switch
-                    id="trial_period"
-                    checked={newTask.trial_period}
-                    onCheckedChange={(checked) => setNewTask({ ...newTask, trial_period: checked })}
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="due_date">Due Date (Optional)</Label>
-                    <Input
-                      id="due_date"
-                      type="date"
-                      value={newTask.due_date}
-                      onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="due_time">Due Time (Optional)</Label>
-                    <Input
-                      id="due_time"
-                      type="time"
-                      value={newTask.due_time}
-                      onChange={(e) => setNewTask({ ...newTask, due_time: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="attachments">Attachments (Optional)</Label>
-                  <div className="space-y-2">
-                    <Input
-                      id="attachments"
-                      type="file"
-                      multiple
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        const attachmentsWithTitles = files.map(file => ({
-                          file,
-                          title: file.name.split('.')[0] // Default title is filename without extension
-                        }));
-                        setNewTask({ ...newTask, attachments: [...newTask.attachments, ...attachmentsWithTitles] });
-                        e.target.value = ''; // Reset input
-                      }}
-                      className="cursor-pointer"
-                    />
-                    {newTask.attachments.length > 0 && (
-                      <div className="space-y-2">
-                        {newTask.attachments.map((attachment, idx) => (
-                          <div key={idx} className="p-3 bg-white/5 rounded border border-white/10 space-y-2">
-                            <div className="flex items-start sm:items-center justify-between gap-2 flex-col sm:flex-row">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <Paperclip className="h-3 w-3 flex-shrink-0" />
-                                <span className="truncate text-sm">{attachment.file.name}</span>
-                                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                  ({(attachment.file.size / 1024).toFixed(1)} KB)
-                                </span>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  const newFiles = newTask.attachments.filter((_, i) => i !== idx);
-                                  setNewTask({ ...newTask, attachments: newFiles });
-                                }}
-                                className="self-end sm:self-auto"
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                            <div>
-                              <Label htmlFor={`title-${idx}`} className="text-xs">Document Title</Label>
-                              <Input
-                                id={`title-${idx}`}
-                                value={attachment.title}
-                                onChange={(e) => {
-                                  const updatedAttachments = [...newTask.attachments];
-                                  updatedAttachments[idx].title = e.target.value;
-                                  setNewTask({ ...newTask, attachments: updatedAttachments });
-                                }}
-                                placeholder="Enter document title"
-                                className="h-8 text-sm"
-                              />
-                            </div>
-                          </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="client">Client *</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto py-1 px-2 text-xs"
+                        onClick={() => setIsAddClientOpen(true)}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add New Client
+                      </Button>
+                    </div>
+                    <Select value={newTask.client_id} onValueChange={(value) => setNewTask({ ...newTask, client_id: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select client" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.map(client => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.company_name} - {client.contact_person}
+                          </SelectItem>
                         ))}
-                      </div>
-                    )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="priority">Priority</Label>
+                      <Select value={newTask.priority} onValueChange={(value) => setNewTask({ ...newTask, priority: value as any })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="urgent">Urgent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="points">Points</Label>
+                      <Input
+                        id="points"
+                        type="number"
+                        value={newTask.points}
+                        onChange={(e) => setNewTask({ ...newTask, points: parseInt(e.target.value) || 10 })}
+                        min="1"
+                        max="100"
+                        disabled={newTask.trial_period}
+                        className={newTask.trial_period ? 'opacity-50' : ''}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-white/5 rounded-lg border border-white/10">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="trial_period" className="text-sm font-medium">
+                        Trial Period
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Staff won't earn points for this task
+                      </p>
+                    </div>
+                    <Switch
+                      id="trial_period"
+                      checked={newTask.trial_period}
+                      onCheckedChange={(checked) => setNewTask({ ...newTask, trial_period: checked })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="due_date">Due Date (Optional)</Label>
+                      <Input
+                        id="due_date"
+                        type="date"
+                        value={newTask.due_date}
+                        onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="due_time">Due Time (Optional)</Label>
+                      <Input
+                        id="due_time"
+                        type="time"
+                        value={newTask.due_time}
+                        onChange={(e) => setNewTask({ ...newTask, due_time: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="attachments">Attachments (Optional)</Label>
+                    <div className="space-y-2">
+                      <Input
+                        id="attachments"
+                        type="file"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          const attachmentsWithTitles = files.map(file => ({
+                            file,
+                            title: file.name.split('.')[0] // Default title is filename without extension
+                          }));
+                          setNewTask({ ...newTask, attachments: [...newTask.attachments, ...attachmentsWithTitles] });
+                          e.target.value = ''; // Reset input
+                        }}
+                        className="cursor-pointer"
+                      />
+                      {newTask.attachments.length > 0 && (
+                        <div className="space-y-2">
+                          {newTask.attachments.map((attachment, idx) => (
+                            <div key={idx} className="p-3 bg-white/5 rounded border border-white/10 space-y-2">
+                              <div className="flex items-start sm:items-center justify-between gap-2 flex-col sm:flex-row">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <Paperclip className="h-3 w-3 flex-shrink-0" />
+                                  <span className="truncate text-sm">{attachment.file.name}</span>
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                    ({(attachment.file.size / 1024).toFixed(1)} KB)
+                                  </span>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const newFiles = newTask.attachments.filter((_, i) => i !== idx);
+                                    setNewTask({ ...newTask, attachments: newFiles });
+                                  }}
+                                  className="self-end sm:self-auto"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              <div>
+                                <Label htmlFor={`title-${idx}`} className="text-xs">Document Title</Label>
+                                <Input
+                                  id={`title-${idx}`}
+                                  value={attachment.title}
+                                  onChange={(e) => {
+                                    const updatedAttachments = [...newTask.attachments];
+                                    updatedAttachments[idx].title = e.target.value;
+                                    setNewTask({ ...newTask, attachments: updatedAttachments });
+                                  }}
+                                  placeholder="Enter document title"
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
+              </ScrollArea>
+              <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t border-white/10">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreateTaskOpen(false)}
+                  className="w-full sm:w-auto"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateTask}
+                  disabled={uploadingFiles}
+                  className="w-full sm:w-auto"
+                >
+                  {uploadingFiles ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    "Create Task"
+                  )}
+                </Button>
               </div>
-            </ScrollArea>
-            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 border-t border-white/10">
-              <Button
-                variant="outline"
-                onClick={() => setIsCreateTaskOpen(false)}
-                className="w-full sm:w-auto"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCreateTask}
-                disabled={uploadingFiles}
-                className="w-full sm:w-auto"
-              >
-                {uploadingFiles ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  "Create Task"
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="space-y-6">

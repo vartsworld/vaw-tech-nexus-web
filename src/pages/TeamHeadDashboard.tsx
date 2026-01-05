@@ -424,19 +424,20 @@ const TeamHeadDashboard = () => {
   const roomComponents = {
     workspace: (
       <div className="flex flex-col space-y-6 pb-8">
-        {/* Toggle Widgets Button */}
-        <div className="flex justify-end">
-          <WidgetManager
-            widgets={widgets}
-            onToggleWidget={toggleWidget}
-            onShowAll={showAllWidgets}
-            onHideAll={hideAllWidgets}
-          />
-        </div>
-
         {/* Row 1: Main Workspace (Header & Tasks) */}
         <div className="w-full relative z-10">
-          <TeamHeadWorkspace userId={profile?.user_id || ''} userProfile={profile} />
+          <TeamHeadWorkspace
+            userId={profile?.user_id || ''}
+            userProfile={profile}
+            widgetManager={
+              <WidgetManager
+                widgets={widgets}
+                onToggleWidget={toggleWidget}
+                onShowAll={showAllWidgets}
+                onHideAll={hideAllWidgets}
+              />
+            }
+          />
         </div>
 
         {/* Row 2: Quick Tools (Notes & Timer) */}
@@ -454,14 +455,20 @@ const TeamHeadDashboard = () => {
           )}
         </div>
 
-        {/* Row 3: Team Chat (or Planner placeholder) */}
-        {widgets.find(w => w.id === 'chat')?.isVisible && (
-          <div className="w-full relative z-10">
-            <div className="max-w-4xl mx-auto h-[600px]">
+        {/* Row 3: Team Chat + Activity Log (side by side) */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+          {widgets.find(w => w.id === 'chat')?.isVisible && (
+            <div className="xl:col-span-2 relative z-10 h-[600px]">
               <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
             </div>
-          </div>
-        )}
+          )}
+
+          {widgets.find(w => w.id === 'activity')?.isVisible && (
+            <div className="xl:col-span-1 relative z-10">
+              <ActivityLogPanel userId={profile?.user_id || ''} className="bg-black/40 backdrop-blur-lg border-white/10 h-[600px]" />
+            </div>
+          )}
+        </div>
 
         {/* Row 4: Chess (Bottom Center) */}
         {widgets.find(w => w.id === 'chess')?.isVisible && (
@@ -469,13 +476,6 @@ const TeamHeadDashboard = () => {
             <div className="w-full max-w-2xl">
               <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
             </div>
-          </div>
-        )}
-
-        {/* Activity Log (Optional/Toggleable) */}
-        {widgets.find(w => w.id === 'activity')?.isVisible && (
-          <div className="fixed bottom-4 right-4 z-50 w-80">
-            <ActivityLogPanel userId={profile?.user_id || ''} className="bg-black/80 backdrop-blur-md border-white/20 shadow-2xl max-h-[400px] overflow-hidden" />
           </div>
         )}
       </div>

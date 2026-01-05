@@ -740,7 +740,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
               {[8, 7, 6, 5, 4, 3, 2, 1].map(r => <span key={r}>{r}</span>)}
             </div>
 
-            <div className="grid grid-cols-8 h-full w-full">
+            <div className="grid grid-cols-8 aspect-square w-full">
               {board.map((row, rowIndex) =>
                 row.map((piece, colIndex) => {
                   const isLight = (rowIndex + colIndex) % 2 === 0;
@@ -748,17 +748,16 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                   const canMove = isPossibleMove(rowIndex, colIndex);
                   const pieceData = getPieceSymbol(piece);
                   const hasPiece = pieceData !== null;
-
+                  
                   return (
                     <div
                       key={`${rowIndex}-${colIndex}`}
                       className={`
-                        relative flex items-center justify-center cursor-pointer transition-all duration-150
-                        ${isLight
-                          ? 'bg-gradient-to-br from-amber-100 via-amber-50 to-amber-100'
-                          : 'bg-gradient-to-br from-amber-700 via-amber-600 to-amber-700'
+                        aspect-square relative flex items-center justify-center cursor-pointer transition-colors duration-150
+                        ${isLight 
+                          ? isSelected ? 'bg-gradient-to-br from-amber-200 via-amber-300 to-amber-200' : 'bg-gradient-to-br from-amber-100 via-amber-50 to-amber-100'
+                          : isSelected ? 'bg-gradient-to-br from-amber-800 via-amber-900 to-amber-800' : 'bg-gradient-to-br from-amber-700 via-amber-600 to-amber-700'
                         }
-                        ${isSelected ? 'ring-2 ring-inset ring-cyan-400 shadow-[inset_0_0_20px_rgba(34,211,238,0.4)]' : ''}
                         ${canMove && !hasPiece ? 'after:absolute after:w-3 after:h-3 after:rounded-full after:bg-cyan-500/40 after:shadow-lg after:shadow-cyan-500/50' : ''}
                         ${canMove && hasPiece ? 'ring-2 ring-inset ring-rose-500 shadow-[inset_0_0_15px_rgba(244,63,94,0.3)]' : ''}
                         hover:brightness-110 active:scale-95
@@ -766,18 +765,18 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                       onClick={() => handleSquareClick(rowIndex, colIndex)}
                     >
                       {pieceData && (
-                        <span
+                        <span 
                           className={`
-                            text-2xl sm:text-3xl transition-transform duration-150 select-none
-                            ${pieceData.isWhite
-                              ? 'text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]'
+                            text-2xl sm:text-3xl md:text-4xl transition-transform duration-150 select-none
+                            ${pieceData.isWhite 
+                              ? 'text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]' 
                               : 'text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]'
                             }
-                            ${isSelected ? 'scale-110 animate-pulse' : 'hover:scale-105'}
+                            hover:scale-105
                           `}
                           style={{
-                            textShadow: pieceData.isWhite
-                              ? '0 2px 4px rgba(0,0,0,0.5), 0 0 10px rgba(255,255,255,0.3)'
+                            textShadow: pieceData.isWhite 
+                              ? '0 2px 4px rgba(0,0,0,0.5), 0 0 10px rgba(255,255,255,0.3)' 
                               : '0 1px 2px rgba(255,255,255,0.2), 0 0 8px rgba(0,0,0,0.3)'
                           }}
                         >

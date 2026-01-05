@@ -38,7 +38,7 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
 
   useEffect(() => {
     fetchTeamMembers();
-    
+
     // Subscribe to real-time status changes
     const channel = supabase
       .channel('team_status')
@@ -274,11 +274,10 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
                     className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[85%] rounded-2xl px-3 py-2 ${
-                        isOwn
+                      className={`max-w-[85%] rounded-2xl px-3 py-2 ${isOwn
                           ? 'bg-blue-500 text-white rounded-br-md'
                           : 'bg-white/10 text-white rounded-bl-md'
-                      }`}
+                        }`}
                     >
                       <p className="text-sm break-words">{message.content}</p>
                       <p className={`text-[10px] mt-1 ${isOwn ? 'text-white/70' : 'text-white/40'}`}>
@@ -302,7 +301,7 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder="Type a message..."
               className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-9"
               disabled={isLoading}
@@ -331,7 +330,7 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
       ) : (
         teamMembers.map((member) => {
           const initials = member.full_name?.split(' ').map((n: string) => n[0]).join('') || '?';
-          
+
           return (
             <button
               key={member.user_id}
@@ -343,7 +342,7 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
                   {initials}
                 </div>
                 {/* Online indicator */}
-                <div 
+                <div
                   className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-slate-900 ${getStatusColor(member.status, member.isOnline)} ${member.isOnline ? 'animate-pulse' : ''}`}
                   title={getStatusText(member.status, member.isOnline)}
                 />
