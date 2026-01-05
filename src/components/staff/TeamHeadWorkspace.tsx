@@ -1649,12 +1649,12 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="space-y-6">
         {/* Tasks Management */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
           {/* Pending Approval Tasks */}
           {tasks.filter(t => t.status === 'pending_approval').length > 0 && (
-            <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-lg border-orange-500/30 text-white">
+            <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-lg border-orange-500/30 text-white relative z-10">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 h-5 text-orange-400" />
@@ -1717,7 +1717,7 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
             </Card>
           )}
 
-          <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white overflow-hidden">
+          <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white overflow-hidden relative z-10">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <Target className="h-5 w-5 text-purple-400" />
@@ -1848,65 +1848,6 @@ const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
               </ScrollArea>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Notes */}
-          <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <StickyNote className="h-5 w-5 text-yellow-400" />
-                Quick Notes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Textarea
-                  placeholder="Add a quick note..."
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  rows={3}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
-                />
-                <Button
-                  onClick={handleAddNote}
-                  disabled={!newNote.trim() || addingNote}
-                  size="sm"
-                  className="w-full"
-                >
-                  {addingNote ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Plus className="mr-2 h-4 w-4" />
-                  )}
-                  Add Note
-                </Button>
-              </div>
-              <ScrollArea className="h-40">
-                <div className="space-y-2">
-                  {notes.map((note) => (
-                    <div key={note.id} className="p-2 bg-white/5 rounded-lg border border-white/10 group relative">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => handleDeleteNote(note.id)}
-                      >
-                        <X className="h-3 w-3 text-white/70" />
-                      </Button>
-                      <p className="text-sm text-white/80 pr-6">{note.content}</p>
-                      <p className="text-xs text-white/50 mt-1">
-                        {format(new Date(note.created_at), 'MMM dd, HH:mm')}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-
-
         </div>
       </div>
 

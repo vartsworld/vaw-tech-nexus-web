@@ -44,6 +44,7 @@ import MiniChess from "@/components/staff/MiniChess";
 import TeamChat from "@/components/staff/TeamChat";
 import TimeboxWidget from "@/components/staff/TimeboxWidget";
 import WidgetManager from "@/components/staff/WidgetManager";
+import { QuickNotes } from "@/components/staff/QuickNotes";
 import { useStaffData } from "@/hooks/useStaffData";
 import { useActivityTracker } from "@/hooks/useActivityTracker";
 import { useUserStatus } from "@/hooks/useUserStatus";
@@ -422,7 +423,8 @@ const TeamHeadDashboard = () => {
 
   const roomComponents = {
     workspace: (
-      <div className="flex flex-col h-full space-y-4">
+      <div className="flex flex-col space-y-6 pb-8">
+        {/* Toggle Widgets Button */}
         <div className="flex justify-end">
           <WidgetManager
             widgets={widgets}
@@ -432,17 +434,50 @@ const TeamHeadDashboard = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
-          {/* Main Workspace Area */}
-          <div className="xl:col-span-3 min-w-0">
-            <TeamHeadWorkspace userId={profile?.user_id || ''} userProfile={profile} />
+        {/* Row 1: Main Workspace (Header & Tasks) */}
+        <div className="w-full relative z-10">
+          <TeamHeadWorkspace userId={profile?.user_id || ''} userProfile={profile} />
+        </div>
+
+        {/* Row 2: Quick Tools (Notes & Timer) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          {/* Quick Notes */}
+          <div className="h-full">
+            <QuickNotes userId={profile?.user_id || ''} />
           </div>
 
-          {/* Right Sidebar / Widgets */}
-          <div className="xl:col-span-1 min-w-0">
-            {renderWidgets()}
-          </div>
+          {/* Timebox / Timer */}
+          {widgets.find(w => w.id === 'timer')?.isVisible && (
+            <div className="h-full">
+              <TimeboxWidget userId={profile?.user_id || ''} userProfile={profile} />
+            </div>
+          )}
         </div>
+
+        {/* Row 3: Team Chat (or Planner placeholder) */}
+        {widgets.find(w => w.id === 'chat')?.isVisible && (
+          <div className="w-full relative z-10">
+            <div className="max-w-4xl mx-auto h-[600px]">
+              <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
+            </div>
+          </div>
+        )}
+
+        {/* Row 4: Chess (Bottom Center) */}
+        {widgets.find(w => w.id === 'chess')?.isVisible && (
+          <div className="w-full flex justify-center py-4 relative z-10">
+            <div className="w-full max-w-2xl">
+              <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
+            </div>
+          </div>
+        )}
+
+        {/* Activity Log (Optional/Toggleable) */}
+        {widgets.find(w => w.id === 'activity')?.isVisible && (
+          <div className="fixed bottom-4 right-4 z-50 w-80">
+            <ActivityLogPanel userId={profile?.user_id || ''} className="bg-black/80 backdrop-blur-md border-white/20 shadow-2xl max-h-[400px] overflow-hidden" />
+          </div>
+        )}
       </div>
     ),
     breakroom: isBreakRoomMinimized ? null : (
