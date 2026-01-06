@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { 
+import {
   Bell,
   Plus,
   Send,
@@ -86,7 +86,7 @@ const NotificationCenter = () => {
     try {
       const { data, error } = await supabase
         .from('staff_profiles')
-        .select('id, full_name, username')
+        .select('id, full_name, username, role, department_id, departments(name)')
         .order('full_name');
 
       if (error) throw error;
@@ -99,7 +99,7 @@ const NotificationCenter = () => {
   const handleCreateNotification = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       const notificationData: any = {
         title: newNotification.title,
         content: newNotification.content,
@@ -178,6 +178,21 @@ const NotificationCenter = () => {
     }
   };
 
+  const toggleUserSelection = (userId) => {
+    const currentSelected = newNotification.target_users || [];
+    if (currentSelected.includes(userId)) {
+      setNewNotification({
+        ...newNotification,
+        target_users: currentSelected.filter(id => id !== userId)
+      });
+    } else {
+      setNewNotification({
+        ...newNotification,
+        target_users: [...currentSelected, userId]
+      });
+    }
+  };
+
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'announcement': return Info;
@@ -190,7 +205,7 @@ const NotificationCenter = () => {
 
   const getNotificationColor = (type, isUrgent) => {
     if (isUrgent) return 'border-red-200 bg-red-50';
-    
+
     switch (type) {
       case 'announcement': return 'border-blue-200 bg-blue-50';
       case 'alert': return 'border-orange-200 bg-orange-50';
@@ -235,7 +250,7 @@ const NotificationCenter = () => {
                 <Input
                   id="title"
                   value={newNotification.title}
-                  onChange={(e) => setNewNotification({...newNotification, title: e.target.value})}
+                  onChange={(e) => setNewNotification({ ...newNotification, title: e.target.value })}
                   placeholder="Enter notification title"
                 />
               </div>
@@ -244,7 +259,7 @@ const NotificationCenter = () => {
                 <Textarea
                   id="content"
                   value={newNotification.content}
-                  onChange={(e) => setNewNotification({...newNotification, content: e.target.value})}
+                  onChange={(e) => setNewNotification({ ...newNotification, content: e.target.value })}
                   placeholder="Enter notification message"
                   rows={4}
                 />
@@ -252,7 +267,7 @@ const NotificationCenter = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="type">Notification Type</Label>
-                  <Select value={newNotification.type} onValueChange={(value) => setNewNotification({...newNotification, type: value})}>
+                  <Select value={newNotification.type} onValueChange={(value) => setNewNotification({ ...newNotification, type: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -268,14 +283,14 @@ const NotificationCenter = () => {
                   <Switch
                     id="urgent"
                     checked={newNotification.is_urgent}
-                    onCheckedChange={(checked) => setNewNotification({...newNotification, is_urgent: checked})}
+                    onCheckedChange={(checked) => setNewNotification({ ...newNotification, is_urgent: checked })}
                   />
                   <Label htmlFor="urgent">Mark as Urgent</Label>
                 </div>
               </div>
               <div>
                 <Label htmlFor="target_type">Send To</Label>
-                <Select value={newNotification.target_type} onValueChange={(value) => setNewNotification({...newNotification, target_type: value})}>
+                <Select value={newNotification.target_type} onValueChange={(value) => setNewNotification({ ...newNotification, target_type: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -286,10 +301,54 @@ const NotificationCenter = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {newNotification.target_type === "specific" && (
+                <div className="border rounded-md p-3 space-y-3">
+                  <Label>Select Users</Label>
+                  <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
+                    {staff.map(user => (
+                      <div
+                        key={user.id}
+                        className={`flex items-start gap-3 p-2 rounded-md border cursor-pointer transition-colors ${(newNotification.target_users || []).includes(user.id)
+                            ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800'
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-800 border-transparent'
+                          }`}
+                        onClick={() => toggleUserSelection(user.id)}
+                      >
+                        <div className={`w-4 h-4 mt-1 rounded border flex items-center justify-center ${(newNotification.target_users || []).includes(user.id)
+                            ? 'bg-blue-600 border-blue-600'
+                            : 'border-gray-300'
+                          }`}>
+                          {(newNotification.target_users || []).includes(user.id) && (
+                            <CheckCircle className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{user.full_name}</p>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            <Badge variant="secondary" className="text-[10px] h-5">
+                              {user.departments?.name || 'No Dept'}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground capitalize">
+                              {user.role}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              ID: {user.username}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground text-right">
+                    {(newNotification.target_users || []).length} users selected
+                  </p>
+                </div>
+              )}
               {newNotification.target_type === "department" && (
                 <div>
                   <Label htmlFor="department">Department</Label>
-                  <Select value={newNotification.department_id} onValueChange={(value) => setNewNotification({...newNotification, department_id: value})}>
+                  <Select value={newNotification.department_id} onValueChange={(value) => setNewNotification({ ...newNotification, department_id: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
@@ -307,7 +366,7 @@ const NotificationCenter = () => {
                   id="expires_at"
                   type="datetime-local"
                   value={newNotification.expires_at}
-                  onChange={(e) => setNewNotification({...newNotification, expires_at: e.target.value})}
+                  onChange={(e) => setNewNotification({ ...newNotification, expires_at: e.target.value })}
                 />
               </div>
               <div className="flex justify-end gap-2">
@@ -386,20 +445,18 @@ const NotificationCenter = () => {
             {notifications.map((notification) => {
               const Icon = getNotificationIcon(notification.type);
               const isExpired = notification.expires_at && new Date(notification.expires_at) < new Date();
-              
+
               return (
                 <div
                   key={notification.id}
-                  className={`p-4 rounded-lg border-2 ${getNotificationColor(notification.type, notification.is_urgent)} ${
-                    isExpired ? 'opacity-50' : ''
-                  }`}
+                  className={`p-4 rounded-lg border-2 ${getNotificationColor(notification.type, notification.is_urgent)} ${isExpired ? 'opacity-50' : ''
+                    }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0">
-                        <Icon className={`h-5 w-5 ${
-                          notification.is_urgent ? 'text-red-600' : 'text-blue-600'
-                        }`} />
+                        <Icon className={`h-5 w-5 ${notification.is_urgent ? 'text-red-600' : 'text-blue-600'
+                          }`} />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">

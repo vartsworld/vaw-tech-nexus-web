@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Users, 
-  UserCheck, 
-  ClipboardList, 
+import {
+  Users,
+  UserCheck,
+  ClipboardList,
   BarChart3,
   Plus,
   Search,
@@ -14,7 +14,9 @@ import {
   AlertCircle,
   TrendingUp,
   Building2,
-  Clock
+  Clock,
+  Moon,
+  Sun
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -37,6 +39,7 @@ const HRDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [hrProfile, setHrProfile] = useState<any>(null);
   const [departmentName, setDepartmentName] = useState<string>("");
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [stats, setStats] = useState({
     totalStaff: 0,
     presentToday: 0,
@@ -52,7 +55,23 @@ const HRDashboard = () => {
     fetchHRProfile();
     fetchDashboardStats();
     fetchRecentActivities();
+
+    // Check system preference
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setIsDarkMode(true);
+      document.documentElement.classList.add('dark');
+    }
   }, []);
+
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   const fetchHRProfile = async () => {
     try {
@@ -67,14 +86,14 @@ const HRDashboard = () => {
 
       if (error) throw error;
       setHrProfile(profile);
-      
+
       if (profile?.department_id) {
         const { data: dept } = await supabase
           .from('departments')
           .select('name')
           .eq('id', profile.department_id)
           .single();
-        
+
         if (dept) {
           setDepartmentName(dept.name);
         }
@@ -175,15 +194,15 @@ const HRDashboard = () => {
   };
 
   const StatCard = ({ title, value, subtitle, icon: Icon, trend = false }) => (
-    <Card>
+    <Card className="dark:bg-gray-800 dark:border-gray-700">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-200">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-2xl font-bold text-gray-900 dark:text-white">{value}</div>
         {subtitle && (
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <p className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
             {trend && <TrendingUp className="h-3 w-3" />}
             {subtitle}
           </p>
@@ -193,20 +212,32 @@ const HRDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-3 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-3 md:p-6 transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-4 md:space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">HR Management Dashboard</h1>
-            <p className="text-sm md:text-base text-gray-600">
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">HR Management Dashboard</h1>
+            <p className="text-sm md:text-base text-gray-700 dark:text-gray-300">
               Comprehensive staff and department management
               {hrProfile?.full_name && ` • ${hrProfile.full_name}`}
               {departmentName && ` • ${departmentName} Department`}
             </p>
           </div>
           <div className="flex items-center gap-2 md:gap-4">
-            <Badge variant="outline" className="px-2 md:px-3 py-1 text-xs md:text-sm">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleDarkMode}
+              className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm"
+            >
+              {isDarkMode ? (
+                <Sun className="h-5 w-5 text-yellow-500" />
+              ) : (
+                <Moon className="h-5 w-5 text-gray-700" />
+              )}
+            </Button>
+            <Badge variant="outline" className="px-2 md:px-3 py-1 text-xs md:text-sm bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm text-gray-900 dark:text-gray-100">
               <Clock className="h-3 w-3 md:h-4 md:w-4 mr-1" />
               <span className="hidden sm:inline">Last updated: </span>{new Date().toLocaleTimeString()}
             </Badge>

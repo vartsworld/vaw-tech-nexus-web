@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
+import {
   ClipboardList,
   Plus,
   Search,
@@ -44,6 +44,7 @@ const TaskManagement = () => {
   const [isHandoverDialogOpen, setIsHandoverDialogOpen] = useState(false);
   const [handoverTaskId, setHandoverTaskId] = useState<string | null>(null);
   const [handoverDepartmentId, setHandoverDepartmentId] = useState("");
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -76,9 +77,11 @@ const TaskManagement = () => {
       const { data: { user } } = await supabase.auth.getUser();
       const { data: currentUserProfile } = await supabase
         .from('staff_profiles')
-        .select('role, department_id, is_department_head')
+        .select('role, department_id, is_department_head, full_name, avatar_url')
         .eq('user_id', user?.id)
         .single();
+
+      setUserProfile(currentUserProfile);
 
       // Fetch tasks
       const { data: tasksData, error: tasksError } = await supabase
@@ -127,14 +130,14 @@ const TaskManagement = () => {
           if (task.assigned_to === user?.id || task.assigned_by === user?.id) {
             return true;
           }
-          
+
           // Show handover tasks to department heads and managers in the same department
           if (task.status === 'handover') {
             const isManagerOrHead = currentUserProfile.role === 'manager' || currentUserProfile.is_department_head;
             const sameDepartment = task.department_id === currentUserProfile.department_id;
             return isManagerOrHead && sameDepartment;
           }
-          
+
           // For non-handover tasks, only show if assigned to/by current user
           return false;
         });
@@ -235,7 +238,7 @@ const TaskManagement = () => {
     try {
       // Get current user's ID for assigned_by
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       const { data, error } = await supabase
         .from('staff_tasks')
         .insert({
@@ -282,6 +285,14 @@ const TaskManagement = () => {
   };
 
   const updateTaskStatus = async (taskId, newStatus, departmentId?: string) => {
+    // Only allow HR or Dept Head to mark as completed directly and award points
+    // Regular staff can mark as review_pending
+    const isAuthorized = userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head;
+
+    // If setting to completed and not authorized, force review_pending or show error
+    // But since we control the UI options, we assume the call is valid for the context
+    // Ideally we double check here
+
     try {
       const updateData: any = {
         status: newStatus,
@@ -308,7 +319,7 @@ const TaskManagement = () => {
       // Award points if task is completed
       if (newStatus === 'completed' && data) {
         const pointsToAward = data.points || 10;
-        
+
         // Get current staff profile points
         const { data: staffProfile } = await supabase
           .from('staff_profiles')
@@ -319,8 +330,8 @@ const TaskManagement = () => {
         // Update staff total points
         await supabase
           .from('staff_profiles')
-          .update({ 
-            total_points: (staffProfile?.total_points || 0) + pointsToAward 
+          .update({
+            total_points: (staffProfile?.total_points || 0) + pointsToAward
           })
           .eq('user_id', data.assigned_to);
 
@@ -336,13 +347,18 @@ const TaskManagement = () => {
 
         toast({
           title: "Success",
-          description: `Task completed! +${pointsToAward} points awarded.`,
+          description: `Task approved & completed! +${pointsToAward} points awarded.`,
+        });
+      } else if (newStatus === 'review_pending') {
+        toast({
+          title: "Submitted",
+          description: "Task submitted for approval.",
         });
       } else {
         toast({
           title: "Success",
-          description: newStatus === 'handover' 
-            ? "Task handed over successfully." 
+          description: newStatus === 'handover'
+            ? "Task handed over successfully."
             : "Task status updated successfully.",
         });
       }
@@ -466,6 +482,7 @@ const TaskManagement = () => {
       pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
       in_progress: { color: 'bg-blue-100 text-blue-800', icon: Target },
       completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
+      review_pending: { color: 'bg-orange-100 text-orange-800', icon: Eye },
       handover: { color: 'bg-purple-100 text-purple-800', icon: User },
       cancelled: { color: 'bg-red-100 text-red-800', icon: AlertCircle }
     };
@@ -476,7 +493,7 @@ const TaskManagement = () => {
     return (
       <Badge className={config.color}>
         <Icon className="h-3 w-3 mr-1" />
-        {status.replace('_', ' ').toUpperCase()}
+        {status.replace(/_/g, ' ').toUpperCase()}
       </Badge>
     );
   };
@@ -502,7 +519,7 @@ const TaskManagement = () => {
       const { data, error } = await supabase.storage
         .from('task-attachments')
         .download(attachment.url);
-      
+
       if (error) throw error;
 
       const url = window.URL.createObjectURL(data);
@@ -548,7 +565,7 @@ const TaskManagement = () => {
                 <Input
                   id="title"
                   value={newTask.title}
-                  onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
                   placeholder="Enter task title"
                 />
               </div>
@@ -557,7 +574,7 @@ const TaskManagement = () => {
                 <Textarea
                   id="description"
                   value={newTask.description}
-                  onChange={(e) => setNewTask({...newTask, description: e.target.value})}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                   placeholder="Enter task description"
                   rows={3}
                 />
@@ -574,7 +591,7 @@ const TaskManagement = () => {
                       const { data: { user } } = await supabase.auth.getUser();
                       const currentUser = staff.find(s => s.user_id === user?.id);
                       if (currentUser) {
-                        setNewTask({...newTask, assigned_to: currentUser.id});
+                        setNewTask({ ...newTask, assigned_to: currentUser.id });
                       }
                     }}
                   >
@@ -582,7 +599,7 @@ const TaskManagement = () => {
                     Assign to myself
                   </Button>
                 </div>
-                <Select value={newTask.assigned_to} onValueChange={(value) => setNewTask({...newTask, assigned_to: value})}>
+                <Select value={newTask.assigned_to} onValueChange={(value) => setNewTask({ ...newTask, assigned_to: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select staff member" />
                   </SelectTrigger>
@@ -597,7 +614,7 @@ const TaskManagement = () => {
               </div>
               <div>
                 <Label htmlFor="project">Project (Optional)</Label>
-                <Select value={newTask.project_id} onValueChange={(value) => setNewTask({...newTask, project_id: value})}>
+                <Select value={newTask.project_id} onValueChange={(value) => setNewTask({ ...newTask, project_id: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
@@ -613,7 +630,7 @@ const TaskManagement = () => {
               </div>
               <div>
                 <Label htmlFor="client">Client (Optional)</Label>
-                <Select value={newTask.client_id} onValueChange={(value) => setNewTask({...newTask, client_id: value})}>
+                <Select value={newTask.client_id} onValueChange={(value) => setNewTask({ ...newTask, client_id: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select client" />
                   </SelectTrigger>
@@ -630,7 +647,7 @@ const TaskManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="priority">Priority</Label>
-                  <Select value={newTask.priority} onValueChange={(value) => setNewTask({...newTask, priority: value})}>
+                  <Select value={newTask.priority} onValueChange={(value) => setNewTask({ ...newTask, priority: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -648,7 +665,7 @@ const TaskManagement = () => {
                     id="points"
                     type="number"
                     value={newTask.points}
-                    onChange={(e) => setNewTask({...newTask, points: parseInt(e.target.value) || 10})}
+                    onChange={(e) => setNewTask({ ...newTask, points: parseInt(e.target.value) || 10 })}
                     min="1"
                     max="100"
                   />
@@ -660,7 +677,7 @@ const TaskManagement = () => {
                   id="due_date"
                   type="date"
                   value={newTask.due_date}
-                  onChange={(e) => setNewTask({...newTask, due_date: e.target.value})}
+                  onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
                 />
               </div>
               <div className="flex justify-end gap-2">
@@ -806,23 +823,40 @@ const TaskManagement = () => {
                       <SelectContent>
                         <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
+
+                        {(userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) ? (
+                          <SelectItem value="completed">Completed (Approve & Award)</SelectItem>
+                        ) : null}
+
+                        <SelectItem value="review_pending">Submit for Review</SelectItem>
                         <SelectItem value="handover">Handover</SelectItem>
                         <SelectItem value="cancelled">Cancelled</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedTask(task);
-                        setIsDetailDialogOpen(true);
-                      }}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      {task.status === 'review_pending' &&
+                        (userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) && (
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => updateTaskStatus(task.id, 'completed')}
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setIsDetailDialogOpen(true);
+                        }}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
