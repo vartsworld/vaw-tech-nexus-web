@@ -52,7 +52,7 @@ interface Subtask {
   title: string;
   description?: string;
   assigned_to: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue' | 'pending_approval';
+  status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue' | 'pending_approval' | 'review_pending';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   points: number;
   due_date?: string;

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -20,55 +19,49 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      console.log("Attempting login with email:", email);
-      
-      // Query admin_users table directly
-      const { data: adminUser, error } = await supabase
-        .from('admin_users')
-        .select('*')
-        .eq('email', email)
-        .single();
+      // Use edge function for secure server-side authentication
+      const { data, error } = await supabase.functions.invoke('admin-auth', {
+        body: { email, password }
+      });
 
-      console.log("Admin user query result:", { adminUser, error });
-
-      if (error || !adminUser) {
-        console.error("Login error:", error);
+      if (error) {
+        console.error("Auth error:", error);
         toast({
           title: "Login failed",
-          description: "Invalid email or password.",
+          description: "An error occurred during authentication.",
           variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
 
-      // SECURITY WARNING: This compares plain text passwords
-      // In production, use proper password hashing (bcrypt) with an edge function
-      if (adminUser.password_hash !== password) {
+      if (!data.success) {
         toast({
           title: "Login failed",
-          description: "Invalid email or password.",
+          description: data.error || "Invalid email or password.",
           variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
 
-      console.log("Login successful for admin:", adminUser.email);
-      
-      // Store admin info in localStorage
-      localStorage.setItem("admin_token", "admin_authenticated");
-      localStorage.setItem("admin_email", adminUser.email);
-      localStorage.setItem("admin_user_id", adminUser.id);
-      localStorage.setItem("admin_full_name", adminUser.full_name);
+      // Store admin session info securely
+      // Note: For production, consider using httpOnly cookies via the edge function
+      sessionStorage.setItem("admin_session", JSON.stringify({
+        token: data.session.token,
+        expires_at: data.session.expires_at,
+        admin_id: data.admin.id,
+        admin_email: data.admin.email,
+        admin_full_name: data.admin.full_name,
+      }));
       
       toast({
         title: "Login successful!",
-        description: `Welcome back, ${adminUser.full_name}!`,
+        description: `Welcome back, ${data.admin.full_name}!`,
       });
       
       navigate("/admin/dashboard");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Unexpected login error:", error);
       toast({
         title: "Login failed",
