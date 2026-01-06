@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trophy, Clock, Brain } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const questions = [
   {
@@ -46,7 +48,7 @@ const questions = [
   }
 ];
 
-const QuickQuiz = ({ onClose }: { onClose: () => void }) => {
+const QuickQuiz = ({ onClose, userId }: { onClose: () => void, userId: string }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -66,14 +68,14 @@ const QuickQuiz = ({ onClose }: { onClose: () => void }) => {
 
   const handleAnswerSelect = (answerIndex: number) => {
     if (answered) return;
-    
+
     setSelectedAnswer(answerIndex);
     setAnswered(true);
-    
+
     if (answerIndex === questions[currentQuestion].correct) {
       setScore(score + 10);
     }
-    
+
     setTimeout(() => {
       handleNextQuestion();
     }, 1500);
@@ -88,6 +90,20 @@ const QuickQuiz = ({ onClose }: { onClose: () => void }) => {
     } else {
       setGameActive(false);
       setShowResult(true);
+      saveScore();
+    }
+  };
+
+  const saveScore = async () => {
+    try {
+      await supabase.from('user_activity_log').insert({
+        user_id: userId,
+        activity_type: 'game_played',
+        metadata: { game: 'Quick Quiz', score: score, total_questions: questions.length }
+      });
+      toast.success("Quiz complete! Results saved.");
+    } catch (error) {
+      console.error("Error saving quiz result:", error);
     }
   };
 
@@ -103,7 +119,7 @@ const QuickQuiz = ({ onClose }: { onClose: () => void }) => {
 
   const getButtonClass = (index: number) => {
     if (!answered) return "bg-white/10 hover:bg-white/20 border-white/20";
-    
+
     if (index === questions[currentQuestion].correct) {
       return "bg-green-600 border-green-600";
     } else if (index === selectedAnswer) {
@@ -133,7 +149,7 @@ const QuickQuiz = ({ onClose }: { onClose: () => void }) => {
           </div>
         )}
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {!showResult ? (
           <>
@@ -145,7 +161,7 @@ const QuickQuiz = ({ onClose }: { onClose: () => void }) => {
                 {questions[currentQuestion].question}
               </h3>
             </div>
-            
+
             <div className="space-y-2">
               {questions[currentQuestion].options.map((option, index) => (
                 <Button
@@ -177,7 +193,7 @@ const QuickQuiz = ({ onClose }: { onClose: () => void }) => {
             </div>
           </div>
         )}
-        
+
         {!showResult && (
           <Button onClick={onClose} variant="outline" className="w-full">
             Back to Lobby

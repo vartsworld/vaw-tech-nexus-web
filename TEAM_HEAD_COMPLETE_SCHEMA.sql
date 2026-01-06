@@ -125,9 +125,10 @@ CREATE TABLE IF NOT EXISTS user_activity_log (
         'break_started', 'break_ended', 'status_changed',
         'coin_earned', 'coin_spent', 'quest_completed'
     )),
-    description TEXT NOT NULL,
     metadata JSONB DEFAULT '{}'::jsonb,
     points_earned INTEGER DEFAULT 0,
+    duration_minutes INTEGER,
+    timestamp TIMESTAMPTZ DEFAULT now(),
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -845,16 +846,16 @@ CREATE TRIGGER chess_game_completion_trigger
 CREATE OR REPLACE FUNCTION log_chat_activity_no_points()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO user_activity_log (user_id, activity_type, description, points_earned, metadata)
+    INSERT INTO user_activity_log (user_id, activity_type, points_earned, metadata)
     VALUES (
-        NEW.sender_id, 'message_sent', 'Sent a message', 0,
+        NEW.sender_id, 'message_sent', 0,
         jsonb_build_object('message_id', NEW.id, 'channel_id', NEW.channel_id)
     );
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS chat_activity_trigger ON chat_messages;
+DROP TRIGGER IF EXISTS chat_activity_no_points_trigger ON chat_messages;
 CREATE TRIGGER chat_activity_no_points_trigger
     AFTER INSERT ON chat_messages
     FOR EACH ROW
@@ -864,9 +865,9 @@ CREATE TRIGGER chat_activity_no_points_trigger
 CREATE OR REPLACE FUNCTION log_note_activity()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO user_activity_log (user_id, activity_type, description, metadata)
+    INSERT INTO user_activity_log (user_id, activity_type, metadata)
     VALUES (
-        NEW.user_id, 'note_created', 'Created a new note',
+        NEW.user_id, 'note_created',
         jsonb_build_object('note_id', NEW.id)
     );
     RETURN NEW;
@@ -880,7 +881,104 @@ CREATE TRIGGER note_activity_trigger
     EXECUTE FUNCTION log_note_activity();
 
 -- ================================================================
--- PART 10: ROW LEVEL SECURITY (RLS)
+-- PART 10: BREAK SESSIONS & GAMES TABLES
+-- ================================================================
+
+-- Break Sessions for persistent timer tracking
+CREATE TABLE IF NOT EXISTS break_sessions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    start_time TIMESTAMPTZ NOT NULL DEFAULT now(),
+    duration_minutes INTEGER NOT NULL,
+    time_remaining_seconds INTEGER NOT NULL,
+    end_time TIMESTAMPTZ,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'paused', 'completed', 'cancelled')),
+    break_type TEXT DEFAULT 'regular' CHECK (break_type IN ('regular', 'coffee', 'lunch', 'custom')),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_break_sessions_user ON break_sessions(user_id, status);
+
+-- Word Game Scores
+CREATE TABLE IF NOT EXISTS word_game_scores (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    score INTEGER NOT NULL DEFAULT 0,
+    words_found INTEGER DEFAULT 0,
+    difficulty TEXT CHECK (difficulty IN ('easy', 'medium', 'hard')),
+    time_taken_seconds INTEGER,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_word_game_user ON word_game_scores(user_id, created_at DESC);
+
+-- Code Puzzles
+CREATE TABLE IF NOT EXISTS code_puzzles (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    difficulty TEXT CHECK (difficulty IN ('easy', 'medium', 'hard')),
+    puzzle_code TEXT NOT NULL,
+    solution_code TEXT NOT NULL,
+    test_cases JSONB,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS code_puzzle_submissions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    puzzle_id UUID NOT NULL REFERENCES code_puzzles(id) ON DELETE CASCADE,
+    submitted_code TEXT NOT NULL,
+    is_correct BOOLEAN DEFAULT false,
+    time_taken_seconds INTEGER,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_code_submissions_user ON code_puzzle_submissions(user_id, created_at DESC);
+
+-- Quiz System
+CREATE TABLE IF NOT EXISTS quiz_questions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    question TEXT NOT NULL,
+    options JSONB NOT NULL,
+    correct_answer TEXT NOT NULL,
+    category TEXT,
+    difficulty TEXT CHECK (difficulty IN ('easy', 'medium', 'hard')),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS quiz_submissions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    question_id UUID NOT NULL REFERENCES quiz_questions(id) ON DELETE CASCADE,
+    selected_answer TEXT NOT NULL,
+    is_correct BOOLEAN DEFAULT false,
+    time_taken_seconds INTEGER,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_quiz_submissions_user ON quiz_submissions(user_id, created_at DESC);
+
+-- Hall of Fame Entries
+CREATE TABLE IF NOT EXISTS hall_of_fame_entries (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    achievement_type TEXT NOT NULL CHECK (achievement_type IN (
+        'top_chess_player', 'top_coin_earner', 'quest_master',
+        'game_champion', 'streak_master', 'contributor'
+    )),
+    achievement_data JSONB,
+    awarded_at TIMESTAMPTZ DEFAULT now(),
+    valid_until TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_hall_of_fame_user ON hall_of_fame_entries(user_id, achievement_type);
+
+-- ================================================================
+-- PART 11: ROW LEVEL SECURITY (RLS)
 -- ================================================================
 
 ALTER TABLE chat_channels ENABLE ROW LEVEL SECURITY;
@@ -900,6 +998,13 @@ ALTER TABLE user_quest_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reward_catalog ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reward_redemptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_coin_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE break_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE word_game_scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE code_puzzles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE code_puzzle_submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quiz_questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE quiz_submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE hall_of_fame_entries ENABLE ROW LEVEL SECURITY;
 
 -- Basic policies (can be refined)
 DROP POLICY IF EXISTS "Users can view all channels" ON chat_channels;
@@ -940,8 +1045,33 @@ CREATE POLICY "Users can view active quests" ON quests FOR SELECT TO authenticat
 DROP POLICY IF EXISTS "Users can view reward catalog" ON reward_catalog;
 CREATE POLICY "Users can view reward catalog" ON reward_catalog FOR SELECT TO authenticated USING (is_available = true);
 
+DROP POLICY IF EXISTS "Users can manage their break sessions" ON break_sessions;
+CREATE POLICY "Users can manage their break sessions" ON break_sessions FOR ALL TO authenticated 
+    USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can view their game scores" ON word_game_scores;
+CREATE POLICY "Users can view their game scores" ON word_game_scores FOR ALL TO authenticated 
+    USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can view puzzles" ON code_puzzles;
+CREATE POLICY "Users can view puzzles" ON code_puzzles FOR SELECT TO authenticated USING (is_active = true);
+
+DROP POLICY IF EXISTS "Users can submit puzzle solutions" ON code_puzzle_submissions;
+CREATE POLICY "Users can submit puzzle solutions" ON code_puzzle_submissions FOR ALL TO authenticated 
+    USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can view quiz questions" ON quiz_questions;
+CREATE POLICY "Users can view quiz questions" ON quiz_questions FOR SELECT TO authenticated USING (is_active = true);
+
+DROP POLICY IF EXISTS "Users can submit quiz answers" ON quiz_submissions;
+CREATE POLICY "Users can submit quiz answers" ON quiz_submissions FOR ALL TO authenticated 
+    USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can view hall of fame" ON hall_of_fame_entries;
+CREATE POLICY "Users can view hall of fame" ON hall_of_fame_entries FOR SELECT TO authenticated USING (true);
+
 -- ================================================================
--- PART 11: INITIAL DATA SETUP
+-- PART 12: INITIAL DATA SETUP
 -- ================================================================
 
 -- Create general chat channel
@@ -955,7 +1085,7 @@ VALUES (get_current_financial_year(), 10000)
 ON CONFLICT (financial_year) DO NOTHING;
 
 -- ================================================================
--- PART 12: ANALYTICS VIEWS
+-- PART 13: ANALYTICS VIEWS
 -- ================================================================
 
 CREATE OR REPLACE VIEW chess_leaderboard AS
@@ -994,6 +1124,6 @@ ORDER BY total_coins DESC;
 
 SELECT 
     'VAW Technologies - Complete Schema Setup Successful!' as status,
-    'Created: Chat, Chess, Notes, Activity Log, VAW Coin Economy' as systems,
-    'Total Tables: 20 | Total Functions: 12 | Total Views: 2' as counts,
-    'Next: Update frontend to integrate coin allocation' as next_step;
+    'Created: Chat, Chess, Notes, Activity Log, VAW Coin Economy, Break Sessions, Games' as systems,
+    'Total Tables: 28 | Total Functions: 12 | Total Views: 2' as counts,
+    'Next: Frontend integration completed' as next_step;

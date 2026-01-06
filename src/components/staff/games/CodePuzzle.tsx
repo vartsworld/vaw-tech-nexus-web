@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trophy, Clock, Code, Lightbulb } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const puzzles = [
   {
@@ -43,7 +45,7 @@ const puzzles = [
   }
 ];
 
-const CodePuzzle = ({ onClose }: { onClose: () => void }) => {
+const CodePuzzle = ({ onClose, userId }: { onClose: () => void, userId: string }) => {
   const [currentPuzzle, setCurrentPuzzle] = useState(0);
   const [userAnswer, setUserAnswer] = useState("");
   const [score, setScore] = useState(0);
@@ -57,24 +59,41 @@ const CodePuzzle = ({ onClose }: { onClose: () => void }) => {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
     } else if (timeLeft === 0) {
+    } else if (timeLeft === 0) {
       setGameActive(false);
+      saveScore();
     }
   }, [timeLeft, gameActive]);
+
+  const saveScore = async () => {
+    try {
+      await supabase.from('user_activity_log').insert({
+        user_id: userId,
+        activity_type: 'game_played',
+        metadata: { game: 'Code Puzzle', score: score }
+      });
+      toast.success("Puzzle session saved!");
+    } catch (error) {
+      console.error("Error saving puzzle result:", error);
+    }
+  };
 
   const checkAnswer = () => {
     const correct = puzzles[currentPuzzle].correctAnswer.toLowerCase();
     const answer = userAnswer.toLowerCase().trim();
-    
+
     if (answer === correct) {
       const points = showHint ? 10 : 15; // Less points if hint was used
       setScore(score + points);
       setFeedback(`Correct! +${points} points`);
-      
+
       setTimeout(() => {
         if (currentPuzzle < puzzles.length - 1) {
           nextPuzzle();
         } else {
+        } else {
           setGameActive(false);
+          saveScore();
         }
       }, 1500);
     } else {
@@ -123,7 +142,7 @@ const CodePuzzle = ({ onClose }: { onClose: () => void }) => {
           </span>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {gameActive ? (
           <>
@@ -133,13 +152,13 @@ const CodePuzzle = ({ onClose }: { onClose: () => void }) => {
               </p>
               <p className="text-green-300 mb-4">{puzzles[currentPuzzle].description}</p>
             </div>
-            
+
             <div className="bg-black/40 rounded-lg p-4 font-mono text-sm">
               <pre className="text-white whitespace-pre-wrap">
                 {puzzles[currentPuzzle].code.replace('__', '___')}
               </pre>
             </div>
-            
+
             {showHint && (
               <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-3">
                 <p className="text-yellow-300 text-sm flex items-center gap-2">
@@ -148,7 +167,7 @@ const CodePuzzle = ({ onClose }: { onClose: () => void }) => {
                 </p>
               </div>
             )}
-            
+
             <div className="flex gap-2">
               <Input
                 value={userAnswer}
@@ -161,7 +180,7 @@ const CodePuzzle = ({ onClose }: { onClose: () => void }) => {
                 Submit
               </Button>
             </div>
-            
+
             <div className="flex justify-between items-center">
               <Button
                 onClick={() => setShowHint(true)}
@@ -173,11 +192,10 @@ const CodePuzzle = ({ onClose }: { onClose: () => void }) => {
                 <Lightbulb className="w-4 h-4 mr-1" />
                 {showHint ? "Hint Shown" : "Get Hint"}
               </Button>
-              
+
               {feedback && (
-                <p className={`text-sm ${
-                  feedback.includes('Correct') ? 'text-green-400' : 'text-red-400'
-                }`}>
+                <p className={`text-sm ${feedback.includes('Correct') ? 'text-green-400' : 'text-red-400'
+                  }`}>
                   {feedback}
                 </p>
               )}
@@ -202,7 +220,7 @@ const CodePuzzle = ({ onClose }: { onClose: () => void }) => {
             </div>
           </div>
         )}
-        
+
         {gameActive && (
           <Button onClick={onClose} variant="outline" className="w-full">
             Back to Lobby

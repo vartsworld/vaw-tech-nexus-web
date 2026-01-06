@@ -38,6 +38,95 @@ const BreakRoom = ({
   const [newMessage, setNewMessage] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
   const [activeGame, setActiveGame] = useState<ActiveGame>('none');
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [leaderboardType, setLeaderboardType] = useState<'coins' | 'chess'>('coins');
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, [leaderboardType]);
+
+  const fetchLeaderboard = async () => {
+    try {
+      let data;
+      if (leaderboardType === 'coins') {
+        const { data: coinData } = await supabase
+          .from('top_coin_earners')
+          .select('*')
+          .limit(5);
+        data = coinData?.map(d => ({
+          id: d.user_id,
+          name: d.full_name,
+          value: d.total_coins,
+          label: 'Coins'
+        }));
+      } else {
+        const { data: chessData } = await supabase
+          .from('chess_leaderboard')
+          .select('*')
+          .limit(5);
+        data = chessData?.map(d => ({
+          id: d.user_id,
+          name: d.full_name,
+          value: d.elo_rating,
+          label: 'ELO'
+        }));
+      }
+      setLeaderboard(data || []);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+    }
+  };
+
+  // Check for active break session on mount
+  useEffect(() => {
+    checkActiveSession();
+  }, [userId]);
+
+  const checkActiveSession = async () => {
+    try {
+      const { data: session } = await supabase
+        .from('break_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (session) {
+        setSessionId(session.id);
+        setBreakDuration(session.duration_minutes);
+
+        // Calculate remaining time
+        const startTime = new Date(session.start_time).getTime();
+        const now = new Date().getTime();
+        const elapsedSeconds = Math.floor((now - startTime) / 1000);
+        const totalSeconds = session.duration_minutes * 60;
+        const remaining = Math.max(0, totalSeconds - elapsedSeconds);
+
+        if (remaining > 0) {
+          setBreakTimeRemaining(remaining);
+          setIsBreakActive(true);
+        } else {
+          // Session expired while away
+          await completeBreakSession(session.id);
+          setIsBreakActive(false);
+          setBreakTimeRemaining(0);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking break session:", error);
+    }
+  };
+
+  const completeBreakSession = async (id: string) => {
+    await supabase
+      .from('break_sessions')
+      .update({ status: 'completed', end_time: new Date().toISOString() })
+      .eq('id', id);
+  };
 
   const games = [
     {
@@ -101,60 +190,104 @@ const BreakRoom = ({
   const startBreak = async () => {
     setIsBreakActive(true);
 
-    // Update status to coffee_break
-    await supabase
-      .from('user_presence_status')
-      .update({ current_status: 'coffee_break' })
-      .eq('user_id', userId);
+    try {
+      // Create new break session
+      const { data: session, error } = await supabase
+        .from('break_sessions')
+        .insert({
+          user_id: userId,
+          duration_minutes: breakDuration,
+          time_remaining_seconds: breakDuration * 60,
+          status: 'active',
+          break_type: 'coffee'
+        })
+        .select()
+        .single();
 
-    // Log break start
-    await supabase
-      .from('user_activity_log')
-      .insert({
-        user_id: userId,
-        activity_type: 'break_start',
-        timestamp: new Date().toISOString(),
-        duration_minutes: breakDuration
-      });
+      if (error) throw error;
+      if (session) setSessionId(session.id);
 
-    if (onStatusChange) onStatusChange('coffee_break');
-    toast.success(`Break started! Enjoy your ${breakDuration}-minute break ☕`);
+      // Update status to coffee_break
+      await supabase
+        .from('user_presence_status')
+        .update({ current_status: 'coffee_break' })
+        .eq('user_id', userId);
+
+      // Log break start
+      await supabase
+        .from('user_activity_log')
+        .insert({
+          user_id: userId,
+          activity_type: 'break_started', // Fixed activity type
+          metadata: { duration_minutes: breakDuration }
+        });
+
+      if (onStatusChange) onStatusChange('coffee_break');
+      toast.success(`Break started! Enjoy your ${breakDuration}-minute break ☕`);
+    } catch (error) {
+      console.error('Error starting break:', error);
+      toast.error('Failed to start break session');
+      setIsBreakActive(false);
+    }
   };
 
   const pauseBreak = async () => {
     setIsBreakActive(false);
 
-    // Update status back to online when paused
-    await supabase
-      .from('user_presence_status')
-      .update({ current_status: 'online' })
-      .eq('user_id', userId);
+    try {
+      if (sessionId) {
+        await supabase
+          .from('break_sessions')
+          .update({
+            status: 'paused',
+            time_remaining_seconds: breakTimeRemaining
+          })
+          .eq('id', sessionId);
+      }
 
-    if (onStatusChange) onStatusChange('online');
-    toast.info("Break paused - Returned to work mode");
+      // Update status back to online when paused
+      await supabase
+        .from('user_presence_status')
+        .update({ current_status: 'online' })
+        .eq('user_id', userId);
+
+      if (onStatusChange) onStatusChange('online');
+      toast.info("Break paused - Returned to work mode");
+    } catch (error) {
+      console.error('Error pausing break:', error);
+    }
   };
 
   const resetBreak = async () => {
     setIsBreakActive(false);
     setBreakTimeRemaining(breakDuration * 60);
 
-    // Update status back to online
-    await supabase
-      .from('user_presence_status')
-      .update({ current_status: 'online' })
-      .eq('user_id', userId);
+    try {
+      if (sessionId) {
+        await completeBreakSession(sessionId);
+        setSessionId(null);
+      }
 
-    // Log break end
-    await supabase
-      .from('user_activity_log')
-      .insert({
-        user_id: userId,
-        activity_type: 'break_end',
-        timestamp: new Date().toISOString()
-      });
+      // Update status back to online
+      await supabase
+        .from('user_presence_status')
+        .update({ current_status: 'online' })
+        .eq('user_id', userId);
 
-    if (onStatusChange) onStatusChange('online');
-    toast.success("Back to work! 💼");
+      // Log break end
+      await supabase
+        .from('user_activity_log')
+        .insert({
+          user_id: userId,
+          activity_type: 'break_ended', // Fixed activity type
+          metadata: { duration_minutes: breakDuration }
+        });
+
+      if (onStatusChange) onStatusChange('online');
+      toast.success("Back to work! 💼");
+    } catch (error) {
+      console.error('Error ending break:', error);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -184,9 +317,9 @@ const BreakRoom = ({
   if (activeGame !== 'none') {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[80vh]">
-        {activeGame === 'word-challenge' && <WordChallenge onClose={() => setActiveGame('none')} />}
-        {activeGame === 'quick-quiz' && <QuickQuiz onClose={() => setActiveGame('none')} />}
-        {activeGame === 'code-puzzle' && <CodePuzzle onClose={() => setActiveGame('none')} />}
+        {activeGame === 'word-challenge' && <WordChallenge onClose={() => setActiveGame('none')} userId={userId} />}
+        {activeGame === 'quick-quiz' && <QuickQuiz onClose={() => setActiveGame('none')} userId={userId} />}
+        {activeGame === 'code-puzzle' && <CodePuzzle onClose={() => setActiveGame('none')} userId={userId} />}
       </div>
     );
   }
@@ -402,14 +535,33 @@ const BreakRoom = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
+            <div className="flex gap-2 mb-4">
+              <Button
+                variant={leaderboardType === 'coins' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setLeaderboardType('coins')}
+                className="flex-1 text-xs font-bold uppercase"
+              >
+                Top Earners
+              </Button>
+              <Button
+                variant={leaderboardType === 'chess' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setLeaderboardType('chess')}
+                className="flex-1 text-xs font-bold uppercase"
+              >
+                Chess Masters
+              </Button>
+            </div>
+
             <div className="space-y-3">
-              {(!teamMembers || teamMembers.length === 0) ? (
+              {leaderboard.length === 0 ? (
                 <div className="text-center py-10 opacity-20">
                   <Trophy className="w-12 h-12 mx-auto mb-2" />
                   <p className="font-bold text-xs uppercase tracking-widest">Awaiting legends...</p>
                 </div>
               ) : (
-                teamMembers.map((member, index) => (
+                leaderboard.map((member, index) => (
                   <div key={member.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/20 transition-all hover:translate-x-1 duration-300">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black shadow-lg ${index === 0 ? 'bg-yellow-500 text-black scale-110 ring-4 ring-yellow-500/20' :
@@ -421,17 +573,16 @@ const BreakRoom = ({
                       </div>
                       <div>
                         <span className="text-white font-black text-sm uppercase tracking-tight">
-                          {member.full_name || member.username || 'RECRUIT'}
+                          {member.name || 'ANONYMOUS'}
                         </span>
                         <div className="flex gap-2 mt-0.5">
                           <Star className="w-3 h-3 text-yellow-500 fill-current" />
-                          <span className="text-[9px] text-zinc-500 font-bold uppercase">Points: {member.total_points || 0}</span>
+                          <span className="text-[9px] text-zinc-500 font-bold uppercase">{member.label}: {member.value}</span>
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-yellow-500 font-black text-lg leading-none">${member.earnings || 0}</span>
-                      <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">Total Earned</p>
+                      <span className="text-yellow-500 font-black text-lg leading-none">{member.value}</span>
                     </div>
                   </div>
                 ))

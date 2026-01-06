@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  Clock, 
-  Coffee, 
-  LogIn, 
-  LogOut, 
-  Moon, 
-  ZapOff, 
+import {
+  Clock,
+  Coffee,
+  LogIn,
+  LogOut,
+  Moon,
+  ZapOff,
   Wifi,
   AlertCircle
 } from 'lucide-react';
@@ -17,7 +17,7 @@ import { formatDistanceToNow } from 'date-fns';
 interface ActivityLog {
   id: string;
   activity_type: string;
-  timestamp: string;
+  created_at: string;
   duration_minutes: number | null;
   metadata: any;
 }
@@ -42,8 +42,8 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
         .from('user_activity_log')
         .select('*')
         .eq('user_id', userId)
-        .gte('timestamp', today.toISOString())
-        .order('timestamp', { ascending: false });
+        .gte('created_at', today.toISOString())
+        .order('created_at', { ascending: false });
 
       if (data && !error) {
         setLogs(data);
@@ -125,10 +125,10 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
               {logs.map((log) => {
                 const config = getActivityConfig(log.activity_type);
                 const Icon = config.icon;
-                
+
                 return (
-                  <div 
-                    key={log.id} 
+                  <div
+                    key={log.id}
                     className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
                   >
                     <div className={`mt-0.5 rounded-full p-2 bg-black/20 backdrop-blur-sm border border-white/10 ${config.color}`}>
@@ -137,7 +137,7 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
                     <div className="flex-1 space-y-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">{config.label}</p>
                       <p className="text-xs text-white/50">
-                        {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
                       </p>
                       {log.duration_minutes && (
                         <p className="text-xs text-blue-300/70">

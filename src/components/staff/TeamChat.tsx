@@ -147,16 +147,6 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
 
       if (error) throw error;
 
-      // Award points for chat engagement
-      await supabase
-        .from('user_points_log')
-        .insert({
-          user_id: userId,
-          points: 2,
-          reason: 'Chat Message Sent',
-          category: 'chat_engagement'
-        });
-
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
@@ -199,8 +189,8 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
               variant={activeChannelId === channel.id ? "default" : "ghost"}
               size="sm"
               className={`flex items-center gap-1 whitespace-nowrap ${activeChannelId === channel.id
-                  ? "bg-blue-500 text-white"
-                  : "text-white/70 hover:text-white"
+                ? "bg-blue-500 text-white"
+                : "text-white/70 hover:text-white"
                 }`}
               onClick={() => setActiveChannelId(channel.id)}
             >
@@ -223,8 +213,8 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
                 >
                   <div
                     className={`max-w-[70%] rounded-lg p-3 ${isOwnMessage
-                        ? 'bg-blue-500/80 text-white'
-                        : 'bg-white/10 text-white border border-white/20'
+                      ? 'bg-blue-500/80 text-white'
+                      : 'bg-white/10 text-white border border-white/20'
                       }`}
                   >
                     {!isOwnMessage && (
@@ -276,7 +266,6 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
 
           <div className="flex items-center justify-between mt-2 text-xs text-white/50">
             <span>Press Enter to send</span>
-            <span>+2 points per message</span>
           </div>
         </div>
       </CardContent>

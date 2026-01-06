@@ -23,6 +23,7 @@ import {
 import { Chess } from 'chess.js';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ChessGameOverDialog } from "@/components/staff/ChessGameOverDialog";
 
 interface MiniChessProps {
   userId: string;
@@ -72,6 +73,10 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
   // Stats
   const [stats, setStats] = useState({ wins: 0, games: 0, rating: 1200 });
+  const [showGameOverDialog, setShowGameOverDialog] = useState(false);
+  const [gameOverData, setGameOverData] = useState<any>(null);
+  const [eloChanges, setEloChanges] = useState<any>(null);
+  const [coinsEarned, setCoinsEarned] = useState<number>(0);
 
   useEffect(() => {
     fetchTeamMembers();
@@ -110,7 +115,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
       const updateData: any = {
         status: 'completed',
         winner_id: winnerId,
-        completed_at: new Date().toISOString(),
+        ended_at: new Date().toISOString(), // Use ended_at as per schema
         game_state: {
           fen: chess.fen(),
           history: gameHistory,
@@ -128,9 +133,48 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
       // Refresh stats to show new ELO rating
       await fetchStats();
 
+      // Fetch game history to get ELO changes
+      // Wait a moment for trigger to process
+      setTimeout(async () => {
+        const { data: historyData } = await supabase
+          .from('chess_game_history')
+          .select('*')
+          .eq('game_id', activeGameId);
+
+        if (historyData && historyData.length > 0) {
+          const myHistory = historyData.find(h => h.player_id === userId);
+          const opponentHistory = historyData.find(h => h.player_id !== userId);
+
+          if (myHistory && opponentHistory) {
+            const isWinner = winnerId === userId;
+
+            setEloChanges({
+              winner_elo_before: isWinner ? myHistory.elo_before : opponentHistory.elo_before,
+              winner_elo_after: isWinner ? myHistory.elo_after : opponentHistory.elo_after,
+              loser_elo_before: isWinner ? opponentHistory.elo_before : myHistory.elo_before,
+              loser_elo_after: isWinner ? opponentHistory.elo_after : myHistory.elo_after
+            });
+
+            setCoinsEarned(myHistory.points_earned || 0);
+          }
+        }
+
+        setGameOverData({
+          winner_id: winnerId,
+          player1_id: userId,
+          player2_id: opponentId || '',
+          player1_name: 'You',
+          player2_name: opponentName,
+          game_id: activeGameId,
+          duration_seconds: 0 // Duration calculation requires created_at vs ended_at
+        });
+
+        setShowGameOverDialog(true);
+      }, 1000);
+
       const message = isDraw
         ? 'Game ended in a draw! ELO ratings updated.'
-        : `${winner} wins! ELO ratings updated.`;
+        : `${winnerId === userId ? 'You won!' : opponentName + ' wins!'} ELO ratings updated.`;
 
       toast.success(message);
     } catch (error) {
@@ -799,105 +843,56 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
               {[8, 7, 6, 5, 4, 3, 2, 1].map(r => <span key={r}>{r}</span>)}
             </div>
 
-            <div className="grid grid-cols-8 aspect-square w-full">
-              {board.map((row, rowIndex) =>
-                row.map((piece, colIndex) => {
-                  const isLight = (rowIndex + colIndex) % 2 === 0;
-                  const isSelected = isSquareHighlighted(rowIndex, colIndex);
-                  const canMove = isPossibleMove(rowIndex, colIndex);
-                  const pieceData = getPieceSymbol(piece);
-                  const hasPiece = pieceData !== null;
+            {/* Board Squares */}
+            <div className="grid grid-cols-8 h-full bg-[#f0d9b5]">
+              {[...Array(64)].map((_, i) => {
+                const row = Math.floor(i / 8);
+                const col = i % 8;
+                const isLight = (row + col) % 2 === 0;
+                const square = getSquareNotation(row, col);
+                const piece = board[row][col];
+                const isSelected = isSquareHighlighted(row, col);
+                const isPossible = isPossibleMove(row, col); // Fix: Use row/col for isPossibleMove check logic if needed, but here simple include check in `isPossibleMove` function works. 
+                // Wait, `isPossibleMove` function uses row,col. 
 
-                  return (
-                    <div
-                      key={`${rowIndex}-${colIndex}`}
-                      className={`
-                        aspect-square relative flex items-center justify-center cursor-pointer transition-colors duration-150
-                        ${isLight
-                          ? isSelected ? 'bg-gradient-to-br from-amber-200 via-amber-300 to-amber-200' : 'bg-gradient-to-br from-amber-100 via-amber-50 to-amber-100'
-                          : isSelected ? 'bg-gradient-to-br from-amber-800 via-amber-900 to-amber-800' : 'bg-gradient-to-br from-amber-700 via-amber-600 to-amber-700'
-                        }
-                        ${canMove && !hasPiece ? 'after:absolute after:w-3 after:h-3 after:rounded-full after:bg-cyan-500/40 after:shadow-lg after:shadow-cyan-500/50' : ''}
-                        ${canMove && hasPiece ? 'ring-2 ring-inset ring-rose-500 shadow-[inset_0_0_15px_rgba(244,63,94,0.3)]' : ''}
-                        hover:brightness-110 active:scale-95
-                      `}
-                      onClick={() => handleSquareClick(rowIndex, colIndex)}
-                    >
-                      {pieceData && (
-                        <span
-                          className={`
-                            text-2xl sm:text-3xl md:text-4xl transition-transform duration-150 select-none
-                            ${pieceData.isWhite
-                              ? 'text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]'
-                              : 'text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]'
-                            }
-                            hover:scale-105
-                          `}
-                          style={{
-                            textShadow: pieceData.isWhite
-                              ? '0 2px 4px rgba(0,0,0,0.5), 0 0 10px rgba(255,255,255,0.3)'
-                              : '0 1px 2px rgba(255,255,255,0.2), 0 0 8px rgba(0,0,0,0.3)'
-                          }}
-                        >
-                          {pieceData.symbol}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })
-              )}
+                return (
+                  <div
+                    key={`${row}-${col}`}
+                    onClick={() => handleSquareClick(row, col)}
+                    className={`
+                      relative flex items-center justify-center
+                      ${isLight ? 'bg-[#f0d9b5]' : 'bg-[#b58863]'}
+                      ${isSelected ? 'after:absolute after:inset-0 after:bg-yellow-400/50' : ''}
+                      ${isPossible && !piece ? 'after:absolute after:w-3 after:h-3 after:bg-black/20 after:rounded-full' : ''}
+                      ${isPossible && piece ? 'after:absolute after:inset-0 after:border-4 after:border-black/20 after:rounded-full' : ''}
+                      cursor-pointer select-none
+                    `}
+                  >
+                    {piece && (
+                      <span className={`text-4xl ${piece.color === 'w' ? 'text-white drop-shadow-[0_2px_1px_rgba(0,0,0,0.5)]' : 'text-black drop-shadow-[0_1px_1px_rgba(255,255,255,0.3)]'}`}>
+                        {getPieceSymbol(piece)?.symbol}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
-
-        {/* Game Status */}
-        {isGameOver ? (
-          <div className="text-center py-3 space-y-3">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold shadow-lg shadow-amber-500/30">
-              <Trophy className="w-5 h-5" />
-              {winner} Wins!
-            </div>
-            <Button size="sm" onClick={resetGame} className="w-full bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500">
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Play Again
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between px-2">
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <Clock className="w-3 h-3" />
-              {gameHistory.length} moves
-            </div>
-            {chess.inCheck() && (
-              <div className="px-3 py-1 rounded-full bg-gradient-to-r from-rose-600 to-red-600 text-white text-xs font-bold animate-pulse shadow-lg shadow-rose-500/30">
-                ⚠️ CHECK!
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Move History */}
-        {gameHistory.length > 0 && (
-          <div className="bg-slate-800/50 rounded-lg p-3 border border-slate-700/50">
-            <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-2 font-bold">Move History</div>
-            <ScrollArea className="h-14">
-              <div className="flex flex-wrap gap-1">
-                {gameHistory.map((move, i) => (
-                  <span
-                    key={i}
-                    className={`px-2 py-0.5 rounded text-xs font-mono ${i % 2 === 0
-                      ? 'bg-slate-700 text-slate-300'
-                      : 'bg-slate-600 text-slate-200'
-                      }`}
-                  >
-                    {i % 2 === 0 ? `${Math.floor(i / 2) + 1}. ` : ''}{move}
-                  </span>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-        )}
       </CardContent>
+
+      {showGameOverDialog && gameOverData && (
+        <ChessGameOverDialog
+          open={showGameOverDialog}
+          onClose={() => {
+            setShowGameOverDialog(false);
+            resetGame(); // Reset game when dialog is closed
+          }}
+          gameData={gameOverData}
+          eloChanges={eloChanges}
+          coinsEarned={coinsEarned}
+        />
+      )}
     </Card>
   );
 };

@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trophy, Clock, Zap } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const words = [
   { word: "JAVASCRIPT", hint: "Popular programming language" },
@@ -15,7 +17,7 @@ const words = [
   { word: "DEBUGGING", hint: "Finding and fixing code errors" }
 ];
 
-const WordChallenge = ({ onClose }: { onClose: () => void }) => {
+const WordChallenge = ({ onClose, userId }: { onClose: () => void, userId: string }) => {
   const [currentWord, setCurrentWord] = useState(words[0]);
   const [scrambledWord, setScrambledWord] = useState("");
   const [userGuess, setUserGuess] = useState("");
@@ -34,8 +36,32 @@ const WordChallenge = ({ onClose }: { onClose: () => void }) => {
       return () => clearTimeout(timer);
     } else if (timeLeft === 0) {
       setGameActive(false);
+      saveScore();
     }
   }, [timeLeft, gameActive]);
+
+  const saveScore = async () => {
+    try {
+      await supabase.from('word_game_scores').insert({
+        user_id: userId,
+        score: score,
+        difficulty: 'easy',
+        words_found: Math.floor(score / 10),
+        time_taken_seconds: 60 - timeLeft
+      });
+
+      // Also log to activity log
+      await supabase.from('user_activity_log').insert({
+        user_id: userId,
+        activity_type: 'game_played',
+        metadata: { game: 'Word Challenge', score: score }
+      });
+
+      toast.success("Score saved!");
+    } catch (error) {
+      console.error("Error saving score:", error);
+    }
+  };
 
   const scrambleWord = () => {
     const letters = currentWord.word.split('');
@@ -92,7 +118,7 @@ const WordChallenge = ({ onClose }: { onClose: () => void }) => {
           </span>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {gameActive ? (
           <>
@@ -102,7 +128,7 @@ const WordChallenge = ({ onClose }: { onClose: () => void }) => {
                 {scrambledWord}
               </div>
             </div>
-            
+
             <div className="flex gap-2">
               <Input
                 value={userGuess}
@@ -115,11 +141,10 @@ const WordChallenge = ({ onClose }: { onClose: () => void }) => {
                 Submit
               </Button>
             </div>
-            
+
             {feedback && (
-              <p className={`text-center text-sm ${
-                feedback.includes('Correct') ? 'text-green-400' : 'text-red-400'
-              }`}>
+              <p className={`text-center text-sm ${feedback.includes('Correct') ? 'text-green-400' : 'text-red-400'
+                }`}>
                 {feedback}
               </p>
             )}
@@ -138,7 +163,7 @@ const WordChallenge = ({ onClose }: { onClose: () => void }) => {
             </div>
           </div>
         )}
-        
+
         {gameActive && (
           <Button onClick={onClose} variant="outline" className="w-full">
             Back to Lobby
