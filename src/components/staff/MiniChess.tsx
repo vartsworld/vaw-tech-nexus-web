@@ -48,10 +48,12 @@ interface ChessInvite {
 type GameMode = 'menu' | 'playing' | 'finding';
 
 const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
+
   const [gameMode, setGameMode] = useState<GameMode>('menu');
   const [isVsBot, setIsVsBot] = useState(false);
   const [opponentId, setOpponentId] = useState<string | null>(null);
   const [opponentName, setOpponentName] = useState<string>('');
+  const [activeGameId, setActiveGameId] = useState<string | null>(null); // Track active game ID
 
   // Chess game state
   const [chess] = useState(new Chess());
@@ -96,6 +98,47 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
       supabase.removeChannel(channel);
     };
   }, [userId]);
+
+  // Function to finalize game and trigger ELO calculation
+  const finalizeGame = async (winnerId: string | null, isDraw: boolean = false) => {
+    if (!activeGameId || isVsBot) {
+      // For bot games, don't update database
+      return;
+    }
+
+    try {
+      const updateData: any = {
+        status: 'completed',
+        winner_id: winnerId,
+        completed_at: new Date().toISOString(),
+        game_state: {
+          fen: chess.fen(),
+          history: gameHistory,
+          turn: chess.turn()
+        }
+      };
+
+      const { error } = await supabase
+        .from('chess_games')
+        .update(updateData)
+        .eq('id', activeGameId);
+
+      if (error) throw error;
+
+      // Refresh stats to show new ELO rating
+      await fetchStats();
+
+      const message = isDraw
+        ? 'Game ended in a draw! ELO ratings updated.'
+        : `${winner} wins! ELO ratings updated.`;
+
+      toast.success(message);
+    } catch (error) {
+      console.error('Error finalizing game:', error);
+      toast.error('Failed to update game results');
+    }
+  };
+
 
   const fetchTeamMembers = async () => {
     try {
@@ -197,6 +240,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
     setWinner(null);
     setIsVsBot(true);
     setOpponentName('Chess Bot');
+    setActiveGameId(null); // No DB tracking for bot games
     setGameMode('playing');
     toast.success("Game started! You play as White.");
   };
@@ -236,6 +280,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
         setOpponentId(game.player1_id);
         setOpponentName(opponentProfile?.full_name || 'Opponent');
+        setActiveGameId(game.id); // Track game ID
         setIsVsBot(false);
         chess.reset();
         setBoard(chess.board());
@@ -275,6 +320,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
             setOpponentId(updatedGame.player2_id);
             setOpponentName(oppProfile?.full_name || 'Opponent');
+            setActiveGameId(newGame?.id || null); // Track game ID
             setIsVsBot(false);
             chess.reset();
             setBoard(chess.board());
@@ -329,6 +375,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
       setOpponentId(invite.from_user_id);
       setOpponentName(invite.from_profile?.full_name || 'Opponent');
+      setActiveGameId(invite.id); // Track game ID
       setIsVsBot(false);
       chess.reset();
       setBoard(chess.board());
@@ -336,6 +383,8 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
       setIsGameOver(false);
       setWinner(null);
       setGameMode('playing');
+
+
 
       toast.success(`Game started with ${invite.from_profile?.full_name}!`);
       fetchPendingInvites();
@@ -359,7 +408,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
     }
   };
 
-  const handleSquareClick = useCallback((row: number, col: number) => {
+  const handleSquareClick = useCallback(async (row: number, col: number) => {
     if (isGameOver) return;
 
     // Only allow moves when it's player's turn (white for now)
@@ -387,8 +436,15 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
             if (chess.isCheckmate()) {
               const winnerColor = chess.turn() === 'w' ? 'Black' : 'White';
               setWinner(winnerColor);
+
+              // Determine winner ID for database
+              const winnerId = winnerColor === 'White' ? userId : opponentId;
+              await finalizeGame(winnerId, false);
+
               toast.success(`Checkmate! ${winnerColor} wins!`);
             } else {
+              // Draw
+              await finalizeGame(null, true);
               toast.info("Game ended in a draw!");
             }
           } else if (isVsBot) {
@@ -433,8 +489,10 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
         const winnerColor = chess.turn() === 'w' ? 'Black' : 'White';
         setWinner(winnerColor);
         toast.success(`Checkmate! ${winnerColor} wins!`);
+        // Bot game - no DB update needed
       } else {
         toast.info("Game ended in a draw!");
+        // Bot game - no DB update needed
       }
     }
   };
@@ -444,6 +502,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
     setIsVsBot(false);
     setOpponentId(null);
     setOpponentName('');
+    setActiveGameId(null); // Clear active game
     chess.reset();
     setBoard(chess.board());
     setSelectedSquare(null);
@@ -709,8 +768,8 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
           </CardTitle>
           <div className="flex items-center gap-2">
             <div className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${chess.turn() === 'w'
-                ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/30'
-                : 'bg-slate-700 text-slate-400'
+              ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/30'
+              : 'bg-slate-700 text-slate-400'
               }`}>
               {chess.turn() === 'w' ? '⚪ Your Turn' : '⚫ Waiting'}
             </div>
@@ -748,13 +807,13 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                   const canMove = isPossibleMove(rowIndex, colIndex);
                   const pieceData = getPieceSymbol(piece);
                   const hasPiece = pieceData !== null;
-                  
+
                   return (
                     <div
                       key={`${rowIndex}-${colIndex}`}
                       className={`
                         aspect-square relative flex items-center justify-center cursor-pointer transition-colors duration-150
-                        ${isLight 
+                        ${isLight
                           ? isSelected ? 'bg-gradient-to-br from-amber-200 via-amber-300 to-amber-200' : 'bg-gradient-to-br from-amber-100 via-amber-50 to-amber-100'
                           : isSelected ? 'bg-gradient-to-br from-amber-800 via-amber-900 to-amber-800' : 'bg-gradient-to-br from-amber-700 via-amber-600 to-amber-700'
                         }
@@ -765,18 +824,18 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                       onClick={() => handleSquareClick(rowIndex, colIndex)}
                     >
                       {pieceData && (
-                        <span 
+                        <span
                           className={`
                             text-2xl sm:text-3xl md:text-4xl transition-transform duration-150 select-none
-                            ${pieceData.isWhite 
-                              ? 'text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]' 
+                            ${pieceData.isWhite
+                              ? 'text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.8)]'
                               : 'text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]'
                             }
                             hover:scale-105
                           `}
                           style={{
-                            textShadow: pieceData.isWhite 
-                              ? '0 2px 4px rgba(0,0,0,0.5), 0 0 10px rgba(255,255,255,0.3)' 
+                            textShadow: pieceData.isWhite
+                              ? '0 2px 4px rgba(0,0,0,0.5), 0 0 10px rgba(255,255,255,0.3)'
                               : '0 1px 2px rgba(255,255,255,0.2), 0 0 8px rgba(0,0,0,0.3)'
                           }}
                         >
@@ -827,8 +886,8 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                   <span
                     key={i}
                     className={`px-2 py-0.5 rounded text-xs font-mono ${i % 2 === 0
-                        ? 'bg-slate-700 text-slate-300'
-                        : 'bg-slate-600 text-slate-200'
+                      ? 'bg-slate-700 text-slate-300'
+                      : 'bg-slate-600 text-slate-200'
                       }`}
                   >
                     {i % 2 === 0 ? `${Math.floor(i / 2) + 1}. ` : ''}{move}

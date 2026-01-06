@@ -1,5 +1,5 @@
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
@@ -37,6 +37,17 @@ const VirtualOfficeLayout = ({
 }: VirtualOfficeLayoutProps) => {
   const [showActivityLog, setShowActivityLog] = useState(false);
   const navigate = useNavigate();
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to top when room changes or component mounts
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  }, [currentRoom]);
 
   const rooms = [
     { id: 'workspace' as const, name: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
@@ -176,7 +187,7 @@ const VirtualOfficeLayout = ({
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+      <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 lg:p-6">
         {children}
       </main>
     </div>
