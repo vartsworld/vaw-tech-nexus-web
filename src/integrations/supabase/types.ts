@@ -98,6 +98,45 @@ export type Database = {
         }
         Relationships: []
       }
+      break_sessions: {
+        Row: {
+          break_type: string | null
+          created_at: string | null
+          duration_minutes: number
+          end_time: string | null
+          id: string
+          start_time: string
+          status: string | null
+          time_remaining_seconds: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          break_type?: string | null
+          created_at?: string | null
+          duration_minutes: number
+          end_time?: string | null
+          id?: string
+          start_time?: string
+          status?: string | null
+          time_remaining_seconds: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          break_type?: string | null
+          created_at?: string | null
+          duration_minutes?: number
+          end_time?: string | null
+          id?: string
+          start_time?: string
+          status?: string | null
+          time_remaining_seconds?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_channels: {
         Row: {
           created_at: string | null
@@ -132,6 +171,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_chat_channels_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
             referencedColumns: ["user_id"]
           },
           {
@@ -187,11 +233,75 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "fk_chat_messages_recipient"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "fk_chat_messages_sender"
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_chat_messages_sender"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      chess_game_history: {
+        Row: {
+          created_at: string | null
+          elo_after: number
+          elo_before: number
+          elo_change: number
+          game_duration_seconds: number | null
+          game_id: string
+          id: string
+          opponent_id: string
+          player_id: string
+          points_earned: number | null
+          result: string
+        }
+        Insert: {
+          created_at?: string | null
+          elo_after: number
+          elo_before: number
+          elo_change?: number
+          game_duration_seconds?: number | null
+          game_id: string
+          id?: string
+          opponent_id: string
+          player_id: string
+          points_earned?: number | null
+          result: string
+        }
+        Update: {
+          created_at?: string | null
+          elo_after?: number
+          elo_before?: number
+          elo_change?: number
+          game_duration_seconds?: number | null
+          game_id?: string
+          id?: string
+          opponent_id?: string
+          player_id?: string
+          points_earned?: number | null
+          result?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chess_game_history_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "chess_games"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -235,10 +345,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "fk_chess_games_player1"
+            columns: ["player1_id"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "fk_chess_games_player2"
             columns: ["player2_id"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_chess_games_player2"
+            columns: ["player2_id"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
             referencedColumns: ["user_id"]
           },
           {
@@ -248,7 +372,59 @@ export type Database = {
             referencedRelation: "staff_profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "fk_chess_games_winner"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
+            referencedColumns: ["user_id"]
+          },
         ]
+      }
+      chess_stats: {
+        Row: {
+          created_at: string | null
+          current_win_streak: number | null
+          elo_rating: number | null
+          games_drawn: number | null
+          games_lost: number | null
+          games_played: number | null
+          games_won: number | null
+          id: string
+          longest_win_streak: number | null
+          total_points_earned: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_win_streak?: number | null
+          elo_rating?: number | null
+          games_drawn?: number | null
+          games_lost?: number | null
+          games_played?: number | null
+          games_won?: number | null
+          id?: string
+          longest_win_streak?: number | null
+          total_points_earned?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_win_streak?: number | null
+          elo_rating?: number | null
+          games_drawn?: number | null
+          games_lost?: number | null
+          games_played?: number | null
+          games_won?: number | null
+          id?: string
+          longest_win_streak?: number | null
+          total_points_earned?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       class_attendance: {
         Row: {
@@ -400,6 +576,119 @@ export type Database = {
         }
         Relationships: []
       }
+      code_puzzle_submissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_correct: boolean | null
+          puzzle_id: string
+          submitted_code: string
+          time_taken_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          puzzle_id: string
+          submitted_code: string
+          time_taken_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          puzzle_id?: string
+          submitted_code?: string
+          time_taken_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_puzzle_submissions_puzzle_id_fkey"
+            columns: ["puzzle_id"]
+            isOneToOne: false
+            referencedRelation: "code_puzzles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      code_puzzles: {
+        Row: {
+          created_at: string | null
+          description: string
+          difficulty: string | null
+          id: string
+          is_active: boolean | null
+          puzzle_code: string
+          solution_code: string
+          test_cases: Json | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          difficulty?: string | null
+          id?: string
+          is_active?: boolean | null
+          puzzle_code: string
+          solution_code: string
+          test_cases?: Json | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          difficulty?: string | null
+          id?: string
+          is_active?: boolean | null
+          puzzle_code?: string
+          solution_code?: string
+          test_cases?: Json | null
+          title?: string
+        }
+        Relationships: []
+      }
+      company_coin_bank: {
+        Row: {
+          allocated_to_heads: number | null
+          allocated_to_quests: number | null
+          available_balance: number | null
+          created_at: string | null
+          created_by: string | null
+          financial_year: string
+          granted_by_hr: number | null
+          id: string
+          total_budget: number
+          updated_at: string | null
+        }
+        Insert: {
+          allocated_to_heads?: number | null
+          allocated_to_quests?: number | null
+          available_balance?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          financial_year: string
+          granted_by_hr?: number | null
+          id?: string
+          total_budget?: number
+          updated_at?: string | null
+        }
+        Update: {
+          allocated_to_heads?: number | null
+          allocated_to_quests?: number | null
+          available_balance?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          financial_year?: string
+          granted_by_hr?: number | null
+          id?: string
+          total_budget?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       daily_quotes: {
         Row: {
           author: string
@@ -524,6 +813,164 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      finance_approvals: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          reason: string
+          request_type: string | null
+          requested_by: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          reason: string
+          request_type?: string | null
+          requested_by: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          reason?: string
+          request_type?: string | null
+          requested_by?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      hall_of_fame_entries: {
+        Row: {
+          achievement_data: Json | null
+          achievement_type: string
+          awarded_at: string | null
+          id: string
+          user_id: string
+          valid_until: string | null
+        }
+        Insert: {
+          achievement_data?: Json | null
+          achievement_type: string
+          awarded_at?: string | null
+          id?: string
+          user_id: string
+          valid_until?: string | null
+        }
+        Update: {
+          achievement_data?: Json | null
+          achievement_type?: string
+          awarded_at?: string | null
+          id?: string
+          user_id?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
+      head_budget_requests: {
+        Row: {
+          approval_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          budget_id: string
+          created_at: string | null
+          head_user_id: string
+          id: string
+          justification: string
+          requested_amount: number
+          status: string | null
+        }
+        Insert: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_id: string
+          created_at?: string | null
+          head_user_id: string
+          id?: string
+          justification: string
+          requested_amount: number
+          status?: string | null
+        }
+        Update: {
+          approval_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          budget_id?: string
+          created_at?: string | null
+          head_user_id?: string
+          id?: string
+          justification?: string
+          requested_amount?: number
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "head_budget_requests_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "head_coin_budgets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      head_coin_budgets: {
+        Row: {
+          additional_approved: number | null
+          allocated_coins: number | null
+          available_coins: number | null
+          base_allocation: number | null
+          created_at: string | null
+          head_user_id: string
+          id: string
+          month: number
+          spent_coins: number | null
+          total_allocation: number | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          additional_approved?: number | null
+          allocated_coins?: number | null
+          available_coins?: number | null
+          base_allocation?: number | null
+          created_at?: string | null
+          head_user_id: string
+          id?: string
+          month: number
+          spent_coins?: number | null
+          total_allocation?: number | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          additional_approved?: number | null
+          allocated_coins?: number | null
+          available_coins?: number | null
+          base_allocation?: number | null
+          created_at?: string | null
+          head_user_id?: string
+          id?: string
+          month?: number
+          spent_coins?: number | null
+          total_allocation?: number | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: []
       }
       inquiries: {
         Row: {
@@ -978,6 +1425,13 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "points_redemptions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "points_redemptions_reward_id_fkey"
             columns: ["reward_id"]
             isOneToOne: false
@@ -989,6 +1443,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "points_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
             referencedColumns: ["user_id"]
           },
         ]
@@ -1066,6 +1527,102 @@ export type Database = {
           phone?: string | null
         }
         Relationships: []
+      }
+      project_coin_allocations: {
+        Row: {
+          allocated_by: string
+          allocated_to: string
+          approval_date: string | null
+          base_coin_amount: number
+          bonus_earned: number | null
+          budget_id: string
+          completed_in_half_time: boolean | null
+          created_at: string | null
+          days_late: number | null
+          employee_deadline: string
+          final_coins_awarded: number | null
+          half_time_bonus: number | null
+          head_deadline: string
+          hr_approval_date: string | null
+          hr_approval_notes: string | null
+          hr_approval_requested: boolean | null
+          hr_approved_by: string | null
+          id: string
+          original_deadline: string
+          penalty_amount: number | null
+          status: string | null
+          submission_date: string | null
+          task_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          allocated_by: string
+          allocated_to: string
+          approval_date?: string | null
+          base_coin_amount: number
+          bonus_earned?: number | null
+          budget_id: string
+          completed_in_half_time?: boolean | null
+          created_at?: string | null
+          days_late?: number | null
+          employee_deadline: string
+          final_coins_awarded?: number | null
+          half_time_bonus?: number | null
+          head_deadline: string
+          hr_approval_date?: string | null
+          hr_approval_notes?: string | null
+          hr_approval_requested?: boolean | null
+          hr_approved_by?: string | null
+          id?: string
+          original_deadline: string
+          penalty_amount?: number | null
+          status?: string | null
+          submission_date?: string | null
+          task_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          allocated_by?: string
+          allocated_to?: string
+          approval_date?: string | null
+          base_coin_amount?: number
+          bonus_earned?: number | null
+          budget_id?: string
+          completed_in_half_time?: boolean | null
+          created_at?: string | null
+          days_late?: number | null
+          employee_deadline?: string
+          final_coins_awarded?: number | null
+          half_time_bonus?: number | null
+          head_deadline?: string
+          hr_approval_date?: string | null
+          hr_approval_notes?: string | null
+          hr_approval_requested?: boolean | null
+          hr_approved_by?: string | null
+          id?: string
+          original_deadline?: string
+          penalty_amount?: number | null
+          status?: string | null
+          submission_date?: string | null
+          task_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_coin_allocations_budget_id_fkey"
+            columns: ["budget_id"]
+            isOneToOne: false
+            referencedRelation: "head_coin_budgets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_coin_allocations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: true
+            referencedRelation: "staff_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_monitors: {
         Row: {
@@ -1197,6 +1754,74 @@ export type Database = {
           },
         ]
       }
+      quests: {
+        Row: {
+          category: string | null
+          coin_reward: number
+          coins_allocated: boolean | null
+          created_at: string | null
+          created_by: string | null
+          criteria: Json
+          current_winners: number | null
+          department_id: string | null
+          description: string
+          id: string
+          is_active: boolean | null
+          max_winners: number | null
+          name: string
+          period_end: string
+          period_start: string
+          scope: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          coin_reward: number
+          coins_allocated?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          criteria: Json
+          current_winners?: number | null
+          department_id?: string | null
+          description: string
+          id?: string
+          is_active?: boolean | null
+          max_winners?: number | null
+          name: string
+          period_end: string
+          period_start: string
+          scope?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          coin_reward?: number
+          coins_allocated?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          criteria?: Json
+          current_winners?: number | null
+          department_id?: string | null
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          max_winners?: number | null
+          name?: string
+          period_end?: string
+          period_start?: string
+          scope?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quests_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quick_notes: {
         Row: {
           content: string
@@ -1220,6 +1845,190 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      quiz_questions: {
+        Row: {
+          category: string | null
+          correct_answer: string
+          created_at: string | null
+          difficulty: string | null
+          id: string
+          is_active: boolean | null
+          options: Json
+          question: string
+        }
+        Insert: {
+          category?: string | null
+          correct_answer: string
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          is_active?: boolean | null
+          options: Json
+          question: string
+        }
+        Update: {
+          category?: string | null
+          correct_answer?: string
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          is_active?: boolean | null
+          options?: Json
+          question?: string
+        }
+        Relationships: []
+      }
+      quiz_submissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_correct: boolean | null
+          question_id: string
+          selected_answer: string
+          time_taken_seconds: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          question_id: string
+          selected_answer: string
+          time_taken_seconds?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          question_id?: string
+          selected_answer?: string
+          time_taken_seconds?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_submissions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reward_catalog: {
+        Row: {
+          category: string | null
+          coin_cost: number
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_available: boolean | null
+          name: string
+          requires_finance_approval: boolean | null
+          requires_hr_approval: boolean | null
+          stock_quantity: number | null
+          terms_conditions: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          coin_cost: number
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          name: string
+          requires_finance_approval?: boolean | null
+          requires_hr_approval?: boolean | null
+          stock_quantity?: number | null
+          terms_conditions?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          coin_cost?: number
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          name?: string
+          requires_finance_approval?: boolean | null
+          requires_hr_approval?: boolean | null
+          stock_quantity?: number | null
+          terms_conditions?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      reward_redemptions: {
+        Row: {
+          coins_spent: number
+          created_at: string | null
+          finance_review_notes: string | null
+          finance_reviewed_at: string | null
+          finance_reviewed_by: string | null
+          fulfilled_at: string | null
+          fulfillment_notes: string | null
+          hr_review_notes: string | null
+          hr_reviewed_at: string | null
+          hr_reviewed_by: string | null
+          id: string
+          requested_at: string | null
+          reward_id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          coins_spent: number
+          created_at?: string | null
+          finance_review_notes?: string | null
+          finance_reviewed_at?: string | null
+          finance_reviewed_by?: string | null
+          fulfilled_at?: string | null
+          fulfillment_notes?: string | null
+          hr_review_notes?: string | null
+          hr_reviewed_at?: string | null
+          hr_reviewed_by?: string | null
+          id?: string
+          requested_at?: string | null
+          reward_id: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          coins_spent?: number
+          created_at?: string | null
+          finance_review_notes?: string | null
+          finance_reviewed_at?: string | null
+          finance_reviewed_by?: string | null
+          fulfilled_at?: string | null
+          fulfillment_notes?: string | null
+          hr_review_notes?: string | null
+          hr_reviewed_at?: string | null
+          hr_reviewed_by?: string | null
+          id?: string
+          requested_at?: string | null
+          reward_id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_redemptions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "reward_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rewards_catalog: {
         Row: {
@@ -1276,6 +2085,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "rewards_catalog_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
             referencedColumns: ["user_id"]
           },
         ]
@@ -1394,7 +2210,38 @@ export type Database = {
             referencedRelation: "staff_profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "fk_staff_attendance_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
+            referencedColumns: ["user_id"]
+          },
         ]
+      }
+      staff_notes: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       staff_notifications: {
         Row: {
@@ -1442,6 +2289,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_staff_notifications_created_by"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
             referencedColumns: ["user_id"]
           },
           {
@@ -1694,10 +2548,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "staff_subtasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "staff_subtasks_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "staff_subtasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
             referencedColumns: ["user_id"]
           },
           {
@@ -1794,10 +2662,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "fk_staff_tasks_assigned_by"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "fk_staff_tasks_assigned_to"
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_staff_tasks_assigned_to"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
             referencedColumns: ["user_id"]
           },
           {
@@ -2061,6 +2943,87 @@ export type Database = {
             referencedRelation: "staff_profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "fk_user_activity_log_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_coin_transactions: {
+        Row: {
+          category: string | null
+          coins: number
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          reason: string
+          related_allocation_id: string | null
+          related_quest_id: string | null
+          related_redemption_id: string | null
+          related_task_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          coins: number
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          reason: string
+          related_allocation_id?: string | null
+          related_quest_id?: string | null
+          related_redemption_id?: string | null
+          related_task_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          coins?: number
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          reason?: string
+          related_allocation_id?: string | null
+          related_quest_id?: string | null
+          related_redemption_id?: string | null
+          related_task_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_coin_transactions_related_allocation_id_fkey"
+            columns: ["related_allocation_id"]
+            isOneToOne: false
+            referencedRelation: "project_coin_allocations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_coin_transactions_related_quest_id_fkey"
+            columns: ["related_quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_coin_transactions_related_redemption_id_fkey"
+            columns: ["related_redemption_id"]
+            isOneToOne: false
+            referencedRelation: "reward_redemptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_coin_transactions_related_task_id_fkey"
+            columns: ["related_task_id"]
+            isOneToOne: false
+            referencedRelation: "staff_tasks"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_mood_entries: {
@@ -2102,6 +3065,13 @@ export type Database = {
             referencedRelation: "staff_profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "fk_user_mood_entries_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       user_points_log: {
@@ -2135,6 +3105,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_user_points_log_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
             referencedColumns: ["user_id"]
           },
         ]
@@ -2171,6 +3148,63 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "staff_profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_user_presence_status_user"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "top_coin_earners"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_quest_progress: {
+        Row: {
+          awarded_at: string | null
+          awarded_by: string | null
+          coins_awarded: boolean | null
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          progress: Json | null
+          quest_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          awarded_at?: string | null
+          awarded_by?: string | null
+          coins_awarded?: boolean | null
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          progress?: Json | null
+          quest_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          awarded_at?: string | null
+          awarded_by?: string | null
+          coins_awarded?: boolean | null
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          progress?: Json | null
+          quest_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_quest_progress_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2214,6 +3248,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fk_user_spotify_sessions_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "top_coin_earners"
             referencedColumns: ["user_id"]
           },
         ]
@@ -2605,6 +3646,36 @@ export type Database = {
         }
         Relationships: []
       }
+      word_game_scores: {
+        Row: {
+          created_at: string | null
+          difficulty: string | null
+          id: string
+          score: number
+          time_taken_seconds: number | null
+          user_id: string
+          words_found: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          score?: number
+          time_taken_seconds?: number | null
+          user_id: string
+          words_found?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          score?: number
+          time_taken_seconds?: number | null
+          user_id?: string
+          words_found?: number | null
+        }
+        Relationships: []
+      }
       workspace_layouts: {
         Row: {
           created_at: string
@@ -2631,6 +3702,21 @@ export type Database = {
       }
     }
     Views: {
+      chess_leaderboard: {
+        Row: {
+          current_win_streak: number | null
+          elo_rating: number | null
+          full_name: string | null
+          games_drawn: number | null
+          games_lost: number | null
+          games_played: number | null
+          games_won: number | null
+          longest_win_streak: number | null
+          user_id: string | null
+          win_percentage: number | null
+        }
+        Relationships: []
+      }
       geography_columns: {
         Row: {
           coord_dimension: number | null
@@ -2670,6 +3756,16 @@ export type Database = {
           f_table_schema?: unknown
           srid?: number | null
           type?: string | null
+        }
+        Relationships: []
+      }
+      top_coin_earners: {
+        Row: {
+          full_name: string | null
+          last_activity: string | null
+          total_coins: number | null
+          total_transactions: number | null
+          user_id: string | null
         }
         Relationships: []
       }
@@ -2802,6 +3898,36 @@ export type Database = {
             }
             Returns: string
           }
+      allocate_coins_to_project: {
+        Args: {
+          p_coin_amount: number
+          p_employee_id: string
+          p_half_time_bonus?: number
+          p_head_id: string
+          p_original_deadline: string
+          p_task_id: string
+        }
+        Returns: string
+      }
+      award_quest_completion: {
+        Args: { p_awarded_by: string; p_quest_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      calculate_late_penalty: {
+        Args: { p_base_coins: number; p_days_late: number }
+        Returns: number
+      }
+      calculate_project_deadlines: {
+        Args: { p_original_deadline: string }
+        Returns: {
+          employee_deadline: string
+          head_deadline: string
+        }[]
+      }
+      check_head_budget_available: {
+        Args: { p_coins_needed: number; p_head_id: string }
+        Returns: boolean
+      }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
@@ -2934,6 +4060,7 @@ export type Database = {
         Returns: boolean
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
+      get_current_financial_year: { Args: never; Returns: string }
       get_nearby_vendors: {
         Args: { distance_meters?: number; lat: number; lng: number }
         Returns: {
@@ -2956,7 +4083,27 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_user_coin_balance: { Args: { p_user_id: string }; Returns: number }
       gettransactionid: { Args: never; Returns: unknown }
+      hr_approve_late_submission: {
+        Args: {
+          p_allocation_id: string
+          p_approval_notes?: string
+          p_hr_user_id: string
+          p_waive_penalty?: boolean
+        }
+        Returns: undefined
+      }
+      hr_grant_coins: {
+        Args: {
+          p_amount: number
+          p_finance_approval_id?: string
+          p_hr_user_id: string
+          p_reason: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       is_admin_email_available: {
         Args: { check_email: string }
         Returns: boolean
@@ -3003,6 +4150,10 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      process_project_submission: {
+        Args: { p_allocation_id: string; p_submission_date?: string }
+        Returns: undefined
+      }
       register_admin: {
         Args: { email: string; name: string; password: string; role?: string }
         Returns: string
@@ -3589,6 +4740,15 @@ export type Database = {
         Returns: unknown
       }
       unlockrows: { Args: { "": string }; Returns: number }
+      update_chess_elo: {
+        Args: {
+          p_game_id: string
+          p_is_draw?: boolean
+          p_loser_id: string
+          p_winner_id: string
+        }
+        Returns: undefined
+      }
       update_order_status: {
         Args: {
           new_status: Database["public"]["Enums"]["order_status"]
@@ -3653,6 +4813,7 @@ export type Database = {
         | "overdue"
         | "handover"
         | "pending_approval"
+        | "review_pending"
       user_role: "hr" | "department_head" | "staff" | "lead" | "manager"
       vendor_status: "pending" | "approved" | "rejected"
     }
@@ -3814,6 +4975,7 @@ export const Constants = {
         "overdue",
         "handover",
         "pending_approval",
+        "review_pending",
       ],
       user_role: ["hr", "department_head", "staff", "lead", "manager"],
       vendor_status: ["pending", "approved", "rejected"],

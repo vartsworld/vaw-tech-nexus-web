@@ -25,9 +25,26 @@ const AdminDashboard = () => {
 
   const checkAuth = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // Check for admin session from edge function authentication
+      const sessionData = sessionStorage.getItem("admin_session");
       
-      if (!session) {
+      if (!sessionData) {
+        navigate("/admin");
+        return;
+      }
+
+      const session = JSON.parse(sessionData);
+      
+      // Check if session has expired
+      if (new Date(session.expires_at) < new Date()) {
+        sessionStorage.removeItem("admin_session");
+        navigate("/admin");
+        return;
+      }
+
+      // Verify token exists
+      if (!session.token || !session.admin_id) {
+        sessionStorage.removeItem("admin_session");
         navigate("/admin");
         return;
       }
@@ -35,6 +52,7 @@ const AdminDashboard = () => {
       setLoading(false);
     } catch (error) {
       console.error("Auth check error:", error);
+      sessionStorage.removeItem("admin_session");
       navigate("/admin");
     }
   };

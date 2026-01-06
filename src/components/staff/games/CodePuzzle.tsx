@@ -91,7 +91,6 @@ const CodePuzzle = ({ onClose, userId }: { onClose: () => void, userId: string }
         if (currentPuzzle < puzzles.length - 1) {
           nextPuzzle();
         } else {
-        } else {
           setGameActive(false);
           saveScore();
         }
