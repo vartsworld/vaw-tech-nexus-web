@@ -41,6 +41,7 @@ const NotificationCenter = () => {
     is_urgent: false,
     expires_at: ""
   });
+  const [userSearchTerm, setUserSearchTerm] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -305,9 +306,9 @@ const NotificationCenter = () => {
               {newNotification.target_type === "specific" && (
                 <div className="space-y-3">
                   <Label>Select Users (Multi-select)</Label>
-                  
+
                   {/* Dropdown to Add Users */}
-                  <Select 
+                  <Select
                     onValueChange={(value) => {
                       if (!newNotification.target_users.includes(value)) {
                         setNewNotification({
@@ -315,6 +316,7 @@ const NotificationCenter = () => {
                           // @ts-ignore
                           target_users: [...newNotification.target_users, value]
                         });
+                        setUserSearchTerm(""); // Clear search on select
                       }
                     }}
                   >
@@ -323,51 +325,54 @@ const NotificationCenter = () => {
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
                       <div className="p-2">
-                        <Input 
-                          placeholder="Search users..." 
-                          className="mb-2 h-8" 
-                          onKeyDown={(e) => e.stopPropagation()} // Prevent select from capturing keys
-                          onChange={(e) => {
-                             // This is a naive implementation of search within generic Select content
-                             // Ideally, we'd filter the map below based on a search state.
-                             // But for now, we'll just show the full list or rely on native browser search if typed.
-                             // A true Combobox is better, but following "similar to department" request.
-                          }}
+                        <Input
+                          placeholder="Search users..."
+                          className="mb-2 h-8"
+                          value={userSearchTerm}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          onChange={(e) => setUserSearchTerm(e.target.value)}
                         />
                       </div>
                       {staff
                         .filter(u => !(newNotification.target_users || []).includes(u.id))
+                        .filter(u => u.full_name.toLowerCase().includes(userSearchTerm.toLowerCase()))
                         .map(user => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.full_name} ({user.departments?.name || 'No Dept'})
-                        </SelectItem>
-                      ))}
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.full_name} ({user.departments?.name || 'No Dept'})
+                          </SelectItem>
+                        ))}
+                      {staff.filter(u =>
+                        !(newNotification.target_users || []).includes(u.id) &&
+                        u.full_name.toLowerCase().includes(userSearchTerm.toLowerCase())
+                      ).length === 0 && (
+                          <div className="p-2 text-sm text-center text-gray-500">No users found</div>
+                        )}
                     </SelectContent>
                   </Select>
 
                   {/* Selected Users List */}
                   <div className="flex flex-wrap gap-2 mt-2 p-2 border rounded-md min-h-[50px] bg-slate-50 dark:bg-slate-900/50">
-                     {(newNotification.target_users || []).length === 0 && (
-                        <span className="text-sm text-gray-400 p-1">No users selected</span>
-                     )}
-                     {(newNotification.target_users || []).map(userId => {
-                        const user = staff.find(s => s.id === userId);
-                        return (
-                          <Badge key={userId} variant="secondary" className="flex items-center gap-1 pl-2 pr-1 py-1">
-                             <span className="text-xs">{user?.full_name || 'Unknown User'}</span>
-                             <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-4 w-4 ml-1 hover:bg-red-100 hover:text-red-600 rounded-full"
-                                onClick={() => toggleUserSelection(userId)}
-                             >
-                                <Trash2 className="h-3 w-3" />
-                             </Button>
-                          </Badge>
-                        );
-                     })}
+                    {(newNotification.target_users || []).length === 0 && (
+                      <span className="text-sm text-gray-400 p-1">No users selected</span>
+                    )}
+                    {(newNotification.target_users || []).map(userId => {
+                      const user = staff.find(s => s.id === userId);
+                      return (
+                        <Badge key={userId} variant="secondary" className="flex items-center gap-1 pl-2 pr-1 py-1">
+                          <span className="text-xs">{user?.full_name || 'Unknown User'}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 ml-1 hover:bg-red-100 hover:text-red-600 rounded-full"
+                            onClick={() => toggleUserSelection(userId)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      );
+                    })}
                   </div>
-                  
+
                   <p className="text-xs text-muted-foreground text-right">
                     {(newNotification.target_users || []).length} users will receive this notification
                   </p>
