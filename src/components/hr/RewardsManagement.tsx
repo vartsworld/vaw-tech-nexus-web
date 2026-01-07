@@ -184,39 +184,7 @@ const RewardsManagement = () => {
 
   return (
     <div className="space-y-4">
-      <Card className="bg-primary/5 border-primary/20">
-        <CardContent className="p-4 flex flex-col md:flex-row items-center gap-4 justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-full">
-              <Gift className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-lg">VAW Coin Value</h4>
-              <p className="text-sm text-muted-foreground">Define the exchange rate for 1 VAW Coin</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-background p-1.5 rounded-lg border">
-              <span className="text-sm font-medium pl-2">1 Coin = ₹</span>
-              <Input
-                type="number"
-                value={coinRate}
-                onChange={(e) => setCoinRate(parseFloat(e.target.value) || 0)}
-                className="w-24 h-8 border-none focus-visible:ring-0 text-right font-bold"
-                min="0"
-                step="0.1"
-              />
-            </div>
-            <Button
-              onClick={handleUpdateRate}
-              disabled={isUpdatingRate}
-              size="sm"
-            >
-              {isUpdatingRate ? 'Saving...' : 'Save Rate'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Rewards Catalog Management</h3>

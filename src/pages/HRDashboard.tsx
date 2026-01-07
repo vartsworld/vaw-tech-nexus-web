@@ -80,7 +80,7 @@ const HRDashboard = () => {
 
       const { data: profile, error } = await supabase
         .from('staff_profiles')
-        .select('*, departments(name)')
+        .select('*')
         .eq('user_id', user.id)
         .single();
 

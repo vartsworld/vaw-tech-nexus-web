@@ -46,12 +46,32 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
   const markAttendance = async () => {
     setIsMarking(true);
     try {
+      // Fetch points config
+      const { data: configData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'points_config')
+        .single();
+
+      // Defaults if config missing
+      const config = {
+        attendance_points: 10,
+        late_penalty: 2,
+        ...(configData?.value || {}) // @ts-ignore
+      };
+
       const now = new Date();
-      const workStartTime = new Date();
-      workStartTime.setHours(9, 0, 0, 0); // 9 AM
-      
-      const isLate = now > workStartTime;
-      
+      // Define window: 05:30 AM to 18:30 (6:30 PM)
+      const startWindow = new Date();
+      startWindow.setHours(5, 30, 0, 0);
+
+      const endWindow = new Date();
+      endWindow.setHours(18, 30, 0, 0);
+
+      // Logic: Marked WITHIN window = On Time. Before or After = Late.
+      // Request: "mark the attentance within 5:30 to 18:30 wont be marked as late and those who marked before or after the timer being will be considered late."
+      const isLate = now < startWindow || now > endWindow;
+
       // Check if attendance already exists for today
       const today = new Date().toISOString().split('T')[0];
       const { data: existingAttendance } = await supabase
@@ -69,7 +89,7 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
         });
         return;
       }
-      
+
       const { error } = await supabase
         .from('staff_attendance')
         .insert({
@@ -80,22 +100,25 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
 
       if (error) throw error;
 
-      // Award points for attendance - simplified without staff profile dependency
-      const points = isLate ? 5 : 10;
+      // Calculate points
+      const points = isLate
+        ? Math.max(0, config.attendance_points - config.late_penalty)
+        : config.attendance_points;
+
       await supabase
         .from('user_points_log')
         .insert({
           user_id: userId,
           points,
-          reason: isLate ? 'Attendance (Late)' : 'Attendance (On Time)',
+          reason: isLate ? 'Attendance (Outside Standard Hours)' : 'Attendance (On Time)',
           category: 'attendance'
         });
 
       toast({
         title: "Attendance Marked!",
-        description: isLate 
-          ? `You're a bit late today, but you earned ${points} points!`
-          : `Great! You're on time and earned ${points} points!`,
+        description: isLate
+          ? `Marked outside standard hours (05:30-18:30). Earned ${points} points.`
+          : `On time! Earned ${points} points!`,
       });
 
       onAttendanceMarked();
@@ -165,13 +188,13 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
               {currentTime.toLocaleDateString()}
             </div>
           </div>
-          
+
           <div className="flex items-center justify-center gap-2 text-white/80">
             <MapPin className="w-4 h-4" />
             <span>VAW Technologies Office</span>
           </div>
 
-          <Button 
+          <Button
             onClick={markAttendance}
             disabled={isMarking}
             className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white"

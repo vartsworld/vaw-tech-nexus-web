@@ -71,7 +71,7 @@ const PointsMonitoring = () => {
       // Recent activity (last 7 days)
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const recentLogs = logsData?.filter(log => 
+      const recentLogs = logsData?.filter(log =>
         new Date(log.created_at) > sevenDaysAgo
       ) || [];
       const recentActivity = recentLogs.reduce((sum, log) => sum + log.points, 0);
@@ -99,8 +99,8 @@ const PointsMonitoring = () => {
       filtered = filtered.filter(log => {
         const userName = log.staff_profiles?.full_name?.toLowerCase() || '';
         const reason = log.reason?.toLowerCase() || '';
-        return userName.includes(searchTerm.toLowerCase()) || 
-               reason.includes(searchTerm.toLowerCase());
+        return userName.includes(searchTerm.toLowerCase()) ||
+          reason.includes(searchTerm.toLowerCase());
       });
     }
 
@@ -111,7 +111,7 @@ const PointsMonitoring = () => {
     if (filterPeriod !== "all") {
       const now = new Date();
       const filterDate = new Date();
-      
+
       switch (filterPeriod) {
         case "today":
           filterDate.setHours(0, 0, 0, 0);
@@ -124,7 +124,7 @@ const PointsMonitoring = () => {
           break;
       }
 
-      filtered = filtered.filter(log => 
+      filtered = filtered.filter(log =>
         new Date(log.created_at) >= filterDate
       );
     }
@@ -143,8 +143,161 @@ const PointsMonitoring = () => {
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
 
+  // --- Configuration Logic ---
+  const [config, setConfig] = useState({
+    attendance_points: 10,
+    mood_points: 5,
+    late_penalty: 2,
+    vaw_coin_rate: 10
+  });
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  const fetchConfig = async () => {
+    try {
+      const { data: pointsData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'points_config')
+        .single();
+
+      const { data: rateData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'vaw_coin_rate')
+        .single();
+
+      setConfig(prev => ({
+        ...prev,
+        // @ts-ignore
+        ...(pointsData?.value || {}),
+        // @ts-ignore
+        vaw_coin_rate: rateData?.value?.inr_value || prev.vaw_coin_rate
+      }));
+    } catch (error) {
+      console.error("Error fetching config:", error);
+    }
+  };
+
+  const handleUpdateConfig = async () => {
+    setIsSavingConfig(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // Update Points Config
+      const { error: pointsError } = await supabase
+        .from('app_settings')
+        .upsert({
+          key: 'points_config',
+          value: {
+            attendance_points: config.attendance_points,
+            mood_points: config.mood_points,
+            late_penalty: config.late_penalty
+          },
+          updated_at: new Date().toISOString(),
+          updated_by: user?.id
+        });
+
+      // Update Coin Rate
+      const { error: rateError } = await supabase
+        .from('app_settings')
+        .upsert({
+          key: 'vaw_coin_rate',
+          value: { inr_value: config.vaw_coin_rate },
+          updated_at: new Date().toISOString(),
+          updated_by: user?.id
+        });
+
+      if (pointsError || rateError) throw pointsError || rateError;
+
+      toast({
+        title: "Success",
+        description: "Points configuration updated successfully.",
+      });
+    } catch (error) {
+      console.error("Error saving config:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update configuration.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Configuration Section */}
+      <Card className="bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Coins className="h-5 w-5 text-yellow-600" />
+            Points & Reward Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Attendance Points (Per Day)
+              </label>
+              <Input
+                type="number"
+                value={config.attendance_points}
+                onChange={(e) => setConfig({ ...config, attendance_points: Number(e.target.value) })}
+                className="bg-white dark:bg-slate-950"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Mood Check-in Points
+              </label>
+              <Input
+                type="number"
+                value={config.mood_points}
+                onChange={(e) => setConfig({ ...config, mood_points: Number(e.target.value) })}
+                className="bg-white dark:bg-slate-950"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Late Arrival Penalty
+              </label>
+              <Input
+                type="number"
+                value={config.late_penalty}
+                onChange={(e) => setConfig({ ...config, late_penalty: Number(e.target.value) })}
+                className="bg-white dark:bg-slate-950 text-red-600 font-semibold"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Prioritize Coin Value (1 Coin = ₹?)
+              </label>
+              <div className="flex items-center relative">
+                <span className="absolute left-3 text-slate-500 font-bold">₹</span>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={config.vaw_coin_rate}
+                  onChange={(e) => setConfig({ ...config, vaw_coin_rate: Number(e.target.value) })}
+                  className="pl-7 bg-white dark:bg-slate-950 font-bold text-green-700"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button onClick={handleUpdateConfig} disabled={isSavingConfig}>
+              {isSavingConfig ? 'Saving Changes...' : 'Save Configuration'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -224,8 +377,8 @@ const PointsMonitoring = () => {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {staff.avatar_url ? (
-                        <img 
-                          src={staff.avatar_url} 
+                        <img
+                          src={staff.avatar_url}
                           alt={staff.full_name}
                           className="h-8 w-8 rounded-full"
                         />
@@ -327,8 +480,8 @@ const PointsMonitoring = () => {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {log.staff_profiles?.avatar_url ? (
-                            <img 
-                              src={log.staff_profiles.avatar_url} 
+                            <img
+                              src={log.staff_profiles.avatar_url}
                               alt={log.staff_profiles.full_name}
                               className="h-6 w-6 rounded-full"
                             />
