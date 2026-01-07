@@ -42,8 +42,8 @@ const Pricing = () => {
   }, []);
   const pricingTiers: PricingTier[] = [{
     name: "Basic Design Website",
-    originalPrice: 14999,
-    discountPrice: 7999,
+    originalPrice: 16999,
+    discountPrice: 8599,
     icon: <Globe className="h-8 w-8 text-tech-blue" />,
     description: "Perfect for small businesses and startups",
     features: ["Professional Website Design", "Free Domain for 1 Year", "Web Hosting Included", "SSL Certificate", "Mobile Responsive", "SEO Optimized", "Contact Form", "Social Media Integration"]
