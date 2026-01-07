@@ -87,7 +87,8 @@ const NotificationCenter = () => {
     try {
       const { data, error } = await supabase
         .from('staff_profiles')
-        .select('id, full_name, username, role, department_id, departments(name)')
+        // Using explicit relationship name to avoid ambiguity
+        .select('id, full_name, username, role, department_id, departments!fk_department(name)')
         .order('full_name');
 
       if (error) throw error;
