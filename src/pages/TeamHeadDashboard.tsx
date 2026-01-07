@@ -26,7 +26,8 @@ import {
   User,
   Lock,
   LogOut,
-  Layout
+  Layout,
+  Coins
 } from "lucide-react";
 import { toast } from "sonner";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
@@ -548,10 +549,10 @@ const TeamHeadDashboard = () => {
 
               <div
                 onClick={() => navigate('/mycoins')}
-                className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2 sm:px-3 py-1 cursor-pointer hover:from-yellow-500/30 hover:to-blue-500/30 transition-all"
+                className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-lg px-2 sm:px-3 py-1 cursor-pointer hover:from-amber-500/30 hover:to-yellow-500/30 transition-all shadow-lg shadow-amber-500/10 group"
               >
-                <Wallet className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-300" />
-                <span className="text-yellow-300 text-xs sm:text-sm">${profile?.earnings || 0}</span>
+                <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                <span className="text-amber-200 text-xs sm:text-sm font-bold">{(profile?.total_points || 0).toLocaleString()} Coins</span>
               </div>
 
               <Badge className="bg-purple-500/20 border-purple-500/30 text-purple-300">

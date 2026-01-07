@@ -4,14 +4,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { 
-  Coffee, 
-  Users, 
-  Briefcase, 
-  Music, 
-  Wallet, 
-  Gamepad2, 
-  StickyNote, 
+import {
+  Coffee,
+  Users,
+  Briefcase,
+  Music,
+  Wallet,
+  Gamepad2,
+  StickyNote,
   MessageCircle,
   Calendar,
   Clock,
@@ -19,7 +19,8 @@ import {
   TrendingUp,
   LogOut,
   User,
-  Trophy
+  Trophy,
+  Coins
 } from "lucide-react";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import WorkspaceRoom from "@/components/staff/WorkspaceRoom";
@@ -51,23 +52,23 @@ const StaffDashboard = () => {
   const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({});
   const [departmentName, setDepartmentName] = useState<string>("");
   const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
-  
+
   // Break timer state
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
   const [isBreakActive, setIsBreakActive] = useState(false);
   const [breakDuration, setBreakDuration] = useState(15);
-  
+
   const { profile, loading } = useStaffData();
-  
+
   // Activity tracking and status
   const { status, reactivationCode, updateStatus, reactivate } = useUserStatus(profile?.user_id || '');
-  useActivityTracker({ 
+  useActivityTracker({
     userId: profile?.user_id || '',
     onStatusChange: (newStatus) => {
       // Status change handled automatically
     }
   });
-  
+
   const [showReactivationDialog, setShowReactivationDialog] = useState(false);
 
   useEffect(() => {
@@ -153,14 +154,14 @@ const StaffDashboard = () => {
 
   const fetchDepartment = async () => {
     if (!profile?.department_id) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('departments')
         .select('name')
         .eq('id', profile.department_id)
         .single();
-      
+
       if (data && !error) {
         setDepartmentName(data.name);
       }
@@ -174,7 +175,7 @@ const StaffDashboard = () => {
 
     try {
       const today = new Date().toISOString().split('T')[0];
-      
+
       // Check if user has marked attendance today
       const { data: attendanceData, error: attendanceError } = await supabase
         .from('staff_attendance')
@@ -233,13 +234,13 @@ const StaffDashboard = () => {
       <div className="min-h-screen relative overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
-          <img 
-            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png" 
-            alt="Modern office background" 
+          <img
+            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
+            alt="Modern office background"
             className="absolute inset-0 w-full h-full object-cover opacity-80"
           />
         </div>
-        
+
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-md space-y-4">
             <div className="text-center mb-4">
@@ -247,8 +248,8 @@ const StaffDashboard = () => {
               <p className="text-white/80">Please mark your attendance to continue</p>
             </div>
             {profile?.user_id && (
-              <AttendanceChecker 
-                userId={profile.user_id} 
+              <AttendanceChecker
+                userId={profile.user_id}
                 onAttendanceMarked={handleAttendanceMarked}
               />
             )}
@@ -264,13 +265,13 @@ const StaffDashboard = () => {
       <div className="min-h-screen relative overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
-          <img 
-            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png" 
-            alt="Modern office background" 
+          <img
+            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
+            alt="Modern office background"
             className="absolute inset-0 w-full h-full object-cover opacity-80"
           />
         </div>
-        
+
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-lg space-y-4">
             <div className="text-center mb-4">
@@ -278,8 +279,8 @@ const StaffDashboard = () => {
               <p className="text-white/80">Share how you're feeling today and get inspired!</p>
             </div>
             {profile?.user_id && (
-              <MoodQuoteChecker 
-                userId={profile.user_id} 
+              <MoodQuoteChecker
+                userId={profile.user_id}
                 onMoodSubmitted={handleMoodSubmitted}
               />
             )}
@@ -301,7 +302,7 @@ const StaffDashboard = () => {
   const roomComponents = {
     workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} />,
     breakroom: isBreakRoomMinimized ? null : (
-      <BreakRoom 
+      <BreakRoom
         breakTimeRemaining={breakTimeRemaining}
         setBreakTimeRemaining={setBreakTimeRemaining}
         isBreakActive={isBreakActive}
@@ -320,14 +321,14 @@ const StaffDashboard = () => {
       {/* Background Images */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60"></div>
-        <img 
-          src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png" 
-          alt="Modern office background" 
+        <img
+          src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
+          alt="Modern office background"
           className="absolute inset-0 w-full h-full object-cover opacity-80"
         />
-        <img 
-          src="/lovable-uploads/508d91e4-1f4c-42a4-9e98-bcb4df6e023d.png" 
-          alt="Office meeting space" 
+        <img
+          src="/lovable-uploads/508d91e4-1f4c-42a4-9e98-bcb4df6e023d.png"
+          alt="Office meeting space"
           className="absolute top-1/2 left-1/2 w-full h-full object-cover opacity-60 mix-blend-overlay"
         />
       </div>
@@ -339,9 +340,9 @@ const StaffDashboard = () => {
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 backdrop-blur-sm rounded-lg flex items-center justify-center p-1.5 flex-shrink-0">
-                  <img 
-                    src="/lovable-uploads/3268a3ac-c0c1-40de-8ba7-8f1b1099460e.png" 
-                    alt="VAW Technologies Logo" 
+                  <img
+                    src="/lovable-uploads/3268a3ac-c0c1-40de-8ba7-8f1b1099460e.png"
+                    alt="VAW Technologies Logo"
                     className="w-full h-full object-contain"
                   />
                 </div>
@@ -353,7 +354,7 @@ const StaffDashboard = () => {
                   )}
                 </div>
               </div>
-              
+
               {/* Actions: Profile & Logout */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Button
@@ -386,23 +387,23 @@ const StaffDashboard = () => {
             {/* Bottom Row: Stats & Notifications */}
             <div className="flex items-center gap-2 flex-wrap">
               <NotificationsBar userId={profile.user_id} />
-              
+
               <div className="flex items-center gap-1.5 bg-green-500/20 border border-green-500/30 rounded-lg px-2.5 py-1.5">
-                <UserStatusBadge 
+                <UserStatusBadge
                   status={status}
                   isBreakActive={isBreakActive}
                   breakTimeRemaining={breakTimeRemaining}
                 />
               </div>
-              
-              <div className="flex items-center gap-1.5 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg px-2.5 py-1.5">
-                <Trophy className="w-3.5 h-3.5 text-purple-300" />
-                <span className="text-purple-300 text-xs font-medium">{profile?.total_points || 0} pts</span>
+
+              <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-amber-500/10">
+                <Coins className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-amber-200 text-xs font-bold tracking-tight">{(profile?.total_points || 0).toLocaleString()} Coins</span>
               </div>
-              
-              <div className="flex items-center gap-1.5 bg-gradient-to-r from-yellow-500/20 to-blue-500/20 border border-yellow-500/30 rounded-lg px-2.5 py-1.5">
-                <Wallet className="w-3.5 h-3.5 text-yellow-300" />
-                <span className="text-yellow-300 text-xs font-medium">${profile?.earnings?.toFixed(2) || '0.00'}</span>
+
+              <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-blue-500/10">
+                <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-cyan-200 text-xs font-bold tracking-tight">Streak: {profile?.attendance_streak || 0}d</span>
               </div>
             </div>
           </div>
@@ -410,8 +411,8 @@ const StaffDashboard = () => {
       </header>
 
       <div className="flex-1 overflow-hidden relative z-10">
-        <VirtualOfficeLayout 
-          currentRoom={currentRoom} 
+        <VirtualOfficeLayout
+          currentRoom={currentRoom}
           onRoomChange={setCurrentRoom}
           onlineUsers={onlineUsers}
           userId={profile.user_id}
@@ -419,7 +420,7 @@ const StaffDashboard = () => {
           {roomComponents[currentRoom]}
         </VirtualOfficeLayout>
       </div>
-      
+
       {/* Break Room Widget (when minimized) */}
       {isBreakRoomMinimized && (
         <BreakRoomWidget
@@ -432,7 +433,7 @@ const StaffDashboard = () => {
           unreadChatCount={0}
         />
       )}
-      
+
       {/* Reactivation Dialog */}
       {showReactivationDialog && reactivationCode && (
         <ReactivationDialog

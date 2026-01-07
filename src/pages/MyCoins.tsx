@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Coins, TrendingUp, Gift, Award } from "lucide-react";
+import { Coins, TrendingUp, Gift, Award, ArrowLeft, Loader2, History, Package } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import PointsBalance from "@/components/staff/PointsBalance";
 import RewardCard from "@/components/staff/RewardCard";
@@ -22,8 +24,9 @@ interface Reward {
 }
 
 const MyCoins = () => {
+  const navigate = useNavigate();
   const [rewards, setRewards] = useState<Reward[]>([]);
-  const [userPoints, setUserPoints] = useState(0);
+  const [userCoins, setUserCoins] = useState(0);
   const [userId, setUserId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
@@ -36,86 +39,102 @@ const MyCoins = () => {
   const fetchUserData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
 
       setUserId(user.id);
 
-      const { data: profile } = await supabase
+      // Fetch user profile for coin balance
+      const { data: profileData, error: profileError } = await supabase
         .from("staff_profiles")
-        .select("total_points")
+        .select("total_points, full_name")
         .eq("user_id", user.id)
         .single();
 
-      if (profile) {
-        setUserPoints(profile.total_points || 0);
-      }
+      if (profileError) throw profileError;
+      
+      setUserCoins(profileData?.total_points || 0);
+
     } catch (error) {
       console.error("Error fetching user data:", error);
-      toast.error("Failed to load user data");
+      toast.error("Failed to load user coin balance");
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchRewards = async () => {
     try {
-      setLoading(true);
       const { data, error } = await supabase
-        .from("rewards_catalog")
+        .from("reward_catalog")
         .select("*")
-        .eq("is_active", true)
+        .eq("is_available", true)
         .order("points_cost", { ascending: true });
 
       if (error) throw error;
       setRewards(data || []);
     } catch (error) {
       console.error("Error fetching rewards:", error);
-      toast.error("Failed to load rewards");
-    } finally {
-      setLoading(false);
+      // Fallback to rewards_catalog if reward_catalog fails (might be transition period)
+      const { data: fallbackData } = await supabase
+        .from("rewards_catalog" as any)
+        .select("*")
+        .eq("is_active", true);
+        
+      if (fallbackData) setRewards(fallbackData as any);
     }
   };
 
-  const handleRedemption = async (rewardId: string, pointsCost: number) => {
-    if (userPoints < pointsCost) {
-      toast.error("Insufficient points!");
-      return;
-    }
+  const handleRedeem = async (rewardId: string, coinsCost: number) => {
+    if (!userId) return;
 
     try {
-      // Create redemption request
+      // 1. Create redemption request
+      // We use reward_redemptions as per new schema
       const { error: redemptionError } = await supabase
-        .from("points_redemptions")
+        .from("reward_redemptions")
         .insert({
           user_id: userId,
           reward_id: rewardId,
-          points_spent: pointsCost,
+          points_spent: coinsCost,
           status: "pending"
         });
 
       if (redemptionError) throw redemptionError;
 
-      // Deduct points
-      const { error: updateError } = await supabase
-        .from("staff_profiles")
-        .update({ total_points: userPoints - pointsCost })
-        .eq("user_id", userId);
-
-      if (updateError) throw updateError;
-
-      // Log transaction
-      await supabase
-        .from("user_points_log")
+      // 2. Log transaction
+      // We use user_coin_transactions as per new schema
+      const { error: transactionError } = await supabase
+        .from("user_coin_transactions")
         .insert({
           user_id: userId,
-          points: -pointsCost,
-          reason: "Points redemption",
-          category: "redemption"
+          coins: -coinsCost,
+          transaction_type: "redemption",
+          description: `Redeemed reward: ${rewards.find(r => r.id === rewardId)?.title}`
         });
 
-      toast.success("🎉 Redemption request submitted! Awaiting HR approval.");
-      setUserPoints(userPoints - pointsCost);
-    } catch (error) {
-      console.error("Error redeeming reward:", error);
-      toast.error("Failed to redeem reward");
+      if (transactionError) throw transactionError;
+
+      // 3. Update staff profile (though DB trigger should handle this eventually)
+      const { error: profileUpdateError } = await supabase
+        .from("staff_profiles")
+        .update({ total_points: userCoins - coinsCost })
+        .eq("user_id", userId);
+
+      if (profileUpdateError) throw profileUpdateError;
+
+      // 4. Update local state
+      setUserCoins(prev => prev - coinsCost);
+
+      toast.success("🎉 Redemption requested! Awaiting approval.");
+      
+      // Refresh data
+      fetchUserData();
+    } catch (error: any) {
+      console.error("Error during redemption:", error);
+      toast.error(error.message || "Failed to process redemption");
     }
   };
 
@@ -132,74 +151,108 @@ const MyCoins = () => {
     { value: "other", label: "Other", icon: Gift }
   ];
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-primary/10 rounded-xl">
-            <Coins className="w-8 h-8 text-primary" />
+    <div className="min-h-screen bg-background p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Navigation & Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => navigate("/staff/dashboard")}
+              className="rounded-full hover:bg-primary/10 border-primary/20"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-4xl font-black tracking-tight text-foreground flex items-center gap-3">
+                <Coins className="w-10 h-10 text-primary animate-pulse" />
+                VAW Coin Economy
+              </h1>
+              <p className="text-muted-foreground font-medium">
+                Your performance, rewarded. Redeem coins for exclusive perks.
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">My Coins</h1>
-            <p className="text-muted-foreground">Redeem your hard-earned points for amazing rewards</p>
+
+          <div className="flex items-center gap-4 bg-muted/30 p-2 rounded-2xl border border-border/50 backdrop-blur-sm">
+            <div className="px-6 py-2 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl border border-primary/20">
+              <p className="text-[10px] uppercase tracking-widest text-primary font-bold">Your Balance</p>
+              <p className="text-3xl font-black text-primary">{userCoins.toLocaleString()} <span className="text-sm font-bold opacity-70">Coins</span></p>
+            </div>
           </div>
         </div>
 
-        {/* Points Balance */}
-        <PointsBalance points={userPoints} userId={userId} />
+        <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <TabsList className="bg-muted/50 p-1 border border-border/50 h-auto flex-wrap">
+              {categories.map(cat => (
+                <TabsTrigger key={cat.value} value={cat.value} className="gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <cat.icon className="w-4 h-4" />
+                  {cat.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" className="gap-2 text-muted-foreground" onClick={() => fetchRewards()}>
+                <History className="w-4 h-4" />
+                History
+              </Button>
+            </div>
+          </div>
 
-        {/* Rewards Catalog */}
-        <Card className="border-border/50 shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gift className="w-5 h-5 text-primary" />
-              Rewards Catalog
-            </CardTitle>
-            <CardDescription>Browse and redeem exciting rewards with your points</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-              <TabsList className="grid w-full grid-cols-6 mb-6">
-                {categories.map(cat => (
-                  <TabsTrigger key={cat.value} value={cat.value} className="gap-2">
-                    <cat.icon className="w-4 h-4" />
-                    {cat.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+          <TabsContent value={activeCategory} className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Stats Cards */}
+            <PointsBalance points={userCoins} userId={userId || ""} />
 
-              <TabsContent value={activeCategory} className="mt-6">
-                {loading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[1, 2, 3, 4, 5, 6].map(i => (
-                      <div key={i} className="h-64 bg-muted/20 animate-pulse rounded-lg" />
-                    ))}
-                  </div>
-                ) : filteredRewards.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Gift className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                    <p>No rewards available in this category</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredRewards.map(reward => (
-                      <RewardCard
-                        key={reward.id}
-                        reward={reward}
-                        userPoints={userPoints}
-                        onRedeem={handleRedemption}
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+            {/* Catalog Grid */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <Package className="w-6 h-6 text-primary" />
+                  Available Rewards
+                </h2>
+                <Badge variant="outline" className="text-muted-foreground">
+                  {filteredRewards.length} Items Found
+                </Badge>
+              </div>
 
-        {/* Redemption History */}
-        <RedemptionHistory userId={userId} />
+              {filteredRewards.length === 0 ? (
+                <div className="text-center py-24 bg-muted/10 border-4 border-dashed border-border/50 rounded-3xl">
+                  <Gift className="w-20 h-20 mx-auto mb-4 opacity-10" />
+                  <h3 className="text-2xl font-bold text-muted-foreground">No rewards found</h3>
+                  <p className="text-muted-foreground">Check back later or try a different category.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                  {filteredRewards.map((reward) => (
+                    <RewardCard
+                      key={reward.id}
+                      reward={reward}
+                      userPoints={userCoins}
+                      onRedeem={handleRedeem}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Redemption History Section */}
+        <div className="pt-12 border-t border-border/50">
+          <RedemptionHistory userId={userId || ""} />
+        </div>
       </div>
     </div>
   );

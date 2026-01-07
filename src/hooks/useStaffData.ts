@@ -57,37 +57,61 @@ export const useStaffData = () => {
 
   useEffect(() => {
     fetchStaffData();
+    
+    // Subscribe to profile changes for real-time points/earnings updates
+    const subscribeToProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const channel = supabase
+        .channel('profile-changes')
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'staff_profiles',
+          filter: `user_id=eq.${user.id}`
+        }, (payload) => {
+          setProfile(prev => prev ? {
+            ...prev,
+            earnings: Number(payload.new.earnings) || 0,
+            total_points: payload.new.total_points || 0,
+            attendance_streak: payload.new.attendance_streak || 0
+          } : null);
+        })
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    };
+    
+    subscribeToProfile();
   }, []);
 
   const fetchStaffData = async () => {
     try {
-      // Get current authenticated user
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        console.log('No authenticated user found');
         setLoading(false);
         return;
       }
 
-      // Get actual staff profile
+      // 1. Fetch Profile
       const { data: staffProfile, error: profileError } = await supabase
         .from('staff_profiles')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (profileError) {
-        console.error('Error fetching staff profile:', profileError);
-        setLoading(false);
-        return;
-      }
+      if (profileError) throw profileError;
 
       const userProfile: Profile = {
         id: staffProfile.id,
         user_id: staffProfile.user_id,
-        full_name: staffProfile.full_name || 'Staff Member',
-        username: staffProfile.username || 'staff',
+        full_name: staffProfile.full_name,
+        username: staffProfile.username,
         avatar_url: staffProfile.avatar_url,
         profile_photo_url: staffProfile.profile_photo_url,
         earnings: Number(staffProfile.earnings) || 0,
@@ -97,105 +121,101 @@ export const useStaffData = () => {
         role: staffProfile.role,
         is_department_head: staffProfile.is_department_head
       };
-
-      console.log('Staff profile loaded:', {
-        id: userProfile.id,
-        department_id: userProfile.department_id,
-        role: userProfile.role,
-        is_department_head: userProfile.is_department_head
-      });
-
       setProfile(userProfile);
 
-      // Mock tasks data
-      const mockTasks: Task[] = [
-        { 
-          id: '1', 
-          title: "Design new landing page", 
-          description: "Create a modern landing page for the new product launch",
-          priority: "High", 
-          status: "In Progress", 
-          due_date: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          assigned_to: user.id,
-          category: "Design"
-        },
-        { 
-          id: '2', 
-          title: "Review client feedback", 
-          description: "Go through client comments and prepare response",
-          priority: "Medium", 
-          status: "Pending", 
-          due_date: new Date(Date.now() + 86400000).toISOString(),
-          created_at: new Date().toISOString(),
-          assigned_to: user.id,
-          category: "Review"
-        },
-        { 
-          id: '3', 
-          title: "Update documentation", 
-          description: "Update API documentation with latest changes",
-          priority: "Low", 
-          status: "Pending", 
-          due_date: new Date(Date.now() + 604800000).toISOString(),
-          created_at: new Date().toISOString(),
-          assigned_to: user.id,
-          category: "Documentation"
+      // 2. Fetch Real Tasks
+      const { data: realTasks, error: tasksError } = await supabase
+        .from('staff_tasks')
+        .select('*')
+        .eq('assigned_to', user.id)
+        .order('created_at', { ascending: false });
+
+      if (tasksError) throw tasksError;
+      setTasks(realTasks || []);
+
+      // 3. Fetch Real Notes
+      const { data: realNotes, error: notesError } = await supabase
+        .from('staff_notes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (!notesError) {
+        setNotes(realNotes || []);
+      }
+
+      // 4. Fetch Chat Messages (Recent from General)
+      const { data: genChannel } = await supabase
+        .from('chat_channels')
+        .select('id')
+        .eq('is_general', true)
+        .single();
+
+      if (genChannel) {
+        const { data: messages, error: messagesError } = await supabase
+          .from('chat_messages')
+          .select(`
+            id,
+            content,
+            sender_id,
+            created_at
+          `)
+          .eq('channel_id', genChannel.id)
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (!messagesError && messages) {
+          // Format for ChatMessage interface
+          const formattedMessages = await Promise.all(messages.map(async m => {
+            const { data: sender } = await supabase
+              .from('staff_profiles')
+              .select('full_name, username')
+              .eq('user_id', m.sender_id)
+              .single();
+              
+            return {
+              id: m.id,
+              message: m.content,
+              user_id: m.sender_id,
+              created_at: m.created_at,
+              profiles: sender ? {
+                full_name: sender.full_name,
+                username: sender.username
+              } : undefined
+            };
+          }));
+          setChatMessages(formattedMessages);
         }
-      ];
+      }
 
-      setTasks(mockTasks);
+      // 5. Fetch Team Members
+      if (staffProfile.department_id) {
+        const { data: team, error: teamError } = await supabase
+          .from('staff_profiles')
+          .select('*')
+          .eq('department_id', staffProfile.department_id)
+          .neq('user_id', user.id);
 
-      // Mock notes
-      const mockNotes: Note[] = [
-        { id: '1', content: "Meeting with client at 3 PM", created_at: new Date().toISOString() },
-        { id: '2', content: "Review design mockups", created_at: new Date().toISOString() },
-        { id: '3', content: "Submit timesheet by Friday", created_at: new Date().toISOString() }
-      ];
-
-      setNotes(mockNotes);
-
-      // Mock chat messages
-      const mockMessages: ChatMessage[] = [
-        { 
-          id: '1', 
-          message: "Anyone up for a quick game?", 
-          user_id: 'user-2', 
-          created_at: new Date(Date.now() - 120000).toISOString(),
-          profiles: { full_name: "Sarah Chen", username: "sarah" }
-        },
-        { 
-          id: '2', 
-          message: "Just finished my tasks! 🎉", 
-          user_id: 'user-3', 
-          created_at: new Date(Date.now() - 300000).toISOString(),
-          profiles: { full_name: "Mike Rodriguez", username: "mike" }
-        },
-        { 
-          id: '3', 
-          message: "Coffee break time!", 
-          user_id: 'user-4', 
-          created_at: new Date(Date.now() - 600000).toISOString(),
-          profiles: { full_name: "Emily Davis", username: "emily" }
+        if (!teamError) {
+          setTeamMembers(team.map(t => ({
+            id: t.id,
+            user_id: t.user_id,
+            full_name: t.full_name,
+            username: t.username,
+            avatar_url: t.avatar_url,
+            profile_photo_url: t.profile_photo_url,
+            earnings: Number(t.earnings) || 0,
+            total_points: t.total_points || 0,
+            department_id: t.department_id
+          })));
         }
-      ];
-
-      setChatMessages(mockMessages);
-
-      // Mock team members
-      const mockTeam: Profile[] = [
-        { id: 'user-2', user_id: 'user-2', full_name: "Sarah Chen", username: "sarah", earnings: 320.00, total_points: 850 },
-        { id: 'user-3', user_id: 'user-3', full_name: "Mike Rodriguez", username: "mike", earnings: 280.50, total_points: 720 },
-        { id: 'user-4', user_id: 'user-4', full_name: "Emily Davis", username: "emily", earnings: 195.75, total_points: 540 }
-      ];
-
-      setTeamMembers(mockTeam);
+      }
 
     } catch (error) {
       console.error('Error fetching staff data:', error);
       toast({
         title: "Error",
-        description: "Failed to load data",
+        description: "Failed to load database data",
         variant: "destructive"
       });
     } finally {
@@ -205,31 +225,33 @@ export const useStaffData = () => {
 
   const updateTaskStatus = async (taskId: string, status: string) => {
     try {
-      // Update task status locally
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({ status: status.toLowerCase().replace(' ', '_'), updated_at: new Date().toISOString() })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
       setTasks(prev => prev.map(task => 
         task.id === taskId ? { ...task, status } : task
       ));
 
       if (status === 'Completed') {
-        // Update earnings locally for demo
-        const task = tasks.find(t => t.id === taskId);
-        const reward = task?.category === 'Design' ? 45 : task?.category === 'Review' ? 25 : 30;
-        
-        setProfile(prev => prev ? { 
-          ...prev, 
-          earnings: prev.earnings + reward 
-        } : null);
-
         toast({
           title: "Task Completed! 🎉",
-          description: `Earned $${reward}! Great work!`,
+          description: "Great work! Coins will be awarded upon head approval.",
+        });
+      } else {
+        toast({
+          title: "Status Updated",
+          description: `Task is now ${status}`,
         });
       }
     } catch (error) {
       console.error('Error updating task:', error);
       toast({
         title: "Error",
-        description: "Failed to update task",
+        description: "Failed to update task status in database",
         variant: "destructive"
       });
     }
@@ -237,22 +259,30 @@ export const useStaffData = () => {
 
   const addNote = async (content: string) => {
     try {
-      const newNote: Note = {
-        id: Date.now().toString(),
-        content,
-        created_at: new Date().toISOString()
-      };
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-      setNotes(prev => [newNote, ...prev]);
+      const { data, error } = await supabase
+        .from('staff_notes')
+        .insert({
+          user_id: user.id,
+          content
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setNotes(prev => [data, ...prev]);
       toast({
-        title: "Note Added",
-        description: "Your note has been saved.",
+        title: "Note Saved",
+        description: "Your note has been saved to the database.",
       });
     } catch (error) {
       console.error('Error adding note:', error);
       toast({
         title: "Error",
-        description: "Failed to add note",
+        description: "Failed to save note to database",
         variant: "destructive"
       });
     }
@@ -260,12 +290,38 @@ export const useStaffData = () => {
 
   const sendChatMessage = async (message: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: genChannel } = await supabase
+        .from('chat_channels')
+        .select('id')
+        .eq('is_general', true)
+        .single();
+
+      if (!genChannel) throw new Error("General channel not found");
+
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert({
+          content: message,
+          sender_id: user.id,
+          channel_id: genChannel.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
       const newMessage: ChatMessage = {
-        id: Date.now().toString(),
-        message,
-        user_id: profile?.user_id || '',
-        created_at: new Date().toISOString(),
-        profiles: { full_name: profile?.full_name || "Staff Member", username: profile?.username || "staff" }
+        id: data.id,
+        message: data.content,
+        user_id: user.id,
+        created_at: data.created_at,
+        profiles: { 
+          full_name: profile?.full_name || "Staff Member", 
+          username: profile?.username || "staff" 
+        }
       };
 
       setChatMessages(prev => [newMessage, ...prev]);
@@ -273,7 +329,7 @@ export const useStaffData = () => {
       console.error('Error sending message:', error);
       toast({
         title: "Error",
-        description: "Failed to send message",
+        description: "Failed to send message to database",
         variant: "destructive"
       });
     }

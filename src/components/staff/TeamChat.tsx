@@ -83,32 +83,44 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
       const { data, error } = await supabase
         .from('chat_messages')
         .select(`
-          *
+          id,
+          content,
+          sender_id,
+          created_at,
+          channel_id
         `)
         .eq('channel_id', activeChannelId)
         .order('created_at', { ascending: true })
-        .limit(50);
+        .limit(100);
 
       if (error) throw error;
 
-      // Get sender info separately for now
-      const messagesWithSender = await Promise.all(
-        (data || []).map(async (msg) => {
-          const { data: senderData } = await supabase
-            .from('staff_profiles')
-            .select('full_name, avatar_url')
-            .eq('user_id', msg.sender_id)
-            .single();
+      // Efficiently fetch profiles for all senders in one go
+      const senderIds = Array.from(new Set(data.map(m => m.sender_id)));
+      if (senderIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('staff_profiles')
+          .select('user_id, full_name, avatar_url, profile_photo_url')
+          .in('user_id', senderIds);
 
-          return {
-            ...msg,
-            sender_name: senderData?.full_name || 'Unknown User',
-            sender_avatar: senderData?.avatar_url
+        const profileMap = (profiles || []).reduce((acc: any, p) => {
+          acc[p.user_id] = {
+            name: p.full_name || 'Unknown User',
+            avatar: p.profile_photo_url || p.avatar_url
           };
-        })
-      );
+          return acc;
+        }, {});
 
-      setMessages(messagesWithSender);
+        const messagesWithSender = data.map((msg) => ({
+          ...msg,
+          sender_name: profileMap[msg.sender_id]?.name || 'Unknown User',
+          sender_avatar: profileMap[msg.sender_id]?.avatar
+        }));
+
+        setMessages(messagesWithSender);
+      } else {
+        setMessages([]);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
@@ -116,14 +128,27 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
 
   const subscribeToMessages = () => {
     const subscription = supabase
-      .channel(`chat-${activeChannelId}`)
+      .channel(`chat-realtime-${activeChannelId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'chat_messages',
         filter: `channel_id=eq.${activeChannelId}`
-      }, (payload) => {
-        fetchMessages(); // Refetch to get sender info
+      }, async (payload) => {
+        // Fetch the profile for the new message sender specifically to be efficient
+        const { data: senderData } = await supabase
+          .from('staff_profiles')
+          .select('full_name, avatar_url, profile_photo_url')
+          .eq('user_id', payload.new.sender_id)
+          .single();
+
+        const newMessage: ChatMessage = {
+          ...payload.new as ChatMessage,
+          sender_name: senderData?.full_name || 'Unknown User',
+          sender_avatar: senderData?.profile_photo_url || senderData?.avatar_url
+        };
+
+        setMessages(prev => [...prev, newMessage]);
       })
       .subscribe();
 
@@ -135,21 +160,23 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeChannelId) return;
 
+    const messageContent = newMessage.trim();
+    setNewMessage('');
     setIsLoading(true);
+
     try {
       const { error } = await supabase
         .from('chat_messages')
         .insert({
-          content: newMessage.trim(),
+          content: messageContent,
           sender_id: userId,
           channel_id: activeChannelId
         });
 
       if (error) throw error;
-
-      setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
+      setNewMessage(messageContent); // Restore message on failure
       toast({
         title: "Error",
         description: "Failed to send message. Please try again.",

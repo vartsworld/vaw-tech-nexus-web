@@ -37,16 +37,30 @@ const RedemptionHistory = ({ userId }: RedemptionHistoryProps) => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from("points_redemptions")
+        .from("reward_redemptions")
         .select(`
           *,
-          reward:rewards_catalog(title, category, image_url)
+          reward:reward_catalog(title, category, image_url)
         `)
         .eq("user_id", userId)
         .order("redemption_date", { ascending: false });
 
-      if (error) throw error;
-      setRedemptions(data || []);
+      if (error) {
+        console.warn("Retrying with legacy tables...");
+        const { data: legacyData, error: legacyError } = await supabase
+          .from("points_redemptions" as any)
+          .select(`
+            *,
+            reward:rewards_catalog(title, category, image_url)
+          `)
+          .eq("user_id", userId)
+          .order("redemption_date", { ascending: false });
+          
+        if (legacyError) throw legacyError;
+        setRedemptions(legacyData || []);
+      } else {
+        setRedemptions(data || []);
+      }
     } catch (error) {
       console.error("Error fetching redemptions:", error);
     } finally {
@@ -107,7 +121,7 @@ const RedemptionHistory = ({ userId }: RedemptionHistoryProps) => {
   }
 
   return (
-    <Card className="border-border/50 shadow-lg">
+    <Card className="border-border/50 shadow-lg bg-card/50 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <History className="w-5 h-5 text-primary" />
@@ -120,17 +134,17 @@ const RedemptionHistory = ({ userId }: RedemptionHistoryProps) => {
           <div className="text-center py-12 text-muted-foreground">
             <History className="w-16 h-16 mx-auto mb-4 opacity-20" />
             <p>No redemptions yet</p>
-            <p className="text-sm mt-2">Start redeeming your points for exciting rewards!</p>
+            <p className="text-sm mt-2">Start redeeming your coins for exciting rewards!</p>
           </div>
         ) : (
           <div className="space-y-3">
             {redemptions.map(redemption => (
               <div
                 key={redemption.id}
-                className="flex items-center gap-4 p-4 border border-border/50 rounded-lg hover:bg-muted/50 transition-colors"
+                className="flex items-center gap-4 p-4 border border-border/50 rounded-xl hover:bg-muted/50 transition-colors bg-background/50"
               >
                 {/* Reward Image */}
-                <div className="w-16 h-16 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
+                <div className="w-16 h-16 bg-muted rounded-lg flex-shrink-0 overflow-hidden border border-border/50">
                   {redemption.reward.image_url ? (
                     <img
                       src={redemption.reward.image_url}
@@ -146,16 +160,16 @@ const RedemptionHistory = ({ userId }: RedemptionHistoryProps) => {
 
                 {/* Details */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-foreground truncate">
+                  <h4 className="font-bold text-foreground truncate">
                     {redemption.reward.title}
                   </h4>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-muted-foreground font-medium">
                       {format(new Date(redemption.redemption_date), "MMM dd, yyyy")}
                     </span>
                     <span className="text-sm text-muted-foreground">•</span>
-                    <span className="text-sm font-semibold text-primary">
-                      {redemption.points_spent.toLocaleString()} points
+                    <span className="text-sm font-black text-primary">
+                      {redemption.points_spent.toLocaleString()} Coins
                     </span>
                   </div>
                   {redemption.rejection_reason && (

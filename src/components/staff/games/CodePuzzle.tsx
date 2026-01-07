@@ -67,14 +67,29 @@ const CodePuzzle = ({ onClose, userId }: { onClose: () => void, userId: string }
 
   const saveScore = async () => {
     try {
+      // Calculate coins earned: 15 points (no hint) = 5 coins, 10 points (hint) = 3 coins
+      // Approximate coins from score:
+      const coinsEarned = Math.floor(score / 3);
+
+      if (coinsEarned > 0) {
+        await supabase.from('user_coin_transactions').insert({
+          user_id: userId,
+          coins: coinsEarned,
+          transaction_type: 'bonus',
+          description: `Won ${coinsEarned} coins playing Code Puzzle (Score: ${score})`
+        });
+      }
+
       await supabase.from('user_activity_log').insert({
         user_id: userId,
         activity_type: 'game_played',
-        metadata: { game: 'Code Puzzle', score: score }
+        metadata: { game: 'Code Puzzle', score: score, coins_earned: coinsEarned }
       });
-      toast.success("Puzzle session saved!");
+
+      toast.success(`Puzzle session complete! You earned ${coinsEarned} coins! 🪙`);
     } catch (error) {
       console.error("Error saving puzzle result:", error);
+      toast.error("Failed to save your result.");
     }
   };
 

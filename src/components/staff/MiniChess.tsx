@@ -147,7 +147,6 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
           if (myHistory && opponentHistory) {
             const isWinner = winnerId === userId;
-
             setEloChanges({
               winner_elo_before: isWinner ? myHistory.elo_before : opponentHistory.elo_before,
               winner_elo_after: isWinner ? myHistory.elo_after : opponentHistory.elo_after,
@@ -155,7 +154,17 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
               loser_elo_after: isWinner ? opponentHistory.elo_after : myHistory.elo_after
             });
 
-            setCoinsEarned(myHistory.points_earned || 0);
+            if (isWinner) {
+              await supabase.from('user_coin_transactions').insert({
+                user_id: userId,
+                coins: 10,
+                transaction_type: 'bonus',
+                description: `Won 10 coins for winning a Chess game against ${opponentName}`
+              });
+              setCoinsEarned(10);
+            } else {
+              setCoinsEarned(0);
+            }
           }
         }
 
@@ -166,7 +175,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
           player1_name: 'You',
           player2_name: opponentName,
           game_id: activeGameId,
-          duration_seconds: 0 // Duration calculation requires created_at vs ended_at
+          duration_seconds: 0
         });
 
         setShowGameOverDialog(true);
@@ -174,7 +183,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
       const message = isDraw
         ? 'Game ended in a draw! ELO ratings updated.'
-        : `${winnerId === userId ? 'You won!' : opponentName + ' wins!'} ELO ratings updated.`;
+        : `${winnerId === userId ? `You won! +10 Coins 🪙` : opponentName + ' wins!'}`;
 
       toast.success(message);
     } catch (error) {

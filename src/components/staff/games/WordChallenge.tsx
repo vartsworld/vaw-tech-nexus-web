@@ -42,6 +42,8 @@ const WordChallenge = ({ onClose, userId }: { onClose: () => void, userId: strin
 
   const saveScore = async () => {
     try {
+      const coinsEarned = Math.floor(score / 10);
+      
       await supabase.from('word_game_scores').insert({
         user_id: userId,
         score: score,
@@ -50,16 +52,26 @@ const WordChallenge = ({ onClose, userId }: { onClose: () => void, userId: strin
         time_taken_seconds: 60 - timeLeft
       });
 
+      if (coinsEarned > 0) {
+        await supabase.from('user_coin_transactions').insert({
+          user_id: userId,
+          coins: coinsEarned,
+          transaction_type: 'bonus',
+          description: `Won ${coinsEarned} coins playing Word Challenge (Score: ${score})`
+        });
+      }
+
       // Also log to activity log
       await supabase.from('user_activity_log').insert({
         user_id: userId,
         activity_type: 'game_played',
-        metadata: { game: 'Word Challenge', score: score }
+        metadata: { game: 'Word Challenge', score: score, coins_earned: coinsEarned }
       });
 
-      toast.success("Score saved!");
+      toast.success(`Score saved! You earned ${coinsEarned} coins! 🪙`);
     } catch (error) {
       console.error("Error saving score:", error);
+      toast.error("Failed to save your score.");
     }
   };
 

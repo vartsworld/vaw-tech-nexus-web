@@ -20,27 +20,41 @@ const PointsBalance = ({ points, userId }: PointsBalanceProps) => {
     if (!userId) return;
 
     try {
-      // Get lifetime earned (positive transactions)
+      // Get lifetime earned (positive transactions from user_coin_transactions)
       const { data: earnedData } = await supabase
-        .from("user_points_log")
-        .select("points")
+        .from("user_coin_transactions")
+        .select("coins")
         .eq("user_id", userId)
-        .gt("points", 0);
+        .gt("coins", 0);
 
-      const earned = earnedData?.reduce((sum, log) => sum + log.points, 0) || 0;
+      const earned = earnedData?.reduce((sum, log) => sum + log.coins, 0) || 0;
       setLifetimeEarned(earned);
 
-      // Get total redeemed (negative transactions)
+      // Get total redeemed (negative transactions from user_coin_transactions)
       const { data: redeemedData } = await supabase
-        .from("user_points_log")
-        .select("points")
+        .from("user_coin_transactions")
+        .select("coins")
         .eq("user_id", userId)
-        .lt("points", 0);
+        .lt("coins", 0)
+        .eq("transaction_type", "redemption");
 
-      const redeemed = Math.abs(redeemedData?.reduce((sum, log) => sum + log.points, 0) || 0);
+      const redeemed = Math.abs(redeemedData?.reduce((sum, log) => sum + log.coins, 0) || 0);
       setTotalRedeemed(redeemed);
     } catch (error) {
-      console.error("Error fetching points stats:", error);
+      console.error("Error fetching coin stats:", error);
+
+      // Fallback for transition
+      const { data: oldData } = await supabase
+        .from("user_points_log")
+        .select("points")
+        .eq("user_id", userId);
+
+      if (oldData) {
+        const earned = oldData.filter(d => d.points > 0).reduce((s, d) => s + d.points, 0);
+        const redeemed = Math.abs(oldData.filter(d => d.points < 0).reduce((s, d) => s + d.points, 0));
+        setLifetimeEarned(earned);
+        setTotalRedeemed(redeemed);
+      }
     }
   };
 
@@ -72,7 +86,7 @@ const PointsBalance = ({ points, userId }: PointsBalanceProps) => {
                 <TrendingUp className="w-6 h-6 text-green-500" />
                 {lifetimeEarned.toLocaleString()}
               </h3>
-              <p className="text-xs text-muted-foreground mt-2">Total points earned</p>
+              <p className="text-xs text-muted-foreground mt-2">Total coins earned</p>
             </div>
           </div>
         </CardContent>
@@ -88,7 +102,7 @@ const PointsBalance = ({ points, userId }: PointsBalanceProps) => {
                 <Award className="w-6 h-6 text-orange-500" />
                 {totalRedeemed.toLocaleString()}
               </h3>
-              <p className="text-xs text-muted-foreground mt-2">Points spent on rewards</p>
+              <p className="text-xs text-muted-foreground mt-2">Coins spent on rewards</p>
             </div>
           </div>
         </CardContent>

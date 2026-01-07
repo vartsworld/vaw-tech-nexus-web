@@ -41,7 +41,7 @@ const RewardCard = ({ reward, userPoints, onRedeem }: RewardCardProps) => {
   };
 
   const getCategoryLabel = (category: string) => {
-    return category.split('_').map(word => 
+    return category.split('_').map(word =>
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
   };
@@ -53,15 +53,15 @@ const RewardCard = ({ reward, userPoints, onRedeem }: RewardCardProps) => {
           {/* Image */}
           <div className="h-48 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center relative overflow-hidden">
             {reward.image_url ? (
-              <img 
-                src={reward.image_url} 
-                alt={reward.title} 
+              <img
+                src={reward.image_url}
+                alt={reward.title}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
               />
             ) : (
               <Gift className="w-20 h-20 text-primary/30" />
             )}
-            
+
             {/* Category Badge */}
             <Badge className={`absolute top-3 left-3 ${getCategoryColor(reward.category)}`}>
               {getCategoryLabel(reward.category)}
@@ -69,7 +69,7 @@ const RewardCard = ({ reward, userPoints, onRedeem }: RewardCardProps) => {
 
             {/* Stock Badge */}
             {reward.stock_quantity !== null && (
-              <Badge 
+              <Badge
                 variant={isOutOfStock ? "destructive" : "secondary"}
                 className="absolute top-3 right-3"
               >
@@ -90,7 +90,7 @@ const RewardCard = ({ reward, userPoints, onRedeem }: RewardCardProps) => {
             </p>
           </div>
 
-          {/* Points Cost */}
+          {/* Coins Cost */}
           <div className="flex items-center justify-between pt-2 border-t border-border/50">
             <div className="flex items-center gap-2">
               <Coins className="w-5 h-5 text-primary" />
@@ -109,7 +109,7 @@ const RewardCard = ({ reward, userPoints, onRedeem }: RewardCardProps) => {
           {!canAfford && (
             <div className="flex items-center gap-2 text-xs text-destructive">
               <AlertCircle className="w-3 h-3" />
-              Need {(reward.points_cost - userPoints).toLocaleString()} more points
+              Need {(reward.points_cost - userPoints).toLocaleString()} more coins
             </div>
           )}
         </CardContent>
@@ -118,10 +118,10 @@ const RewardCard = ({ reward, userPoints, onRedeem }: RewardCardProps) => {
           <Button
             onClick={() => setShowDialog(true)}
             disabled={!canAfford || isOutOfStock}
-            className="w-full"
+            className="w-full font-bold"
             variant={canAfford && !isOutOfStock ? "default" : "outline"}
           >
-            {isOutOfStock ? "Out of Stock" : canAfford ? "Redeem Now" : "Insufficient Points"}
+            {isOutOfStock ? "Out of Stock" : canAfford ? "Redeem Now" : "Insufficient Coins"}
           </Button>
         </CardFooter>
       </Card>

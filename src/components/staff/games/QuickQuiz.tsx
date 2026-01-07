@@ -96,14 +96,27 @@ const QuickQuiz = ({ onClose, userId }: { onClose: () => void, userId: string })
 
   const saveScore = async () => {
     try {
+      const coinsEarned = (score / 10) * 2;
+
+      if (coinsEarned > 0) {
+        await supabase.from('user_coin_transactions').insert({
+          user_id: userId,
+          coins: coinsEarned,
+          transaction_type: 'bonus',
+          description: `Won ${coinsEarned} coins playing Quick Quiz (Score: ${score}/${questions.length * 10})`
+        });
+      }
+
       await supabase.from('user_activity_log').insert({
         user_id: userId,
         activity_type: 'game_played',
-        metadata: { game: 'Quick Quiz', score: score, total_questions: questions.length }
+        metadata: { game: 'Quick Quiz', score: score, total_questions: questions.length, coins_earned: coinsEarned }
       });
-      toast.success("Quiz complete! Results saved.");
+
+      toast.success(`Quiz complete! You earned ${coinsEarned} coins! 🪙`);
     } catch (error) {
       console.error("Error saving quiz result:", error);
+      toast.error("Failed to save your result.");
     }
   };
 
