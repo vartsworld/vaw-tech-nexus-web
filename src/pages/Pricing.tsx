@@ -43,7 +43,7 @@ const Pricing = () => {
   const pricingTiers: PricingTier[] = [{
     name: "Basic Design Website",
     originalPrice: 16999,
-    discountPrice: 8599,
+    discountPrice: 7999,
     icon: <Globe className="h-8 w-8 text-tech-blue" />,
     description: "Perfect for small businesses and startups",
     features: ["Professional Website Design", "Free Domain for 1 Year", "Web Hosting Included", "SSL Certificate", "Mobile Responsive", "SEO Optimized", "Contact Form", "Social Media Integration"]
@@ -70,7 +70,7 @@ const Pricing = () => {
     description: "Professional portfolio websites",
     features: ["Creative Portfolio Design", "Gallery Management", "Project Showcase", "Client Testimonials", "Blog Integration", "Custom Branding", "Performance Optimized", "SEO Enhanced"]
   }, {
-    name: "Crypto Trending Portal",
+    name: "Crypto Trading Portal",
     originalPrice: 500000,
     discountPrice: 500000,
     icon: <TrendingUp className="h-8 w-8 text-tech-purple" />,
@@ -86,7 +86,7 @@ const Pricing = () => {
   }, {
     name: "Social Media-Based News Website",
     originalPrice: 15999,
-    discountPrice: 7999,
+    discountPrice: 8599,
     icon: <Globe className="h-8 w-8 text-tech-blue" />,
     description: "Perfect for news channels, vlogs & social media platforms",
     features: ["7 Days Development - Go Live Fast!", "Automatic Content Fetching", "1 Year Hosting Included", "Free Domain (.com / .in)", "SSL Certificate for Security", "Malware Protection & Security Suite", "Fully Managed Setup", "Social Media Integration"]
