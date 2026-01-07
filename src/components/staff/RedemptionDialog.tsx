@@ -16,10 +16,10 @@ import { toast } from "sonner";
 
 interface Reward {
   id: string;
-  title: string;
+  name: string;
   description: string;
   category: string;
-  points_cost: number;
+  coin_cost: number;
   monetary_value: number | null;
   terms_conditions: string | null;
 }
@@ -37,7 +37,7 @@ const RedemptionDialog = ({ open, onClose, reward, userPoints, onConfirm }: Rede
   const [loading, setLoading] = useState(false);
 
   const needsAddress = reward.category === "merchandise";
-  const remainingPoints = userPoints - reward.points_cost;
+  const remainingPoints = userPoints - reward.coin_cost;
 
   const handleConfirm = async () => {
     if (needsAddress && !deliveryAddress.trim()) {
@@ -75,17 +75,17 @@ const RedemptionDialog = ({ open, onClose, reward, userPoints, onConfirm }: Rede
           <div className="bg-muted/50 rounded-lg p-4 space-y-2">
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <h4 className="font-semibold text-foreground">{reward.title}</h4>
+                <h4 className="font-semibold text-foreground">{reward.name}</h4>
                 <p className="text-sm text-muted-foreground mt-1">{reward.description}</p>
               </div>
             </div>
-            
+
             <div className="pt-3 border-t border-border/50 space-y-1">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Points Cost:</span>
+                <span className="text-muted-foreground">Coins Cost:</span>
                 <span className="font-bold text-primary flex items-center gap-1">
                   <Coins className="w-4 h-4" />
-                  {reward.points_cost.toLocaleString()}
+                  {reward.coin_cost.toLocaleString()}
                 </span>
               </div>
               {reward.monetary_value && (
@@ -101,16 +101,16 @@ const RedemptionDialog = ({ open, onClose, reward, userPoints, onConfirm }: Rede
           <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span>Current Balance:</span>
-              <span className="font-semibold">{userPoints.toLocaleString()} points</span>
+              <span className="font-semibold">{userPoints.toLocaleString()} coins</span>
             </div>
             <div className="flex justify-between text-sm text-destructive">
               <span>Redemption Cost:</span>
-              <span className="font-semibold">-{reward.points_cost.toLocaleString()} points</span>
+              <span className="font-semibold">-{reward.coin_cost.toLocaleString()} coins</span>
             </div>
             <div className="pt-2 border-t border-primary/20 flex justify-between">
               <span className="font-semibold">Remaining Balance:</span>
               <span className="font-bold text-lg text-primary">
-                {remainingPoints.toLocaleString()} points
+                {remainingPoints.toLocaleString()} coins
               </span>
             </div>
           </div>
@@ -146,7 +146,7 @@ const RedemptionDialog = ({ open, onClose, reward, userPoints, onConfirm }: Rede
           <div className="flex items-start gap-2 text-xs text-muted-foreground bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
             <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
             <span>
-              Points will be deducted immediately. Your redemption will be reviewed by HR and processed within 2-3 business days.
+              Coins will be deducted immediately. Your redemption will be reviewed by HR and processed within 2-3 business days.
             </span>
           </div>
         </div>

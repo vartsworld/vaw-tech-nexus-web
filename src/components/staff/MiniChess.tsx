@@ -50,19 +50,20 @@ type GameMode = 'menu' | 'playing' | 'finding';
 
 const ChessPiece = ({ piece, color }: { piece: string, color: 'white' | 'black' }) => {
   const isWhite = color === 'white';
-  const fill = isWhite ? '#ffffff' : '#212121';
-  const stroke = isWhite ? '#000000' : '#ffffff';
+  const fill = isWhite ? '#FFFFFF' : '#333333';
+  const stroke = isWhite ? '#000000' : '#FFFFFF';
 
+  // Unified minimalist style
   switch (piece) {
     case 'p':
       return (
-        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-md">
+        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-sm">
           <path d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z" fill={fill} stroke={stroke} strokeWidth="1.5" />
         </svg>
       );
     case 'r':
       return (
-        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-md">
+        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-sm">
           <path d="M9 39h27v-3H9v3zM12 36h21v-4H12v4zM11 14V9h4v2h5V9h5v2h5V9h4v5" fill={fill} stroke={stroke} strokeWidth="1.5" />
           <path d="M34 14l-3 3H14l-3-3" fill={fill} stroke={stroke} strokeWidth="1.5" />
           <path d="M31 17v12.5l-2.5 2.5h-12l-2.5-2.5V17" fill={fill} stroke={stroke} strokeWidth="1.5" />
@@ -72,7 +73,7 @@ const ChessPiece = ({ piece, color }: { piece: string, color: 'white' | 'black' 
       );
     case 'n':
       return (
-        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-md">
+        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-sm">
           <path d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21" fill={fill} stroke={stroke} strokeWidth="1.5" />
           <path d="M24 18c.3 1.2 1.5 2 2.5 1" fill={fill} stroke={stroke} strokeWidth="1.5" />
           <path d="M9.5 25.5A.5.5 0 1 1 9 25.5.5.5 0 1 1 9.5 25.5" fill={fill} stroke={stroke} strokeWidth="1.5" />
@@ -81,7 +82,7 @@ const ChessPiece = ({ piece, color }: { piece: string, color: 'white' | 'black' 
       );
     case 'b':
       return (
-        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-md">
+        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-sm">
           <g fill="none" fillRule="evenodd" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <g fill={fill}>
               <path d="M9 36c3.39-.97 10.11.43 13.5-1 3.39 1.43 10.11.03 13.5 1-1.35-3.69-5.4-6.31-7.5-12 1.48-1.57 2.5-4.5 2.5-7.5 0-4.63-3.12-8-6.5-8s-6.5 3.37-6.5 8c0 3 1.02 5.93 2.5 7.5-2.1 5.69-6.15 8.31-7.5 12z" />
@@ -94,7 +95,7 @@ const ChessPiece = ({ piece, color }: { piece: string, color: 'white' | 'black' 
       );
     case 'q':
       return (
-        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-lg">
+        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-sm">
           <g fill={fill} stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M8 12c2.5 2.5 4.5 1.5 6 4.5 1.5-3 3.5-2 6-4.5 2.5 2.5 4.5 1.5 6 4.5 1.5-3 3.5-2 6-4.5V9H8v3z" />
             <path d="M9 26c8.5-1.5 21-1.5 27 0l2-12H7l2 12z" />
@@ -106,7 +107,7 @@ const ChessPiece = ({ piece, color }: { piece: string, color: 'white' | 'black' 
       );
     case 'k':
       return (
-        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-xl">
+        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-sm">
           <g fill="none" fillRule="evenodd" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M22.5 11.63V6M20 8h5" stroke={stroke} />
             <g fill={fill}>
@@ -247,13 +248,13 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
           player1_id: userId,
           player2_id: opponentId || '',
           player1_name: 'You',
-          player2_name: opponentName,
+          player2_name: isDraw ? 'Draw' : (opponentName || 'Opponent'),
           game_id: activeGameId,
           duration_seconds: 0
         });
 
         setShowGameOverDialog(true);
-      }, 1000);
+      }, 500);
 
       const message = isDraw
         ? 'Game ended in a draw! ELO ratings updated.'
@@ -612,14 +613,30 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
     if (chess.isGameOver()) {
       setIsGameOver(true);
-      if (chess.isCheckmate()) {
-        const winnerColor = chess.turn() === 'w' ? 'Black' : 'White';
+      const isCheckmate = chess.isCheckmate();
+      const isDraw = chess.isDraw() || chess.isStalemate() || chess.isThreefoldRepetition() || chess.isInsufficientMaterial();
+      const winnerColor = chess.turn() === 'w' ? 'Black' : 'White';
+      
+      if (isCheckmate) {
         setWinner(winnerColor);
+      }
+      
+      setGameOverData({
+        winner_id: isCheckmate ? (winnerColor === 'White' ? userId : 'bot') : null,
+        player1_id: userId,
+        player2_id: 'bot',
+        player1_name: 'You',
+        player2_name: isDraw ? 'Draw' : 'AI Bot',
+        game_id: 'bot-game',
+        duration_seconds: 0
+      });
+      
+      setTimeout(() => setShowGameOverDialog(true), 500);
+      
+      if (isCheckmate) {
         toast.success(`Checkmate! ${winnerColor} wins!`);
-        // Bot game - no DB update needed
-      } else {
+      } else if (isDraw) {
         toast.info("Game ended in a draw!");
-        // Bot game - no DB update needed
       }
     }
   };
@@ -909,23 +926,10 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
       <CardContent className="p-2 sm:p-4 space-y-4">
         {/* Chess Board with elegant wood texture styling */}
-        <div className="relative">
+        <div className="relative mx-auto w-full max-w-[300px]">
           {/* Board frame/border */}
-          <div className="absolute -inset-2 bg-gradient-to-br from-amber-900 via-amber-800 to-amber-900 rounded-xl shadow-2xl" />
-          <div className="absolute -inset-1.5 bg-gradient-to-br from-amber-700 to-amber-800 rounded-lg" />
-
-          {/* Actual board */}
-          <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-inner">
-            {/* File labels (a-h) */}
-            <div className="absolute -bottom-5 left-0 right-0 flex justify-around text-[10px] font-bold text-amber-400/70">
-              {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map(f => <span key={f}>{f}</span>)}
-            </div>
-
-            {/* Rank labels (8-1) */}
-            <div className="absolute -left-4 top-0 bottom-0 flex flex-col justify-around text-[10px] font-bold text-amber-400/70">
-              {[8, 7, 6, 5, 4, 3, 2, 1].map(r => <span key={r}>{r}</span>)}
-            </div>
-
+          <div className="rounded-xl overflow-hidden shadow-2xl border-4 border-[#5d4037] bg-[#5d4037]">
+            {/* Actual board grid - 1:1 Aspect Ratio ensured by aspect-square */}
             <div className="grid grid-cols-8 aspect-square w-full">
               {[...Array(64)].map((_, i) => {
                 const row = Math.floor(i / 8);
@@ -943,19 +947,29 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                       relative flex items-center justify-center aspect-square
                       ${isLight ? 'bg-[#efebe9]' : 'bg-[#a1887f]'}
                       ${isSelected ? 'after:absolute after:inset-0 after:bg-yellow-400/40' : ''}
-                      ${isPossible && !piece ? 'after:absolute after:w-3 after:h-3 after:bg-black/10 after:rounded-full' : ''}
-                      ${isPossible && piece ? 'after:absolute after:inset-0 after:border-4 after:border-black/20 after:rounded-full' : ''}
-                      cursor-pointer select-none transition-colors duration-200
+                      ${isPossible && !piece ? 'after:absolute after:w-[30%] after:h-[30%] after:bg-black/10 after:rounded-full shadow-inner' : ''}
+                      ${isPossible && piece ? 'after:absolute after:inset-[10%] after:border-4 after:border-black/20 after:rounded-full' : ''}
+                      cursor-pointer select-none transition-all duration-200
                       hover:brightness-105 active:scale-95
                     `}
                   >
                     {piece && (
-                      <div className={`w-4/5 h-4/5 flex items-center justify-center transition-transform hover:scale-110`}>
+                      <div className="w-4/5 h-4/5 flex items-center justify-center transition-transform hover:scale-110 drop-shadow-sm">
                         <ChessPiece piece={piece.type} color={piece.color === 'w' ? 'white' : 'black'} />
                       </div>
                     )}
-                    {col === 0 && <span className="absolute top-0.5 left-0.5 text-[8px] font-bold opacity-30 select-none text-[#5d4037]">{8 - row}</span>}
-                    {row === 7 && <span className="absolute bottom-0.5 right-0.5 text-[8px] font-bold opacity-30 select-none text-[#5d4037]">{String.fromCharCode(97 + col)}</span>}
+                    
+                    {/* Minimalist Coordinate Labels */}
+                    {col === 0 && (
+                      <span className={`absolute top-0.5 left-0.5 text-[7px] font-bold opacity-30 select-none ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>
+                        {8 - row}
+                      </span>
+                    )}
+                    {row === 7 && (
+                      <span className={`absolute bottom-0.5 right-0.5 text-[7px] font-bold opacity-30 select-none ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>
+                        {String.fromCharCode(97 + col)}
+                      </span>
+                    )}
                   </div>
                 );
               })}

@@ -7,10 +7,10 @@ import RedemptionDialog from "./RedemptionDialog";
 
 interface Reward {
   id: string;
-  title: string;
+  name: string;
   description: string;
   category: string;
-  points_cost: number;
+  coin_cost: number;
   monetary_value: number | null;
   image_url: string | null;
   stock_quantity: number | null;
@@ -26,7 +26,7 @@ interface RewardCardProps {
 
 const RewardCard = ({ reward, userPoints, onRedeem }: RewardCardProps) => {
   const [showDialog, setShowDialog] = useState(false);
-  const canAfford = userPoints >= reward.points_cost;
+  const canAfford = userPoints >= reward.coin_cost;
   const isOutOfStock = reward.stock_quantity !== null && reward.stock_quantity <= 0;
 
   const getCategoryColor = (category: string) => {
@@ -55,7 +55,7 @@ const RewardCard = ({ reward, userPoints, onRedeem }: RewardCardProps) => {
             {reward.image_url ? (
               <img
                 src={reward.image_url}
-                alt={reward.title}
+                alt={reward.name}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
               />
             ) : (
@@ -83,7 +83,7 @@ const RewardCard = ({ reward, userPoints, onRedeem }: RewardCardProps) => {
         <CardContent className="p-4 space-y-3">
           <div>
             <h3 className="font-bold text-lg text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-              {reward.title}
+              {reward.name}
             </h3>
             <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
               {reward.description}
@@ -95,7 +95,7 @@ const RewardCard = ({ reward, userPoints, onRedeem }: RewardCardProps) => {
             <div className="flex items-center gap-2">
               <Coins className="w-5 h-5 text-primary" />
               <span className="text-2xl font-bold text-primary">
-                {reward.points_cost.toLocaleString()}
+                {reward.coin_cost.toLocaleString()}
               </span>
             </div>
             {reward.monetary_value && (
@@ -109,7 +109,7 @@ const RewardCard = ({ reward, userPoints, onRedeem }: RewardCardProps) => {
           {!canAfford && (
             <div className="flex items-center gap-2 text-xs text-destructive">
               <AlertCircle className="w-3 h-3" />
-              Need {(reward.points_cost - userPoints).toLocaleString()} more coins
+              Need {(reward.coin_cost - userPoints).toLocaleString()} more coins
             </div>
           )}
         </CardContent>
@@ -131,7 +131,7 @@ const RewardCard = ({ reward, userPoints, onRedeem }: RewardCardProps) => {
         onClose={() => setShowDialog(false)}
         reward={reward}
         userPoints={userPoints}
-        onConfirm={() => onRedeem(reward.id, reward.points_cost)}
+        onConfirm={() => onRedeem(reward.id, reward.coin_cost)}
       />
     </>
   );

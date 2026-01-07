@@ -7,13 +7,13 @@ import { format } from "date-fns";
 
 interface Redemption {
   id: string;
-  points_spent: number;
+  coins_spent: number;
   status: string;
-  redemption_date: string;
+  created_at: string;
   approved_at: string | null;
   rejection_reason: string | null;
   reward: {
-    title: string;
+    name: string;
     category: string;
     image_url: string | null;
   };
@@ -40,10 +40,10 @@ const RedemptionHistory = ({ userId }: RedemptionHistoryProps) => {
         .from("reward_redemptions")
         .select(`
           *,
-          reward:reward_catalog(title, category, image_url)
+          reward:reward_catalog(name, category, image_url)
         `)
         .eq("user_id", userId)
-        .order("redemption_date", { ascending: false });
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.warn("Retrying with legacy tables...");
@@ -55,7 +55,7 @@ const RedemptionHistory = ({ userId }: RedemptionHistoryProps) => {
           `)
           .eq("user_id", userId)
           .order("redemption_date", { ascending: false });
-          
+
         if (legacyError) throw legacyError;
         setRedemptions(legacyData || []);
       } else {
@@ -161,15 +161,15 @@ const RedemptionHistory = ({ userId }: RedemptionHistoryProps) => {
                 {/* Details */}
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-foreground truncate">
-                    {redemption.reward.title}
+                    {redemption.reward.name}
                   </h4>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm text-muted-foreground font-medium">
-                      {format(new Date(redemption.redemption_date), "MMM dd, yyyy")}
+                      {format(new Date(redemption.created_at), "MMM dd, yyyy")}
                     </span>
                     <span className="text-sm text-muted-foreground">•</span>
                     <span className="text-sm font-black text-primary">
-                      {redemption.points_spent.toLocaleString()} Coins
+                      {redemption.coins_spent.toLocaleString()} Coins
                     </span>
                   </div>
                   {redemption.rejection_reason && (

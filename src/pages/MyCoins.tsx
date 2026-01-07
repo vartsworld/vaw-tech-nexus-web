@@ -9,13 +9,14 @@ import { toast } from "sonner";
 import PointsBalance from "@/components/staff/PointsBalance";
 import RewardCard from "@/components/staff/RewardCard";
 import RedemptionHistory from "@/components/staff/RedemptionHistory";
+import { Badge } from "@/components/ui/badge";
 
 interface Reward {
   id: string;
-  title: string;
+  name: string;
   description: string;
   category: string;
-  points_cost: number;
+  coin_cost: number;
   monetary_value: number | null;
   image_url: string | null;
   stock_quantity: number | null;
@@ -71,7 +72,7 @@ const MyCoins = () => {
         .from("reward_catalog")
         .select("*")
         .eq("is_available", true)
-        .order("points_cost", { ascending: true });
+        .order("coin_cost", { ascending: true });
 
       if (error) throw error;
       setRewards(data || []);
@@ -98,7 +99,7 @@ const MyCoins = () => {
         .insert({
           user_id: userId,
           reward_id: rewardId,
-          points_spent: coinsCost,
+          coins_spent: coinsCost,
           status: "pending"
         });
 
@@ -112,7 +113,7 @@ const MyCoins = () => {
           user_id: userId,
           coins: -coinsCost,
           transaction_type: "redemption",
-          description: `Redeemed reward: ${rewards.find(r => r.id === rewardId)?.title}`
+          description: `Redeemed reward: ${rewards.find(r => r.id === rewardId)?.name || 'Reward'}`
         });
 
       if (transactionError) throw transactionError;

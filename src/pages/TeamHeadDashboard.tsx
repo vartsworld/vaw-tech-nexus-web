@@ -25,8 +25,9 @@ import {
   Settings,
   User,
   Layout,
-  Coins,
-  Settings2
+  Settings2,
+  Lock as LockIcon,
+  LogOut
 } from "lucide-react";
 import { CoinConfigDialog } from "@/components/staff/CoinConfigDialog";
 import { toast } from "sonner";
@@ -577,7 +578,7 @@ const TeamHeadDashboard = () => {
                     View/Edit Profile
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowEmojiDialog(true)}>
-                    <Lock className="mr-2 h-4 w-4" />
+                    <LockIcon className="mr-2 h-4 w-4" />
                     Update Emoji Password
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowCoinConfigDialog(true)} className="text-amber-500 hover:text-amber-600">
