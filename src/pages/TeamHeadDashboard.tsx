@@ -24,11 +24,11 @@ import {
   TrendingUp,
   Settings,
   User,
-  Lock,
-  LogOut,
   Layout,
-  Coins
+  Coins,
+  Settings2
 } from "lucide-react";
+import { CoinConfigDialog } from "@/components/staff/CoinConfigDialog";
 import { toast } from "sonner";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import BreakRoom from "@/components/staff/BreakRoom";
@@ -81,6 +81,7 @@ const TeamHeadDashboard = () => {
   const [confirmEmojiPassword, setConfirmEmojiPassword] = useState<string[]>([]);
   const [profileForm, setProfileForm] = useState({ full_name: "", about_me: "" });
   const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
+  const [showCoinConfigDialog, setShowCoinConfigDialog] = useState(false);
 
   // Break timer state (lifted up to persist when minimized)
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
@@ -579,6 +580,10 @@ const TeamHeadDashboard = () => {
                     <Lock className="mr-2 h-4 w-4" />
                     Update Emoji Password
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowCoinConfigDialog(true)} className="text-amber-500 hover:text-amber-600">
+                    <Settings2 className="mr-2 h-4 w-4" />
+                    Coin Rewards Config
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
@@ -745,6 +750,10 @@ const TeamHeadDashboard = () => {
         />
       )}
 
+      <CoinConfigDialog
+        open={showCoinConfigDialog}
+        onOpenChange={setShowCoinConfigDialog}
+      />
       <PWAInstallPrompt />
     </div>
   );
