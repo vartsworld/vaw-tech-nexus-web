@@ -44,16 +44,16 @@ const StaffLogin = () => {
       .eq('user_id', userId)
       .eq('date', today)
       .maybeSingle();
-    
+
     return !error && data !== null;
   };
 
   const getDashboardRoute = (staffProfile: any) => {
     // Check if user is HR, manager, lead, or department head
-    if (staffProfile.role === 'hr' || 
-        staffProfile.role === 'manager' || 
-        staffProfile.role === 'lead' || 
-        staffProfile.is_department_head) {
+    if (staffProfile.role === 'hr' ||
+      staffProfile.role === 'manager' ||
+      staffProfile.role === 'lead' ||
+      staffProfile.is_department_head) {
       return '/team-head/dashboard';
     }
     return '/staff/dashboard';
@@ -71,18 +71,28 @@ const StaffLogin = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('staff_profiles')
-        .select('*')
-        .eq('username', username)
-        .eq('first_time_passcode', passcode)
-        .eq('passcode_used', false)
-        .single();
+      // Use RPC to bypass RLS for fetching profile by username
+      const { data: rawData, error } = await supabase
+        .rpc('get_staff_login_details' as any, { p_username: username })
+        .maybeSingle();
 
-      if (error || !data) {
+      const data = rawData as any;
+
+      if (error) {
+        console.error("Error fetching profile:", error);
+        toast({
+          title: "System Error",
+          description: "Could not access user directory",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Client-side validation since we can't filter protected columns in RLS-protected table easily for anon
+      if (!data || data.first_time_passcode !== passcode || data.passcode_used !== false) {
         toast({
           title: "Invalid Credentials",
-          description: "Username or passcode is incorrect",
+          description: "Username or passcode is incorrect, or passcode already used.",
           variant: "destructive",
         });
         return;
@@ -149,15 +159,17 @@ const StaffLogin = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('staff_profiles')
-        .select('*')
-        .eq('username', username)
-        .eq('emoji_password', emojiPassword.join(''))
-        .eq('is_emoji_password', true)
-        .single();
+      // Use RPC to bypass RLS
+      const { data: rawData, error } = await supabase
+        .rpc('get_staff_login_details' as any, { p_username: username })
+        .maybeSingle();
 
-      if (error || !data) {
+      const data = rawData as any;
+
+      const inputEmojiPass = emojiPassword.join('');
+
+      // Client-side validation
+      if (error || !data || data.emoji_password !== inputEmojiPass || !data.is_emoji_password) {
         toast({
           title: "Invalid Credentials",
           description: "Username or emoji password is incorrect",
@@ -169,7 +181,7 @@ const StaffLogin = () => {
       // Sign in with Supabase auth using email and emoji password
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
-        password: emojiPassword.join(''),
+        password: inputEmojiPass,
       });
 
       if (authError) {
@@ -184,7 +196,7 @@ const StaffLogin = () => {
 
       // Get current user after successful login
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      
+
       if (authUser) {
         // Check if attendance is marked for today
         const hasMarkedAttendance = await checkTodayAttendance(authUser.id);
@@ -274,7 +286,7 @@ const StaffLogin = () => {
 
       // Use stored userProfile or fetch new one
       const profileToUse = userProfile || staffProfile;
-      
+
       if (profileToUse) {
         // Check if attendance is marked for today
         const hasMarkedAttendance = await checkTodayAttendance(user.id);
@@ -524,7 +536,7 @@ const StaffLogin = () => {
                   Clear All
                 </Button>
               </div>
-              
+
               <div className="grid grid-cols-10 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg mt-2">
                 {EMOJI_OPTIONS.map((emoji, index) => (
                   <Button
