@@ -27,7 +27,8 @@ import {
   Layout,
   Settings2,
   Lock as LockIcon,
-  LogOut
+  LogOut,
+  Coins
 } from "lucide-react";
 import { CoinConfigDialog } from "@/components/staff/CoinConfigDialog";
 import { toast } from "sonner";

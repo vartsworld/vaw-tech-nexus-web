@@ -24,6 +24,7 @@ interface ChatChannel {
   name: string;
   description?: string;
   is_general: boolean;
+  department_id?: string | null;
 }
 
 interface TeamChatProps {
@@ -57,19 +58,33 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
 
   const fetchChannels = async () => {
     try {
+      // First get user's department
+      let userDeptId: string | null = null;
+      if (userProfile?.department_id) {
+        userDeptId = userProfile.department_id;
+      }
+
       const { data, error } = await supabase
         .from('chat_channels')
         .select('*')
+        .order('is_general', { ascending: false })
         .order('name');
 
       if (error) throw error;
 
-      setChannels(data || []);
+      // Filter channels: show general + user's department channel
+      const filteredChannels = (data || []).filter(c => 
+        c.is_general || c.department_id === userDeptId || !c.department_id
+      );
+
+      setChannels(filteredChannels);
 
       // Set general channel as default
-      const generalChannel = data?.find(c => c.is_general);
+      const generalChannel = filteredChannels.find(c => c.is_general);
       if (generalChannel) {
         setActiveChannelId(generalChannel.id);
+      } else if (filteredChannels.length > 0) {
+        setActiveChannelId(filteredChannels[0].id);
       }
     } catch (error) {
       console.error('Error fetching channels:', error);

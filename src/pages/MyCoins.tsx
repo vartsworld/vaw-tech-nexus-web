@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import PointsBalance from "@/components/staff/PointsBalance";
 import RewardCard from "@/components/staff/RewardCard";
 import RedemptionHistory from "@/components/staff/RedemptionHistory";
+import CoinTransactionLog from "@/components/staff/CoinTransactionLog";
 import { Badge } from "@/components/ui/badge";
 
 interface Reward {
@@ -249,6 +250,11 @@ const MyCoins = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Coin Transaction Log Section */}
+        <div className="pt-12 border-t border-border/50">
+          <CoinTransactionLog userId={userId || ""} />
+        </div>
 
         {/* Redemption History Section */}
         <div className="pt-12 border-t border-border/50">

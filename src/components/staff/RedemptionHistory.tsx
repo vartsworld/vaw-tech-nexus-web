@@ -13,7 +13,8 @@ interface Redemption {
   approved_at: string | null;
   rejection_reason: string | null;
   reward: {
-    name: string;
+    name?: string;
+    title?: string;
     category: string;
     image_url: string | null;
   };
@@ -148,7 +149,7 @@ const RedemptionHistory = ({ userId }: RedemptionHistoryProps) => {
                   {redemption.reward.image_url ? (
                     <img
                       src={redemption.reward.image_url}
-                      alt={redemption.reward.title}
+                      alt={redemption.reward.name || redemption.reward.title || 'Reward'}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -161,7 +162,7 @@ const RedemptionHistory = ({ userId }: RedemptionHistoryProps) => {
                 {/* Details */}
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-foreground truncate">
-                    {redemption.reward.name}
+                    {redemption.reward.name || redemption.reward.title || 'Reward'}
                   </h4>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm text-muted-foreground font-medium">

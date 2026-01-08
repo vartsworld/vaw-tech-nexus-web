@@ -90,16 +90,39 @@ const TasksManager = ({
       // Award points for completing task
       if (newStatus === 'completed') {
         const task = tasks.find(t => t.id === taskId);
-        if (task) {
-          await supabase.from('user_points_log').insert({
+        if (task && !task.trial_period) {
+          // Log coin transaction
+          await supabase.from('user_coin_transactions').insert({
             user_id: userId,
-            points: task.points,
-            reason: `Task Completed: ${task.title}`,
-            category: 'task_completion'
+            coins: task.points,
+            transaction_type: 'earning',
+            description: `Task Completed: ${task.title}`,
+            source_type: 'task',
+            source_id: taskId
           });
+          
+          // Update user's total points directly
+          const { data: profileData } = await supabase
+            .from('staff_profiles')
+            .select('total_points')
+            .eq('user_id', userId)
+            .single();
+          
+          if (profileData) {
+            await supabase
+              .from('staff_profiles')
+              .update({ total_points: (profileData.total_points || 0) + task.points })
+              .eq('user_id', userId);
+          }
+          
           toast({
             title: "Task Completed! 🎉",
-            description: `You earned ${task.points} points for completing "${task.title}"`
+            description: `You earned ${task.points} coins for completing "${task.title}"`
+          });
+        } else if (task?.trial_period) {
+          toast({
+            title: "Task Completed! 🎉",
+            description: `Trial task "${task.title}" completed! (No coins for trial period)`
           });
         }
       }
