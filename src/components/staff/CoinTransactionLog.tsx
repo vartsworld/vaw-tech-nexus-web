@@ -39,30 +39,14 @@ const CoinTransactionLog = ({ userId }: CoinTransactionLogProps) => {
         .limit(50);
 
       if (error) {
-        console.warn("Error fetching transactions:", error);
-        // Try fallback to user_points_log
-        const { data: fallbackData } = await supabase
-          .from("user_points_log")
-          .select("*")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false })
-          .limit(50);
-        
-        if (fallbackData) {
-          setTransactions(fallbackData.map((item: any) => ({
-            id: item.id,
-            coins: item.points,
-            transaction_type: item.points > 0 ? 'earning' : 'redemption',
-            description: item.reason || 'Transaction',
-            source_type: item.source,
-            created_at: item.created_at
-          })));
-        }
+        console.error("Error fetching transactions:", error);
+        setTransactions([]);
       } else {
         setTransactions(data || []);
       }
     } catch (error) {
       console.error("Error fetching transactions:", error);
+      setTransactions([]);
     } finally {
       setLoading(false);
     }

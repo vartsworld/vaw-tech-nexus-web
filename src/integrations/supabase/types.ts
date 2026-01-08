@@ -2994,6 +2994,7 @@ export type Database = {
           related_quest_id: string | null
           related_redemption_id: string | null
           related_task_id: string | null
+          source_type: string | null
           transaction_type: string
           user_id: string
         }
@@ -3008,6 +3009,7 @@ export type Database = {
           related_quest_id?: string | null
           related_redemption_id?: string | null
           related_task_id?: string | null
+          source_type?: string | null
           transaction_type: string
           user_id: string
         }
@@ -3022,6 +3024,7 @@ export type Database = {
           related_quest_id?: string | null
           related_redemption_id?: string | null
           related_task_id?: string | null
+          source_type?: string | null
           transaction_type?: string
           user_id?: string
         }

@@ -21,40 +21,34 @@ const PointsBalance = ({ points, userId }: PointsBalanceProps) => {
 
     try {
       // Get lifetime earned (positive transactions from user_coin_transactions)
-      const { data: earnedData } = await supabase
+      const { data: earnedData, error: earnedError } = await supabase
         .from("user_coin_transactions")
         .select("coins")
         .eq("user_id", userId)
         .gt("coins", 0);
 
+      if (earnedError) {
+        console.error("Error fetching earned coins:", earnedError);
+      }
+
       const earned = earnedData?.reduce((sum, log) => sum + log.coins, 0) || 0;
       setLifetimeEarned(earned);
 
       // Get total redeemed (negative transactions from user_coin_transactions)
-      const { data: redeemedData } = await supabase
+      const { data: redeemedData, error: redeemedError } = await supabase
         .from("user_coin_transactions")
         .select("coins")
         .eq("user_id", userId)
-        .lt("coins", 0)
-        .eq("transaction_type", "redemption");
+        .lt("coins", 0);
+
+      if (redeemedError) {
+        console.error("Error fetching redeemed coins:", redeemedError);
+      }
 
       const redeemed = Math.abs(redeemedData?.reduce((sum, log) => sum + log.coins, 0) || 0);
       setTotalRedeemed(redeemed);
     } catch (error) {
       console.error("Error fetching coin stats:", error);
-
-      // Fallback for transition
-      const { data: oldData } = await supabase
-        .from("user_points_log")
-        .select("points")
-        .eq("user_id", userId);
-
-      if (oldData) {
-        const earned = oldData.filter(d => d.points > 0).reduce((s, d) => s + d.points, 0);
-        const redeemed = Math.abs(oldData.filter(d => d.points < 0).reduce((s, d) => s + d.points, 0));
-        setLifetimeEarned(earned);
-        setTotalRedeemed(redeemed);
-      }
     }
   };
 
