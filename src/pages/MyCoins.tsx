@@ -42,7 +42,7 @@ const MyCoins = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate("/auth");
+        navigate("/staff/login");
         return;
       }
 
@@ -69,23 +69,37 @@ const MyCoins = () => {
 
   const fetchRewards = async () => {
     try {
+      // Use rewards_catalog as the primary table (has proper data)
       const { data, error } = await supabase
-        .from("reward_catalog")
-        .select("*")
-        .eq("is_available", true)
-        .order("coin_cost", { ascending: true });
+        .from("rewards_catalog")
+        .select("id, title, description, category, points_cost, monetary_value, image_url, stock_quantity, redemption_limit, terms_conditions, is_active")
+        .eq("is_active", true)
+        .order("points_cost", { ascending: true });
 
-      if (error) throw error;
-      setRewards(data || []);
+      if (error) {
+        console.error("Error fetching rewards:", error);
+        setRewards([]);
+        return;
+      }
+      
+      // Map to expected interface format
+      const mappedRewards = (data || []).map(r => ({
+        id: r.id,
+        name: r.title,
+        description: r.description || '',
+        category: r.category,
+        coin_cost: r.points_cost,
+        monetary_value: r.monetary_value,
+        image_url: r.image_url,
+        stock_quantity: r.stock_quantity,
+        redemption_limit: r.redemption_limit,
+        terms_conditions: r.terms_conditions
+      }));
+      
+      setRewards(mappedRewards);
     } catch (error) {
       console.error("Error fetching rewards:", error);
-      // Fallback to rewards_catalog if reward_catalog fails (might be transition period)
-      const { data: fallbackData } = await supabase
-        .from("rewards_catalog" as any)
-        .select("*")
-        .eq("is_active", true);
-        
-      if (fallbackData) setRewards(fallbackData as any);
+      setRewards([]);
     }
   };
 
@@ -93,33 +107,32 @@ const MyCoins = () => {
     if (!userId) return;
 
     try {
-      // 1. Create redemption request
-      // We use reward_redemptions as per new schema
+      // 1. Create redemption request using points_redemptions table
       const { error: redemptionError } = await supabase
-        .from("reward_redemptions")
+        .from("points_redemptions")
         .insert({
           user_id: userId,
           reward_id: rewardId,
-          coins_spent: coinsCost,
+          points_spent: coinsCost,
           status: "pending"
         });
 
       if (redemptionError) throw redemptionError;
 
       // 2. Log transaction
-      // We use user_coin_transactions as per new schema
       const { error: transactionError } = await supabase
         .from("user_coin_transactions")
         .insert({
           user_id: userId,
           coins: -coinsCost,
           transaction_type: "redemption",
-          description: `Redeemed reward: ${rewards.find(r => r.id === rewardId)?.name || 'Reward'}`
+          description: `Redeemed reward: ${rewards.find(r => r.id === rewardId)?.name || 'Reward'}`,
+          source_type: "redemption"
         });
 
       if (transactionError) throw transactionError;
 
-      // 3. Update staff profile (though DB trigger should handle this eventually)
+      // 3. Update staff profile
       const { error: profileUpdateError } = await supabase
         .from("staff_profiles")
         .update({ total_points: userCoins - coinsCost })
@@ -134,6 +147,7 @@ const MyCoins = () => {
       
       // Refresh data
       fetchUserData();
+      fetchRewards();
     } catch (error: any) {
       console.error("Error during redemption:", error);
       toast.error(error.message || "Failed to process redemption");

@@ -37,33 +37,45 @@ const RedemptionHistory = ({ userId }: RedemptionHistoryProps) => {
   const fetchRedemptions = async () => {
     try {
       setLoading(true);
+      // Use points_redemptions with rewards_catalog as primary
       const { data, error } = await supabase
-        .from("reward_redemptions")
+        .from("points_redemptions")
         .select(`
-          *,
-          reward:reward_catalog(name, category, image_url)
+          id,
+          points_spent,
+          status,
+          created_at,
+          approved_at,
+          rejection_reason,
+          reward:rewards_catalog(title, category, image_url)
         `)
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.warn("Retrying with legacy tables...");
-        const { data: legacyData, error: legacyError } = await supabase
-          .from("points_redemptions" as any)
-          .select(`
-            *,
-            reward:rewards_catalog(title, category, image_url)
-          `)
-          .eq("user_id", userId)
-          .order("redemption_date", { ascending: false });
-
-        if (legacyError) throw legacyError;
-        setRedemptions(legacyData || []);
+        console.error("Error fetching redemptions:", error);
+        setRedemptions([]);
       } else {
-        setRedemptions(data || []);
+        // Map to expected format
+        const mappedRedemptions = (data || []).map((r: any) => ({
+          id: r.id,
+          coins_spent: r.points_spent,
+          status: r.status,
+          created_at: r.created_at,
+          approved_at: r.approved_at,
+          rejection_reason: r.rejection_reason,
+          reward: {
+            name: r.reward?.title,
+            title: r.reward?.title,
+            category: r.reward?.category || 'other',
+            image_url: r.reward?.image_url
+          }
+        }));
+        setRedemptions(mappedRedemptions);
       }
     } catch (error) {
       console.error("Error fetching redemptions:", error);
+      setRedemptions([]);
     } finally {
       setLoading(false);
     }
