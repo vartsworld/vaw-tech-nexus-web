@@ -37,6 +37,7 @@ import ProjectMonitor from "./pages/ProjectMonitor";
 import Install from "./pages/Install";
 import ClientLogin from "./pages/ClientLogin";
 import ClientDashboard from "./pages/ClientDashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const AppContent = () => {
           <Route path="/client-portal/:uniqueId" element={<ClientPortal />} />
           <Route path="/client/login" element={<ClientLogin />} />
           <Route path="/client/dashboard/*" element={<ClientDashboard />} />
+          <Route path="/super-admin/dashboard/*" element={<SuperAdminDashboard />} />
           <Route path="/vaw-cups" element={<VAWCups />} />
           <Route path="/vaw-cups/vendor" element={<VAWVendor />} />
           <Route path="/vaw-cups/sponsor" element={<VAWSponsor />} />

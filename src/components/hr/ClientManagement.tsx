@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
+import {
   Briefcase,
   Plus,
   Search,
@@ -16,7 +16,8 @@ import {
   Phone,
   MapPin,
   Edit,
-  Trash2
+  Trash2,
+  Key
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -50,8 +51,11 @@ const ClientManagement = () => {
   const fetchClients = async () => {
     try {
       const { data, error } = await supabase
-        .from('clients')
-        .select('*')
+        .from('client_profiles')
+        .select(`
+          *,
+          client_projects (id, name, status)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -83,7 +87,7 @@ const ClientManagement = () => {
   const handleAddClient = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         toast({
           title: "Authentication Error",
@@ -94,7 +98,7 @@ const ClientManagement = () => {
       }
 
       console.log('Creating client with user:', user.id);
-      
+
       const { data, error } = await supabase
         .from('clients')
         .insert({
@@ -158,7 +162,7 @@ const ClientManagement = () => {
 
       // Refresh client list from database
       await fetchClients();
-      
+
       setIsEditDialogOpen(false);
       setEditingClient(null);
 
@@ -227,7 +231,7 @@ const ClientManagement = () => {
                 <Input
                   id="company_name"
                   value={newClient.company_name}
-                  onChange={(e) => setNewClient({...newClient, company_name: e.target.value})}
+                  onChange={(e) => setNewClient({ ...newClient, company_name: e.target.value })}
                   placeholder="Enter company name"
                 />
               </div>
@@ -236,7 +240,7 @@ const ClientManagement = () => {
                 <Input
                   id="contact_person"
                   value={newClient.contact_person}
-                  onChange={(e) => setNewClient({...newClient, contact_person: e.target.value})}
+                  onChange={(e) => setNewClient({ ...newClient, contact_person: e.target.value })}
                   placeholder="Enter contact person name"
                 />
               </div>
@@ -246,7 +250,7 @@ const ClientManagement = () => {
                   id="email"
                   type="email"
                   value={newClient.email}
-                  onChange={(e) => setNewClient({...newClient, email: e.target.value})}
+                  onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
                   placeholder="Enter email address"
                 />
               </div>
@@ -255,7 +259,7 @@ const ClientManagement = () => {
                 <Input
                   id="phone"
                   value={newClient.phone}
-                  onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
+                  onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
                   placeholder="Enter phone number"
                 />
               </div>
@@ -264,7 +268,7 @@ const ClientManagement = () => {
                 <Input
                   id="address"
                   value={newClient.address}
-                  onChange={(e) => setNewClient({...newClient, address: e.target.value})}
+                  onChange={(e) => setNewClient({ ...newClient, address: e.target.value })}
                   placeholder="Enter address"
                 />
               </div>
@@ -273,14 +277,14 @@ const ClientManagement = () => {
                 <Textarea
                   id="notes"
                   value={newClient.notes}
-                  onChange={(e) => setNewClient({...newClient, notes: e.target.value})}
+                  onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
                   placeholder="Enter any additional notes"
                   rows={3}
                 />
               </div>
               <div>
                 <Label htmlFor="status">Status</Label>
-                <Select value={newClient.status} onValueChange={(value) => setNewClient({...newClient, status: value})}>
+                <Select value={newClient.status} onValueChange={(value) => setNewClient({ ...newClient, status: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -375,6 +379,19 @@ const ClientManagement = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
+                          toast({
+                            title: "Access Protocol Triggered",
+                            description: `Credential reset initiated for ${client.company_name}. Nexus link active.`,
+                          });
+                        }}
+                        className="text-tech-red"
+                      >
+                        <Key className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
                           setEditingClient(client);
                           setIsEditDialogOpen(true);
                         }}
@@ -417,7 +434,7 @@ const ClientManagement = () => {
                 <Input
                   id="edit_company_name"
                   value={editingClient.company_name}
-                  onChange={(e) => setEditingClient({...editingClient, company_name: e.target.value})}
+                  onChange={(e) => setEditingClient({ ...editingClient, company_name: e.target.value })}
                   placeholder="Enter company name"
                 />
               </div>
@@ -426,7 +443,7 @@ const ClientManagement = () => {
                 <Input
                   id="edit_contact_person"
                   value={editingClient.contact_person}
-                  onChange={(e) => setEditingClient({...editingClient, contact_person: e.target.value})}
+                  onChange={(e) => setEditingClient({ ...editingClient, contact_person: e.target.value })}
                   placeholder="Enter contact person name"
                 />
               </div>
@@ -436,7 +453,7 @@ const ClientManagement = () => {
                   id="edit_email"
                   type="email"
                   value={editingClient.email}
-                  onChange={(e) => setEditingClient({...editingClient, email: e.target.value})}
+                  onChange={(e) => setEditingClient({ ...editingClient, email: e.target.value })}
                   placeholder="Enter email address"
                 />
               </div>
@@ -445,7 +462,7 @@ const ClientManagement = () => {
                 <Input
                   id="edit_phone"
                   value={editingClient.phone || ""}
-                  onChange={(e) => setEditingClient({...editingClient, phone: e.target.value})}
+                  onChange={(e) => setEditingClient({ ...editingClient, phone: e.target.value })}
                   placeholder="Enter phone number"
                 />
               </div>
@@ -454,7 +471,7 @@ const ClientManagement = () => {
                 <Input
                   id="edit_address"
                   value={editingClient.address || ""}
-                  onChange={(e) => setEditingClient({...editingClient, address: e.target.value})}
+                  onChange={(e) => setEditingClient({ ...editingClient, address: e.target.value })}
                   placeholder="Enter address"
                 />
               </div>
@@ -463,14 +480,14 @@ const ClientManagement = () => {
                 <Textarea
                   id="edit_notes"
                   value={editingClient.notes || ""}
-                  onChange={(e) => setEditingClient({...editingClient, notes: e.target.value})}
+                  onChange={(e) => setEditingClient({ ...editingClient, notes: e.target.value })}
                   placeholder="Enter any additional notes"
                   rows={3}
                 />
               </div>
               <div>
                 <Label htmlFor="edit_status">Status</Label>
-                <Select value={editingClient.status} onValueChange={(value) => setEditingClient({...editingClient, status: value})}>
+                <Select value={editingClient.status} onValueChange={(value) => setEditingClient({ ...editingClient, status: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
