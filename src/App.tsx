@@ -35,6 +35,8 @@ import VAWAdmin from "./pages/VAWAdmin";
 import MyCoins from "./pages/MyCoins";
 import ProjectMonitor from "./pages/ProjectMonitor";
 import Install from "./pages/Install";
+import ClientLogin from "./pages/ClientLogin";
+import ClientDashboard from "./pages/ClientDashboard";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +70,8 @@ const AppContent = () => {
           <Route path="/account" element={<AccountDashboard />} />
           <Route path="/client-portal" element={<ClientPortal />} />
           <Route path="/client-portal/:uniqueId" element={<ClientPortal />} />
+          <Route path="/client/login" element={<ClientLogin />} />
+          <Route path="/client/dashboard/*" element={<ClientDashboard />} />
           <Route path="/vaw-cups" element={<VAWCups />} />
           <Route path="/vaw-cups/vendor" element={<VAWVendor />} />
           <Route path="/vaw-cups/sponsor" element={<VAWSponsor />} />
