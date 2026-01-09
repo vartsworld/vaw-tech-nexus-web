@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Eye, Smartphone, PlayCircle, Building, Gamepad2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 
 const VRARDevelopment = () => {
   const solutions = [
@@ -40,27 +43,33 @@ const VRARDevelopment = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Immersive VR & AR Development"
+        description="Premium VR and AR development services. We create interactive 3D simulations, augmented reality marketing campaigns, and immersive virtual tours. Innovating with Unity and Unreal Engine."
+        keywords="VR development, AR development, augmented reality, virtual reality, 3D simulations, Unity 3D, Unreal Engine, VAW, Varts, Kerala tech"
+      />
+      <Navbar />
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 bg-gradient-to-br from-tech-purple via-tech-dark to-background">
         <div className="absolute inset-0 bg-cyber-grid opacity-20"></div>
         <div className="absolute top-20 right-10 w-64 h-64 rounded-full bg-tech-purple/20 blur-3xl animate-morph"></div>
         <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-tech-cyan/10 blur-3xl animate-float"></div>
-        
+
         <div className="container mx-auto px-4 relative">
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-tech-purple/10 px-4 py-2 rounded-full mb-6 animate-slide-in">
               <Eye className="h-5 w-5 text-tech-purple" />
               <span className="text-tech-purple font-medium">VR/AR Development</span>
             </div>
-            
+
             <h1 className="text-4xl md:text-6xl font-bold mb-6 font-['Space_Grotesk'] animate-slide-in" style={{ animationDelay: '0.2s' }}>
               Creating <span className="text-gradient bg-gradient-to-r from-tech-purple to-tech-cyan bg-clip-text text-transparent">Immersive</span> Experiences
             </h1>
-            
+
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 animate-slide-in" style={{ animationDelay: '0.4s' }}>
               Virtual and augmented reality solutions that engage, inspire, and transform user interactions
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-in" style={{ animationDelay: '0.6s' }}>
               <Button size="lg" className="bg-tech-purple hover:bg-tech-purple/80 text-white group">
                 <Link to="/service-request" className="flex items-center">
@@ -82,9 +91,9 @@ const VRARDevelopment = () => {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative">
               <div className="aspect-video bg-gradient-to-br from-tech-purple/30 to-tech-cyan/20 rounded-2xl overflow-hidden relative group">
-                <img 
-                  src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=600&h=400&fit=crop" 
-                  alt="VR Development" 
+                <img
+                  src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=600&h=400&fit=crop"
+                  alt="VR Development"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-tech-dark/60 to-transparent"></div>
@@ -94,7 +103,7 @@ const VRARDevelopment = () => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Floating VR Elements */}
               <div className="absolute -top-6 -right-6 w-20 h-20 bg-tech-purple/20 rounded-full flex items-center justify-center animate-spin-slow">
                 <Eye className="h-10 w-10 text-tech-purple" />
@@ -103,14 +112,14 @@ const VRARDevelopment = () => {
                 <Smartphone className="h-8 w-8 text-tech-cyan" />
               </div>
             </div>
-            
+
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6 font-['Space_Grotesk']">
                 Beyond Reality, Into <span className="text-tech-purple">Innovation</span>
               </h2>
               <p className="text-lg text-muted-foreground mb-6">
-                Our VR and AR solutions push the boundaries of what's possible, creating experiences that blur 
-                the line between digital and physical worlds. From virtual product showcases to immersive training 
+                Our VR and AR solutions push the boundaries of what's possible, creating experiences that blur
+                the line between digital and physical worlds. From virtual product showcases to immersive training
                 simulations, we bring your vision to life.
               </p>
               <div className="grid grid-cols-2 gap-4 mb-6">
@@ -224,6 +233,7 @@ const VRARDevelopment = () => {
           </div>
         </div>
       </section>
+      <Footer />
     </div>
   );
 };

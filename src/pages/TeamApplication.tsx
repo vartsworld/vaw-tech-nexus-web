@@ -8,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Users, Send, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import SEO from "@/components/SEO";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const TeamApplication = () => {
   const [departments, setDepartments] = useState([]);
@@ -100,8 +103,8 @@ const TeamApplication = () => {
     setFormData(prev => ({ ...prev, work_confidence_level: value }));
     setShowReference(value !== 'great');
     if (value === 'great') {
-      setFormData(prev => ({ 
-        ...prev, 
+      setFormData(prev => ({
+        ...prev,
         work_confidence_level: value,
         reference_person_name: "",
         reference_person_number: ""
@@ -111,7 +114,7 @@ const TeamApplication = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const { error } = await supabase
         .from('team_applications_staff')
@@ -172,6 +175,12 @@ const TeamApplication = () => {
 
   return (
     <div className="min-h-screen bg-background p-4">
+      <SEO
+        title="Join Our Core Team"
+        description="Apply to join the core team at VAW Technologies. We're looking for passionate individuals in tech, design, and management. Start your career with us today."
+        keywords="careers, job application, join team, tech jobs, design jobs, VAW, Varts, Kerala tech careers"
+      />
+      <Navbar />
       <div className="max-w-4xl mx-auto">
         <Card>
           <CardHeader className="text-center">
@@ -195,7 +204,7 @@ const TeamApplication = () => {
                       id="full_name"
                       required
                       value={formData.full_name}
-                      onChange={(e) => setFormData(prev => ({...prev, full_name: e.target.value}))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                       placeholder="Enter your full name"
                     />
                   </div>
@@ -206,7 +215,7 @@ const TeamApplication = () => {
                       type="email"
                       required
                       value={formData.email}
-                      onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                       placeholder="Enter your email"
                     />
                   </div>
@@ -215,7 +224,7 @@ const TeamApplication = () => {
                     <Input
                       id="phone"
                       value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({...prev, phone: e.target.value}))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                       placeholder="Enter your phone number"
                     />
                   </div>
@@ -225,13 +234,13 @@ const TeamApplication = () => {
                       id="username"
                       required
                       value={formData.username}
-                      onChange={(e) => setFormData(prev => ({...prev, username: e.target.value}))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
                       placeholder="Choose a username"
                     />
                   </div>
                   <div>
                     <Label htmlFor="gender">Gender</Label>
-                    <Select value={formData.gender} onValueChange={(value) => setFormData(prev => ({...prev, gender: value}))}>
+                    <Select value={formData.gender} onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
@@ -249,7 +258,7 @@ const TeamApplication = () => {
                       id="date_of_birth"
                       type="date"
                       value={formData.date_of_birth}
-                      onChange={(e) => setFormData(prev => ({...prev, date_of_birth: e.target.value}))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, date_of_birth: e.target.value }))}
                     />
                   </div>
                 </div>
@@ -261,7 +270,7 @@ const TeamApplication = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="preferred_role">Preferred Role</Label>
-                    <Select value={formData.preferred_role} onValueChange={(value) => setFormData(prev => ({...prev, preferred_role: value}))}>
+                    <Select value={formData.preferred_role} onValueChange={(value) => setFormData(prev => ({ ...prev, preferred_role: value }))}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -274,7 +283,7 @@ const TeamApplication = () => {
                   </div>
                   <div>
                     <Label htmlFor="preferred_department">Preferred Department</Label>
-                    <Select value={formData.preferred_department_id} onValueChange={(value) => setFormData(prev => ({...prev, preferred_department_id: value}))}>
+                    <Select value={formData.preferred_department_id} onValueChange={(value) => setFormData(prev => ({ ...prev, preferred_department_id: value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
@@ -306,7 +315,7 @@ const TeamApplication = () => {
                         <Input
                           id="reference_name"
                           value={formData.reference_person_name}
-                          onChange={(e) => setFormData(prev => ({...prev, reference_person_name: e.target.value}))}
+                          onChange={(e) => setFormData(prev => ({ ...prev, reference_person_name: e.target.value }))}
                           placeholder="Name of someone who is great at this field"
                         />
                       </div>
@@ -315,7 +324,7 @@ const TeamApplication = () => {
                         <Input
                           id="reference_number"
                           value={formData.reference_person_number}
-                          onChange={(e) => setFormData(prev => ({...prev, reference_person_number: e.target.value}))}
+                          onChange={(e) => setFormData(prev => ({ ...prev, reference_person_number: e.target.value }))}
                           placeholder="Their contact number"
                         />
                       </div>
@@ -333,7 +342,7 @@ const TeamApplication = () => {
                     <Input
                       id="father_name"
                       value={formData.father_name}
-                      onChange={(e) => setFormData(prev => ({...prev, father_name: e.target.value}))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, father_name: e.target.value }))}
                       placeholder="Enter father's name"
                     />
                   </div>
@@ -342,7 +351,7 @@ const TeamApplication = () => {
                     <Input
                       id="mother_name"
                       value={formData.mother_name}
-                      onChange={(e) => setFormData(prev => ({...prev, mother_name: e.target.value}))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, mother_name: e.target.value }))}
                       placeholder="Enter mother's name"
                     />
                   </div>
@@ -351,7 +360,7 @@ const TeamApplication = () => {
                     <Input
                       id="siblings"
                       value={formData.siblings}
-                      onChange={(e) => setFormData(prev => ({...prev, siblings: e.target.value}))}
+                      onChange={(e) => setFormData(prev => ({ ...prev, siblings: e.target.value }))}
                       placeholder="e.g., 2 brothers, 1 sister"
                     />
                   </div>
@@ -364,7 +373,7 @@ const TeamApplication = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="relationship_status">Relationship Status</Label>
-                    <Select value={formData.relationship_status} onValueChange={(value) => setFormData(prev => ({...prev, relationship_status: value}))}>
+                    <Select value={formData.relationship_status} onValueChange={(value) => setFormData(prev => ({ ...prev, relationship_status: value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
@@ -378,7 +387,7 @@ const TeamApplication = () => {
                   </div>
                   <div>
                     <Label htmlFor="marriage_preference">Marriage Preference</Label>
-                    <Select value={formData.marriage_preference} onValueChange={(value) => setFormData(prev => ({...prev, marriage_preference: value}))}>
+                    <Select value={formData.marriage_preference} onValueChange={(value) => setFormData(prev => ({ ...prev, marriage_preference: value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Your preference" />
                       </SelectTrigger>
@@ -398,7 +407,7 @@ const TeamApplication = () => {
                 <Textarea
                   id="about_me"
                   value={formData.about_me}
-                  onChange={(e) => setFormData(prev => ({...prev, about_me: e.target.value}))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, about_me: e.target.value }))}
                   placeholder="Tell us about yourself, your interests, goals, experience, etc."
                   rows={4}
                 />
@@ -453,6 +462,7 @@ const TeamApplication = () => {
           </CardContent>
         </Card>
       </div>
+      <Footer />
     </div>
   );
 };

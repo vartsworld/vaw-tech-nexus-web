@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Palette, FileImage, Book, CreditCard, Sparkles, Layers } from "lucide-react";
 import { Link } from "react-router-dom";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 
 const DigitalDesign = () => {
   const designServices = [
@@ -68,27 +71,33 @@ const DigitalDesign = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Creative Digital Design & Branding"
+        description="Professional digital design services. We create eye-catching posters, advertisements, e-books, brand identities, and NFC digital cards. Elevate your brand with VAW Technologies."
+        keywords="digital design, branding, logo design, graphic design, posters, advertisements, e-books, NFC cards, brand identity, VAW, Varts"
+      />
+      <Navbar />
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 bg-gradient-to-br from-tech-gold/20 via-tech-dark to-background">
         <div className="absolute inset-0 bg-cyber-grid opacity-30"></div>
         <div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-tech-gold/20 blur-3xl animate-pulse-gentle"></div>
         <div className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-tech-red/10 blur-3xl animate-float"></div>
-        
+
         <div className="container mx-auto px-4 relative">
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-tech-gold/10 px-4 py-2 rounded-full mb-6 animate-slide-in">
               <Palette className="h-5 w-5 text-tech-gold" />
               <span className="text-tech-gold font-medium">Digital Design</span>
             </div>
-            
+
             <h1 className="text-4xl md:text-6xl font-bold mb-6 font-['Space_Grotesk'] animate-slide-in" style={{ animationDelay: '0.2s' }}>
               Creative <span className="text-gradient bg-gradient-to-r from-tech-gold to-tech-red bg-clip-text text-transparent">Digital Designs</span>
             </h1>
-            
+
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 animate-slide-in" style={{ animationDelay: '0.4s' }}>
               Captivating audience attention and strengthening brand identity through innovative design solutions
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-in" style={{ animationDelay: '0.6s' }}>
               <Button size="lg" className="bg-tech-gold hover:bg-tech-gold/80 text-tech-dark group">
                 <Link to="/service-request" className="flex items-center">
@@ -120,8 +129,8 @@ const DigitalDesign = () => {
             {designShowcase.map((item, index) => (
               <div key={index} className="group cursor-pointer animate-slide-in" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className="relative overflow-hidden rounded-2xl aspect-[4/3] bg-gradient-to-br from-tech-gold/10 to-tech-red/10">
-                  <img 
-                    src={item.image} 
+                  <img
+                    src={item.image}
                     alt={item.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
@@ -266,6 +275,7 @@ const DigitalDesign = () => {
           </div>
         </div>
       </section>
+      <Footer />
     </div>
   );
 };

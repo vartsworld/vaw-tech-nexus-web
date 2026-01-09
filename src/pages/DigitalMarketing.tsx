@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ParticleBackground from "@/components/ParticleBackground";
 import { motion } from "framer-motion";
+import SEO from "@/components/SEO";
 
 const DigitalMarketing = () => {
   const [activePackage, setActivePackage] = useState(null);
@@ -26,7 +27,7 @@ const DigitalMarketing = () => {
 
   const whatWeDo = [
     "Digital Marketing Consultation",
-    "Social Media Management", 
+    "Social Media Management",
     "Website Design & Development",
     "SEO Consulting & Optimization",
     "Paid Advertising Management",
@@ -43,7 +44,7 @@ const DigitalMarketing = () => {
       description: "Perfect for small businesses starting their digital journey",
       features: [
         "3 Boosted Ad campaigns",
-        "20km radius targeting", 
+        "20km radius targeting",
         "3-day ad duration each",
         "Facebook & Instagram ads",
         "Google Ads basic setup",
@@ -54,13 +55,13 @@ const DigitalMarketing = () => {
     },
     {
       name: "Basic Plus",
-      price: "₹16,999", 
+      price: "₹16,999",
       period: "/ month",
       description: "Most popular choice for growing businesses",
       features: [
         "4 Boosted Ad campaigns",
         "30km radius targeting",
-        "3-day ad duration each", 
+        "3-day ad duration each",
         "Facebook, Instagram & Messenger",
         "Google Search Ads included",
         "Bi-weekly performance reports",
@@ -72,7 +73,7 @@ const DigitalMarketing = () => {
     {
       name: "Standard",
       price: "₹29,999",
-      period: "/ month", 
+      period: "/ month",
       description: "Comprehensive solution for established businesses",
       features: [
         "5 Boosted Ad campaigns",
@@ -98,10 +99,10 @@ const DigitalMarketing = () => {
       features: ["3 platforms", "Basic posting", "Community management"]
     },
     {
-      name: "Advanced Social Media Managing", 
+      name: "Advanced Social Media Managing",
       description: "Complete social media ecosystem management",
       price: "₹3,000",
-      period: "monthly", 
+      period: "monthly",
       features: ["5 platforms", "Content strategy", "Analytics", "Google Business"]
     },
     {
@@ -132,21 +133,26 @@ const DigitalMarketing = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      <SEO
+        title="Digital Marketing & Social Media Management"
+        description="Premium digital marketing services in Kerala. We offer social media management, content planning, SEO consulting, and paid advertising. Expert digital marketers at VAW Technologies."
+        keywords="digital marketing, social media management, SEO, advertising, Kerala marketing, india dev, VAW, Varts, content planning"
+      />
       <ParticleBackground />
       <Navbar />
-      
+
       {/* Hero Section - Enhanced with Golden Rule */}
       <section className="pt-32 pb-20 relative">
         <div className="absolute inset-0 bg-gradient-to-br from-tech-purple/5 via-tech-blue/5 to-tech-gold/5"></div>
         <div className="container mx-auto px-4 relative">
-          <motion.div 
+          <motion.div
             className="text-center max-w-5xl mx-auto"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
             <div className="flex justify-center mb-8">
-              <motion.div 
+              <motion.div
                 className="relative"
                 whileHover={{ scale: 1.1 }}
                 transition={{ type: "spring", stiffness: 300 }}
@@ -157,8 +163,8 @@ const DigitalMarketing = () => {
                 </div>
               </motion.div>
             </div>
-            
-            <motion.h1 
+
+            <motion.h1
               className="text-5xl md:text-7xl font-bold mb-6 font-['Space_Grotesk']"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -166,8 +172,8 @@ const DigitalMarketing = () => {
             >
               Digital <span className="bg-gradient-to-r from-tech-gold via-tech-red to-tech-purple bg-clip-text text-transparent">Marketing</span>
             </motion.h1>
-            
-            <motion.div 
+
+            <motion.div
               className="space-y-4 mb-12"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -178,7 +184,7 @@ const DigitalMarketing = () => {
               </p>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="flex flex-col sm:flex-row gap-4 justify-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -202,7 +208,7 @@ const DigitalMarketing = () => {
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-tech-gold/5 rounded-full blur-3xl"></div>
           <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-tech-purple/5 rounded-full blur-3xl"></div>
         </div>
-        
+
         <div className="container mx-auto px-4 relative">
           <motion.div
             className="text-center max-w-6xl mx-auto"
@@ -223,7 +229,7 @@ const DigitalMarketing = () => {
               </div>
             </motion.div>
 
-            <motion.h2 
+            <motion.h2
               className="text-3xl md:text-4xl font-bold mb-4 text-white"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -242,9 +248,9 @@ const DigitalMarketing = () => {
               whileHover={{ scale: 1.02 }}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-tech-gold/5 via-tech-red/5 to-tech-purple/5 rounded-3xl animate-pulse"></div>
-              
+
               <div className="relative">
-                <motion.p 
+                <motion.p
                   className="text-lg md:text-xl text-gray-300 mb-6 font-medium"
                   initial={{ opacity: 0 }}
                   whileInView={{ opacity: 1 }}
@@ -253,8 +259,8 @@ const DigitalMarketing = () => {
                 >
                   To present the
                 </motion.p>
-                
-                <motion.div 
+
+                <motion.div
                   className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-8 text-center"
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -318,7 +324,7 @@ const DigitalMarketing = () => {
               viewport={{ once: true }}
               transition={{ delay: 1.8, duration: 0.6 }}
             >
-              This fundamental principle guides every strategy we develop, every campaign we create, and every result we deliver. 
+              This fundamental principle guides every strategy we develop, every campaign we create, and every result we deliver.
               Our data-driven approach ensures your message reaches the perfect audience when they're most receptive.
             </motion.p>
           </motion.div>
@@ -342,7 +348,7 @@ const DigitalMarketing = () => {
                 Comprehensive digital marketing solutions designed to elevate your brand and drive measurable results
               </p>
             </motion.div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {marketingServices.map((service, index) => {
                 const Icon = service.icon;
@@ -467,10 +473,10 @@ const DigitalMarketing = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   <Card className={`h-full relative overflow-hidden ${pkg.popular ? 'ring-2 ring-tech-gold shadow-2xl shadow-tech-gold/20' : 'hover:shadow-xl'} transition-all duration-500`}>
                     <div className={`absolute inset-0 bg-gradient-to-br ${pkg.color} opacity-5 group-hover:opacity-10 transition-opacity`}></div>
-                    
+
                     <CardHeader className="relative text-center pb-6">
                       <CardTitle className="text-2xl font-bold mb-2">{pkg.name}</CardTitle>
                       <p className="text-muted-foreground text-sm mb-6">{pkg.description}</p>
@@ -481,7 +487,7 @@ const DigitalMarketing = () => {
                         <div className="text-muted-foreground">{pkg.period}</div>
                       </div>
                     </CardHeader>
-                    
+
                     <CardContent className="relative">
                       <ul className="space-y-4 mb-8">
                         {pkg.features.map((feature, featureIndex) => (
@@ -493,8 +499,8 @@ const DigitalMarketing = () => {
                           </li>
                         ))}
                       </ul>
-                      
-                      <Button 
+
+                      <Button
                         className={`w-full ${pkg.popular ? 'bg-gradient-to-r from-tech-gold to-tech-red hover:shadow-lg hover:shadow-tech-gold/50' : 'bg-gradient-to-r from-tech-purple to-tech-blue hover:shadow-lg'} text-white font-semibold py-3 rounded-full transition-all duration-300 hover:scale-105`}
                         onClick={() => setActivePackage(pkg.name)}
                       >
@@ -586,7 +592,7 @@ const DigitalMarketing = () => {
                   </CardContent>
                 </Card>
               </motion.div>
-              
+
               <motion.div whileHover={{ y: -5 }}>
                 <Card className="text-center hover:shadow-lg hover:shadow-tech-blue/20 transition-all duration-300 group">
                   <CardContent className="p-8">
@@ -601,7 +607,7 @@ const DigitalMarketing = () => {
                   </CardContent>
                 </Card>
               </motion.div>
-              
+
               <motion.div whileHover={{ y: -5 }}>
                 <Card className="text-center hover:shadow-lg hover:shadow-tech-red/20 transition-all duration-300 group">
                   <CardContent className="p-8">

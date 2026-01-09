@@ -3,6 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Bot, Brain, MessageSquare, TrendingUp, FileText, Mic } from "lucide-react";
 import { Link } from "react-router-dom";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 
 const AISolutions = () => {
   const solutions = [
@@ -40,27 +43,33 @@ const AISolutions = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Advanced AI Solutions"
+        description="Transform your business with cutting-edge AI solutions. We develop AI character chatbots, voice assistants, predictive analytics tools, and NLP applications."
+        keywords="AI development, artificial intelligence, chatbots, voice assistants, machine learning, VAW, Varts, AI tool development"
+      />
+      <Navbar />
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 bg-gradient-to-br from-tech-dark via-tech-gray to-background">
         <div className="absolute inset-0 bg-cyber-grid opacity-30"></div>
         <div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-tech-blue/10 blur-3xl animate-pulse-gentle"></div>
         <div className="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-tech-purple/10 blur-3xl animate-float"></div>
-        
+
         <div className="container mx-auto px-4 relative">
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-tech-blue/10 px-4 py-2 rounded-full mb-6 animate-slide-in">
               <Bot className="h-5 w-5 text-tech-blue" />
               <span className="text-tech-blue font-medium">AI Solutions</span>
             </div>
-            
+
             <h1 className="text-4xl md:text-6xl font-bold mb-6 font-['Space_Grotesk'] animate-slide-in" style={{ animationDelay: '0.2s' }}>
               Leveraging <span className="text-gradient bg-gradient-to-r from-tech-blue to-tech-purple bg-clip-text text-transparent">Artificial Intelligence</span>
             </h1>
-            
+
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 animate-slide-in" style={{ animationDelay: '0.4s' }}>
               Creating smart, innovative digital products that transform your business operations
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-in" style={{ animationDelay: '0.6s' }}>
               <Button size="lg" className="bg-tech-blue hover:bg-tech-blue/80 text-white group">
                 <Link to="/service-request" className="flex items-center">
@@ -85,7 +94,7 @@ const AISolutions = () => {
                 The Future of <span className="text-tech-blue">Intelligence</span>
               </h2>
               <p className="text-lg text-muted-foreground mb-6">
-                Our AI solutions combine cutting-edge machine learning algorithms with intuitive user experiences 
+                Our AI solutions combine cutting-edge machine learning algorithms with intuitive user experiences
                 to deliver intelligent systems that learn, adapt, and evolve with your business needs.
               </p>
               <div className="grid grid-cols-2 gap-4 mb-6">
@@ -101,9 +110,9 @@ const AISolutions = () => {
             </div>
             <div className="relative">
               <div className="aspect-video bg-gradient-to-br from-tech-blue/20 to-tech-purple/20 rounded-2xl overflow-hidden relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=600&h=400&fit=crop" 
-                  alt="AI Technology" 
+                <img
+                  src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=600&h=400&fit=crop"
+                  alt="AI Technology"
                   className="w-full h-full object-cover animate-float"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-tech-dark/50 to-transparent"></div>
@@ -219,6 +228,7 @@ const AISolutions = () => {
           </div>
         </div>
       </section>
+      <Footer />
     </div>
   );
 };

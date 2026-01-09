@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ParticleBackground from "@/components/ParticleBackground";
 import PricingInquiryForm from "@/components/PricingInquiryForm";
+import SEO from "@/components/SEO";
 
 interface PricingTier {
   name: string;
@@ -99,119 +100,124 @@ const Pricing = () => {
     }).format(price);
   };
   return <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      <ParticleBackground />
-      <Navbar />
-      
-      <section className="pt-24 pb-16">
-        <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 font-['Space_Grotesk']">
-              Choose Your <span className="text-gradient">Perfect Plan</span>
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-              Professional web solutions tailored to your business needs with unbeatable pricing
-            </p>
-            
-            {/* Countdown Timer */}
-            <div className="bg-gradient-to-r from-tech-red/20 to-tech-gold/20 rounded-xl p-6 max-w-md mx-auto mb-8">
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <Clock className="h-5 w-5 text-tech-red animate-pulse" />
-                <span className="text-lg font-semibold text-tech-red">Limited Time Offer!</span>
+    <SEO
+      title="Web Development & Tech Service Pricing"
+      description="Transparent and affordable pricing for premium web development, AI integration, e-commerce platforms, and digital marketing services at VAW Technologies."
+      keywords="web development pricing, app development cost, SEO pricing, digital marketing packages, VAW, Varts, Kerala tech agency pricing"
+    />
+    <ParticleBackground />
+    <Navbar />
+
+    <section className="pt-24 pb-16">
+      <div className="container mx-auto px-4">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 font-['Space_Grotesk']">
+            Choose Your <span className="text-gradient">Perfect Plan</span>
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
+            Professional web solutions tailored to your business needs with unbeatable pricing
+          </p>
+
+          {/* Countdown Timer */}
+          <div className="bg-gradient-to-r from-tech-red/20 to-tech-gold/20 rounded-xl p-6 max-w-md mx-auto mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Clock className="h-5 w-5 text-tech-red animate-pulse" />
+              <span className="text-lg font-semibold text-tech-red">Limited Time Offer!</span>
+            </div>
+            <div className="flex justify-center gap-4 text-center">
+              <div className="bg-background/50 rounded-lg p-3 min-w-[60px]">
+                <div className="text-2xl font-bold text-tech-red">{timeLeft.days}</div>
+                <div className="text-xs text-muted-foreground">Days</div>
               </div>
-              <div className="flex justify-center gap-4 text-center">
-                <div className="bg-background/50 rounded-lg p-3 min-w-[60px]">
-                  <div className="text-2xl font-bold text-tech-red">{timeLeft.days}</div>
-                  <div className="text-xs text-muted-foreground">Days</div>
-                </div>
-                <div className="bg-background/50 rounded-lg p-3 min-w-[60px]">
-                  <div className="text-2xl font-bold text-tech-red">{timeLeft.hours}</div>
-                  <div className="text-xs text-muted-foreground">Hours</div>
-                </div>
-                <div className="bg-background/50 rounded-lg p-3 min-w-[60px]">
-                  <div className="text-2xl font-bold text-tech-red">{timeLeft.minutes}</div>
-                  <div className="text-xs text-muted-foreground">Minutes</div>
-                </div>
-                <div className="bg-background/50 rounded-lg p-3 min-w-[60px]">
-                  <div className="text-2xl font-bold text-tech-red">{timeLeft.seconds}</div>
-                  <div className="text-xs text-muted-foreground">Seconds</div>
-                </div>
+              <div className="bg-background/50 rounded-lg p-3 min-w-[60px]">
+                <div className="text-2xl font-bold text-tech-red">{timeLeft.hours}</div>
+                <div className="text-xs text-muted-foreground">Hours</div>
+              </div>
+              <div className="bg-background/50 rounded-lg p-3 min-w-[60px]">
+                <div className="text-2xl font-bold text-tech-red">{timeLeft.minutes}</div>
+                <div className="text-xs text-muted-foreground">Minutes</div>
+              </div>
+              <div className="bg-background/50 rounded-lg p-3 min-w-[60px]">
+                <div className="text-2xl font-bold text-tech-red">{timeLeft.seconds}</div>
+                <div className="text-xs text-muted-foreground">Seconds</div>
               </div>
             </div>
           </div>
-
-          {/* Pricing Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {pricingTiers.map((tier, index) => <Card key={index} className={`tech-card relative ${tier.popular ? 'ring-2 ring-tech-gold/50 scale-105' : ''}`}>
-                {tier.popular && <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-tech-gold to-tech-red text-white px-4 py-1 rounded-full text-sm font-medium">
-                      Most Popular
-                    </span>
-                  </div>}
-                
-                <CardHeader className="text-center pb-4">
-                  <div className="flex justify-center mb-4">
-                    <div className="bg-muted/30 p-3 rounded-full">
-                      {tier.icon}
-                    </div>
-                  </div>
-                  <CardTitle className="text-2xl font-bold">{tier.name}</CardTitle>
-                  <p className="text-muted-foreground text-sm">{tier.description}</p>
-                  
-                  <div className="py-4">
-                    {tier.originalPrice !== tier.discountPrice && <div className="text-lg text-muted-foreground line-through">
-                        {formatPrice(tier.originalPrice)}
-                      </div>}
-                    <div className="text-3xl font-bold text-tech-red">
-                      {formatPrice(tier.discountPrice)}
-                    </div>
-                    {tier.originalPrice !== tier.discountPrice && <div className="text-sm text-tech-green font-medium">
-                        Save {formatPrice(tier.originalPrice - tier.discountPrice)}
-                      </div>}
-                  </div>
-                </CardHeader>
-                
-                <CardContent>
-                  <ul className="space-y-3 mb-6">
-                    {tier.features.map((feature, featureIndex) => <li key={featureIndex} className="flex items-center gap-3">
-                        <Check className="h-4 w-4 text-tech-gold flex-shrink-0" />
-                        <span className="text-sm">{feature}</span>
-                      </li>)}
-                  </ul>
-                  
-                  <PricingInquiryForm 
-                    packageName={tier.name}
-                    packagePrice={tier.discountPrice}
-                  >
-                    <Button className={`w-full ${tier.popular ? 'bg-gradient-to-r from-tech-gold to-tech-red hover:shadow-lg hover:shadow-tech-gold/50' : 'bg-primary hover:bg-primary/90'} text-white`}>
-                      Get Started
-                    </Button>
-                  </PricingInquiryForm>
-                </CardContent>
-              </Card>)}
-          </div>
-
-          {/* Bottom CTA */}
-          <div className="text-center mt-16">
-            <h3 className="text-2xl font-bold mb-4">
-              Need a Custom Solution?
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              Contact us for enterprise solutions and custom development projects
-            </p>
-            <PricingInquiryForm 
-              packageName="Custom Solution"
-              packagePrice={0}
-            >
-              <Button size="lg" className="bg-gradient-to-r from-tech-purple to-tech-blue text-white">
-                Contact Our Experts
-              </Button>
-            </PricingInquiryForm>
-          </div>
         </div>
-      </section>
-      
-      <Footer />
-    </div>;
+
+        {/* Pricing Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {pricingTiers.map((tier, index) => <Card key={index} className={`tech-card relative ${tier.popular ? 'ring-2 ring-tech-gold/50 scale-105' : ''}`}>
+            {tier.popular && <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+              <span className="bg-gradient-to-r from-tech-gold to-tech-red text-white px-4 py-1 rounded-full text-sm font-medium">
+                Most Popular
+              </span>
+            </div>}
+
+            <CardHeader className="text-center pb-4">
+              <div className="flex justify-center mb-4">
+                <div className="bg-muted/30 p-3 rounded-full">
+                  {tier.icon}
+                </div>
+              </div>
+              <CardTitle className="text-2xl font-bold">{tier.name}</CardTitle>
+              <p className="text-muted-foreground text-sm">{tier.description}</p>
+
+              <div className="py-4">
+                {tier.originalPrice !== tier.discountPrice && <div className="text-lg text-muted-foreground line-through">
+                  {formatPrice(tier.originalPrice)}
+                </div>}
+                <div className="text-3xl font-bold text-tech-red">
+                  {formatPrice(tier.discountPrice)}
+                </div>
+                {tier.originalPrice !== tier.discountPrice && <div className="text-sm text-tech-green font-medium">
+                  Save {formatPrice(tier.originalPrice - tier.discountPrice)}
+                </div>}
+              </div>
+            </CardHeader>
+
+            <CardContent>
+              <ul className="space-y-3 mb-6">
+                {tier.features.map((feature, featureIndex) => <li key={featureIndex} className="flex items-center gap-3">
+                  <Check className="h-4 w-4 text-tech-gold flex-shrink-0" />
+                  <span className="text-sm">{feature}</span>
+                </li>)}
+              </ul>
+
+              <PricingInquiryForm
+                packageName={tier.name}
+                packagePrice={tier.discountPrice}
+              >
+                <Button className={`w-full ${tier.popular ? 'bg-gradient-to-r from-tech-gold to-tech-red hover:shadow-lg hover:shadow-tech-gold/50' : 'bg-primary hover:bg-primary/90'} text-white`}>
+                  Get Started
+                </Button>
+              </PricingInquiryForm>
+            </CardContent>
+          </Card>)}
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="text-center mt-16">
+          <h3 className="text-2xl font-bold mb-4">
+            Need a Custom Solution?
+          </h3>
+          <p className="text-muted-foreground mb-6">
+            Contact us for enterprise solutions and custom development projects
+          </p>
+          <PricingInquiryForm
+            packageName="Custom Solution"
+            packagePrice={0}
+          >
+            <Button size="lg" className="bg-gradient-to-r from-tech-purple to-tech-blue text-white">
+              Contact Our Experts
+            </Button>
+          </PricingInquiryForm>
+        </div>
+      </div>
+    </section>
+
+    <Footer />
+  </div>;
 };
 export default Pricing;

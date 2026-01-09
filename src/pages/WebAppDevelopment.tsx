@@ -3,16 +3,16 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Code, 
-  Database, 
-  Globe, 
-  Zap, 
-  Shield, 
-  Users, 
-  BarChart3, 
-  Calendar, 
-  ShoppingCart, 
+import {
+  Code,
+  Database,
+  Globe,
+  Zap,
+  Shield,
+  Users,
+  BarChart3,
+  Calendar,
+  ShoppingCart,
   GraduationCap,
   Building2,
   CheckCircle,
@@ -25,6 +25,7 @@ import {
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 
 const WebAppDevelopment = () => {
   const [activeService, setActiveService] = useState(0);
@@ -118,8 +119,13 @@ const WebAppDevelopment = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SEO
+        title="Scalable Web App Development"
+        description="Custom web application development services. We build CRM systems, inventory management apps, and complex project platforms. Scalable, secure, and modern web apps by VAW Technologies."
+        keywords="web app development, custom software, CRM development, inventory management systems, SaaS development, VAW, Varts, Kerala tech agency"
+      />
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 overflow-hidden">
         {/* Animated Background */}
@@ -138,12 +144,12 @@ const WebAppDevelopment = () => {
                   WebApp Development
                 </Badge>
                 <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                  Building <span className="text-gradient">Robust</span> & 
+                  Building <span className="text-gradient">Robust</span> &
                   <br />
                   <span className="text-gradient">Scalable</span> Web Apps
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed">
-                  Transform your business with custom web applications tailored to your unique needs. 
+                  Transform your business with custom web applications tailored to your unique needs.
                   From concept to deployment, we deliver solutions that drive growth and efficiency.
                 </p>
               </div>
@@ -185,13 +191,13 @@ const WebAppDevelopment = () => {
                     <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                     <div className="w-3 h-3 rounded-full bg-green-500"></div>
                   </div>
-                  
-                  <img 
+
+                  <img
                     src="https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=600&h=400&fit=crop"
                     alt="Web Application Development"
                     className="w-full h-64 object-cover rounded-lg mb-6"
                   />
-                  
+
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <h3 className="text-lg font-semibold">Dashboard Analytics</h3>
@@ -238,13 +244,12 @@ const WebAppDevelopment = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
               {services.map((service, index) => (
-                <Card 
+                <Card
                   key={index}
-                  className={`cursor-pointer transition-all duration-500 ${
-                    activeService === index 
-                      ? 'border-tech-gold/50 shadow-lg shadow-tech-gold/20 scale-105' 
+                  className={`cursor-pointer transition-all duration-500 ${activeService === index
+                      ? 'border-tech-gold/50 shadow-lg shadow-tech-gold/20 scale-105'
                       : 'hover:border-tech-gold/30'
-                  }`}
+                    }`}
                   onClick={() => setActiveService(index)}
                 >
                   <CardHeader className="pb-3">
@@ -276,12 +281,12 @@ const WebAppDevelopment = () => {
 
             <div className="relative">
               <div className="relative bg-gradient-to-br from-card to-card/80 rounded-2xl p-8 shadow-2xl border border-tech-gold/20">
-                <img 
+                <img
                   src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&h=400&fit=crop"
                   alt="Custom Web Application"
                   className="w-full h-80 object-cover rounded-lg mb-6"
                 />
-                
+
                 <div className="space-y-4">
                   <h3 className="text-xl font-semibold">
                     {services[activeService].title}
@@ -289,7 +294,7 @@ const WebAppDevelopment = () => {
                   <p className="text-muted-foreground">
                     {services[activeService].description}
                   </p>
-                  
+
                   <div className="flex flex-wrap gap-2">
                     {services[activeService].features.map((feature, idx) => (
                       <Badge key={idx} variant="outline" className="text-xs">
@@ -346,7 +351,7 @@ const WebAppDevelopment = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {techStack.map((tech, index) => (
-              <div 
+              <div
                 key={index}
                 className="bg-card rounded-lg p-6 text-center hover:shadow-lg hover:shadow-tech-gold/20 transition-all duration-300 group"
               >
@@ -373,7 +378,7 @@ const WebAppDevelopment = () => {
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Let's discuss your project requirements and create a custom solution that drives your business forward.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="btn-3d bg-primary hover:bg-primary/80 group" asChild>
                 <Link to="/service-request">

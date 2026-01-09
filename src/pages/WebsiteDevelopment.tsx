@@ -4,6 +4,7 @@ import { ArrowRight, CheckCircle, Code, Palette, Smartphone, Zap } from "lucide-
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import SEO from "@/components/SEO";
 
 const WebsiteDevelopment = () => {
   const features = [
@@ -31,7 +32,7 @@ const WebsiteDevelopment = () => {
 
   const services = [
     "Creative business websites",
-    "E-commerce platforms", 
+    "E-commerce platforms",
     "Portfolio showcases",
     "Crypto trending portals",
     "AI-integrated websites"
@@ -39,8 +40,13 @@ const WebsiteDevelopment = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <SEO
+        title="Professional Website Development"
+        description="Premium website development services in Kerala. We build creative business websites, e-commerce platforms, and AI-integrated portals. Expert web developers at VAW Technologies."
+        keywords="web development, website design, kerala dev, india dev, VAW, Varts, creative websites, ecommerce development"
+      />
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className="pt-24 pb-16 px-4">
         <div className="container mx-auto max-w-6xl">

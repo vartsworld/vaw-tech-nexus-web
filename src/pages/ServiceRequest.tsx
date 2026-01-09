@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import ConversationalForm from "@/components/ConversationalForm";
 import ParticleBackground from "@/components/ParticleBackground";
 import { useUser } from "@/context/UserContext";
+import SEO from "@/components/SEO";
 
 const ServiceRequest = () => {
   const { hasCompletedIntro } = useUser();
@@ -21,6 +22,11 @@ const ServiceRequest = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      <SEO
+        title="Request a Service"
+        description="Book a consultation for web development, AI solutions, or digital marketing. Get a custom quote for your next big project at VAW Technologies."
+        keywords="service request, quote, web development quote, AI consultation, digital marketing help, VAW, Varts"
+      />
       <ParticleBackground />
       <Navbar />
       <section className="py-16 md:py-24">
@@ -33,7 +39,7 @@ const ServiceRequest = () => {
               Tell us about your project needs, and we'll help bring your vision to reality.
             </p>
           </div>
-          
+
           <ConversationalForm />
         </div>
       </section>
