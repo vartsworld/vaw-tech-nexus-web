@@ -54,16 +54,30 @@ const ClientManagement = () => {
 
   const fetchClients = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: clientsData, error: clientsError } = await supabase
         .from('client_profiles')
-        .select(`
-          *,
-          client_projects (id, title, status)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setClients(data || []);
+      if (clientsError) throw clientsError;
+
+      // Fetch projects separately to avoid join error
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('client_projects')
+        .select('id, title, status, client_id');
+
+      if (projectsError) {
+        console.error('Error fetching projects:', projectsError);
+        // Don't fail the whole page if projects fail
+      }
+
+      // Merge projects into clients
+      const formattedClients = (clientsData || []).map(client => ({
+        ...client,
+        client_projects: (projectsData || []).filter(p => p.client_id === client.id)
+      }));
+
+      setClients(formattedClients);
     } catch (error) {
       console.error('Error fetching clients:', error);
       toast({

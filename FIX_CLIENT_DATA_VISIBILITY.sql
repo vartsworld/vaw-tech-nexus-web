@@ -1,5 +1,5 @@
 -- ================================================================
--- FIX: CLIENT DATA VISIBILITY (RLS POLICIES)
+-- FIX: CLIENT DATA VISIBILITY (RLS POLICIES) - V2
 -- ================================================================
 -- This script fixes the issue where client data exists in the table
 -- but is not visible in the dashboard due to Row Level Security.
@@ -16,6 +16,8 @@ DROP POLICY IF EXISTS "HR can manage clients" ON client_profiles;
 DROP POLICY IF EXISTS "Staff can view clients" ON client_profiles;
 DROP POLICY IF EXISTS "client_profiles_select_policy" ON client_profiles;
 DROP POLICY IF EXISTS "client_profiles_all_policy" ON client_profiles;
+DROP POLICY IF EXISTS "Allow Authenticated Read Access" ON client_profiles;
+DROP POLICY IF EXISTS "Allow HR and Admin Write Access" ON client_profiles;
 
 -- 3. Create a simple Read policy for ALL authenticated staff
 -- This allows any logged-in user to SEE the client list.
@@ -28,6 +30,8 @@ USING (true);
 
 -- 4. Create a specific Write policy for HR and Admins
 -- This allows HR and Managers to Insert, Update, Delete.
+-- NOTE: Removed invalid roles 'creative_director' and 'ceo' to prevent enum errors.
+-- We are casting role to text to avoid enum mismatch errors entirely.
 CREATE POLICY "Allow HR and Admin Write Access"
 ON client_profiles
 FOR ALL
@@ -37,7 +41,7 @@ USING (
     SELECT 1 FROM staff_profiles
     WHERE user_id = auth.uid()
     AND (
-      role IN ('hr', 'admin', 'creative_director', 'ceo', 'manager') 
+      role::text IN ('hr', 'admin', 'manager') 
       OR department_id IN (SELECT id FROM departments WHERE name IN ('HR', 'Management', 'Administration'))
     )
   )
@@ -51,6 +55,7 @@ BEGIN
         ALTER TABLE client_projects ENABLE ROW LEVEL SECURITY;
         
         DROP POLICY IF EXISTS "project_read_policy" ON client_projects;
+        DROP POLICY IF EXISTS "Allow Project Read Access" ON client_projects;
         
         CREATE POLICY "Allow Project Read Access"
         ON client_projects FOR SELECT
