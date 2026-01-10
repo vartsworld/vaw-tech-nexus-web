@@ -59,6 +59,7 @@ const ClientManagement = () => {
   }, [clients, searchTerm]);
 
   const fetchClients = async () => {
+    console.log('Fetching clients from table: clients');
     try {
       const { data, error } = await supabase
         .from('clients')
@@ -68,6 +69,7 @@ const ClientManagement = () => {
         `)
         .order('created_at', { ascending: false });
 
+      console.log('Client Fetch Result:', { data, error });
       if (error) throw error;
       setClients(data || []);
     } catch (error) {
@@ -659,6 +661,19 @@ const ClientManagement = () => {
               </Button>
               <Button onClick={handleSavePassword} disabled={isSavingPassword}>
                 {isSavingPassword ? "Saving..." : "Save Password"}
+              </Button>
+            </div>
+            <div className="flex justify-center border-t pt-4 mt-2">
+              <Button
+                variant="link"
+                size="sm"
+                className="text-xs text-gray-500"
+                onClick={() => {
+                  setPassword("vaw123*");
+                  setConfirmPassword("vaw123*");
+                }}
+              >
+                Set Default: vaw123*
               </Button>
             </div>
           </div>
