@@ -28,6 +28,10 @@ const ClientManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [selectedClientForPassword, setSelectedClientForPassword] = useState<any>(null);
+  const [generatedCredentials, setGeneratedCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [isGeneratingPassword, setIsGeneratingPassword] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [newClient, setNewClient] = useState({
     company_name: "",
@@ -378,13 +382,30 @@ const ClientManagement = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          toast({
-                            title: "Access Protocol Triggered",
-                            description: `Credential reset initiated for ${client.company_name}. Nexus link active.`,
-                          });
+                        onClick={async () => {
+                          const action = client.user_id ? 'reset' : 'create';
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (!session) {
+                            toast({ title: "Error", description: "Please log in first", variant: "destructive" });
+                            return;
+                          }
+                          toast({ title: "Generating...", description: "Creating credentials for " + client.company_name });
+                          try {
+                            const res = await fetch(`https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/client-password`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                              body: JSON.stringify({ client_profile_id: client.id, email: client.email, action })
+                            });
+                            const result = await res.json();
+                            if (!res.ok) throw new Error(result.error);
+                            toast({ title: "Success!", description: `Email: ${result.email} | Password: ${result.password}` });
+                            navigator.clipboard.writeText(`Email: ${result.email}\nPassword: ${result.password}`);
+                          } catch (e: any) {
+                            toast({ title: "Error", description: e.message, variant: "destructive" });
+                          }
                         }}
                         className="text-tech-red"
+                        title={client.user_id ? "Reset Password" : "Create Login"}
                       >
                         <Key className="h-4 w-4" />
                       </Button>

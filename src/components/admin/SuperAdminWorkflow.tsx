@@ -104,7 +104,7 @@ const SuperAdminWorkflow = () => {
                                     <Badge className="bg-white/5 text-[9px] font-black uppercase tracking-widest">{project.status}</Badge>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <Progress value={project.progress} className="h-1.5 bg-white/5" indicatorClassName={project.color} />
+                                    <Progress value={project.progress} className={cn("h-1.5 bg-white/5 [&>div]:" + project.color)} />
                                     <span className="text-[10px] font-black text-gray-500">{project.progress}%</span>
                                 </div>
                             </div>

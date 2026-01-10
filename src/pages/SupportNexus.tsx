@@ -37,6 +37,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 const SupportNexus = ({ profile }: { profile: any }) => {
     const [feedback, setFeedback] = useState<any[]>([]);

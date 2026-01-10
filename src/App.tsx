@@ -62,6 +62,7 @@ const AppContent = () => {
           <Route path="/vr-ar-development" element={<VRARDevelopment />} />
           <Route path="/digital-design" element={<DigitalDesign />} />
           <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/super-admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/hr/dashboard" element={<HRDashboard />} />
           <Route path="/staff/login" element={<StaffLogin />} />

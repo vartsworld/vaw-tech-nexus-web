@@ -4,6 +4,7 @@ import {
     CardHeader,
     CardTitle
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
     Activity,
     TrendingUp,
@@ -116,7 +117,7 @@ const SuperAdminOverview = () => {
                     <CardContent className="flex-1 p-4 font-mono text-[10px] overflow-hidden space-y-2">
                         <div className="text-green-500">[01:52:09] SYSTEM_RECOVER_AUTH: SYNC WITH SUB-SERVER 04</div>
                         <div className="text-gray-500">[01:52:12] DB_MUTATION: CLIENT_PROFILE_ID_88 SET_ACCESS_PIN</div>
-                        <div className="text-gray-500">[01:52:15] SHARED_PROTOCOL: PROJECT_ID_119 -> DEPT_IT</div>
+                        <div className="text-gray-500">[01:52:15] SHARED_PROTOCOL: PROJECT_ID_119 {'->'} DEPT_IT</div>
                         <div className="text-tech-red/[0.5]">[01:52:18] ALERT: UNAUTHORIZED ATTEMPT AT PORT 4433 BLOCKED</div>
                         <div className="text-gray-500">[01:52:21] CRON_TRIGGER: BROADCASTING_DATA_PULSE_99</div>
                         <div className="text-blue-500">[01:52:25] NEXUS_SYNC: ALL CORES ALIGNED</div>
