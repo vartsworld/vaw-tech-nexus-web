@@ -89,7 +89,7 @@ const SuperAdminClientManager = () => {
                 .from("client_profiles")
                 .select(`
                     *,
-                    client_projects (id, name, status, progress),
+                    client_projects (id, title, status, progress),
                     client_feedback (id, type, status)
                 `)
                 .order('created_at', { ascending: false });

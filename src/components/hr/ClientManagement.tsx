@@ -58,7 +58,7 @@ const ClientManagement = () => {
         .from('client_profiles')
         .select(`
           *,
-          client_projects (id, name, status)
+          client_projects (id, title, status)
         `)
         .order('created_at', { ascending: false });
 
