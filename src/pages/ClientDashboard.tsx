@@ -52,7 +52,7 @@ const ClientDashboard = () => {
     const checkUser = async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-            navigate("/client-portal/login");
+            navigate("/client/login");
             return;
         }
 
@@ -64,7 +64,7 @@ const ClientDashboard = () => {
 
         if (error || !profile) {
             toast.error("Profile not found");
-            navigate("/client-portal/login");
+            navigate("/client/login");
             return;
         }
 
@@ -75,7 +75,7 @@ const ClientDashboard = () => {
     const handleLogout = async () => {
         await supabase.auth.signOut();
         toast.success("Logged out successfully");
-        navigate("/client-portal/login");
+        navigate("/client/login");
     };
 
     const menuItems = [

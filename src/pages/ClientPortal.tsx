@@ -167,7 +167,7 @@ const ClientPortal = () => {
       setDocuments(docsData);
 
       if ((!servicesData || servicesData.length === 0) && (!inquiriesData || inquiriesData.length === 0)) {
-        toast.error("No records found for this email");
+        toast.error("No record found for this email");
         setIsAuthenticated(false);
         setProjectData(undefined);
       } else {

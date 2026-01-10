@@ -18,13 +18,13 @@ interface EnhancedStaffFormProps {
   isEdit?: boolean;
 }
 
-const EnhancedStaffForm = ({ 
-  departments, 
-  newStaff, 
-  setNewStaff, 
-  onSubmit, 
+const EnhancedStaffForm = ({
+  departments,
+  newStaff,
+  setNewStaff,
+  onSubmit,
   onCancel,
-  isEdit = false 
+  isEdit = false
 }: EnhancedStaffFormProps) => {
   const [uploading, setUploading] = useState(false);
   const [showReference, setShowReference] = useState(newStaff.work_confidence_level && newStaff.work_confidence_level !== 'great');
@@ -85,8 +85,8 @@ const EnhancedStaffForm = ({
     setNewStaff({ ...newStaff, work_confidence_level: value });
     setShowReference(value !== 'great');
     if (value === 'great') {
-      setNewStaff({ 
-        ...newStaff, 
+      setNewStaff({
+        ...newStaff,
         work_confidence_level: value,
         reference_person_name: "",
         reference_person_number: ""
@@ -119,13 +119,13 @@ const EnhancedStaffForm = ({
         {/* Basic Information */}
         <div className="space-y-4">
           <h3 className="font-semibold text-lg">Basic Information</h3>
-          
+
           <div>
             <Label htmlFor="full_name">Full Name *</Label>
             <Input
               id="full_name"
               value={newStaff.full_name}
-              onChange={(e) => setNewStaff({...newStaff, full_name: e.target.value})}
+              onChange={(e) => setNewStaff({ ...newStaff, full_name: e.target.value })}
               placeholder="Enter full name"
             />
           </div>
@@ -136,7 +136,7 @@ const EnhancedStaffForm = ({
               id="email"
               type="email"
               value={newStaff.email}
-              onChange={(e) => setNewStaff({...newStaff, email: e.target.value})}
+              onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
               placeholder="Enter email address"
             />
           </div>
@@ -146,14 +146,14 @@ const EnhancedStaffForm = ({
             <Input
               id="username"
               value={newStaff.username}
-              onChange={(e) => setNewStaff({...newStaff, username: e.target.value})}
+              onChange={(e) => setNewStaff({ ...newStaff, username: e.target.value })}
               placeholder="Enter username"
             />
           </div>
 
           <div>
             <Label htmlFor="gender">Gender</Label>
-            <Select value={newStaff.gender} onValueChange={(value) => setNewStaff({...newStaff, gender: value})}>
+            <Select value={newStaff.gender} onValueChange={(value) => setNewStaff({ ...newStaff, gender: value })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select gender" />
               </SelectTrigger>
@@ -172,7 +172,7 @@ const EnhancedStaffForm = ({
               id="date_of_birth"
               type="date"
               value={newStaff.date_of_birth}
-              onChange={(e) => setNewStaff({...newStaff, date_of_birth: e.target.value})}
+              onChange={(e) => setNewStaff({ ...newStaff, date_of_birth: e.target.value })}
             />
           </div>
         </div>
@@ -180,25 +180,28 @@ const EnhancedStaffForm = ({
         {/* Professional Information */}
         <div className="space-y-4">
           <h3 className="font-semibold text-lg">Professional Information</h3>
-          
+
           <div>
             <Label htmlFor="role">Role *</Label>
-            <Select value={newStaff.role} onValueChange={(value) => setNewStaff({...newStaff, role: value})}>
+            <Select value={newStaff.role} onValueChange={(value) => setNewStaff({ ...newStaff, role: value })}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="intern">Intern</SelectItem>
                 <SelectItem value="staff">Staff</SelectItem>
                 <SelectItem value="lead">Team Lead</SelectItem>
+                <SelectItem value="team_head">Team Head</SelectItem>
                 <SelectItem value="manager">Manager</SelectItem>
                 <SelectItem value="hr">HR</SelectItem>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
             <Label htmlFor="department">Department</Label>
-            <Select value={newStaff.department_id} onValueChange={(value) => setNewStaff({...newStaff, department_id: value})}>
+            <Select value={newStaff.department_id} onValueChange={(value) => setNewStaff({ ...newStaff, department_id: value })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select department" />
               </SelectTrigger>
@@ -216,7 +219,7 @@ const EnhancedStaffForm = ({
               id="hire_date"
               type="date"
               value={newStaff.hire_date}
-              onChange={(e) => setNewStaff({...newStaff, hire_date: e.target.value})}
+              onChange={(e) => setNewStaff({ ...newStaff, hire_date: e.target.value })}
             />
           </div>
 
@@ -242,7 +245,7 @@ const EnhancedStaffForm = ({
                 <Input
                   id="reference_name"
                   value={newStaff.reference_person_name}
-                  onChange={(e) => setNewStaff({...newStaff, reference_person_name: e.target.value})}
+                  onChange={(e) => setNewStaff({ ...newStaff, reference_person_name: e.target.value })}
                   placeholder="Name of someone who is great at this field"
                 />
               </div>
@@ -251,7 +254,7 @@ const EnhancedStaffForm = ({
                 <Input
                   id="reference_number"
                   value={newStaff.reference_person_number}
-                  onChange={(e) => setNewStaff({...newStaff, reference_person_number: e.target.value})}
+                  onChange={(e) => setNewStaff({ ...newStaff, reference_person_number: e.target.value })}
                   placeholder="Their contact number"
                 />
               </div>
@@ -269,7 +272,7 @@ const EnhancedStaffForm = ({
             <Input
               id="father_name"
               value={newStaff.father_name}
-              onChange={(e) => setNewStaff({...newStaff, father_name: e.target.value})}
+              onChange={(e) => setNewStaff({ ...newStaff, father_name: e.target.value })}
               placeholder="Enter father's name"
             />
           </div>
@@ -278,7 +281,7 @@ const EnhancedStaffForm = ({
             <Input
               id="mother_name"
               value={newStaff.mother_name}
-              onChange={(e) => setNewStaff({...newStaff, mother_name: e.target.value})}
+              onChange={(e) => setNewStaff({ ...newStaff, mother_name: e.target.value })}
               placeholder="Enter mother's name"
             />
           </div>
@@ -287,7 +290,7 @@ const EnhancedStaffForm = ({
             <Input
               id="siblings"
               value={newStaff.siblings}
-              onChange={(e) => setNewStaff({...newStaff, siblings: e.target.value})}
+              onChange={(e) => setNewStaff({ ...newStaff, siblings: e.target.value })}
               placeholder="e.g., 2 brothers, 1 sister"
             />
           </div>
@@ -300,7 +303,7 @@ const EnhancedStaffForm = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="relationship_status">Relationship Status</Label>
-            <Select value={newStaff.relationship_status} onValueChange={(value) => setNewStaff({...newStaff, relationship_status: value})}>
+            <Select value={newStaff.relationship_status} onValueChange={(value) => setNewStaff({ ...newStaff, relationship_status: value })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
@@ -314,7 +317,7 @@ const EnhancedStaffForm = ({
           </div>
           <div>
             <Label htmlFor="marriage_preference">Marriage Preference</Label>
-            <Select value={newStaff.marriage_preference} onValueChange={(value) => setNewStaff({...newStaff, marriage_preference: value})}>
+            <Select value={newStaff.marriage_preference} onValueChange={(value) => setNewStaff({ ...newStaff, marriage_preference: value })}>
               <SelectTrigger>
                 <SelectValue placeholder="Your preference" />
               </SelectTrigger>
@@ -334,7 +337,7 @@ const EnhancedStaffForm = ({
         <Textarea
           id="about_me"
           value={newStaff.about_me}
-          onChange={(e) => setNewStaff({...newStaff, about_me: e.target.value})}
+          onChange={(e) => setNewStaff({ ...newStaff, about_me: e.target.value })}
           placeholder="Tell us about yourself, your interests, goals, etc."
           rows={4}
         />

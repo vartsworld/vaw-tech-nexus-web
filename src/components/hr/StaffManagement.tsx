@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Users, 
-  Plus, 
-  Search, 
+import {
+  Users,
+  Plus,
+  Search,
   Edit,
   Trash2,
   Mail,
@@ -134,7 +134,7 @@ const StaffManagement = () => {
     try {
       // Generate a random first-time passcode
       const firstTimePasscode = Math.random().toString(36).substring(2, 10);
-      
+
       // Create Supabase Auth user first
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newStaff.email,
@@ -216,7 +216,7 @@ const StaffManagement = () => {
 
       if (error) throw error;
 
-      setStaff(staff.map(member => 
+      setStaff(staff.map(member =>
         member.id === staffId ? { ...member, ...data } : member
       ));
 
@@ -263,9 +263,13 @@ const StaffManagement = () => {
 
   const getRoleBadgeColor = (role) => {
     switch (role) {
+      case 'super_admin': return 'bg-red-100 text-red-800';
       case 'hr': return 'bg-purple-100 text-purple-800';
       case 'manager': return 'bg-blue-100 text-blue-800';
+      case 'team_head': return 'bg-yellow-100 text-yellow-800';
       case 'lead': return 'bg-green-100 text-green-800';
+      case 'intern': return 'bg-orange-100 text-orange-800';
+      case 'staff': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -288,7 +292,7 @@ const StaffManagement = () => {
 
       // Generate a new random passcode
       const newPasscode = Math.random().toString(36).substring(2, 10);
-      
+
       // Update the auth user's password via edge function
       const { data: resetData, error: resetError } = await supabase.functions.invoke(
         'reset-staff-password',
@@ -303,7 +307,7 @@ const StaffManagement = () => {
       // Update staff_profiles
       const { error } = await supabase
         .from('staff_profiles')
-        .update({ 
+        .update({
           first_time_passcode: newPasscode,
           passcode_used: false,
           is_emoji_password: false,
@@ -314,8 +318,8 @@ const StaffManagement = () => {
       if (error) throw error;
 
       // Update local state
-      setStaff(staff.map(member => 
-        member.id === staffId 
+      setStaff(staff.map(member =>
+        member.id === staffId
           ? { ...member, first_time_passcode: newPasscode, passcode_used: false, is_emoji_password: false, emoji_password: null }
           : member
       ));
@@ -476,10 +480,13 @@ const StaffManagement = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="intern">Intern</SelectItem>
                 <SelectItem value="staff">Staff</SelectItem>
                 <SelectItem value="lead">Team Lead</SelectItem>
+                <SelectItem value="team_head">Team Head</SelectItem>
                 <SelectItem value="manager">Manager</SelectItem>
                 <SelectItem value="hr">HR</SelectItem>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
               </SelectContent>
             </Select>
             <div className="flex items-center gap-2">
@@ -616,28 +623,28 @@ const StaffManagement = () => {
                         size="sm"
                         onClick={() => {
                           setEditingStaff(member);
-                           setNewStaff({
-                             full_name: member.full_name,
-                             email: member.email,
-                             username: member.username,
-                             role: member.role,
-                             department_id: member.department_id || "",
-                             hire_date: member.hire_date || "",
-                             is_department_head: member.is_department_head,
-                             gender: member.gender || "",
-                             date_of_birth: member.date_of_birth || "",
-                             cv_url: member.cv_url || "",
-                             about_me: member.about_me || "",
-                             profile_photo_url: member.profile_photo_url || "",
-                             father_name: member.father_name || "",
-                             mother_name: member.mother_name || "",
-                             siblings: member.siblings || "",
-                             relationship_status: member.relationship_status || "",
-                             marriage_preference: member.marriage_preference || "",
-                             work_confidence_level: member.work_confidence_level || "",
-                             reference_person_name: member.reference_person_name || "",
-                             reference_person_number: member.reference_person_number || ""
-                           });
+                          setNewStaff({
+                            full_name: member.full_name,
+                            email: member.email,
+                            username: member.username,
+                            role: member.role,
+                            department_id: member.department_id || "",
+                            hire_date: member.hire_date || "",
+                            is_department_head: member.is_department_head,
+                            gender: member.gender || "",
+                            date_of_birth: member.date_of_birth || "",
+                            cv_url: member.cv_url || "",
+                            about_me: member.about_me || "",
+                            profile_photo_url: member.profile_photo_url || "",
+                            father_name: member.father_name || "",
+                            mother_name: member.mother_name || "",
+                            siblings: member.siblings || "",
+                            relationship_status: member.relationship_status || "",
+                            marriage_preference: member.marriage_preference || "",
+                            work_confidence_level: member.work_confidence_level || "",
+                            reference_person_name: member.reference_person_name || "",
+                            reference_person_number: member.reference_person_number || ""
+                          });
                           setIsEditDialogOpen(true);
                         }}
                       >

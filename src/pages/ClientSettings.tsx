@@ -189,45 +189,6 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                         </CardContent>
                     </Card>
 
-                    <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 overflow-hidden">
-                        <CardHeader>
-                            <CardTitle className="text-xl font-black text-white flex items-center gap-2">
-                                <Smartphone className="w-5 h-5 text-tech-gold" />
-                                Device Protocols
-                            </CardTitle>
-                            <CardDescription className="text-gray-400">Manage browser permissions for real-time collaboration.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {[
-                                { id: 'camera', label: 'Optical Sensor', desc: 'Camera access for video sync', icon: Camera },
-                                { id: 'microphone', label: 'Audio Matrix', desc: 'Microphone for voice comms', icon: RotateCcw },
-                                { id: 'geolocation', label: 'Regional GPS', desc: 'Used for service localization', icon: Globe },
-                            ].map((item) => (
-                                <div key={item.id} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl">
-                                    <div className="flex items-center gap-4">
-                                        <div className="p-3 bg-white/5 rounded-xl">
-                                            <item.icon className="w-5 h-5 text-gray-400" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold text-white">{item.label}</p>
-                                            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{item.desc}</p>
-                                        </div>
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => requestPermission(item.id)}
-                                        className={cn(
-                                            "border-tech-gold/20 text-[10px] font-black uppercase h-8 rounded-lg",
-                                            permissions[item.id] === 'granted' ? "text-green-500 border-green-500/20" : "text-tech-gold"
-                                        )}
-                                    >
-                                        {permissions[item.id] === 'granted' ? 'Authorized' : 'Authorize'}
-                                    </Button>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
 
                     <Card className="bg-black/40 backdrop-blur-xl border-tech-red/10 overflow-hidden">
                         <CardHeader>
