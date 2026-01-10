@@ -63,10 +63,7 @@ const ClientManagement = () => {
     try {
       const { data, error } = await supabase
         .from('clients')
-        .select(`
-          *,
-          client_projects (id, title, status)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       console.log('Client Fetch Result:', { data, error });
