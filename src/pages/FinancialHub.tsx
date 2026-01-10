@@ -105,7 +105,7 @@ const FinancialHub = ({ profile }: { profile: any }) => {
                         </div>
                         <h2 className="text-4xl font-black text-white mb-2">₹{totalPaid.toLocaleString()}</h2>
                         <div className="space-y-1 mt-4">
-                            <Progress value={(totalPaid / totalBudget) * 100} className="h-1 bg-white/5" indicatorClassName="bg-green-500" />
+                            <Progress value={(totalPaid / totalBudget) * 100} className="h-1 bg-white/5 [&>div]:bg-green-500" />
                             <p className="text-[10px] text-green-500 font-black text-right uppercase">{(totalPaid / totalBudget * 100).toFixed(1)}% COMPLETION</p>
                         </div>
                     </CardContent>

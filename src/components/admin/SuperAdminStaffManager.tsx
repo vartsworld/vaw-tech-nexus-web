@@ -54,6 +54,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 const SuperAdminStaffManager = () => {
     const [staff, setStaff] = useState<any[]>([]);

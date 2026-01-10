@@ -528,6 +528,195 @@ export type Database = {
         }
         Relationships: []
       }
+      client_credential_management: {
+        Row: {
+          action: string
+          client_id: string | null
+          created_at: string | null
+          id: string
+          managed_by: string | null
+        }
+        Insert: {
+          action: string
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          managed_by?: string | null
+        }
+        Update: {
+          action?: string
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          managed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_credential_management_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_data_shares: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          id: string
+          permission_level: string | null
+          project_id: string | null
+          shared_by: string | null
+          shared_with_dept_id: string | null
+          shared_with_staff_id: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          permission_level?: string | null
+          project_id?: string | null
+          shared_by?: string | null
+          shared_with_dept_id?: string | null
+          shared_with_staff_id?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          permission_level?: string | null
+          project_id?: string | null
+          shared_by?: string | null
+          shared_with_dept_id?: string | null
+          shared_with_staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_data_shares_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_data_shares_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_data_shares_shared_with_dept_id_fkey"
+            columns: ["shared_with_dept_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_documents: {
+        Row: {
+          amount: number | null
+          client_id: string | null
+          created_at: string | null
+          doc_type: string
+          file_url: string
+          id: string
+          project_id: string | null
+          status: string | null
+          title: string
+        }
+        Insert: {
+          amount?: number | null
+          client_id?: string | null
+          created_at?: string | null
+          doc_type: string
+          file_url: string
+          id?: string
+          project_id?: string | null
+          status?: string | null
+          title: string
+        }
+        Update: {
+          amount?: number | null
+          client_id?: string | null
+          created_at?: string | null
+          doc_type?: string
+          file_url?: string
+          id?: string
+          project_id?: string | null
+          status?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_feedback: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          id: string
+          message: string
+          project_id: string | null
+          status: string | null
+          subject: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+          project_id?: string | null
+          status?: string | null
+          subject: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          project_id?: string | null
+          status?: string | null
+          subject?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_feedback_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_feedback_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_logos: {
         Row: {
           created_at: string | null
@@ -557,6 +746,145 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      client_profiles: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          company_name: string
+          contact_person: string
+          created_at: string | null
+          email: string
+          id: string
+          phone: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          company_name: string
+          contact_person: string
+          created_at?: string | null
+          email: string
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          company_name?: string
+          contact_person?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      client_project_files: {
+        Row: {
+          created_at: string | null
+          file_category: string | null
+          file_name: string
+          file_size_bytes: number | null
+          file_type: string
+          file_url: string
+          id: string
+          project_id: string | null
+          uploaded_by_client: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_category?: string | null
+          file_name: string
+          file_size_bytes?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          project_id?: string | null
+          uploaded_by_client?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          file_category?: string | null
+          file_name?: string
+          file_size_bytes?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          project_id?: string | null
+          uploaded_by_client?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_projects: {
+        Row: {
+          amount_paid: number | null
+          client_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          next_payment_date: string | null
+          progress: number | null
+          project_type: string
+          renewal_date: string | null
+          status: string
+          title: string
+          total_amount: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount_paid?: number | null
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          next_payment_date?: string | null
+          progress?: number | null
+          project_type: string
+          renewal_date?: string | null
+          status?: string
+          title: string
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount_paid?: number | null
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          next_payment_date?: string | null
+          progress?: number | null
+          project_type?: string
+          renewal_date?: string | null
+          status?: string
+          title?: string
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
@@ -2717,6 +3045,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      super_admin_audit_logs: {
+        Row: {
+          action_type: string
+          admin_id: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: string | null
+          target_id: string | null
+        }
+        Insert: {
+          action_type: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_id?: string | null
+        }
+        Relationships: []
+      }
+      super_admins: {
+        Row: {
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      system_global_config: {
+        Row: {
+          description: string | null
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          description?: string | null
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          description?: string | null
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
       }
       tasks: {
         Row: {

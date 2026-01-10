@@ -21,7 +21,9 @@ import {
     Lock,
     Eye,
     Activity,
-    Award
+    Award,
+    AlertCircle,
+    CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +36,13 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const ClientSettings = ({ profile }: { profile: any }) => {
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        contact_person: profile?.contact_person || "",
+        company_name: profile?.company_name || "",
+        phone: profile?.phone || "",
+        address: profile?.address || ""
+    });
     const [permissions, setPermissions] = useState<any>({
         camera: 'prompt',
         microphone: 'prompt',

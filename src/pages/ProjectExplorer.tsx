@@ -26,7 +26,8 @@ import {
     FileType,
     Trash2,
     PlusCircle,
-    FolderOpen
+    FolderOpen,
+    FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -407,7 +408,7 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                     <span>Nexus Integration</span>
                                     <span className="text-tech-gold">{project.progress}%</span>
                                 </div>
-                                <Progress value={project.progress} className="h-1.5 bg-white/5" indicatorClassName="bg-tech-gold" />
+                                <Progress value={project.progress} className="h-1.5 bg-white/5 [&>div]:bg-tech-gold" />
                             </div>
                         </CardContent>
                     </Card>
