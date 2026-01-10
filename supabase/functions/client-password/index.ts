@@ -94,7 +94,7 @@ serve(async (req: Request) => {
 
     // Get the client profile
     const { data: clientProfile, error: profileError } = await supabase
-      .from('client_profiles')
+      .from('clients')
       .select('*')
       .eq('id', client_profile_id)
       .single();
@@ -140,7 +140,7 @@ serve(async (req: Request) => {
 
       // Update client profile with user_id
       const { error: updateError } = await supabase
-        .from('client_profiles')
+        .from('clients')
         .update({ user_id: newUser.user.id })
         .eq('id', client_profile_id);
 

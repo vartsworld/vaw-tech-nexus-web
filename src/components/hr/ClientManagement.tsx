@@ -61,7 +61,7 @@ const ClientManagement = () => {
   const fetchClients = async () => {
     try {
       const { data, error } = await supabase
-        .from('client_profiles')
+        .from('clients')
         .select(`
           *,
           client_projects (id, title, status)
@@ -110,7 +110,7 @@ const ClientManagement = () => {
       console.log('Creating client with user:', user.id);
 
       const { data, error } = await supabase
-        .from('client_profiles')
+        .from('clients')
         .insert({
           ...newClient,
           created_by: user.id
@@ -224,7 +224,7 @@ const ClientManagement = () => {
   const handleEditClient = async () => {
     try {
       const { error } = await supabase
-        .from('client_profiles')
+        .from('clients')
         .update({
           company_name: editingClient.company_name,
           contact_person: editingClient.contact_person,
@@ -267,7 +267,7 @@ const ClientManagement = () => {
 
     try {
       const { error } = await supabase
-        .from('client_profiles')
+        .from('clients')
         .delete()
         .eq('id', clientId);
 
