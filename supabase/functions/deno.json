@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "esnext",
+    "lib": ["esnext", "dom", "deno.ns", "deno.window"], 
+    "allowJs": true,
+    "strict": false
+  },
+  "importMap": "import_map.json"
+}
