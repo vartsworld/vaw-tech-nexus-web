@@ -104,7 +104,7 @@ const ClientManagement = () => {
       console.log('Creating client with user:', user.id);
 
       const { data, error } = await supabase
-        .from('clients')
+        .from('client_profiles')
         .insert({
           ...newClient,
           created_by: user.id
@@ -146,7 +146,7 @@ const ClientManagement = () => {
   const handleEditClient = async () => {
     try {
       const { error } = await supabase
-        .from('clients')
+        .from('client_profiles')
         .update({
           company_name: editingClient.company_name,
           contact_person: editingClient.contact_person,
@@ -189,7 +189,7 @@ const ClientManagement = () => {
 
     try {
       const { error } = await supabase
-        .from('clients')
+        .from('client_profiles')
         .delete()
         .eq('id', clientId);
 
