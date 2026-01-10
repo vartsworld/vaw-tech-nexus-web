@@ -60,15 +60,24 @@ const ClientDashboard = () => {
             .from("client_profiles")
             .select("*")
             .eq("user_id", user.id)
-            .single();
+            .maybeSingle();
 
-        if (error || !profile) {
-            toast.error("Profile not found");
-            navigate("/client/login");
-            return;
+        // Even if error or no profile, we allow access as requested
+        if (error) {
+            console.error("Error fetching profile:", error);
         }
 
-        setProfile(profile);
+        if (!profile) {
+            setProfile({
+                contact_person: "Valued Client",
+                company_name: "Client Account",
+                email: user.email,
+                id: "temp",
+                user_id: user.id
+            });
+        } else {
+            setProfile(profile);
+        }
         setLoading(false);
     };
 

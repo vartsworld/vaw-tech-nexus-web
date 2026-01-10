@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Users,
@@ -16,7 +18,8 @@ import {
   Building2,
   Clock,
   Moon,
-  Sun
+  Sun,
+  LogOut
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -50,6 +53,12 @@ const HRDashboard = () => {
   });
   const [recentActivities, setRecentActivities] = useState([]);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/staff/login");
+  };
 
   useEffect(() => {
     fetchHRProfile();
@@ -76,13 +85,38 @@ const HRDashboard = () => {
   const fetchHRProfile = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        navigate("/staff/login");
+        return;
+      }
 
       const { data: profile, error } = await supabase
         .from('staff_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
+      if (!profile) {
+        // No profile found, redirect to 404 or login
+        navigate("/404");
+        return;
+      }
+
+      // Access Control: Only HR and Super Admin
+      if (profile.role !== 'hr' && profile.role !== 'super_admin') {
+        toast({
+          title: "Access Denied",
+          description: "You do not have permission to view this dashboard.",
+          variant: "destructive"
+        });
+        navigate("/404"); // As requested
+        return;
+      }
 
       if (error) throw error;
       setHrProfile(profile);
@@ -241,6 +275,15 @@ const HRDashboard = () => {
               <Clock className="h-3 w-3 md:h-4 md:w-4 mr-1" />
               <span className="hidden sm:inline">Last updated: </span>{new Date().toLocaleTimeString()}
             </Badge>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={handleLogout}
+              className="gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </Button>
           </div>
         </div>
 
@@ -405,7 +448,7 @@ const HRDashboard = () => {
         </Tabs>
       </div>
       <PWAInstallPrompt />
-    </div>
+    </div >
   );
 };
 

@@ -82,8 +82,8 @@ serve(async (req: Request) => {
       .eq('user_id', caller.id)
       .single();
 
-    const isHR = staffProfile?.role === 'hr' || staffProfile?.role === 'admin';
-    const isSuperAdmin = !!superAdmin;
+    const isHR = staffProfile?.role === 'hr' || staffProfile?.role === 'admin' || staffProfile?.role === 'super_admin';
+    const isSuperAdmin = !!superAdmin || staffProfile?.role === 'super_admin';
 
     if (!isHR && !isSuperAdmin) {
       return new Response(JSON.stringify({ error: 'Insufficient permissions. Only HR or Super Admin can manage client credentials.' }), {

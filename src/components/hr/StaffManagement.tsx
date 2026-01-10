@@ -157,7 +157,7 @@ const StaffManagement = () => {
           ...newStaff,
           user_id: authData.user.id,
           department_id: newStaff.department_id || null,
-          role: newStaff.role as 'hr' | 'staff',
+          role: newStaff.role as string,
           first_time_passcode: firstTimePasscode,
           application_status: 'approved'
         })
@@ -199,7 +199,9 @@ const StaffManagement = () => {
       console.error('Error adding staff:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to add staff member.",
+        description: error.message?.includes("enum")
+          ? "The selected role is not supported by the database schema."
+          : (error.message || "Failed to add staff member."),
         variant: "destructive",
       });
     }
@@ -228,7 +230,9 @@ const StaffManagement = () => {
       console.error('Error updating staff:', error);
       toast({
         title: "Error",
-        description: "Failed to update staff member.",
+        description: error.message?.includes("enum")
+          ? "The selected role is not supported by the database schema."
+          : (error.message || "Failed to update staff member."),
         variant: "destructive",
       });
     }
