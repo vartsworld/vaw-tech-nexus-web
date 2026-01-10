@@ -32,7 +32,7 @@ serve(async (req) => {
       });
     }
 
-    const { client_profile_id, email, action } = await req.json();
+    const { client_profile_id, email, action, password } = await req.json();
 
     // Basic input validation
     if (!client_profile_id || !email || !action) {
@@ -105,8 +105,8 @@ serve(async (req) => {
       });
     }
 
-    // Generate new password
-    const newPassword = generatePassword(12);
+    // Use provided password or generate new one
+    const finalPassword = password || generatePassword(12);
 
     if (action === 'create') {
       // Check if user already exists
@@ -120,7 +120,7 @@ serve(async (req) => {
       // Create new auth user
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: email,
-        password: newPassword,
+        password: finalPassword,
         email_confirm: true, // Auto-confirm email
         user_metadata: {
           role: 'client',
@@ -166,7 +166,7 @@ serve(async (req) => {
         success: true,
         message: 'Client credentials created successfully',
         email: email,
-        password: newPassword, // Return password for HR to share with client
+        password: finalPassword, // Return password for HR to share with client
         note: 'Please share these credentials securely with the client. They should change their password after first login.'
       }), {
         status: 200,
@@ -185,7 +185,7 @@ serve(async (req) => {
       // Update the user's password
       const { error: resetError } = await supabase.auth.admin.updateUserById(
         clientProfile.user_id,
-        { password: newPassword }
+        { password: finalPassword }
       );
 
       if (resetError) {
@@ -209,7 +209,7 @@ serve(async (req) => {
         success: true,
         message: 'Client password reset successfully',
         email: email,
-        password: newPassword,
+        password: finalPassword,
         note: 'Please share this new password securely with the client.'
       }), {
         status: 200,

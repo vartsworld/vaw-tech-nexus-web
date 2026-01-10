@@ -17,7 +17,10 @@ import {
   MapPin,
   Edit,
   Trash2,
-  Key
+  Key,
+  Lock,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -30,8 +33,7 @@ const ClientManagement = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [selectedClientForPassword, setSelectedClientForPassword] = useState<any>(null);
-  const [generatedCredentials, setGeneratedCredentials] = useState<{ email: string; password: string } | null>(null);
-  const [isGeneratingPassword, setIsGeneratingPassword] = useState(false);
+
   const [editingClient, setEditingClient] = useState(null);
   const [newClient, setNewClient] = useState({
     company_name: "",
@@ -42,6 +44,10 @@ const ClientManagement = () => {
     notes: "",
     status: "active"
   });
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -54,30 +60,16 @@ const ClientManagement = () => {
 
   const fetchClients = async () => {
     try {
-      const { data: clientsData, error: clientsError } = await supabase
+      const { data, error } = await supabase
         .from('client_profiles')
-        .select('*')
+        .select(`
+          *,
+          client_projects (id, title, status)
+        `)
         .order('created_at', { ascending: false });
 
-      if (clientsError) throw clientsError;
-
-      // Fetch projects separately to avoid join error
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('client_projects')
-        .select('id, title, status, client_id');
-
-      if (projectsError) {
-        console.error('Error fetching projects:', projectsError);
-        // Don't fail the whole page if projects fail
-      }
-
-      // Merge projects into clients
-      const formattedClients = (clientsData || []).map(client => ({
-        ...client,
-        client_projects: (projectsData || []).filter(p => p.client_id === client.id)
-      }));
-
-      setClients(formattedClients);
+      if (error) throw error;
+      setClients(data || []);
     } catch (error) {
       console.error('Error fetching clients:', error);
       toast({
@@ -154,6 +146,78 @@ const ClientManagement = () => {
         description: error.message || "Failed to create client. Check if you have proper permissions.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleSavePassword = async () => {
+    if (!selectedClientForPassword) return;
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSavingPassword(true);
+    const action = selectedClientForPassword.user_id ? 'reset' : 'create';
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("You must be logged in.");
+      }
+
+      const res = await fetch(`https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/client-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          client_profile_id: selectedClientForPassword.id,
+          email: selectedClientForPassword.email,
+          action,
+          password: password
+        })
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+
+      toast({
+        title: "Success",
+        description: `Password ${action === 'create' ? 'created' : 'updated'} successfully for ${selectedClientForPassword.company_name}.`
+      });
+
+      // Refresh clients to update user_id linkage if created
+      await fetchClients();
+
+      setIsPasswordDialogOpen(false);
+      setPassword("");
+      setConfirmPassword("");
+      setSelectedClientForPassword(null);
+
+    } catch (error: any) {
+      console.error('Error saving password:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save password.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingPassword(false);
     }
   };
 
@@ -396,32 +460,24 @@ const ClientManagement = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={async () => {
-                          const action = client.user_id ? 'reset' : 'create';
-                          const { data: { session } } = await supabase.auth.getSession();
-                          if (!session) {
-                            toast({ title: "Error", description: "Please log in first", variant: "destructive" });
+                        onClick={() => {
+                          if (!client.email) {
+                            toast({
+                              title: "Missing Email",
+                              description: "Please update the client email before creating a password.",
+                              variant: "destructive"
+                            });
                             return;
                           }
-                          toast({ title: "Generating...", description: "Creating credentials for " + client.company_name });
-                          try {
-                            const res = await fetch(`https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/client-password`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                              body: JSON.stringify({ client_profile_id: client.id, email: client.email, action })
-                            });
-                            const result = await res.json();
-                            if (!res.ok) throw new Error(result.error);
-                            toast({ title: "Success!", description: `Email: ${result.email} | Password: ${result.password}` });
-                            navigator.clipboard.writeText(`Email: ${result.email}\nPassword: ${result.password}`);
-                          } catch (e: any) {
-                            toast({ title: "Error", description: e.message, variant: "destructive" });
-                          }
+                          setSelectedClientForPassword(client);
+                          setPassword("");
+                          setConfirmPassword("");
+                          setIsPasswordDialogOpen(true);
                         }}
-                        className="text-tech-red"
-                        title={client.user_id ? "Reset Password" : "Create Login"}
+                        className="text-blue-600"
+                        title={client.user_id ? "Change Password" : "Create Login"}
                       >
-                        <Key className="h-4 w-4" />
+                        <Lock className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -547,6 +603,67 @@ const ClientManagement = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Password Management Dialog */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{selectedClientForPassword?.user_id ? 'Change Password' : 'Create Client Login'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-3 bg-blue-50 text-blue-700 rounded-md text-sm">
+              Creating login credentials for <strong>{selectedClientForPassword?.email}</strong>
+            </div>
+
+            <div>
+              <Label htmlFor="new-password">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSavePassword} disabled={isSavingPassword}>
+                {isSavingPassword ? "Saving..." : "Save Password"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
