@@ -93,11 +93,13 @@ serve(async (req: Request) => {
     }
 
     // Get the client profile
+    console.log(`[${new Date().toISOString()}] Fetching client profile for ID: ${client_profile_id}`);
     const { data: clientProfile, error: profileError } = await supabase
       .from('clients')
       .select('*')
       .eq('id', client_profile_id)
       .single();
+    console.log(`[${new Date().toISOString()}] Client profile fetch result:`, { found: !!clientProfile, error: profileError });
 
     if (profileError || !clientProfile) {
       return new Response(JSON.stringify({ error: 'Client profile not found' }), {
@@ -119,6 +121,7 @@ serve(async (req: Request) => {
       }
 
       // Create new auth user
+      console.log(`[${new Date().toISOString()}] Creating auth user for email: ${email}`);
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: email,
         password: finalPassword,
@@ -129,6 +132,7 @@ serve(async (req: Request) => {
           company_name: clientProfile.company_name
         }
       });
+      console.log(`[${new Date().toISOString()}] User creation result:`, { userId: newUser?.user?.id, error: createError });
 
       if (createError) {
         console.error('Error creating user:', createError);
@@ -139,10 +143,12 @@ serve(async (req: Request) => {
       }
 
       // Update client profile with user_id
+      console.log(`[${new Date().toISOString()}] Updating client profile ${client_profile_id} with user_id: ${newUser.user.id}`);
       const { error: updateError } = await supabase
         .from('clients')
         .update({ user_id: newUser.user.id })
         .eq('id', client_profile_id);
+      console.log(`[${new Date().toISOString()}] Client profile update result:`, { error: updateError });
 
       if (updateError) {
         console.error('Error updating client profile:', updateError);

@@ -32,20 +32,8 @@ const ClientLogin = () => {
             if (error) throw error;
 
             if (data.user) {
-                // Check if user is a client (e.g. check client_profiles table)
-                const { data: profile, error: profileError } = await supabase
-                    .from("client_profiles")
-                    .select("id")
-                    .eq("user_id", data.user.id)
-                    .single();
-
-                if (profileError || !profile) {
-                    // If not in client_profiles, maybe check other role tables or just deny access to client portal
-                    toast.error("Access denied. This portal is for clients only.");
-                    await supabase.auth.signOut();
-                    return;
-                }
-
+                // Allow any authenticated user to access the client portal
+                // This enables clients, PAs, assistants, or anyone with valid credentials to access
                 toast.success("Welcome to your dashboard!");
                 navigate("/client/dashboard");
             }
