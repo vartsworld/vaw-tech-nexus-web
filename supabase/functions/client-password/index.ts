@@ -1,6 +1,6 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"; 
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -148,7 +148,10 @@ serve(async (req: Request) => {
         console.error('Error updating client profile:', updateError);
         // Try to clean up the created user
         await supabase.auth.admin.deleteUser(newUser.user.id);
-        return new Response(JSON.stringify({ error: 'Failed to link user to client profile' }), {
+        return new Response(JSON.stringify({
+          error: 'Failed to link user to client profile',
+          details: updateError.message
+        }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
