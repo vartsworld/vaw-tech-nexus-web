@@ -166,6 +166,18 @@ const StaffManagement = () => {
 
       if (error) throw error;
 
+      // If role is super_admin, also add to super_admins table
+      if (newStaff.role === 'super_admin') {
+        const { error: superAdminError } = await supabase
+          .from('super_admins')
+          .insert({ user_id: authData.user.id });
+
+        if (superAdminError && !superAdminError.message.includes('unique constraint')) {
+          console.error('Error adding to super_admins:', superAdminError);
+          // Don't throw here, just log, as the main profile was created
+        }
+      }
+
       setStaff([...staff, data]);
       setIsAddDialogOpen(false);
       setNewStaff({
@@ -217,6 +229,16 @@ const StaffManagement = () => {
         .single();
 
       if (error) throw error;
+
+      // Sync with super_admins table if role changed
+      if (updates.role) {
+        if (updates.role === 'super_admin') {
+          await supabase.from('super_admins').upsert({ user_id: data.user_id });
+        } else {
+          // If role changed from super_admin to something else, remove from super_admins
+          await supabase.from('super_admins').delete().eq('user_id', data.user_id);
+        }
+      }
 
       setStaff(staff.map(member =>
         member.id === staffId ? { ...member, ...data } : member

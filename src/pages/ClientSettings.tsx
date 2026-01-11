@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Card,
     CardContent,
@@ -35,7 +35,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const ClientSettings = ({ profile }: { profile: any }) => {
+const ClientSettings = ({ profile, onProfileUpdate }: { profile: any, onProfileUpdate?: () => void }) => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         contact_person: profile?.contact_person || "",
@@ -43,6 +43,18 @@ const ClientSettings = ({ profile }: { profile: any }) => {
         phone: profile?.phone || "",
         address: profile?.address || ""
     });
+
+    useEffect(() => {
+        if (profile) {
+            setFormData({
+                contact_person: profile.contact_person || "",
+                company_name: profile.company_name || "",
+                phone: profile.phone || "",
+                address: profile.address || ""
+            });
+        }
+    }, [profile]);
+
     const [permissions, setPermissions] = useState<any>({
         camera: 'prompt',
         microphone: 'prompt',
@@ -111,6 +123,7 @@ const ClientSettings = ({ profile }: { profile: any }) => {
 
             if (error) throw error;
             toast.success("Profile nexus synchronized.");
+            if (onProfileUpdate) onProfileUpdate();
         } catch (error: any) {
             toast.error(`Update failure: ${error.message}`);
         } finally {
@@ -122,8 +135,8 @@ const ClientSettings = ({ profile }: { profile: any }) => {
         <div className="space-y-8 pb-12">
             {/* Header */}
             <div>
-                <h1 className="text-3xl font-black tracking-tight text-white mb-2">CLIENT <span className="text-tech-gold uppercase">SETTINGS</span></h1>
-                <p className="text-gray-400 font-medium italic">Configure your nexus environment parameters and security protocols.</p>
+                <h1 className="text-3xl font-black tracking-tight text-white mb-2">ACCOUNT <span className="text-tech-gold uppercase">SETTINGS</span></h1>
+                <p className="text-gray-400 font-medium italic">Manage your profile, security, and notification preferences.</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -134,15 +147,15 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                         <CardHeader>
                             <CardTitle className="text-xl font-black text-white flex items-center gap-2">
                                 <User className="w-5 h-5 text-tech-gold" />
-                                Profile Architecture
+                                Profile Details
                             </CardTitle>
-                            <CardDescription className="text-gray-400">Update your primary identity within the digital matrix.</CardDescription>
+                            <CardDescription className="text-gray-400">Update your personal and company information.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={handleUpdateProfile} className="space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <Label className="text-xs font-black text-gray-500 uppercase tracking-widest">Full Identity Name</Label>
+                                        <Label className="text-xs font-black text-gray-500 uppercase tracking-widest">Full Name</Label>
                                         <Input
                                             value={formData.contact_person}
                                             onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
@@ -150,7 +163,7 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-xs font-black text-gray-500 uppercase tracking-widest">Corporate Entity</Label>
+                                        <Label className="text-xs font-black text-gray-500 uppercase tracking-widest">Company Name</Label>
                                         <Input
                                             value={formData.company_name}
                                             onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
@@ -158,11 +171,11 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-xs font-black text-gray-500 uppercase tracking-widest">Digital Comm Line (Email)</Label>
+                                        <Label className="text-xs font-black text-gray-500 uppercase tracking-widest">Email Address</Label>
                                         <Input value={profile.email} disabled className="bg-black/40 border-tech-gold/10 text-gray-500 rounded-xl h-12 cursor-not-allowed" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-xs font-black text-gray-500 uppercase tracking-widest">Signal Frequency (Phone)</Label>
+                                        <Label className="text-xs font-black text-gray-500 uppercase tracking-widest">Phone Number</Label>
                                         <Input
                                             value={formData.phone}
                                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -171,7 +184,7 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-xs font-black text-gray-500 uppercase tracking-widest">Regional Base Address</Label>
+                                    <Label className="text-xs font-black text-gray-500 uppercase tracking-widest">Address</Label>
                                     <Input
                                         value={formData.address}
                                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -183,7 +196,7 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                                     className="bg-tech-gold hover:bg-white text-black font-black h-12 px-8 rounded-xl transition-all shadow-lg shadow-tech-gold/10"
                                     disabled={loading}
                                 >
-                                    {loading ? "Synchronizing..." : "Update Nexus Identity"}
+                                    {loading ? "Saving..." : "Save Changes"}
                                 </Button>
                             </form>
                         </CardContent>
@@ -194,9 +207,9 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                         <CardHeader>
                             <CardTitle className="text-xl font-black text-white flex items-center gap-2">
                                 <Shield className="w-5 h-5 text-tech-red" />
-                                Nexus Guard
+                                Security
                             </CardTitle>
-                            <CardDescription className="text-gray-400">Security protocols and access control.</CardDescription>
+                            <CardDescription className="text-gray-400">Security preferences and access control.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl">
@@ -241,9 +254,27 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                 <div className="space-y-6">
                     <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10">
                         <CardHeader>
-                            <CardTitle className="text-sm font-black uppercase tracking-widest text-tech-gold">Signal Alerts Status</CardTitle>
+                            <CardTitle className="text-sm font-black uppercase tracking-widest text-tech-gold">Notification Preferences</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
+                            <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-tech-gold/10 rounded-xl">
+                                        <Bell className="w-6 h-6 text-tech-gold" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-white">Device Notifications</p>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Browser alerts</p>
+                                    </div>
+                                </div>
+                                <Switch 
+                                    checked={permissions.notifications === 'granted'}
+                                    onCheckedChange={() => requestPermission('notifications')}
+                                    disabled={permissions.notifications === 'denied'}
+                                />
+                            </div>
+
+                            <div className="h-px bg-white/5 my-2" />
                             {[
                                 { label: "Critical Updates", desc: "Project phase mutations", icon: Activity, status: "Active" },
                                 { label: "Financial Signals", desc: "Invoices and receipts", icon: CreditCard, status: "Active" },

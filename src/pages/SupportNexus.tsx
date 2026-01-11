@@ -106,157 +106,163 @@ const SupportNexus = ({ profile }: { profile: any }) => {
 
     return (
         <div className="space-y-8 pb-12">
-            {/* Header */}
+            {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-white mb-2">SUPPORT <span className="text-tech-gold uppercase">NEXUS</span></h1>
-                    <p className="text-gray-400 font-medium italic">Establishing direct connection protocols with the technical core.</p>
+                    <h1 className="text-3xl font-black tracking-tight text-white mb-2">SUPPORT <span className="text-tech-gold uppercase">CENTER</span></h1>
+                    <p className="text-gray-400 font-medium italic">Direct support channel.</p>
                 </div>
-                <div className="flex items-center gap-4 bg-tech-gold/10 border border-tech-gold/20 p-3 px-6 rounded-2xl">
-                    <div className="p-2 bg-tech-gold rounded-full">
-                        <Phone className="w-4 h-4 text-black" />
-                    </div>
-                    <div>
-                        <p className="text-[10px] font-black text-tech-gold uppercase tracking-widest">Priority Hotline</p>
-                        <p className="text-sm font-black text-white">+91 91100 85987</p>
-                    </div>
+                <div className="flex items-center gap-3">
+                    <Button variant="outline" className="border-tech-gold/30 text-tech-gold hover:bg-tech-gold/10 font-bold h-12 px-6 rounded-xl">
+                        <PhoneCall className="w-4 h-4 mr-2" /> Phone Support
+                    </Button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                {/* Transmission Controller */}
-                <div className="lg:col-span-3 space-y-6">
-                    <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 relative overflow-hidden group">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-tech-gold via-tech-red to-tech-gold" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Support Form */}
+                <Card className="lg:col-span-2 bg-black/40 backdrop-blur-xl border-tech-gold/10 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-tech-gold to-transparent opacity-50" />
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-white">
+                            <MessageSquare className="w-5 h-5 text-tech-gold" />
+                            Create Ticket
+                        </CardTitle>
+                        <CardDescription>
+                            Submit a new support request.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="type" className="text-gray-400">Issue Type</Label>
+                                <Select value={newSignal.type} onValueChange={(v) => setNewSignal({ ...newSignal, type: v })}>
+                                    <SelectTrigger className="bg-white/5 border-white/10 text-white h-12 rounded-xl">
+                                        <SelectValue placeholder="Select Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="technical">Technical Issue</SelectItem>
+                                        <SelectItem value="billing">Billing Inquiry</SelectItem>
+                                        <SelectItem value="project">Project Update</SelectItem>
+                                        <SelectItem value="other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="priority" className="text-gray-400">Priority</Label>
+                                <Select value={newSignal.priority} onValueChange={(v) => setNewSignal({ ...newSignal, priority: v })}>
+                                    <SelectTrigger className="bg-white/5 border-white/10 text-white h-12 rounded-xl">
+                                        <SelectValue placeholder="Select Priority" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="low">Low Priority</SelectItem>
+                                        <SelectItem value="medium">Medium Priority</SelectItem>
+                                        <SelectItem value="high">High Priority</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="subject" className="text-gray-400">Subject</Label>
+                            <Input
+                                id="subject"
+                                value={newSignal.subject}
+                                onChange={(e) => setNewSignal({ ...newSignal, subject: e.target.value })}
+                                className="bg-white/5 border-white/10 text-white h-12 rounded-xl"
+                                placeholder="Brief description of the issue"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="message" className="text-gray-400">Details</Label>
+                            <Textarea
+                                id="message"
+                                value={newSignal.message}
+                                onChange={(e) => setNewSignal({ ...newSignal, message: e.target.value })}
+                                className="bg-white/5 border-white/10 text-white min-h-[150px] rounded-xl"
+                                placeholder="Provide detailed information about your request..."
+                            />
+                        </div>
+
+                        <Button
+                            onClick={handleSubmitSignal}
+                            disabled={isSubmitting}
+                            className="w-full bg-tech-gold hover:bg-white text-black font-bold h-12 rounded-xl transition-all shadow-lg shadow-tech-gold/20"
+                        >
+                            {isSubmitting ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                    Sending...
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <Send className="w-4 h-4" />
+                                    SUBMIT TICKET
+                                </div>
+                            )}
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                {/* History & Stats */}
+                <div className="space-y-6">
+                    <Card className="bg-blue-500/10 border-blue-500/20">
                         <CardHeader>
-                            <CardTitle className="text-2xl font-black text-white">Signal Transmitter</CardTitle>
-                            <CardDescription className="text-gray-400 font-medium">Broadcast your signal across the nexus infrastructure.</CardDescription>
+                            <CardTitle className="text-sm text-blue-400 flex items-center gap-2">
+                                <Zap className="w-4 h-4" />
+                                Support SLA
+                            </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handleSignalTransmission} className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-black text-gray-400 uppercase tracking-widest">Signal Vector</Label>
-                                        <Select value={type} onValueChange={setType}>
-                                            <SelectTrigger className="bg-white/5 border-tech-gold/20 text-white rounded-xl h-12">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-black/90 border-tech-gold/20 text-white backdrop-blur-xl">
-                                                {signalTypes.map(s => (
-                                                    <SelectItem key={s.id} value={s.id} className="focus:bg-tech-gold/10 focus:text-tech-gold">
-                                                        <div className="flex items-center gap-2">
-                                                            <s.icon className={cn("w-4 h-4", s.color)} />
-                                                            <span className="font-bold">{s.label}</span>
-                                                        </div>
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-xs font-black text-gray-400 uppercase tracking-widest">Signal Subject</Label>
-                                        <Input
-                                            placeholder="Core identification"
-                                            className="bg-white/5 border-tech-gold/20 text-white rounded-xl h-12 focus:ring-tech-gold/20"
-                                            value={subject}
-                                            onChange={(e) => setSubject(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-black text-gray-400 uppercase tracking-widest">Signal Amplitude (Details)</Label>
-                                    <Textarea
-                                        placeholder="Detailed transmission content..."
-                                        className="bg-white/5 border-tech-gold/20 text-white rounded-2xl min-h-[160px] focus:ring-tech-gold/20 font-medium"
-                                        value={message}
-                                        onChange={(e) => setMessage(e.target.value)}
-                                    />
-                                </div>
-
-                                <Button
-                                    type="submit"
-                                    className="w-full bg-tech-gold hover:bg-white text-black font-black h-14 rounded-2xl transition-all shadow-xl shadow-tech-gold/10"
-                                    disabled={isSubmitting}
-                                >
-                                    {isSubmitting ? (
-                                        <Loader2 className="w-6 h-6 animate-spin" />
-                                    ) : (
-                                        <span className="flex items-center gap-2">
-                                            INITIALIZE TRANSMISSION <Send className="w-5 h-5" />
-                                        </span>
-                                    )}
-                                </Button>
-                            </form>
+                            <div className="flex items-end gap-2">
+                                <span className="text-3xl font-black text-white">&lt; 2hr</span>
+                                <span className="text-xs text-gray-400 mb-1.5">Response time</span>
+                            </div>
                         </CardContent>
                     </Card>
-                </div>
 
-                {/* Transmission Archive */}
-                <div className="lg:col-span-2 space-y-6">
-                    <h2 className="text-xl font-bold flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-tech-purple" />
-                        Signal History
-                    </h2>
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-tech-gold" />
+                        Ticket History
+                    </h3>
 
-                    <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+                    <div className="space-y-3">
                         {loading ? (
-                            [1, 2, 3].map(i => <div key={i} className="h-24 bg-white/5 rounded-2xl animate-pulse" />)
-                        ) : feedback.length > 0 ? (
-                            feedback.map((f, i) => (
-                                <motion.div
-                                    key={f.id}
-                                    initial={{ opacity: 0, x: 20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.1 }}
-                                >
-                                    <Card className="bg-white/5 border-white/5 hover:border-tech-gold/20 transition-all group overflow-hidden">
-                                        <CardContent className="p-5">
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-black/40 rounded-lg group-hover:text-tech-gold transition-colors">
-                                                        {signalTypes.find(t => t.id === f.type)?.icon({ className: "w-4 h-4" }) || <MessageCircle className="w-4 h-4" />}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-white group-hover:text-tech-gold transition-colors truncate max-w-[150px]">{f.subject}</p>
-                                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{new Date(f.created_at).toLocaleDateString()}</p>
-                                                    </div>
-                                                </div>
-                                                <Badge className={cn(
-                                                    "text-[8px] uppercase font-black tracking-[0.1em]",
-                                                    f.status === 'pending' ? "bg-tech-gold/10 text-tech-gold border-tech-gold/20" : "bg-green-500/10 text-green-500 border-green-500/20"
-                                                )}>
-                                                    {f.status}
-                                                </Badge>
-                                            </div>
-                                            <p className="text-xs text-gray-400 line-clamp-2 font-medium bg-black/20 p-3 rounded-lg border border-white/5 italic">
-                                                "{f.message}"
-                                            </p>
-                                        </CardContent>
-                                    </Card>
-                                </motion.div>
+                            <div className="h-40 bg-white/5 rounded-2xl animate-pulse" />
+                        ) : signals.length > 0 ? (
+                            signals.map((signal) => (
+                                <div key={signal.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-tech-gold/30 transition-all group cursor-pointer">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <Badge variant="outline" className={cn(
+                                            "border-0 text-[10px] uppercase font-black px-1.5 py-0.5",
+                                            signal.status === 'resolved' ? "bg-green-500/20 text-green-500" :
+                                                signal.status === 'pending' ? "bg-yellow-500/20 text-yellow-500" :
+                                                    "bg-blue-500/20 text-blue-500"
+                                        )}>
+                                            {signal.status}
+                                        </Badge>
+                                        <span className="text-[10px] text-gray-500 font-mono">
+                                            {new Date(signal.created_at).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                    <h4 className="font-bold text-white text-sm mb-1 group-hover:text-tech-gold transition-colors truncate">
+                                        {signal.subject}
+                                    </h4>
+                                    <p className="text-xs text-gray-500 truncate">
+                                        {signal.message}
+                                    </p>
+                                </div>
                             ))
                         ) : (
-                            <div className="text-center py-20 bg-black/20 border border-dashed border-tech-gold/10 rounded-3xl opacity-40">
-                                <Shield className="w-12 h-12 mx-auto mb-4" />
-                                <p className="text-xs font-black uppercase tracking-widest">No previous signal data found</p>
-                            </div>
+                            <p className="text-gray-500 text-sm text-center py-8 italic">
+                                No history found.
+                            </p>
                         )}
                     </div>
-
-                    <Card className="bg-tech-gold/5 border-tech-gold/10">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-xs font-black uppercase tracking-tighter text-tech-gold">Nexus SLA</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-xs text-gray-400 font-medium leading-relaxed">
-                                Signal response latency is currently within the <span className="text-white font-bold">4-hour window</span> for Enterprise clients. Anomalies are prioritized for immediate technical remediation.
-                            </p>
-                        </CardContent>
-                    </Card>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

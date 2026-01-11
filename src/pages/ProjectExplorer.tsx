@@ -299,10 +299,10 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const tabs = [
-        { id: "overview", label: "Protocol Overview", icon: ActivityIcon },
-        { id: "files", label: "Asset Matrix", icon: FolderIcon },
-        { id: "milestones", label: "Timeline Nodes", icon: TimelineIcon },
-        { id: "feedback", label: "Signal Feed", icon: MessageIcon },
+        { id: "overview", label: "Overview", icon: ActivityIcon },
+        { id: "files", label: "Files", icon: FolderIcon },
+        { id: "milestones", label: "Milestones", icon: TimelineIcon },
+        { id: "feedback", label: "Feedback", icon: MessageIcon },
     ];
 
     function ActivityIcon() { return <Activity className="w-4 h-4" />; }
@@ -347,7 +347,7 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                         disabled={isUploading}
                     >
                         <Upload className={cn("w-4 h-4", isUploading && "animate-bounce")} />
-                        {isUploading ? "Uploading..." : "Inject Assets"}
+                        {isUploading ? "Uploading..." : "Upload Files"}
                     </Button>
                     <input
                         type="file"
@@ -357,7 +357,7 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                         onChange={(e) => onUpload(e.target.files)}
                     />
                     <Button className="bg-tech-gold hover:bg-white text-black font-bold h-12 rounded-xl px-6">
-                        Secure Update Request
+                        Request Update
                     </Button>
                 </div>
             </div>

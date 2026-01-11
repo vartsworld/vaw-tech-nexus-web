@@ -29,9 +29,11 @@ import ProjectExplorer from "./ProjectExplorer";
 import FinancialHub from "./FinancialHub";
 import SupportNexus from "./SupportNexus";
 import ClientSettings from "./ClientSettings";
+import ClientNotificationCenter from "@/components/client/NotificationCenter";
 
 const ClientDashboard = () => {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    // Sidebar closed by default on mobile (< 1024px), open on desktop
+    const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024);
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
@@ -40,13 +42,27 @@ const ClientDashboard = () => {
     useEffect(() => {
         checkUser();
 
+        // Handle window resize
+        const handleResize = () => {
+            if (window.innerWidth < 1024) {
+                setIsSidebarOpen(false);
+            } else {
+                setIsSidebarOpen(true);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+
         // Auto-refresh every 5 minutes as per requirement
         const interval = setInterval(() => {
             checkUser();
-            toast.info("Nexus data synchronized.", { duration: 2000 });
+            toast.info("Data synchronized.", { duration: 2000 });
         }, 5 * 60 * 1000);
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('resize', handleResize);
+        }
     }, []);
 
     const checkUser = async () => {
@@ -62,19 +78,31 @@ const ClientDashboard = () => {
             .eq("user_id", user.id)
             .maybeSingle();
 
-        // Even if error or no profile, we allow access as requested
         if (error) {
             console.error("Error fetching profile:", error);
         }
 
         if (!profile) {
-            setProfile({
+            const newProfile = {
+                user_id: user.id,
+                email: user.email,
                 contact_person: user.user_metadata?.full_name || user.email?.split('@')[0] || "Valued Client",
                 company_name: user.user_metadata?.company_name || "New Client Account",
-                email: user.email,
-                id: "temp",
-                user_id: user.id
-            });
+            };
+
+            const { data: insertedProfile, error: insertError } = await supabase
+                .from("client_profiles")
+                .insert(newProfile)
+                .select()
+                .single();
+
+            if (insertError) {
+                console.error("Error creating profile:", insertError);
+                setProfile({ ...newProfile, id: "temp" });
+                toast.error("Limited access: Could not initialize permanent profile.");
+            } else {
+                setProfile(insertedProfile);
+            }
         } else {
             setProfile(profile);
         }
@@ -107,7 +135,6 @@ const ClientDashboard = () => {
             </div>
         );
     }
-
     return (
         <div className="min-h-screen bg-[#050505] text-white flex overflow-hidden">
             {/* Sidebar */}
@@ -120,7 +147,7 @@ const ClientDashboard = () => {
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         className="fixed inset-y-0 left-0 z-50 w-72 bg-black/80 backdrop-blur-2xl border-r border-tech-gold/10 flex flex-col lg:relative"
                     >
-                        <div className="p-6 border-b border-tech-gold/10">
+                        <div className="p-6 border-b border-tech-gold/10 flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-tech-gold rounded-xl shadow-lg shadow-tech-gold/20">
                                     <img
@@ -130,10 +157,19 @@ const ClientDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <h2 className="font-black tracking-tighter text-lg leading-none">CLIENT <span className="text-tech-gold">NEXUS</span></h2>
-                                    <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mt-1 font-bold">Priority Portal</p>
+                                    <h2 className="font-black tracking-tighter text-lg leading-none">CLIENT <span className="text-tech-gold">PORTAL</span></h2>
+                                    <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mt-1 font-bold">Client Access</p>
                                 </div>
                             </div>
+                            {/* Mobile Close Button */}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="lg:hidden text-gray-400 hover:text-white"
+                                onClick={() => setIsSidebarOpen(false)}
+                            >
+                                <X className="w-5 h-5" />
+                            </Button>
                         </div>
 
                         <nav className="flex-1 p-4 space-y-2 mt-4">
@@ -143,6 +179,7 @@ const ClientDashboard = () => {
                                     <Link
                                         key={item.path}
                                         to={item.path}
+                                        onClick={() => window.innerWidth < 1024 && setIsSidebarOpen(false)}
                                         className={cn(
                                             "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative",
                                             isActive
@@ -182,7 +219,7 @@ const ClientDashboard = () => {
                                 className="w-full justify-start gap-3 text-gray-400 hover:text-tech-red hover:bg-tech-red/5 rounded-xl transition-all h-12"
                             >
                                 <LogOut className="w-5 h-5" />
-                                <span className="font-bold">Terminate Session</span>
+                                <span className="font-bold">Logout</span>
                             </Button>
                         </div>
                     </motion.aside>
@@ -200,7 +237,7 @@ const ClientDashboard = () => {
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                             className="text-tech-gold hover:bg-tech-gold/10"
                         >
-                            {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                            {isSidebarOpen ? <X className="w-6 h-6 lg:hidden" /> : <Menu className="w-6 h-6" />}
                         </Button>
                         <div className="hidden sm:block">
                             <h1 className="text-xl font-bold tracking-tight">
@@ -212,12 +249,9 @@ const ClientDashboard = () => {
                     <div className="flex items-center gap-4">
                         <div className="hidden md:flex items-center gap-4 mr-4 px-4 py-1.5 bg-tech-gold/5 border border-tech-gold/10 rounded-full">
                             <Clock className="w-4 h-4 text-tech-gold" />
-                            <span className="text-xs font-bold text-tech-gold/80 uppercase tracking-widest">Nexus Active</span>
+                            <span className="text-xs font-bold text-tech-gold/80 uppercase tracking-widest">System Online</span>
                         </div>
-                        <Button variant="ghost" size="icon" className="relative text-gray-400 hover:text-white group">
-                            <Bell className="w-5 h-5 transition-transform group-hover:rotate-12" />
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-tech-red rounded-full border-2 border-black" />
-                        </Button>
+                        <ClientNotificationCenter clientId={profile?.id} />
                         <div className="h-8 w-px bg-tech-gold/10 mx-2" />
                         <div className="flex items-center gap-3 pl-2">
                             <div className="text-right hidden sm:block">
@@ -255,7 +289,7 @@ const ClientDashboard = () => {
                                 <Route path="projects" element={<ProjectExplorer profile={profile} />} />
                                 <Route path="financials" element={<FinancialHub profile={profile} />} />
                                 <Route path="support" element={<SupportNexus profile={profile} />} />
-                                <Route path="settings" element={<ClientSettings profile={profile} />} />
+                                <Route path="settings" element={<ClientSettings profile={profile} onProfileUpdate={checkUser} />} />
                             </Routes>
                         </motion.div>
                     </AnimatePresence>

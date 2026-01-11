@@ -50,7 +50,8 @@ const FinancialHub = ({ profile }: { profile: any }) => {
         const { data: docData } = await supabase
             .from("client_documents")
             .select("*")
-            .eq("client_id", profile.id);
+            .eq("client_id", profile.id)
+            .eq("status", "approved");
 
         if (projectData) setProjects(projectData);
         if (docData) setDocuments(docData);
@@ -66,12 +67,12 @@ const FinancialHub = ({ profile }: { profile: any }) => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-white mb-2">FINANCIAL <span className="text-tech-gold uppercase">HUB</span></h1>
-                    <p className="text-gray-400 font-medium italic">Transparency in every transaction within the nexus.</p>
+                    <h1 className="text-3xl font-black tracking-tight text-white mb-2">FINANCIAL <span className="text-tech-gold uppercase">RECORDS</span></h1>
+                    <p className="text-gray-400 font-medium italic">Transparency in every transaction.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Button className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl transition-all shadow-lg shadow-tech-gold/20">
-                        Nexus Quick Pay
+                        Quick Pay
                     </Button>
                 </div>
             </div>
@@ -85,7 +86,7 @@ const FinancialHub = ({ profile }: { profile: any }) => {
                             <div className="p-3 bg-tech-gold/10 rounded-2xl group-hover:scale-110 transition-transform">
                                 <CreditCard className="w-6 h-6 text-tech-gold" />
                             </div>
-                            <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Total Capital Flow</p>
+                            <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Total Budget</p>
                         </div>
                         <h2 className="text-4xl font-black text-white mb-2">₹{totalBudget.toLocaleString()}</h2>
                         <div className="flex items-center gap-2 text-xs text-gray-500 font-bold uppercase tracking-widest mt-4">
@@ -101,12 +102,12 @@ const FinancialHub = ({ profile }: { profile: any }) => {
                             <div className="p-3 bg-green-500/10 rounded-2xl group-hover:scale-110 transition-transform">
                                 <CheckCircle2 className="w-6 h-6 text-green-500" />
                             </div>
-                            <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Amount Synchronized</p>
+                            <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Amount Paid</p>
                         </div>
                         <h2 className="text-4xl font-black text-white mb-2">₹{totalPaid.toLocaleString()}</h2>
                         <div className="space-y-1 mt-4">
                             <Progress value={(totalPaid / totalBudget) * 100} className="h-1 bg-white/5 [&>div]:bg-green-500" />
-                            <p className="text-[10px] text-green-500 font-black text-right uppercase">{(totalPaid / totalBudget * 100).toFixed(1)}% COMPLETION</p>
+                            <p className="text-[10px] text-green-500 font-black text-right uppercase">{(totalPaid / totalBudget * 100).toFixed(1)}% PAID</p>
                         </div>
                     </CardContent>
                 </Card>
@@ -118,11 +119,11 @@ const FinancialHub = ({ profile }: { profile: any }) => {
                             <div className="p-3 bg-tech-red/10 rounded-2xl group-hover:scale-110 transition-transform">
                                 <Clock className="w-6 h-6 text-tech-red" />
                             </div>
-                            <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Matrix Dues</p>
+                            <p className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Pending Dues</p>
                         </div>
                         <h2 className="text-4xl font-black text-white mb-2">₹{pendingAmount.toLocaleString()}</h2>
                         <div className="flex items-center gap-2 text-xs text-tech-red font-bold uppercase tracking-widest mt-4">
-                            <AlertCircle className="w-4 h-4" /> Next node activation required
+                            <AlertCircle className="w-4 h-4" /> Payment required soon
                         </div>
                     </CardContent>
                 </Card>
@@ -133,7 +134,7 @@ const FinancialHub = ({ profile }: { profile: any }) => {
                 <div className="lg:col-span-2 space-y-6">
                     <h2 className="text-xl font-bold flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-tech-gold" />
-                        Active Project Accounting
+                        Project Billing
                     </h2>
 
                     <div className="grid gap-4">
@@ -151,7 +152,7 @@ const FinancialHub = ({ profile }: { profile: any }) => {
                                                         {project.project_type}
                                                     </Badge>
                                                     <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                                                        Billing frequency: Milestone-based
+                                                        Frequency: Milestone-based
                                                     </span>
                                                 </div>
                                             </div>
@@ -172,7 +173,7 @@ const FinancialHub = ({ profile }: { profile: any }) => {
                                 </Card>
                             ))
                         ) : (
-                            <p className="text-gray-500 italic text-center py-12">No active billing cycles detected.</p>
+                            <p className="text-gray-500 italic text-center py-12">No active billing cycles found.</p>
                         )}
                     </div>
                 </div>
@@ -181,7 +182,7 @@ const FinancialHub = ({ profile }: { profile: any }) => {
                 <div className="space-y-6">
                     <h2 className="text-xl font-bold flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-500" />
-                        Protocol Documents
+                        Documents
                     </h2>
 
                     <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl p-4 space-y-3">
@@ -211,7 +212,7 @@ const FinancialHub = ({ profile }: { profile: any }) => {
                         ) : (
                             <div className="py-12 text-center text-gray-600">
                                 <History className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                                <p className="text-xs font-bold uppercase tracking-widest">Nexus Archive Empty</p>
+                                <p className="text-xs font-bold uppercase tracking-widest">No Documents Found</p>
                             </div>
                         )}
                     </div>
@@ -220,18 +221,18 @@ const FinancialHub = ({ profile }: { profile: any }) => {
                         <CardHeader>
                             <CardTitle className="text-white text-sm flex items-center gap-2">
                                 <ShieldCheck className="w-4 h-4 text-blue-400" />
-                                Compliance Node
+                                Compliance
                             </CardTitle>
                             <CardDescription className="text-gray-300 text-[10px] font-bold uppercase">
-                                Secure 256-bit Transaction Protocols Active
+                                Secure Payment Processing Active
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="pt-0">
                             <p className="text-xs text-gray-400 font-medium mb-4">
-                                All financial signals are encrypted and verified. For corporate tax inquiries, please request a master ledger export.
+                                All financial transactions are encrypted and verified. For corporate tax inquiries, please request a ledger export.
                             </p>
                             <Button variant="outline" className="w-full border-blue-500/30 text-white hover:bg-blue-500/10 text-xs font-bold h-10 rounded-xl">
-                                Request Master Ledger
+                                Request Ledger
                             </Button>
                         </CardContent>
                     </Card>

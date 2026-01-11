@@ -67,15 +67,15 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
             icon: Briefcase,
             color: "text-tech-gold",
             bg: "bg-tech-gold/10",
-            description: "Projects currently in Nexus"
+            description: "Projects currently in progress"
         },
         {
-            label: "Capital Deployed",
+            label: "Total Paid",
             value: `₹${stats.totalPaid.toLocaleString()}`,
             icon: CreditCard,
             color: "text-green-500",
             bg: "bg-green-500/10",
-            description: "Total amount invested so far"
+            description: "Total amount paid to date"
         },
         {
             label: "Pending Actions",
@@ -83,10 +83,10 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
             icon: Clock,
             color: "text-blue-500",
             bg: "bg-blue-500/10",
-            description: "Required attention or payments"
+            description: "Tasks that need your attention"
         },
         {
-            label: "Nexus Completions",
+            label: "Completed",
             value: stats.completedProjects,
             icon: CheckCircle2,
             color: "text-tech-purple",
@@ -105,15 +105,15 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                     </h1>
                     <p className="text-gray-400 font-medium flex items-center gap-2">
                         <Activity className="w-4 h-4 text-tech-gold animate-pulse" />
-                        Your project ecosystem is performing within optimal parameters.
+                        All your projects are running smoothly.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
                     <Button className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl transition-all shadow-lg shadow-tech-gold/20">
-                        Rapid Inquiry
+                        New Message
                     </Button>
                     <Button variant="outline" className="border-tech-gold/20 hover:bg-tech-gold/5 text-white h-12 px-6 rounded-xl font-bold">
-                        Project Matrix
+                        Our Roadmap
                     </Button>
                 </div>
             </div>
@@ -152,10 +152,10 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                     <div className="flex items-center justify-between">
                         <h2 className="text-xl font-bold flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-tech-gold" />
-                            Active Project Matrix
+                            Active Projects
                         </h2>
-                        <Button variant="ghost" className="text-tech-gold hover:text-white font-bold text-sm h-auto p-0">
-                            View Extended Matrix <ChevronRight className="w-4 h-4 ml-1" />
+                        <Button variant="ghost" className="text-tech-gold hover:text-white font-bold text-sm h-auto p-0" onClick={() => window.location.href = '/client/dashboard/projects'}>
+                            View All <ChevronRight className="w-4 h-4 ml-1" />
                         </Button>
                     </div>
 
@@ -185,7 +185,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                                 <div className="flex items-center gap-8">
                                                     <div className="w-48 space-y-2">
                                                         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
-                                                            <span className="text-gray-500">Deployment Progress</span>
+                                                            <span className="text-gray-500">Current Progress</span>
                                                             <span className="text-tech-gold">{project.progress}%</span>
                                                         </div>
                                                         <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
@@ -222,7 +222,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                 <div className="space-y-6">
                     <h2 className="text-xl font-bold flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-tech-red" />
-                        Nexus Commands
+                        Actions
                     </h2>
 
                     <div className="grid gap-4">
@@ -234,7 +234,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                 <div className="p-2 bg-tech-gold/10 rounded-lg group-hover:scale-110 transition-transform">
                                     <FileText className="w-5 h-5 text-tech-gold" />
                                 </div>
-                                <span className="text-sm">Download Invoices</span>
+                                <span className="text-sm">View Invoices</span>
                             </div>
                             <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0" />
                         </Button>
@@ -247,7 +247,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                 <div className="p-2 bg-blue-500/10 rounded-lg group-hover:scale-110 transition-transform">
                                     <Activity className="w-5 h-5 text-blue-500" />
                                 </div>
-                                <span className="text-sm">Request Tech Update</span>
+                                <span className="text-sm">Request Update</span>
                             </div>
                             <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0" />
                         </Button>
@@ -260,7 +260,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                 <div className="p-2 bg-tech-red/10 rounded-lg group-hover:scale-110 transition-transform">
                                     <AlertCircle className="w-5 h-5 text-tech-red" />
                                 </div>
-                                <span className="text-sm">Emergency Support</span>
+                                <span className="text-sm">Get Support</span>
                             </div>
                             <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0" />
                         </Button>
@@ -271,7 +271,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                         <CardHeader className="relative z-10">
                             <CardTitle className="text-white flex items-center gap-2">
                                 <Shield className="w-5 h-5 text-tech-gold" />
-                                Client Success
+                                Your Support Team
                             </CardTitle>
                             <CardDescription className="text-gray-300 font-medium">
                                 Your dedicated support team is online.
@@ -284,14 +284,14 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                 </div>
                                 <div>
                                     <p className="text-sm font-bold text-white">VAW Support Team</p>
-                                    <p className="text-xs text-tech-gold">Technical Directorate</p>
+                                    <p className="text-xs text-tech-gold">Support Team</p>
                                 </div>
                             </div>
                             <Button
                                 className="w-full bg-black hover:bg-white hover:text-black text-white font-bold h-12 rounded-xl transition-all border border-tech-gold/30"
                                 onClick={() => window.location.href = '/client/dashboard/support'}
                             >
-                                Secure Channel
+                                Contact Support
                             </Button>
                         </CardContent>
                     </Card>

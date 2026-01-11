@@ -38,16 +38,23 @@ const NotificationCenter = () => {
     target_type: "all",
     department_id: "",
     target_users: [],
+    target_clients: [], // Added for client targeting
     is_urgent: false,
     expires_at: ""
   });
+  const [activeNotificationTab, setActiveNotificationTab] = useState("staff");
+  const [clientNotifications, setClientNotifications] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [clientSearchTerm, setClientSearchTerm] = useState("");
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
     fetchNotifications();
+    fetchClientNotifications();
     fetchDepartments();
     fetchStaff();
+    fetchClients();
   }, []);
 
   const fetchNotifications = async () => {
@@ -83,18 +90,34 @@ const NotificationCenter = () => {
     }
   };
 
-  const fetchStaff = async () => {
+  const fetchClientNotifications = async () => {
     try {
       const { data, error } = await supabase
-        .from('staff_profiles')
-        // Using explicit relationship name to avoid ambiguity
-        .select('id, full_name, username, role, department_id, departments!fk_department(name)')
-        .order('full_name');
+        .from('client_notifications')
+        .select('*, client_profiles(company_name, contact_person)')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('client_notifications table might not exist yet:', error);
+        return;
+      }
+      setClientNotifications(data || []);
+    } catch (error) {
+      console.error('Error fetching client notifications:', error);
+    }
+  };
+
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('client_profiles')
+        .select('id, company_name, contact_person, email')
+        .order('company_name');
 
       if (error) throw error;
-      setStaff(data || []);
+      setClients(data || []);
     } catch (error) {
-      console.error('Error fetching staff:', error);
+      console.error('Error fetching clients:', error);
     }
   };
 
@@ -102,31 +125,72 @@ const NotificationCenter = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
-      const notificationData: any = {
-        title: newNotification.title,
-        content: newNotification.content,
-        type: newNotification.type as 'announcement' | 'task_assigned' | 'mood_alert' | 'achievement',
-        is_urgent: newNotification.is_urgent,
-        created_by: user?.id || crypto.randomUUID(),
-        expires_at: newNotification.expires_at || null
-      };
+      if (activeNotificationTab === "clients") {
+        // Handle client notification
+        if (newNotification.target_type === "all") {
+          // Send to all clients
+          const notificationsToInsert = clients.map(client => ({
+            client_id: client.id,
+            title: newNotification.title,
+            message: newNotification.content,
+            type: newNotification.type,
+            priority: newNotification.is_urgent ? 'urgent' : 'medium',
+            created_by: user?.id,
+            expires_at: newNotification.expires_at || null
+          }));
 
-      // Set target based on selection
-      if (newNotification.target_type === "department" && newNotification.department_id) {
-        notificationData.department_id = newNotification.department_id;
-      } else if (newNotification.target_type === "specific" && newNotification.target_users.length > 0) {
-        notificationData.target_users = newNotification.target_users;
+          const { error } = await supabase
+            .from('client_notifications')
+            .insert(notificationsToInsert);
+
+          if (error) throw error;
+        } else {
+          // Send to specific clients
+          const notificationsToInsert = newNotification.target_clients.map(clientId => ({
+            client_id: clientId,
+            title: newNotification.title,
+            message: newNotification.content,
+            type: newNotification.type,
+            priority: newNotification.is_urgent ? 'urgent' : 'medium',
+            created_by: user?.id,
+            expires_at: newNotification.expires_at || null
+          }));
+
+          const { error } = await supabase
+            .from('client_notifications')
+            .insert(notificationsToInsert);
+
+          if (error) throw error;
+        }
+
+        fetchClientNotifications();
+      } else {
+        // Handle staff notification (existing logic)
+        const notificationData: any = {
+          title: newNotification.title,
+          content: newNotification.content,
+          type: newNotification.type as 'announcement' | 'task_assigned' | 'mood_alert' | 'achievement',
+          is_urgent: newNotification.is_urgent,
+          created_by: user?.id || crypto.randomUUID(),
+          expires_at: newNotification.expires_at || null
+        };
+
+        if (newNotification.target_type === "department" && newNotification.department_id) {
+          notificationData.department_id = newNotification.department_id;
+        } else if (newNotification.target_type === "specific" && newNotification.target_users.length > 0) {
+          notificationData.target_users = newNotification.target_users;
+        }
+
+        const { data, error } = await supabase
+          .from('staff_notifications')
+          .insert(notificationData)
+          .select('*')
+          .single();
+
+        if (error) throw error;
+        setNotifications([data, ...notifications]);
       }
 
-      const { data, error } = await supabase
-        .from('staff_notifications')
-        .insert(notificationData)
-        .select('*')
-        .single();
-
-      if (error) throw error;
-
-      setNotifications([data, ...notifications]);
       setIsCreateDialogOpen(false);
       setNewNotification({
         title: "",
@@ -135,6 +199,7 @@ const NotificationCenter = () => {
         target_type: "all",
         department_id: "",
         target_users: [],
+        target_clients: [],
         is_urgent: false,
         expires_at: ""
       });
@@ -147,7 +212,7 @@ const NotificationCenter = () => {
       console.error('Error creating notification:', error);
       toast({
         title: "Error",
-        description: "Failed to send notification.",
+        description: "Failed to send notification. Make sure the database table exists.",
         variant: "destructive",
       });
     }
@@ -230,10 +295,26 @@ const NotificationCenter = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-2">
           <Bell className="h-6 w-6 text-blue-600" />
           <h2 className="text-2xl font-bold">Notification Center</h2>
+        </div>
+        <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 p-1 rounded-lg border">
+          <Button
+            variant={activeNotificationTab === "staff" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveNotificationTab("staff")}
+          >
+            Staff
+          </Button>
+          <Button
+            variant={activeNotificationTab === "clients" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setActiveNotificationTab("clients")}
+          >
+            Clients
+          </Button>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
@@ -297,12 +378,75 @@ const NotificationCenter = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Staff</SelectItem>
-                    <SelectItem value="department">Specific Department</SelectItem>
-                    <SelectItem value="specific">Specific Users</SelectItem>
+                    <SelectItem value="all">{activeNotificationTab === "staff" ? "All Staff" : "All Clients"}</SelectItem>
+                    {activeNotificationTab === "staff" && <SelectItem value="department">Specific Department</SelectItem>}
+                    <SelectItem value="specific">{activeNotificationTab === "staff" ? "Specific Users" : "Specific Clients"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {newNotification.target_type === "specific" && activeNotificationTab === "clients" && (
+                <div className="space-y-3">
+                  <Label>Select Clients</Label>
+                  <Select
+                    onValueChange={(value) => {
+                      // @ts-ignore
+                      if (!newNotification.target_clients.includes(value)) {
+                        setNewNotification({
+                          ...newNotification,
+                          // @ts-ignore
+                          target_clients: [...newNotification.target_clients, value]
+                        });
+                        setClientSearchTerm("");
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select client to add..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <div className="p-2">
+                        <Input
+                          placeholder="Search clients..."
+                          className="mb-2 h-8"
+                          value={clientSearchTerm}
+                          onChange={(e) => setClientSearchTerm(e.target.value)}
+                        />
+                      </div>
+                      {clients
+                        .filter(c => !(newNotification.target_clients || []).includes(c.id))
+                        .filter(c => c.company_name.toLowerCase().includes(clientSearchTerm.toLowerCase()))
+                        .map(client => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.company_name} ({client.contact_person})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+
+                  <div className="flex flex-wrap gap-2 mt-2 p-2 border rounded-md min-h-[50px] bg-slate-50">
+                    {(newNotification.target_clients || []).map(clientId => {
+                      const client = clients.find(c => c.id === clientId);
+                      return (
+                        <Badge key={clientId} variant="secondary" className="flex items-center gap-1">
+                          {client?.company_name}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 rounded-full"
+                            onClick={() => setNewNotification({
+                              ...newNotification,
+                              target_clients: newNotification.target_clients.filter(id => id !== clientId)
+                            })}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {newNotification.target_type === "specific" && (
                 <div className="space-y-3">
@@ -476,7 +620,7 @@ const NotificationCenter = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {notifications.map((notification) => {
+            {activeNotificationTab === "staff" ? notifications.map((notification) => {
               const Icon = getNotificationIcon(notification.type);
               const isExpired = notification.expires_at && new Date(notification.expires_at) < new Date();
 
@@ -537,13 +681,53 @@ const NotificationCenter = () => {
                   </div>
                 </div>
               );
+            }) : clientNotifications.map((notification) => {
+              const Icon = getNotificationIcon(notification.type);
+
+              return (
+                <div
+                  key={notification.id}
+                  className={`p-4 rounded-lg border-2 ${getNotificationColor(notification.type, notification.priority === 'urgent')}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <Icon className={`h-5 w-5 ${notification.priority === 'urgent' ? 'text-red-600' : 'text-blue-600'}`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold">{notification.title}</h3>
+                          {notification.priority === 'urgent' && (
+                            <Badge variant="destructive" className="text-xs">URGENT</Badge>
+                          )}
+                          <Badge variant="outline" className="text-xs">
+                            {notification.type?.toUpperCase()}
+                          </Badge>
+                        </div>
+                        <p className="text-gray-700 mb-3">{notification.message}</p>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            To: {notification.client_profiles?.company_name || 'All Clients'}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {format(new Date(notification.created_at), 'MMM dd, yyyy HH:mm')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
             })}
           </div>
-          {notifications.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No notifications sent yet. Create your first notification to get started.
-            </div>
-          )}
+          {((activeNotificationTab === "staff" && notifications.length === 0) ||
+            (activeNotificationTab === "clients" && clientNotifications.length === 0)) && (
+              <div className="text-center py-8 text-gray-500">
+                No notifications sent yet in this category.
+              </div>
+            )}
         </CardContent>
       </Card>
     </div>
