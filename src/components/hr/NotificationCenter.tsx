@@ -76,6 +76,20 @@ const NotificationCenter = () => {
     }
   };
 
+  const fetchStaff = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('staff_profiles')
+        .select('id, full_name, email, department_id')
+        .order('full_name');
+
+      if (error) throw error;
+      setStaff(data || []);
+    } catch (error) {
+      console.error('Error fetching staff:', error);
+    }
+  };
+
   const fetchDepartments = async () => {
     try {
       const { data, error } = await supabase

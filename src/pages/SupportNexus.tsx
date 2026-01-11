@@ -20,7 +20,9 @@ import {
     Shield,
     Send,
     Loader2,
-    HeadphonesIcon
+    HeadphonesIcon,
+    PhoneCall,
+    Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,9 +47,12 @@ const SupportNexus = ({ profile }: { profile: any }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Form state
-    const [type, setType] = useState("feedback");
-    const [subject, setSubject] = useState("");
-    const [message, setMessage] = useState("");
+    const [newSignal, setNewSignal] = useState({
+        type: "feedback",
+        priority: "medium",
+        subject: "",
+        message: ""
+    });
 
     useEffect(() => {
         fetchFeedback();
@@ -65,10 +70,10 @@ const SupportNexus = ({ profile }: { profile: any }) => {
         setLoading(false);
     };
 
-    const handleSignalTransmission = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!subject || !message) {
-            toast.error("Subject and signal content are required for transmission.");
+    const handleSignalTransmission = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (!newSignal.subject || !newSignal.message) {
+            toast.error("Subject and details are required for transmission.");
             return;
         }
 
@@ -78,17 +83,22 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                 .from("client_feedback")
                 .insert({
                     client_id: profile.id,
-                    type,
-                    subject,
-                    message,
-                    status: 'pending'
+                    type: newSignal.type,
+                    subject: newSignal.subject,
+                    message: newSignal.message,
+                    status: 'pending',
+                    metadata: { priority: newSignal.priority }
                 });
 
             if (error) throw error;
 
-            toast.success("Signal successfully transmitted to the Nexus.");
-            setSubject("");
-            setMessage("");
+            toast.success("Help request successfully transmitted.");
+            setNewSignal({
+                type: "feedback",
+                priority: "medium",
+                subject: "",
+                message: ""
+            });
             fetchFeedback();
         } catch (error: any) {
             toast.error(`Transmission failure: ${error.message}`);
@@ -186,7 +196,7 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                         </div>
 
                         <Button
-                            onClick={handleSubmitSignal}
+                            onClick={() => handleSignalTransmission()}
                             disabled={isSubmitting}
                             className="w-full bg-tech-gold hover:bg-white text-black font-bold h-12 rounded-xl transition-all shadow-lg shadow-tech-gold/20"
                         >
@@ -230,8 +240,8 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                     <div className="space-y-3">
                         {loading ? (
                             <div className="h-40 bg-white/5 rounded-2xl animate-pulse" />
-                        ) : signals.length > 0 ? (
-                            signals.map((signal) => (
+                        ) : feedback.length > 0 ? (
+                            feedback.map((signal) => (
                                 <div key={signal.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-tech-gold/30 transition-all group cursor-pointer">
                                     <div className="flex justify-between items-start mb-2">
                                         <Badge variant="outline" className={cn(

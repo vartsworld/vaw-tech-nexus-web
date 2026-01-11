@@ -7,7 +7,12 @@ BEGIN
     END IF;
 END $$;
 
-CREATE TYPE notification_priority AS ENUM ('low', 'medium', 'high', 'urgent');
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notification_priority') THEN
+        CREATE TYPE notification_priority AS ENUM ('low', 'medium', 'high', 'urgent');
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS client_notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -40,12 +45,24 @@ CREATE POLICY "Clients can update own read status" ON client_notifications
         is_read IS NOT NULL
     );
 
+-- Fixed RLS policy to avoid immediate enum validation error
+-- We check for standard roles AND check the super_admins table separately
 CREATE POLICY "HR and Admins can manage client notifications" ON client_notifications
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM staff_profiles
             WHERE user_id = auth.uid() 
-            AND role IN ('hr', 'admin', 'manager', 'super_admin')
+            AND role IN ('hr', 'admin', 'manager')
+        )
+        OR EXISTS (
+            SELECT 1 FROM super_admins
+            WHERE user_id = auth.uid()
+        )
+        -- Fallback check for the new role using text casting to skip enum validation in same txn
+        OR EXISTS (
+            SELECT 1 FROM staff_profiles
+            WHERE user_id = auth.uid()
+            AND role::text = 'super_admin'
         )
     );
 
