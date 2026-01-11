@@ -206,10 +206,10 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-white">Two-Factor Authentication</p>
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Adds a secondary security layer</p>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Secondary security layer</p>
                                     </div>
                                 </div>
-                                <Switch />
+                                <Badge variant="outline" className="text-[10px] text-gray-500 border-gray-500/30 uppercase">Option Unavailable</Badge>
                             </div>
 
                             <div className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl">
@@ -219,7 +219,7 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-white">Advanced Encryption</p>
-                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">AES-256 Protocol active by default</p>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">AES-256 Protocol active</p>
                                     </div>
                                 </div>
                                 <Badge className="bg-tech-gold/10 text-tech-gold border-tech-gold/20 uppercase font-black text-[8px]">Enforced</Badge>
@@ -231,7 +231,7 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                                 <p className="text-[10px] font-black text-tech-red uppercase tracking-widest">Safety Protocol Note</p>
                             </div>
                             <p className="text-xs text-gray-400 font-medium">
-                                Account termination is disabled for Enterprise Clients via this portal to prevent accidental nexus collapse. Please contact your Strategic Director for account migration or offboarding protocols.
+                                Account termination is disabled for Enterprise Clients via this portal. Contact Support for assistance.
                             </p>
                         </CardFooter>
                     </Card>
@@ -241,16 +241,16 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                 <div className="space-y-6">
                     <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10">
                         <CardHeader>
-                            <CardTitle className="text-sm font-black uppercase tracking-widest text-tech-gold">Signal Alerts</CardTitle>
+                            <CardTitle className="text-sm font-black uppercase tracking-widest text-tech-gold">Signal Alerts Status</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             {[
-                                { label: "Critical Updates", desc: "Project phase mutations", icon: Activity, checked: true },
-                                { label: "Financial Signals", desc: "Invoices and receipts", icon: CreditCard, checked: true },
-                                { label: "Tech Advisories", desc: "Digital design changes", icon: Globe, checked: false },
-                                { label: "Milestone Node", desc: "Project completions", icon: Award, checked: true },
+                                { label: "Critical Updates", desc: "Project phase mutations", icon: Activity, status: "Active" },
+                                { label: "Financial Signals", desc: "Invoices and receipts", icon: CreditCard, status: "Active" },
+                                { label: "Tech Advisories", desc: "Digital design changes", icon: Globe, status: "Subscribed" },
+                                { label: "Milestone Node", desc: "Project completions", icon: Award, status: "Active" },
                             ].map((item, i) => (
-                                <div key={i} className="flex items-center justify-between group cursor-pointer">
+                                <div key={i} className="flex items-center justify-between group">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-white/5 rounded-lg group-hover:bg-tech-gold/10 transition-colors">
                                             <item.icon className="w-4 h-4 text-gray-400 group-hover:text-tech-gold transition-colors" />
@@ -260,7 +260,7 @@ const ClientSettings = ({ profile }: { profile: any }) => {
                                             <p className="text-[9px] text-gray-500 uppercase tracking-widest font-black">{item.desc}</p>
                                         </div>
                                     </div>
-                                    <Switch defaultChecked={item.checked} />
+                                    <span className="text-[10px] font-bold text-tech-gold/70">{item.status}</span>
                                 </div>
                             ))}
                         </CardContent>

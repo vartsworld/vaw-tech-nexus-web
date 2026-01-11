@@ -226,7 +226,10 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                     </h2>
 
                     <div className="grid gap-4">
-                        <Button className="w-full bg-white/5 border border-tech-gold/20 hover:bg-tech-gold/10 hover:border-tech-gold text-white font-bold h-16 justify-between px-6 rounded-2xl group transition-all">
+                        <Button
+                            className="w-full bg-white/5 border border-tech-gold/20 hover:bg-tech-gold/10 hover:border-tech-gold text-white font-bold h-16 justify-between px-6 rounded-2xl group transition-all"
+                            onClick={() => window.location.href = '/client/dashboard/financials'}
+                        >
                             <div className="flex items-center gap-4">
                                 <div className="p-2 bg-tech-gold/10 rounded-lg group-hover:scale-110 transition-transform">
                                     <FileText className="w-5 h-5 text-tech-gold" />
@@ -236,7 +239,10 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                             <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0" />
                         </Button>
 
-                        <Button className="w-full bg-white/5 border border-tech-gold/20 hover:bg-tech-gold/10 hover:border-tech-gold text-white font-bold h-16 justify-between px-6 rounded-2xl group transition-all">
+                        <Button
+                            className="w-full bg-white/5 border border-tech-gold/20 hover:bg-tech-gold/10 hover:border-tech-gold text-white font-bold h-16 justify-between px-6 rounded-2xl group transition-all"
+                            onClick={() => window.location.href = '/client/dashboard/support'}
+                        >
                             <div className="flex items-center gap-4">
                                 <div className="p-2 bg-blue-500/10 rounded-lg group-hover:scale-110 transition-transform">
                                     <Activity className="w-5 h-5 text-blue-500" />
@@ -246,7 +252,10 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                             <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0" />
                         </Button>
 
-                        <Button className="w-full bg-white/5 border border-tech-gold/20 hover:bg-tech-gold/10 hover:border-tech-gold text-white font-bold h-16 justify-between px-6 rounded-2xl group transition-all">
+                        <Button
+                            className="w-full bg-white/5 border border-tech-gold/20 hover:bg-tech-gold/10 hover:border-tech-gold text-white font-bold h-16 justify-between px-6 rounded-2xl group transition-all"
+                            onClick={() => window.location.href = '/client/dashboard/support'}
+                        >
                             <div className="flex items-center gap-4">
                                 <div className="p-2 bg-tech-red/10 rounded-lg group-hover:scale-110 transition-transform">
                                     <AlertCircle className="w-5 h-5 text-tech-red" />
@@ -265,7 +274,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                 Client Success
                             </CardTitle>
                             <CardDescription className="text-gray-300 font-medium">
-                                Your dedicated account strategist is online.
+                                Your dedicated support team is online.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="relative z-10 pt-0">
@@ -274,11 +283,14 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                     <User className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-bold text-white">Aryan Sharma</p>
-                                    <p className="text-xs text-tech-gold">Technical Director</p>
+                                    <p className="text-sm font-bold text-white">VAW Support Team</p>
+                                    <p className="text-xs text-tech-gold">Technical Directorate</p>
                                 </div>
                             </div>
-                            <Button className="w-full bg-black hover:bg-white hover:text-black text-white font-bold h-12 rounded-xl transition-all border border-tech-gold/30">
+                            <Button
+                                className="w-full bg-black hover:bg-white hover:text-black text-white font-bold h-12 rounded-xl transition-all border border-tech-gold/30"
+                                onClick={() => window.location.href = '/client/dashboard/support'}
+                            >
                                 Secure Channel
                             </Button>
                         </CardContent>

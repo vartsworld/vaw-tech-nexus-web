@@ -69,8 +69,8 @@ const ClientDashboard = () => {
 
         if (!profile) {
             setProfile({
-                contact_person: "Valued Client",
-                company_name: "Client Account",
+                contact_person: user.user_metadata?.full_name || user.email?.split('@')[0] || "Valued Client",
+                company_name: user.user_metadata?.company_name || "New Client Account",
                 email: user.email,
                 id: "temp",
                 user_id: user.id
