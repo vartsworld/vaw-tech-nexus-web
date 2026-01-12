@@ -68,6 +68,20 @@ const SuperAdminDashboard = () => {
         setLoading(false);
     };
 
+    const handleLogout = async () => {
+        try {
+            await supabase.auth.signOut();
+            localStorage.removeItem("admin_session");
+            localStorage.removeItem("admin_email");
+            localStorage.removeItem("admin_user_id");
+            toast.success("SESSION TERMINATED. PROTOCOL COMPLETE.");
+            navigate("/admin");
+        } catch (error) {
+            console.error("Logout error:", error);
+            toast.error("TERMINATION FAILED. MANUAL OVERRIDE REQUIRED.");
+        }
+    };
+
     const navItems = [
         { icon: Activity, label: "Nexus Overview", path: "/super-admin/dashboard" },
         { icon: Users, label: "Client Management", path: "/super-admin/dashboard/clients" },
@@ -138,7 +152,11 @@ const SuperAdminDashboard = () => {
                                     <p className="text-xs font-bold">ALL SYSTEMS NOMINAL</p>
                                 </div>
                             </div>
-                            <Button variant="ghost" className="w-full justify-start gap-3 text-gray-500 hover:text-tech-red hover:bg-tech-red/5 rounded-xl">
+                            <Button
+                                variant="ghost"
+                                className="w-full justify-start gap-3 text-gray-500 hover:text-tech-red hover:bg-tech-red/5 rounded-xl"
+                                onClick={handleLogout}
+                            >
                                 <LogOut className="w-5 h-5" />
                                 <span className="font-bold">Terminate Session</span>
                             </Button>

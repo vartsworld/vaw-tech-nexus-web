@@ -12,7 +12,7 @@ const AdminHeader = () => {
     try {
       // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
         console.error("Logout error:", error);
         toast({
@@ -28,12 +28,13 @@ const AdminHeader = () => {
       localStorage.removeItem("admin_role");
       localStorage.removeItem("admin_email");
       localStorage.removeItem("admin_user_id");
-      
+      localStorage.removeItem("admin_session");
+
       toast({
         title: "Logged out successfully",
         description: "You have been signed out.",
       });
-      
+
       navigate("/admin");
     } catch (error) {
       console.error("Unexpected logout error:", error);
@@ -54,7 +55,7 @@ const AdminHeader = () => {
               VAW<span className="text-accent">tech</span> Admin
             </span>
           </Link>
-          
+
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
               Logged in as: <span className="font-semibold">{adminEmail}</span>

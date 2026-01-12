@@ -26,25 +26,25 @@ const AdminDashboard = () => {
   const checkAuth = async () => {
     try {
       // Check for admin session from edge function authentication
-      const sessionData = sessionStorage.getItem("admin_session");
-      
+      const sessionData = localStorage.getItem("admin_session");
+
       if (!sessionData) {
         navigate("/admin");
         return;
       }
 
       const session = JSON.parse(sessionData);
-      
+
       // Check if session has expired
       if (new Date(session.expires_at) < new Date()) {
-        sessionStorage.removeItem("admin_session");
+        localStorage.removeItem("admin_session");
         navigate("/admin");
         return;
       }
 
       // Verify token exists
       if (!session.token || !session.admin_id) {
-        sessionStorage.removeItem("admin_session");
+        localStorage.removeItem("admin_session");
         navigate("/admin");
         return;
       }
@@ -52,7 +52,7 @@ const AdminDashboard = () => {
       setLoading(false);
     } catch (error) {
       console.error("Auth check error:", error);
-      sessionStorage.removeItem("admin_session");
+      localStorage.removeItem("admin_session");
       navigate("/admin");
     }
   };
@@ -68,7 +68,7 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <AdminHeader />
-      
+
       <div className="container mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         <Tabs defaultValue="inquiries" className="space-y-4 sm:space-y-6">
           <TabsList className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 w-full gap-1 h-auto p-1">
@@ -100,39 +100,39 @@ const AdminDashboard = () => {
               <span className="hidden sm:inline">Client </span>Logos
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="inquiries">
             <InquiryList />
           </TabsContent>
-          
+
           <TabsContent value="pricing">
             <PricingInquiryList />
           </TabsContent>
-          
+
           <TabsContent value="internships">
             <InternshipApplicationsList />
           </TabsContent>
-          
+
           <TabsContent value="experiences">
             <InternExperiencesList />
           </TabsContent>
-          
+
           <TabsContent value="team-applications">
             <TeamApplicationsList />
           </TabsContent>
-          
+
           <TabsContent value="testimonials">
             <TestimonialManagement />
           </TabsContent>
-          
+
           <TabsContent value="projects">
             <ProjectsManagement />
           </TabsContent>
-          
+
           <TabsContent value="partners">
             <PartnersManagement />
           </TabsContent>
-          
+
           <TabsContent value="logos">
             <ClientLogosManagement />
           </TabsContent>
