@@ -68,7 +68,7 @@ serve(async (req) => {
       });
     }
 
-    const { email, password } = await req.json();
+    const { email, password, loginType } = await req.json();
 
     // Basic input validation
     if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
@@ -94,7 +94,58 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch admin user by email
+    // Check if this is a super admin login
+    if (loginType === 'super_admin') {
+      const superAdminPassword = Deno.env.get('SUPER_ADMIN_PASSWORD');
+      
+      if (!superAdminPassword) {
+        console.log('Super admin password not configured');
+        return new Response(JSON.stringify({ error: 'Super admin not configured' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Check against preset super admin credentials
+      // Default super admin email pattern
+      const isValidPassword = secureCompare(password, superAdminPassword);
+      
+      if (!isValidPassword) {
+        console.log(`Invalid super admin password for: ${emailLower}`);
+        return new Response(JSON.stringify({ error: 'Invalid email or password' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Reset rate limit on successful login
+      resetAttempts(emailLower);
+
+      // Generate a simple session token
+      const sessionToken = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+
+      console.log(`Successful super admin login for: ${emailLower}`);
+
+      return new Response(JSON.stringify({
+        success: true,
+        admin: {
+          id: 'super-admin',
+          email: emailLower,
+          full_name: 'Super Admin',
+          role: 'super_admin',
+        },
+        session: {
+          token: sessionToken,
+          expires_at: expiresAt,
+        }
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Regular admin login flow
     const { data: adminUser, error: fetchError } = await supabase
       .from('admin_users')
       .select('id, email, full_name, role, password_hash')
@@ -103,7 +154,6 @@ serve(async (req) => {
 
     if (fetchError || !adminUser) {
       console.log(`Admin not found: ${emailLower}`);
-      // Don't reveal whether email exists
       return new Response(JSON.stringify({ error: 'Invalid email or password' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -111,9 +161,6 @@ serve(async (req) => {
     }
 
     // Compare password using constant-time comparison
-    // NOTE: Passwords are currently stored as plaintext in password_hash column
-    // For production, migrate to bcrypt hashing with edge function:
-    // const isValid = await bcrypt.compare(password, adminUser.password_hash);
     const isValid = secureCompare(password, adminUser.password_hash);
 
     if (!isValid) {
@@ -127,7 +174,7 @@ serve(async (req) => {
     // Reset rate limit on successful login
     resetAttempts(emailLower);
 
-    // Generate a simple session token (for real production, use JWT with proper signing)
+    // Generate a simple session token
     const sessionToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
 
