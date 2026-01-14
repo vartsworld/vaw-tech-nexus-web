@@ -747,6 +747,62 @@ export type Database = {
         }
         Relationships: []
       }
+      client_notifications: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_read: boolean | null
+          link_url: string | null
+          message: string
+          metadata: Json | null
+          priority: Database["public"]["Enums"]["notification_priority"] | null
+          read_at: string | null
+          title: string
+          type: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          link_url?: string | null
+          message: string
+          metadata?: Json | null
+          priority?: Database["public"]["Enums"]["notification_priority"] | null
+          read_at?: string | null
+          title: string
+          type?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          link_url?: string | null
+          message?: string
+          metadata?: Json | null
+          priority?: Database["public"]["Enums"]["notification_priority"] | null
+          read_at?: string | null
+          title?: string
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_notifications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_profiles: {
         Row: {
           address: string | null
@@ -899,6 +955,7 @@ export type Database = {
           phone: string | null
           status: string | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           address?: string | null
@@ -912,6 +969,7 @@ export type Database = {
           phone?: string | null
           status?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           address?: string | null
@@ -925,6 +983,7 @@ export type Database = {
           phone?: string | null
           status?: string | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -5281,6 +5340,7 @@ export type Database = {
     Enums: {
       delivery_status: "available" | "busy" | "offline"
       mood_type: "happy" | "neutral" | "sad" | "stressed" | "excited"
+      notification_priority: "low" | "medium" | "high" | "urgent"
       notification_type:
         | "announcement"
         | "task_assigned"
@@ -5309,6 +5369,7 @@ export type Database = {
         | "lead"
         | "manager"
         | "admin"
+        | "super_admin"
       vendor_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -5447,6 +5508,7 @@ export const Constants = {
     Enums: {
       delivery_status: ["available", "busy", "offline"],
       mood_type: ["happy", "neutral", "sad", "stressed", "excited"],
+      notification_priority: ["low", "medium", "high", "urgent"],
       notification_type: [
         "announcement",
         "task_assigned",
@@ -5471,7 +5533,15 @@ export const Constants = {
         "pending_approval",
         "review_pending",
       ],
-      user_role: ["hr", "department_head", "staff", "lead", "manager", "admin"],
+      user_role: [
+        "hr",
+        "department_head",
+        "staff",
+        "lead",
+        "manager",
+        "admin",
+        "super_admin",
+      ],
       vendor_status: ["pending", "approved", "rejected"],
     },
   },
