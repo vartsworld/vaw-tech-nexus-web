@@ -31,11 +31,7 @@ const AdminLogin = () => {
 
   const isSuperAdminRoute = location.pathname.includes("super-admin");
 
-  useEffect(() => {
-    if (isSuperAdminRoute) {
-      setLoginMode("emoji");
-    }
-  }, [isSuperAdminRoute]);
+  // Super admin can use either password or emoji login
 
   const addEmoji = (emoji: string) => {
     if (emojiPassword.length < 8) {
@@ -179,7 +175,6 @@ const AdminLogin = () => {
               onClick={() => setLoginMode("standard")}
               className="flex-1"
               size="sm"
-              disabled={isSuperAdminRoute} // Super admin must use emoji
             >
               Password
             </Button>
