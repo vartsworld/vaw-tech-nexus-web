@@ -230,7 +230,7 @@ const Internship = () => {
 
               <div className="space-y-2">
                 <h3 className="text-xl font-semibold">💰 Registration Fee:</h3>
-                <p className="text-lg font-bold">₹3,500/- only</p>
+                <p className="text-lg font-bold">₹1,500/- only</p>
                 <p className="text-muted-foreground text-sm">
                   (Covers mentorship, access to tools, and program resources)
                 </p>
@@ -403,7 +403,7 @@ const Internship = () => {
                     </FormControl>
                     <div className="space-y-1 leading-none">
                       <FormLabel className="font-normal cursor-pointer">
-                        I agree to the terms and conditions, including the registration fee of ₹3,500/- which will be payable after selection.
+                        I agree to the terms and conditions, including the registration fee of ₹1,500/- which will be payable after selection.
                       </FormLabel>
                       <FormDescription>
                         You will receive payment instructions after your application is reviewed and accepted.
