@@ -70,7 +70,11 @@ const AdminLogin = () => {
     try {
       // Use edge function for secure server-side authentication
       const { data, error } = await supabase.functions.invoke('admin-auth', {
-        body: { email, password: finalPassword }
+        body: { 
+          email, 
+          password: finalPassword,
+          loginType: isSuperAdminRoute ? 'super_admin' : 'admin'
+        }
       });
 
       if (error) {
