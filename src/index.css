@@ -82,17 +82,11 @@
   }
 
   .tech-card {
-    @apply bg-card border-2 border-tech-gold/30 rounded-xl p-6 shadow-xl hover:shadow-tech-gold/30 transition-all duration-300 backdrop-blur-sm relative overflow-hidden;
+    @apply bg-card border-2 border-tech-gold/30 rounded-xl p-6 shadow-xl transition-all duration-300 backdrop-blur-sm;
   }
   
-  .tech-card::before {
-    content: '';
-    @apply absolute -inset-1 bg-gradient-to-r from-tech-gold/30 via-tech-red/20 to-tech-gold/30 blur-sm opacity-0 transition-opacity duration-300;
-    z-index: -1;
-  }
-  
-  .tech-card:hover::before {
-    @apply opacity-100;
+  .tech-card:hover {
+    @apply shadow-2xl shadow-tech-gold/40;
   }
 
   .tech-button {
