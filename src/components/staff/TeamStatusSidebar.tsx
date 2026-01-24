@@ -63,7 +63,29 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
   useEffect(() => {
     if (selectedMember && currentUserId) {
       fetchDirectMessages();
-      subscribeToDirectMessages();
+      
+      // Subscribe to real-time direct messages
+      const channel = supabase
+        .channel(`dm-${currentUserId}-${selectedMember.user_id}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages'
+        }, (payload) => {
+          const newMsg = payload.new as ChatMessage;
+          // Check if message is part of this DM conversation
+          if (
+            (newMsg.sender_id === currentUserId && newMsg.recipient_id === selectedMember.user_id) ||
+            (newMsg.sender_id === selectedMember.user_id && newMsg.recipient_id === currentUserId)
+          ) {
+            setMessages(prev => [...prev, newMsg]);
+          }
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [selectedMember, currentUserId]);
 
@@ -142,31 +164,7 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
     }
   };
 
-  const subscribeToDirectMessages = () => {
-    if (!selectedMember || !currentUserId) return;
-
-    const subscription = supabase
-      .channel(`dm-${currentUserId}-${selectedMember.user_id}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'chat_messages'
-      }, (payload) => {
-        const newMsg = payload.new as ChatMessage;
-        // Check if message is part of this DM conversation
-        if (
-          (newMsg.sender_id === currentUserId && newMsg.recipient_id === selectedMember.user_id) ||
-          (newMsg.sender_id === selectedMember.user_id && newMsg.recipient_id === currentUserId)
-        ) {
-          setMessages(prev => [...prev, newMsg]);
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  };
+  // subscribeToDirectMessages moved inline to useEffect for proper cleanup
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedMember || !currentUserId) return;
