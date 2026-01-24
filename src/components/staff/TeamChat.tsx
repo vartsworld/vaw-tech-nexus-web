@@ -48,7 +48,8 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
   useEffect(() => {
     if (activeChannelId) {
       fetchMessages();
-      subscribeToMessages();
+      const cleanup = subscribeToMessages();
+      return cleanup;
     }
   }, [activeChannelId]);
 
@@ -163,7 +164,7 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
           sender_avatar: senderData?.profile_photo_url || senderData?.avatar_url
         };
 
-        setMessages(prev => [...prev, newMessage]);
+        setMessages(prev => (prev.some(m => m.id === newMessage.id) ? prev : [...prev, newMessage]));
       })
       .subscribe();
 
@@ -180,15 +181,27 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('chat_messages')
         .insert({
           content: messageContent,
           sender_id: userId,
           channel_id: activeChannelId
-        });
+        })
+        .select('id, content, sender_id, created_at, channel_id')
+        .single();
 
       if (error) throw error;
+
+      // Optimistic UI: show instantly even if Realtime is delayed.
+      if (data) {
+        const optimistic: ChatMessage = {
+          ...data,
+          sender_name: userProfile?.full_name || 'You',
+          sender_avatar: userProfile?.profile_photo_url || userProfile?.avatar_url,
+        };
+        setMessages(prev => (prev.some(m => m.id === optimistic.id) ? prev : [...prev, optimistic]));
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       setNewMessage(messageContent); // Restore message on failure

@@ -78,7 +78,7 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
             (newMsg.sender_id === currentUserId && newMsg.recipient_id === selectedMember.user_id) ||
             (newMsg.sender_id === selectedMember.user_id && newMsg.recipient_id === currentUserId)
           ) {
-            setMessages(prev => [...prev, newMsg]);
+            setMessages(prev => (prev.some(m => m.id === newMsg.id) ? prev : [...prev, newMsg]));
           }
         })
         .subscribe();
@@ -169,20 +169,31 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedMember || !currentUserId) return;
 
+    const content = newMessage.trim();
     setIsLoading(true);
     try {
-      const { error } = await supabase
+      setNewMessage('');
+
+      const { data, error } = await supabase
         .from('chat_messages')
         .insert({
-          content: newMessage.trim(),
+          content,
           sender_id: currentUserId,
           recipient_id: selectedMember.user_id
-        });
+        })
+        .select('id, content, sender_id, recipient_id, created_at')
+        .single();
 
       if (error) throw error;
-      setNewMessage('');
+
+      // Optimistic UI: show instantly even if Realtime is delayed.
+      if (data) {
+        setMessages(prev => (prev.some(m => m.id === data.id) ? prev : [...prev, data as ChatMessage]));
+      }
     } catch (error) {
       console.error('Error sending message:', error);
+      // Restore message on failure
+      setNewMessage(content);
       toast({
         title: "Error",
         description: "Failed to send message",
