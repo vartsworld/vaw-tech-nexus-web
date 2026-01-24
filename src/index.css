@@ -372,3 +372,12 @@
 .pulse-gentle {
   animation: pulse-gentle 3s ease-in-out infinite;
 }
+
+/* Safe area for mobile bottom nav */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+}

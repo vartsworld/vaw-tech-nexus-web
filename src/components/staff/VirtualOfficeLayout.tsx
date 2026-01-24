@@ -2,6 +2,7 @@
 import { ReactNode, useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useNavigate } from "react-router-dom";
 import {
   Monitor,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import { ActivityLogPanel } from "./ActivityLogPanel";
+import MobileBottomNav from "./MobileBottomNav";
 
 
 interface VirtualOfficeLayoutProps {
@@ -36,6 +38,7 @@ const VirtualOfficeLayout = ({
   className
 }: VirtualOfficeLayoutProps) => {
   const [showActivityLog, setShowActivityLog] = useState(false);
+  const [showMobileChat, setShowMobileChat] = useState(false);
   const navigate = useNavigate();
   const mainContentRef = useRef<HTMLDivElement>(null);
 
@@ -57,31 +60,20 @@ const VirtualOfficeLayout = ({
 
   return (
     <div className={`flex flex-col lg:flex-row h-full w-full overflow-hidden ${className || ""}`}>
-      {/* Mobile Navigation */}
-      <div className="lg:hidden bg-black/20 backdrop-blur-lg border-b border-white/10 p-4">
-        <div className="flex gap-2 overflow-x-auto">
-          {rooms.map((room) => {
-            const Icon = room.icon;
-            const isActive = currentRoom === room.id;
-
-            return (
-              <Button
-                key={room.id}
-                variant="ghost"
-                size="sm"
-                className={`flex-shrink-0 p-3 transition-all duration-300 ${isActive
-                  ? `bg-gradient-to-r ${room.color} text-white shadow-lg`
-                  : 'text-gray-300 hover:text-white hover:bg-white/10'
-                  }`}
-                onClick={() => onRoomChange(room.id)}
-              >
-                <Icon className="w-4 h-4 mr-2" />
-                <span className="text-sm font-medium">{room.name}</span>
-              </Button>
-            );
-          })}
-        </div>
-      </div>
+      {/* Mobile Chat Sheet */}
+      <Sheet open={showMobileChat} onOpenChange={setShowMobileChat}>
+        <SheetContent side="right" className="w-full sm:w-[400px] p-0 bg-background/95 backdrop-blur-xl">
+          <SheetHeader className="p-4 border-b">
+            <SheetTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5" />
+              Team Chat
+            </SheetTitle>
+          </SheetHeader>
+          <div className="h-[calc(100vh-80px)] overflow-y-auto p-4">
+            <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 p-6 overflow-y-auto flex-shrink-0 z-20">
@@ -187,9 +179,17 @@ const VirtualOfficeLayout = ({
       </aside>
 
       {/* Main Content Area */}
-      <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 lg:p-6">
+      <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
         {children}
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav
+        currentRoom={currentRoom}
+        onRoomChange={onRoomChange}
+        onOpenChat={() => setShowMobileChat(true)}
+        onOpenCoins={() => navigate('/mycoins')}
+      />
     </div>
   );
 };
