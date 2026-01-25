@@ -69,6 +69,7 @@ export const TaskApprovalDialog = ({
   const [showReworkSection, setShowReworkSection] = useState(false);
   const [reworkNote, setReworkNote] = useState("");
   const [newDeadline, setNewDeadline] = useState<Date | undefined>(undefined);
+  const [deadlineTime, setDeadlineTime] = useState("17:00");
   const { toast } = useToast();
 
   const resetState = () => {
@@ -77,6 +78,7 @@ export const TaskApprovalDialog = ({
     setShowReworkSection(false);
     setReworkNote("");
     setNewDeadline(undefined);
+    setDeadlineTime("17:00");
   };
 
   const handleApprove = async () => {
@@ -220,9 +222,17 @@ export const TaskApprovalDialog = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Calculate combined deadline with time
+      let combinedDeadline: Date | undefined = undefined;
+      if (newDeadline) {
+        combinedDeadline = new Date(newDeadline);
+        const [hours, minutes] = deadlineTime.split(':').map(Number);
+        combinedDeadline.setHours(hours, minutes, 0, 0);
+      }
+
       // Add rework comment
       const reworkComment = {
-        text: `Task sent for rework: ${reworkNote}${newDeadline ? ` | New deadline: ${format(newDeadline, 'MMM dd, yyyy')}` : ''}`,
+        text: `Task sent for rework: ${reworkNote}${combinedDeadline ? ` | New deadline: ${format(combinedDeadline, 'MMM dd, yyyy hh:mm a')}` : ''}`,
         user_id: user.id,
         created_at: new Date().toISOString(),
         type: 'rework',
@@ -240,8 +250,8 @@ export const TaskApprovalDialog = ({
       };
 
       // Update deadline if provided
-      if (newDeadline) {
-        updateData.due_date = newDeadline.toISOString();
+      if (combinedDeadline) {
+        updateData.due_date = combinedDeadline.toISOString();
       }
 
       const { error } = await supabase
@@ -483,30 +493,38 @@ export const TaskApprovalDialog = ({
 
                 <div>
                   <Label className="text-white">New Deadline (Optional)</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal mt-2 bg-black/30 border-white/20",
-                          !newDeadline && "text-white/50"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {newDeadline ? format(newDeadline, "PPP") : "Select new deadline"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-slate-900 border-white/20" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={newDeadline}
-                        onSelect={setNewDeadline}
-                        initialFocus
-                        disabled={(date) => date < new Date()}
-                        className="bg-slate-900 text-white"
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <div className="flex gap-2 mt-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "flex-1 justify-start text-left font-normal bg-black/30 border-white/20",
+                            !newDeadline && "text-white/50"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {newDeadline ? format(newDeadline, "PPP") : "Select date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 bg-slate-900 border-white/20" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={newDeadline}
+                          onSelect={setNewDeadline}
+                          initialFocus
+                          disabled={(date) => date < new Date()}
+                          className="bg-slate-900 text-white pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      type="time"
+                      value={deadlineTime}
+                      onChange={(e) => setDeadlineTime(e.target.value)}
+                      className="w-32 bg-black/30 border-white/20 text-white"
+                    />
+                  </div>
                 </div>
 
                 <Button
