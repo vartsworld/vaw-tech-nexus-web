@@ -12,20 +12,25 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   CheckCircle,
   XCircle,
   FileText,
   Download,
   User,
-  Calendar,
+  Calendar as CalendarIcon,
   MessageSquare,
   ArrowRight,
   Loader2,
+  RotateCcw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface Task {
   id: string;
@@ -61,7 +66,18 @@ export const TaskApprovalDialog = ({
   const [feedback, setFeedback] = useState("");
   const [requireHandover, setRequireHandover] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showReworkSection, setShowReworkSection] = useState(false);
+  const [reworkNote, setReworkNote] = useState("");
+  const [newDeadline, setNewDeadline] = useState<Date | undefined>(undefined);
   const { toast } = useToast();
+
+  const resetState = () => {
+    setFeedback("");
+    setRequireHandover(false);
+    setShowReworkSection(false);
+    setReworkNote("");
+    setNewDeadline(undefined);
+  };
 
   const handleApprove = async () => {
     if (!task) return;
@@ -122,8 +138,7 @@ export const TaskApprovalDialog = ({
 
       onApproved();
       onOpenChange(false);
-      setFeedback("");
-      setRequireHandover(false);
+      resetState();
     } catch (error) {
       console.error('Error approving task:', error);
       toast({
@@ -175,13 +190,80 @@ export const TaskApprovalDialog = ({
 
       onApproved();
       onOpenChange(false);
-      setFeedback("");
-      setRequireHandover(false);
+      resetState();
     } catch (error) {
       console.error('Error requesting handover:', error);
       toast({
         title: "Request failed",
         description: "Failed to request handover",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSendForRework = async () => {
+    if (!task) return;
+    if (!reworkNote.trim()) {
+      toast({
+        title: "Rework note required",
+        description: "Please add a note explaining what needs to be fixed",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Add rework comment
+      const reworkComment = {
+        text: `Task sent for rework: ${reworkNote}${newDeadline ? ` | New deadline: ${format(newDeadline, 'MMM dd, yyyy')}` : ''}`,
+        user_id: user.id,
+        created_at: new Date().toISOString(),
+        type: 'rework',
+      };
+
+      const updatedComments = [
+        ...(task.comments || []),
+        reworkComment,
+      ];
+
+      const updateData: any = {
+        status: 'in_progress',
+        comments: updatedComments,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Update deadline if provided
+      if (newDeadline) {
+        updateData.due_date = newDeadline.toISOString();
+      }
+
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update(updateData)
+        .eq('id', task.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Task sent for rework",
+        description: "The staff member has been notified to revise their work",
+      });
+
+      onApproved();
+      onOpenChange(false);
+      resetState();
+    } catch (error) {
+      console.error('Error sending task for rework:', error);
+      toast({
+        title: "Failed",
+        description: "Could not send task for rework",
         variant: "destructive",
       });
     } finally {
@@ -223,7 +305,10 @@ export const TaskApprovalDialog = ({
   if (!task) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) resetState();
+      onOpenChange(isOpen);
+    }}>
       <DialogContent className="max-w-3xl max-h-[90vh] bg-gradient-to-br from-slate-900 to-slate-800 border-white/20 text-white">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
@@ -279,7 +364,7 @@ export const TaskApprovalDialog = ({
               </div>
               {task.due_date && (
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-orange-400" />
+                  <CalendarIcon className="w-5 h-5 text-orange-400" />
                   <div>
                     <p className="text-xs text-white/50">Due Date</p>
                     <p className="text-sm font-medium">
@@ -302,7 +387,12 @@ export const TaskApprovalDialog = ({
                   </h3>
                   <div className="space-y-2">
                     {task.comments.map((comment: any, idx: number) => (
-                      <div key={idx} className="bg-black/30 rounded-lg p-3 border border-white/10">
+                      <div key={idx} className={cn(
+                        "rounded-lg p-3 border",
+                        comment.type === 'rework' 
+                          ? "bg-red-500/10 border-red-500/30" 
+                          : "bg-black/30 border-white/10"
+                      )}>
                         <p className="text-white/90 text-sm">{comment.text}</p>
                         <p className="text-white/50 text-xs mt-1">
                           {format(new Date(comment.created_at), 'MMM dd, yyyy HH:mm')}
@@ -359,66 +449,152 @@ export const TaskApprovalDialog = ({
               </>
             )}
 
-            {/* Approval Section */}
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="feedback" className="text-white">
-                  Feedback (Optional)
-                </Label>
-                <Textarea
-                  id="feedback"
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="Add feedback or comments..."
-                  className="bg-black/30 border-white/20 text-white mt-2"
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex items-center justify-between bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
-                <div className="flex items-center gap-2">
-                  <ArrowRight className="w-5 h-5 text-orange-400" />
-                  <Label htmlFor="handover" className="text-white cursor-pointer">
-                    Require Handover
-                  </Label>
+            {/* Rework Section */}
+            {showReworkSection ? (
+              <div className="space-y-4 bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold flex items-center gap-2 text-red-300">
+                    <RotateCcw className="w-5 h-5" />
+                    Send for Rework
+                  </h3>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setShowReworkSection(false)}
+                    className="text-white/70 hover:text-white"
+                  >
+                    Cancel
+                  </Button>
                 </div>
-                <Switch
-                  id="handover"
-                  checked={requireHandover}
-                  onCheckedChange={setRequireHandover}
-                />
-              </div>
+                
+                <div>
+                  <Label htmlFor="reworkNote" className="text-white">
+                    Rework Note <span className="text-red-400">*</span>
+                  </Label>
+                  <Textarea
+                    id="reworkNote"
+                    value={reworkNote}
+                    onChange={(e) => setReworkNote(e.target.value)}
+                    placeholder="Explain what needs to be fixed or improved..."
+                    className="bg-black/30 border-white/20 text-white mt-2"
+                    rows={3}
+                  />
+                </div>
 
-              <div className="flex gap-3">
-                {requireHandover ? (
-                  <Button
-                    onClick={handleRequestHandover}
-                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <ArrowRight className="w-4 h-4 mr-2" />
-                    )}
-                    Request Handover
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={handleApprove}
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                    )}
-                    Approve & Complete
-                  </Button>
-                )}
+                <div>
+                  <Label className="text-white">New Deadline (Optional)</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal mt-2 bg-black/30 border-white/20",
+                          !newDeadline && "text-white/50"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {newDeadline ? format(newDeadline, "PPP") : "Select new deadline"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-slate-900 border-white/20" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={newDeadline}
+                        onSelect={setNewDeadline}
+                        initialFocus
+                        disabled={(date) => date < new Date()}
+                        className="bg-slate-900 text-white"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <Button
+                  onClick={handleSendForRework}
+                  className="w-full bg-red-500 hover:bg-red-600 text-white"
+                  disabled={isSubmitting || !reworkNote.trim()}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                  )}
+                  Send for Rework
+                </Button>
               </div>
-            </div>
+            ) : (
+              /* Approval Section */
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="feedback" className="text-white">
+                    Feedback (Optional)
+                  </Label>
+                  <Textarea
+                    id="feedback"
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    placeholder="Add feedback or comments..."
+                    className="bg-black/30 border-white/20 text-white mt-2"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <ArrowRight className="w-5 h-5 text-orange-400" />
+                    <Label htmlFor="handover" className="text-white cursor-pointer">
+                      Require Handover
+                    </Label>
+                  </div>
+                  <Switch
+                    id="handover"
+                    checked={requireHandover}
+                    onCheckedChange={setRequireHandover}
+                  />
+                </div>
+
+                <div className="flex gap-3 flex-col sm:flex-row">
+                  {requireHandover ? (
+                    <Button
+                      onClick={handleRequestHandover}
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <ArrowRight className="w-4 h-4 mr-2" />
+                      )}
+                      Request Handover
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={handleApprove}
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                        )}
+                        Approve & Complete
+                      </Button>
+                      <Button
+                        onClick={() => setShowReworkSection(true)}
+                        variant="outline"
+                        className="flex-1 border-red-400/50 text-red-300 hover:bg-red-500/20"
+                        disabled={isSubmitting}
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Not Approved / Rework
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </ScrollArea>
       </DialogContent>
