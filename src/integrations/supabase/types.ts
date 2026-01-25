@@ -279,6 +279,41 @@ export type Database = {
           },
         ]
       }
+      chat_typing_indicators: {
+        Row: {
+          channel_id: string | null
+          id: string
+          is_typing: boolean
+          recipient_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_id?: string | null
+          id?: string
+          is_typing?: boolean
+          recipient_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string | null
+          id?: string
+          is_typing?: boolean
+          recipient_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_typing_indicators_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chess_game_history: {
         Row: {
           created_at: string | null
@@ -4423,6 +4458,7 @@ export type Database = {
         Args: { p_coins_needed: number; p_head_id: string }
         Returns: boolean
       }
+      cleanup_stale_typing_indicators: { Args: never; Returns: undefined }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {

@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { Send, Hash, Users, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import TypingIndicator from "./TypingIndicator";
+import { AnimatePresence } from "framer-motion";
 
 interface ChatMessage {
   id: string;
@@ -40,6 +42,12 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Typing indicator hook
+  const { typingUsers, handleTyping, stopTyping } = useTypingIndicator({
+    userId,
+    channelId: activeChannelId || undefined
+  });
 
   useEffect(() => {
     fetchChannels();
@@ -179,6 +187,7 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
     const messageContent = newMessage.trim();
     setNewMessage('');
     setIsLoading(true);
+    stopTyping(); // Clear typing indicator when sending
 
     try {
       const { data, error } = await supabase
@@ -213,6 +222,11 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    handleTyping(); // Trigger typing indicator
   };
 
   const scrollToBottom = () => {
@@ -298,12 +312,21 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
           </div>
         </ScrollArea>
 
+        {/* Typing Indicator */}
+        <AnimatePresence>
+          {typingUsers.length > 0 && (
+            <div className="px-4 py-2">
+              <TypingIndicator typingUsers={typingUsers} />
+            </div>
+          )}
+        </AnimatePresence>
+
         {/* Message Input */}
         <div className="p-4 border-t border-white/20 mt-4">
           <div className="flex gap-2">
             <Input
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={handleKeyPress}
               placeholder="Type a message..."
               className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
