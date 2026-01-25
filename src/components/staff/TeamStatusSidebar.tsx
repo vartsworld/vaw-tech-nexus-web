@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, ArrowLeft, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import TypingIndicator from "./TypingIndicator";
+import { AnimatePresence } from "framer-motion";
 
 interface TeamMember {
   user_id: string;
@@ -35,6 +38,12 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  // Typing indicator for DMs
+  const { typingUsers, handleTyping, stopTyping } = useTypingIndicator({
+    userId: currentUserId || '',
+    recipientId: selectedMember?.user_id
+  });
 
   useEffect(() => {
     fetchTeamMembers();
@@ -171,6 +180,8 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
 
     const content = newMessage.trim();
     setIsLoading(true);
+    stopTyping(); // Clear typing indicator when sending
+    
     try {
       setNewMessage('');
 
@@ -202,6 +213,11 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewMessage(e.target.value);
+    handleTyping(); // Trigger typing indicator
   };
 
   const scrollToBottom = () => {
@@ -304,12 +320,21 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
           </div>
         </ScrollArea>
 
+        {/* Typing Indicator */}
+        <AnimatePresence>
+          {typingUsers.length > 0 && (
+            <div className="px-3 py-1">
+              <TypingIndicator typingUsers={typingUsers} />
+            </div>
+          )}
+        </AnimatePresence>
+
         {/* Input */}
         <div className="p-3 border-t border-white/10">
           <div className="flex gap-2">
             <Input
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={handleKeyPress}
               placeholder="Type a message..."
               className="bg-white/10 border-white/20 text-white placeholder:text-white/40 text-sm h-9"
