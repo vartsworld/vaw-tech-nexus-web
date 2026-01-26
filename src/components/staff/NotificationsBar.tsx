@@ -27,11 +27,13 @@ const NotificationsBar = ({ userId }: NotificationsBarProps) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    if (!userId) return;
+    
     fetchNotifications();
     
-    // Set up real-time subscription
-    const subscription = supabase
-      .channel('notifications-channel')
+    // Set up real-time subscription for notifications
+    const notificationChannel = supabase
+      .channel(`notifications-realtime-${userId}`)
       .on('postgres_changes', 
         { 
           event: 'INSERT', 
@@ -39,19 +41,75 @@ const NotificationsBar = ({ userId }: NotificationsBarProps) => {
           table: 'staff_notifications' 
         }, 
         (payload) => {
-          fetchNotifications();
+          const newNotification = payload.new as any;
+          // Add new notification to state immediately (optimistic)
+          setNotifications(prev => {
+            if (prev.some(n => n.id === newNotification.id)) return prev;
+            return [newNotification, ...prev].slice(0, 10);
+          });
+          
+          // Update unread count
+          if (!newNotification.read_by?.includes(userId)) {
+            setUnreadCount(prev => prev + 1);
+          }
+          
+          // Show toast with sound notification effect
           toast({
-            title: "New Notification",
-            description: payload.new.title,
+            title: "🔔 New Notification",
+            description: newNotification.title,
+            duration: 5000,
+          });
+        }
+      )
+      .on('postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'staff_notifications'
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          setNotifications(prev => prev.map(n => n.id === updated.id ? updated : n));
+        }
+      )
+      .subscribe();
+
+    // Also subscribe to new chat messages for DM notifications
+    const chatChannel = supabase
+      .channel(`chat-notifications-${userId}`)
+      .on('postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `recipient_id=eq.${userId}`
+        },
+        async (payload) => {
+          const msg = payload.new as any;
+          // Don't notify for own messages
+          if (msg.sender_id === userId) return;
+          
+          // Fetch sender name
+          const { data: sender } = await supabase
+            .from('staff_profiles')
+            .select('full_name')
+            .eq('user_id', msg.sender_id)
+            .single();
+          
+          toast({
+            title: `💬 New message from ${sender?.full_name || 'Team member'}`,
+            description: msg.content?.substring(0, 50) + (msg.content?.length > 50 ? '...' : ''),
+            duration: 4000,
           });
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(subscription);
+      supabase.removeChannel(notificationChannel);
+      supabase.removeChannel(chatChannel);
     };
-  }, [userId]);
+  }, [userId, toast]);
 
   const fetchNotifications = async () => {
     try {

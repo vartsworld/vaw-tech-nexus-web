@@ -48,9 +48,9 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
   useEffect(() => {
     fetchTeamMembers();
 
-    // Subscribe to real-time status changes
-    const channel = supabase
-      .channel('team_status')
+    // Subscribe to real-time status changes with immediate updates
+    const statusChannel = supabase
+      .channel('team_status_realtime')
       .on(
         'postgres_changes',
         {
@@ -58,16 +58,65 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
           schema: 'public',
           table: 'user_presence_status'
         },
-        () => {
-          fetchTeamMembers();
+        (payload) => {
+          // Update member status in real-time without full refetch
+          const newData = payload.new as { user_id?: string; current_status?: string };
+          if (newData && newData.user_id) {
+            setTeamMembers(prev => prev.map(member => 
+              member.user_id === newData.user_id 
+                ? { ...member, status: newData.current_status || member.status }
+                : member
+            ));
+          }
         }
       )
       .subscribe();
 
+    // Also track Supabase Presence for instant online/offline detection
+    const presenceChannel = supabase
+      .channel('online_users_presence')
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const onlineIds = new Set<string>();
+        Object.values(state).forEach((presences: any) => {
+          presences.forEach((p: any) => {
+            if (p.user_id) onlineIds.add(p.user_id);
+          });
+        });
+        setTeamMembers(prev => prev.map(member => ({
+          ...member,
+          isOnline: onlineIds.has(member.user_id)
+        })));
+      })
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        newPresences.forEach((p: any) => {
+          if (p.user_id) {
+            setTeamMembers(prev => prev.map(member =>
+              member.user_id === p.user_id ? { ...member, isOnline: true } : member
+            ));
+          }
+        });
+      })
+      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        leftPresences.forEach((p: any) => {
+          if (p.user_id) {
+            setTeamMembers(prev => prev.map(member =>
+              member.user_id === p.user_id ? { ...member, isOnline: false } : member
+            ));
+          }
+        });
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED' && currentUserId) {
+          await presenceChannel.track({ user_id: currentUserId });
+        }
+      });
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(statusChannel);
+      supabase.removeChannel(presenceChannel);
     };
-  }, [onlineUsers]);
+  }, [currentUserId]);
 
   useEffect(() => {
     if (selectedMember && currentUserId) {
