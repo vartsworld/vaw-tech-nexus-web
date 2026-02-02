@@ -1,0 +1,21 @@
+{
+    "name": "VAW Technologies",
+    "short_name": "VAW Tech",
+    "theme_color": "#0f172a",
+    "background_color": "#0f172a",
+    "display": "standalone",
+    "scope": "/",
+    "start_url": "/",
+    "icons": [
+        {
+            "src": "/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
