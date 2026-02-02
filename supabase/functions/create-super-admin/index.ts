@@ -31,9 +31,13 @@ serve(async (req) => {
     const { action } = await req.json()
 
     if (action === 'create_super_admin') {
-      // Super admin credentials
-      const superAdminEmail = 'superwow@vaw.tech'
-      const superAdminPassword = 'tech.vaw@wowsuper'
+      // Super admin credentials (moved to environment variables for security)
+      const superAdminEmail = Deno.env.get('SUPER_ADMIN_EMAIL') ?? 'superwow@vaw.tech'
+      const superAdminPassword = Deno.env.get('SUPER_ADMIN_PASSWORD')
+
+      if (!superAdminPassword) {
+        throw new Error('SUPER_ADMIN_PASSWORD environment variable is not set')
+      }
 
       // Check if user already exists
       const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
