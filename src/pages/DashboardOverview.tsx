@@ -26,9 +26,13 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
         activeProjects: 0,
         totalPaid: 0,
         pendingPaymentsCount: 0,
-        completedProjects: 0
+        completedProjects: 0,
+        pendingReminders: 0,
+        openErrors: 0,
+        unreadNotifications: 0
     });
     const [recentProjects, setRecentProjects] = useState<any[]>([]);
+    const [paymentReminders, setPaymentReminders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -44,6 +48,29 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
             .select("*")
             .eq("client_id", profile.id);
 
+        // Fetch payment reminders
+        const { data: reminders } = await supabase
+            .from("payment_reminders")
+            .select("*")
+            .eq("client_id", profile.id)
+            .in("status", ["pending", "sent", "overdue"])
+            .order("due_date", { ascending: true })
+            .limit(3);
+
+        // Fetch error logs
+        const { data: errors } = await supabase
+            .from("client_error_logs")
+            .select("*")
+            .eq("client_id", profile.id)
+            .eq("status", "open");
+
+        // Fetch unread notifications
+        const { data: notifications } = await supabase
+            .from("client_notifications")
+            .select("*")
+            .eq("client_id", profile.id)
+            .eq("read", false);
+
         if (projects) {
             const active = projects.filter(p => !['completed', 'cancel'].includes(p.status)).length;
             const completed = projects.filter(p => p.status === 'completed').length;
@@ -53,9 +80,13 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                 activeProjects: active,
                 totalPaid: paid,
                 pendingPaymentsCount: projects.filter(p => p.total_amount > p.amount_paid).length,
-                completedProjects: completed
+                completedProjects: completed,
+                pendingReminders: reminders?.length || 0,
+                openErrors: errors?.length || 0,
+                unreadNotifications: notifications?.length || 0
             });
             setRecentProjects(projects.slice(0, 3));
+            setPaymentReminders(reminders || []);
         }
         setLoading(false);
     };
@@ -145,6 +176,99 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                     </motion.div>
                 ))}
             </div>
+
+            {/* Payment Reminders Alert */}
+            {paymentReminders.length > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                >
+                    <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 border-orange-500/30 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,.02)_50%,transparent_75%,transparent_100%)] bg-[length:250%_250%] animate-[shimmer_60s_linear_infinite]" />
+                        <CardHeader className="relative">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <CardTitle className="text-white flex items-center gap-2">
+                                        <Clock className="w-5 h-5 text-orange-500" />
+                                        Payment Reminders
+                                    </CardTitle>
+                                    <CardDescription className="text-gray-300 font-medium mt-1">
+                                        You have {stats.pendingReminders} pending payment{stats.pendingReminders !== 1 ? 's' : ''}
+                                    </CardDescription>
+                                </div>
+                                <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/40">Urgent</Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="relative space-y-3">
+                            {paymentReminders.slice(0, 2).map((reminder, idx) => {
+                                const dueDate = new Date(reminder.due_date);
+                                const today = new Date();
+                                const daysUntil = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                                const isOverdue = daysUntil < 0;
+
+                                return (
+                                    <div
+                                        key={reminder.id}
+                                        className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-4 flex items-center justify-between"
+                                    >
+                                        <div>
+                                            <p className="text-sm font-bold text-white">{reminder.title}</p>
+                                            <p className="text-xs text-gray-400 mt-1">
+                                                Amount: <span className="text-tech-gold font-bold">₹{Number(reminder.amount).toLocaleString()}</span>
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <Badge
+                                                variant={isOverdue ? "destructive" : "outline"}
+                                                className={isOverdue ? "bg-red-500/20 text-red-400" : "bg-orange-500/10 text-orange-400"}
+                                            >
+                                                {isOverdue
+                                                    ? `${Math.abs(daysUntil)} days overdue`
+                                                    : daysUntil === 0
+                                                        ? "Due today"
+                                                        : `${daysUntil} days left`
+                                                }
+                                            </Badge>
+                                            <p className="text-[10px] text-gray-500 mt-1">{dueDate.toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            <Button
+                                className="w-full bg-white/5 hover:bg-white/10 border border-white/20 text-white font-bold"
+                                onClick={() => window.location.href = '/client/dashboard/financials'}
+                            >
+                                View All Payments
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+            )}
+
+            {/* Quick Error Report Button */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+            >
+                <Button
+                    variant="outline"
+                    className="w-full border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-white font-bold h-14 rounded-xl justify-between px-6 group"
+                    onClick={() => window.location.href = '/client/dashboard/support?tab=error-log'}
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-500/20 rounded-lg">
+                            <AlertCircle className="w-5 h-5 text-red-500" />
+                        </div>
+                        <div className="text-left">
+                            <p className="text-sm font-bold">Report an Issue</p>
+                            <p className="text-xs text-gray-400">Something not working? Let us know</p>
+                        </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all" />
+                </Button>
+            </motion.div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Recent Projects */}

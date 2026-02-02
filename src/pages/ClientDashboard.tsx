@@ -23,13 +23,18 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-// Sub-components (to be implemented)
+// Sub-components
 import DashboardOverview from "./DashboardOverview";
 import ProjectExplorer from "./ProjectExplorer";
 import FinancialHub from "./FinancialHub";
 import SupportNexus from "./SupportNexus";
 import ClientSettings from "./ClientSettings";
 import ClientNotificationCenter from "@/components/client/NotificationCenter";
+import PaymentCenter from "./PaymentCenter";
+import FeedbackHub from "@/components/client/FeedbackHub";
+import ErrorLogger from "@/components/client/ErrorLogger";
+import PWAInstallPrompt from "@/components/client/PWAInstallPrompt";
+import MobileBottomNav from "@/components/client/MobileBottomNav";
 
 const ClientDashboard = () => {
     // Sidebar closed by default on mobile (< 1024px), open on desktop
@@ -287,15 +292,21 @@ const ClientDashboard = () => {
                             <Routes>
                                 <Route index element={<DashboardOverview profile={profile} />} />
                                 <Route path="projects" element={<ProjectExplorer profile={profile} />} />
-                                <Route path="financials" element={<FinancialHub profile={profile} />} />
+                                <Route path="financials" element={<PaymentCenter profile={profile} />} />
                                 <Route path="support" element={<SupportNexus profile={profile} />} />
                                 <Route path="settings" element={<ClientSettings profile={profile} onProfileUpdate={checkUser} />} />
                             </Routes>
                         </motion.div>
                     </AnimatePresence>
                 </main>
+
+                {/* PWA Install Prompt */}
+                <PWAInstallPrompt />
+
+                {/* Mobile Bottom Navigation */}
+                <MobileBottomNav />
             </div>
-        </div>
+        </div >
     );
 };
 
