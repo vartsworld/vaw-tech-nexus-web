@@ -701,35 +701,189 @@ export type Database = {
           },
         ]
       }
+      client_error_logs: {
+        Row: {
+          assigned_to: string | null
+          browser_info: Json | null
+          client_id: string | null
+          created_at: string | null
+          description: string
+          error_type: string
+          id: string
+          page_url: string | null
+          priority: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          screenshot_url: string | null
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          browser_info?: Json | null
+          client_id?: string | null
+          created_at?: string | null
+          description: string
+          error_type: string
+          id?: string
+          page_url?: string | null
+          priority?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          screenshot_url?: string | null
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          browser_info?: Json | null
+          client_id?: string | null
+          created_at?: string | null
+          description?: string
+          error_type?: string
+          id?: string
+          page_url?: string | null
+          priority?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          screenshot_url?: string | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_error_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_feature_requests: {
+        Row: {
+          admin_notes: string | null
+          assigned_to: string | null
+          category: string | null
+          client_id: string | null
+          completion_date: string | null
+          created_at: string | null
+          description: string
+          estimated_effort: string | null
+          id: string
+          metadata: Json | null
+          priority: string | null
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string | null
+          upvoted_by: string[] | null
+          votes: number | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          category?: string | null
+          client_id?: string | null
+          completion_date?: string | null
+          created_at?: string | null
+          description: string
+          estimated_effort?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string | null
+          upvoted_by?: string[] | null
+          votes?: number | null
+        }
+        Update: {
+          admin_notes?: string | null
+          assigned_to?: string | null
+          category?: string | null
+          client_id?: string | null
+          completion_date?: string | null
+          created_at?: string | null
+          description?: string
+          estimated_effort?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: string | null
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string | null
+          upvoted_by?: string[] | null
+          votes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_feature_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_feedback: {
         Row: {
+          assigned_to: string | null
           client_id: string | null
           created_at: string | null
           id: string
           message: string
+          metadata: Json | null
+          priority: string | null
           project_id: string | null
+          rating: number | null
+          responded_at: string | null
+          responded_by: string | null
+          response: string | null
           status: string | null
           subject: string
           type: string
           updated_at: string | null
         }
         Insert: {
+          assigned_to?: string | null
           client_id?: string | null
           created_at?: string | null
           id?: string
           message: string
+          metadata?: Json | null
+          priority?: string | null
           project_id?: string | null
+          rating?: number | null
+          responded_at?: string | null
+          responded_by?: string | null
+          response?: string | null
           status?: string | null
           subject: string
           type: string
           updated_at?: string | null
         }
         Update: {
+          assigned_to?: string | null
           client_id?: string | null
           created_at?: string | null
           id?: string
           message?: string
+          metadata?: Json | null
+          priority?: string | null
           project_id?: string | null
+          rating?: number | null
+          responded_at?: string | null
+          responded_by?: string | null
+          response?: string | null
           status?: string | null
           subject?: string
           type?: string
@@ -784,6 +938,8 @@ export type Database = {
       }
       client_notifications: {
         Row: {
+          action_url: string | null
+          category: string | null
           client_id: string | null
           created_at: string | null
           created_by: string | null
@@ -799,6 +955,8 @@ export type Database = {
           type: string | null
         }
         Insert: {
+          action_url?: string | null
+          category?: string | null
           client_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -814,6 +972,8 @@ export type Database = {
           type?: string | null
         }
         Update: {
+          action_url?: string | null
+          category?: string | null
           client_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -972,6 +1132,62 @@ export type Database = {
             foreignKeyName: "client_projects_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_webpages: {
+        Row: {
+          branding: Json | null
+          client_id: string | null
+          content: Json | null
+          created_at: string | null
+          created_by: string | null
+          custom_domain: string | null
+          id: string
+          is_published: boolean | null
+          meta_tags: Json | null
+          published_at: string | null
+          slug: string
+          template: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          branding?: Json | null
+          client_id?: string | null
+          content?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          custom_domain?: string | null
+          id?: string
+          is_published?: boolean | null
+          meta_tags?: Json | null
+          published_at?: string | null
+          slug: string
+          template?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          branding?: Json | null
+          client_id?: string | null
+          content?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          custom_domain?: string | null
+          id?: string
+          is_published?: boolean | null
+          meta_tags?: Json | null
+          published_at?: string | null
+          slug?: string
+          template?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_webpages_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
             referencedRelation: "client_profiles"
             referencedColumns: ["id"]
           },
@@ -1815,6 +2031,66 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      payment_reminders: {
+        Row: {
+          amount: number
+          client_id: string | null
+          created_at: string | null
+          created_by: string | null
+          due_date: string
+          id: string
+          notes: string | null
+          project_id: string | null
+          reminder_schedule: Json | null
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          due_date: string
+          id?: string
+          notes?: string | null
+          project_id?: string | null
+          reminder_schedule?: Json | null
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          due_date?: string
+          id?: string
+          notes?: string | null
+          project_id?: string | null
+          reminder_schedule?: Json | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_reminders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_reminders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       points_redemptions: {
         Row: {
@@ -4593,6 +4869,10 @@ export type Database = {
       geomfromewkt: { Args: { "": string }; Returns: unknown }
       get_app_setting: {
         Args: { p_default?: Json; p_key: string }
+        Returns: Json
+      }
+      get_client_dashboard_stats: {
+        Args: { p_client_id: string }
         Returns: Json
       }
       get_current_financial_year: { Args: never; Returns: string }
