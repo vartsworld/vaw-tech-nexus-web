@@ -143,7 +143,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                 .from('payment-confirmations')
                 .getPublicUrl(fileName);
 
-            // Create payment confirmation record (you may want to create a new table for this)
+            // Create payment confirmation record
             const { error: insertError } = await supabase
                 .from('client_documents')
                 .insert({
@@ -153,10 +153,21 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                     doc_type: 'payment_confirmation',
                     amount: selectedReminder.amount,
                     status: 'pending_verification',
-                    // Store transaction ID in metadata or separate field
+                    metadata: { transaction_id: transactionId }
                 });
 
             if (insertError) throw insertError;
+
+            // Update the payment reminder status
+            const { error: updateError } = await supabase
+                .from('payment_reminders')
+                .update({ status: 'confirmation_submitted' })
+                .eq('id', selectedReminder.id);
+
+            if (updateError) {
+                console.error("Warning: Failed to update reminder status:", updateError);
+                // We don't throw here as the main document was already inserted
+            }
 
             // Create notification for admin
             await supabase
@@ -194,6 +205,10 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
     const getStatusBadge = (status: string, dueDate?: string) => {
         if (status === 'paid') {
             return <Badge className="bg-green-500/20 text-green-400 border-0">Paid</Badge>;
+        }
+
+        if (status === 'confirmation_submitted') {
+            return <Badge className="bg-blue-500/20 text-blue-400 border-0">Verifying...</Badge>;
         }
 
         if (dueDate) {

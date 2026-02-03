@@ -87,6 +87,7 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                     subject: newSignal.subject,
                     message: newSignal.message,
                     status: 'pending',
+                    priority: newSignal.priority,
                     metadata: { priority: newSignal.priority }
                 });
 
@@ -151,10 +152,10 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                                         <SelectValue placeholder="Select Type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="technical">Technical Issue</SelectItem>
-                                        <SelectItem value="billing">Billing Inquiry</SelectItem>
-                                        <SelectItem value="project">Project Update</SelectItem>
-                                        <SelectItem value="other">Other</SelectItem>
+                                        <SelectItem value="bug_report">Technical Issue</SelectItem>
+                                        <SelectItem value="support">Billing Inquiry</SelectItem>
+                                        <SelectItem value="update_request">Project Update</SelectItem>
+                                        <SelectItem value="suggestion">Other / Suggestion</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

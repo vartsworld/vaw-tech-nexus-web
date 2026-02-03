@@ -101,10 +101,12 @@ const FeedbackHub = ({ clientId }: FeedbackHubProps) => {
                 .from("client_feedback")
                 .insert({
                     client_id: clientId,
-                    feedback: feedbackText.trim(),
-                    category: feedbackCategory,
+                    message: feedbackText.trim(),
+                    type: 'feedback',
+                    subject: 'Client Feedback',
                     rating: rating,
-                    status: "submitted"
+                    status: "pending",
+                    metadata: { category: feedbackCategory }
                 });
 
             if (error) throw error;
@@ -144,7 +146,7 @@ const FeedbackHub = ({ clientId }: FeedbackHubProps) => {
                     description: featureDescription.trim(),
                     category: featureCategory,
                     status: "submitted",
-                    upvotes: 0
+                    votes: 0
                 });
 
             if (error) throw error;
@@ -171,7 +173,7 @@ const FeedbackHub = ({ clientId }: FeedbackHubProps) => {
         try {
             const { error } = await supabase
                 .from("client_feature_requests")
-                .update({ upvotes: currentUpvotes + 1 })
+                .update({ votes: currentUpvotes + 1 })
                 .eq("id", featureId);
 
             if (error) throw error;
