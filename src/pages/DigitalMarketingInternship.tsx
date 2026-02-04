@@ -134,219 +134,184 @@ const DigitalMarketingInternship = () => {
       <ParticleBackground />
       <Navbar />
 
-      {/* Hero Section with Amber Theme */}
-      <section className="relative py-16 md:py-24 overflow-hidden">
-        {/* Amber gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-orange-500/10 to-yellow-500/20 pointer-events-none" />
-        
-        <div className="container mx-auto px-4 relative z-10">
+      <section className="relative py-16 md:py-24">
+        <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-            {/* Left: Poster & Info */}
-            <motion.div initial={{
-            opacity: 0,
-            x: -50
-          }} animate={{
-            opacity: 1,
-            x: 0
-          }} transition={{
-            duration: 0.6
-          }} className="space-y-8">
-              {/* Poster Image */}
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition duration-500" />
-                <img src={digitalMarketingPoster} alt="Digital Marketing Internship - What You Know vs What You'll Learn" className="relative rounded-2xl shadow-2xl w-full max-w-md mx-auto lg:mx-0 border-4 border-amber-500/30" />
-              </div>
-
-              {/* Program Highlights */}
-              
+            {/* Left: Poster */}
+            <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
+              <img src={digitalMarketingPoster} alt="Digital Marketing Internship" className="rounded-xl shadow-lg w-full max-w-md mx-auto lg:mx-0" />
             </motion.div>
 
             {/* Right: Application Form */}
-            <motion.div initial={{
-            opacity: 0,
-            x: 50
-          }} animate={{
-            opacity: 1,
-            x: 0
-          }} transition={{
-            duration: 0.6,
-            delay: 0.2
-          }} className="bg-gradient-to-br from-amber-950/40 to-background/80 border border-amber-500/30 rounded-2xl p-6 md:p-8 backdrop-blur-sm">
+            <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="bg-card border border-border rounded-xl p-6 md:p-8">
               <div className="mb-6">
-                <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent">
-                  Apply for Digital Marketing Internship
-                </h1>
-                <p className="text-muted-foreground">
-                  Fill in your details to start your journey in digital marketing
-                </p>
+                <h1 className="text-2xl font-bold mb-2">Apply for Digital Marketing Internship</h1>
+                <p className="text-muted-foreground text-sm">Fill in your details to start your journey</p>
               </div>
 
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                  {/* Personal Info */}
-                  <FormField control={form.control} name="fullName" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel className="text-amber-100">Full Name*</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter your full name" {...field} className="bg-background/50 border-amber-500/30 focus:border-amber-400" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>} />
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField control={form.control} name="fullName" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name*</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter your full name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="email" render={({
-                    field
-                  }) => <FormItem>
-                          <FormLabel className="text-amber-100">Email*</FormLabel>
-                          <FormControl>
-                            <Input placeholder="your@email.com" type="email" {...field} className="bg-background/50 border-amber-500/30 focus:border-amber-400" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>} />
+                    <FormField control={form.control} name="email" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="your@email.com" type="email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
 
-                    <FormField control={form.control} name="phone" render={({
-                    field
-                  }) => <FormItem>
-                          <FormLabel className="text-amber-100">Phone*</FormLabel>
-                          <FormControl>
-                            <Input placeholder="+91 XXXXX XXXXX" {...field} className="bg-background/50 border-amber-500/30 focus:border-amber-400" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>} />
+                    <FormField control={form.control} name="phone" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="+91 XXXXX XXXXX" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="collegeName" render={({
-                    field
-                  }) => <FormItem>
-                          <FormLabel className="text-amber-100">College/University*</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Your institution" {...field} className="bg-background/50 border-amber-500/30 focus:border-amber-400" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>} />
-
-                    <FormField control={form.control} name="course" render={({
-                    field
-                  }) => <FormItem>
-                          <FormLabel className="text-amber-100">Course/Degree*</FormLabel>
-                          <FormControl>
-                            <Input placeholder="BBA, MBA, etc." {...field} className="bg-background/50 border-amber-500/30 focus:border-amber-400" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>} />
-                  </div>
-
-                  <FormField control={form.control} name="graduationYear" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel className="text-amber-100">Expected Graduation Year*</FormLabel>
+                    <FormField control={form.control} name="collegeName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>College/University*</FormLabel>
                         <FormControl>
-                          <Input placeholder="2025" {...field} className="bg-background/50 border-amber-500/30 focus:border-amber-400" />
+                          <Input placeholder="Your institution" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>} />
+                      </FormItem>
+                    )} />
+
+                    <FormField control={form.control} name="course" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Course/Degree*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="BBA, MBA, etc." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                  </div>
+
+                  <FormField control={form.control} name="graduationYear" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expected Graduation Year*</FormLabel>
+                      <FormControl>
+                        <Input placeholder="2025" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
 
                   {/* Specializations */}
-                  <FormField control={form.control} name="specialization" render={() => <FormItem>
-                        <FormLabel className="text-amber-100">Choose Your Focus Areas*</FormLabel>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                          {specializations.map(spec => <FormField key={spec.id} control={form.control} name="specialization" render={({
-                      field
-                    }) => <FormItem className={`flex items-center space-x-3 space-y-0 rounded-lg border p-4 cursor-pointer transition-all ${field.value?.includes(spec.id) ? 'bg-amber-500/20 border-amber-400' : 'bg-background/30 border-amber-500/20 hover:border-amber-500/50'}`}>
-                                  <FormControl>
-                                    <Checkbox checked={field.value?.includes(spec.id)} onCheckedChange={checked => {
-                          return checked ? field.onChange([...field.value, spec.id]) : field.onChange(field.value?.filter(v => v !== spec.id));
-                        }} className="border-amber-500/50 data-[state=checked]:bg-amber-500" />
-                                  </FormControl>
-                                  <div className="flex items-center gap-2">
-                                    <spec.icon className="w-4 h-4 text-amber-400" />
-                                    <FormLabel className="font-normal cursor-pointer text-amber-100">
-                                      {spec.label}
-                                    </FormLabel>
-                                  </div>
-                                </FormItem>} />)}
-                        </div>
-                        <FormMessage />
-                      </FormItem>} />
+                  <FormField control={form.control} name="specialization" render={() => (
+                    <FormItem>
+                      <FormLabel>Choose Your Focus Areas*</FormLabel>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                        {specializations.map(spec => (
+                          <FormField key={spec.id} control={form.control} name="specialization" render={({ field }) => (
+                            <FormItem className={`flex items-center space-x-3 space-y-0 rounded-lg border p-3 cursor-pointer transition-colors ${field.value?.includes(spec.id) ? 'bg-primary/10 border-primary' : 'hover:bg-muted'}`}>
+                              <FormControl>
+                                <Checkbox checked={field.value?.includes(spec.id)} onCheckedChange={checked => checked ? field.onChange([...field.value, spec.id]) : field.onChange(field.value?.filter(v => v !== spec.id))} />
+                              </FormControl>
+                              <div className="flex items-center gap-2">
+                                <spec.icon className="w-4 h-4 text-muted-foreground" />
+                                <FormLabel className="font-normal cursor-pointer text-sm">{spec.label}</FormLabel>
+                              </div>
+                            </FormItem>
+                          )} />
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
 
                   {/* Knowledge Assessment */}
-                  <div className="space-y-4 p-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
-                    <div className="flex items-center gap-2 text-amber-400 font-semibold">
-                      <TrendingUp className="w-5 h-5" />
+                  <div className="space-y-4 p-4 rounded-lg bg-muted/50 border">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <TrendingUp className="w-4 h-4" />
                       <span>Your Marketing Knowledge</span>
                     </div>
 
-                    <FormField control={form.control} name="currentKnowledge" render={({
-                    field
-                  }) => <FormItem>
-                          <FormLabel className="text-amber-100">What You Know*</FormLabel>
-                          <FormControl>
-                            <textarea className="flex min-h-[80px] w-full rounded-md border border-amber-500/30 bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400" placeholder="Describe your current knowledge in digital marketing..." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>} />
+                    <FormField control={form.control} name="currentKnowledge" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>What You Know*</FormLabel>
+                        <FormControl>
+                          <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="Describe your current knowledge in digital marketing..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
 
-                    <FormField control={form.control} name="learningGoals" render={({
-                    field
-                  }) => <FormItem>
-                          <FormLabel className="text-amber-100">What You'll Learn*</FormLabel>
-                          <FormControl>
-                            <textarea className="flex min-h-[80px] w-full rounded-md border border-amber-500/30 bg-background/50 px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400" placeholder="What skills do you want to develop during this internship?" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>} />
+                    <FormField control={form.control} name="learningGoals" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>What You'll Learn*</FormLabel>
+                        <FormControl>
+                          <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="What skills do you want to develop?" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                   </div>
 
-                  <FormField control={form.control} name="portfolio" render={({
-                  field
-                }) => <FormItem>
-                        <FormLabel className="text-amber-100">Portfolio/LinkedIn URL (Optional)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://linkedin.com/in/yourprofile" {...field} className="bg-background/50 border-amber-500/30 focus:border-amber-400" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>} />
+                  <FormField control={form.control} name="portfolio" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Portfolio/LinkedIn URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://linkedin.com/in/yourprofile" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
 
-                  <FormField control={form.control} name="resume" render={({
-                  field: {
-                    onChange,
-                    value,
-                    ...rest
-                  }
-                }) => <FormItem>
-                        <FormLabel className="text-amber-100">Upload Resume (Optional)</FormLabel>
-                        <FormControl>
-                          <Input type="file" accept=".pdf,.doc,.docx" onChange={e => onChange(e.target.files)} {...rest} className="cursor-pointer bg-background/50 border-amber-500/30" />
-                        </FormControl>
-                        <FormDescription className="text-amber-200/60">
-                          PDF or DOC format
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>} />
+                  <FormField control={form.control} name="resume" render={({ field: { onChange, value, ...rest } }) => (
+                    <FormItem>
+                      <FormLabel>Upload Resume (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="file" accept=".pdf,.doc,.docx" onChange={e => onChange(e.target.files)} {...rest} className="cursor-pointer" />
+                      </FormControl>
+                      <FormDescription>PDF or DOC format</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
 
-                  <FormField control={form.control} name="agreeToTerms" render={({
-                  field
-                }) => <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border border-amber-500/30 p-4 bg-amber-500/5">
-                        <FormControl>
-                          <Checkbox checked={field.value} onCheckedChange={field.onChange} className="border-amber-500/50 data-[state=checked]:bg-amber-500" />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="font-normal cursor-pointer text-amber-100">
-                            I agree to the terms and conditions, including the registration fee of ₹1,500/- payable after selection.
-                          </FormLabel>
-                        </div>
-                      </FormItem>} />
+                  <FormField control={form.control} name="agreeToTerms" render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border p-4">
+                      <FormControl>
+                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="font-normal cursor-pointer text-sm">
+                          I agree to the terms and conditions, including the registration fee of ₹1,500/- payable after selection.
+                        </FormLabel>
+                      </div>
+                    </FormItem>
+                  )} />
 
-                  <Button type="submit" disabled={isSubmitting} className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 hover:from-amber-600 hover:via-orange-600 hover:to-yellow-600 text-black font-bold py-6 text-lg shadow-lg shadow-amber-500/30 transition-all hover:shadow-amber-500/50">
-                    {isSubmitting ? <span className="flex items-center gap-2">
-                        <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  <Button type="submit" disabled={isSubmitting} className="w-full">
+                    {isSubmitting ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                         Submitting...
-                      </span> : <span className="flex items-center gap-2">
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
                         Submit Application
-                        <ArrowRight className="w-5 h-5" />
-                      </span>}
+                        <ArrowRight className="w-4 h-4" />
+                      </span>
+                    )}
                   </Button>
                 </form>
               </Form>
