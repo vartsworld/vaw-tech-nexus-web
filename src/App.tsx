@@ -40,6 +40,7 @@ import Install from "./pages/Install";
 import ClientLogin from "./pages/ClientLogin";
 import ClientDashboard from "./pages/ClientDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import DigitalMarketingInternship from "./pages/DigitalMarketingInternship";
 
 const queryClient = new QueryClient();
 
@@ -100,6 +101,7 @@ const AppContent = () => {
           <Route path="/vaw-cups/admin" element={<VAWAdmin />} />
           <Route path="/project-monitor" element={<ProjectMonitor />} />
           <Route path="/install" element={<Install />} />
+          <Route path="/digital-marketing-internship" element={<DigitalMarketingInternship />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
