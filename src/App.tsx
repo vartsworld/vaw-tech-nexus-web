@@ -101,6 +101,7 @@ const AppContent = () => {
           <Route path="/vaw-cups/admin" element={<VAWAdmin />} />
           <Route path="/project-monitor" element={<ProjectMonitor />} />
           <Route path="/install" element={<Install />} />
+          <Route path="/digital-marketing-internship" element={<DigitalMarketingInternship />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
