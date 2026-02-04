@@ -40,6 +40,7 @@ import Install from "./pages/Install";
 import ClientLogin from "./pages/ClientLogin";
 import ClientDashboard from "./pages/ClientDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import DigitalMarketingInternship from "./pages/DigitalMarketingInternship";
 
 const queryClient = new QueryClient();
 
