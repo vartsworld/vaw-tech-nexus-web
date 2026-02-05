@@ -312,7 +312,7 @@ const DigitalMarketingInternship = () => {
                       </FormControl>
                       <div className="space-y-1 leading-none">
                         <FormLabel className="font-normal cursor-pointer text-sm">
-                          I agree to the terms and conditions, including the registration fee of ₹1,500/- payable after selection.
+                          I agree to the terms and conditions.
                         </FormLabel>
                       </div>
                     </FormItem>} />
