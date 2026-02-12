@@ -81,7 +81,7 @@ const TaskManagement = () => {
       const { data: { user } } = await supabase.auth.getUser();
       const { data: currentUserProfile } = await supabase
         .from('staff_profiles')
-        .select('role, department_id, is_department_head, full_name, avatar_url')
+        .select('id, user_id, role, department_id, is_department_head, full_name, avatar_url')
         .eq('user_id', user?.id)
         .single();
 
@@ -898,8 +898,8 @@ const TaskManagement = () => {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {/* Show delete button for HR (all tasks) or creators (own tasks) */}
-                      {(userProfile?.role === 'hr' || task.assigned_by === userProfile?.user_id) && (
+                      {/* Show delete button for HR/Admin (all tasks) or creators (own tasks) */}
+                      {(['hr', 'admin'].includes(userProfile?.role) || task.assigned_by === userProfile?.user_id) && (
                         <Button
                           size="sm"
                           variant="ghost"
