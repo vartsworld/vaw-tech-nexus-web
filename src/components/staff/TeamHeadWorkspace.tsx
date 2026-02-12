@@ -1838,9 +1838,26 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                                     setSelectedTask(task);
                                     setIsEditTaskOpen(true);
                                   }}
+                                  title="Edit task"
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
+
+                                {/* Only show delete button for tasks created by this team head */}
+                                {task.assigned_by === userId && (
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                    onClick={() => {
+                                      setSelectedTask(task);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                    title="Delete task"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           </TableCell>
