@@ -898,21 +898,19 @@ const TaskManagement = () => {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {/* Show delete button for HR/Admin (all tasks) or creators (own tasks) */}
-                      {(['hr', 'admin'].includes(userProfile?.role) || task.assigned_by === userProfile?.user_id) && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                          onClick={() => {
-                            setTaskToDelete(task);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                          title="Delete task"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
+                      {/* Delete button - always shown on HR dashboard */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                        onClick={() => {
+                          setTaskToDelete(task);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                        title="Delete task"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
