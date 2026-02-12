@@ -898,8 +898,8 @@ const TaskManagement = () => {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {/* Only show delete button for tasks created by this HR user */}
-                      {task.assigned_by === userProfile?.user_id && (
+                      {/* Show delete button for HR (all tasks) or creators (own tasks) */}
+                      {(userProfile?.role === 'hr' || task.assigned_by === userProfile?.user_id) && (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -1197,8 +1197,27 @@ const TaskManagement = () => {
             </div>
           )}
         </DialogContent>
-      </Dialog>
-    </div>
+      </DialogContent>
+    </Dialog>
+
+      {/* Delete Confirmation Dialog */ }
+  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Delete Task</AlertDialogTitle>
+        <AlertDialogDescription>
+          Are you sure you want to delete "{taskToDelete?.title}"? This action cannot be undone and will also delete all attached files.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction onClick={handleDeleteTask} className="bg-red-500 hover:bg-red-600">
+          Delete
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+    </div >
   );
 };
 
