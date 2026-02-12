@@ -44,7 +44,7 @@ import { UserStatusBadge } from "@/components/staff/UserStatusBadge";
 import { ActivityLogPanel } from "@/components/staff/ActivityLogPanel";
 import { ReactivationDialog } from "@/components/staff/ReactivationDialog";
 import MiniChess from "@/components/staff/MiniChess";
-import TeamChat from "@/components/staff/TeamChat";
+// TeamChat moved to sidebar via VirtualOfficeLayout
 import TimeboxWidget from "@/components/staff/TimeboxWidget";
 import WidgetManager from "@/components/staff/WidgetManager";
 import { QuickNotes } from "@/components/staff/QuickNotes";
@@ -93,7 +93,6 @@ const TeamHeadDashboard = () => {
   // Widgets state
   const [widgets, setWidgets] = useState([
     { id: 'chess', name: 'Mini Chess', description: 'Play chess with colleagues', isVisible: true },
-    { id: 'chat', name: 'Team Chat', description: 'Chat with your team', isVisible: true },
     { id: 'timer', name: 'Focus Timer', description: 'Pomodoro-style focus timer', isVisible: true },
     { id: 'activity', name: 'Activity Log', description: 'Track your daily activities', isVisible: false },
   ]);
@@ -411,11 +410,6 @@ const TeamHeadDashboard = () => {
           <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
         </div>
       )}
-      {widgets.find(w => w.id === 'chat')?.isVisible && (
-        <div className="h-[500px]">
-          <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
-        </div>
-      )}
       {widgets.find(w => w.id === 'timer')?.isVisible && (
         <TimeboxWidget userId={profile?.user_id || ''} userProfile={profile} />
       )}
@@ -459,20 +453,12 @@ const TeamHeadDashboard = () => {
           )}
         </div>
 
-        {/* Row 3: Team Chat + Activity Log (side by side) */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-          {widgets.find(w => w.id === 'chat')?.isVisible && (
-            <div className="xl:col-span-2 relative z-10 h-[600px]">
-              <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
-            </div>
-          )}
-
-          {widgets.find(w => w.id === 'activity')?.isVisible && (
-            <div className="xl:col-span-1 relative z-10">
-              <ActivityLogPanel userId={profile?.user_id || ''} className="bg-black/40 backdrop-blur-lg border-white/10 h-[600px]" />
-            </div>
-          )}
-        </div>
+        {/* Row 3: Activity Log */}
+        {widgets.find(w => w.id === 'activity')?.isVisible && (
+          <div className="w-full relative z-10">
+            <ActivityLogPanel userId={profile?.user_id || ''} className="bg-black/40 backdrop-blur-lg border-white/10 h-[600px]" />
+          </div>
+        )}
 
         {/* Row 4: Chess (Bottom Center) */}
         {widgets.find(w => w.id === 'chess')?.isVisible && (
@@ -603,6 +589,7 @@ const TeamHeadDashboard = () => {
         onRoomChange={setCurrentRoom}
         onlineUsers={onlineUsers}
         userId={profile?.user_id}
+        userProfile={profile}
         className="flex-1"
       >
         {roomComponents[currentRoom]}

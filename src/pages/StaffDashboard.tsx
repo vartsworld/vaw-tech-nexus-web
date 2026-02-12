@@ -416,6 +416,7 @@ const StaffDashboard = () => {
           onRoomChange={setCurrentRoom}
           onlineUsers={onlineUsers}
           userId={profile.user_id}
+          userProfile={profile}
         >
           {roomComponents[currentRoom]}
         </VirtualOfficeLayout>
