@@ -3,12 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Hash, Users, MessageCircle } from "lucide-react";
+import { Send, Hash, Users, MessageCircle, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import TypingIndicator from "./TypingIndicator";
 import { AnimatePresence } from "framer-motion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ChatMessage {
   id: string;
@@ -279,33 +286,35 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
   };
 
   return (
-    <Card className="bg-white/10 backdrop-blur-sm border-white/20 h-full flex flex-col">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-white flex items-center gap-2">
-          <MessageCircle className="w-5 h-5" />
-          Team Chat
-        </CardTitle>
+    <Card className="bg-white/10 backdrop-blur-sm border-white/20 h-full max-h-full flex flex-col overflow-hidden">
+      <CardHeader className="pb-3 px-4 flex-shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-white flex items-center gap-2 whitespace-nowrap">
+            <MessageCircle className="w-5 h-5 text-blue-400" />
+            Team Chat
+          </CardTitle>
+
+          {channels.length > 0 && (
+            <Select value={activeChannelId} onValueChange={setActiveChannelId}>
+              <SelectTrigger className="h-8 w-[140px] bg-white/5 border-white/10 text-white text-xs">
+                <SelectValue placeholder="Select channel" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-900 border-white/10 text-white">
+                {channels.map((channel) => (
+                  <SelectItem key={channel.id} value={channel.id} className="text-xs">
+                    <div className="flex items-center gap-2">
+                      {channel.is_general ? <Hash className="w-3 h-3" /> : <Users className="w-3 h-3" />}
+                      {channel.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0">
-        {/* Channel Tabs */}
-        <div className="flex gap-1 px-4 mb-4 overflow-x-auto">
-          {channels.map((channel) => (
-            <Button
-              key={channel.id}
-              variant={activeChannelId === channel.id ? "default" : "ghost"}
-              size="sm"
-              className={`flex items-center gap-1 whitespace-nowrap ${activeChannelId === channel.id
-                ? "bg-blue-500 text-white"
-                : "text-white/70 hover:text-white"
-                }`}
-              onClick={() => setActiveChannelId(channel.id)}
-            >
-              {channel.is_general ? <Hash className="w-3 h-3" /> : <Users className="w-3 h-3" />}
-              {channel.name}
-            </Button>
-          ))}
-        </div>
+      <CardContent className="flex-1 flex flex-col p-0 min-h-0 overflow-hidden">
 
         {/* Messages Area */}
         <div
@@ -362,28 +371,24 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
         </AnimatePresence>
 
         {/* Message Input */}
-        <div className="p-4 border-t border-white/20 mt-4">
+        <div className="p-4 border-t border-white/20 flex-shrink-0">
           <div className="flex gap-2">
             <Input
               value={newMessage}
               onChange={handleInputChange}
               onKeyDown={handleKeyPress}
               placeholder="Type a message..."
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/40"
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/40 h-9"
               disabled={isLoading}
             />
             <Button
               onClick={sendMessage}
               disabled={isLoading || !newMessage.trim()}
-              size="icon"
-              className="bg-blue-500 hover:bg-blue-600 text-white"
+              size="sm"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-3"
             >
               <Send className="w-4 h-4" />
             </Button>
-          </div>
-
-          <div className="flex items-center justify-between mt-2 text-xs text-white/50">
-            <span>Press Enter to send</span>
           </div>
         </div>
       </CardContent>

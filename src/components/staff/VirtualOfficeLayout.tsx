@@ -77,22 +77,20 @@ const VirtualOfficeLayout = ({
           <div className="flex border-b border-white/10">
             <button
               onClick={() => setMobileSidebarTab('status')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
-                mobileSidebarTab === 'status'
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${mobileSidebarTab === 'status'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
+                }`}
             >
               <Users className="w-4 h-4" />
               Status
             </button>
             <button
               onClick={() => setMobileSidebarTab('chat')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
-                mobileSidebarTab === 'chat'
-                  ? 'text-primary border-b-2 border-primary'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${mobileSidebarTab === 'chat'
+                ? 'text-primary border-b-2 border-primary'
+                : 'text-muted-foreground hover:text-foreground'
+                }`}
             >
               <Hash className="w-4 h-4" />
               Team Chat
@@ -104,7 +102,7 @@ const VirtualOfficeLayout = ({
                 <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
               </div>
             ) : (
-              <div className="h-full">
+              <div className="h-full overflow-hidden flex flex-col">
                 <TeamChat userId={userId || ''} userProfile={userProfile} />
               </div>
             )}
@@ -213,22 +211,20 @@ const VirtualOfficeLayout = ({
           <div className="flex flex-shrink-0">
             <button
               onClick={() => setSidebarTab('status')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
-                sidebarTab === 'status'
-                  ? 'text-white border-b-2 border-blue-500 bg-white/5'
-                  : 'text-white/50 hover:text-white/80 hover:bg-white/5'
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${sidebarTab === 'status'
+                ? 'text-white border-b-2 border-blue-500 bg-white/5'
+                : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                }`}
             >
               <Users className="w-4 h-4" />
               Team Status
             </button>
             <button
               onClick={() => setSidebarTab('chat')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
-                sidebarTab === 'chat'
-                  ? 'text-white border-b-2 border-blue-500 bg-white/5'
-                  : 'text-white/50 hover:text-white/80 hover:bg-white/5'
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${sidebarTab === 'chat'
+                ? 'text-white border-b-2 border-blue-500 bg-white/5'
+                : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                }`}
             >
               <Hash className="w-4 h-4" />
               Team Chat
@@ -240,7 +236,7 @@ const VirtualOfficeLayout = ({
                 <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
               </div>
             ) : (
-              <div className="h-full">
+              <div className="h-full overflow-hidden flex flex-col">
                 <TeamChat userId={userId || ''} userProfile={userProfile} />
               </div>
             )}
