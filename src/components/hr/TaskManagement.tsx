@@ -1178,132 +1178,240 @@ const TaskManagement = () => {
           <CardTitle>Tasks</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Task</TableHead>
-                <TableHead>Assigned To</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Points</TableHead>
-                <TableHead>Actions</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTasks.map((task) => (
-                <TableRow key={task.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{task.title}</div>
-                      {task.description && (
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
-                          {task.description}
-                        </div>
-                      )}
-                      {task.staff_projects?.name && (
-                        <Badge variant="outline" className="mt-1 text-xs">
-                          {task.staff_projects.name}
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-gray-400" />
-                      <div>
-                        <div className="font-medium">
-                          {task.assigned_to_profile?.full_name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          @{task.assigned_to_profile?.username}
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {getPriorityBadge(task.priority)}
-                  </TableCell>
-                  <TableCell>
-                    {getStatusBadge(task.status)}
-                  </TableCell>
-                  <TableCell>
-                    {task.due_date ? (
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                        {format(new Date(task.due_date), 'MMM dd, yyyy')}
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">No due date</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{task.points} pts</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={task.status}
-                      onValueChange={(value) => handleStatusChange(task.id, value)}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-
-                        {(userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) ? (
-                          <SelectItem value="completed">Completed (Approve & Award)</SelectItem>
-                        ) : null}
-
-                        <SelectItem value="review_pending">Submit for Review</SelectItem>
-                        <SelectItem value="handover">Handover</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      {task.status === 'review_pending' &&
-                        (userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) && (
-                          <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                            onClick={() => updateTaskStatus(task.id, 'completed')}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                        )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedTask(task);
-                          setIsDetailDialogOpen(true);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {/* Delete button - always shown on HR dashboard */}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                        onClick={() => {
-                          setTaskToDelete(task);
-                          setIsDeleteDialogOpen(true);
-                        }}
-                        title="Delete task"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {/* Desktop Table View */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Task</TableHead>
+                  <TableHead>Assigned To</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Points</TableHead>
+                  <TableHead>Actions</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredTasks.map((task) => (
+                  <TableRow key={task.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{task.title}</div>
+                        {task.description && (
+                          <div className="text-sm text-gray-500 truncate max-w-xs">
+                            {task.description}
+                          </div>
+                        )}
+                        {task.staff_projects?.name && (
+                          <Badge variant="outline" className="mt-1 text-xs">
+                            {task.staff_projects.name}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-400" />
+                        <div>
+                          <div className="font-medium">
+                            {task.assigned_to_profile?.full_name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            @{task.assigned_to_profile?.username}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {getPriorityBadge(task.priority)}
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(task.status)}
+                    </TableCell>
+                    <TableCell>
+                      {task.due_date ? (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          {format(new Date(task.due_date), 'MMM dd, yyyy')}
+                          {task.due_time && <span className="text-xs text-muted-foreground">{task.due_time}</span>}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">No due date</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{task.points} pts</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={task.status}
+                        onValueChange={(value) => handleStatusChange(task.id, value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+
+                          {(userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) ? (
+                            <SelectItem value="completed">Completed (Approve & Award)</SelectItem>
+                          ) : null}
+
+                          <SelectItem value="review_pending">Submit for Review</SelectItem>
+                          <SelectItem value="handover">Handover</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {task.status === 'review_pending' &&
+                          (userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) && (
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              onClick={() => updateTaskStatus(task.id, 'completed')}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedTask(task);
+                            setIsDetailDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                          onClick={() => {
+                            setTaskToDelete(task);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                          title="Delete task"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {filteredTasks.map((task) => (
+              <div key={task.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg border shadow-sm space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium text-lg">{task.title}</h3>
+                    {task.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                        {task.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {getPriorityBadge(task.priority)}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span>{task.assigned_to_profile?.full_name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 justify-end">
+                    <Badge variant="outline">{task.points} pts</Badge>
+                  </div>
+
+                  {task.due_date && (
+                    <div className="flex items-center gap-2 col-span-2 text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        {format(new Date(task.due_date), 'MMM dd, yyyy')}
+                        {task.due_time && ` at ${task.due_time}`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3 pt-2 border-t">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">Status:</span>
+                    {getStatusBadge(task.status)}
+                  </div>
+
+                  <Select
+                    value={task.status}
+                    onValueChange={(value) => handleStatusChange(task.id, value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      {(userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) ? (
+                        <SelectItem value="completed">Completed (Approve & Award)</SelectItem>
+                      ) : null}
+                      <SelectItem value="review_pending">Submit for Review</SelectItem>
+                      <SelectItem value="handover">Handover</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <div className="flex gap-2 justify-end">
+                    {task.status === 'review_pending' &&
+                      (userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) && (
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white flex-1"
+                          onClick={() => updateTaskStatus(task.id, 'completed')}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Approve
+                        </Button>
+                      )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setSelectedTask(task);
+                        setIsDetailDialogOpen(true);
+                      }}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                      onClick={() => {
+                        setTaskToDelete(task);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
           {filteredTasks.length === 0 && (
             <div className="text-center py-8 text-gray-500">
               No tasks found matching your criteria.
