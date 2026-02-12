@@ -28,25 +28,60 @@ const EnhancedStaffForm = ({
 }: EnhancedStaffFormProps) => {
   const [uploading, setUploading] = useState(false);
   const [showReference, setShowReference] = useState(newStaff.work_confidence_level && newStaff.work_confidence_level !== 'great');
-  const [applications, setApplications] = useState<any[]>([]);
+  const [teamApplications, setTeamApplications] = useState<any[]>([]);
+  const [internApplications, setInternApplications] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     if (!isEdit) {
-      fetchApplications();
+      fetchAllApplications();
     }
   }, [isEdit]);
 
-  const fetchApplications = async () => {
-    const { data } = await supabase
-      .from('internship_applications')
-      .select('id, full_name, email, phone, college_name, course, domains')
-      .order('created_at', { ascending: false });
-    setApplications(data || []);
+  const fetchAllApplications = async () => {
+    const [teamRes, internRes] = await Promise.all([
+      supabase
+        .from('team_applications_staff')
+        .select('id, full_name, email, phone, username, gender, date_of_birth, about_me, cv_url, profile_photo_url, father_name, mother_name, siblings, relationship_status, marriage_preference, work_confidence_level, reference_person_name, reference_person_number, preferred_department_id, preferred_role')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('internship_applications')
+        .select('id, full_name, email, phone')
+        .order('created_at', { ascending: false })
+    ]);
+    setTeamApplications(teamRes.data || []);
+    setInternApplications(internRes.data || []);
   };
 
-  const handleImportApplication = (appId: string) => {
-    const app = applications.find(a => a.id === appId);
+  const handleImportTeamApp = (appId: string) => {
+    const app = teamApplications.find(a => a.id === appId);
+    if (!app) return;
+    setNewStaff({
+      ...newStaff,
+      full_name: app.full_name,
+      email: app.email,
+      username: app.username || app.full_name.toLowerCase().replace(/\s+/g, '.'),
+      gender: app.gender || '',
+      date_of_birth: app.date_of_birth || '',
+      about_me: app.about_me || '',
+      cv_url: app.cv_url || '',
+      profile_photo_url: app.profile_photo_url || '',
+      father_name: app.father_name || '',
+      mother_name: app.mother_name || '',
+      siblings: app.siblings || '',
+      relationship_status: app.relationship_status || '',
+      marriage_preference: app.marriage_preference || '',
+      work_confidence_level: app.work_confidence_level || '',
+      reference_person_name: app.reference_person_name || '',
+      reference_person_number: app.reference_person_number || '',
+      department_id: app.preferred_department_id || '',
+      role: app.preferred_role || 'staff',
+    });
+    toast({ title: "Imported", description: `Loaded all details from ${app.full_name}'s team application.` });
+  };
+
+  const handleImportInternApp = (appId: string) => {
+    const app = internApplications.find(a => a.id === appId);
     if (!app) return;
     setNewStaff({
       ...newStaff,
@@ -54,7 +89,7 @@ const EnhancedStaffForm = ({
       email: app.email,
       username: app.full_name.toLowerCase().replace(/\s+/g, '.'),
     });
-    toast({ title: "Imported", description: `Loaded details from ${app.full_name}'s application.` });
+    toast({ title: "Imported", description: `Loaded details from ${app.full_name}'s internship application.` });
   };
 
   const handleFileUpload = async (file: File, type: 'cv' | 'photo') => {
@@ -142,24 +177,52 @@ const EnhancedStaffForm = ({
         </Card>
       )}
 
-      {!isEdit && applications.length > 0 && (
+      {!isEdit && teamApplications.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <UserPlus className="h-5 w-5" />
-              Import from Application
+              Import from Team Application
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground mb-3">
-              Select an internship applicant to pre-fill the form
+              Select a team applicant to pre-fill all details
             </p>
-            <Select onValueChange={handleImportApplication}>
+            <Select onValueChange={handleImportTeamApp}>
               <SelectTrigger>
-                <SelectValue placeholder="Select an applicant..." />
+                <SelectValue placeholder="Select a team applicant..." />
               </SelectTrigger>
               <SelectContent>
-                {applications.map(app => (
+                {teamApplications.map(app => (
+                  <SelectItem key={app.id} value={app.id}>
+                    {app.full_name} — {app.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isEdit && internApplications.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <UserPlus className="h-5 w-5" />
+              Import from Internship Application
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              Select an internship applicant to pre-fill basic details
+            </p>
+            <Select onValueChange={handleImportInternApp}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select an internship applicant..." />
+              </SelectTrigger>
+              <SelectContent>
+                {internApplications.map(app => (
                   <SelectItem key={app.id} value={app.id}>
                     {app.full_name} — {app.email}
                   </SelectItem>
