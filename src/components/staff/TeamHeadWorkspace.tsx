@@ -1752,7 +1752,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[500px] sm:h-[600px] w-full">
-                <div className="overflow-x-auto">
+                <div className="hidden md:block overflow-x-auto">
                   <Table className="min-w-[800px]">
                     <TableHeader>
                       <TableRow className="border-white/10 hover:bg-white/5">
@@ -1834,6 +1834,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                                   <SelectItem value="pending">Pending</SelectItem>
                                   <SelectItem value="in_progress">In Progress</SelectItem>
                                   <SelectItem value="completed">Completed</SelectItem>
+                                  <SelectItem value="handover">Handover</SelectItem>
                                 </SelectContent>
                               </Select>
 
@@ -1887,6 +1888,132 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4 px-1">
+                  {tasks.map((task) => (
+                    <div key={task.id} className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0">
+                          <h4 className="font-medium text-white text-base truncate">{task.title}</h4>
+                          {task.description && (
+                            <p className="text-white/60 text-sm line-clamp-2 mt-1">
+                              {task.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0">
+                          {getPriorityBadge(task.priority)}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-white/40" />
+                          <div className="min-w-0">
+                            <div className="font-medium text-white/90 truncate">
+                              {task.staff_profiles?.full_name || 'Unknown'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-end gap-1">
+                          {task.trial_period && (
+                            <Badge variant="outline" className="text-[10px] bg-yellow-500/20 border-yellow-500/30 text-yellow-300">
+                              Trial
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="text-white/70 border-white/20">
+                            {task.points} pts
+                          </Badge>
+                        </div>
+
+                        {(task.due_date || task.due_time) && (
+                          <div className="flex items-center gap-2 col-span-2 text-white/50">
+                            <Calendar className="h-4 w-4" />
+                            <span>
+                              {task.due_date && task.due_date.trim() !== '' && (() => {
+                                try {
+                                  const date = new Date(task.due_date);
+                                  if (isNaN(date.getTime())) return 'Invalid date';
+                                  return format(date, 'MMM dd');
+                                } catch {
+                                  return 'Invalid date';
+                                }
+                              })()}
+                              {task.due_time && ` ${task.due_time}`}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-3 pt-3 border-t border-white/10">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-white/60">Status:</span>
+                          {getStatusBadge(task.status)}
+                        </div>
+
+                        <Select
+                          value={task.status}
+                          onValueChange={(value) => handleTaskStatusUpdate(task.id, value)}
+                        >
+                          <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                            <SelectItem value="handover">Handover</SelectItem>
+                          </SelectContent>
+                        </Select>
+
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                            onClick={async () => {
+                              setSelectedTask(task);
+                              await fetchSubtasks(task.id);
+                              setIsViewTaskOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10"
+                            onClick={() => {
+                              setSelectedTask(task);
+                              setIsEditTaskOpen(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+
+                          {task.assigned_by === userId && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1 bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                              onClick={() => {
+                                setSelectedTask(task);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </ScrollArea>
             </CardContent>
