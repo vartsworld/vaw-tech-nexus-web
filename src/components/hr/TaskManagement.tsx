@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import {
   ClipboardList,
   Plus,
@@ -24,7 +25,10 @@ import {
   Download,
   FileText,
   MessageSquare,
-  Trash2
+  Trash2,
+  Paperclip,
+  X,
+  Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +45,7 @@ const TaskManagement = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isHandoverDialogOpen, setIsHandoverDialogOpen] = useState(false);
@@ -49,6 +54,8 @@ const TaskManagement = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -59,8 +66,21 @@ const TaskManagement = () => {
     status: "pending",
     priority: "medium",
     due_date: "",
-    points: 10
+    due_time: "",
+    trial_period: false,
+    points: 10,
+    attachments: [] as Array<{ file: File; title: string }>
   });
+
+  const [newClient, setNewClient] = useState({
+    company_name: "",
+    contact_person: "",
+    email: "",
+    phone: "",
+    address: "",
+    notes: ""
+  });
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -238,28 +258,198 @@ const TaskManagement = () => {
     setFilteredTasks(filtered);
   };
 
-  const handleAddTask = async () => {
+  const handleAddClient = async () => {
+    // Validate required fields
+    if (!newClient.company_name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Company name is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!newClient.contact_person.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Contact person is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!newClient.email.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Email is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newClient.email.trim())) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      // Get current user's ID for assigned_by
-      const { data: { user } } = await supabase.auth.getUser();
+      // Get authenticated user from Supabase Auth
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to add clients.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       const { data, error } = await supabase
-        .from('staff_tasks')
+        .from('clients')
         .insert({
-          ...newTask,
-          assigned_by: user?.id || crypto.randomUUID(),
-          due_date: newTask.due_date || null,
-          project_id: newTask.project_id === "no-project" ? null : newTask.project_id,
-          client_id: newTask.client_id === "no-client" ? null : newTask.client_id,
-          priority: newTask.priority as 'low' | 'medium' | 'high' | 'urgent',
-          status: newTask.status as 'pending' | 'in_progress' | 'completed'
+          company_name: newClient.company_name.trim(),
+          contact_person: newClient.contact_person.trim(),
+          email: newClient.email.trim().toLowerCase(),
+          phone: newClient.phone.trim() || null,
+          address: newClient.address.trim() || null,
+          notes: newClient.notes.trim() || null,
+          created_by: user.id,
+          status: 'active'
         })
-        .select('*')
+        .select('id, company_name, contact_person')
         .single();
 
       if (error) throw error;
 
-      setTasks([data, ...tasks]);
+      // Add to clients list
+      setClients([...clients, data]);
+
+      // Reset form
+      setNewClient({
+        company_name: "",
+        contact_person: "",
+        email: "",
+        phone: "",
+        address: "",
+        notes: ""
+      });
+
+      setIsAddClientOpen(false);
+
+      toast({
+        title: "Success",
+        description: "Client added successfully.",
+      });
+
+      // Auto-select the newly created client in the task form
+      setNewTask({ ...newTask, client_id: data.id });
+
+    } catch (error: any) {
+      console.error('Error adding client:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add client.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddTask = async () => {
+    if (!newTask.title || !newTask.assigned_to) {
+      toast({
+        title: "Validation Error",
+        description: "Title and Assignee are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setUploadingFiles(true);
+      // Get current user's ID for assigned_by
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const taskData = {
+        title: newTask.title,
+        description: newTask.description,
+        assigned_to: newTask.assigned_to,
+        assigned_by: user?.id || crypto.randomUUID(),
+        project_id: newTask.project_id === "no-project" ? null : newTask.project_id,
+        client_id: newTask.client_id === "no-client" ? null : newTask.client_id,
+        priority: newTask.priority as 'low' | 'medium' | 'high' | 'urgent',
+        status: newTask.status as 'pending' | 'in_progress' | 'completed',
+        due_date: newTask.due_date || null,
+        due_time: newTask.due_time || null,
+        trial_period: newTask.trial_period,
+        points: newTask.points,
+        department_id: userProfile?.department_id || null, // Ensure department_id is set
+        attachments: []
+      };
+
+      const { data: taskResponse, error: taskError } = await supabase
+        .from('staff_tasks')
+        .insert(taskData)
+        .select('*')
+        .single();
+
+      if (taskError) throw taskError;
+
+      // Handle attachments
+      let finalAttachments = [];
+      if (newTask.attachments.length > 0) {
+        for (const attachment of newTask.attachments) {
+          const fileExt = attachment.file.name.split('.').pop();
+          const filePath = `${taskResponse.id}/${Date.now()}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('task-attachments')
+            .upload(filePath, attachment.file);
+
+          if (uploadError) {
+            console.error('Upload error:', uploadError);
+            toast({
+              title: "Warning",
+              description: `Failed to upload ${attachment.file.name}`,
+              variant: "destructive",
+            });
+            continue;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('task-attachments')
+            .getPublicUrl(filePath);
+
+          finalAttachments.push({
+            title: attachment.title || attachment.file.name,
+            name: attachment.file.name,
+            url: filePath,
+            publicUrl: publicUrl,
+            size: attachment.file.size,
+            type: attachment.file.type
+          });
+        }
+
+        if (finalAttachments.length > 0) {
+          const { error: updateError } = await supabase
+            .from('staff_tasks')
+            .update({ attachments: finalAttachments })
+            .eq('id', taskResponse.id);
+
+          if (updateError) console.error('Error updating task attachments:', updateError);
+        }
+      }
+
+      // Refresh tasks list
+      const newTaskWithAttachments = { ...taskResponse, attachments: finalAttachments };
+      setTasks([newTaskWithAttachments, ...tasks]);
+
       setIsAddDialogOpen(false);
       setNewTask({
         title: "",
@@ -271,20 +461,25 @@ const TaskManagement = () => {
         status: "pending",
         priority: "medium",
         due_date: "",
-        points: 10
+        due_time: "",
+        trial_period: false,
+        points: 10,
+        attachments: []
       });
 
       toast({
         title: "Success",
         description: "Task created successfully.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding task:', error);
       toast({
         title: "Error",
-        description: "Failed to create task.",
+        description: error.message || "Failed to create task.",
         variant: "destructive",
       });
+    } finally {
+      setUploadingFiles(false);
     }
   };
 
@@ -631,7 +826,7 @@ const TaskManagement = () => {
               Create Task
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create New Task</DialogTitle>
             </DialogHeader>
@@ -655,76 +850,75 @@ const TaskManagement = () => {
                   rows={3}
                 />
               </div>
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="assigned_to">Assign To</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto py-1 px-2 text-xs"
-                    onClick={async () => {
-                      const { data: { user } } = await supabase.auth.getUser();
-                      const currentUser = staff.find(s => s.user_id === user?.id);
-                      if (currentUser) {
-                        setNewTask({ ...newTask, assigned_to: currentUser.id });
-                      }
-                    }}
-                  >
-                    <User className="h-3 w-3 mr-1" />
-                    Assign to myself
-                  </Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="assigned_to">Assign To</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto py-1 px-2 text-xs"
+                      onClick={async () => {
+                        const { data: { user } } = await supabase.auth.getUser();
+                        const currentUser = staff.find(s => s.user_id === user?.id);
+                        if (currentUser) {
+                          setNewTask({ ...newTask, assigned_to: currentUser.id });
+                        }
+                      }}
+                    >
+                      <User className="h-3 w-3 mr-1" />
+                      Assign to myself
+                    </Button>
+                  </div>
+                  <Select value={newTask.assigned_to} onValueChange={(value) => setNewTask({ ...newTask, assigned_to: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select staff member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {staff.map(member => (
+                        <SelectItem key={member.id} value={member.user_id}>
+                          {member.full_name} (@{member.username})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select value={newTask.assigned_to} onValueChange={(value) => setNewTask({ ...newTask, assigned_to: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select staff member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {staff.map(member => (
-                      <SelectItem key={member.id} value={member.id}>
-                        {member.full_name} (@{member.username})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="client">Client</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto py-1 px-2 text-xs"
+                      onClick={() => setIsAddClientOpen(true)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add New Client
+                    </Button>
+                  </div>
+                  <Select value={newTask.client_id} onValueChange={(value) => setNewTask({ ...newTask, client_id: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no-client">No Client</SelectItem>
+                      {clients.map(client => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.company_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="project">Project (Optional)</Label>
-                <Select value={newTask.project_id} onValueChange={(value) => setNewTask({ ...newTask, project_id: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="no-project">No Project</SelectItem>
-                    {projects.map(project => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="client">Client (Optional)</Label>
-                <Select value={newTask.client_id} onValueChange={(value) => setNewTask({ ...newTask, client_id: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="no-client">No Client</SelectItem>
-                    {clients.map(client => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.company_name} - {client.contact_person}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="priority">Priority</Label>
                   <Select value={newTask.priority} onValueChange={(value) => setNewTask({ ...newTask, priority: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger className="mt-2">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -737,31 +931,190 @@ const TaskManagement = () => {
                 </div>
                 <div>
                   <Label htmlFor="points">Points</Label>
+                  <div className="flex items-center gap-4 mt-2">
+                    <Input
+                      id="points"
+                      type="number"
+                      value={newTask.points}
+                      onChange={(e) => setNewTask({ ...newTask, points: parseInt(e.target.value) || 10 })}
+                      min="1"
+                      max="100"
+                      className="flex-1"
+                      disabled={newTask.trial_period}
+                    />
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="trial_period"
+                        checked={newTask.trial_period}
+                        onCheckedChange={(checked) => setNewTask({ ...newTask, trial_period: checked, points: checked ? 0 : 10 })}
+                      />
+                      <Label htmlFor="trial_period" className="text-sm text-muted-foreground whitespace-nowrap">
+                        Trial Period
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="due_date">Due Date (Optional)</Label>
                   <Input
-                    id="points"
-                    type="number"
-                    value={newTask.points}
-                    onChange={(e) => setNewTask({ ...newTask, points: parseInt(e.target.value) || 10 })}
-                    min="1"
-                    max="100"
+                    id="due_date"
+                    type="date"
+                    value={newTask.due_date}
+                    onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="due_time">Due Time (Optional)</Label>
+                  <Input
+                    id="due_time"
+                    type="time"
+                    value={newTask.due_time}
+                    onChange={(e) => setNewTask({ ...newTask, due_time: e.target.value })}
+                    className="mt-2"
                   />
                 </div>
               </div>
+
               <div>
-                <Label htmlFor="due_date">Due Date (Optional)</Label>
-                <Input
-                  id="due_date"
-                  type="date"
-                  value={newTask.due_date}
-                  onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-                />
+                <Label>Attachments</Label>
+                <div className="mt-2 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      id="file-upload"
+                      className="hidden"
+                      multiple
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          const files = Array.from(e.target.files).map(file => ({
+                            file,
+                            title: file.name
+                          }));
+                          setNewTask({ ...newTask, attachments: [...newTask.attachments, ...files] });
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById('file-upload')?.click()}
+                      disabled={uploadingFiles}
+                    >
+                      <Paperclip className="h-4 w-4 mr-2" />
+                      Attach Files
+                    </Button>
+                  </div>
+
+                  {newTask.attachments.length > 0 && (
+                    <div className="space-y-2">
+                      {newTask.attachments.map((att, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-2 bg-muted/50 rounded border text-sm">
+                          <span className="truncate flex-1">{att.title}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => {
+                              const newAttachments = [...newTask.attachments];
+                              newAttachments.splice(idx, 1);
+                              setNewTask({ ...newTask, attachments: newAttachments });
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex justify-end gap-2">
+
+              <div className="flex justify-end gap-2 pt-4">
                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleAddTask}>
-                  Create Task
+                <Button onClick={handleAddTask} disabled={uploadingFiles}>
+                  {uploadingFiles ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Task"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Client Dialog */}
+        <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New Client</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="company_name">Company Name *</Label>
+                <Input
+                  id="company_name"
+                  value={newClient.company_name}
+                  onChange={(e) => setNewClient({ ...newClient, company_name: e.target.value })}
+                  placeholder="Enter company name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="contact_person">Contact Person *</Label>
+                <Input
+                  id="contact_person"
+                  value={newClient.contact_person}
+                  onChange={(e) => setNewClient({ ...newClient, contact_person: e.target.value })}
+                  placeholder="Enter contact person name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={newClient.email}
+                  onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="phone">Phone (Optional)</Label>
+                <Input
+                  id="phone"
+                  value={newClient.phone}
+                  onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={newClient.notes}
+                  onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
+                  placeholder="Enter any notes"
+                  rows={2}
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setIsAddClientOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddClient}>
+                  Add Client
                 </Button>
               </div>
             </div>
