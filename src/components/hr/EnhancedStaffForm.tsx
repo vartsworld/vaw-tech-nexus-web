@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Link } from "lucide-react";
+import { Upload, Link, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -28,7 +28,34 @@ const EnhancedStaffForm = ({
 }: EnhancedStaffFormProps) => {
   const [uploading, setUploading] = useState(false);
   const [showReference, setShowReference] = useState(newStaff.work_confidence_level && newStaff.work_confidence_level !== 'great');
+  const [applications, setApplications] = useState<any[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!isEdit) {
+      fetchApplications();
+    }
+  }, [isEdit]);
+
+  const fetchApplications = async () => {
+    const { data } = await supabase
+      .from('internship_applications')
+      .select('id, full_name, email, phone, college_name, course, domains')
+      .order('created_at', { ascending: false });
+    setApplications(data || []);
+  };
+
+  const handleImportApplication = (appId: string) => {
+    const app = applications.find(a => a.id === appId);
+    if (!app) return;
+    setNewStaff({
+      ...newStaff,
+      full_name: app.full_name,
+      email: app.email,
+      username: app.full_name.toLowerCase().replace(/\s+/g, '.'),
+    });
+    toast({ title: "Imported", description: `Loaded details from ${app.full_name}'s application.` });
+  };
 
   const handleFileUpload = async (file: File, type: 'cv' | 'photo') => {
     if (!file) return;
@@ -99,7 +126,7 @@ const EnhancedStaffForm = ({
       {!isEdit && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-base">
               <Link className="h-5 w-5" />
               Team Application Link
             </CardTitle>
@@ -111,6 +138,34 @@ const EnhancedStaffForm = ({
             <Button onClick={copyTeamApplicationLink} variant="outline" className="w-full">
               Copy Team Application Link
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {!isEdit && applications.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <UserPlus className="h-5 w-5" />
+              Import from Application
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              Select an internship applicant to pre-fill the form
+            </p>
+            <Select onValueChange={handleImportApplication}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select an applicant..." />
+              </SelectTrigger>
+              <SelectContent>
+                {applications.map(app => (
+                  <SelectItem key={app.id} value={app.id}>
+                    {app.full_name} — {app.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
       )}
