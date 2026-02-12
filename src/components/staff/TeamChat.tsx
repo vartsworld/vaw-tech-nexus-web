@@ -82,7 +82,7 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
       if (error) throw error;
 
       // Filter channels: show general + user's department channel
-      const filteredChannels = (data || []).filter(c => 
+      const filteredChannels = (data || []).filter(c =>
         c.is_general || c.department_id === userDeptId || !c.department_id
       );
 
@@ -151,6 +151,8 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
   };
 
   const subscribeToMessages = () => {
+    console.log('[TeamChat] Setting up real-time subscription for channel:', activeChannelId);
+
     const subscription = supabase
       .channel(`chat-realtime-${activeChannelId}`)
       .on('postgres_changes', {
@@ -159,6 +161,8 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
         table: 'chat_messages',
         filter: `channel_id=eq.${activeChannelId}`
       }, async (payload) => {
+        console.log('[TeamChat] New message received via real-time:', payload);
+
         // Fetch the profile for the new message sender specifically to be efficient
         const { data: senderData } = await supabase
           .from('staff_profiles')
@@ -172,11 +176,25 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
           sender_avatar: senderData?.profile_photo_url || senderData?.avatar_url
         };
 
+        console.log('[TeamChat] Adding message to state:', newMessage);
         setMessages(prev => (prev.some(m => m.id === newMessage.id) ? prev : [...prev, newMessage]));
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[TeamChat] Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('[TeamChat] Successfully subscribed to channel:', activeChannelId);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[TeamChat] Channel subscription error for:', activeChannelId);
+          toast({
+            title: "Connection Error",
+            description: "Failed to connect to real-time chat. Messages may not update automatically.",
+            variant: "destructive",
+          });
+        }
+      });
 
     return () => {
+      console.log('[TeamChat] Cleaning up subscription for channel:', activeChannelId);
       supabase.removeChannel(subscription);
     };
   };

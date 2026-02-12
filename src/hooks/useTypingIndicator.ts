@@ -24,6 +24,8 @@ export const useTypingIndicator = ({ userId, channelId, recipientId }: UseTyping
     const filterColumn = channelId ? 'channel_id' : 'recipient_id';
     const filterValue = channelId || recipientId;
 
+    console.log('[TypingIndicator] Setting up subscription:', { filterColumn, filterValue, userId });
+
     const channel = supabase
       .channel(`typing-${filterValue}`)
       .on('postgres_changes', {
@@ -32,10 +34,18 @@ export const useTypingIndicator = ({ userId, channelId, recipientId }: UseTyping
         table: 'chat_typing_indicators',
         filter: `${filterColumn}=eq.${filterValue}`
       }, async (payload) => {
+        console.log('[TypingIndicator] Received typing event:', payload);
         // Refetch typing users on any change
         await fetchTypingUsers();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[TypingIndicator] Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('[TypingIndicator] Successfully subscribed to typing indicators');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[TypingIndicator] Failed to subscribe to typing indicators');
+        }
+      });
 
     // Initial fetch
     fetchTypingUsers();
@@ -44,6 +54,7 @@ export const useTypingIndicator = ({ userId, channelId, recipientId }: UseTyping
     const cleanupInterval = setInterval(fetchTypingUsers, 5000);
 
     return () => {
+      console.log('[TypingIndicator] Cleaning up subscription');
       supabase.removeChannel(channel);
       clearInterval(cleanupInterval);
     };
@@ -113,6 +124,8 @@ export const useTypingIndicator = ({ userId, channelId, recipientId }: UseTyping
     }
     lastTypingUpdateRef.current = now;
 
+    console.log('[TypingIndicator] Setting typing status:', { userId, isTyping, channelId, recipientId });
+
     try {
       const upsertData: any = {
         user_id: userId,
@@ -127,13 +140,19 @@ export const useTypingIndicator = ({ userId, channelId, recipientId }: UseTyping
         upsertData.recipient_id = recipientId;
       }
 
-      await supabase
+      const { error } = await supabase
         .from('chat_typing_indicators')
         .upsert(upsertData, {
           onConflict: channelId ? 'user_id,channel_id' : 'user_id,recipient_id'
         });
+
+      if (error) {
+        console.error('[TypingIndicator] Error setting typing status:', error);
+      } else {
+        console.log('[TypingIndicator] Successfully updated typing status');
+      }
     } catch (error) {
-      console.error('Error setting typing status:', error);
+      console.error('[TypingIndicator] Error setting typing status:', error);
     }
   }, [userId, channelId, recipientId]);
 
