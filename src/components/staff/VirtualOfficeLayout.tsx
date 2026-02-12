@@ -13,9 +13,11 @@ import {
   Bell,
   ClipboardList,
   X,
-  Coins
+  Coins,
+  Hash
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
+import TeamChat from "./TeamChat";
 import { ActivityLogPanel } from "./ActivityLogPanel";
 import MobileBottomNav from "./MobileBottomNav";
 
@@ -26,6 +28,7 @@ interface VirtualOfficeLayoutProps {
   onRoomChange: (room: 'workspace' | 'breakroom' | 'meeting') => void;
   onlineUsers?: Record<string, any>;
   userId?: string;
+  userProfile?: any;
   className?: string;
 }
 
@@ -35,14 +38,16 @@ const VirtualOfficeLayout = ({
   onRoomChange,
   onlineUsers = {},
   userId,
+  userProfile,
   className
 }: VirtualOfficeLayoutProps) => {
   const [showActivityLog, setShowActivityLog] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<'status' | 'chat'>('status');
+  const [mobileSidebarTab, setMobileSidebarTab] = useState<'status' | 'chat'>('status');
   const navigate = useNavigate();
   const mainContentRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to top when room changes or component mounts
   useEffect(() => {
     if (mainContentRef.current) {
       mainContentRef.current.scrollTo({
@@ -66,18 +71,50 @@ const VirtualOfficeLayout = ({
           <SheetHeader className="p-4 border-b">
             <SheetTitle className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5" />
-              Team Chat
+              Team
             </SheetTitle>
           </SheetHeader>
-          <div className="h-[calc(100vh-80px)] overflow-y-auto p-4">
-            <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
+          <div className="flex border-b border-white/10">
+            <button
+              onClick={() => setMobileSidebarTab('status')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                mobileSidebarTab === 'status'
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Status
+            </button>
+            <button
+              onClick={() => setMobileSidebarTab('chat')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                mobileSidebarTab === 'chat'
+                  ? 'text-primary border-b-2 border-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Hash className="w-4 h-4" />
+              Team Chat
+            </button>
+          </div>
+          <div className="h-[calc(100vh-140px)] overflow-hidden">
+            {mobileSidebarTab === 'status' ? (
+              <div className="h-full overflow-y-auto p-4">
+                <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
+              </div>
+            ) : (
+              <div className="h-full">
+                <TeamChat userId={userId || ''} userProfile={userProfile} />
+              </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 p-6 overflow-y-auto flex-shrink-0 z-20">
-        <div className="space-y-6">
+      <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 overflow-hidden flex-shrink-0 z-20">
+        <div className="p-6 pb-4 space-y-4 flex-shrink-0">
           {/* Room Navigation */}
           <div>
             <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
@@ -169,11 +206,44 @@ const VirtualOfficeLayout = ({
               )}
             </div>
           </div>
+        </div>
 
-          {/* Team Status */}
-          <div>
-            <h3 className="text-white font-semibold mb-4">Team Status</h3>
-            <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
+        {/* Team Status / Chat Toggle Section */}
+        <div className="flex-1 flex flex-col min-h-0 border-t border-white/10">
+          <div className="flex flex-shrink-0">
+            <button
+              onClick={() => setSidebarTab('status')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                sidebarTab === 'status'
+                  ? 'text-white border-b-2 border-blue-500 bg-white/5'
+                  : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              Team Status
+            </button>
+            <button
+              onClick={() => setSidebarTab('chat')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${
+                sidebarTab === 'chat'
+                  ? 'text-white border-b-2 border-blue-500 bg-white/5'
+                  : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+              }`}
+            >
+              <Hash className="w-4 h-4" />
+              Team Chat
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            {sidebarTab === 'status' ? (
+              <div className="h-full overflow-y-auto p-4">
+                <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
+              </div>
+            ) : (
+              <div className="h-full">
+                <TeamChat userId={userId || ''} userProfile={userProfile} />
+              </div>
+            )}
           </div>
         </div>
       </aside>
