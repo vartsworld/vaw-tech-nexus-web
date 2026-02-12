@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   ClipboardList,
@@ -22,7 +23,8 @@ import {
   Eye,
   Download,
   FileText,
-  MessageSquare
+  MessageSquare,
+  Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +46,8 @@ const TaskManagement = () => {
   const [isHandoverDialogOpen, setIsHandoverDialogOpen] = useState(false);
   const [handoverTaskId, setHandoverTaskId] = useState<string | null>(null);
   const [handoverDepartmentId, setHandoverDepartmentId] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [newTask, setNewTask] = useState({
     title: "",
@@ -381,6 +385,44 @@ const TaskManagement = () => {
       setIsHandoverDialogOpen(true);
     } else {
       updateTaskStatus(taskId, newStatus);
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!taskToDelete) return;
+
+    try {
+      // Delete attachments from storage if any
+      if (taskToDelete.attachments && taskToDelete.attachments.length > 0) {
+        const filePaths = taskToDelete.attachments.map((att: any) => att.url);
+        await supabase.storage
+          .from('task-attachments')
+          .remove(filePaths);
+      }
+
+      // Delete task
+      const { error } = await supabase
+        .from('staff_tasks')
+        .delete()
+        .eq('id', taskToDelete.id);
+
+      if (error) throw error;
+
+      setTasks(tasks.filter(t => t.id !== taskToDelete.id));
+      setIsDeleteDialogOpen(false);
+      setTaskToDelete(null);
+
+      toast({
+        title: "Success",
+        description: "Task deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -856,6 +898,21 @@ const TaskManagement = () => {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
+                      {/* Only show delete button for tasks created by this HR user */}
+                      {task.assigned_by === userProfile?.user_id && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                          onClick={() => {
+                            setTaskToDelete(task);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                          title="Delete task"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
