@@ -216,6 +216,28 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     };
   }, [userId, userProfile]);
 
+  // Real-time task updates
+  useEffect(() => {
+    if (!userProfile?.department_id) return;
+
+    const channel = supabase
+      .channel('team-head-tasks-updates')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'staff_tasks',
+        filter: `department_id=eq.${userProfile.department_id}`
+      }, (payload) => {
+        console.log('Task update received, refreshing tasks...', payload);
+        fetchTasks();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userProfile?.department_id]);
+
   const fetchTasks = async () => {
     try {
       // Fetch tasks assigned by/to team head OR tasks in their department

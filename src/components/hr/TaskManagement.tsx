@@ -367,6 +367,40 @@ const TaskManagement = () => {
         });
       }
 
+      // Create notification for the user
+      if (newStatus === 'completed' || newStatus === 'review_pending' || newStatus === 'handover') {
+        let notificationTitle = "";
+        let notificationContent = "";
+        let notificationType = "task_assigned";
+
+        if (newStatus === 'completed') {
+          notificationTitle = "Task Approved & Completed";
+          notificationContent = `Your task "${data.title}" has been approved and completed. ${data.points ? `You earned ${data.points} points!` : ''}`;
+          notificationType = "achievement";
+        } else if (newStatus === 'review_pending') {
+          notificationTitle = "Task Submitted for Review";
+          notificationContent = `Task "${data.title}" has been submitted for review.`;
+          notificationType = "task_assigned";
+        } else if (newStatus === 'handover') {
+          notificationTitle = "Task Handed Over";
+          notificationContent = `Task "${data.title}" has been handed over.`;
+          notificationType = "task_assigned";
+        }
+
+        if (notificationTitle) {
+          await supabase
+            .from('staff_notifications')
+            .insert({
+              title: notificationTitle,
+              content: notificationContent,
+              type: notificationType,
+              target_users: [data.assigned_to],
+              created_by: userProfile?.user_id,
+              is_urgent: false
+            });
+        }
+      }
+
       await fetchTasks(); // Refresh tasks to get updated data
     } catch (error) {
       console.error('Error updating task:', error);

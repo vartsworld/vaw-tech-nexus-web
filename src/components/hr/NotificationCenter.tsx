@@ -25,6 +25,7 @@ import {
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useRealtimeQuery } from "@/hooks/useRealtimeQuery";
 
 const NotificationCenter = () => {
   const [notifications, setNotifications] = useState([]);
@@ -49,31 +50,33 @@ const NotificationCenter = () => {
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const { toast } = useToast();
 
+  // Use real-time query for notifications
+  const { data: notificationsData } = useRealtimeQuery<any>({
+    queryKey: ['staff_notifications_admin'],
+    table: 'staff_notifications',
+    select: '*',
+    order: { column: 'created_at', ascending: false },
+    limit: 50, // Higher limit for admin view
+  });
+
+  // Update local state when realtime data changes
   useEffect(() => {
-    fetchNotifications();
+    if (notificationsData) {
+      setNotifications(notificationsData);
+    }
+  }, [notificationsData]);
+
+  // Fetch other data
+  useEffect(() => {
     fetchClientNotifications();
     fetchDepartments();
     fetchStaff();
     fetchClients();
   }, []);
 
+  // fetchNotifications is replaced by useRealtimeQuery
   const fetchNotifications = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('staff_notifications')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setNotifications(data || []);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load notifications.",
-        variant: "destructive",
-      });
-    }
+    // Legacy function kept for compatibility if needed, but data comes from hook now
   };
 
   const fetchStaff = async () => {
