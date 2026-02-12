@@ -4,12 +4,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle, Clock, AlertTriangle, Filter, Calendar, User, Target, Eye } from "lucide-react";
+import {
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  Filter,
+  Calendar,
+  User,
+  Target,
+  Eye,
+  LayoutGrid,
+  List,
+  LayoutDashboard,
+  ArrowRight,
+  HandMetal
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { TaskDetailDialog } from "./TaskDetailDialog";
 import { useRealtimeQuery } from "@/hooks/useRealtimeQuery";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { format } from "date-fns";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Task {
   id: string;
@@ -43,6 +66,7 @@ const TasksManager = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const { toast } = useToast();
 
   // Use real-time query for tasks with automatic cache invalidation
@@ -170,184 +194,276 @@ const TasksManager = ({
       setIsLoading(false);
     }
   };
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent':
-        return 'bg-red-500 text-white';
-      case 'high':
-        return 'bg-orange-500 text-white';
-      case 'medium':
-        return 'bg-yellow-500 text-black';
-      case 'low':
-        return 'bg-green-500 text-white';
-      default:
-        return 'bg-gray-500 text-white';
-    }
+  const getPriorityBadge = (priority: string) => {
+    const configs = {
+      urgent: "bg-red-500/20 text-red-400 border-red-500/30",
+      high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+      medium: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      low: "bg-green-500/20 text-green-400 border-green-500/30"
+    };
+    const config = configs[priority as keyof typeof configs] || configs.medium;
+    return (
+      <Badge variant="outline" className={`${config} uppercase text-[10px] font-bold tracking-wider`}>
+        {priority}
+      </Badge>
+    );
   };
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'text-green-400';
-      case 'handover':
-        return 'text-purple-400';
-      case 'in_progress':
-        return 'text-blue-400';
-      case 'overdue':
-        return 'text-red-400';
-      default:
-        return 'text-yellow-400';
-    }
-  };
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-4 h-4" />;
-      case 'handover':
-        return <User className="w-4 h-4" />;
-      case 'in_progress':
-        return <Clock className="w-4 h-4" />;
-      case 'overdue':
-        return <AlertTriangle className="w-4 h-4" />;
-      default:
-        return <Target className="w-4 h-4" />;
-    }
+
+  const getStatusBadge = (status: string) => {
+    const configs = {
+      completed: { color: "bg-green-500/20 text-green-400 border-green-500/30", icon: CheckCircle },
+      handover: { color: "bg-purple-500/20 text-purple-400 border-purple-500/30", icon: ArrowRight },
+      in_progress: { color: "bg-blue-500/20 text-blue-400 border-blue-500/30", icon: Clock },
+      overdue: { color: "bg-red-500/20 text-red-400 border-red-500/30", icon: AlertTriangle },
+      pending: { color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", icon: Target },
+      pending_approval: { color: "bg-orange-500/20 text-orange-400 border-orange-500/30", icon: Clock }
+    };
+    const config = configs[status as keyof typeof configs] || configs.pending;
+    const Icon = config.icon;
+    return (
+      <Badge variant="outline" className={`${config.color} flex items-center gap-1 py-0.5 px-2`}>
+        <Icon className="w-3 h-3" />
+        <span className="capitalize">{status.replace('_', ' ')}</span>
+      </Badge>
+    );
   };
   const filteredTasks = tasks.filter(task => filter === 'all' || task.status === filter);
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const totalTasks = tasks.length;
   const completionRate = totalTasks > 0 ? completedTasks / totalTasks * 100 : 0;
-  return <Card className="bg-white/10 backdrop-blur-sm border-white/20 h-full flex flex-col">
-    <CardHeader className="pb-3">
-      <CardTitle className="text-white flex items-center gap-2">
-        <Target className="w-5 h-5" />
-        My Tasks
-      </CardTitle>
-
-      {/* Progress Overview */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm text-white/70">
-          <span>Progress: {completedTasks}/{totalTasks} tasks</span>
-          <span>{Math.round(completionRate)}%</span>
+  return (
+    <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white overflow-hidden flex flex-col h-full">
+      <CardHeader className="pb-4 space-y-4 flex-shrink-0">
+        <div className="flex flex-row items-center justify-between">
+          <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
+            <LayoutDashboard className="h-6 w-6 text-blue-400" />
+            My Dashboard
+          </CardTitle>
+          <div className="flex bg-white/5 rounded-lg p-1 gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-8 w-8 p-0 ${viewMode === 'card' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
+              onClick={() => setViewMode('card')}
+              title="Card View"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-8 w-8 p-0 ${viewMode === 'table' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
+              onClick={() => setViewMode('table')}
+              title="Table View"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <Progress value={completionRate} className="h-2" />
-      </div>
-    </CardHeader>
 
-    <CardContent className="flex-1 flex flex-col p-0">
-      {/* Filter Buttons */}
-      <div className="flex gap-1 px-4 mb-4 overflow-x-auto">
-        {[{
-          key: 'all',
-          label: 'All',
-          count: tasks.length
-        }, {
-          key: 'pending',
-          label: 'Pending',
-          count: tasks.filter(t => t.status === 'pending').length
-        }, {
-          key: 'in_progress',
-          label: 'In Progress',
-          count: tasks.filter(t => t.status === 'in_progress').length
-        }, {
-          key: 'completed',
-          label: 'Completed',
-          count: tasks.filter(t => t.status === 'completed').length
-        }, {
-          key: 'handover',
-          label: 'Handover',
-          count: tasks.filter(t => t.status === 'handover').length
-        }].map(filterOption => <Button key={filterOption.key} variant={filter === filterOption.key ? "default" : "ghost"} size="sm" className={`flex items-center gap-1 whitespace-nowrap ${filter === filterOption.key ? "bg-blue-500 text-white" : "text-white/70 hover:text-white"}`} onClick={() => setFilter(filterOption.key as any)}>
-          <Filter className="w-3 h-3" />
-          {filterOption.label}
-          <Badge variant="secondary" className="ml-1 h-4 text-xs">
-            {filterOption.count}
-          </Badge>
-        </Button>)}
-      </div>
+        {/* Filter and Stats Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
+            {[{
+              key: 'all',
+              label: 'All',
+              count: tasks.length
+            }, {
+              key: 'pending',
+              label: 'Pending',
+              count: tasks.filter(t => t.status === 'pending').length
+            }, {
+              key: 'in_progress',
+              label: 'Active',
+              count: tasks.filter(t => t.status === 'in_progress').length
+            }, {
+              key: 'completed',
+              label: 'Finished',
+              count: tasks.filter(t => t.status === 'completed').length
+            }, {
+              key: 'handover',
+              label: 'Handover',
+              count: tasks.filter(t => t.status === 'handover').length
+            }].map(filterOption => (
+              <Button
+                key={filterOption.key}
+                variant={filter === filterOption.key ? "default" : "ghost"}
+                size="sm"
+                className={`flex items-center gap-2 px-3 h-8 rounded-full transition-all ${filter === filterOption.key
+                  ? "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                  : "text-white/60 hover:text-white hover:bg-white/10"
+                  }`}
+                onClick={() => setFilter(filterOption.key as any)}
+              >
+                <span className="text-xs font-medium">{filterOption.label}</span>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${filter === filterOption.key ? "bg-white/20" : "bg-white/10"
+                  }`}>
+                  {filterOption.count}
+                </span>
+              </Button>
+            ))}
+          </div>
 
-      {/* Tasks List */}
-      <ScrollArea className="flex-1 px-4" style={{
-        scrollBehavior: 'smooth'
-      }}>
-        <div className="space-y-3">
-          {filteredTasks.length === 0 ? <div className="text-center py-8">
-            <Target className="w-12 h-12 text-white/30 mx-auto mb-4" />
-            <p className="text-white/60">
-              {filter === 'all' ? 'No tasks assigned yet' : `No ${filter.replace('_', ' ')} tasks`}
-            </p>
-          </div> : filteredTasks.map(task => <Card key={task.id} className="bg-white/5 border-white/20 hover:bg-white/10 transition-all">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`flex items-center gap-1 ${getStatusColor(task.status)}`}>
-                      {getStatusIcon(task.status)}
-                      <span className="text-xs font-medium capitalize">
-                        {task.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <Badge className={`${getPriorityColor(task.priority)} text-xs`}>
-                      {task.priority.toUpperCase()}
-                    </Badge>
-                  </div>
+          <div className="flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-white/50 uppercase font-semibold">Completion</span>
+              <span className="text-sm font-bold text-green-400">{Math.round(completionRate)}%</span>
+            </div>
+            <div className="w-24 bg-white/5 h-1.5 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-green-500 rounded-full transition-all duration-500"
+                style={{ width: `${completionRate}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </CardHeader>
 
-                  <h4 className="text-white font-medium mb-1 truncate">
-                    {task.title}
-                  </h4>
-
-                  {task.description && <p className="text-white/70 text-sm mb-2 line-clamp-2">
-                    {task.description}
-                  </p>}
-
-                  <div className="flex items-center gap-4 text-xs text-white/50">
-                    {task.assignedBy && <div className="flex items-center gap-1">
-                      <User className="w-3 h-3" />
-                      <span>by {task.assignedBy.full_name}</span>
-                    </div>}
-
-                    {task.due_date && <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      <span>Due {new Date(task.due_date).toLocaleDateString()}</span>
-                    </div>}
-
-                    {task.trial_period ? <div className="flex items-center gap-1 text-yellow-400">
-                      <Target className="w-3 h-3" />
-                      <span>Trial Period</span>
-                    </div> : <div className="flex items-center gap-1">
-                      <Target className="w-3 h-3" />
-                      <span>{task.points} pts</span>
-                    </div>}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-1">
-                  <Button size="sm" variant="outline" className="bg-blue-500/20 border-blue-500/30 text-blue-300 hover:bg-blue-500/30" onClick={() => {
-                    setSelectedTask(task);
-                    setIsDialogOpen(true);
-                  }}>
-                    <Eye className="w-3 h-3 mr-1" />
-                    Open Task
-                  </Button>
-
-                  {task.status !== 'handover' && task.status !== 'completed' && <>
-                    {task.status === 'pending'}
-
-                    {task.status === 'in_progress'}
-                  </>}
-
-                  {task.status === 'completed' && <Button size="sm" variant="outline" className="bg-orange-500/20 border-orange-500/30 text-orange-300 hover:bg-orange-500/30" onClick={() => updateTaskStatus(task.id, 'handover')} disabled={isLoading}>
-                    Handover
-                  </Button>}
-                </div>
+      <CardContent className="flex-1 overflow-hidden p-0">
+        <ScrollArea className="h-full w-full px-4 pb-4">
+          {filteredTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+              <div className="p-4 bg-white/5 rounded-full">
+                <Target className="w-12 h-12 text-white/20" />
               </div>
-            </CardContent>
-          </Card>)}
-        </div>
-      </ScrollArea>
-    </CardContent>
+              <div>
+                <h3 className="text-lg font-medium text-white/80">No tasks found</h3>
+                <p className="text-white/40 text-sm max-w-[200px]">
+                  {filter === 'all' ? "You haven't been assigned any tasks yet." : `You have no ${filter} tasks right now.`}
+                </p>
+              </div>
+            </div>
+          ) : viewMode === 'table' ? (
+            <div className="overflow-x-auto rounded-xl border border-white/10">
+              <Table>
+                <TableHeader className="bg-white/5">
+                  <TableRow className="border-white/10 hover:bg-transparent">
+                    <TableHead className="text-white/80 h-10 py-0">Task details</TableHead>
+                    <TableHead className="text-white/80 h-10 py-0">Priority</TableHead>
+                    <TableHead className="text-white/80 h-10 py-0">Status</TableHead>
+                    <TableHead className="text-white/80 h-10 py-0">Timeline</TableHead>
+                    <TableHead className="text-white/80 h-10 py-0 text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTasks.map((task) => (
+                    <TableRow key={task.id} className="border-white/10 hover:bg-white/5 transition-colors group">
+                      <TableCell>
+                        <div className="space-y-1">
+                          <p className="font-medium text-white text-sm group-hover:text-blue-400 transition-colors">
+                            {task.title}
+                          </p>
+                          {task.description && (
+                            <p className="text-white/50 text-xs truncate max-w-[200px]">
+                              {task.description}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{getPriorityBadge(task.priority)}</TableCell>
+                      <TableCell>{getStatusBadge(task.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1.5 text-xs text-white/60">
+                            <Calendar className="w-3 h-3 text-blue-400" />
+                            {task.due_date ? format(new Date(task.due_date), 'MMM dd, yyyy') : 'No date'}
+                          </div>
+                          {task.due_time && (
+                            <div className="flex items-center gap-1.5 text-[10px] text-white/40 ml-4.5">
+                              <Clock className="w-2.5 h-2.5" />
+                              {task.due_time}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-white/50 hover:text-white"
+                          onClick={() => {
+                            setSelectedTask(task);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4 flex flex-col hover:bg-white/[0.08] hover:border-white/20 hover:translate-y-[-2px] transition-all duration-300 relative group"
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1 pr-8">
+                      <h4 className="font-bold text-white text-base leading-tight line-clamp-2">
+                        {task.title}
+                      </h4>
+                      <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest flex items-center gap-1">
+                        <Target className="w-3 h-3" />
+                        {task.trial_period ? "TRIAL MISSION" : `${task.points} COINS REWARD`}
+                      </p>
+                    </div>
+                    <div className="absolute top-4 right-4">
+                      {getPriorityBadge(task.priority)}
+                    </div>
+                  </div>
 
-    <TaskDetailDialog task={selectedTask} open={isDialogOpen} onOpenChange={setIsDialogOpen} onStatusUpdate={updateTaskStatus} />
-  </Card>;
+                  {task.description && (
+                    <p className="text-white/60 text-sm line-clamp-3 bg-black/20 p-2 rounded-lg border border-white/5 flex-1">
+                      {task.description}
+                    </p>
+                  )}
+
+                  <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between text-xs py-2 border-y border-white/5">
+                      <div className="flex items-center gap-2 text-white/50">
+                        <Calendar className="h-3.5 w-3.5 text-blue-400" />
+                        <span>{task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No due date'}</span>
+                      </div>
+                      {getStatusBadge(task.status)}
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button
+                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white h-9 font-bold text-xs rounded-lg shadow-lg shadow-blue-500/20 transition-all border-none"
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setIsDialogOpen(true);
+                        }}
+                      >
+                        <Eye className="h-3.5 w-3.5 mr-2" />
+                        VIEW DETAILS
+                      </Button>
+
+                      {task.status === 'completed' && (
+                        <Button
+                          className="flex-1 bg-purple-500 hover:bg-purple-600 text-white h-9 font-bold text-xs rounded-lg shadow-lg shadow-purple-500/20 transition-all border-none"
+                          onClick={() => updateTaskStatus(task.id, 'handover')}
+                          disabled={isLoading}
+                        >
+                          <ArrowRight className="h-3.5 w-3.5 mr-2" />
+                          HANDOVER
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+
+      <TaskDetailDialog task={selectedTask} open={isDialogOpen} onOpenChange={setIsDialogOpen} onStatusUpdate={updateTaskStatus} />
+    </Card>
+  );
 };
 export default TasksManager;
