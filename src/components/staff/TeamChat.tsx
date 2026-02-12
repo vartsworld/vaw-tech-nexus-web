@@ -288,8 +288,8 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
         </div>
 
         {/* Messages Area */}
-        <ScrollArea className="flex-1 px-4" style={{ scrollBehavior: 'auto', overflowY: 'scroll' }}>
-          <div className="space-y-3">
+        <div className="flex-1 px-4 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+          <div className="space-y-3 pb-2">
             {messages.map((message) => {
               const isOwnMessage = message.sender_id === userId;
 
@@ -314,7 +314,7 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
                         </span>
                       </div>
                     )}
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm break-words">{message.content}</p>
                     <p className={`text-xs mt-1 ${isOwnMessage ? 'text-white/70' : 'text-white/50'
                       }`}>
                       {new Date(message.created_at).toLocaleTimeString([], {
@@ -328,7 +328,7 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
             })}
             <div ref={messagesEndRef} />
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Typing Indicator */}
         <AnimatePresence>
