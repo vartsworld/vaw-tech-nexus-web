@@ -69,7 +69,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
           try {
             const layoutData = data.layout_data as any[];
             if (Array.isArray(layoutData)) {
-            const validatedItems: WorkspaceItem[] = layoutData.map(item => ({
+              const validatedItems: WorkspaceItem[] = layoutData.map(item => ({
                 id: item.id,
                 component: item.component,
                 title: item.title,
@@ -135,7 +135,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
 
   const addWidget = useCallback(() => {
     if (!selectedWidget) return;
-    
+
     const widget = availableWidgets.find(w => w.component === selectedWidget);
     if (!widget) return;
 
@@ -151,7 +151,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
 
     setItems(prev => [...prev, newItem]);
     setSelectedWidget('');
-    
+
     toast({
       title: "Widget Added",
       description: `${widget.title} has been added to your workspace.`,
@@ -159,7 +159,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
   }, [selectedWidget, toast]);
 
   const toggleWidgetVisibility = useCallback((id: string) => {
-    setItems(prev => prev.map(item => 
+    setItems(prev => prev.map(item =>
       item.id === id ? { ...item, isVisible: !item.isVisible } : item
     ));
   }, []);
@@ -183,7 +183,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
   const removeWidget = useCallback((id: string) => {
     const removedWidget = items.find(item => item.id === id);
     setItems(prev => prev.filter(item => item.id !== id));
-    
+
     if (removedWidget) {
       toast({
         title: "Widget Removed",
@@ -236,8 +236,8 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
             </SelectTrigger>
             <SelectContent className="bg-black/90 border-white/20">
               {getAvailableWidgets().map((widget) => (
-                <SelectItem 
-                  key={widget.component} 
+                <SelectItem
+                  key={widget.component}
                   value={widget.component}
                   className="text-white hover:bg-white/10"
                 >
@@ -246,8 +246,8 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
               ))}
             </SelectContent>
           </Select>
-          <Button 
-            onClick={addWidget} 
+          <Button
+            onClick={addWidget}
             disabled={!selectedWidget}
             className="bg-primary/20 hover:bg-primary/30 text-white border-primary/30"
             size="sm"
@@ -285,15 +285,13 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
-                      className={`${
-                        item.span === 'full' ? 'lg:col-span-2' : 'lg:col-span-1'
-                      } ${
-                        snapshot.isDragging
+                      className={`${item.span === 'full' ? 'lg:col-span-2' : 'lg:col-span-1'
+                        } ${snapshot.isDragging
                           ? 'opacity-80 transform rotate-2 z-50'
                           : ''
-                      } transition-all duration-200`}
+                        } transition-all duration-200`}
                     >
-                      <Card className="bg-black/20 backdrop-blur-lg border-white/10 h-full relative group">
+                      <Card className="bg-black/20 backdrop-blur-lg border-white/10 h-[500px] relative group">
                         {/* Controls */}
                         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                           <Button
@@ -320,7 +318,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
                             <GripVertical className="w-3 h-3 text-white/60 hover:text-white/80" />
                           </div>
                         </div>
-                        
+
                         <CardContent className={`p-0 h-full transition-all duration-300 ${!item.isVisible ? 'max-h-12 overflow-hidden' : ''}`}>
                           {!item.isVisible ? (
                             <div className="p-4 cursor-pointer hover:bg-white/5" onClick={() => toggleWidgetVisibility(item.id)}>

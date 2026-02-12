@@ -247,9 +247,29 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
     handleTyping(); // Trigger typing indicator
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Scroll handling
+  const scrollToBottom = (smooth = true) => {
+    if (messagesEndRef.current) {
+      const { scrollHeight, clientHeight } = messagesEndRef.current;
+      messagesEndRef.current.scrollTo({
+        top: scrollHeight - clientHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+    }
   };
+
+  useEffect(() => {
+    // Only scroll if we were already near bottom or it's the first load
+    if (messagesEndRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesEndRef.current;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      const isNewMessageFromMe = messages[messages.length - 1]?.sender_id === userId;
+
+      if (isNearBottom || isNewMessageFromMe || messages.length <= 20) {
+        scrollToBottom();
+      }
+    }
+  }, [messages]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -288,7 +308,10 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 px-4 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+        <div
+          ref={messagesEndRef}
+          className="flex-1 px-4 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
+        >
           <div className="space-y-3 pb-2">
             {messages.map((message) => {
               const isOwnMessage = message.sender_id === userId;
@@ -326,7 +349,6 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
                 </div>
               );
             })}
-            <div ref={messagesEndRef} />
           </div>
         </div>
 
