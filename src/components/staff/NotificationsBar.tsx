@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Bell, X, AlertTriangle, Info, CheckCircle, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useRealtimeQuery } from "@/hooks/useRealtimeQuery";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Notification {
   id: string;
@@ -14,6 +16,7 @@ interface Notification {
   is_urgent: boolean;
   created_at: string;
   read_by: string[];
+  expires_at?: string;
 }
 
 interface NotificationsBarProps {
@@ -21,145 +24,52 @@ interface NotificationsBarProps {
 }
 
 const NotificationsBar = ({ userId }: NotificationsBarProps) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!userId) return;
-    
-    fetchNotifications();
-    
-    // Set up real-time subscription for notifications
-    const notificationChannel = supabase
-      .channel(`notifications-realtime-${userId}`)
-      .on('postgres_changes', 
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'staff_notifications' 
-        }, 
-        (payload) => {
-          const newNotification = payload.new as any;
-          // Add new notification to state immediately (optimistic)
-          setNotifications(prev => {
-            if (prev.some(n => n.id === newNotification.id)) return prev;
-            return [newNotification, ...prev].slice(0, 10);
-          });
-          
-          // Update unread count
-          if (!newNotification.read_by?.includes(userId)) {
-            setUnreadCount(prev => prev + 1);
-          }
-          
-          // Show toast with sound notification effect
-          toast({
-            title: "🔔 New Notification",
-            description: newNotification.title,
-            duration: 5000,
-          });
-        }
-      )
-      .on('postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'staff_notifications'
-        },
-        (payload) => {
-          const updated = payload.new as any;
-          setNotifications(prev => prev.map(n => n.id === updated.id ? updated : n));
-        }
-      )
-      .subscribe();
+  // Use real-time query for notifications with caching
+  const { data: notificationsData } = useRealtimeQuery<Notification[]>({
+    queryKey: ['notifications', userId],
+    table: 'staff_notifications',
+    select: '*',
+    order: { column: 'created_at', ascending: false },
+    limit: 10,
+    staleTime: 1 * 60 * 1000, // 1 minute for notifications (more frequent)
+  });
 
-    // Also subscribe to new chat messages for DM notifications
-    const chatChannel = supabase
-      .channel(`chat-notifications-${userId}`)
-      .on('postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'chat_messages',
-          filter: `recipient_id=eq.${userId}`
-        },
-        async (payload) => {
-          const msg = payload.new as any;
-          // Don't notify for own messages
-          if (msg.sender_id === userId) return;
-          
-          // Fetch sender name
-          const { data: sender } = await supabase
-            .from('staff_profiles')
-            .select('full_name')
-            .eq('user_id', msg.sender_id)
-            .single();
-          
-          toast({
-            title: `💬 New message from ${sender?.full_name || 'Team member'}`,
-            description: msg.content?.substring(0, 50) + (msg.content?.length > 50 ? '...' : ''),
-            duration: 4000,
-          });
-        }
-      )
-      .subscribe();
+  // Filter out expired notifications
+  const notifications = (notificationsData || []).filter(notification =>
+    !notification.expires_at || new Date(notification.expires_at) > new Date()
+  );
 
-    return () => {
-      supabase.removeChannel(notificationChannel);
-      supabase.removeChannel(chatChannel);
-    };
-  }, [userId, toast]);
-
-  const fetchNotifications = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('staff_notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-
-      const validNotifications = data.filter(notification => 
-        !notification.expires_at || new Date(notification.expires_at) > new Date()
-      );
-
-      const unread = validNotifications.filter(n => 
-        !n.read_by?.includes(userId)
-      );
-
-      setNotifications(validNotifications);
-      setUnreadCount(unread.length);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    }
-  };
+  const unreadCount = notifications.filter(n => !n.read_by?.includes(userId)).length;
 
   const markAsRead = async (notificationId: string) => {
-    try {
-      const notification = notifications.find(n => n.id === notificationId);
-      if (!notification) return;
+    const notification = notifications.find(n => n.id === notificationId);
+    if (!notification) return;
 
-      const updatedReadBy = [...(notification.read_by || []), userId];
-      
+    const updatedReadBy = [...(notification.read_by || []), userId];
+
+    // Optimistic update - update UI immediately
+    queryClient.setQueryData(['notifications', userId], (old: Notification[] | undefined) => {
+      if (!old) return old;
+      return old.map(n =>
+        n.id === notificationId ? { ...n, read_by: updatedReadBy } : n
+      );
+    });
+
+    try {
       const { error } = await supabase
         .from('staff_notifications')
         .update({ read_by: updatedReadBy })
         .eq('id', notificationId);
 
       if (error) throw error;
-
-      setNotifications(prev => 
-        prev.map(n => 
-          n.id === notificationId 
-            ? { ...n, read_by: updatedReadBy }
-            : n
-        )
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
     }
   };
 
@@ -180,7 +90,7 @@ const NotificationsBar = ({ userId }: NotificationsBarProps) => {
 
   const getNotificationColor = (type: string, isUrgent: boolean) => {
     if (isUrgent) return 'bg-red-500/20 border-red-500/30';
-    
+
     switch (type) {
       case 'announcement':
         return 'bg-blue-500/20 border-blue-500/30';
@@ -233,13 +143,12 @@ const NotificationsBar = ({ userId }: NotificationsBarProps) => {
             ) : (
               notifications.map((notification) => {
                 const isUnread = !notification.read_by?.includes(userId);
-                
+
                 return (
                   <Card
                     key={notification.id}
-                    className={`${getNotificationColor(notification.type, notification.is_urgent)} ${
-                      isUnread ? 'ring-2 ring-blue-400/50' : ''
-                    } cursor-pointer transition-all hover:scale-[1.02]`}
+                    className={`${getNotificationColor(notification.type, notification.is_urgent)} ${isUnread ? 'ring-2 ring-blue-400/50' : ''
+                      } cursor-pointer transition-all hover:scale-[1.02]`}
                     onClick={() => isUnread && markAsRead(notification.id)}
                   >
                     <CardContent className="p-3">
@@ -264,9 +173,9 @@ const NotificationsBar = ({ userId }: NotificationsBarProps) => {
                           </p>
                           <p className="text-white/50 text-xs mt-2">
                             {new Date(notification.created_at).toLocaleDateString()} at{' '}
-                            {new Date(notification.created_at).toLocaleTimeString([], { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
+                            {new Date(notification.created_at).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit'
                             })}
                           </p>
                         </div>

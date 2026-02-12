@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { useRealtimeQuery } from "@/hooks/useRealtimeQuery";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -43,17 +44,87 @@ const HRDashboard = () => {
   const [hrProfile, setHrProfile] = useState<any>(null);
   const [departmentName, setDepartmentName] = useState<string>("");
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [stats, setStats] = useState({
-    totalStaff: 0,
-    presentToday: 0,
-    activeTasks: 0,
-    completedTasks: 0,
-    departments: 0,
-    avgAttendance: 0
-  });
-  const [recentActivities, setRecentActivities] = useState([]);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Real-time queries for dashboard data
+  const { data: staffData } = useRealtimeQuery({
+    queryKey: ['staff-profiles'],
+    table: 'staff_profiles',
+    select: 'id',
+  });
+
+  const today = new Date().toISOString().split('T')[0];
+  const { data: attendanceData } = useRealtimeQuery({
+    queryKey: ['attendance-today', today],
+    table: 'staff_attendance',
+    filter: `date=eq.${today}`,
+    select: 'id',
+  });
+
+  const { data: activeTasksData } = useRealtimeQuery({
+    queryKey: ['active-tasks'],
+    table: 'staff_tasks',
+    select: 'id',
+  });
+
+  const firstOfMonth = new Date();
+  firstOfMonth.setDate(1);
+  const { data: completedTasksData } = useRealtimeQuery({
+    queryKey: ['completed-tasks', firstOfMonth.toISOString()],
+    table: 'staff_tasks',
+    filter: `status=eq.completed`,
+    select: 'id',
+  });
+
+  const { data: departmentsData } = useRealtimeQuery({
+    queryKey: ['departments'],
+    table: 'departments',
+    select: 'id',
+  });
+
+  const { data: recentTasksData } = useRealtimeQuery({
+    queryKey: ['recent-completed-tasks'],
+    table: 'staff_tasks',
+    filter: 'status=eq.completed',
+    select: 'id, title, completed_at, updated_at, assigned_to',
+    order: { column: 'completed_at', ascending: false },
+    limit: 5,
+  });
+
+  const { data: recentAttendanceData } = useRealtimeQuery({
+    queryKey: ['recent-attendance'],
+    table: 'staff_attendance',
+    select: 'id, check_in_time, is_late, user_id',
+    order: { column: 'check_in_time', ascending: false },
+    limit: 5,
+  });
+
+  // Calculate stats from real-time data
+  const stats = {
+    totalStaff: staffData?.length || 0,
+    presentToday: attendanceData?.length || 0,
+    activeTasks: activeTasksData?.filter((t: any) => t.status === 'pending' || t.status === 'in_progress').length || 0,
+    completedTasks: completedTasksData?.length || 0,
+    departments: departmentsData?.length || 0,
+    avgAttendance: staffData?.length ? Math.round(((attendanceData?.length || 0) / staffData.length) * 100) : 0,
+  };
+
+  // Combine recent activities
+  const recentActivities = [
+    ...(recentTasksData || []).map((task: any) => ({
+      type: 'task_completed',
+      title: `Task "${task.title}" completed`,
+      time: task.completed_at,
+      icon: ClipboardList,
+    })),
+    ...(recentAttendanceData || []).map((attendance: any) => ({
+      type: 'attendance',
+      title: `Staff member checked in${attendance.is_late ? ' (Late)' : ''}`,
+      time: attendance.check_in_time,
+      icon: attendance.is_late ? AlertCircle : UserCheck,
+    })),
+  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -62,8 +133,6 @@ const HRDashboard = () => {
 
   useEffect(() => {
     fetchHRProfile();
-    fetchDashboardStats();
-    fetchRecentActivities();
 
     // Check system preference
     if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -137,95 +206,6 @@ const HRDashboard = () => {
     }
   };
 
-  const fetchDashboardStats = async () => {
-    try {
-      // Get total staff count
-      const { data: staffData, error: staffError } = await supabase
-        .from('staff_profiles')
-        .select('id', { count: 'exact' });
-
-      // Get today's attendance
-      const today = new Date().toISOString().split('T')[0];
-      const { data: attendanceData, error: attendanceError } = await supabase
-        .from('staff_attendance')
-        .select('id', { count: 'exact' })
-        .eq('date', today);
-
-      // Get active tasks
-      const { data: activeTasksData, error: activeTasksError } = await supabase
-        .from('staff_tasks')
-        .select('id', { count: 'exact' })
-        .in('status', ['pending', 'in_progress']);
-
-      // Get completed tasks this month
-      const firstOfMonth = new Date();
-      firstOfMonth.setDate(1);
-      const { data: completedTasksData, error: completedTasksError } = await supabase
-        .from('staff_tasks')
-        .select('id', { count: 'exact' })
-        .eq('status', 'completed')
-        .gte('completed_at', firstOfMonth.toISOString());
-
-      // Get departments count
-      const { data: deptData, error: deptError } = await supabase
-        .from('departments')
-        .select('id', { count: 'exact' });
-
-      setStats({
-        totalStaff: staffData?.length || 0,
-        presentToday: attendanceData?.length || 0,
-        activeTasks: activeTasksData?.length || 0,
-        completedTasks: completedTasksData?.length || 0,
-        departments: deptData?.length || 0,
-        avgAttendance: staffData?.length ? Math.round((attendanceData?.length || 0) / staffData.length * 100) : 0
-      });
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load dashboard statistics.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const fetchRecentActivities = async () => {
-    try {
-      // Get recent task completions - simplified query
-      const { data: taskActivities, error: taskError } = await supabase
-        .from('staff_tasks')
-        .select('id, title, status, completed_at, updated_at, assigned_to')
-        .eq('status', 'completed')
-        .order('completed_at', { ascending: false })
-        .limit(5);
-
-      // Get recent attendance - simplified query
-      const { data: attendanceActivities, error: attendanceError } = await supabase
-        .from('staff_attendance')
-        .select('id, check_in_time, is_late, user_id')
-        .order('check_in_time', { ascending: false })
-        .limit(5);
-
-      const activities = [
-        ...(taskActivities || []).map(task => ({
-          type: 'task_completed',
-          title: `Task "${task.title}" completed`,
-          time: task.completed_at,
-          icon: ClipboardList
-        })),
-        ...(attendanceActivities || []).map(attendance => ({
-          type: 'attendance',
-          title: `Staff member checked in${attendance.is_late ? ' (Late)' : ''}`,
-          time: attendance.check_in_time,
-          icon: attendance.is_late ? AlertCircle : UserCheck
-        }))
-      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8);
-
-      setRecentActivities(activities);
-    } catch (error) {
-      console.error('Error fetching recent activities:', error);
-    }
-  };
 
   const StatCard = ({ title, value, subtitle, icon: Icon, trend = false }) => (
     <Card className="dark:bg-gray-800 dark:border-gray-700">
@@ -275,9 +255,9 @@ const HRDashboard = () => {
               <Clock className="h-3 w-3 md:h-4 md:w-4 mr-1" />
               <span className="hidden sm:inline">Last updated: </span>{new Date().toLocaleTimeString()}
             </Badge>
-            <Button 
-              variant="destructive" 
-              size="sm" 
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={handleLogout}
               className="gap-2"
             >

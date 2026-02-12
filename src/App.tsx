@@ -42,7 +42,18 @@ import ClientDashboard from "./pages/ClientDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import DigitalMarketingInternship from "./pages/DigitalMarketingInternship";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes - data is considered fresh
+      gcTime: 10 * 60 * 1000, // 10 minutes - cache garbage collection time (formerly cacheTime)
+      refetchOnWindowFocus: true, // Refetch when user returns to tab
+      refetchInterval: 30 * 1000, // 30 seconds - background refetch interval
+      retry: 2, // Retry failed queries twice
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    },
+  },
+});
 
 const ManifestSwitcher = () => {
   const location = useLocation();
