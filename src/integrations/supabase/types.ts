@@ -74,6 +74,66 @@ export type Database = {
         }
         Relationships: []
       }
+      announcement_banners: {
+        Row: {
+          banner_type: string
+          content: string
+          created_at: string
+          created_by: string
+          created_by_role: string
+          expires_at: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          link_url: string | null
+          priority: number
+          starts_at: string
+          target_audience: string
+          target_department_ids: string[] | null
+          target_staff_ids: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          banner_type?: string
+          content: string
+          created_at?: string
+          created_by: string
+          created_by_role?: string
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_url?: string | null
+          priority?: number
+          starts_at?: string
+          target_audience?: string
+          target_department_ids?: string[] | null
+          target_staff_ids?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          banner_type?: string
+          content?: string
+          created_at?: string
+          created_by?: string
+          created_by_role?: string
+          expires_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          link_url?: string | null
+          priority?: number
+          starts_at?: string
+          target_audience?: string
+          target_department_ids?: string[] | null
+          target_staff_ids?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           description: string | null

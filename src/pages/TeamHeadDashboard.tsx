@@ -48,6 +48,7 @@ import MiniChess from "@/components/staff/MiniChess";
 import TimeboxWidget from "@/components/staff/TimeboxWidget";
 import WidgetManager from "@/components/staff/WidgetManager";
 import { QuickNotes } from "@/components/staff/QuickNotes";
+import AnnouncementBanner from "@/components/staff/AnnouncementBanner";
 import { useStaffData } from "@/hooks/useStaffData";
 import { useActivityTracker } from "@/hooks/useActivityTracker";
 import { useUserStatus } from "@/hooks/useUserStatus";
@@ -583,6 +584,9 @@ const TeamHeadDashboard = () => {
           </div>
         </div>
       </header>
+
+      {/* Announcement Banner */}
+      <AnnouncementBanner userId={profile?.user_id || ''} departmentId={profile?.department_id} />
 
       <VirtualOfficeLayout
         currentRoom={currentRoom}
