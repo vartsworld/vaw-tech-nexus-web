@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
-interface UseRealtimeQueryOptions<TData = any> extends Omit<UseQueryOptions<TData>, 'queryKey' | 'queryFn'> {
+interface UseRealtimeQueryOptions<TData = any> extends Omit<UseQueryOptions<TData, Error, TData, any[]>, 'queryKey' | 'queryFn' | 'select'> {
     queryKey: any[];
     table: string;
     select?: string;

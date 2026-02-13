@@ -3319,9 +3319,15 @@ export type Database = {
           due_date: string | null
           due_time: string | null
           id: string
+          is_recurring: boolean | null
+          next_recurrence_date: string | null
+          parent_task_id: string | null
           points: number | null
           priority: Database["public"]["Enums"]["task_priority"] | null
           project_id: string | null
+          recurrence_end_date: string | null
+          recurrence_interval: number | null
+          recurrence_type: string | null
           status: Database["public"]["Enums"]["task_status"] | null
           timer_started_at: string | null
           title: string
@@ -3344,9 +3350,15 @@ export type Database = {
           due_date?: string | null
           due_time?: string | null
           id?: string
+          is_recurring?: boolean | null
+          next_recurrence_date?: string | null
+          parent_task_id?: string | null
           points?: number | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           project_id?: string | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: number | null
+          recurrence_type?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           timer_started_at?: string | null
           title: string
@@ -3369,9 +3381,15 @@ export type Database = {
           due_date?: string | null
           due_time?: string | null
           id?: string
+          is_recurring?: boolean | null
+          next_recurrence_date?: string | null
+          parent_task_id?: string | null
           points?: number | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           project_id?: string | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: number | null
+          recurrence_type?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           timer_started_at?: string | null
           title?: string
@@ -3412,6 +3430,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "staff_tasks"
             referencedColumns: ["id"]
           },
         ]

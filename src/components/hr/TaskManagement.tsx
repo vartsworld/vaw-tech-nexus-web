@@ -28,7 +28,8 @@ import {
   Trash2,
   Paperclip,
   X,
-  Loader2
+  Loader2,
+  Repeat
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -69,7 +70,11 @@ const TaskManagement = () => {
     due_time: "",
     trial_period: false,
     points: 10,
-    attachments: [] as Array<{ file: File; title: string }>
+    attachments: [] as Array<{ file: File; title: string }>,
+    is_recurring: false,
+    recurrence_type: "weekly" as string,
+    recurrence_interval: 1,
+    recurrence_end_date: ""
   });
 
   const [newClient, setNewClient] = useState({
@@ -361,6 +366,22 @@ const TaskManagement = () => {
     }
   };
 
+  const calculateNextRecurrence = (dueDate: string, type: string, interval: number): string => {
+    const date = new Date(dueDate);
+    switch (type) {
+      case 'daily':
+        date.setDate(date.getDate() + interval);
+        break;
+      case 'weekly':
+        date.setDate(date.getDate() + (7 * interval));
+        break;
+      case 'monthly':
+        date.setMonth(date.getMonth() + interval);
+        break;
+    }
+    return date.toISOString().split('T')[0];
+  };
+
   const handleAddTask = async () => {
     if (!newTask.title || !newTask.assigned_to) {
       toast({
@@ -376,7 +397,7 @@ const TaskManagement = () => {
       // Get current user's ID for assigned_by
       const { data: { user } } = await supabase.auth.getUser();
 
-      const taskData = {
+      const taskData: any = {
         title: newTask.title,
         description: newTask.description,
         assigned_to: newTask.assigned_to,
@@ -389,7 +410,12 @@ const TaskManagement = () => {
         due_time: newTask.due_time || null,
         trial_period: newTask.trial_period,
         points: newTask.points,
-        department_id: userProfile?.department_id || null, // Ensure department_id is set
+        department_id: userProfile?.department_id || null,
+        is_recurring: newTask.is_recurring,
+        recurrence_type: newTask.is_recurring ? newTask.recurrence_type : null,
+        recurrence_interval: newTask.is_recurring ? newTask.recurrence_interval : 1,
+        recurrence_end_date: newTask.is_recurring && newTask.recurrence_end_date ? newTask.recurrence_end_date : null,
+        next_recurrence_date: newTask.is_recurring && newTask.due_date ? calculateNextRecurrence(newTask.due_date, newTask.recurrence_type, newTask.recurrence_interval) : null,
         attachments: []
       };
 
@@ -464,7 +490,11 @@ const TaskManagement = () => {
         due_time: "",
         trial_period: false,
         points: 10,
-        attachments: []
+        attachments: [],
+        is_recurring: false,
+        recurrence_type: "weekly",
+        recurrence_interval: 1,
+        recurrence_end_date: ""
       });
 
       toast({
@@ -977,6 +1007,65 @@ const TaskManagement = () => {
                     className="mt-2"
                   />
                 </div>
+              </div>
+
+              {/* Recurring Task Section */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Repeat className="h-4 w-4 text-muted-foreground" />
+                    <Label htmlFor="is_recurring" className="font-medium">Recurring Task</Label>
+                  </div>
+                  <Switch
+                    id="is_recurring"
+                    checked={newTask.is_recurring}
+                    onCheckedChange={(checked) => setNewTask({ ...newTask, is_recurring: checked })}
+                  />
+                </div>
+
+                {newTask.is_recurring && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                    <div>
+                      <Label htmlFor="recurrence_type">Frequency</Label>
+                      <Select value={newTask.recurrence_type} onValueChange={(value) => setNewTask({ ...newTask, recurrence_type: value })}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="recurrence_interval">Every</Label>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Input
+                          id="recurrence_interval"
+                          type="number"
+                          min="1"
+                          max="30"
+                          value={newTask.recurrence_interval}
+                          onChange={(e) => setNewTask({ ...newTask, recurrence_interval: parseInt(e.target.value) || 1 })}
+                        />
+                        <span className="text-sm text-muted-foreground whitespace-nowrap">
+                          {newTask.recurrence_type === 'daily' ? 'day(s)' : newTask.recurrence_type === 'weekly' ? 'week(s)' : 'month(s)'}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="recurrence_end_date">End Date (Optional)</Label>
+                      <Input
+                        id="recurrence_end_date"
+                        type="date"
+                        value={newTask.recurrence_end_date}
+                        onChange={(e) => setNewTask({ ...newTask, recurrence_end_date: e.target.value })}
+                        className="mt-2"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
