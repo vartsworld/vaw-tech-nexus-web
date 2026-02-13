@@ -38,6 +38,7 @@ import PointsMonitoring from "@/components/hr/PointsMonitoring";
 import RewardsManagement from "@/components/hr/RewardsManagement";
 import RedemptionApprovals from "@/components/hr/RedemptionApprovals";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import BannerManagement from "@/components/hr/BannerManagement";
 
 const HRDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -268,8 +269,9 @@ const HRDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
-          <TabsList className="w-full overflow-x-auto flex md:grid md:grid-cols-11 justify-start md:justify-center h-auto p-1">
+          <TabsList className="w-full overflow-x-auto flex md:grid md:grid-cols-12 justify-start md:justify-center h-auto p-1">
             <TabsTrigger value="overview" className="whitespace-nowrap">Overview</TabsTrigger>
+            <TabsTrigger value="banners" className="whitespace-nowrap">Banners</TabsTrigger>
             <TabsTrigger value="staff" className="whitespace-nowrap">Staff</TabsTrigger>
             <TabsTrigger value="attendance" className="whitespace-nowrap">Attendance</TabsTrigger>
             <TabsTrigger value="tasks" className="whitespace-nowrap">Tasks</TabsTrigger>
@@ -420,6 +422,10 @@ const HRDashboard = () => {
 
           <TabsContent value="notifications">
             <NotificationCenter />
+          </TabsContent>
+
+          <TabsContent value="banners">
+            <BannerManagement />
           </TabsContent>
 
           <TabsContent value="applications">

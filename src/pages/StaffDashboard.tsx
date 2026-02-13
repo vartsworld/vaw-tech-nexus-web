@@ -40,6 +40,7 @@ import { useUserStatus } from "@/hooks/useUserStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import AnnouncementBanner from "@/components/staff/AnnouncementBanner";
 
 type RoomType = 'workspace' | 'breakroom' | 'meeting';
 
@@ -409,6 +410,9 @@ const StaffDashboard = () => {
           </div>
         </div>
       </header>
+
+      {/* Announcement Banner */}
+      <AnnouncementBanner userId={profile.user_id} departmentId={profile.department_id} />
 
       <div className="flex-1 overflow-hidden relative z-10">
         <VirtualOfficeLayout
