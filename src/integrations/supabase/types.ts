@@ -1058,6 +1058,56 @@ export type Database = {
           },
         ]
       }
+      client_onboarding_links: {
+        Row: {
+          additional_info: string | null
+          client_name: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string
+          custom_fields: Json | null
+          expires_at: string | null
+          id: string
+          package_id: string | null
+          status: string | null
+          token: string
+        }
+        Insert: {
+          additional_info?: string | null
+          client_name?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by: string
+          custom_fields?: Json | null
+          expires_at?: string | null
+          id?: string
+          package_id?: string | null
+          status?: string | null
+          token?: string
+        }
+        Update: {
+          additional_info?: string | null
+          client_name?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string
+          custom_fields?: Json | null
+          expires_at?: string | null
+          id?: string
+          package_id?: string | null
+          status?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_onboarding_links_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_profiles: {
         Row: {
           address: string | null
@@ -2235,6 +2285,51 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      pricing_packages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          discount_price: number
+          display_order: number | null
+          features: string[] | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          is_popular: boolean | null
+          name: string
+          original_price: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          discount_price?: number
+          display_order?: number | null
+          features?: string[] | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_popular?: boolean | null
+          name: string
+          original_price?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          discount_price?: number
+          display_order?: number | null
+          features?: string[] | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_popular?: boolean | null
+          name?: string
+          original_price?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       products: {
         Row: {

@@ -41,6 +41,7 @@ import ClientLogin from "./pages/ClientLogin";
 import ClientDashboard from "./pages/ClientDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import DigitalMarketingInternship from "./pages/DigitalMarketingInternship";
+import ClientOnboarding from "./pages/ClientOnboarding";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -113,6 +114,7 @@ const AppContent = () => {
           <Route path="/project-monitor" element={<ProjectMonitor />} />
           <Route path="/install" element={<Install />} />
           <Route path="/digital-marketing-internship" element={<DigitalMarketingInternship />} />
+          <Route path="/onboard/:token" element={<ClientOnboarding />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
