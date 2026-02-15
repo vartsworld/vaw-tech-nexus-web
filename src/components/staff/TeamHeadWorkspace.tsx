@@ -51,6 +51,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useStaffData } from "@/hooks/useStaffData";
 
 import { TaskApprovalDialog } from "./TaskApprovalDialog";
+import ClientOnboardingCreator from "./ClientOnboardingCreator";
 
 interface Subtask {
   id: string;
@@ -2896,6 +2897,13 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Client Onboarding Section */}
+      <Card className="bg-black/40 backdrop-blur-md border-white/10">
+        <CardContent className="pt-4">
+          <ClientOnboardingCreator userId={userId} />
+        </CardContent>
+      </Card>
 
       <TaskApprovalDialog
         task={selectedTask}
