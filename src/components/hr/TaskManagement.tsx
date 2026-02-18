@@ -10,6 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 import {
   ClipboardList,
   Plus,
@@ -29,7 +32,9 @@ import {
   Paperclip,
   X,
   Loader2,
-  Repeat
+  Repeat,
+  ChevronDown,
+  Check
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,7 +65,7 @@ const TaskManagement = () => {
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
-    assigned_to: "",
+    assigned_to: [] as string[],
     assigned_by: "",
     project_id: "",
     client_id: "",
@@ -383,10 +388,10 @@ const TaskManagement = () => {
   };
 
   const handleAddTask = async () => {
-    if (!newTask.title || !newTask.assigned_to) {
+    if (!newTask.title || newTask.assigned_to.length === 0) {
       toast({
         title: "Validation Error",
-        description: "Title and Assignee are required.",
+        description: "Title and at least one Assignee are required.",
         variant: "destructive",
       });
       return;
@@ -397,42 +402,52 @@ const TaskManagement = () => {
       // Get current user's ID for assigned_by
       const { data: { user } } = await supabase.auth.getUser();
 
-      const taskData: any = {
-        title: newTask.title,
-        description: newTask.description,
-        assigned_to: newTask.assigned_to,
-        assigned_by: user?.id || crypto.randomUUID(),
-        project_id: newTask.project_id === "no-project" ? null : newTask.project_id,
-        client_id: newTask.client_id === "no-client" ? null : newTask.client_id,
-        priority: newTask.priority as 'low' | 'medium' | 'high' | 'urgent',
-        status: newTask.status as 'pending' | 'in_progress' | 'completed',
-        due_date: newTask.due_date || null,
-        due_time: newTask.due_time || null,
-        trial_period: newTask.trial_period,
-        points: newTask.points,
-        department_id: userProfile?.department_id || null,
-        is_recurring: newTask.is_recurring,
-        recurrence_type: newTask.is_recurring ? newTask.recurrence_type : null,
-        recurrence_interval: newTask.is_recurring ? newTask.recurrence_interval : 1,
-        recurrence_end_date: newTask.is_recurring && newTask.recurrence_end_date ? newTask.recurrence_end_date : null,
-        next_recurrence_date: newTask.is_recurring && newTask.due_date ? calculateNextRecurrence(newTask.due_date, newTask.recurrence_type, newTask.recurrence_interval) : null,
-        attachments: []
-      };
-
-      const { data: taskResponse, error: taskError } = await supabase
-        .from('staff_tasks')
-        .insert(taskData)
-        .select('*')
-        .single();
-
-      if (taskError) throw taskError;
-
-      // Handle attachments
+      const createdTasks = [];
       let finalAttachments = [];
-      if (newTask.attachments.length > 0) {
+      let firstTaskId = null;
+
+      // Loop through each assignee and create a separate task
+      for (const assigneeId of newTask.assigned_to) {
+        const taskData: any = {
+          title: newTask.title,
+          description: newTask.description,
+          assigned_to: assigneeId,
+          assigned_by: user?.id || crypto.randomUUID(),
+          project_id: newTask.project_id === "no-project" ? null : newTask.project_id,
+          client_id: newTask.client_id === "no-client" ? null : newTask.client_id,
+          priority: newTask.priority as 'low' | 'medium' | 'high' | 'urgent',
+          status: newTask.status as 'pending' | 'in_progress' | 'completed',
+          due_date: newTask.due_date || null,
+          due_time: newTask.due_time || null,
+          trial_period: newTask.trial_period,
+          points: newTask.points,
+          department_id: userProfile?.department_id || null,
+          is_recurring: newTask.is_recurring,
+          recurrence_type: newTask.is_recurring ? newTask.recurrence_type : null,
+          recurrence_interval: newTask.is_recurring ? newTask.recurrence_interval : 1,
+          recurrence_end_date: newTask.is_recurring && newTask.recurrence_end_date ? newTask.recurrence_end_date : null,
+          next_recurrence_date: newTask.is_recurring && newTask.due_date ? calculateNextRecurrence(newTask.due_date, newTask.recurrence_type, newTask.recurrence_interval) : null,
+          attachments: []
+        };
+
+        const { data: taskResponse, error: taskError } = await supabase
+          .from('staff_tasks')
+          .insert(taskData)
+          .select('*')
+          .single();
+
+        if (taskError) throw taskError;
+
+        if (!firstTaskId) firstTaskId = taskResponse.id;
+
+        createdTasks.push(taskResponse);
+      }
+
+      // Handle attachments - upload once and link to all created tasks
+      if (newTask.attachments.length > 0 && firstTaskId) {
         for (const attachment of newTask.attachments) {
           const fileExt = attachment.file.name.split('.').pop();
-          const filePath = `${taskResponse.id}/${Date.now()}.${fileExt}`;
+          const filePath = `${firstTaskId}/${Date.now()}.${fileExt}`;
 
           const { error: uploadError } = await supabase.storage
             .from('task-attachments')
@@ -463,24 +478,28 @@ const TaskManagement = () => {
         }
 
         if (finalAttachments.length > 0) {
+          // Update all created tasks with the same attachments
+          const taskIds = createdTasks.map(t => t.id);
           const { error: updateError } = await supabase
             .from('staff_tasks')
             .update({ attachments: finalAttachments })
-            .eq('id', taskResponse.id);
+            .in('id', taskIds);
 
           if (updateError) console.error('Error updating task attachments:', updateError);
+
+          // Update local references
+          createdTasks.forEach(t => t.attachments = finalAttachments);
         }
       }
 
       // Refresh tasks list
-      const newTaskWithAttachments = { ...taskResponse, attachments: finalAttachments };
-      setTasks([newTaskWithAttachments, ...tasks]);
+      setTasks([...createdTasks, ...tasks]);
 
       setIsAddDialogOpen(false);
       setNewTask({
         title: "",
         description: "",
-        assigned_to: "",
+        assigned_to: [],
         assigned_by: "",
         project_id: "",
         client_id: "",
@@ -901,18 +920,70 @@ const TaskManagement = () => {
                       Assign to myself
                     </Button>
                   </div>
-                  <Select value={newTask.assigned_to} onValueChange={(value) => setNewTask({ ...newTask, assigned_to: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select staff member" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {staff.map(member => (
-                        <SelectItem key={member.id} value={member.user_id}>
-                          {member.full_name} (@{member.username})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between mt-2 h-auto min-h-[40px] py-2"
+                      >
+                        <div className="flex flex-wrap gap-1 max-w-[90%]">
+                          {newTask.assigned_to.length > 0 ? (
+                            newTask.assigned_to.map((id) => {
+                              const member = staff.find(s => s.user_id === id);
+                              return (
+                                <Badge key={id} variant="secondary" className="mr-1 mb-1">
+                                  {member?.full_name || id}
+                                </Badge>
+                              );
+                            })
+                          ) : (
+                            <span className="text-muted-foreground">Select staff members...</span>
+                          )}
+                        </div>
+                        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0" align="start">
+                      <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto">
+                        {staff.map((member) => (
+                          <div
+                            key={member.id}
+                            className="flex items-center space-x-2 p-2 hover:bg-muted rounded-md cursor-pointer"
+                            onClick={() => {
+                              const isSelected = newTask.assigned_to.includes(member.user_id);
+                              if (isSelected) {
+                                setNewTask({
+                                  ...newTask,
+                                  assigned_to: newTask.assigned_to.filter(id => id !== member.user_id)
+                                });
+                              } else {
+                                setNewTask({
+                                  ...newTask,
+                                  assigned_to: [...newTask.assigned_to, member.user_id]
+                                });
+                              }
+                            }}
+                          >
+                            <Checkbox
+                              id={`staff-${member.id}`}
+                              checked={newTask.assigned_to.includes(member.user_id)}
+                              onCheckedChange={() => { }} // Handled by div onClick
+                            />
+                            <div className="flex flex-col">
+                              <Label htmlFor={`staff-${member.id}`} className="cursor-pointer font-medium">
+                                {member.full_name}
+                              </Label>
+                              <span className="text-xs text-muted-foreground">@{member.username}</span>
+                            </div>
+                            {newTask.assigned_to.includes(member.user_id) && (
+                              <Check className="h-4 w-4 ml-auto text-primary" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-2">

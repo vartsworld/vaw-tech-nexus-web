@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+
 import {
   CheckCircle,
   Clock,
@@ -42,7 +44,9 @@ import {
   LayoutGrid,
   List,
   MoreVertical,
-  Search
+  Search,
+  ChevronDown,
+  Check
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
@@ -837,10 +841,10 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   };
 
   const handleCreateTask = async () => {
-    if (!newTask.title || !newTask.assigned_to || !newTask.client_id) {
+    if (!newTask.title || newTask.assigned_to.length === 0 || !newTask.client_id) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields including client selection.",
+        description: "Please fill in all required fields including client selection and at least one assignee.",
         variant: "destructive",
       });
       return;
@@ -862,50 +866,53 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         return;
       }
 
-      // First create the task
-      const taskData = {
-        title: newTask.title,
-        description: newTask.description,
-        assigned_to: newTask.assigned_to,
-        client_id: newTask.client_id,
-        priority: newTask.priority,
-        due_date: newTask.due_date || null,
-        due_time: newTask.due_time || null,
-        trial_period: newTask.trial_period,
-        points: newTask.points,
-        assigned_by: user.id,
-        department_id: userProfile?.department_id || null,
-        status: 'pending' as const,
-        attachments: []
-      };
+      const createdTasks = [];
+      let finalAttachments = [];
+      let firstTaskId = null;
 
-      const { data: taskResponse, error: taskError } = await supabase
-        .from('staff_tasks')
-        .insert(taskData)
-        .select(`
-          *,
-          staff_profiles:assigned_to (
-            full_name,
-            username
-          )
-        `)
-        .single();
+      // Loop through each assignee and create a separate task
+      for (const assigneeId of newTask.assigned_to) {
+        const taskData = {
+          title: newTask.title,
+          description: newTask.description,
+          assigned_to: assigneeId,
+          client_id: newTask.client_id,
+          priority: newTask.priority,
+          due_date: newTask.due_date || null,
+          due_time: newTask.due_time || null,
+          trial_period: newTask.trial_period,
+          points: newTask.points,
+          assigned_by: user.id,
+          department_id: userProfile?.department_id || null,
+          status: 'pending' as const,
+          attachments: []
+        };
 
-      if (taskError) throw taskError;
+        const { data: taskResponse, error: taskError } = await supabase
+          .from('staff_tasks')
+          .insert(taskData)
+          .select(`
+            *,
+            staff_profiles:assigned_to (
+              full_name,
+              username
+            )
+          `)
+          .single();
 
-      // Cast and add to tasks
-      const newTaskData = {
-        ...taskResponse,
-        attachments: taskResponse.attachments ? (taskResponse.attachments as any) : []
-      } as Task;
+        if (taskError) throw taskError;
+
+        if (!firstTaskId) firstTaskId = taskResponse.id;
+
+        createdTasks.push(taskResponse);
+      }
 
       // Upload files if any
-      const attachmentData = [];
-      if (newTask.attachments.length > 0) {
+      if (newTask.attachments.length > 0 && firstTaskId) {
         console.log('Uploading attachments:', newTask.attachments.length, 'files');
         for (const attachment of newTask.attachments) {
           const fileExt = attachment.file.name.split('.').pop();
-          const filePath = `${taskResponse.id}/${Date.now()}.${fileExt}`;
+          const filePath = `${firstTaskId}/${Date.now()}.${fileExt}`;
 
           console.log('Uploading file:', attachment.file.name, 'to:', filePath);
           const { error: uploadError } = await supabase.storage
@@ -925,7 +932,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
               .getPublicUrl(filePath);
 
             console.log('File uploaded successfully:', publicUrl);
-            attachmentData.push({
+            finalAttachments.push({
               title: attachment.title || attachment.file.name,
               name: attachment.file.name,
               url: filePath,
@@ -936,30 +943,38 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           }
         }
 
-        if (attachmentData.length > 0) {
-          console.log('Updating task with attachments:', attachmentData);
-          // Update task with attachment info
+        if (finalAttachments.length > 0) {
+          console.log('Updating tasks with attachments:', finalAttachments);
+          // Update all tasks with attachment info
+          const taskIds = createdTasks.map(t => t.id);
           const { error: updateError } = await supabase
             .from('staff_tasks')
-            .update({ attachments: attachmentData })
-            .eq('id', taskResponse.id);
+            .update({ attachments: finalAttachments })
+            .in('id', taskIds);
 
           if (updateError) {
-            console.error('Error updating task with attachments:', updateError);
+            console.error('Error updating tasks with attachments:', updateError);
           }
 
-          newTaskData.attachments = attachmentData;
+          // Update local references
+          createdTasks.forEach(t => t.attachments = finalAttachments);
         }
       } else {
         console.log('No attachments to upload');
       }
 
-      setTasks([newTaskData, ...tasks]);
+      // Format for the state
+      const newTasksForState = createdTasks.map(task => ({
+        ...task,
+        attachments: task.attachments ? (task.attachments as any) : []
+      } as Task));
+
+      setTasks([...newTasksForState, ...tasks]);
       setIsCreateTaskOpen(false);
       setNewTask({
         title: "",
         description: "",
-        assigned_to: "",
+        assigned_to: [],
         client_id: "",
         priority: "medium",
         due_date: "",
