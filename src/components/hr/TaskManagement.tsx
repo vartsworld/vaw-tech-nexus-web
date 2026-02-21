@@ -192,7 +192,7 @@ const TaskManagement = () => {
     try {
       const { data, error } = await supabase
         .from('staff_profiles')
-        .select('id, full_name, username, role')
+        .select('id, user_id, full_name, username, role')
         .order('full_name');
 
       if (error) throw error;
@@ -910,9 +910,8 @@ const TaskManagement = () => {
                       className="h-auto py-1 px-2 text-xs"
                       onClick={async () => {
                         const { data: { user } } = await supabase.auth.getUser();
-                        const currentUser = staff.find(s => s.user_id === user?.id);
-                        if (currentUser) {
-                          setNewTask({ ...newTask, assigned_to: currentUser.id });
+                        if (user?.id) {
+                          setNewTask({ ...newTask, assigned_to: [user.id] });
                         }
                       }}
                     >
