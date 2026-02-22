@@ -42,6 +42,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const TaskManagement = () => {
+
+  // Helper: parse assigned_to which may be a plain UUID or a JSON array string
+  const parseAssignedTo = (val: string | null | undefined): string[] => {
+    if (!val) return [];
+    if (val.startsWith('[')) {
+      try { return JSON.parse(val); } catch { return [val]; }
+    }
+    return [val];
+  };
+
+  // Helper: serialize assignee array back for storage
+  const serializeAssignedTo = (ids: string[]): string | null => {
+    if (ids.length === 0) return null;
+    if (ids.length === 1) return ids[0];
+    return JSON.stringify(ids);
+  };
+
   const [tasks, setTasks] = useState([]);
   const [staff, setStaff] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -134,15 +151,17 @@ const TaskManagement = () => {
         return;
       }
 
-      // Get unique IDs for batch fetching
-      const assignedToIds = [...new Set(tasksData.map(t => t.assigned_to).filter(Boolean))];
+      // Get unique IDs for batch fetching — handle JSON-array assigned_to
+      const allAssignedToIds = [...new Set(
+        tasksData.flatMap(t => parseAssignedTo(t.assigned_to))
+      )].filter(Boolean);
       const assignedByIds = [...new Set(tasksData.map(t => t.assigned_by).filter(Boolean))];
       const projectIds = [...new Set(tasksData.map(t => t.project_id).filter(Boolean))];
       const clientIds = [...new Set(tasksData.map(t => t.client_id).filter(Boolean))];
 
       // Fetch related data in parallel
       const [profilesData, projectsData, clientsData] = await Promise.all([
-        supabase.from('staff_profiles').select('id, user_id, full_name, username, avatar_url, role').in('user_id', [...assignedToIds, ...assignedByIds]),
+        supabase.from('staff_profiles').select('id, user_id, full_name, username, avatar_url, role').in('user_id', [...allAssignedToIds, ...assignedByIds]),
         projectIds.length > 0 ? supabase.from('staff_projects').select('id, name, status').in('id', projectIds) : { data: [] },
         clientIds.length > 0 ? supabase.from('clients').select('id, company_name, contact_person, email, phone').in('id', clientIds) : { data: [] }
       ]);
@@ -152,20 +171,26 @@ const TaskManagement = () => {
       const projectsMap = (projectsData.data || []).reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
       const clientsMap = (clientsData.data || []).reduce((acc, c) => ({ ...acc, [c.id]: c }), {});
 
-      // Merge data
-      let enrichedTasks = tasksData.map(task => ({
-        ...task,
-        assigned_to_profile: profilesMap[task.assigned_to] || null,
-        assigned_by_profile: profilesMap[task.assigned_by] || null,
-        staff_projects: task.project_id ? projectsMap[task.project_id] || null : null,
-        clients: task.client_id ? clientsMap[task.client_id] || null : null
-      }));
+      // Merge data — attach all assignee profiles
+      let enrichedTasks = tasksData.map(task => {
+        const assigneeIds = parseAssignedTo(task.assigned_to);
+        return {
+          ...task,
+          assigned_to_ids: assigneeIds,
+          assigned_to_profiles: assigneeIds.map((id: string) => profilesMap[id] || null).filter(Boolean),
+          assigned_to_profile: assigneeIds[0] ? (profilesMap[assigneeIds[0]] || null) : null, // keep legacy compat
+          assigned_by_profile: profilesMap[task.assigned_by] || null,
+          staff_projects: task.project_id ? projectsMap[task.project_id] || null : null,
+          clients: task.client_id ? clientsMap[task.client_id] || null : null
+        };
+      });
 
       // Filter handover tasks: show to department heads and managers in same department
       if (currentUserProfile && currentUserProfile.role !== 'hr') {
         enrichedTasks = enrichedTasks.filter(task => {
+          const assigneeIds: string[] = task.assigned_to_ids || [];
           // Always show tasks assigned to or by the current user
-          if (task.assigned_to === user?.id || task.assigned_by === user?.id) {
+          if (assigneeIds.includes(user?.id) || task.assigned_by === user?.id) {
             return true;
           }
 
@@ -708,27 +733,13 @@ const TaskManagement = () => {
     }
   };
 
-  const openEditDialog = async (task: any) => {
-    // Find all sibling tasks (same title + assigned_by) to load all assignees
-    const { data: siblingTasks } = await supabase
-      .from('staff_tasks')
-      .select('id, assigned_to')
-      .eq('title', task.title)
-      .eq('assigned_by', task.assigned_by)
-      .eq('priority', task.priority);
-
-    const allAssignees = siblingTasks
-      ? siblingTasks.map(t => t.assigned_to).filter(Boolean)
-      : [task.assigned_to].filter(Boolean);
-
-    const siblingIds = siblingTasks ? siblingTasks.map(t => t.id) : [task.id];
-
+  const openEditDialog = (task: any) => {
+    const assigneeIds = parseAssignedTo(task.assigned_to);
     setEditTask({
       id: task.id,
-      siblingIds, // track all related task IDs
       title: task.title || "",
       description: task.description || "",
-      assigned_to: allAssignees as string[],
+      assigned_to: assigneeIds,
       project_id: task.project_id || "",
       client_id: task.client_id || "",
       status: task.status || "pending",
@@ -753,18 +764,11 @@ const TaskManagement = () => {
 
     try {
       setSavingEdit(true);
-      const { data: { user } } = await supabase.auth.getUser();
 
-      // Get the original task for base data
-      const { data: originalTask } = await supabase
-        .from('staff_tasks')
-        .select('*')
-        .eq('id', editTask.id)
-        .single();
-
-      const commonData: any = {
+      const updateData: any = {
         title: editTask.title,
         description: editTask.description,
+        assigned_to: serializeAssignedTo(editTask.assigned_to),
         project_id: editTask.project_id === "no-project" ? null : editTask.project_id || null,
         client_id: editTask.client_id === "no-client" ? null : editTask.client_id || null,
         status: editTask.status,
@@ -780,56 +784,14 @@ const TaskManagement = () => {
         updated_at: new Date().toISOString()
       };
 
-      const siblingIds: string[] = editTask.siblingIds || [editTask.id];
-      const newAssignees: string[] = editTask.assigned_to;
-
-      // Get current sibling tasks to know their current assignees
-      const { data: currentSiblings } = await supabase
+      const { error } = await supabase
         .from('staff_tasks')
-        .select('id, assigned_to')
-        .in('id', siblingIds);
+        .update(updateData)
+        .eq('id', editTask.id);
 
-      const currentAssignees = (currentSiblings || []).map(t => t.assigned_to).filter(Boolean) as string[];
+      if (error) throw error;
 
-      // Assignees to remove (had task, no longer selected)
-      const toRemove = currentSiblings?.filter(t => !newAssignees.includes(t.assigned_to)) || [];
-      // Assignees to add (newly selected, no existing task)
-      const toAdd = newAssignees.filter(id => !currentAssignees.includes(id));
-      // Assignees to keep/update
-      const toUpdate = currentSiblings?.filter(t => newAssignees.includes(t.assigned_to)) || [];
-
-      // Update tasks that are being kept
-      for (const task of toUpdate) {
-        const { error } = await supabase
-          .from('staff_tasks')
-          .update({ ...commonData, assigned_to: task.assigned_to })
-          .eq('id', task.id);
-        if (error) throw error;
-      }
-
-      // Delete tasks for removed assignees
-      if (toRemove.length > 0) {
-        const { error } = await supabase
-          .from('staff_tasks')
-          .delete()
-          .in('id', toRemove.map(t => t.id));
-        if (error) throw error;
-      }
-
-      // Create tasks for new assignees
-      if (toAdd.length > 0) {
-        const newTasks = toAdd.map(assigneeId => ({
-          ...commonData,
-          assigned_to: assigneeId,
-          assigned_by: user?.id || originalTask?.assigned_by,
-          department_id: originalTask?.department_id,
-          attachments: originalTask?.attachments || []
-        }));
-        const { error } = await supabase.from('staff_tasks').insert(newTasks);
-        if (error) throw error;
-      }
-
-      toast({ title: "Success", description: `Task updated with ${newAssignees.length} assignee${newAssignees.length > 1 ? 's' : ''} successfully.` });
+      toast({ title: "Success", description: `Task updated with ${editTask.assigned_to.length} assignee${editTask.assigned_to.length > 1 ? 's' : ''} successfully.` });
       setIsEditDialogOpen(false);
       setEditTask(null);
       await fetchTasks();
@@ -1509,14 +1471,20 @@ const TaskManagement = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <div className="font-medium">
-                            {task.assigned_to_profile?.full_name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            @{task.assigned_to_profile?.username}
-                          </div>
+                        <User className="h-4 w-4 text-gray-400 shrink-0" />
+                        <div className="flex flex-wrap gap-1">
+                          {(task.assigned_to_profiles?.length > 0
+                            ? task.assigned_to_profiles
+                            : task.assigned_to_profile ? [task.assigned_to_profile] : []
+                          ).map((profile: any, i: number) => (
+                            <div key={i} className="text-sm">
+                              <span className="font-medium">{profile.full_name}</span>
+                              {i < (task.assigned_to_profiles?.length || 1) - 1 && <span className="text-muted-foreground">, </span>}
+                            </div>
+                          ))}
+                          {!task.assigned_to_profile && !task.assigned_to_profiles?.length && (
+                            <span className="text-gray-400 text-sm">Unassigned</span>
+                          )}
                         </div>
                       </div>
                     </TableCell>
@@ -1631,9 +1599,21 @@ const TaskManagement = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span>{task.assigned_to_profile?.full_name}</span>
+                  <div className="flex items-center gap-2 col-span-2">
+                    <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex flex-wrap gap-1">
+                      {(task.assigned_to_profiles?.length > 0
+                        ? task.assigned_to_profiles
+                        : task.assigned_to_profile ? [task.assigned_to_profile] : []
+                      ).map((profile: any, i: number) => (
+                        <span key={i} className="text-sm font-medium">
+                          {profile.full_name}{i < (task.assigned_to_profiles?.length || 1) - 1 ? ',' : ''}
+                        </span>
+                      ))}
+                      {!task.assigned_to_profile && !task.assigned_to_profiles?.length && (
+                        <span className="text-gray-400 text-sm">Unassigned</span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 justify-end">
                     <Badge variant="outline">{task.points} pts</Badge>
@@ -1818,12 +1798,20 @@ const TaskManagement = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-xs text-muted-foreground">Assigned To</Label>
-                    <div className="mt-1 flex items-center gap-2">
-                      <div>
-                        <div className="font-medium">{selectedTask.assigned_to_profile?.full_name}</div>
-                        <div className="text-sm text-muted-foreground">@{selectedTask.assigned_to_profile?.username}</div>
-                        <Badge variant="outline" className="mt-1 text-xs">{selectedTask.assigned_to_profile?.role}</Badge>
-                      </div>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {(selectedTask.assigned_to_profiles?.length > 0
+                        ? selectedTask.assigned_to_profiles
+                        : selectedTask.assigned_to_profile ? [selectedTask.assigned_to_profile] : []
+                      ).map((profile: any, i: number) => (
+                        <div key={i} className="flex flex-col">
+                          <span className="font-medium">{profile.full_name}</span>
+                          <span className="text-sm text-muted-foreground">@{profile.username}</span>
+                          <Badge variant="outline" className="mt-1 text-xs w-fit">{profile.role}</Badge>
+                        </div>
+                      ))}
+                      {!selectedTask.assigned_to_profile && !selectedTask.assigned_to_profiles?.length && (
+                        <span className="text-gray-400 text-sm">Unassigned</span>
+                      )}
                     </div>
                   </div>
                   <div>
