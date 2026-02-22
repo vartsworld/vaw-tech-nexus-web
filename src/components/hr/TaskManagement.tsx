@@ -90,6 +90,7 @@ const TaskManagement = () => {
     assigned_by: "",
     project_id: "",
     client_id: "",
+    department_id: "",
     status: "pending",
     priority: "medium",
     due_date: "",
@@ -450,7 +451,7 @@ const TaskManagement = () => {
           due_time: newTask.due_time || null,
           trial_period: newTask.trial_period,
           points: newTask.points,
-          department_id: userProfile?.department_id || null,
+          department_id: newTask.department_id && newTask.department_id !== "no-department" ? newTask.department_id : (userProfile?.department_id || null),
           is_recurring: newTask.is_recurring,
           recurrence_type: newTask.is_recurring ? newTask.recurrence_type : null,
           recurrence_interval: newTask.is_recurring ? newTask.recurrence_interval : 1,
@@ -532,6 +533,7 @@ const TaskManagement = () => {
         assigned_by: "",
         project_id: "",
         client_id: "",
+        department_id: "",
         status: "pending",
         priority: "medium",
         due_date: "",
@@ -742,6 +744,7 @@ const TaskManagement = () => {
       assigned_to: assigneeIds,
       project_id: task.project_id || "",
       client_id: task.client_id || "",
+      department_id: task.department_id || "",
       status: task.status || "pending",
       priority: task.priority || "medium",
       due_date: task.due_date ? task.due_date.split('T')[0] : "",
@@ -771,6 +774,7 @@ const TaskManagement = () => {
         assigned_to: serializeAssignedTo(editTask.assigned_to),
         project_id: editTask.project_id === "no-project" ? null : editTask.project_id || null,
         client_id: editTask.client_id === "no-client" ? null : editTask.client_id || null,
+        department_id: editTask.department_id === "no-department" ? null : editTask.department_id || null,
         status: editTask.status,
         priority: editTask.priority,
         due_date: editTask.due_date || null,
@@ -1106,6 +1110,40 @@ const TaskManagement = () => {
                       {clients.map(client => (
                         <SelectItem key={client.id} value={client.id}>
                           {client.company_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="department">Department</Label>
+                  <Select value={newTask.department_id || "no-department"} onValueChange={(value) => setNewTask({ ...newTask, department_id: value })}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no-department">Auto (My Department)</SelectItem>
+                      {departments.map(dept => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="project">Project</Label>
+                  <Select value={newTask.project_id || "no-project"} onValueChange={(value) => setNewTask({ ...newTask, project_id: value })}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no-project">No Project</SelectItem>
+                      {projects.map(project => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -2178,6 +2216,22 @@ const TaskManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div>
+                <Label htmlFor="edit-department">Department</Label>
+                <Select value={editTask.department_id || "no-department"} onValueChange={(value) => setEditTask({ ...editTask, department_id: value })}>
+                  <SelectTrigger className="mt-2">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no-department">No Department</SelectItem>
+                    {departments.map(dept => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
