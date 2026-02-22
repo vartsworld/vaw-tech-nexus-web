@@ -34,7 +34,8 @@ import {
   Loader2,
   Repeat,
   ChevronDown,
-  Check
+  Check,
+  Edit
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +55,8 @@ const TaskManagement = () => {
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editTask, setEditTask] = useState<any>(null);
   const [isHandoverDialogOpen, setIsHandoverDialogOpen] = useState(false);
   const [handoverTaskId, setHandoverTaskId] = useState<string | null>(null);
   const [handoverDepartmentId, setHandoverDepartmentId] = useState("");
@@ -61,6 +64,7 @@ const TaskManagement = () => {
   const [taskToDelete, setTaskToDelete] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -701,6 +705,75 @@ const TaskManagement = () => {
         description: "Failed to delete task.",
         variant: "destructive",
       });
+    }
+  };
+
+  const openEditDialog = (task: any) => {
+    setEditTask({
+      id: task.id,
+      title: task.title || "",
+      description: task.description || "",
+      assigned_to: task.assigned_to || "",
+      project_id: task.project_id || "",
+      client_id: task.client_id || "",
+      status: task.status || "pending",
+      priority: task.priority || "medium",
+      due_date: task.due_date ? task.due_date.split('T')[0] : "",
+      due_time: task.due_time || "",
+      trial_period: task.trial_period || false,
+      points: task.points || 10,
+      is_recurring: task.is_recurring || false,
+      recurrence_type: task.recurrence_type || "weekly",
+      recurrence_interval: task.recurrence_interval || 1,
+      recurrence_end_date: task.recurrence_end_date ? task.recurrence_end_date.split('T')[0] : "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditTask = async () => {
+    if (!editTask || !editTask.title) {
+      toast({ title: "Validation Error", description: "Title is required.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      setSavingEdit(true);
+
+      const updateData: any = {
+        title: editTask.title,
+        description: editTask.description,
+        assigned_to: editTask.assigned_to || null,
+        project_id: editTask.project_id === "no-project" ? null : editTask.project_id || null,
+        client_id: editTask.client_id === "no-client" ? null : editTask.client_id || null,
+        status: editTask.status,
+        priority: editTask.priority,
+        due_date: editTask.due_date || null,
+        due_time: editTask.due_time || null,
+        trial_period: editTask.trial_period,
+        points: editTask.points,
+        is_recurring: editTask.is_recurring,
+        recurrence_type: editTask.is_recurring ? editTask.recurrence_type : null,
+        recurrence_interval: editTask.is_recurring ? editTask.recurrence_interval : 1,
+        recurrence_end_date: editTask.is_recurring && editTask.recurrence_end_date ? editTask.recurrence_end_date : null,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update(updateData)
+        .eq('id', editTask.id);
+
+      if (error) throw error;
+
+      toast({ title: "Success", description: "Task updated successfully." });
+      setIsEditDialogOpen(false);
+      setEditTask(null);
+      await fetchTasks();
+    } catch (error: any) {
+      console.error('Error updating task:', error);
+      toast({ title: "Error", description: error.message || "Failed to update task.", variant: "destructive" });
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -1440,6 +1513,14 @@ const TaskManagement = () => {
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => openEditDialog(task)}
+                          title="Edit task"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => {
                             setSelectedTask(task);
                             setIsDetailDialogOpen(true);
@@ -1542,6 +1623,15 @@ const TaskManagement = () => {
                           Approve
                         </Button>
                       )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => openEditDialog(task)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -1846,6 +1936,234 @@ const TaskManagement = () => {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          {editTask && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-title">Task Title</Label>
+                <Input
+                  id="edit-title"
+                  value={editTask.title}
+                  onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
+                  placeholder="Enter task title"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={editTask.description}
+                  onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
+                  placeholder="Enter task description"
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-assigned_to">Assign To</Label>
+                  <Select value={editTask.assigned_to} onValueChange={(value) => setEditTask({ ...editTask, assigned_to: value })}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Select staff member" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {staff.map(member => (
+                        <SelectItem key={member.id} value={member.user_id}>
+                          {member.full_name} (@{member.username})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-client">Client</Label>
+                  <Select value={editTask.client_id || "no-client"} onValueChange={(value) => setEditTask({ ...editTask, client_id: value })}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Select client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no-client">No Client</SelectItem>
+                      {clients.map(client => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.company_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-status">Status</Label>
+                  <Select value={editTask.status} onValueChange={(value) => setEditTask({ ...editTask, status: value })}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="review_pending">Review Pending</SelectItem>
+                      <SelectItem value="handover">Handover</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-priority">Priority</Label>
+                  <Select value={editTask.priority} onValueChange={(value) => setEditTask({ ...editTask, priority: value })}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-points">Points</Label>
+                  <div className="flex items-center gap-4 mt-2">
+                    <Input
+                      id="edit-points"
+                      type="number"
+                      value={editTask.points}
+                      onChange={(e) => setEditTask({ ...editTask, points: parseInt(e.target.value) || 10 })}
+                      min="1"
+                      max="100"
+                      className="flex-1"
+                      disabled={editTask.trial_period}
+                    />
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id="edit-trial"
+                        checked={editTask.trial_period}
+                        onCheckedChange={(checked) => setEditTask({ ...editTask, trial_period: checked, points: checked ? 0 : 10 })}
+                      />
+                      <Label htmlFor="edit-trial" className="text-sm text-muted-foreground whitespace-nowrap">
+                        Trial Period
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="edit-project">Project</Label>
+                  <Select value={editTask.project_id || "no-project"} onValueChange={(value) => setEditTask({ ...editTask, project_id: value })}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Select project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="no-project">No Project</SelectItem>
+                      {projects.map(project => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-due_date">Due Date</Label>
+                  <Input
+                    id="edit-due_date"
+                    type="date"
+                    value={editTask.due_date}
+                    onChange={(e) => setEditTask({ ...editTask, due_date: e.target.value })}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-due_time">Due Time</Label>
+                  <Input
+                    id="edit-due_time"
+                    type="time"
+                    value={editTask.due_time}
+                    onChange={(e) => setEditTask({ ...editTask, due_time: e.target.value })}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+
+              {/* Recurring Task Section */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Repeat className="h-4 w-4 text-muted-foreground" />
+                    <Label htmlFor="edit-recurring" className="font-medium">Recurring Task</Label>
+                  </div>
+                  <Switch
+                    id="edit-recurring"
+                    checked={editTask.is_recurring}
+                    onCheckedChange={(checked) => setEditTask({ ...editTask, is_recurring: checked })}
+                  />
+                </div>
+                {editTask.is_recurring && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                    <div>
+                      <Label>Frequency</Label>
+                      <Select value={editTask.recurrence_type} onValueChange={(value) => setEditTask({ ...editTask, recurrence_type: value })}>
+                        <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Every</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="30"
+                        value={editTask.recurrence_interval}
+                        onChange={(e) => setEditTask({ ...editTask, recurrence_interval: parseInt(e.target.value) || 1 })}
+                        className="mt-2"
+                      />
+                    </div>
+                    <div>
+                      <Label>End Date</Label>
+                      <Input
+                        type="date"
+                        value={editTask.recurrence_end_date}
+                        onChange={(e) => setEditTask({ ...editTask, recurrence_end_date: e.target.value })}
+                        className="mt-2"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleEditTask} disabled={savingEdit}>
+                  {savingEdit ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
