@@ -586,99 +586,70 @@ const TaskManagement = () => {
       // Get current user's ID for assigned_by
       const { data: { user } } = await supabase.auth.getUser();
 
-      const createdTasks = [];
-      let finalAttachments = [];
-      let firstTaskId = null;
+      const taskData: any = {
+        title: newTask.title,
+        description: newTask.description,
+        assigned_to: JSON.stringify(newTask.assigned_to),
+        assigned_by: user?.id || crypto.randomUUID(),
+        project_id: !newTask.project_id || newTask.project_id === "no-project" ? null : newTask.project_id,
+        client_id: !newTask.client_id || newTask.client_id === "no-client" ? null : newTask.client_id,
+        priority: newTask.priority as 'low' | 'medium' | 'high' | 'urgent',
+        status: newTask.status as 'pending' | 'in_progress' | 'completed',
+        due_date: newTask.due_date || null,
+        due_time: newTask.due_time || null,
+        trial_period: newTask.trial_period,
+        points: newTask.points,
+        department_id: newTask.department_id && newTask.department_id !== "no-department" ? newTask.department_id : (userProfile?.department_id || null),
+        is_recurring: newTask.is_recurring,
+        recurrence_type: newTask.is_recurring ? newTask.recurrence_type : null,
+        recurrence_interval: newTask.is_recurring ? newTask.recurrence_interval : 1,
+        recurrence_end_date: newTask.is_recurring && newTask.recurrence_end_date ? newTask.recurrence_end_date : null,
+        next_recurrence_date: newTask.is_recurring && newTask.due_date ? calculateNextRecurrence(newTask.due_date, newTask.recurrence_type, newTask.recurrence_interval) : null,
+        attachments: []
+      };
 
-      // Loop through each assignee and create a separate task
-      for (const assigneeId of newTask.assigned_to) {
-        const taskData: any = {
-          title: newTask.title,
-          description: newTask.description,
-          assigned_to: assigneeId,
-          assigned_by: user?.id || crypto.randomUUID(),
-          project_id: !newTask.project_id || newTask.project_id === "no-project" ? null : newTask.project_id,
-          client_id: !newTask.client_id || newTask.client_id === "no-client" ? null : newTask.client_id,
-          priority: newTask.priority as 'low' | 'medium' | 'high' | 'urgent',
-          status: newTask.status as 'pending' | 'in_progress' | 'completed',
-          due_date: newTask.due_date || null,
-          due_time: newTask.due_time || null,
-          trial_period: newTask.trial_period,
-          points: newTask.points,
-          department_id: newTask.department_id && newTask.department_id !== "no-department" ? newTask.department_id : (userProfile?.department_id || null),
-          is_recurring: newTask.is_recurring,
-          recurrence_type: newTask.is_recurring ? newTask.recurrence_type : null,
-          recurrence_interval: newTask.is_recurring ? newTask.recurrence_interval : 1,
-          recurrence_end_date: newTask.is_recurring && newTask.recurrence_end_date ? newTask.recurrence_end_date : null,
-          next_recurrence_date: newTask.is_recurring && newTask.due_date ? calculateNextRecurrence(newTask.due_date, newTask.recurrence_type, newTask.recurrence_interval) : null,
-          attachments: []
-        };
+      const { data: taskResponse, error: taskError } = await supabase
+        .from('staff_tasks')
+        .insert(taskData)
+        .select('*')
+        .single();
 
-        const { data: taskResponse, error: taskError } = await supabase
-          .from('staff_tasks')
-          .insert(taskData)
-          .select('*')
-          .single();
+      if (taskError) throw taskError;
+      const createdTaskId = taskResponse.id;
 
-        if (taskError) throw taskError;
-
-        if (!firstTaskId) firstTaskId = taskResponse.id;
-
-        createdTasks.push(taskResponse);
-      }
-
-      // Handle attachments - upload once and link to all created tasks
-      if (newTask.attachments.length > 0 && firstTaskId) {
+      // Handle attachments
+      if (newTask.attachments.length > 0 && createdTaskId) {
         for (const attachment of newTask.attachments) {
           const fileExt = attachment.file.name.split('.').pop();
-          const filePath = `${firstTaskId}/${Date.now()}.${fileExt}`;
+          const filePath = `${createdTaskId}/${Date.now()}.${fileExt}`;
 
           const { error: uploadError } = await supabase.storage
             .from('task-attachments')
             .upload(filePath, attachment.file);
 
-          if (uploadError) {
-            console.error('Upload error:', uploadError);
-            toast({
-              title: "Warning",
-              description: `Failed to upload ${attachment.file.name}`,
-              variant: "destructive",
-            });
-            continue;
-          }
+          if (uploadError) throw uploadError;
 
           const { data: { publicUrl } } = supabase.storage
             .from('task-attachments')
             .getPublicUrl(filePath);
 
-          finalAttachments.push({
-            title: attachment.title || attachment.file.name,
-            name: attachment.file.name,
-            url: filePath,
-            publicUrl: publicUrl,
-            size: attachment.file.size,
-            type: attachment.file.type
-          });
-        }
+          const attachmentData = {
+            task_id: createdTaskId,
+            name: attachment.title || attachment.file.name,
+            url: publicUrl,
+            type: attachment.file.type,
+            size: attachment.file.size
+          };
 
-        if (finalAttachments.length > 0) {
-          // Update all created tasks with the same attachments
-          const taskIds = createdTasks.map(t => t.id);
-          const { error: updateError } = await supabase
-            .from('staff_tasks')
-            .update({ attachments: finalAttachments })
-            .in('id', taskIds);
-
-          if (updateError) console.error('Error updating task attachments:', updateError);
-
-          // Update local references
-          createdTasks.forEach(t => t.attachments = finalAttachments);
+          await supabase.from('task_attachments').insert(attachmentData);
         }
       }
+      toast({
+        title: "Success",
+        description: "Task created and assigned successfully.",
+      });
 
-      // Refresh tasks list
-      setTasks([...createdTasks, ...tasks]);
-
+      await fetchTasks();
       setIsAddDialogOpen(false);
       setNewTask({
         title: "",
