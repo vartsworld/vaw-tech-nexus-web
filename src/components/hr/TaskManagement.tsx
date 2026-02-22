@@ -82,6 +82,17 @@ const TaskManagement = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [subtasks, setSubtasks] = useState<any[]>([]);
+  const [loadingSubtasks, setLoadingSubtasks] = useState(false);
+  const [newSubtask, setNewSubtask] = useState({
+    title: "",
+    description: "",
+    assigned_to: "",
+    priority: "medium" as 'low' | 'medium' | 'high' | 'urgent',
+    points: 0,
+    due_date: "",
+    due_time: ""
+  });
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -213,6 +224,149 @@ const TaskManagement = () => {
       toast({
         title: "Error",
         description: "Failed to load tasks.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchSubtasks = async (taskId: string) => {
+    try {
+      setLoadingSubtasks(true);
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .select(`
+          *,
+          staff_profiles:assigned_to (
+            full_name,
+            username
+          )
+        `)
+        .eq('task_id', taskId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSubtasks(data || []);
+    } catch (error) {
+      console.error('Error fetching subtasks:', error);
+    } finally {
+      setLoadingSubtasks(false);
+    }
+  };
+
+  const handleCreateSubtask = async (taskId: string) => {
+    if (!newSubtask.title || !newSubtask.assigned_to) {
+      toast({
+        title: "Error",
+        description: "Please fill in title and assignee.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .insert({
+          task_id: taskId,
+          title: newSubtask.title,
+          description: newSubtask.description,
+          assigned_to: newSubtask.assigned_to,
+          priority: newSubtask.priority,
+          points: newSubtask.points || 0,
+          due_date: newSubtask.due_date || null,
+          due_time: newSubtask.due_time || null,
+          created_by: user?.id,
+          status: 'pending'
+        })
+        .select(`
+          *,
+          staff_profiles:assigned_to (
+            full_name,
+            username
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+
+      setSubtasks([data, ...subtasks]);
+      setNewSubtask({
+        title: "",
+        description: "",
+        assigned_to: "",
+        priority: "medium",
+        points: 0,
+        due_date: "",
+        due_time: ""
+      });
+
+      toast({
+        title: "Success",
+        description: "Subtask created successfully.",
+      });
+    } catch (error: any) {
+      console.error('Error creating subtask:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create subtask.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('staff_subtasks')
+        .delete()
+        .eq('id', subtaskId);
+
+      if (error) throw error;
+
+      setSubtasks(subtasks.filter(st => st.id !== subtaskId));
+      toast({
+        title: "Success",
+        description: "Subtask deleted successfully.",
+      });
+    } catch (error: any) {
+      console.error('Error deleting subtask:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete subtask.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSubtaskStatusUpdate = async (subtaskId: string, newStatus: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', subtaskId)
+        .select(`
+          *,
+          staff_profiles:assigned_to (
+            full_name,
+            username
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+
+      setSubtasks(subtasks.map(st => st.id === subtaskId ? data : st));
+      toast({
+        title: "Success",
+        description: "Subtask status updated.",
+      });
+    } catch (error: any) {
+      console.error('Error updating subtask:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update subtask status.",
         variant: "destructive",
       });
     }
@@ -1593,6 +1747,7 @@ const TaskManagement = () => {
                           variant="outline"
                           onClick={() => {
                             setSelectedTask(task);
+                            fetchSubtasks(task.id);
                             setIsDetailDialogOpen(true);
                           }}
                         >
@@ -1720,6 +1875,7 @@ const TaskManagement = () => {
                       className="flex-1"
                       onClick={() => {
                         setSelectedTask(task);
+                        fetchSubtasks(task.id);
                         setIsDetailDialogOpen(true);
                       }}
                     >
@@ -1919,6 +2075,157 @@ const TaskManagement = () => {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Subtasks Section */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Subtasks
+                    {subtasks.length > 0 && (
+                      <Badge variant="outline" className="ml-2">
+                        {subtasks.filter(st => st.status === 'completed').length}/{subtasks.length} Completed
+                      </Badge>
+                    )}
+                  </h4>
+                </div>
+
+                {/* Create Subtask Form */}
+                <div className="p-4 bg-muted/30 rounded-lg border border-muted space-y-3">
+                  <h5 className="font-medium text-sm">Create Subtask</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="md:col-span-2">
+                      <Input
+                        placeholder="Subtask title *"
+                        value={newSubtask.title}
+                        onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Textarea
+                        placeholder="Description (optional)"
+                        value={newSubtask.description}
+                        onChange={(e) => setNewSubtask({ ...newSubtask, description: e.target.value })}
+                        rows={2}
+                      />
+                    </div>
+                    <Select
+                      value={newSubtask.assigned_to}
+                      onValueChange={(value) => setNewSubtask({ ...newSubtask, assigned_to: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Assign to *" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {staff.map((member: any) => (
+                          <SelectItem key={member.id} value={member.user_id}>
+                            {member.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={newSubtask.priority}
+                      onValueChange={(value) => setNewSubtask({ ...newSubtask, priority: value as any })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      placeholder="Points (optional)"
+                      value={newSubtask.points === 0 ? "" : newSubtask.points}
+                      onChange={(e) => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
+                      min="0"
+                    />
+                    <Input
+                      type="date"
+                      value={newSubtask.due_date}
+                      onChange={(e) => setNewSubtask({ ...newSubtask, due_date: e.target.value })}
+                    />
+                    <Button
+                      onClick={() => handleCreateSubtask(selectedTask.id)}
+                      className="md:col-span-2"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Subtask
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Subtasks List */}
+                {loadingSubtasks ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : subtasks.length > 0 ? (
+                  <div className="space-y-2">
+                    {subtasks.map((subtask) => (
+                      <div key={subtask.id} className="p-3 bg-muted/20 rounded-lg border border-muted">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium">{subtask.title}</span>
+                              {getPriorityBadge(subtask.priority)}
+                            </div>
+                            {subtask.description && (
+                              <p className="text-sm text-muted-foreground mb-2">{subtask.description}</p>
+                            )}
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                {subtask.staff_profiles?.full_name || 'Loading...'}
+                              </span>
+                              {subtask.points > 0 && <span>{subtask.points} Points</span>}
+                              {subtask.due_date && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {format(new Date(subtask.due_date), 'MMM dd, yyyy')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={subtask.status}
+                              onValueChange={(value) => handleSubtaskStatusUpdate(subtask.id, value)}
+                            >
+                              <SelectTrigger className="w-32 h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="in_progress">In Progress</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                                <SelectItem value="review_pending">Review Pending</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleDeleteSubtask(subtask.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground text-sm">
+                    No subtasks yet.
+                  </div>
+                )}
               </div>
 
               {/* Handover History */}
