@@ -39,6 +39,7 @@ import RewardsManagement from "@/components/hr/RewardsManagement";
 import RedemptionApprovals from "@/components/hr/RedemptionApprovals";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import BannerManagement from "@/components/hr/BannerManagement";
+import TaskTemplateManagement from "@/components/hr/TaskTemplateManagement";
 
 const HRDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -275,6 +276,7 @@ const HRDashboard = () => {
             <TabsTrigger value="staff" className="whitespace-nowrap">Staff</TabsTrigger>
             <TabsTrigger value="attendance" className="whitespace-nowrap">Attendance</TabsTrigger>
             <TabsTrigger value="tasks" className="whitespace-nowrap">Tasks</TabsTrigger>
+            <TabsTrigger value="templates" className="whitespace-nowrap">Templates</TabsTrigger>
             <TabsTrigger value="clients" className="whitespace-nowrap">Clients</TabsTrigger>
             <TabsTrigger value="departments" className="whitespace-nowrap">Departments</TabsTrigger>
             <TabsTrigger value="performance" className="whitespace-nowrap">Performance</TabsTrigger>
@@ -395,6 +397,10 @@ const HRDashboard = () => {
 
           <TabsContent value="tasks">
             <TaskManagement />
+          </TabsContent>
+
+          <TabsContent value="templates">
+            <TaskTemplateManagement />
           </TabsContent>
 
           <TabsContent value="clients">
