@@ -708,12 +708,27 @@ const TaskManagement = () => {
     }
   };
 
-  const openEditDialog = (task: any) => {
+  const openEditDialog = async (task: any) => {
+    // Find all sibling tasks (same title + assigned_by) to load all assignees
+    const { data: siblingTasks } = await supabase
+      .from('staff_tasks')
+      .select('id, assigned_to')
+      .eq('title', task.title)
+      .eq('assigned_by', task.assigned_by)
+      .eq('priority', task.priority);
+
+    const allAssignees = siblingTasks
+      ? siblingTasks.map(t => t.assigned_to).filter(Boolean)
+      : [task.assigned_to].filter(Boolean);
+
+    const siblingIds = siblingTasks ? siblingTasks.map(t => t.id) : [task.id];
+
     setEditTask({
       id: task.id,
+      siblingIds, // track all related task IDs
       title: task.title || "",
       description: task.description || "",
-      assigned_to: task.assigned_to ? [task.assigned_to] : [] as string[],
+      assigned_to: allAssignees as string[],
       project_id: task.project_id || "",
       client_id: task.client_id || "",
       status: task.status || "pending",
@@ -740,19 +755,16 @@ const TaskManagement = () => {
       setSavingEdit(true);
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Get original task for attachments and other fixed data
+      // Get the original task for base data
       const { data: originalTask } = await supabase
         .from('staff_tasks')
         .select('*')
         .eq('id', editTask.id)
         .single();
 
-      // Update the first/current task record
-      const firstAssignee = editTask.assigned_to[0];
-      const updateData: any = {
+      const commonData: any = {
         title: editTask.title,
         description: editTask.description,
-        assigned_to: firstAssignee,
         project_id: editTask.project_id === "no-project" ? null : editTask.project_id || null,
         client_id: editTask.client_id === "no-client" ? null : editTask.client_id || null,
         status: editTask.status,
@@ -768,45 +780,56 @@ const TaskManagement = () => {
         updated_at: new Date().toISOString()
       };
 
-      const { error: updateError } = await supabase
+      const siblingIds: string[] = editTask.siblingIds || [editTask.id];
+      const newAssignees: string[] = editTask.assigned_to;
+
+      // Get current sibling tasks to know their current assignees
+      const { data: currentSiblings } = await supabase
         .from('staff_tasks')
-        .update(updateData)
-        .eq('id', editTask.id);
+        .select('id, assigned_to')
+        .in('id', siblingIds);
 
-      if (updateError) throw updateError;
+      const currentAssignees = (currentSiblings || []).map(t => t.assigned_to).filter(Boolean) as string[];
 
-      // Handle additional assignees by creating new tasks
-      if (editTask.assigned_to.length > 1) {
-        const additionalAssignees = editTask.assigned_to.slice(1);
-        const newTasks = additionalAssignees.map(assigneeId => ({
-          title: editTask.title,
-          description: editTask.description,
-          assigned_to: assigneeId,
-          assigned_by: user?.id || originalTask?.assigned_by,
-          project_id: editTask.project_id === "no-project" ? null : editTask.project_id || null,
-          client_id: editTask.client_id === "no-client" ? null : editTask.client_id || null,
-          status: editTask.status,
-          priority: editTask.priority,
-          due_date: editTask.due_date || null,
-          due_time: editTask.due_time || null,
-          trial_period: editTask.trial_period,
-          points: editTask.points,
-          department_id: originalTask?.department_id,
-          is_recurring: editTask.is_recurring,
-          recurrence_type: editTask.is_recurring ? editTask.recurrence_type : null,
-          recurrence_interval: editTask.is_recurring ? editTask.recurrence_interval : 1,
-          recurrence_end_date: editTask.is_recurring && editTask.recurrence_end_date ? editTask.recurrence_end_date : null,
-          attachments: originalTask?.attachments || []
-        }));
+      // Assignees to remove (had task, no longer selected)
+      const toRemove = currentSiblings?.filter(t => !newAssignees.includes(t.assigned_to)) || [];
+      // Assignees to add (newly selected, no existing task)
+      const toAdd = newAssignees.filter(id => !currentAssignees.includes(id));
+      // Assignees to keep/update
+      const toUpdate = currentSiblings?.filter(t => newAssignees.includes(t.assigned_to)) || [];
 
-        const { error: insertError } = await supabase
+      // Update tasks that are being kept
+      for (const task of toUpdate) {
+        const { error } = await supabase
           .from('staff_tasks')
-          .insert(newTasks);
-
-        if (insertError) throw insertError;
+          .update({ ...commonData, assigned_to: task.assigned_to })
+          .eq('id', task.id);
+        if (error) throw error;
       }
 
-      toast({ title: "Success", description: `Task updated${editTask.assigned_to.length > 1 ? ' and additional tasks created' : ''} successfully.` });
+      // Delete tasks for removed assignees
+      if (toRemove.length > 0) {
+        const { error } = await supabase
+          .from('staff_tasks')
+          .delete()
+          .in('id', toRemove.map(t => t.id));
+        if (error) throw error;
+      }
+
+      // Create tasks for new assignees
+      if (toAdd.length > 0) {
+        const newTasks = toAdd.map(assigneeId => ({
+          ...commonData,
+          assigned_to: assigneeId,
+          assigned_by: user?.id || originalTask?.assigned_by,
+          department_id: originalTask?.department_id,
+          attachments: originalTask?.attachments || []
+        }));
+        const { error } = await supabase.from('staff_tasks').insert(newTasks);
+        if (error) throw error;
+      }
+
+      toast({ title: "Success", description: `Task updated with ${newAssignees.length} assignee${newAssignees.length > 1 ? 's' : ''} successfully.` });
       setIsEditDialogOpen(false);
       setEditTask(null);
       await fetchTasks();
