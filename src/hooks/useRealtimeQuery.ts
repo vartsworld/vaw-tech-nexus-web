@@ -8,6 +8,7 @@ interface UseRealtimeQueryOptions<TData = any> extends Omit<UseQueryOptions<TDat
     table: string;
     select?: string;
     filter?: string;
+    orFilters?: string; // Supabase OR filter string e.g. "assigned_to.eq.uuid,assigned_to.like.*uuid*"
     order?: { column: string; ascending?: boolean };
     limit?: number;
     single?: boolean;
@@ -31,6 +32,7 @@ export function useRealtimeQuery<TData = any>({
     table,
     select = '*',
     filter,
+    orFilters,
     order,
     limit,
     single = false,
@@ -66,8 +68,17 @@ export function useRealtimeQuery<TData = any>({
                     query = query.lt(column, operatorAndValue.substring(3));
                 } else if (operatorAndValue.startsWith('lte.')) {
                     query = query.lte(column, operatorAndValue.substring(4));
+                } else if (operatorAndValue.startsWith('like.')) {
+                    query = query.like(column, operatorAndValue.substring(5));
+                } else if (operatorAndValue.startsWith('ilike.')) {
+                    query = query.ilike(column, operatorAndValue.substring(6));
                 }
             }
+        }
+
+        // Support OR filters for multi-condition queries (e.g. multi-assignee)
+        if (orFilters) {
+            query = query.or(orFilters);
         }
 
         if (order) {

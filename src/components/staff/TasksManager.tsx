@@ -69,14 +69,15 @@ const TasksManager = ({
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const { toast } = useToast();
 
-  // Use real-time query for tasks with automatic cache invalidation
+  // Use real-time query for tasks — supports both single UUID and JSON-array multi-assign
   const { data: tasksData, isLoading: tasksLoading, refetch } = useRealtimeQuery<any[]>({
     queryKey: ['tasks', userId],
     table: 'staff_tasks',
-    filter: `assigned_to=eq.${userId}`,
+    // orFilters: matches exact UUID (single assign) OR JSON array containing UUID (multi-assign)
+    orFilters: `assigned_to.eq.${userId},assigned_to.like.*${userId}*`,
     select: '*, due_time, trial_period, attachments, comments',
     order: { column: 'created_at', ascending: false },
-    staleTime: 2 * 60 * 1000, // 2 minutes for tasks (more frequent than default)
+    staleTime: 2 * 60 * 1000,
   });
 
   // Fetch assigner profiles and map to tasks
@@ -88,26 +89,28 @@ const TasksManager = ({
   // Real-time subscription for new task assignments with toast notification
   useRealtimeSubscription({
     table: 'staff_tasks',
-    filter: `assigned_to=eq.${userId}`,
     onInsert: (payload) => {
       const newTask = payload.new as any;
+      // Check if this task is assigned to current user (single or multi-assign)
+      const assignedTo: string = newTask.assigned_to || '';
+      const isAssigned = assignedTo === userId || assignedTo.includes(userId);
+      if (!isAssigned) return;
       toast({
         title: "🎯 New Task Assigned!",
         description: `You have been assigned: "${newTask.title}"`,
         duration: 5000,
       });
-      // Refetch to get updated data
       refetch();
     },
     onUpdate: (payload) => {
       const updatedTask = payload.new as any;
-      // Only show toast if status changed to something significant
       if (updatedTask.status === 'completed' && selectedTask?.id === updatedTask.id) {
         toast({
           title: "✅ Task Updated",
           description: `Task "${updatedTask.title}" has been updated`,
         });
       }
+      refetch();
     },
   });
   const updateTaskStatus = async (taskId: string, newStatus: Task['status']) => {
