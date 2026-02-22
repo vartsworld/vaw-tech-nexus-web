@@ -713,7 +713,7 @@ const TaskManagement = () => {
       id: task.id,
       title: task.title || "",
       description: task.description || "",
-      assigned_to: task.assigned_to || "",
+      assigned_to: task.assigned_to ? [task.assigned_to] : [] as string[],
       project_id: task.project_id || "",
       client_id: task.client_id || "",
       status: task.status || "pending",
@@ -731,18 +731,28 @@ const TaskManagement = () => {
   };
 
   const handleEditTask = async () => {
-    if (!editTask || !editTask.title) {
-      toast({ title: "Validation Error", description: "Title is required.", variant: "destructive" });
+    if (!editTask || !editTask.title || editTask.assigned_to.length === 0) {
+      toast({ title: "Validation Error", description: "Title and at least one Assignee are required.", variant: "destructive" });
       return;
     }
 
     try {
       setSavingEdit(true);
+      const { data: { user } } = await supabase.auth.getUser();
 
+      // Get original task for attachments and other fixed data
+      const { data: originalTask } = await supabase
+        .from('staff_tasks')
+        .select('*')
+        .eq('id', editTask.id)
+        .single();
+
+      // Update the first/current task record
+      const firstAssignee = editTask.assigned_to[0];
       const updateData: any = {
         title: editTask.title,
         description: editTask.description,
-        assigned_to: editTask.assigned_to || null,
+        assigned_to: firstAssignee,
         project_id: editTask.project_id === "no-project" ? null : editTask.project_id || null,
         client_id: editTask.client_id === "no-client" ? null : editTask.client_id || null,
         status: editTask.status,
@@ -758,14 +768,45 @@ const TaskManagement = () => {
         updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('staff_tasks')
         .update(updateData)
         .eq('id', editTask.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      toast({ title: "Success", description: "Task updated successfully." });
+      // Handle additional assignees by creating new tasks
+      if (editTask.assigned_to.length > 1) {
+        const additionalAssignees = editTask.assigned_to.slice(1);
+        const newTasks = additionalAssignees.map(assigneeId => ({
+          title: editTask.title,
+          description: editTask.description,
+          assigned_to: assigneeId,
+          assigned_by: user?.id || originalTask?.assigned_by,
+          project_id: editTask.project_id === "no-project" ? null : editTask.project_id || null,
+          client_id: editTask.client_id === "no-client" ? null : editTask.client_id || null,
+          status: editTask.status,
+          priority: editTask.priority,
+          due_date: editTask.due_date || null,
+          due_time: editTask.due_time || null,
+          trial_period: editTask.trial_period,
+          points: editTask.points,
+          department_id: originalTask?.department_id,
+          is_recurring: editTask.is_recurring,
+          recurrence_type: editTask.is_recurring ? editTask.recurrence_type : null,
+          recurrence_interval: editTask.is_recurring ? editTask.recurrence_interval : 1,
+          recurrence_end_date: editTask.is_recurring && editTask.recurrence_end_date ? editTask.recurrence_end_date : null,
+          attachments: originalTask?.attachments || []
+        }));
+
+        const { error: insertError } = await supabase
+          .from('staff_tasks')
+          .insert(newTasks);
+
+        if (insertError) throw insertError;
+      }
+
+      toast({ title: "Success", description: `Task updated${editTask.assigned_to.length > 1 ? ' and additional tasks created' : ''} successfully.` });
       setIsEditDialogOpen(false);
       setEditTask(null);
       await fetchTasks();
@@ -1970,19 +2011,70 @@ const TaskManagement = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="edit-assigned_to">Assign To</Label>
-                  <Select value={editTask.assigned_to} onValueChange={(value) => setEditTask({ ...editTask, assigned_to: value })}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select staff member" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {staff.map(member => (
-                        <SelectItem key={member.id} value={member.user_id}>
-                          {member.full_name} (@{member.username})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between mt-2 h-auto min-h-[40px] py-2"
+                      >
+                        <div className="flex flex-wrap gap-1 max-w-[90%]">
+                          {editTask.assigned_to.length > 0 ? (
+                            editTask.assigned_to.map((id) => {
+                              const member = staff.find(s => s.user_id === id);
+                              return (
+                                <Badge key={id} variant="secondary" className="mr-1 mb-1">
+                                  {member?.full_name || id}
+                                </Badge>
+                              );
+                            })
+                          ) : (
+                            <span className="text-muted-foreground">Select staff members...</span>
+                          )}
+                        </div>
+                        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0" align="start">
+                      <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto">
+                        {staff.map((member) => (
+                          <div
+                            key={member.id}
+                            className="flex items-center space-x-2 p-2 hover:bg-muted rounded-md cursor-pointer"
+                            onClick={() => {
+                              const isSelected = editTask.assigned_to.includes(member.user_id);
+                              if (isSelected) {
+                                setEditTask({
+                                  ...editTask,
+                                  assigned_to: editTask.assigned_to.filter(id => id !== member.user_id)
+                                });
+                              } else {
+                                setEditTask({
+                                  ...editTask,
+                                  assigned_to: [...editTask.assigned_to, member.user_id]
+                                });
+                              }
+                            }}
+                          >
+                            <Checkbox
+                              id={`edit-staff-${member.id}`}
+                              checked={editTask.assigned_to.includes(member.user_id)}
+                              onCheckedChange={() => { }} // Handled by div onClick
+                            />
+                            <div className="flex flex-col">
+                              <Label htmlFor={`edit-staff-${member.id}`} className="cursor-pointer font-medium">
+                                {member.full_name}
+                              </Label>
+                              <span className="text-xs text-muted-foreground">@{member.username}</span>
+                            </div>
+                            {editTask.assigned_to.includes(member.user_id) && (
+                              <Check className="h-4 w-4 ml-auto text-primary" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div>
                   <Label htmlFor="edit-client">Client</Label>
