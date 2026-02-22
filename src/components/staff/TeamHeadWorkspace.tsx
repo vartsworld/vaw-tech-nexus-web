@@ -974,7 +974,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       setNewTask({
         title: "",
         description: "",
-        assigned_to: [],
+        assigned_to: "",
         client_id: "",
         priority: "medium",
         due_date: "",
