@@ -3596,6 +3596,44 @@ export type Database = {
           },
         ]
       }
+      subtask_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          points: number | null
+          sort_order: number | null
+          task_template_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          points?: number | null
+          sort_order?: number | null
+          task_template_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          points?: number | null
+          sort_order?: number | null
+          task_template_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subtask_templates_task_template_id_fkey"
+            columns: ["task_template_id"]
+            isOneToOne: false
+            referencedRelation: "task_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       super_admin_audit_logs: {
         Row: {
           action_type: string
@@ -3670,6 +3708,62 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      task_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          estimated_days: number | null
+          id: string
+          is_active: boolean | null
+          package_id: string | null
+          points: number | null
+          priority: string | null
+          sort_order: number | null
+          title: string
+          trial_period: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          estimated_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          package_id?: string | null
+          points?: number | null
+          priority?: string | null
+          sort_order?: number | null
+          title: string
+          trial_period?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          estimated_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          package_id?: string | null
+          points?: number | null
+          priority?: string | null
+          sort_order?: number | null
+          title?: string
+          trial_period?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_templates_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_packages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
