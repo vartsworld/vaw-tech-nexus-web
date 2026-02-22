@@ -156,7 +156,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
-    assigned_to: "",
+    assigned_to: [] as string[],
     client_id: "",
     priority: "medium" as 'low' | 'medium' | 'high' | 'urgent',
     due_date: "",
@@ -165,6 +165,17 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     points: 10,
     attachments: [] as Array<{ file: File; title: string }>
   });
+
+  // Helper: resolve assignee name from staff list
+  const getAssigneeName = (assignedTo: string): string => {
+    const member = staff.find(s => s.user_id === assignedTo);
+    return member?.full_name || 'Unknown';
+  };
+
+  const getAssigneeUsername = (assignedTo: string): string => {
+    const member = staff.find(s => s.user_id === assignedTo);
+    return member?.username || 'unknown';
+  };
 
   const [newClient, setNewClient] = useState({
     company_name: "",
@@ -253,26 +264,16 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const fetchTasks = async () => {
     try {
       // Fetch tasks assigned by/to team head OR tasks in their department
+      // NOTE: assigned_to is now TEXT (not UUID FK) to support multi-assign JSON arrays
       const { data, error } = await supabase
         .from('staff_tasks')
-        .select(`
-          *,
-          staff_profiles:assigned_to (
-            full_name,
-            username
-          )
-        `)
-        .or(`assigned_by.eq.${userId},assigned_to.eq.${userId},department_id.eq.${userProfile?.department_id}`)
+        .select('*')
+        .or(`assigned_by.eq.${userId},assigned_to.eq.${userId},assigned_to.like.*${userId}*,department_id.eq.${userProfile?.department_id}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      console.log('Fetched tasks with attachments:', data?.map(t => ({
-        id: t.id,
-        title: t.title,
-        attachments: t.attachments,
-        department_id: t.department_id
-      })));
+      console.log('Fetched tasks:', data?.length);
 
       // Cast attachments from Json to any[]
       const tasksWithAttachments = (data || []).map(task => ({
@@ -891,13 +892,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         const { data: taskResponse, error: taskError } = await supabase
           .from('staff_tasks')
           .insert(taskData)
-          .select(`
-            *,
-            staff_profiles:assigned_to (
-              full_name,
-              username
-            )
-          `)
+          .select('*')
           .single();
 
         if (taskError) throw taskError;
@@ -974,7 +969,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       setNewTask({
         title: "",
         description: "",
-        assigned_to: "",
+        assigned_to: [],
         client_id: "",
         priority: "medium",
         due_date: "",
@@ -1094,13 +1089,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         .from('staff_tasks')
         .update(updateData)
         .eq('id', taskId)
-        .select(`
-          *,
-          staff_profiles:assigned_to (
-            full_name,
-            username
-          )
-        `)
+        .select('*')
         .single();
 
       if (error) throw error;
@@ -1490,30 +1479,76 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <Label htmlFor="assigned_to">Assign To</Label>
+                      <Label htmlFor="assigned_to">Assign To ({newTask.assigned_to.length} selected)</Label>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         className="h-auto py-1 px-2 text-xs"
-                        onClick={() => setNewTask({ ...newTask, assigned_to: userId })}
+                        onClick={() => {
+                          const alreadySelected = newTask.assigned_to.includes(userId);
+                          setNewTask({
+                            ...newTask,
+                            assigned_to: alreadySelected
+                              ? newTask.assigned_to
+                              : [...newTask.assigned_to, userId]
+                          });
+                        }}
                       >
                         <User className="h-3 w-3 mr-1" />
                         Assign to myself
                       </Button>
                     </div>
-                    <Select value={newTask.assigned_to} onValueChange={(value) => setNewTask({ ...newTask, assigned_to: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select staff member" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {staff.map(member => (
-                          <SelectItem key={member.id} value={member.user_id}>
-                            {member.full_name} (@{member.username})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="border border-white/20 rounded-lg max-h-40 overflow-y-auto p-2 space-y-1 bg-black/20">
+                      {staff.length === 0 ? (
+                        <p className="text-xs text-white/50 text-center py-2">No staff members found</p>
+                      ) : staff.map(member => {
+                        const isChecked = newTask.assigned_to.includes(member.user_id);
+                        return (
+                          <label
+                            key={member.id}
+                            className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${isChecked ? 'bg-blue-500/20 border border-blue-500/30' : 'hover:bg-white/5 border border-transparent'
+                              }`}
+                          >
+                            <Checkbox
+                              checked={isChecked}
+                              onCheckedChange={(checked) => {
+                                setNewTask({
+                                  ...newTask,
+                                  assigned_to: checked
+                                    ? [...newTask.assigned_to, member.user_id]
+                                    : newTask.assigned_to.filter(id => id !== member.user_id)
+                                });
+                              }}
+                              className="border-white/30"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm text-white truncate">{member.full_name}</div>
+                              <div className="text-xs text-white/50 truncate">@{member.username}</div>
+                            </div>
+                            {isChecked && <Check className="h-4 w-4 text-blue-400 flex-shrink-0" />}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {newTask.assigned_to.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {newTask.assigned_to.map(id => {
+                          const member = staff.find(s => s.user_id === id);
+                          return (
+                            <Badge
+                              key={id}
+                              variant="outline"
+                              className="bg-blue-500/20 border-blue-500/30 text-blue-300 text-xs cursor-pointer hover:bg-red-500/20 hover:border-red-500/30 hover:text-red-300 transition-colors"
+                              onClick={() => setNewTask({ ...newTask, assigned_to: newTask.assigned_to.filter(uid => uid !== id) })}
+                            >
+                              {member?.full_name || 'Unknown'}
+                              <X className="h-3 w-3 ml-1" />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -1723,7 +1758,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                           <div className="flex items-center gap-3 text-xs text-white/60">
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3" />
-                              {task.staff_profiles?.full_name || 'Unknown'}
+                              {getAssigneeName(task.assigned_to)}
                             </div>
                             {task.due_date && task.due_date.trim() !== '' && (
                               <div className="flex items-center gap-1">
@@ -1847,10 +1882,10 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                                 <User className="h-4 w-4 text-white/40 hidden sm:block" />
                                 <div className="min-w-0">
                                   <div className="font-medium text-white/90 text-sm truncate">
-                                    {task.staff_profiles?.full_name || 'Unknown'}
+                                    {getAssigneeName(task.assigned_to)}
                                   </div>
                                   <div className="text-xs text-white/50 truncate">
-                                    @{task.staff_profiles?.username || 'unknown'}
+                                    @{getAssigneeUsername(task.assigned_to)}
                                   </div>
                                 </div>
                               </div>
@@ -1956,10 +1991,10 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                             <User className="h-4 w-4 text-white/40" />
                             <div className="min-w-0">
                               <div className="font-medium text-white/90 truncate">
-                                {task.staff_profiles?.full_name || 'Unknown'}
+                                {getAssigneeName(task.assigned_to)}
                               </div>
                               <div className="text-xs text-white/50 truncate">
-                                @{task.staff_profiles?.username || 'unknown'}
+                                @{getAssigneeUsername(task.assigned_to)}
                               </div>
                             </div>
                           </div>
@@ -2324,7 +2359,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-muted-foreground">Assigned to:</span>{' '}
-                    <span className="font-medium">{selectedTask.staff_profiles?.full_name}</span>
+                    <span className="font-medium">{getAssigneeName(selectedTask.assigned_to)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Points:</span>{' '}
