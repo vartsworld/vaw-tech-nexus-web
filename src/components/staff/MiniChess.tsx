@@ -230,13 +230,38 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
             });
 
             if (isWinner) {
-              await supabase.from('user_coin_transactions').insert({
-                user_id: userId,
-                coins: 10,
-                transaction_type: 'bonus',
-                description: `Won 10 coins for winning a Chess game against ${opponentName}`
-              });
-              setCoinsEarned(10);
+              // Check if game points are enabled by HR
+              const { data: chessSettingsData } = await supabase
+                .from('app_settings')
+                .select('value')
+                .eq('key', 'points_config')
+                .single();
+              const chessGamesEnabled = chessSettingsData?.value?.games_points_enabled !== false;
+
+              if (chessGamesEnabled) {
+                await supabase.from('user_coin_transactions').insert({
+                  user_id: userId,
+                  coins: 10,
+                  transaction_type: 'bonus',
+                  description: `Won 10 coins for winning a Chess game against ${opponentName}`
+                });
+
+                // Update staff_profiles.total_points
+                const { data: chessProfileData } = await supabase
+                  .from('staff_profiles')
+                  .select('total_points')
+                  .eq('user_id', userId)
+                  .single();
+
+                if (chessProfileData) {
+                  await supabase
+                    .from('staff_profiles')
+                    .update({ total_points: (chessProfileData.total_points || 0) + 10 })
+                    .eq('user_id', userId);
+                }
+              }
+
+              setCoinsEarned(chessGamesEnabled ? 10 : 0);
             } else {
               setCoinsEarned(0);
             }
@@ -616,11 +641,11 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
       const isCheckmate = chess.isCheckmate();
       const isDraw = chess.isDraw() || chess.isStalemate() || chess.isThreefoldRepetition() || chess.isInsufficientMaterial();
       const winnerColor = chess.turn() === 'w' ? 'Black' : 'White';
-      
+
       if (isCheckmate) {
         setWinner(winnerColor);
       }
-      
+
       setGameOverData({
         winner_id: isCheckmate ? (winnerColor === 'White' ? userId : 'bot') : null,
         player1_id: userId,
@@ -630,9 +655,9 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
         game_id: 'bot-game',
         duration_seconds: 0
       });
-      
+
       setTimeout(() => setShowGameOverDialog(true), 500);
-      
+
       if (isCheckmate) {
         toast.success(`Checkmate! ${winnerColor} wins!`);
       } else if (isDraw) {
@@ -958,7 +983,7 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                         <ChessPiece piece={piece.type} color={piece.color === 'w' ? 'white' : 'black'} />
                       </div>
                     )}
-                    
+
                     {/* Minimalist Coordinate Labels */}
                     {col === 0 && (
                       <span className={`absolute top-0.5 left-0.5 text-[7px] font-bold opacity-30 select-none ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>

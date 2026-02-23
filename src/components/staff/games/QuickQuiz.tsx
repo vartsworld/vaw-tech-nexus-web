@@ -98,22 +98,46 @@ const QuickQuiz = ({ onClose, userId }: { onClose: () => void, userId: string })
     try {
       const coinsEarned = (score / 10) * 2;
 
-      if (coinsEarned > 0) {
+      // Check if game points are enabled by HR
+      const { data: settingsData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'points_config')
+        .single();
+      const gamesEnabled = settingsData?.value?.games_points_enabled !== false;
+
+      if (coinsEarned > 0 && gamesEnabled) {
         await supabase.from('user_coin_transactions').insert({
           user_id: userId,
           coins: coinsEarned,
           transaction_type: 'bonus',
           description: `Won ${coinsEarned} coins playing Quick Quiz (Score: ${score}/${questions.length * 10})`
         });
+
+        // Update staff_profiles.total_points
+        const { data: profileData } = await supabase
+          .from('staff_profiles')
+          .select('total_points')
+          .eq('user_id', userId)
+          .single();
+
+        if (profileData) {
+          await supabase
+            .from('staff_profiles')
+            .update({ total_points: (profileData.total_points || 0) + coinsEarned })
+            .eq('user_id', userId);
+        }
       }
 
       await supabase.from('user_activity_log').insert({
         user_id: userId,
         activity_type: 'game_played',
-        metadata: { game: 'Quick Quiz', score: score, total_questions: questions.length, coins_earned: coinsEarned }
+        metadata: { game: 'Quick Quiz', score: score, total_questions: questions.length, coins_earned: gamesEnabled ? coinsEarned : 0 }
       });
 
-      toast.success(`Quiz complete! You earned ${coinsEarned} coins! 🪙`);
+      toast.success(gamesEnabled && coinsEarned > 0
+        ? `Quiz complete! You earned ${coinsEarned} coins! 🪙`
+        : `Quiz complete! Score: ${score}/${questions.length * 10} (Points disabled by HR)`);
     } catch (error) {
       console.error("Error saving quiz result:", error);
       toast.error("Failed to save your result.");

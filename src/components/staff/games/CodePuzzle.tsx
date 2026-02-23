@@ -71,22 +71,46 @@ const CodePuzzle = ({ onClose, userId }: { onClose: () => void, userId: string }
       // Approximate coins from score:
       const coinsEarned = Math.floor(score / 3);
 
-      if (coinsEarned > 0) {
+      // Check if game points are enabled by HR
+      const { data: settingsData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'points_config')
+        .single();
+      const gamesEnabled = settingsData?.value?.games_points_enabled !== false;
+
+      if (coinsEarned > 0 && gamesEnabled) {
         await supabase.from('user_coin_transactions').insert({
           user_id: userId,
           coins: coinsEarned,
           transaction_type: 'bonus',
           description: `Won ${coinsEarned} coins playing Code Puzzle (Score: ${score})`
         });
+
+        // Update staff_profiles.total_points
+        const { data: profileData } = await supabase
+          .from('staff_profiles')
+          .select('total_points')
+          .eq('user_id', userId)
+          .single();
+
+        if (profileData) {
+          await supabase
+            .from('staff_profiles')
+            .update({ total_points: (profileData.total_points || 0) + coinsEarned })
+            .eq('user_id', userId);
+        }
       }
 
       await supabase.from('user_activity_log').insert({
         user_id: userId,
         activity_type: 'game_played',
-        metadata: { game: 'Code Puzzle', score: score, coins_earned: coinsEarned }
+        metadata: { game: 'Code Puzzle', score: score, coins_earned: gamesEnabled ? coinsEarned : 0 }
       });
 
-      toast.success(`Puzzle session complete! You earned ${coinsEarned} coins! 🪙`);
+      toast.success(gamesEnabled && coinsEarned > 0
+        ? `Puzzle session complete! You earned ${coinsEarned} coins! 🪙`
+        : `Puzzle complete! Score: ${score} (Points disabled by HR)`);
     } catch (error) {
       console.error("Error saving puzzle result:", error);
       toast.error("Failed to save your result.");

@@ -124,12 +124,35 @@ export const TaskApprovalDialog = ({
           .single();
 
         if (staffProfile) {
+          // Update total_points on staff profile
           await supabase
             .from('staff_profiles')
             .update({
               total_points: (staffProfile.total_points || 0) + task.points,
             })
             .eq('user_id', task.assigned_to);
+
+          // Log to user_points_log (for HR PointsMonitoring)
+          await supabase
+            .from('user_points_log')
+            .insert({
+              user_id: task.assigned_to,
+              points: task.points,
+              reason: `Task approved: ${task.title}`,
+              category: 'task'
+            });
+
+          // Log to user_coin_transactions (for PointsBalance / MyCoins)
+          await supabase
+            .from('user_coin_transactions')
+            .insert({
+              user_id: task.assigned_to,
+              coins: task.points,
+              transaction_type: 'earning',
+              description: `Task Completed: ${task.title}`,
+              source_type: 'task',
+              source_id: task.id
+            });
         }
       }
 
@@ -341,11 +364,10 @@ export const TaskApprovalDialog = ({
               <Badge variant="outline" className="border-blue-400/50 text-blue-300">
                 {task.status.replace('_', ' ').toUpperCase()}
               </Badge>
-              <Badge className={`${
-                task.priority === 'urgent' ? 'bg-red-500' :
-                task.priority === 'high' ? 'bg-orange-500' :
-                task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-              }`}>
+              <Badge className={`${task.priority === 'urgent' ? 'bg-red-500' :
+                  task.priority === 'high' ? 'bg-orange-500' :
+                    task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                }`}>
                 {task.priority.toUpperCase()}
               </Badge>
               {task.trial_period ? (
@@ -399,8 +421,8 @@ export const TaskApprovalDialog = ({
                     {task.comments.map((comment: any, idx: number) => (
                       <div key={idx} className={cn(
                         "rounded-lg p-3 border",
-                        comment.type === 'rework' 
-                          ? "bg-red-500/10 border-red-500/30" 
+                        comment.type === 'rework'
+                          ? "bg-red-500/10 border-red-500/30"
                           : "bg-black/30 border-white/10"
                       )}>
                         <p className="text-white/90 text-sm">{comment.text}</p>
@@ -467,16 +489,16 @@ export const TaskApprovalDialog = ({
                     <RotateCcw className="w-5 h-5" />
                     Send for Rework
                   </h3>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setShowReworkSection(false)}
                     className="text-white/70 hover:text-white"
                   >
                     Cancel
                   </Button>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="reworkNote" className="text-white">
                     Rework Note <span className="text-red-400">*</span>

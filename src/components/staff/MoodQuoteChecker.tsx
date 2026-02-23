@@ -106,19 +106,57 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
 
       if (error) throw error;
 
-      // Award points for mood check-in
-      await supabase
-        .from('user_points_log')
-        .insert({
-          user_id: userId,
-          points: personalQuote ? 15 : 10,
-          reason: personalQuote ? 'Daily Mood & Quote Submission' : 'Daily Mood Check-in',
-          category: 'mood_checkin'
-        });
+      // Check if mood points are enabled by HR
+      const { data: settingsData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'points_config')
+        .single();
+      const moodEnabled = settingsData?.value?.mood_points_enabled !== false;
+      const moodPoints = personalQuote ? 15 : 10;
+
+      if (moodEnabled) {
+        // Log to user_points_log (for HR PointsMonitoring)
+        await supabase
+          .from('user_points_log')
+          .insert({
+            user_id: userId,
+            points: moodPoints,
+            reason: personalQuote ? 'Daily Mood & Quote Submission' : 'Daily Mood Check-in',
+            category: 'mood_checkin'
+          });
+
+        // Log to user_coin_transactions (for PointsBalance / MyCoins)
+        await supabase
+          .from('user_coin_transactions')
+          .insert({
+            user_id: userId,
+            coins: moodPoints,
+            transaction_type: 'earning',
+            description: personalQuote ? 'Daily Mood & Quote Submission' : 'Daily Mood Check-in',
+            source_type: 'bonus'
+          });
+
+        // Update staff_profiles.total_points
+        const { data: moodProfileData } = await supabase
+          .from('staff_profiles')
+          .select('total_points')
+          .eq('user_id', userId)
+          .single();
+
+        if (moodProfileData) {
+          await supabase
+            .from('staff_profiles')
+            .update({ total_points: (moodProfileData.total_points || 0) + moodPoints })
+            .eq('user_id', userId);
+        }
+      }
 
       toast({
-        title: "Mood & Quote Submitted!",
-        description: `Thanks for sharing! You earned ${personalQuote ? 15 : 10} points.`,
+        title: "Mood Submitted!",
+        description: moodEnabled
+          ? `Thanks for sharing! You earned ${moodPoints} coins.`
+          : "Mood recorded. Points are currently disabled by HR.",
       });
 
       onMoodSubmitted();
@@ -138,7 +176,7 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
   if (todayMoodEntry) {
     const mood = moods.find(m => m.id === todayMoodEntry.mood);
     const MoodIcon = mood?.icon || Smile;
-    
+
     return (
       <Card className={mood?.bgColor || "bg-blue-500/20 border-blue-500/30"}>
         <CardContent className="pt-6">
@@ -186,11 +224,10 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
                 <Button
                   key={mood.id}
                   variant="outline"
-                  className={`flex flex-col items-center gap-2 p-4 h-auto transition-all ${
-                    isSelected 
-                      ? `${mood.bgColor} border-2 scale-105` 
-                      : 'bg-white/5 border-white/20 hover:bg-white/10'
-                  }`}
+                  className={`flex flex-col items-center gap-2 p-4 h-auto transition-all ${isSelected
+                    ? `${mood.bgColor} border-2 scale-105`
+                    : 'bg-white/5 border-white/20 hover:bg-white/10'
+                    }`}
                   onClick={() => setSelectedMood(mood.id)}
                 >
                   <Icon className={`w-6 h-6 ${isSelected ? mood.color : 'text-white/60'}`} />
@@ -213,7 +250,7 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
             className="bg-white/10 border-white/20 text-white placeholder:text-white/40 resize-none"
             rows={3}
           />
-          
+
           <div className="flex items-center space-x-2">
             <Switch
               id="share-anonymous"

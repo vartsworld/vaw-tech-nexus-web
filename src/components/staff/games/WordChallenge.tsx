@@ -43,7 +43,15 @@ const WordChallenge = ({ onClose, userId }: { onClose: () => void, userId: strin
   const saveScore = async () => {
     try {
       const coinsEarned = Math.floor(score / 10);
-      
+
+      // Check if game points are enabled by HR
+      const { data: settingsData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'points_config')
+        .single();
+      const gamesEnabled = settingsData?.value?.games_points_enabled !== false;
+
       await supabase.from('word_game_scores').insert({
         user_id: userId,
         score: score,
@@ -52,23 +60,39 @@ const WordChallenge = ({ onClose, userId }: { onClose: () => void, userId: strin
         time_taken_seconds: 60 - timeLeft
       });
 
-      if (coinsEarned > 0) {
+      if (coinsEarned > 0 && gamesEnabled) {
         await supabase.from('user_coin_transactions').insert({
           user_id: userId,
           coins: coinsEarned,
           transaction_type: 'bonus',
           description: `Won ${coinsEarned} coins playing Word Challenge (Score: ${score})`
         });
+
+        // Update staff_profiles.total_points
+        const { data: profileData } = await supabase
+          .from('staff_profiles')
+          .select('total_points')
+          .eq('user_id', userId)
+          .single();
+
+        if (profileData) {
+          await supabase
+            .from('staff_profiles')
+            .update({ total_points: (profileData.total_points || 0) + coinsEarned })
+            .eq('user_id', userId);
+        }
       }
 
       // Also log to activity log
       await supabase.from('user_activity_log').insert({
         user_id: userId,
         activity_type: 'game_played',
-        metadata: { game: 'Word Challenge', score: score, coins_earned: coinsEarned }
+        metadata: { game: 'Word Challenge', score: score, coins_earned: gamesEnabled ? coinsEarned : 0 }
       });
 
-      toast.success(`Score saved! You earned ${coinsEarned} coins! 🪙`);
+      toast.success(gamesEnabled && coinsEarned > 0
+        ? `Score saved! You earned ${coinsEarned} coins! 🪙`
+        : `Game over! Score: ${score} (Points disabled by HR)`);
     } catch (error) {
       console.error("Error saving score:", error);
       toast.error("Failed to save your score.");

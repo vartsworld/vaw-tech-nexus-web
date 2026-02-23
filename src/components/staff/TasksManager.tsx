@@ -128,7 +128,7 @@ const TasksManager = ({
       if (newStatus === 'completed') {
         const task = tasks.find(t => t.id === taskId);
         if (task && !task.trial_period) {
-          // Log coin transaction
+          // Log coin transaction (for PointsBalance / MyCoins)
           await supabase.from('user_coin_transactions').insert({
             user_id: userId,
             coins: task.points,
@@ -138,7 +138,15 @@ const TasksManager = ({
             source_id: taskId
           });
 
-          // Update user's total points directly
+          // Log to user_points_log (for HR PointsMonitoring visibility)
+          await supabase.from('user_points_log').insert({
+            user_id: userId,
+            points: task.points,
+            reason: `Task completed: ${task.title}`,
+            category: 'task'
+          });
+
+          // Update user's total points
           const { data: profileData } = await supabase
             .from('staff_profiles')
             .select('total_points')

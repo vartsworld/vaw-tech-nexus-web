@@ -105,20 +105,58 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
         ? Math.max(0, config.attendance_points - config.late_penalty)
         : config.attendance_points;
 
-      await supabase
-        .from('user_points_log')
-        .insert({
-          user_id: userId,
-          points,
-          reason: isLate ? 'Attendance (Outside Standard Hours)' : 'Attendance (On Time)',
-          category: 'attendance'
-        });
+      // Check if attendance points are enabled by HR
+      const { data: settingsData } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'points_config')
+        .single();
+      const attendanceEnabled = settingsData?.value?.attendance_points_enabled !== false;
+
+      if (attendanceEnabled && points > 0) {
+        // Log to user_points_log (for HR PointsMonitoring)
+        await supabase
+          .from('user_points_log')
+          .insert({
+            user_id: userId,
+            points,
+            reason: isLate ? 'Attendance (Outside Standard Hours)' : 'Attendance (On Time)',
+            category: 'attendance'
+          });
+
+        // Log to user_coin_transactions (for PointsBalance / MyCoins)
+        await supabase
+          .from('user_coin_transactions')
+          .insert({
+            user_id: userId,
+            coins: points,
+            transaction_type: 'earning',
+            description: isLate ? 'Attendance (Outside Standard Hours)' : 'Attendance (On Time)',
+            source_type: 'attendance'
+          });
+
+        // Update staff_profiles.total_points
+        const { data: profileData } = await supabase
+          .from('staff_profiles')
+          .select('total_points')
+          .eq('user_id', userId)
+          .single();
+
+        if (profileData) {
+          await supabase
+            .from('staff_profiles')
+            .update({ total_points: (profileData.total_points || 0) + points })
+            .eq('user_id', userId);
+        }
+      }
 
       toast({
         title: "Attendance Marked!",
-        description: isLate
-          ? `Marked outside standard hours (05:30-18:30). Earned ${points} points.`
-          : `On time! Earned ${points} points!`,
+        description: attendanceEnabled && points > 0
+          ? isLate
+            ? `Marked outside standard hours. Earned ${points} points.`
+            : `On time! Earned ${points} points!`
+          : "Attendance recorded. Points are currently disabled by HR.",
       });
 
       onAttendanceMarked();

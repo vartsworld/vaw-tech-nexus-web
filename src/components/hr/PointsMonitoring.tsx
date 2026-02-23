@@ -4,10 +4,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Trophy, TrendingUp, Award, Coins, Search, Calendar, User } from "lucide-react";
+import { Trophy, TrendingUp, Award, Coins, Search, Calendar, User, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 
 const PointsMonitoring = () => {
@@ -149,7 +150,11 @@ const PointsMonitoring = () => {
     attendance_points: 10,
     mood_points: 5,
     late_penalty: 2,
-    vaw_coin_rate: 10
+    vaw_coin_rate: 10,
+    // Enable/disable toggles
+    attendance_points_enabled: true,
+    mood_points_enabled: true,
+    games_points_enabled: true,
   });
   const [isSavingConfig, setIsSavingConfig] = useState(false);
 
@@ -176,7 +181,13 @@ const PointsMonitoring = () => {
         // @ts-ignore
         ...(pointsData?.value || {}),
         // @ts-ignore
-        vaw_coin_rate: rateData?.value?.inr_value || prev.vaw_coin_rate
+        vaw_coin_rate: rateData?.value?.inr_value || prev.vaw_coin_rate,
+        // @ts-ignore
+        attendance_points_enabled: pointsData?.value?.attendance_points_enabled ?? true,
+        // @ts-ignore
+        mood_points_enabled: pointsData?.value?.mood_points_enabled ?? true,
+        // @ts-ignore
+        games_points_enabled: pointsData?.value?.games_points_enabled ?? true,
       }));
     } catch (error) {
       console.error("Error fetching config:", error);
@@ -196,7 +207,10 @@ const PointsMonitoring = () => {
           value: {
             attendance_points: config.attendance_points,
             mood_points: config.mood_points,
-            late_penalty: config.late_penalty
+            late_penalty: config.late_penalty,
+            attendance_points_enabled: config.attendance_points_enabled,
+            mood_points_enabled: config.mood_points_enabled,
+            games_points_enabled: config.games_points_enabled,
           },
           updated_at: new Date().toISOString(),
           updated_by: user?.id
@@ -291,6 +305,78 @@ const PointsMonitoring = () => {
               </div>
             </div>
           </div>
+          {/* Enable/Disable Toggles */}
+          <div className="mt-6 border-t pt-5">
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Enable / Disable Point Categories</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Attendance Toggle */}
+              <div className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors ${config.attendance_points_enabled
+                  ? 'border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-800'
+                  : 'border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800'
+                }`}>
+                <div className="flex items-center gap-2">
+                  {config.attendance_points_enabled
+                    ? <CheckCircle className="h-4 w-4 text-green-600" />
+                    : <XCircle className="h-4 w-4 text-red-500" />}
+                  <div>
+                    <p className="text-sm font-medium">Attendance Points</p>
+                    <p className="text-xs text-muted-foreground">
+                      {config.attendance_points_enabled ? 'Awarding points on check-in' : 'Points disabled'}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={config.attendance_points_enabled}
+                  onCheckedChange={(val) => setConfig({ ...config, attendance_points_enabled: val })}
+                />
+              </div>
+
+              {/* Mood Toggle */}
+              <div className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors ${config.mood_points_enabled
+                  ? 'border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-800'
+                  : 'border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800'
+                }`}>
+                <div className="flex items-center gap-2">
+                  {config.mood_points_enabled
+                    ? <CheckCircle className="h-4 w-4 text-green-600" />
+                    : <XCircle className="h-4 w-4 text-red-500" />}
+                  <div>
+                    <p className="text-sm font-medium">Mood Check-in Points</p>
+                    <p className="text-xs text-muted-foreground">
+                      {config.mood_points_enabled ? 'Awarding points on mood submit' : 'Points disabled'}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={config.mood_points_enabled}
+                  onCheckedChange={(val) => setConfig({ ...config, mood_points_enabled: val })}
+                />
+              </div>
+
+              {/* Games Toggle */}
+              <div className={`flex items-center justify-between rounded-xl border px-4 py-3 transition-colors ${config.games_points_enabled
+                  ? 'border-green-200 bg-green-50 dark:bg-green-950/30 dark:border-green-800'
+                  : 'border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800'
+                }`}>
+                <div className="flex items-center gap-2">
+                  {config.games_points_enabled
+                    ? <CheckCircle className="h-4 w-4 text-green-600" />
+                    : <XCircle className="h-4 w-4 text-red-500" />}
+                  <div>
+                    <p className="text-sm font-medium">Games &amp; Quiz Points</p>
+                    <p className="text-xs text-muted-foreground">
+                      {config.games_points_enabled ? 'Awarding coins for games/quizzes' : 'Points disabled'}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={config.games_points_enabled}
+                  onCheckedChange={(val) => setConfig({ ...config, games_points_enabled: val })}
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="mt-4 flex justify-end">
             <Button onClick={handleUpdateConfig} disabled={isSavingConfig}>
               {isSavingConfig ? 'Saving Changes...' : 'Save Configuration'}
