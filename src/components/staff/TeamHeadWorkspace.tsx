@@ -74,6 +74,8 @@ interface Subtask {
   created_at: string;
   updated_at: string;
   completed_at?: string;
+  approved_at?: string | null;
+  approved_by?: string | null;
   attachments?: any;
   comments?: any;
   staff_profiles?: any;

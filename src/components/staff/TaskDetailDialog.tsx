@@ -151,7 +151,7 @@ export const TaskDetailDialog = ({
     try {
       const { error } = await supabase
         .from('staff_subtasks')
-        .update({ status: 'in_progress', started_at: new Date().toISOString() } as any)
+        .update({ status: 'in_progress' } as any)
         .eq('id', subtaskId);
       if (error) throw error;
 
@@ -635,7 +635,10 @@ export const TaskDetailDialog = ({
                             </Badge>
                           )}
                           {isLocked && (
-                            <AlertCircle className="w-4 h-4 text-white/20" title="Previous subtask must be approved" />
+                            <AlertCircle
+                              className="w-4 h-4 text-white/20"
+                              aria-label="Previous subtask must be approved"
+                            />
                           )}
                         </div>
                       </div>
