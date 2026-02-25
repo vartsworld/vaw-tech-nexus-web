@@ -473,7 +473,7 @@ const TasksManager = ({
         </ScrollArea>
       </CardContent>
 
-      <TaskDetailDialog task={selectedTask} open={isDialogOpen} onOpenChange={setIsDialogOpen} onStatusUpdate={updateTaskStatus} />
+      <TaskDetailDialog task={selectedTask} open={isDialogOpen} onOpenChange={setIsDialogOpen} onStatusUpdate={updateTaskStatus} userId={userId} />
     </Card>
   );
 };

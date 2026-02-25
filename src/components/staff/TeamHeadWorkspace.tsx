@@ -46,7 +46,9 @@ import {
   MoreVertical,
   Search,
   ChevronDown,
-  Check
+  Check,
+  LayoutTemplate,
+  ChevronRight
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
@@ -134,6 +136,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [uploadingSubtaskAttachment, setUploadingSubtaskAttachment] = useState<string | null>(null);
   const [newMessageTask, setNewMessageTask] = useState("");
   const [newMessageSubtask, setNewMessageSubtask] = useState<{ [key: string]: string }>({});
+  const [rejectionNotes, setRejectionNotes] = useState<{ [key: string]: string }>({});
+
   const [loading, setLoading] = useState(true);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
@@ -165,6 +169,12 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     points: 10,
     attachments: [] as Array<{ file: File; title: string }>
   });
+
+  const [taskTemplates, setTaskTemplates] = useState<any[]>([]);
+  const [subtaskTemplates, setSubtaskTemplates] = useState<any[]>([]);
+  const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState<string>("none");
+  const [selectedSubtaskTemplateId, setSelectedSubtaskTemplateId] = useState<string>("none");
+  const [bulkSubtasks, setBulkSubtasks] = useState<any[]>([]);
 
   // Helper: resolve assignee name from staff list
   const getAssigneeName = (assignedTo: string): string => {
@@ -198,6 +208,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     fetchDepartments();
     fetchClients();
     fetchNotes();
+    fetchTaskTemplates();
+    fetchSubtaskTemplates();
   }, [userId, userProfile?.department_id]);
 
   // Fetch staff only when userProfile is loaded
@@ -354,6 +366,94 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       setClients(data || []);
     } catch (error) {
       console.error('Error fetching clients:', error);
+    }
+  };
+
+  const fetchTaskTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('task_templates')
+        .select('*, subtask_templates (*)')
+        .eq('is_active', true)
+        .order('title');
+
+      if (error) throw error;
+      setTaskTemplates(data || []);
+    } catch (error) {
+      console.error('Error fetching task templates:', error);
+    }
+  };
+
+  const fetchSubtaskTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subtask_templates')
+        .select('*')
+        .order('title');
+
+      if (error) throw error;
+      setSubtaskTemplates(data || []);
+    } catch (error) {
+      console.error('Error fetching subtask templates:', error);
+    }
+  };
+
+  const handleBulkAddSubtasks = async () => {
+    if (!selectedTask || bulkSubtasks.length === 0) return;
+
+    const unassigned = bulkSubtasks.some(st => !st.assigned_to);
+    if (unassigned) {
+      toast({
+        title: "Incomplete Assignment",
+        description: "Please assign all subtasks from the template before adding.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const subtasksToInsert = bulkSubtasks.map(st => ({
+        task_id: selectedTask.id,
+        title: st.title,
+        description: st.description,
+        assigned_to: st.assigned_to,
+        priority: st.priority || 'medium',
+        points: st.points || 0,
+        created_by: user.id,
+        status: 'pending'
+      }));
+
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .insert(subtasksToInsert)
+        .select(`
+          *,
+          staff_profiles:assigned_to (
+            full_name,
+            username
+          )
+        `);
+
+      if (error) throw error;
+
+      setSubtasks([...(data || []), ...subtasks]);
+      setBulkSubtasks([]);
+      setSelectedTaskTemplateId("none");
+
+      toast({
+        title: "Success",
+        description: `${data?.length} subtasks added successfully.`,
+      });
+    } catch (error) {
+      console.error('Error bulk adding subtasks:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add subtasks.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -632,6 +732,83 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
   const handleAttachToSubtask = async (subtaskId: string, file: File) => {
     handleSendSubtaskMessage(subtaskId, true, file);
+  };
+
+  const handleSubtaskApprove = async (subtaskId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .update({
+          status: 'completed',
+          approved_at: new Date().toISOString(),
+          approved_by: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', subtaskId)
+        .select(`*, staff_profiles:assigned_to(full_name, username)`)
+        .single();
+
+      if (error) throw error;
+
+      setSubtasks(subtasks.map(st => st.id === subtaskId ? data : st));
+      toast({ title: "✅ Subtask Approved", description: "The subtask has been marked as completed." });
+    } catch (error: any) {
+      console.error('Error approving subtask:', error);
+      toast({ title: "Error", description: error?.message || "Failed to approve subtask.", variant: "destructive" });
+    }
+  };
+
+  const handleSubtaskReject = async (subtaskId: string, rejectionNote: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch current profile for rejection comment
+      const { data: profile } = await supabase
+        .from('staff_profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .single();
+
+      // Get existing comments and append rejection note
+      const { data: subtaskData } = await supabase
+        .from('staff_subtasks')
+        .select('comments')
+        .eq('id', subtaskId)
+        .single();
+
+      const existingComments = (subtaskData?.comments as any[]) || [];
+      const rejectionComment = {
+        user_id: user.id,
+        user_name: profile?.full_name || 'Team Head',
+        message: `❌ REJECTED: ${rejectionNote || 'Please redo this subtask.'}`,
+        timestamp: new Date().toISOString(),
+        type: 'rejection'
+      };
+      const updatedComments = [...existingComments, rejectionComment];
+
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .update({
+          status: 'in_progress',
+          comments: updatedComments,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', subtaskId)
+        .select(`*, staff_profiles:assigned_to(full_name, username)`)
+        .single();
+
+      if (error) throw error;
+
+      setSubtasks(subtasks.map(st => st.id === subtaskId ? data : st));
+      toast({ title: "🔄 Subtask Returned", description: "Subtask has been returned to the staff for revision." });
+    } catch (error: any) {
+      console.error('Error rejecting subtask:', error);
+      toast({ title: "Error", description: error?.message || "Failed to return subtask.", variant: "destructive" });
+    }
   };
 
   const handleSendTaskMessage = async (taskId: string, includeAttachment: boolean = false, file?: File) => {
@@ -2568,284 +2745,528 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   </h4>
                 </div>
 
-                {/* Create Subtask Form */}
-                <div className="mb-4 p-4 bg-white/5 rounded-lg border border-white/10 space-y-3">
-                  <h5 className="font-medium text-sm">Create Subtask</h5>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                      <Input
-                        placeholder="Subtask title *"
-                        value={newSubtask.title}
-                        onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
-                      />
+                {/* Template Selection Section */}
+                <div className="space-y-4 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h5 className="font-semibold text-sm flex items-center gap-2 text-white">
+                        <LayoutTemplate className="h-4 w-4 text-purple-400" />
+                        Task Templates (Bulk)
+                      </h5>
+                      <p className="text-[10px] text-white/50">Select a preset to add multiple subtasks at once.</p>
                     </div>
-                    <div className="col-span-2">
-                      <Textarea
-                        placeholder="Description (optional)"
-                        value={newSubtask.description}
-                        onChange={(e) => setNewSubtask({ ...newSubtask, description: e.target.value })}
-                        rows={2}
-                      />
-                    </div>
-                    <Select
-                      value={newSubtask.assigned_to}
-                      onValueChange={(value) => setNewSubtask({ ...newSubtask, assigned_to: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Assign to *" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {staff.map(member => (
-                          <SelectItem key={member.id} value={member.user_id}>
-                            {member.full_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={newSubtask.priority}
-                      onValueChange={(value) => setNewSubtask({ ...newSubtask, priority: value as any })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="number"
-                      placeholder="Points (optional)"
-                      value={newSubtask.points === 0 ? "" : newSubtask.points}
-                      onChange={(e) => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
-                      min="0"
-                      max="50"
-                    />
-                    <div></div>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !newSubtask.due_date && "text-muted-foreground"
-                          )}
-                        >
-                          <Calendar className="mr-2 h-4 w-4" />
-                          {newSubtask.due_date && newSubtask.due_date.trim() !== '' ? (
-                            (() => {
-                              try {
-                                const date = new Date(newSubtask.due_date);
-                                if (isNaN(date.getTime())) return <span>Pick due date (optional)</span>;
-                                return format(date, "PPP");
-                              } catch {
-                                return <span>Pick due date (optional)</span>;
-                              }
-                            })()
-                          ) : (
-                            <span>Pick due date (optional)</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={(() => {
-                            if (!newSubtask.due_date || newSubtask.due_date.trim() === '') return undefined;
-                            try {
-                              const date = new Date(newSubtask.due_date);
-                              return isNaN(date.getTime()) ? undefined : date;
-                            } catch {
-                              return undefined;
+                    {bulkSubtasks.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-[10px] text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+                        onClick={() => {
+                          setBulkSubtasks([]);
+                          setSelectedTaskTemplateId("none");
+                        }}
+                      >
+                        Clear Selection
+                      </Button>
+                    )}
+                  </div>
+
+                  {!selectedTaskTemplateId || selectedTaskTemplateId === 'none' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {taskTemplates.map((tpl: any) => (
+                        <div
+                          key={tpl.id}
+                          className="p-3 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 cursor-pointer transition-all group hover:border-purple-500/50"
+                          onClick={() => {
+                            setSelectedTaskTemplateId(tpl.id);
+                            if (tpl.subtask_templates) {
+                              setBulkSubtasks(tpl.subtask_templates.map((st: any) => ({
+                                ...st,
+                                assigned_to: "",
+                                priority: tpl.priority || 'medium'
+                              })));
                             }
-                          })()}
-                          onSelect={(date) => setNewSubtask({ ...newSubtask, due_date: date ? format(date, "yyyy-MM-dd") : "" })}
-                          initialFocus
-                          className="pointer-events-auto"
+                          }}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold truncate group-hover:text-purple-400 transition-colors text-white">{tpl.title}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-[9px] h-4 py-0 px-1 border-white/10 text-white/50">
+                                  {tpl.subtask_templates?.length || 0} tasks
+                                </Badge>
+                                <span className="text-[9px] text-white/40">{tpl.points} pts</span>
+                              </div>
+                            </div>
+                            <Plus className="h-3 w-3 text-white/30 group-hover:text-purple-400 transition-all" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/30 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h6 className="text-[11px] font-bold text-purple-400">
+                            Template: {taskTemplates.find(t => t.id === selectedTaskTemplateId)?.title}
+                          </h6>
+                        </div>
+                        <div className="flex items-center gap-2 bg-black/40 p-1 rounded border border-white/10">
+                          <span className="text-[9px] text-white/60 px-1">Assign All To:</span>
+                          <Select onValueChange={(val) => {
+                            setBulkSubtasks(bulkSubtasks.map(st => ({ ...st, assigned_to: val })));
+                          }}>
+                            <SelectTrigger className="w-[110px] h-6 text-[9px] border-none bg-transparent focus:ring-0 shadow-none text-white">
+                              <SelectValue placeholder="Select staff" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {staff.map((member: any) => (
+                                <SelectItem key={member.id} value={member.user_id} className="text-xs">{member.full_name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="bg-black/20 rounded-md border border-white/10 p-2 max-h-[300px] overflow-y-auto space-y-1 custom-scrollbar">
+                        {bulkSubtasks.map((st, idx) => (
+                          <div key={idx} className="flex items-center gap-2 p-2 bg-white/5 rounded border border-white/5 hover:bg-white/10 transition-colors">
+                            <div className="flex-1 min-w-0 ml-1">
+                              <p className="text-[10px] font-medium truncate text-white/90">{st.title}</p>
+                              <p className="text-[8px] text-white/40">{st.points} pts</p>
+                            </div>
+                            <Select
+                              value={st.assigned_to}
+                              onValueChange={(val) => {
+                                const newBulk = [...bulkSubtasks];
+                                newBulk[idx].assigned_to = val;
+                                setBulkSubtasks(newBulk);
+                              }}
+                            >
+                              <SelectTrigger className="w-[130px] h-7 text-[10px] bg-black/40 border-white/10 text-white">
+                                <SelectValue placeholder="Assign To..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {staff.map((member: any) => (
+                                  <SelectItem key={member.id} value={member.user_id} className="text-xs">
+                                    {member.full_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-end gap-2 mt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-[10px] text-white/60 hover:bg-red-500/10 hover:text-red-400"
+                          onClick={() => {
+                            setBulkSubtasks([]);
+                            setSelectedTaskTemplateId("none");
+                          }}
+                        >
+                          Change Template
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-8 text-[10px] bg-purple-600 hover:bg-purple-700 font-semibold text-white"
+                          onClick={handleBulkAddSubtasks}
+                        >
+                          Add {bulkSubtasks.length} Subtasks
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="border-t border-white/10 my-2 pt-4">
+                    <h5 className="font-medium text-[11px] text-white/40 uppercase tracking-widest mb-3">Create Individual Subtask</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
+                      <div className="md:col-span-2 mb-2">
+                        <Select
+                          value={selectedSubtaskTemplateId}
+                          onValueChange={(value) => {
+                            setSelectedSubtaskTemplateId(value);
+                            if (value !== 'none') {
+                              const tpl = subtaskTemplates.find(t => t.id === value);
+                              if (tpl) {
+                                setNewSubtask(prev => ({
+                                  ...prev,
+                                  title: tpl.title || "",
+                                  description: tpl.description || "",
+                                  points: tpl.points || 0
+                                }));
+                              }
+                            } else {
+                              setNewSubtask(prev => ({
+                                ...prev,
+                                title: "",
+                                description: "",
+                                points: 0
+                              }));
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-9 text-xs bg-white/5 border-white/10 text-white">
+                            <SelectValue placeholder="Quick fill from subtask template..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Manual / Custom Entry</SelectItem>
+                            {subtaskTemplates.map((tpl: any) => (
+                              <SelectItem key={tpl.id} value={tpl.id}>{tpl.title}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <Input
+                          placeholder="Subtask title *"
+                          value={newSubtask.title}
+                          onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
+                          className="h-9 text-xs bg-white/5 border-white/10 text-white"
                         />
-                      </PopoverContent>
-                    </Popover>
-                    <Select
-                      value={newSubtask.due_time}
-                      onValueChange={(value) => setNewSubtask({ ...newSubtask, due_time: value })}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select time (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <ScrollArea className="h-60">
-                          {Array.from({ length: 24 * 4 }, (_, i) => {
-                            const hour = Math.floor(i / 4);
-                            const minute = (i % 4) * 15;
-                            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                            const displayTime = new Date(2000, 0, 1, hour, minute).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                            return (
-                              <SelectItem key={timeString} value={timeString}>
-                                {displayTime}
+                      </div>
+                      <div className="md:col-span-2">
+                        <Textarea
+                          placeholder="Description (optional)"
+                          value={newSubtask.description}
+                          onChange={(e) => setNewSubtask({ ...newSubtask, description: e.target.value })}
+                          rows={2}
+                          className="text-xs resize-none bg-white/5 border-white/10 text-white"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 md:col-span-2">
+                        <Select
+                          value={newSubtask.assigned_to}
+                          onValueChange={(value) => setNewSubtask({ ...newSubtask, assigned_to: value })}
+                        >
+                          <SelectTrigger className="h-9 text-xs bg-white/5 border-white/10 text-white">
+                            <SelectValue placeholder="Assign To *" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {staff.map((member: any) => (
+                              <SelectItem key={member.id} value={member.user_id} className="text-xs">
+                                {member.full_name}
                               </SelectItem>
-                            );
-                          })}
-                        </ScrollArea>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      onClick={() => handleCreateSubtask(selectedTask.id)}
-                      className="col-span-2"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Subtask
-                    </Button>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={newSubtask.priority}
+                          onValueChange={(value) => setNewSubtask({ ...newSubtask, priority: value as any })}
+                        >
+                          <SelectTrigger className="h-9 text-xs bg-white/5 border-white/10 text-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low" className="text-xs text-blue-400">Low</SelectItem>
+                            <SelectItem value="medium" className="text-xs text-yellow-400">Medium</SelectItem>
+                            <SelectItem value="high" className="text-xs text-orange-400">High</SelectItem>
+                            <SelectItem value="urgent" className="text-xs text-red-500 font-bold">Urgent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 md:col-span-2">
+                        <Input
+                          type="number"
+                          placeholder="Points"
+                          value={newSubtask.points === 0 ? "" : newSubtask.points}
+                          onChange={(e) => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
+                          min="0"
+                          className="h-9 text-xs bg-white/5 border-white/10 text-white"
+                        />
+                        <div className="flex gap-1">
+                          <Input
+                            type="date"
+                            value={newSubtask.due_date}
+                            onChange={(e) => setNewSubtask({ ...newSubtask, due_date: e.target.value })}
+                            className="h-9 text-xs bg-white/5 border-white/10 text-white flex-1"
+                          />
+                          <Input
+                            type="time"
+                            value={newSubtask.due_time}
+                            onChange={(e) => setNewSubtask({ ...newSubtask, due_time: e.target.value })}
+                            className="h-9 text-xs bg-white/5 border-white/10 text-white w-24"
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => handleCreateSubtask(selectedTask.id)}
+                        className="md:col-span-2 h-9 text-xs bg-primary hover:bg-primary/90 text-white"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Individual Subtask
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
                 {/* Subtasks List */}
                 {loadingSubtasks ? (
                   <div className="flex justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
                   </div>
                 ) : subtasks.length > 0 ? (
-                  <div className="space-y-2">
-                    {subtasks.map((subtask) => (
-                      <div key={subtask.id} className="p-3 bg-white/5 rounded-lg border border-white/10">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium">{subtask.title}</span>
-                              {getPriorityBadge(subtask.priority)}
-                            </div>
-                            {subtask.description && (
-                              <p className="text-sm text-muted-foreground mb-2">{subtask.description}</p>
-                            )}
-                            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                              <span>Assigned to: {subtask.staff_profiles?.full_name}</span>
-                              {subtask.points > 0 && <span>Points: {subtask.points}</span>}
-                              {subtask.due_date && subtask.due_date.trim() !== '' && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {(() => {
-                                    try {
-                                      const date = new Date(subtask.due_date);
-                                      if (isNaN(date.getTime())) return 'Invalid date';
-                                      return format(date, 'MMM dd, yyyy');
-                                    } catch {
-                                      return 'Invalid date';
-                                    }
-                                  })()}
-                                  {subtask.due_time && ` at ${subtask.due_time}`}
-                                </span>
-                              )}
-                            </div>
-                            {subtask.comments && subtask.comments.length > 0 && (
-                              <div className="mt-2 space-y-2">
-                                {subtask.comments.map((comment: any, idx: number) => (
-                                  <div key={idx} className="bg-muted/50 p-2 rounded text-xs space-y-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium">{comment.user_name}</span>
-                                      <span className="text-muted-foreground">
-                                        {new Date(comment.timestamp).toLocaleString()}
-                                      </span>
-                                    </div>
-                                    {comment.message && <p>{comment.message}</p>}
-                                    {comment.attachment_url && (
-                                      <div className="flex items-center justify-between p-1 bg-white/5 rounded border border-white/10">
-                                        <a
-                                          href={comment.attachment_url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-1 text-primary hover:underline"
-                                        >
-                                          <Paperclip className="h-3 w-3" />
-                                          {comment.attachment_name}
-                                        </a>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-5 w-5 p-0"
-                                          onClick={() => handleDeleteSubtaskCommentAttachment(subtask.id, idx)}
-                                        >
-                                          <X className="h-3 w-3 text-red-400" />
-                                        </Button>
-                                      </div>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                  <div className="space-y-3">
+                    {subtasks.map((subtask, idx) => {
+                      const isPendingApproval = subtask.status === 'pending_approval';
+                      const isCompleted = subtask.status === 'completed';
+                      const isInProgress = subtask.status === 'in_progress';
 
-                            <div className="mt-2 flex gap-2">
-                              <Textarea
-                                placeholder="Type a message..."
-                                value={newMessageSubtask[subtask.id] || ""}
-                                onChange={(e) => setNewMessageSubtask({ ...newMessageSubtask, [subtask.id]: e.target.value })}
-                                className="flex-1 text-sm"
-                                rows={1}
-                              />
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                onClick={() => handleSendSubtaskMessage(subtask.id, false)}
-                                disabled={!newMessageSubtask[subtask.id]?.trim() || uploadingSubtaskAttachment === subtask.id}
-                              >
-                                <Send className="h-3 w-3" />
-                              </Button>
-                              <input
-                                type="file"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) handleAttachToSubtask(subtask.id, file);
-                                  e.target.value = '';
-                                }}
-                                className="hidden"
-                                id={`subtask-file-${subtask.id}`}
-                              />
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                onClick={() => document.getElementById(`subtask-file-${subtask.id}`)?.click()}
-                                disabled={uploadingSubtaskAttachment === subtask.id}
-                              >
-                                {uploadingSubtaskAttachment === subtask.id ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Paperclip className="h-3 w-3" />
+                      const submissionComments = Array.isArray(subtask.comments)
+                        ? subtask.comments.filter((c: any) => c.type === 'submission_note' || c.type === 'rejection')
+                        : [];
+                      const submissionAttachments = Array.isArray(subtask.attachments) ? subtask.attachments : [];
+
+                      return (
+                        <div
+                          key={subtask.id}
+                          className={`rounded-xl border transition-all duration-200 overflow-hidden ${isPendingApproval
+                              ? 'border-orange-500/50 bg-orange-500/5 shadow-lg shadow-orange-900/20'
+                              : isCompleted
+                                ? 'border-green-500/30 bg-green-500/5'
+                                : 'border-white/10 bg-white/3'
+                            }`}
+                        >
+                          {/* Subtask Header */}
+                          <div className="p-3 flex items-center gap-3">
+                            {/* Step Number / Status Icon */}
+                            <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-xs ${isCompleted ? 'bg-green-500 text-white' :
+                                isPendingApproval ? 'bg-orange-500 text-white animate-pulse' :
+                                  isInProgress ? 'bg-blue-500 text-white' :
+                                    'bg-white/10 text-white/40'
+                              }`}>
+                              {isCompleted ? <CheckCircle className="w-4 h-4" /> : idx + 1}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`text-sm font-semibold truncate ${isCompleted ? 'line-through text-white/40' : 'text-white'}`}>
+                                  {subtask.title}
+                                </span>
+                                {getPriorityBadge(subtask.priority)}
+                                {isPendingApproval && (
+                                  <span className="text-[9px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded px-1.5 py-0.5 animate-pulse">
+                                    AWAITING REVIEW
+                                  </span>
                                 )}
+                                {isCompleted && (
+                                  <span className="text-[9px] font-bold bg-green-500/20 text-green-400 border border-green-500/30 rounded px-1.5 py-0.5">
+                                    ✓ APPROVED
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs text-white/40">
+                                <span>👤 {subtask.staff_profiles?.full_name || 'Unassigned'}</span>
+                                {subtask.points > 0 && <span>⭐ {subtask.points} pts</span>}
+                                {subtask.due_date && subtask.due_date.trim() !== '' && (
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {(() => {
+                                      try {
+                                        const d = new Date(subtask.due_date);
+                                        return isNaN(d.getTime()) ? 'Invalid date' : format(d, 'MMM dd, yyyy');
+                                      } catch { return 'Invalid date'; }
+                                    })()}
+                                    {subtask.due_time && ` at ${subtask.due_time}`}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Actions for non-pending-approval statuses */}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {!isPendingApproval && (
+                                <Select
+                                  value={subtask.status}
+                                  onValueChange={(value) => handleSubtaskStatusUpdate(subtask.id, value)}
+                                >
+                                  <SelectTrigger className="w-28 h-7 text-[10px] bg-black/30 border-white/10 text-white">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending" className="text-xs">Pending</SelectItem>
+                                    <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
+                                    <SelectItem value="completed" className="text-xs">Completed</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteSubtask(subtask.id)}
+                                className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+                                title="Delete subtask"
+                              >
+                                <X className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Select
-                              value={subtask.status}
-                              onValueChange={(value) => handleSubtaskStatusUpdate(subtask.id, value)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="in_progress">In Progress</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteSubtask(subtask.id)}
-                              title="Delete subtask"
-                            >
-                              <X className="h-4 w-4 text-red-400" />
-                            </Button>
-                          </div>
+
+                          {/* Pending Approval Panel — rich review UI */}
+                          {isPendingApproval && (
+                            <div className="border-t border-orange-500/20 bg-black/30 px-4 pb-4 pt-3 space-y-4">
+                              <p className="text-[11px] font-semibold text-orange-400 uppercase tracking-widest flex items-center gap-2">
+                                <AlertCircle className="h-3.5 w-3.5" />
+                                Staff Submission — Awaiting Your Review
+                              </p>
+
+                              {/* Submission Notes */}
+                              {submissionComments.length > 0 && (
+                                <div className="space-y-2">
+                                  <p className="text-[10px] text-white/40 uppercase tracking-widest">Notes from Staff</p>
+                                  <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar pr-1">
+                                    {submissionComments.map((comment: any, cidx: number) => (
+                                      <div
+                                        key={cidx}
+                                        className={`p-2 rounded-lg text-xs ${comment.type === 'rejection'
+                                            ? 'bg-red-500/10 border border-red-500/20 text-red-300'
+                                            : 'bg-white/5 border border-white/5 text-white/80'
+                                          }`}
+                                      >
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                          <span className="font-semibold text-[10px] text-white/60">{comment.user_name}</span>
+                                          <span className="text-[9px] text-white/30">{new Date(comment.timestamp).toLocaleString()}</span>
+                                        </div>
+                                        <p>{comment.message}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Submitted Attachments */}
+                              {submissionAttachments.length > 0 && (
+                                <div className="space-y-1.5">
+                                  <p className="text-[10px] text-white/40 uppercase tracking-widest">Proof of Work</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {submissionAttachments.map((att: any, aidx: number) => (
+                                      <a
+                                        key={aidx}
+                                        href={att.publicUrl || att.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg text-[10px] hover:bg-blue-500/20 transition-colors"
+                                      >
+                                        <Paperclip className="h-3 w-3" />
+                                        <span className="max-w-[100px] truncate">{att.name || 'Attachment'}</span>
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Rejection Note Input */}
+                              <div className="space-y-1">
+                                <p className="text-[10px] text-white/40 uppercase tracking-widest">Rejection Reason (if returning)</p>
+                                <Textarea
+                                  placeholder="Optional: explain what needs to be fixed..."
+                                  value={rejectionNotes[subtask.id] || ''}
+                                  onChange={(e) => setRejectionNotes({ ...rejectionNotes, [subtask.id]: e.target.value })}
+                                  rows={2}
+                                  className="text-xs resize-none bg-black/40 border-white/10 text-white placeholder:text-white/20"
+                                />
+                              </div>
+
+                              {/* Approve / Return Buttons */}
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  className="flex-1 h-9 bg-green-600 hover:bg-green-700 font-bold text-xs gap-2"
+                                  onClick={() => handleSubtaskApprove(subtask.id)}
+                                >
+                                  <CheckCircle className="h-3.5 w-3.5" />
+                                  APPROVE
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 h-9 border-red-500/40 text-red-400 hover:bg-red-500/10 font-bold text-xs gap-2"
+                                  onClick={() => {
+                                    handleSubtaskReject(subtask.id, rejectionNotes[subtask.id] || '');
+                                    setRejectionNotes({ ...rejectionNotes, [subtask.id]: '' });
+                                  }}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                  RETURN
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Completed subtask — show approval details */}
+                          {isCompleted && subtask.approved_at && (
+                            <div className="border-t border-green-500/10 bg-green-500/3 px-3 py-1.5">
+                              <p className="text-[9px] text-green-500/60">
+                                Approved {new Date(subtask.approved_at).toLocaleString()}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Normal comment thread for non-review statuses */}
+                          {!isPendingApproval && (
+                            <div className="border-t border-white/5 px-3 pb-3 pt-2">
+                              {/* Display existing comments (including rejections shown to head) */}
+                              {subtask.comments && subtask.comments.length > 0 && (
+                                <div className="space-y-1 mb-2 max-h-24 overflow-y-auto custom-scrollbar">
+                                  {(subtask.comments as any[]).map((comment: any, idx: number) => (
+                                    <div key={idx} className={`text-xs p-1.5 rounded ${comment.type === 'rejection' ? 'bg-red-500/10 text-red-300' : 'bg-white/5 text-white/70'}`}>
+                                      <span className="font-semibold text-white/50 mr-1">{comment.user_name}:</span>
+                                      {comment.message}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="flex gap-2 mt-1">
+                                <Textarea
+                                  placeholder="Add a note..."
+                                  value={newMessageSubtask[subtask.id] || ''}
+                                  onChange={(e) => setNewMessageSubtask({ ...newMessageSubtask, [subtask.id]: e.target.value })}
+                                  className="flex-1 text-xs resize-none bg-black/30 border-white/10 text-white"
+                                  rows={1}
+                                />
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 self-end"
+                                  onClick={() => handleSendSubtaskMessage(subtask.id, false)}
+                                  disabled={!newMessageSubtask[subtask.id]?.trim() || uploadingSubtaskAttachment === subtask.id}
+                                >
+                                  <Send className="h-3 w-3" />
+                                </Button>
+                                <input
+                                  type="file"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleAttachToSubtask(subtask.id, file);
+                                    e.target.value = '';
+                                  }}
+                                  className="hidden"
+                                  id={`subtask-file-${subtask.id}`}
+                                />
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 self-end"
+                                  onClick={() => document.getElementById(`subtask-file-${subtask.id}`)?.click()}
+                                  disabled={uploadingSubtaskAttachment === subtask.id}
+                                >
+                                  {uploadingSubtaskAttachment === subtask.id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Paperclip className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
+                  <div className="text-center py-8 text-white/30 text-sm border border-dashed border-white/10 rounded-xl">
                     No subtasks yet. Create one above to get started.
                   </div>
                 )}
