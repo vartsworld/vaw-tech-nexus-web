@@ -317,6 +317,7 @@ const TaskManagement = () => {
           due_date: newSubtask.due_date || null,
           due_time: newSubtask.due_time || null,
           created_by: user?.id,
+          stage: 1,
           status: 'pending'
         })
         .select(`
@@ -380,6 +381,7 @@ const TaskManagement = () => {
         assigned_to: st.assigned_to,
         priority: st.priority || 'medium',
         points: st.points || 0,
+        stage: (st as any).stage ?? 1,
         created_by: user.id,
         status: 'pending'
       }));
