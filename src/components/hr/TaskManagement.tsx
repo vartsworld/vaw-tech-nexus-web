@@ -35,7 +35,9 @@ import {
   Repeat,
   ChevronDown,
   Check,
-  Edit
+  Edit,
+  LayoutTemplate,
+  ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,7 +87,10 @@ const TaskManagement = () => {
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
   const [subtaskTemplates, setSubtaskTemplates] = useState<any[]>([]);
+  const [taskTemplates, setTaskTemplates] = useState<any[]>([]);
   const [selectedSubtaskTemplateId, setSelectedSubtaskTemplateId] = useState<string>("none");
+  const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState<string>("none");
+  const [bulkSubtasks, setBulkSubtasks] = useState<any[]>([]);
 
   const [newSubtask, setNewSubtask] = useState({
     title: "",
@@ -136,6 +141,7 @@ const TaskManagement = () => {
     fetchClients();
     fetchDepartments();
     fetchSubtaskTemplates();
+    fetchTaskTemplates();
   }, []);
 
   useEffect(() => {
@@ -230,6 +236,21 @@ const TaskManagement = () => {
         description: "Failed to load tasks.",
         variant: "destructive",
       });
+    }
+  };
+
+  const fetchTaskTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('task_templates')
+        .select('*, subtask_templates (*)')
+        .eq('is_active', true)
+        .order('title');
+
+      if (error) throw error;
+      setTaskTemplates(data || []);
+    } catch (error) {
+      console.error('Error fetching task templates:', error);
     }
   };
 
@@ -330,6 +351,65 @@ const TaskManagement = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to create subtask.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkAddSubtasks = async () => {
+    if (!selectedTask || bulkSubtasks.length === 0) return;
+
+    const unassigned = bulkSubtasks.some(st => !st.assigned_to);
+    if (unassigned) {
+      toast({
+        title: "Incomplete Assignment",
+        description: "Please assign all subtasks from the template before adding.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const subtasksToInsert = bulkSubtasks.map(st => ({
+        task_id: selectedTask.id,
+        title: st.title,
+        description: st.description,
+        assigned_to: st.assigned_to,
+        priority: st.priority || 'medium',
+        points: st.points || 0,
+        created_by: user.id,
+        status: 'pending'
+      }));
+
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .insert(subtasksToInsert)
+        .select(`
+          *,
+          staff_profiles:assigned_to (
+            full_name,
+            username
+          )
+        `);
+
+      if (error) throw error;
+
+      setSubtasks([...(data || []), ...subtasks]);
+      setBulkSubtasks([]);
+      setSelectedTaskTemplateId("none");
+
+      toast({
+        title: "Success",
+        description: `${data?.length} subtasks added successfully.`,
+      });
+    } catch (error) {
+      console.error('Error bulk adding subtasks:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add subtasks.",
         variant: "destructive",
       });
     }
@@ -1431,8 +1511,8 @@ const TaskManagement = () => {
                       onChange={(e) => {
                         if (e.target.files) {
                           const files = Array.from(e.target.files).map(file => ({
-                            file,
-                            title: file.name
+                            file: file as File,
+                            title: (file as File).name
                           }));
                           setNewTask({ ...newTask, attachments: [...newTask.attachments, ...files] });
                         }
@@ -2081,109 +2161,252 @@ const TaskManagement = () => {
                   </h4>
                 </div>
 
-                {/* Create Subtask Form */}
-                <div className="p-4 bg-muted/30 rounded-lg border border-muted space-y-3">
-                  <h5 className="font-medium text-sm">Create Subtask</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="md:col-span-2 mb-2">
-                      <Select
-                        value={selectedSubtaskTemplateId}
-                        onValueChange={(value) => {
-                          setSelectedSubtaskTemplateId(value);
-                          if (value !== 'none') {
-                            const tpl = subtaskTemplates.find(t => t.id === value);
-                            if (tpl) {
-                              setNewSubtask(prev => ({
-                                ...prev,
-                                title: tpl.title || "",
-                                description: tpl.description || "",
-                                points: tpl.points || 0
-                              }));
-                            }
-                          } else {
-                            setNewSubtask(prev => ({
-                              ...prev,
-                              title: "",
-                              description: "",
-                              points: 0
-                            }));
-                          }
+                {/* Template Selection Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h5 className="font-semibold text-sm flex items-center gap-2">
+                        <LayoutTemplate className="h-4 w-4 text-purple-500" />
+                        Task Templates (Bulk)
+                      </h5>
+                      <p className="text-[10px] text-muted-foreground">Select a preset to add multiple subtasks at once.</p>
+                    </div>
+                    {bulkSubtasks.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-[10px] hover:text-primary"
+                        onClick={() => {
+                          setBulkSubtasks([]);
+                          setSelectedTaskTemplateId("none");
                         }}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a template (optional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No Template (Custom)</SelectItem>
-                          {subtaskTemplates.map((tpl: any) => (
-                            <SelectItem key={tpl.id} value={tpl.id}>{tpl.title}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        Clear Selection
+                      </Button>
+                    )}
+                  </div>
+
+                  {!selectedTaskTemplateId || selectedTaskTemplateId === 'none' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {taskTemplates.map((tpl: any) => (
+                        <div
+                          key={tpl.id}
+                          className="p-3 bg-muted/10 hover:bg-muted/30 rounded-lg border border-muted/50 cursor-pointer transition-all group hover:border-purple-500/50"
+                          onClick={() => {
+                            setSelectedTaskTemplateId(tpl.id);
+                            if (tpl.subtask_templates) {
+                              setBulkSubtasks(tpl.subtask_templates.map((st: any) => ({
+                                ...st,
+                                assigned_to: "",
+                                priority: tpl.priority || 'medium'
+                              })));
+                            }
+                          }}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold truncate group-hover:text-purple-400 transition-colors">{tpl.title}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-[9px] h-4 py-0 px-1 border-muted/30">
+                                  {tpl.subtask_templates?.length || 0} tasks
+                                </Badge>
+                                <span className="text-[9px] text-muted-foreground">{tpl.points} pts</span>
+                              </div>
+                            </div>
+                            <Plus className="h-3 w-3 text-muted-foreground group-hover:text-purple-500 transition-all" />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="md:col-span-2">
-                      <Input
-                        placeholder="Subtask title *"
-                        value={newSubtask.title}
-                        onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Textarea
-                        placeholder="Description (optional)"
-                        value={newSubtask.description}
-                        onChange={(e) => setNewSubtask({ ...newSubtask, description: e.target.value })}
-                        rows={2}
-                      />
-                    </div>
-                    <Select
-                      value={newSubtask.assigned_to}
-                      onValueChange={(value) => setNewSubtask({ ...newSubtask, assigned_to: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Assign to *" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {staff.map((member: any) => (
-                          <SelectItem key={member.id} value={member.user_id}>
-                            {member.full_name}
-                          </SelectItem>
+                  ) : (
+                    <div className="p-4 bg-purple-500/5 rounded-lg border border-purple-500/20 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <h6 className="text-[11px] font-bold text-purple-400">
+                            Template: {taskTemplates.find(t => t.id === selectedTaskTemplateId)?.title}
+                          </h6>
+                        </div>
+                        <div className="flex items-center gap-2 bg-background/50 p-1 rounded border border-white/5">
+                          <span className="text-[9px] text-muted-foreground px-1">Assign All To:</span>
+                          <Select onValueChange={(val) => {
+                            setBulkSubtasks(bulkSubtasks.map(st => ({ ...st, assigned_to: val })));
+                          }}>
+                            <SelectTrigger className="w-[110px] h-6 text-[9px] border-none bg-transparent focus:ring-0 shadow-none">
+                              <SelectValue placeholder="Select staff" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {staff.map((member: any) => (
+                                <SelectItem key={member.id} value={member.user_id} className="text-xs">{member.full_name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="bg-background/20 rounded-md border border-white/5 p-2 max-h-[300px] overflow-y-auto space-y-1 custom-scrollbar">
+                        {bulkSubtasks.map((st, idx) => (
+                          <div key={idx} className="flex items-center gap-2 p-2 bg-muted/10 rounded border border-muted/20 hover:bg-muted/20 transition-colors">
+                            <div className="flex-1 min-w-0 ml-1">
+                              <p className="text-[10px] font-medium truncate">{st.title}</p>
+                              <p className="text-[8px] text-muted-foreground">{st.points} pts</p>
+                            </div>
+                            <Select
+                              value={st.assigned_to}
+                              onValueChange={(val) => {
+                                const newBulk = [...bulkSubtasks];
+                                newBulk[idx].assigned_to = val;
+                                setBulkSubtasks(newBulk);
+                              }}
+                            >
+                              <SelectTrigger className="w-[130px] h-7 text-[10px] bg-background/50 border-muted/30">
+                                <SelectValue placeholder="Assign To..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {staff.map((member: any) => (
+                                  <SelectItem key={member.id} value={member.user_id} className="text-xs">
+                                    {member.full_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={newSubtask.priority}
-                      onValueChange={(value) => setNewSubtask({ ...newSubtask, priority: value as any })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="number"
-                      placeholder="Points (optional)"
-                      value={newSubtask.points === 0 ? "" : newSubtask.points}
-                      onChange={(e) => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
-                      min="0"
-                    />
-                    <Input
-                      type="date"
-                      value={newSubtask.due_date}
-                      onChange={(e) => setNewSubtask({ ...newSubtask, due_date: e.target.value })}
-                    />
-                    <Button
-                      onClick={() => handleCreateSubtask(selectedTask.id)}
-                      className="md:col-span-2"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Subtask
-                    </Button>
+                      </div>
+
+                      <div className="flex justify-end gap-2 mt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-[10px] hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => {
+                            setBulkSubtasks([]);
+                            setSelectedTaskTemplateId("none");
+                          }}
+                        >
+                          Change Template
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-8 text-[10px] bg-purple-600 hover:bg-purple-700 font-semibold"
+                          onClick={handleBulkAddSubtasks}
+                        >
+                          Add {bulkSubtasks.length} Subtasks
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="border-t border-muted/50 my-2 pt-4">
+                    <h5 className="font-medium text-[11px] text-muted-foreground uppercase tracking-widest mb-3">Create Individual Subtask</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
+                      <div className="md:col-span-2 mb-2">
+                        <Select
+                          value={selectedSubtaskTemplateId}
+                          onValueChange={(value) => {
+                            setSelectedSubtaskTemplateId(value);
+                            if (value !== 'none') {
+                              const tpl = subtaskTemplates.find(t => t.id === value);
+                              if (tpl) {
+                                setNewSubtask(prev => ({
+                                  ...prev,
+                                  title: tpl.title || "",
+                                  description: tpl.description || "",
+                                  points: tpl.points || 0
+                                }));
+                              }
+                            } else {
+                              setNewSubtask(prev => ({
+                                ...prev,
+                                title: "",
+                                description: "",
+                                points: 0
+                              }));
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-9 text-xs">
+                            <SelectValue placeholder="Quick fill from subtask template..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Manual / Custom Entry</SelectItem>
+                            {subtaskTemplates.map((tpl: any) => (
+                              <SelectItem key={tpl.id} value={tpl.id}>{tpl.title}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <Input
+                          placeholder="Subtask title *"
+                          value={newSubtask.title}
+                          onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
+                          className="h-9 text-xs"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <Textarea
+                          placeholder="Description (optional)"
+                          value={newSubtask.description}
+                          onChange={(e) => setNewSubtask({ ...newSubtask, description: e.target.value })}
+                          rows={2}
+                          className="text-xs resize-none"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 md:col-span-2">
+                        <Select
+                          value={newSubtask.assigned_to}
+                          onValueChange={(value) => setNewSubtask({ ...newSubtask, assigned_to: value })}
+                        >
+                          <SelectTrigger className="h-9 text-xs">
+                            <SelectValue placeholder="Assign To *" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {staff.map((member: any) => (
+                              <SelectItem key={member.id} value={member.user_id} className="text-xs">
+                                {member.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={newSubtask.priority}
+                          onValueChange={(value) => setNewSubtask({ ...newSubtask, priority: value as any })}
+                        >
+                          <SelectTrigger className="h-9 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low" className="text-xs text-blue-500">Low</SelectItem>
+                            <SelectItem value="medium" className="text-xs text-yellow-500">Medium</SelectItem>
+                            <SelectItem value="high" className="text-xs text-orange-500">High</SelectItem>
+                            <SelectItem value="urgent" className="text-xs text-red-500 font-bold">Urgent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 md:col-span-2">
+                        <Input
+                          type="number"
+                          placeholder="Points"
+                          value={newSubtask.points === 0 ? "" : newSubtask.points}
+                          onChange={(e) => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
+                          min="0"
+                          className="h-9 text-xs"
+                        />
+                        <Input
+                          type="date"
+                          value={newSubtask.due_date}
+                          onChange={(e) => setNewSubtask({ ...newSubtask, due_date: e.target.value })}
+                          className="h-9 text-xs"
+                        />
+                      </div>
+                      <Button
+                        onClick={() => handleCreateSubtask(selectedTask.id)}
+                        className="md:col-span-2 h-9 text-xs bg-primary hover:bg-primary/90"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Individual Subtask
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
