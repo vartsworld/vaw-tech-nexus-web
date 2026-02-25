@@ -753,8 +753,49 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       if (error) throw error;
 
+      // Award points for subtask completion
+      if (data.points > 0) {
+        // 1. Update total_points on staff profile
+        const { data: staffProfile } = await supabase
+          .from('staff_profiles')
+          .select('total_points')
+          .eq('user_id', data.assigned_to)
+          .single();
+
+        if (staffProfile) {
+          await supabase
+            .from('staff_profiles')
+            .update({
+              total_points: (staffProfile.total_points || 0) + data.points,
+            })
+            .eq('user_id', data.assigned_to);
+
+          // 2. Log to user_points_log (for HR PointsMonitoring)
+          await supabase
+            .from('user_points_log')
+            .insert({
+              user_id: data.assigned_to,
+              points: data.points,
+              reason: `Subtask approved: ${data.title}`,
+              category: 'task'
+            });
+
+          // 3. Log to user_coin_transactions (for PointsBalance / MyCoins)
+          await supabase
+            .from('user_coin_transactions')
+            .insert({
+              user_id: data.assigned_to,
+              coins: data.points,
+              transaction_type: 'earning',
+              description: `Subtask Completed: ${data.title}`,
+              source_type: 'subtask',
+              source_id: data.id
+            });
+        }
+      }
+
       setSubtasks(subtasks.map(st => st.id === subtaskId ? data : st));
-      toast({ title: "✅ Subtask Approved", description: "The subtask has been marked as completed." });
+      toast({ title: "✅ Subtask Approved", description: `The subtask has been approved and ${data.points} points awarded.` });
     } catch (error: any) {
       console.error('Error approving subtask:', error);
       toast({ title: "Error", description: error?.message || "Failed to approve subtask.", variant: "destructive" });
@@ -3023,19 +3064,19 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                         <div
                           key={subtask.id}
                           className={`rounded-xl border transition-all duration-200 overflow-hidden ${isPendingApproval
-                              ? 'border-orange-500/50 bg-orange-500/5 shadow-lg shadow-orange-900/20'
-                              : isCompleted
-                                ? 'border-green-500/30 bg-green-500/5'
-                                : 'border-white/10 bg-white/3'
+                            ? 'border-orange-500/50 bg-orange-500/5 shadow-lg shadow-orange-900/20'
+                            : isCompleted
+                              ? 'border-green-500/30 bg-green-500/5'
+                              : 'border-white/10 bg-white/3'
                             }`}
                         >
                           {/* Subtask Header */}
                           <div className="p-3 flex items-center gap-3">
                             {/* Step Number / Status Icon */}
                             <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-xs ${isCompleted ? 'bg-green-500 text-white' :
-                                isPendingApproval ? 'bg-orange-500 text-white animate-pulse' :
-                                  isInProgress ? 'bg-blue-500 text-white' :
-                                    'bg-white/10 text-white/40'
+                              isPendingApproval ? 'bg-orange-500 text-white animate-pulse' :
+                                isInProgress ? 'bg-blue-500 text-white' :
+                                  'bg-white/10 text-white/40'
                               }`}>
                               {isCompleted ? <CheckCircle className="w-4 h-4" /> : idx + 1}
                             </div>
@@ -3121,8 +3162,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                                       <div
                                         key={cidx}
                                         className={`p-2 rounded-lg text-xs ${comment.type === 'rejection'
-                                            ? 'bg-red-500/10 border border-red-500/20 text-red-300'
-                                            : 'bg-white/5 border border-white/5 text-white/80'
+                                          ? 'bg-red-500/10 border border-red-500/20 text-red-300'
+                                          : 'bg-white/5 border border-white/5 text-white/80'
                                           }`}
                                       >
                                         <div className="flex items-center gap-2 mb-0.5">
