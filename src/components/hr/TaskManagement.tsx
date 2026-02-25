@@ -84,6 +84,9 @@ const TaskManagement = () => {
   const [savingEdit, setSavingEdit] = useState(false);
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
+  const [subtaskTemplates, setSubtaskTemplates] = useState<any[]>([]);
+  const [selectedSubtaskTemplateId, setSelectedSubtaskTemplateId] = useState<string>("none");
+
   const [newSubtask, setNewSubtask] = useState({
     title: "",
     description: "",
@@ -132,6 +135,7 @@ const TaskManagement = () => {
     fetchProjects();
     fetchClients();
     fetchDepartments();
+    fetchSubtaskTemplates();
   }, []);
 
   useEffect(() => {
@@ -229,6 +233,20 @@ const TaskManagement = () => {
     }
   };
 
+  const fetchSubtaskTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subtask_templates')
+        .select('*')
+        .order('title');
+
+      if (error) throw error;
+      setSubtaskTemplates(data || []);
+    } catch (error) {
+      console.error('Error fetching subtask templates:', error);
+    }
+  };
+
   const fetchSubtasks = async (taskId: string) => {
     try {
       setLoadingSubtasks(true);
@@ -301,6 +319,7 @@ const TaskManagement = () => {
         due_date: "",
         due_time: ""
       });
+      setSelectedSubtaskTemplateId("none");
 
       toast({
         title: "Success",
@@ -2066,6 +2085,42 @@ const TaskManagement = () => {
                 <div className="p-4 bg-muted/30 rounded-lg border border-muted space-y-3">
                   <h5 className="font-medium text-sm">Create Subtask</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="md:col-span-2 mb-2">
+                      <Select
+                        value={selectedSubtaskTemplateId}
+                        onValueChange={(value) => {
+                          setSelectedSubtaskTemplateId(value);
+                          if (value !== 'none') {
+                            const tpl = subtaskTemplates.find(t => t.id === value);
+                            if (tpl) {
+                              setNewSubtask(prev => ({
+                                ...prev,
+                                title: tpl.title || "",
+                                description: tpl.description || "",
+                                points: tpl.points || 0
+                              }));
+                            }
+                          } else {
+                            setNewSubtask(prev => ({
+                              ...prev,
+                              title: "",
+                              description: "",
+                              points: 0
+                            }));
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a template (optional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Template (Custom)</SelectItem>
+                          {subtaskTemplates.map((tpl: any) => (
+                            <SelectItem key={tpl.id} value={tpl.id}>{tpl.title}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="md:col-span-2">
                       <Input
                         placeholder="Subtask title *"
