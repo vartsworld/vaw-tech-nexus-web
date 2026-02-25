@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import {
   CheckCircle,
@@ -48,7 +49,8 @@ import {
   ChevronDown,
   Check,
   LayoutTemplate,
-  ChevronRight
+  ChevronRight,
+  ListChecks
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
@@ -112,6 +114,8 @@ interface Staff {
   full_name: string;
   username: string;
   department_id?: string;
+  avatar_url?: string | null;
+  role?: string | null;
 }
 
 interface TeamHeadWorkspaceProps {
@@ -143,6 +147,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [loading, setLoading] = useState(true);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
+  const [pendingSubtasks, setPendingSubtasks] = useState<Subtask[]>([]);
   const [newSubtask, setNewSubtask] = useState({
     title: "",
     description: "",
@@ -178,15 +183,81 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [selectedSubtaskTemplateId, setSelectedSubtaskTemplateId] = useState<string>("none");
   const [bulkSubtasks, setBulkSubtasks] = useState<any[]>([]);
 
-  // Helper: resolve assignee name from staff list
+  // Helper: parse assigned_to which may be a plain UUID or a JSON array string
+  const parseAssignedTo = (val: string | null | undefined): string[] => {
+    if (!val) return [];
+    const trimmed = val.trim();
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return Array.isArray(parsed) ? parsed : [val];
+      } catch {
+        return [val];
+      }
+    }
+    return [val];
+  };
+
+  // Helper: resolve assignee data from staff list (supports multi-assign)
+  const getAssigneeProfiles = (assignedTo: string): Staff[] => {
+    const ids = parseAssignedTo(assignedTo);
+    if (ids.length === 0) return [];
+    return staff.filter((s) => ids.includes(s.user_id));
+  };
+
   const getAssigneeName = (assignedTo: string): string => {
-    const member = staff.find(s => s.user_id === assignedTo);
-    return member?.full_name || 'Unknown';
+    const assignees = getAssigneeProfiles(assignedTo);
+    if (assignees.length === 0) return "Unassigned";
+    if (assignees.length === 1) return assignees[0].full_name;
+    const [first, ...rest] = assignees;
+    return `${first.full_name} + ${rest.length} more`;
   };
 
   const getAssigneeUsername = (assignedTo: string): string => {
-    const member = staff.find(s => s.user_id === assignedTo);
-    return member?.username || 'unknown';
+    const ids = parseAssignedTo(assignedTo);
+    if (ids.length === 0) return "unknown";
+    const first = staff.find((s) => s.user_id === ids[0]);
+    return first?.username || "unknown";
+  };
+
+  const getAssigneeCount = (assignedTo: string): number => {
+    return parseAssignedTo(assignedTo).length;
+  };
+
+  const getCreatorName = (assignedBy: string | null | undefined): string => {
+    if (!assignedBy) return "Unknown";
+    const creator = staff.find((s) => s.user_id === assignedBy);
+    return creator?.full_name || "Unknown";
+  };
+
+  // Fetch all subtasks in pending_approval for the currently visible tasks
+  const fetchPendingSubtasksForTasks = async (taskIds: string[]) => {
+    if (!taskIds.length) {
+      setPendingSubtasks([]);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from("staff_subtasks")
+        .select(
+          `
+          *,
+          staff_profiles:assigned_to (
+            full_name,
+            username,
+            avatar_url,
+            role
+          )
+        `
+        )
+        .in("task_id", taskIds)
+        .eq("status", "pending_approval" as any);
+
+      if (error) throw error;
+      setPendingSubtasks((data || []) as any);
+    } catch (error) {
+      console.error("Error fetching pending subtasks:", error);
+    }
   };
 
   const [newClient, setNewClient] = useState({
@@ -296,6 +367,9 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       }));
 
       setTasks(tasksWithAttachments as Task[]);
+
+      // Also fetch subtasks that are pending approval for these tasks
+      await fetchPendingSubtasksForTasks((tasksWithAttachments || []).map((t) => t.id));
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {
@@ -320,7 +394,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       const { data, error } = await supabase
         .from('staff_profiles')
-        .select('id, user_id, full_name, username, department_id, role')
+        .select('id, user_id, full_name, username, department_id, role, avatar_url')
         .eq('department_id', userProfile.department_id)
         .order('full_name');
 
@@ -1952,6 +2026,95 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       <div className="space-y-6">
         {/* Tasks Management */}
         <div className="space-y-6">
+          {/* Pending Subtasks for Review */}
+          {pendingSubtasks.length > 0 && (
+            <Card className="bg-gradient-to-br from-purple-500/20 via-blue-500/10 to-indigo-500/20 backdrop-blur-lg border-purple-500/30 text-white relative z-10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ListChecks className="h-5 w-5 text-purple-300" />
+                  Subtasks Pending Review ({pendingSubtasks.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {pendingSubtasks.map((subtask) => {
+                    const parentTask = tasks.find((t) => t.id === subtask.task_id);
+                    const assigneeProfile = (subtask as any).staff_profiles as any | null;
+                    return (
+                      <div
+                        key={subtask.id}
+                        className="bg-black/30 border border-purple-500/40 rounded-lg p-3 flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar className="h-8 w-8 border border-white/10 bg-white/5 flex-shrink-0">
+                            <AvatarImage
+                              src={assigneeProfile?.avatar_url || undefined}
+                              alt={assigneeProfile?.full_name || subtask.title}
+                            />
+                            <AvatarFallback className="text-[10px]">
+                              {(assigneeProfile?.full_name || "U")
+                                .split(" ")
+                                .map((n: string) => n[0])
+                                .join("")
+                                .slice(0, 2)
+                                .toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 space-y-0.5">
+                            <div className="text-sm font-semibold text-white truncate">
+                              {subtask.title}
+                            </div>
+                            {parentTask && (
+                              <div className="text-[11px] text-white/60 truncate">
+                                In task: <span className="font-medium">{parentTask.title}</span>
+                              </div>
+                            )}
+                            <div className="text-[11px] text-white/50 flex flex-wrap gap-x-2 gap-y-0.5">
+                              {assigneeProfile && (
+                                <span>
+                                  👤 {assigneeProfile.full_name} (@{assigneeProfile.username})
+                                </span>
+                              )}
+                              {subtask.points > 0 && <span>⭐ {subtask.points} pts</span>}
+                              {subtask.due_date && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {(() => {
+                                    try {
+                                      const d = new Date(subtask.due_date as any);
+                                      return isNaN(d.getTime()) ? "Invalid date" : format(d, "MMM dd");
+                                    } catch {
+                                      return "Invalid date";
+                                    }
+                                  })()}
+                                  {subtask.due_time && ` ${subtask.due_time}`}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {parentTask && (
+                          <Button
+                            size="sm"
+                            className="flex-shrink-0 bg-green-500 hover:bg-green-600 text-white h-8 text-xs"
+                            onClick={async () => {
+                              setSelectedTask(parentTask);
+                              await fetchSubtasks(parentTask.id);
+                              setIsViewTaskOpen(true);
+                            }}
+                          >
+                            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                            Review
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Pending Approval Tasks */}
           {tasks.filter(t => t.status === 'pending_approval').length > 0 && (
             <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-lg border-orange-500/30 text-white relative z-10">
@@ -2094,17 +2257,36 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                               </div>
                             </TableCell>
                             <TableCell className="align-top">
-                              <div className="flex items-center gap-2">
-                                <User className="h-4 w-4 text-white/40 hidden sm:block" />
-                                <div className="min-w-0">
-                                  <div className="font-medium text-white/90 text-sm truncate">
-                                    {getAssigneeName(task.assigned_to)}
-                                  </div>
-                                  <div className="text-xs text-white/50 truncate">
-                                    @{getAssigneeUsername(task.assigned_to)}
-                                  </div>
-                                </div>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7 border border-white/10 bg-white/5">
+                              <AvatarImage
+                                src={
+                                  getAssigneeProfiles(task.assigned_to)[0]?.avatar_url || undefined
+                                }
+                                alt={getAssigneeName(task.assigned_to)}
+                              />
+                              <AvatarFallback className="text-[10px]">
+                                {getAssigneeName(task.assigned_to)
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .slice(0, 2)
+                                  .toUpperCase() || "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <div className="font-medium text-white/90 text-sm truncate">
+                                {getAssigneeName(task.assigned_to)}
                               </div>
+                              <div className="text-[11px] text-white/50 truncate">
+                                @{getAssigneeUsername(task.assigned_to)} • {getAssigneeCount(task.assigned_to)}{" "}
+                                assignee{getAssigneeCount(task.assigned_to) === 1 ? "" : "s"}
+                              </div>
+                              <div className="text-[10px] text-white/40 truncate">
+                                Created by {getCreatorName(task.assigned_by)}
+                              </div>
+                            </div>
+                          </div>
                             </TableCell>
                             <TableCell className="align-top">
                               <div className="scale-90 origin-left">
@@ -2204,13 +2386,32 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
                         <div className="grid grid-cols-2 gap-2 text-sm flex-1">
                           <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-white/40" />
+                            <Avatar className="h-7 w-7 border border-white/10 bg-white/5">
+                              <AvatarImage
+                                src={
+                                  getAssigneeProfiles(task.assigned_to)[0]?.avatar_url || undefined
+                                }
+                                alt={getAssigneeName(task.assigned_to)}
+                              />
+                              <AvatarFallback className="text-[10px]">
+                                {getAssigneeName(task.assigned_to)
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .slice(0, 2)
+                                  .toUpperCase() || "U"}
+                              </AvatarFallback>
+                            </Avatar>
                             <div className="min-w-0">
                               <div className="font-medium text-white/90 truncate">
                                 {getAssigneeName(task.assigned_to)}
                               </div>
-                              <div className="text-xs text-white/50 truncate">
-                                @{getAssigneeUsername(task.assigned_to)}
+                              <div className="text-[11px] text-white/50 truncate">
+                                @{getAssigneeUsername(task.assigned_to)} • {getAssigneeCount(task.assigned_to)}{" "}
+                                assignee{getAssigneeCount(task.assigned_to) === 1 ? "" : "s"}
+                              </div>
+                              <div className="text-[10px] text-white/40 truncate">
+                                Created by {getCreatorName(task.assigned_by)}
                               </div>
                             </div>
                           </div>
@@ -2575,7 +2776,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-muted-foreground">Assigned to:</span>{' '}
-                    <span className="font-medium">{getAssigneeName(selectedTask.assigned_to)}</span>
+                        <span className="font-medium">{getAssigneeName(selectedTask.assigned_to)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Points:</span>{' '}
