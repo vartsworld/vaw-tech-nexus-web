@@ -871,36 +871,32 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       let finalAttachments = [];
       let firstTaskId = null;
 
-      // Loop through each assignee and create a separate task
-      for (const assigneeId of newTask.assigned_to) {
-        const taskData = {
-          title: newTask.title,
-          description: newTask.description,
-          assigned_to: assigneeId,
-          client_id: newTask.client_id,
-          priority: newTask.priority,
-          due_date: newTask.due_date || null,
-          due_time: newTask.due_time || null,
-          trial_period: newTask.trial_period,
-          points: newTask.points,
-          assigned_by: user.id,
-          department_id: userProfile?.department_id || null,
-          status: 'pending' as const,
-          attachments: []
-        };
+      const taskData = {
+        title: newTask.title,
+        description: newTask.description,
+        assigned_to: JSON.stringify(newTask.assigned_to),
+        client_id: newTask.client_id,
+        priority: newTask.priority,
+        due_date: newTask.due_date || null,
+        due_time: newTask.due_time || null,
+        trial_period: newTask.trial_period,
+        points: newTask.points,
+        assigned_by: user.id,
+        department_id: userProfile?.department_id || null,
+        status: 'pending' as const,
+        attachments: []
+      };
 
-        const { data: taskResponse, error: taskError } = await supabase
-          .from('staff_tasks')
-          .insert(taskData)
-          .select('*')
-          .single();
+      const { data: taskResponse, error: taskError } = await supabase
+        .from('staff_tasks')
+        .insert(taskData)
+        .select('*')
+        .single();
 
-        if (taskError) throw taskError;
+      if (taskError) throw taskError;
 
-        if (!firstTaskId) firstTaskId = taskResponse.id;
-
-        createdTasks.push(taskResponse);
-      }
+      firstTaskId = taskResponse.id;
+      createdTasks.push(taskResponse);
 
       // Upload files if any
       if (newTask.attachments.length > 0 && firstTaskId) {
