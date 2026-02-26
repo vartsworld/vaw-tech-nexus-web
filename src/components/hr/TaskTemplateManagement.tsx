@@ -708,29 +708,59 @@ const TaskTemplateManagement = () => {
                           <div className="space-y-2">
                             <h4 className="text-sm font-semibold flex items-center gap-2">
                               <ListChecks className="h-4 w-4" />
-                              Subtasks
+                              Subtasks & Stages
                             </h4>
                             <div className="space-y-2">
-                              {template.subtasks.map((subtask, sIdx) => (
-                                <div key={subtask.id || sIdx} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border">
-                                  <ChevronRight className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-medium text-sm">{subtask.title}</div>
-                                    {subtask.description && (
-                                      <p className="text-xs text-muted-foreground mt-1">{subtask.description}</p>
-                                    )}
+                              {template.subtasks.map((subtask, sIdx) => {
+                                const stage = (subtask as any).stage || 1;
+                                const stageLabel =
+                                  (subtask as any).stage_label || `Stage ${stage}`;
+                                const stageColor =
+                                  (subtask as any).stage_color ||
+                                  getDefaultStageColor(stage);
+
+                                return (
+                                  <div
+                                    key={subtask.id || sIdx}
+                                    className="flex items-start gap-3 p-3 rounded-lg border bg-muted/40"
+                                  >
+                                    <div
+                                      className="mt-0.5 w-2 rounded-full flex-shrink-0"
+                                      style={{ backgroundColor: stageColor }}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between gap-2">
+                                        <div>
+                                          <div className="font-medium text-sm">
+                                            {subtask.title}
+                                          </div>
+                                          {subtask.description && (
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                              {subtask.description}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                          <Badge
+                                            variant="secondary"
+                                            className="gap-1 text-[11px]"
+                                            style={{
+                                              backgroundColor: stageColor,
+                                              color: "#0f172a",
+                                            }}
+                                          >
+                                            {stageLabel}
+                                          </Badge>
+                                          <Badge variant="outline" className="gap-1 text-[11px]">
+                                            <Coins className="h-3 w-3" />
+                                            {subtask.points} pts
+                                          </Badge>
+                                        </div>
+                                      </div>
+                                    </div>
                                   </div>
-                                  {subtask.stage && (
-                                    <Badge variant="secondary" className="gap-1 flex-shrink-0">
-                                      Stage {subtask.stage}
-                                    </Badge>
-                                  )}
-                                  <Badge variant="outline" className="gap-1 flex-shrink-0">
-                                    <Coins className="h-3 w-3" />
-                                    {subtask.points} pts
-                                  </Badge>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         )}
