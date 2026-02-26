@@ -367,15 +367,6 @@ const TaskTemplateManagement = () => {
     setSelectedSubtaskIds([]);
   };
 
-
-  const getSortedSubtasksArray = () => {
-    const sortedItems = [...taskForm.subtasks].sort((a, b) => {
-      if ((a.stage || 1) !== (b.stage || 1)) return (a.stage || 1) - (b.stage || 1);
-      return a.sort_order - b.sort_order;
-    });
-    return sortedItems;
-  };
-
   const handleSaveTemplate = async () => {
     if (!taskForm.title.trim()) {
       toast({ title: "Validation Error", description: "Task title is required.", variant: "destructive" });
