@@ -27,6 +27,8 @@ interface SubtaskTemplate {
   sort_order: number;
   // Stage number (1-based). Subtasks in the same stage can run in parallel.
   stage?: number;
+  stage_label?: string | null;
+  stage_color?: string | null;
   isNew?: boolean;
 }
 
@@ -52,6 +54,11 @@ interface PricingPackage {
   icon: string;
   features: string[];
 }
+
+const STAGE_COLORS = ['#4f46e5', '#16a34a', '#f97316', '#06b6d4', '#ec4899'];
+
+const getDefaultStageColor = (stage: number) =>
+  STAGE_COLORS[(Math.max(stage, 1) - 1) % STAGE_COLORS.length];
 
 const TaskTemplateManagement = () => {
   const [packages, setPackages] = useState<PricingPackage[]>([]);
@@ -122,27 +129,20 @@ const TaskTemplateManagement = () => {
       }
 
       const taskIds = taskData.map(t => t.id);
-
-      let subtaskData: any[] = [];
-      const res1 = await supabase
+      const { data: subtaskDataRaw, error: subErr } = await supabase
         .from('subtask_templates')
         .select('*')
-        .in('task_template_id', taskIds)
-        // Order by stage first, then within stage by sort_order
-        .order('stage', { ascending: true } as any)
-        .order('sort_order', { ascending: true });
+        .in('task_template_id', taskIds);
 
-      if (res1.error) {
-        console.warn("Ordering by stage failed, falling back to sort_order", res1.error);
-        const res2 = await supabase
-          .from('subtask_templates')
-          .select('*')
-          .in('task_template_id', taskIds)
-          .order('sort_order', { ascending: true });
-        subtaskData = res2.data || [];
-      } else {
-        subtaskData = res1.data || [];
-      }
+      if (subErr) throw subErr;
+
+      // Ensure deterministic ordering: stage ASC, then sort_order ASC
+      const subtaskData = (subtaskDataRaw || []).sort((a: any, b: any) => {
+        const sa = a.stage || 1;
+        const sb = b.stage || 1;
+        if (sa !== sb) return sa - sb;
+        return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+      });
 
       const subtaskMap: Record<string, SubtaskTemplate[]> = {};
       (subtaskData || []).forEach((s: any) => {
@@ -182,7 +182,16 @@ const TaskTemplateManagement = () => {
       points: template.points,
       trial_period: template.trial_period,
       estimated_days: template.estimated_days?.toString() || "",
-      subtasks: (template.subtasks || []).map(s => ({ ...s, frontEndId: s.id || crypto.randomUUID(), stage: s.stage ?? 1 }))
+      subtasks: (template.subtasks || []).map(s => {
+        const stage = s.stage ?? 1;
+        return {
+          ...s,
+          stage,
+          stage_label: s.stage_label ?? `Stage ${stage}`,
+          stage_color: s.stage_color ?? getDefaultStageColor(stage),
+          frontEndId: s.id || (typeof crypto !== 'undefined' ? crypto.randomUUID() : `${stage}-${Math.random()}`)
+        };
+      })
     });
     setIsTaskDialogOpen(true);
   };
@@ -190,16 +199,59 @@ const TaskTemplateManagement = () => {
   const addSubtask = () => {
     setTaskForm(prev => ({
       ...prev,
-      subtasks: [...prev.subtasks, {
-        frontEndId: crypto.randomUUID(),
-        title: "",
-        description: "",
-        points: 5,
-        sort_order: prev.subtasks.length,
-        stage: 1,
-        isNew: true
-      }]
+      subtasks: (() => {
+        const last = prev.subtasks[prev.subtasks.length - 1];
+        const stage = last ? (last.stage || 1) : 1;
+        const label = last?.stage_label ?? `Stage ${stage}`;
+        const color = last?.stage_color ?? getDefaultStageColor(stage);
+        return [
+          ...prev.subtasks,
+          {
+            frontEndId: typeof crypto !== 'undefined' ? crypto.randomUUID() : `${stage}-${Math.random()}`,
+            title: "",
+            description: "",
+            points: 5,
+            sort_order: prev.subtasks.length,
+            stage,
+            stage_label: label,
+            stage_color: color,
+            isNew: true
+          }
+        ];
+      })()
     }));
+  };
+
+  const addStage = () => {
+    setTaskForm(prev => {
+      const currentMaxStage = prev.subtasks.reduce(
+        (max, s) => Math.max(max, s.stage || 1),
+        0
+      );
+      const nextStage = currentMaxStage + 1 || 1;
+      const color = getDefaultStageColor(nextStage);
+      const label = `Stage ${nextStage}`;
+      return {
+        ...prev,
+        subtasks: [
+          ...prev.subtasks,
+          {
+            frontEndId:
+              typeof crypto !== 'undefined'
+                ? crypto.randomUUID()
+                : `${nextStage}-${Math.random()}`,
+            title: "",
+            description: "",
+            points: 5,
+            sort_order: prev.subtasks.length,
+            stage: nextStage,
+            stage_label: label,
+            stage_color: color,
+            isNew: true
+          }
+        ]
+      };
+    });
   };
 
   const updateSubtask = (index: number, field: string, value: any) => {
@@ -241,12 +293,6 @@ const TaskTemplateManagement = () => {
         sort_order: index
       }));
 
-      // If the destination index falls squarely inside a certain stage, we can smartly update the element's stage
-      const siblingItem = updatedItems[endIndex > 0 ? endIndex - 1 : 1];
-      if (siblingItem && siblingItem.stage) {
-        updatedItems[endIndex].stage = siblingItem.stage;
-      }
-
       return { ...prev, subtasks: updatedItems };
     });
   };
@@ -259,16 +305,14 @@ const TaskTemplateManagement = () => {
     return acc;
   }, {} as Record<number, SubtaskTemplate[]>);
 
-  const sortedStages = Object.keys(subtasksByStage).map(Number).sort((a, b) => a - b);
+  const sortedStages = Object.keys(subtasksByStage)
+    .map(Number)
+    .sort((a, b) => a - b);
 
-  // Calculate raw Index based strictly on the position inside the visually sorted array
-  const getRawIndex = (subtask: SubtaskTemplate): number => {
-    const sorted = [...taskForm.subtasks].sort((a, b) => {
-      if ((a.stage || 1) !== (b.stage || 1)) return (a.stage || 1) - (b.stage || 1);
-      return a.sort_order - b.sort_order;
-    });
-    return taskForm.subtasks.findIndex(s => s.frontEndId === subtask.frontEndId);
-  };
+  // Helper: get array index in the original state for a given subtask
+  const getRawIndex = (subtask: SubtaskTemplate): number =>
+    taskForm.subtasks.findIndex((s) => s.frontEndId === subtask.frontEndId);
+
 
   const getSortedSubtasksArray = () => {
     const sortedItems = [...taskForm.subtasks].sort((a, b) => {
@@ -318,7 +362,9 @@ const TaskTemplateManagement = () => {
             description: s.description,
             points: s.points,
             sort_order: i,
-            stage: s.stage ?? 1
+            stage: s.stage ?? 1,
+            stage_label: s.stage_label ?? null,
+            stage_color: s.stage_color ?? null
           }));
 
           const { error: subError } = await supabase
@@ -361,7 +407,9 @@ const TaskTemplateManagement = () => {
             description: s.description,
             points: s.points,
             sort_order: i,
-            stage: s.stage ?? 1
+            stage: s.stage ?? 1,
+            stage_label: s.stage_label ?? null,
+            stage_color: s.stage_color ?? null
           }));
 
           const { error: subError } = await supabase
@@ -750,9 +798,14 @@ const TaskTemplateManagement = () => {
                   <ListChecks className="h-4 w-4" />
                   Subtasks ({taskForm.subtasks.length})
                 </h3>
-                <Button type="button" size="sm" variant="outline" onClick={addSubtask} className="gap-1">
-                  <Plus className="h-3 w-3" /> Add Subtask
-                </Button>
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" variant="outline" onClick={addStage} className="gap-1">
+                    <Plus className="h-3 w-3" /> Add Stage
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={addSubtask} className="gap-1">
+                    <Plus className="h-3 w-3" /> Add Subtask
+                  </Button>
+                </div>
               </div>
 
               {taskForm.subtasks.length === 0 ? (
@@ -767,17 +820,65 @@ const TaskTemplateManagement = () => {
 
                         {sortedStages.map((stageNum, stageIndex) => {
                           const stageSubtasks = subtasksByStage[stageNum];
+                          const sample = stageSubtasks[0];
+                          const stageLabel = sample?.stage_label || `Stage ${stageNum}`;
+                          const stageColor = sample?.stage_color || getDefaultStageColor(stageNum);
 
                           return (
-                            <div key={`stage-${stageNum}`} className="space-y-3 bg-muted/10 p-4 rounded-xl border border-muted-foreground/20">
-                              <div className="flex items-center gap-2 mb-2 pb-2 border-b border-muted">
-                                <div className="bg-primary/20 text-primary w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                            <div
+                              key={`stage-${stageNum}`}
+                              className="space-y-3 p-4 rounded-xl border"
+                              style={{
+                                borderColor: stageColor,
+                                background:
+                                  'linear-gradient(to right, ' +
+                                  stageColor +
+                                  '22, transparent 40%)'
+                              }}
+                            >
+                              <div className="flex items-center gap-3 mb-2 pb-2 border-b border-white/10">
+                                <div
+                                  className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs"
+                                  style={{ backgroundColor: stageColor, color: '#0f172a' }}
+                                >
                                   {stageNum}
                                 </div>
-                                <h4 className="font-semibold">Stage {stageNum} Workflow</h4>
-                                <Badge variant="outline" className="ml-auto">
-                                  {stageSubtasks.length} task{stageSubtasks.length !== 1 ? 's' : ''}
-                                </Badge>
+                                <div className="flex-1 flex items-center gap-2">
+                                  <Input
+                                    className="h-8 text-sm"
+                                    value={stageLabel}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      setTaskForm(prev => ({
+                                        ...prev,
+                                        subtasks: prev.subtasks.map(st =>
+                                          (st.stage || 1) === stageNum
+                                            ? { ...st, stage_label: value }
+                                            : st
+                                        )
+                                      }));
+                                    }}
+                                  />
+                                  <input
+                                    type="color"
+                                    className="w-10 h-8 rounded cursor-pointer border border-white/20 bg-transparent"
+                                    value={stageColor}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      setTaskForm(prev => ({
+                                        ...prev,
+                                        subtasks: prev.subtasks.map(st =>
+                                          (st.stage || 1) === stageNum
+                                            ? { ...st, stage_color: value }
+                                            : st
+                                        )
+                                      }));
+                                    }}
+                                  />
+                                  <Badge variant="outline" className="ml-auto text-xs">
+                                    {stageSubtasks.length} task{stageSubtasks.length !== 1 ? 's' : ''}
+                                  </Badge>
+                                </div>
                               </div>
 
                               {stageSubtasks.map((subtask) => {
@@ -809,7 +910,7 @@ const TaskTemplateManagement = () => {
                                             <Trash2 className="h-3 w-3" />
                                           </Button>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_80px] gap-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-[1fr_80px] gap-3">
                                           <div className="space-y-1">
                                             <Label className="text-xs text-muted-foreground">Title</Label>
                                             <Input
@@ -826,16 +927,6 @@ const TaskTemplateManagement = () => {
                                               value={subtask.points}
                                               onChange={(e) => updateSubtask(rawIdx, 'points', parseInt(e.target.value) || 0)}
                                               min="0"
-                                            />
-                                          </div>
-                                          <div className="space-y-1">
-                                            <Label className="text-xs text-muted-foreground">Stage</Label>
-                                            <Input
-                                              type="number"
-                                              placeholder="Stage"
-                                              value={subtask.stage ?? 1}
-                                              onChange={(e) => updateSubtask(rawIdx, 'stage', Math.max(1, parseInt(e.target.value) || 1))}
-                                              min="1"
                                             />
                                           </div>
                                         </div>
