@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   LayoutTemplate, Plus, Edit, Trash2, Package, ListChecks, GripVertical,
@@ -80,6 +81,8 @@ const TaskTemplateManagement = () => {
     estimated_days: "",
     subtasks: [] as SubtaskTemplate[]
   });
+
+  const [selectedSubtaskIds, setSelectedSubtaskIds] = useState<string[]>([]);
 
   const { toast } = useToast();
 
@@ -278,22 +281,45 @@ const TaskTemplateManagement = () => {
     // a single list but visually grouped by stages. A more complex DND could update the stage, 
     // but right now we just reorder the underlying array elements.
     setTaskForm(prev => {
-      // First, sort the subtasks by stage + sort_order, so they map properly to the UI view
+      // Sort by stage + sort_order to get the visual list
       const sortedItems = [...prev.subtasks].sort((a, b) => {
-        if ((a.stage || 1) !== (b.stage || 1)) return (a.stage || 1) - (b.stage || 1);
+        const sa = a.stage || 1;
+        const sb = b.stage || 1;
+        if (sa !== sb) return sa - sb;
         return a.sort_order - b.sort_order;
       });
 
-      const [reorderedItem] = sortedItems.splice(startIndex, 1);
-      sortedItems.splice(endIndex, 0, reorderedItem);
+      const [moved] = sortedItems.splice(startIndex, 1);
+      sortedItems.splice(endIndex, 0, moved);
 
-      // Re-assign sort order strictly
-      const updatedItems = sortedItems.map((item, index) => ({
-        ...item,
-        sort_order: index
-      }));
+      // Determine new stage for the moved item based on its neighbors in the visual list
+      let targetStage = moved.stage || 1;
+      const neighborBefore = sortedItems[endIndex - 1];
+      const neighborAfter = sortedItems[endIndex + 1];
+      if (neighborBefore) {
+        targetStage = neighborBefore.stage || 1;
+      } else if (neighborAfter) {
+        targetStage = neighborAfter.stage || 1;
+      }
 
-      return { ...prev, subtasks: updatedItems };
+      const stageLabel = moved.stage_label ?? `Stage ${targetStage}`;
+      const stageColor = moved.stage_color ?? getDefaultStageColor(targetStage);
+
+      // Re-assign sort_order and apply new stage/stage meta to the moved item
+      const updatedVisual = sortedItems.map((item, index) => {
+        if (item.frontEndId === moved.frontEndId) {
+          return {
+            ...item,
+            sort_order: index,
+            stage: targetStage,
+            stage_label: stageLabel,
+            stage_color: stageColor,
+          };
+        }
+        return { ...item, sort_order: index };
+      });
+
+      return { ...prev, subtasks: updatedVisual };
     });
   };
 
@@ -309,9 +335,37 @@ const TaskTemplateManagement = () => {
     .map(Number)
     .sort((a, b) => a - b);
 
-  // Helper: get array index in the original state for a given subtask
+  // Visual list helper and raw index lookup
+  const getSortedSubtasksArray = () =>
+    [...taskForm.subtasks].sort((a, b) => {
+      const sa = a.stage || 1;
+      const sb = b.stage || 1;
+      if (sa !== sb) return sa - sb;
+      return a.sort_order - b.sort_order;
+    });
+
   const getRawIndex = (subtask: SubtaskTemplate): number =>
     taskForm.subtasks.findIndex((s) => s.frontEndId === subtask.frontEndId);
+
+  const handleBulkStageChange = (targetStage: number) => {
+    if (!targetStage || selectedSubtaskIds.length === 0) return;
+    const label = `Stage ${targetStage}`;
+    const color = getDefaultStageColor(targetStage);
+    setTaskForm(prev => ({
+      ...prev,
+      subtasks: prev.subtasks.map(st =>
+        st.frontEndId && selectedSubtaskIds.includes(st.frontEndId)
+          ? {
+              ...st,
+              stage: targetStage,
+              stage_label: st.stage_label ?? label,
+              stage_color: st.stage_color ?? color,
+            }
+          : st
+      ),
+    }));
+    setSelectedSubtaskIds([]);
+  };
 
 
   const getSortedSubtasksArray = () => {
@@ -798,13 +852,47 @@ const TaskTemplateManagement = () => {
                   <ListChecks className="h-4 w-4" />
                   Subtasks ({taskForm.subtasks.length})
                 </h3>
-                <div className="flex gap-2">
-                  <Button type="button" size="sm" variant="outline" onClick={addStage} className="gap-1">
-                    <Plus className="h-3 w-3" /> Add Stage
-                  </Button>
-                  <Button type="button" size="sm" variant="outline" onClick={addSubtask} className="gap-1">
-                    <Plus className="h-3 w-3" /> Add Subtask
-                  </Button>
+                <div className="flex items-center gap-3">
+                  {selectedSubtaskIds.length > 0 && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{selectedSubtaskIds.length} selected</span>
+                      <Select
+                        onValueChange={(value) => {
+                          if (value === "new") {
+                            const maxStage =
+                              sortedStages.length > 0
+                                ? sortedStages[sortedStages.length - 1]
+                                : 0;
+                            handleBulkStageChange(maxStage + 1);
+                          } else {
+                            handleBulkStageChange(parseInt(value, 10));
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-7 w-32 text-xs">
+                          <SelectValue placeholder="Move to stage" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sortedStages.map((s) => (
+                            <SelectItem key={s} value={String(s)} className="text-xs">
+                              Stage {s}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="new" className="text-xs">
+                            New Stage
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" variant="outline" onClick={addStage} className="gap-1">
+                      <Plus className="h-3 w-3" /> Add Stage
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" onClick={addSubtask} className="gap-1">
+                      <Plus className="h-3 w-3" /> Add Subtask
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -894,11 +982,31 @@ const TaskTemplateManagement = () => {
                                         className={`border rounded-lg p-3 space-y-3 bg-card ${snapshot.isDragging ? 'shadow-lg opacity-90 border-primary' : 'hover:border-primary/40'}`}
                                       >
                                         <div className="flex items-center justify-between gap-2">
-                                          <div className="flex items-center gap-2">
-                                            <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
-                                              <GripVertical className="h-4 w-4" />
+                                          <div className="flex items-center gap-3">
+                                            <Checkbox
+                                              className="h-4 w-4"
+                                              checked={
+                                                !!subtask.frontEndId &&
+                                                selectedSubtaskIds.includes(subtask.frontEndId as string)
+                                              }
+                                              onCheckedChange={(checked) => {
+                                                if (!subtask.frontEndId) return;
+                                                setSelectedSubtaskIds((prev) =>
+                                                  checked
+                                                    ? [...prev, subtask.frontEndId as string]
+                                                    : prev.filter((id) => id !== subtask.frontEndId)
+                                                );
+                                              }}
+                                            />
+                                            <div className="flex items-center gap-2">
+                                              <div
+                                                {...provided.dragHandleProps}
+                                                className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground"
+                                              >
+                                                <GripVertical className="h-4 w-4" />
+                                              </div>
+                                              <span className="text-sm font-medium text-muted-foreground">Subtask</span>
                                             </div>
-                                            <span className="text-sm font-medium text-muted-foreground">Subtask</span>
                                           </div>
                                           <Button
                                             type="button"
