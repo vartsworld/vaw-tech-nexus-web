@@ -69,6 +69,9 @@ const TaskTemplateManagement = () => {
   const [editingTemplate, setEditingTemplate] = useState<TaskTemplate | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+  const [templateToDuplicate, setTemplateToDuplicate] = useState<TaskTemplate | null>(null);
+  const [duplicateTargetPackageId, setDuplicateTargetPackageId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -516,12 +519,12 @@ const TaskTemplateManagement = () => {
     }
   };
 
-  const duplicateTemplate = async (template: TaskTemplate) => {
+  const duplicateTemplate = async (template: TaskTemplate, targetPackageId: string) => {
     try {
       const { data: newTemplate, error } = await supabase
         .from('task_templates')
         .insert({
-          package_id: template.package_id,
+          package_id: targetPackageId || template.package_id,
           title: `${template.title} (Copy)`,
           description: template.description,
           priority: template.priority,
@@ -555,6 +558,7 @@ const TaskTemplateManagement = () => {
       }
 
       toast({ title: "Duplicated", description: "Template duplicated successfully." });
+      // After duplication, keep the current package filter unchanged
       fetchTemplates(selectedPackageId);
     } catch (error) {
       console.error('Error duplicating:', error);
@@ -761,7 +765,16 @@ const TaskTemplateManagement = () => {
                           <Button size="sm" variant="outline" onClick={() => openEditDialog(template)} className="gap-1">
                             <Edit className="h-3 w-3" /> Edit
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => duplicateTemplate(template)} className="gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setTemplateToDuplicate(template);
+                              setDuplicateTargetPackageId(template.package_id || selectedPackageId);
+                              setIsDuplicateDialogOpen(true);
+                            }}
+                            className="gap-1"
+                          >
                             <Copy className="h-3 w-3" /> Duplicate
                           </Button>
                           <Button
@@ -1119,6 +1132,63 @@ const TaskTemplateManagement = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Duplicate Template – choose target package */}
+      <Dialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Duplicate Task Template</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select which package you want to copy{" "}
+              <span className="font-medium">
+                {templateToDuplicate?.title}
+              </span>{" "}
+              into.
+            </p>
+            <div>
+              <Label className="text-xs text-muted-foreground">Target Package</Label>
+              <Select
+                value={duplicateTargetPackageId}
+                onValueChange={setDuplicateTargetPackageId}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Choose package" />
+                </SelectTrigger>
+                <SelectContent>
+                  {packages.map((pkg) => (
+                    <SelectItem key={pkg.id} value={pkg.id}>
+                      {pkg.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsDuplicateDialogOpen(false);
+                  setTemplateToDuplicate(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!templateToDuplicate || !duplicateTargetPackageId) return;
+                  await duplicateTemplate(templateToDuplicate, duplicateTargetPackageId);
+                  setIsDuplicateDialogOpen(false);
+                  setTemplateToDuplicate(null);
+                }}
+              >
+                Duplicate
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
