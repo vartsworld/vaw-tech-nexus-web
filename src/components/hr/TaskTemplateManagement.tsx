@@ -16,9 +16,11 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 
 interface SubtaskTemplate {
   id?: string;
+  frontEndId?: string;
   title: string;
   description: string;
   points: number;
@@ -162,7 +164,7 @@ const TaskTemplateManagement = () => {
       points: template.points,
       trial_period: template.trial_period,
       estimated_days: template.estimated_days?.toString() || "",
-      subtasks: (template.subtasks || []).map(s => ({ ...s }))
+      subtasks: (template.subtasks || []).map(s => ({ ...s, frontEndId: s.id || crypto.randomUUID() }))
     });
     setIsTaskDialogOpen(true);
   };
@@ -171,6 +173,7 @@ const TaskTemplateManagement = () => {
     setTaskForm(prev => ({
       ...prev,
       subtasks: [...prev.subtasks, {
+        frontEndId: crypto.randomUUID(),
         title: "",
         description: "",
         points: 5,
@@ -193,6 +196,25 @@ const TaskTemplateManagement = () => {
       ...prev,
       subtasks: prev.subtasks.filter((_, i) => i !== index)
     }));
+  };
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const startIndex = result.source.index;
+    const endIndex = result.destination.index;
+
+    setTaskForm(prev => {
+      const items = Array.from(prev.subtasks);
+      const [reorderedItem] = items.splice(startIndex, 1);
+      items.splice(endIndex, 0, reorderedItem);
+
+      const updatedItems = items.map((item, index) => ({
+        ...item,
+        sort_order: index
+      }));
+
+      return { ...prev, subtasks: updatedItems };
+    });
   };
 
   const handleSaveTemplate = async () => {
@@ -417,11 +439,10 @@ const TaskTemplateManagement = () => {
               <button
                 key={pkg.id}
                 onClick={() => setSelectedPackageId(pkg.id)}
-                className={`p-3 rounded-lg border-2 text-left transition-all ${
-                  selectedPackageId === pkg.id
+                className={`p-3 rounded-lg border-2 text-left transition-all ${selectedPackageId === pkg.id
                     ? 'border-primary bg-primary/5 shadow-md'
                     : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                }`}
+                  }`}
               >
                 <div className="font-medium text-sm truncate">{pkg.name}</div>
                 <div className="text-xs text-muted-foreground mt-1">
@@ -654,49 +675,69 @@ const TaskTemplateManagement = () => {
                   No subtasks yet. Add subtasks to break down this task.
                 </p>
               ) : (
-                <div className="space-y-3">
-                  {taskForm.subtasks.map((subtask, idx) => (
-                    <div key={idx} className="border rounded-lg p-3 space-y-3 bg-muted/30">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">Subtask {idx + 1}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                          onClick={() => removeSubtask(idx)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="subtasks-list">
+                    {(provided) => (
+                      <div className="space-y-3" {...provided.droppableProps} ref={provided.innerRef}>
+                        {taskForm.subtasks.map((subtask, idx) => (
+                          <Draggable key={subtask.frontEndId} draggableId={subtask.frontEndId as string} index={idx}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`border rounded-lg p-3 space-y-3 bg-muted/30 ${snapshot.isDragging ? 'shadow-lg opacity-90' : ''}`}
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
+                                      <GripVertical className="h-4 w-4" />
+                                    </div>
+                                    <span className="text-sm font-medium text-muted-foreground">Subtask {idx + 1}</span>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                    onClick={() => removeSubtask(idx)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-[1fr_80px] gap-3">
+                                  <div>
+                                    <Input
+                                      placeholder="Subtask title"
+                                      value={subtask.title}
+                                      onChange={(e) => updateSubtask(idx, 'title', e.target.value)}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Input
+                                      type="number"
+                                      placeholder="Points"
+                                      value={subtask.points}
+                                      onChange={(e) => updateSubtask(idx, 'points', parseInt(e.target.value) || 0)}
+                                      min="0"
+                                    />
+                                  </div>
+                                </div>
+                                <Textarea
+                                  placeholder="Subtask description (optional)"
+                                  value={subtask.description}
+                                  onChange={(e) => updateSubtask(idx, 'description', e.target.value)}
+                                  rows={2}
+                                  className="text-sm"
+                                />
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-[1fr_80px] gap-3">
-                        <div>
-                          <Input
-                            placeholder="Subtask title"
-                            value={subtask.title}
-                            onChange={(e) => updateSubtask(idx, 'title', e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <Input
-                            type="number"
-                            placeholder="Points"
-                            value={subtask.points}
-                            onChange={(e) => updateSubtask(idx, 'points', parseInt(e.target.value) || 0)}
-                            min="0"
-                          />
-                        </div>
-                      </div>
-                      <Textarea
-                        placeholder="Subtask description (optional)"
-                        value={subtask.description}
-                        onChange={(e) => updateSubtask(idx, 'description', e.target.value)}
-                        rows={2}
-                        className="text-sm"
-                      />
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
               )}
 
               {taskForm.subtasks.length > 0 && (
