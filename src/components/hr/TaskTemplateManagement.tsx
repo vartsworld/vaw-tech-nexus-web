@@ -748,14 +748,16 @@ const TaskTemplateManagement = () => {
                                   </Button>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_80px] gap-3">
-                                  <div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground">Title</Label>
                                     <Input
                                       placeholder="Subtask title"
                                       value={subtask.title}
                                       onChange={(e) => updateSubtask(idx, 'title', e.target.value)}
                                     />
                                   </div>
-                                  <div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground">Points</Label>
                                     <Input
                                       type="number"
                                       placeholder="Points"
@@ -764,7 +766,8 @@ const TaskTemplateManagement = () => {
                                       min="0"
                                     />
                                   </div>
-                                  <div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground">Stage</Label>
                                     <Input
                                       type="number"
                                       placeholder="Stage"
