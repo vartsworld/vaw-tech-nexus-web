@@ -230,9 +230,9 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     return creator?.full_name || "Unknown";
   };
 
-  // Fetch all subtasks in pending_approval for the currently visible tasks
-  const fetchPendingSubtasksForTasks = async (taskIds: string[]) => {
-    if (!taskIds.length) {
+  // Fetch all subtasks in pending_approval that belong to tasks in this head's department
+  const fetchPendingSubtasksForTasks = async () => {
+    if (!userProfile?.department_id) {
       setPendingSubtasks([]);
       return;
     }
@@ -242,6 +242,16 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         .select(
           `
           *,
+          staff_tasks!inner (
+            id,
+            title,
+            department_id,
+            status,
+            assigned_to,
+            assigned_by,
+            priority,
+            points
+          ),
           staff_profiles:assigned_to (
             full_name,
             username,
@@ -250,8 +260,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           )
         `
         )
-        .in("task_id", taskIds)
-        .eq("status", "pending_approval" as any);
+        .eq("status", "pending_approval" as any)
+        .eq("staff_tasks.department_id", userProfile.department_id as any);
 
       if (error) throw error;
       setPendingSubtasks((data || []) as any);
@@ -368,8 +378,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       setTasks(tasksWithAttachments as Task[]);
 
-      // Also fetch subtasks that are pending approval for these tasks
-      await fetchPendingSubtasksForTasks((tasksWithAttachments || []).map((t) => t.id));
+      // Also fetch subtasks that are pending approval for tasks in this head's department
+      await fetchPendingSubtasksForTasks();
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {
