@@ -151,7 +151,7 @@ export const TaskDetailDialog = ({
     try {
       const { error } = await supabase
         .from('staff_subtasks')
-        .update({ status: 'in_progress', started_at: new Date().toISOString() } as any)
+        .update({ status: 'in_progress' } as any)
         .eq('id', subtaskId);
       if (error) throw error;
 
@@ -582,9 +582,13 @@ export const TaskDetailDialog = ({
               <div className="space-y-3">
                 {subtasks.map((st, idx) => {
                   const isAssignedToMe = st.assigned_to === userId;
-                  const isFirst = idx === 0;
-                  const isPrevApproved = isFirst || subtasks[idx - 1].status === 'completed';
-                  const isLocked = !isPrevApproved;
+                  const stage = (st as any).stage || 1;
+                  // A subtask is locked if any subtask in a LOWER stage is not completed
+                  const hasBlockingStage = subtasks.some(other => {
+                    const otherStage = (other as any).stage || 1;
+                    return otherStage < stage && other.status !== 'completed';
+                  });
+                  const isLocked = hasBlockingStage;
                   const isExpanded = expandedSubtask === st.id;
 
                   return (
@@ -606,6 +610,10 @@ export const TaskDetailDialog = ({
                             {st.title}
                           </h4>
                           <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] text-blue-300/80 border border-blue-400/40 rounded-full px-2 py-0.5 bg-blue-500/10">
+                              Stage {stage}
+                            </span>
+                            <span className="text-[10px] text-white/20">•</span>
                             <span className="text-[10px] text-white/40">{st.points || 0} pts</span>
                             <span className="text-[10px] text-white/20">•</span>
                             <span className={`text-[10px] font-medium ${isAssignedToMe ? 'text-purple-400' : 'text-white/30'}`}>
@@ -635,7 +643,10 @@ export const TaskDetailDialog = ({
                             </Badge>
                           )}
                           {isLocked && (
-                            <AlertCircle className="w-4 h-4 text-white/20" title="Previous subtask must be approved" />
+                            <AlertCircle
+                              className="w-4 h-4 text-white/20"
+                              aria-label="Previous subtask must be approved"
+                            />
                           )}
                         </div>
                       </div>

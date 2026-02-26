@@ -25,6 +25,8 @@ interface SubtaskTemplate {
   description: string;
   points: number;
   sort_order: number;
+  // Stage number (1-based). Subtasks in the same stage can run in parallel.
+  stage?: number;
   isNew?: boolean;
 }
 
@@ -124,7 +126,9 @@ const TaskTemplateManagement = () => {
         .from('subtask_templates')
         .select('*')
         .in('task_template_id', taskIds)
-        .order('sort_order');
+        // Order by stage first, then within stage by sort_order
+        .order('stage', { ascending: true } as any)
+        .order('sort_order', { ascending: true });
 
       const subtaskMap: Record<string, SubtaskTemplate[]> = {};
       (subtaskData || []).forEach((s: any) => {
@@ -164,7 +168,7 @@ const TaskTemplateManagement = () => {
       points: template.points,
       trial_period: template.trial_period,
       estimated_days: template.estimated_days?.toString() || "",
-      subtasks: (template.subtasks || []).map(s => ({ ...s, frontEndId: s.id || crypto.randomUUID() }))
+      subtasks: (template.subtasks || []).map(s => ({ ...s, frontEndId: s.id || crypto.randomUUID(), stage: s.stage ?? 1 }))
     });
     setIsTaskDialogOpen(true);
   };
@@ -178,6 +182,7 @@ const TaskTemplateManagement = () => {
         description: "",
         points: 5,
         sort_order: prev.subtasks.length,
+        stage: 1,
         isNew: true
       }]
     }));
@@ -256,7 +261,8 @@ const TaskTemplateManagement = () => {
             title: s.title,
             description: s.description,
             points: s.points,
-            sort_order: i
+            sort_order: i,
+            stage: s.stage ?? 1
           }));
 
           const { error: subError } = await supabase
@@ -293,7 +299,8 @@ const TaskTemplateManagement = () => {
             title: s.title,
             description: s.description,
             points: s.points,
-            sort_order: i
+            sort_order: i,
+            stage: s.stage ?? 1
           }));
 
           const { error: subError } = await supabase
@@ -440,8 +447,8 @@ const TaskTemplateManagement = () => {
                 key={pkg.id}
                 onClick={() => setSelectedPackageId(pkg.id)}
                 className={`p-3 rounded-lg border-2 text-left transition-all ${selectedPackageId === pkg.id
-                    ? 'border-primary bg-primary/5 shadow-md'
-                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                  ? 'border-primary bg-primary/5 shadow-md'
+                  : 'border-border hover:border-primary/50 hover:bg-muted/50'
                   }`}
               >
                 <div className="font-medium text-sm truncate">{pkg.name}</div>
@@ -704,7 +711,7 @@ const TaskTemplateManagement = () => {
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-[1fr_80px] gap-3">
+                                <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_80px] gap-3">
                                   <div>
                                     <Input
                                       placeholder="Subtask title"
@@ -719,6 +726,15 @@ const TaskTemplateManagement = () => {
                                       value={subtask.points}
                                       onChange={(e) => updateSubtask(idx, 'points', parseInt(e.target.value) || 0)}
                                       min="0"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Input
+                                      type="number"
+                                      placeholder="Stage"
+                                      value={subtask.stage ?? 1}
+                                      onChange={(e) => updateSubtask(idx, 'stage', Math.max(1, parseInt(e.target.value) || 1))}
+                                      min="1"
                                     />
                                   </div>
                                 </div>
