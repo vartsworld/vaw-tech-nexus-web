@@ -148,6 +148,9 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
   const [pendingSubtasks, setPendingSubtasks] = useState<Subtask[]>([]);
+  const [approvedSubtasks, setApprovedSubtasks] = useState<Subtask[]>([]);
+  const [returnedSubtasks, setReturnedSubtasks] = useState<Subtask[]>([]);
+  const [pendingSubtasks, setPendingSubtasks] = useState<Subtask[]>([]);
   const [newSubtask, setNewSubtask] = useState({
     title: "",
     description: "",
@@ -230,14 +233,19 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     return creator?.full_name || "Unknown";
   };
 
-  // Fetch all subtasks in pending_approval that belong to tasks in this head's department
-  const fetchPendingSubtasksForTasks = async () => {
+  // Fetch subtask review queues for this head:
+  // - pendingSubtasks: pending_approval in this department
+  // - approvedSubtasks: completed & approved_by = current user
+  // - returnedSubtasks: in_progress with latest rejection comment from current user
+  const fetchReviewQueues = async () => {
     if (!userProfile?.department_id) {
       setPendingSubtasks([]);
+      setApprovedSubtasks([]);
+      setReturnedSubtasks([]);
       return;
     }
     try {
-      const { data, error } = await supabase
+      const { data: pending, error: pendingError } = await supabase
         .from("staff_subtasks")
         .select(
           `
@@ -263,8 +271,68 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         .eq("status", "pending_approval" as any)
         .eq("staff_tasks.department_id", userProfile.department_id as any);
 
-      if (error) throw error;
-      setPendingSubtasks((data || []) as any);
+      if (pendingError) throw pendingError;
+      setPendingSubtasks((pending || []) as any);
+
+      // Approved by this head
+      const { data: approved, error: approvedError } = await supabase
+        .from("staff_subtasks")
+        .select(
+          `
+          *,
+          staff_tasks!inner (
+            id,
+            title,
+            department_id
+          ),
+          staff_profiles:assigned_to (
+            full_name,
+            username,
+            avatar_url,
+            role
+          )
+        `
+        )
+        .eq("status", "completed" as any)
+        .eq("approved_by", userId as any)
+        .eq("staff_tasks.department_id", userProfile.department_id as any)
+        .order("approved_at", { ascending: false } as any)
+        .limit(15);
+
+      if (approvedError) throw approvedError;
+      setApprovedSubtasks((approved || []) as any);
+
+      // Returned for rework by this head (status back to in_progress and has rejection comment by this user)
+      const { data: returnedRaw, error: returnedError } = await supabase
+        .from("staff_subtasks")
+        .select(
+          `
+          *,
+          staff_tasks!inner (
+            id,
+            title,
+            department_id
+          ),
+          staff_profiles:assigned_to (
+            full_name,
+            username,
+            avatar_url,
+            role
+          )
+        `
+        )
+        .eq("status", "in_progress" as any)
+        .eq("staff_tasks.department_id", userProfile.department_id as any);
+
+      if (returnedError) throw returnedError;
+
+      const returnedFiltered = (returnedRaw || []).filter((st: any) => {
+        if (!Array.isArray(st.comments)) return false;
+        const lastRejection = [...st.comments].reverse().find(c => c.type === "rejection");
+        return lastRejection && lastRejection.user_id === userId;
+      });
+
+      setReturnedSubtasks(returnedFiltered as any);
     } catch (error) {
       console.error("Error fetching pending subtasks:", error);
     }
@@ -378,8 +446,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       setTasks(tasksWithAttachments as Task[]);
 
-      // Also fetch subtasks that are pending approval for tasks in this head's department
-      await fetchPendingSubtasksForTasks();
+      // Also fetch subtask review queues for this head
+      await fetchReviewQueues();
     } catch (error) {
       console.error('Error fetching tasks:', error);
     } finally {
@@ -2117,6 +2185,161 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                           >
                             <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
                             Review
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recently Approved Subtasks */}
+          {approvedSubtasks.length > 0 && (
+            <Card className="bg-gradient-to-br from-emerald-500/20 via-green-500/10 to-teal-500/20 backdrop-blur-lg border-emerald-500/30 text-white relative z-10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-emerald-300" />
+                  Recently Approved Subtasks ({approvedSubtasks.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {approvedSubtasks.map((subtask: any) => {
+                    const parentTask = subtask.staff_tasks as any;
+                    const assigneeProfile = subtask.staff_profiles as any | null;
+                    return (
+                      <div
+                        key={subtask.id}
+                        className="bg-black/30 border border-emerald-500/40 rounded-lg p-3 flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar className="h-8 w-8 border border-white/10 bg-white/5 flex-shrink-0">
+                            <AvatarImage
+                              src={assigneeProfile?.avatar_url || undefined}
+                              alt={assigneeProfile?.full_name || subtask.title}
+                            />
+                            <AvatarFallback className="text-[10px]">
+                              {(assigneeProfile?.full_name || "U")
+                                .split(" ")
+                                .map((n: string) => n[0])
+                                .join("")
+                                .slice(0, 2)
+                                .toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 space-y-0.5">
+                            <div className="text-sm font-semibold text-white truncate">
+                              {subtask.title}
+                            </div>
+                            {parentTask && (
+                              <div className="text-[11px] text-white/60 truncate">
+                                In task: <span className="font-medium">{parentTask.title}</span>
+                              </div>
+                            )}
+                            <div className="text-[11px] text-white/50 flex flex-wrap gap-x-2 gap-y-0.5">
+                              {assigneeProfile && (
+                                <span>
+                                  👤 {assigneeProfile.full_name} (@{assigneeProfile.username})
+                                </span>
+                              )}
+                              {subtask.points > 0 && <span>⭐ {subtask.points} pts</span>}
+                              {subtask.approved_at && (
+                                <span>
+                                  ✅ {new Date(subtask.approved_at).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {parentTask && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-shrink-0 h-8 text-xs border-emerald-400/50 text-emerald-200 hover:bg-emerald-500/20"
+                            onClick={async () => {
+                              setSelectedTask(parentTask);
+                              await fetchSubtasks(parentTask.id);
+                              setIsViewTaskOpen(true);
+                            }}
+                          >
+                            View
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Subtasks Returned for Rework */}
+          {returnedSubtasks.length > 0 && (
+            <Card className="bg-gradient-to-br from-red-500/20 via-rose-500/10 to-orange-500/20 backdrop-blur-lg border-red-500/30 text-white relative z-10">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-red-300" />
+                  Returned for Rework ({returnedSubtasks.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {returnedSubtasks.map((subtask: any) => {
+                    const parentTask = subtask.staff_tasks as any;
+                    const assigneeProfile = subtask.staff_profiles as any | null;
+                    const lastRejection = Array.isArray(subtask.comments)
+                      ? [...subtask.comments].reverse().find((c: any) => c.type === "rejection")
+                      : null;
+                    return (
+                      <div
+                        key={subtask.id}
+                        className="bg-black/30 border border-red-500/40 rounded-lg p-3 flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar className="h-8 w-8 border border-white/10 bg-white/5 flex-shrink-0">
+                            <AvatarImage
+                              src={assigneeProfile?.avatar_url || undefined}
+                              alt={assigneeProfile?.full_name || subtask.title}
+                            />
+                            <AvatarFallback className="text-[10px]">
+                              {(assigneeProfile?.full_name || "U")
+                                .split(" ")
+                                .map((n: string) => n[0])
+                                .join("")
+                                .slice(0, 2)
+                                .toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 space-y-0.5">
+                            <div className="text-sm font-semibold text-white truncate">
+                              {subtask.title}
+                            </div>
+                            {parentTask && (
+                              <div className="text-[11px] text-white/60 truncate">
+                                In task: <span className="font-medium">{parentTask.title}</span>
+                              </div>
+                            )}
+                            {lastRejection && (
+                              <div className="text-[11px] text-red-200/90 line-clamp-2">
+                                {lastRejection.message}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {parentTask && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-shrink-0 h-8 text-xs border-red-400/50 text-red-200 hover:bg-red-500/20"
+                            onClick={async () => {
+                              setSelectedTask(parentTask);
+                              await fetchSubtasks(parentTask.id);
+                              setIsViewTaskOpen(true);
+                            }}
+                          >
+                            View
                           </Button>
                         )}
                       </div>
