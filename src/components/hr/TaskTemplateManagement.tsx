@@ -122,13 +122,27 @@ const TaskTemplateManagement = () => {
       }
 
       const taskIds = taskData.map(t => t.id);
-      const { data: subtaskData } = await supabase
+
+      let subtaskData: any[] = [];
+      const res1 = await supabase
         .from('subtask_templates')
         .select('*')
         .in('task_template_id', taskIds)
         // Order by stage first, then within stage by sort_order
         .order('stage', { ascending: true } as any)
         .order('sort_order', { ascending: true });
+
+      if (res1.error) {
+        console.warn("Ordering by stage failed, falling back to sort_order", res1.error);
+        const res2 = await supabase
+          .from('subtask_templates')
+          .select('*')
+          .in('task_template_id', taskIds)
+          .order('sort_order', { ascending: true });
+        subtaskData = res2.data || [];
+      } else {
+        subtaskData = res1.data || [];
+      }
 
       const subtaskMap: Record<string, SubtaskTemplate[]> = {};
       (subtaskData || []).forEach((s: any) => {
@@ -269,7 +283,12 @@ const TaskTemplateManagement = () => {
             .from('subtask_templates')
             .insert(subtasksToInsert);
 
-          if (subError) throw subError;
+          if (subError) {
+            console.warn("Insert with stage failed, retrying without stage", subError);
+            const fallbackSubtasks = subtasksToInsert.map(({ stage, ...rest }) => rest);
+            const { error: retryError } = await supabase.from('subtask_templates').insert(fallbackSubtasks);
+            if (retryError) throw retryError;
+          }
         }
 
         toast({ title: "Success", description: "Task template updated." });
@@ -307,7 +326,12 @@ const TaskTemplateManagement = () => {
             .from('subtask_templates')
             .insert(subtasksToInsert);
 
-          if (subError) throw subError;
+          if (subError) {
+            console.warn("Insert with stage failed, retrying without stage", subError);
+            const fallbackSubtasks = subtasksToInsert.map(({ stage, ...rest }) => rest);
+            const { error: retryError } = await supabase.from('subtask_templates').insert(fallbackSubtasks);
+            if (retryError) throw retryError;
+          }
         }
 
         toast({ title: "Success", description: "Task template created." });
@@ -377,15 +401,22 @@ const TaskTemplateManagement = () => {
       if (error) throw error;
 
       if (template.subtasks && template.subtasks.length > 0) {
-        await supabase.from('subtask_templates').insert(
-          template.subtasks.map((s, i) => ({
-            task_template_id: newTemplate.id,
-            title: s.title,
-            description: s.description,
-            points: s.points,
-            sort_order: i
-          }))
-        );
+        const subtasksToInsert = template.subtasks.map((s, i) => ({
+          task_template_id: newTemplate.id,
+          title: s.title,
+          description: s.description,
+          points: s.points,
+          sort_order: i,
+          stage: s.stage ?? 1
+        }));
+
+        const { error: subError } = await supabase.from('subtask_templates').insert(subtasksToInsert);
+
+        if (subError) {
+          console.warn("Duplicate with stage failed, retrying without stage", subError);
+          const fallbackSubtasks = subtasksToInsert.map(({ stage, ...rest }) => rest);
+          await supabase.from('subtask_templates').insert(fallbackSubtasks);
+        }
       }
 
       toast({ title: "Duplicated", description: "Template duplicated successfully." });
@@ -545,6 +576,11 @@ const TaskTemplateManagement = () => {
                                       <p className="text-xs text-muted-foreground mt-1">{subtask.description}</p>
                                     )}
                                   </div>
+                                  {subtask.stage && (
+                                    <Badge variant="secondary" className="gap-1 flex-shrink-0">
+                                      Stage {subtask.stage}
+                                    </Badge>
+                                  )}
                                   <Badge variant="outline" className="gap-1 flex-shrink-0">
                                     <Coins className="h-3 w-3" />
                                     {subtask.points} pts
