@@ -222,18 +222,60 @@ const TaskTemplateManagement = () => {
     const startIndex = result.source.index;
     const endIndex = result.destination.index;
 
+    // We only support reordering within the raw array since the user still sees
+    // a single list but visually grouped by stages. A more complex DND could update the stage, 
+    // but right now we just reorder the underlying array elements.
     setTaskForm(prev => {
-      const items = Array.from(prev.subtasks);
-      const [reorderedItem] = items.splice(startIndex, 1);
-      items.splice(endIndex, 0, reorderedItem);
+      // First, sort the subtasks by stage + sort_order, so they map properly to the UI view
+      const sortedItems = [...prev.subtasks].sort((a, b) => {
+        if ((a.stage || 1) !== (b.stage || 1)) return (a.stage || 1) - (b.stage || 1);
+        return a.sort_order - b.sort_order;
+      });
 
-      const updatedItems = items.map((item, index) => ({
+      const [reorderedItem] = sortedItems.splice(startIndex, 1);
+      sortedItems.splice(endIndex, 0, reorderedItem);
+
+      // Re-assign sort order strictly
+      const updatedItems = sortedItems.map((item, index) => ({
         ...item,
         sort_order: index
       }));
 
+      // If the destination index falls squarely inside a certain stage, we can smartly update the element's stage
+      const siblingItem = updatedItems[endIndex > 0 ? endIndex - 1 : 1];
+      if (siblingItem && siblingItem.stage) {
+        updatedItems[endIndex].stage = siblingItem.stage;
+      }
+
       return { ...prev, subtasks: updatedItems };
     });
+  };
+
+  // Group subtasks by stage for rendering
+  const subtasksByStage = taskForm.subtasks.reduce((acc, subtask) => {
+    const s = subtask.stage || 1;
+    if (!acc[s]) acc[s] = [];
+    acc[s].push(subtask);
+    return acc;
+  }, {} as Record<number, SubtaskTemplate[]>);
+
+  const sortedStages = Object.keys(subtasksByStage).map(Number).sort((a, b) => a - b);
+
+  // Calculate raw Index based strictly on the position inside the visually sorted array
+  const getRawIndex = (subtask: SubtaskTemplate): number => {
+    const sorted = [...taskForm.subtasks].sort((a, b) => {
+      if ((a.stage || 1) !== (b.stage || 1)) return (a.stage || 1) - (b.stage || 1);
+      return a.sort_order - b.sort_order;
+    });
+    return taskForm.subtasks.findIndex(s => s.frontEndId === subtask.frontEndId);
+  };
+
+  const getSortedSubtasksArray = () => {
+    const sortedItems = [...taskForm.subtasks].sort((a, b) => {
+      if ((a.stage || 1) !== (b.stage || 1)) return (a.stage || 1) - (b.stage || 1);
+      return a.sort_order - b.sort_order;
+    });
+    return sortedItems;
   };
 
   const handleSaveTemplate = async () => {
@@ -721,73 +763,97 @@ const TaskTemplateManagement = () => {
                 <DragDropContext onDragEnd={onDragEnd}>
                   <Droppable droppableId="subtasks-list">
                     {(provided) => (
-                      <div className="space-y-3" {...provided.droppableProps} ref={provided.innerRef}>
-                        {taskForm.subtasks.map((subtask, idx) => (
-                          <Draggable key={subtask.frontEndId} draggableId={subtask.frontEndId as string} index={idx}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={`border rounded-lg p-3 space-y-3 bg-muted/30 ${snapshot.isDragging ? 'shadow-lg opacity-90' : ''}`}
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
-                                      <GripVertical className="h-4 w-4" />
-                                    </div>
-                                    <span className="text-sm font-medium text-muted-foreground">Subtask {idx + 1}</span>
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                                    onClick={() => removeSubtask(idx)}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
+                      <div className="space-y-6" {...provided.droppableProps} ref={provided.innerRef}>
+
+                        {sortedStages.map((stageNum, stageIndex) => {
+                          const stageSubtasks = subtasksByStage[stageNum];
+
+                          return (
+                            <div key={`stage-${stageNum}`} className="space-y-3 bg-muted/10 p-4 rounded-xl border border-muted-foreground/20">
+                              <div className="flex items-center gap-2 mb-2 pb-2 border-b border-muted">
+                                <div className="bg-primary/20 text-primary w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                                  {stageNum}
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_80px] gap-3">
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Title</Label>
-                                    <Input
-                                      placeholder="Subtask title"
-                                      value={subtask.title}
-                                      onChange={(e) => updateSubtask(idx, 'title', e.target.value)}
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Points</Label>
-                                    <Input
-                                      type="number"
-                                      placeholder="Points"
-                                      value={subtask.points}
-                                      onChange={(e) => updateSubtask(idx, 'points', parseInt(e.target.value) || 0)}
-                                      min="0"
-                                    />
-                                  </div>
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Stage</Label>
-                                    <Input
-                                      type="number"
-                                      placeholder="Stage"
-                                      value={subtask.stage ?? 1}
-                                      onChange={(e) => updateSubtask(idx, 'stage', Math.max(1, parseInt(e.target.value) || 1))}
-                                      min="1"
-                                    />
-                                  </div>
-                                </div>
-                                <Textarea
-                                  placeholder="Subtask description (optional)"
-                                  value={subtask.description}
-                                  onChange={(e) => updateSubtask(idx, 'description', e.target.value)}
-                                  rows={2}
-                                  className="text-sm"
-                                />
+                                <h4 className="font-semibold">Stage {stageNum} Workflow</h4>
+                                <Badge variant="outline" className="ml-auto">
+                                  {stageSubtasks.length} task{stageSubtasks.length !== 1 ? 's' : ''}
+                                </Badge>
                               </div>
-                            )}
-                          </Draggable>
-                        ))}
+
+                              {stageSubtasks.map((subtask) => {
+                                const rawIdx = getRawIndex(subtask);
+                                const visualIdx = getSortedSubtasksArray().findIndex(s => s.frontEndId === subtask.frontEndId);
+
+                                return (
+                                  <Draggable key={subtask.frontEndId} draggableId={subtask.frontEndId as string} index={visualIdx}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        className={`border rounded-lg p-3 space-y-3 bg-card ${snapshot.isDragging ? 'shadow-lg opacity-90 border-primary' : 'hover:border-primary/40'}`}
+                                      >
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div className="flex items-center gap-2">
+                                            <div {...provided.dragHandleProps} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground">
+                                              <GripVertical className="h-4 w-4" />
+                                            </div>
+                                            <span className="text-sm font-medium text-muted-foreground">Subtask</span>
+                                          </div>
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                            onClick={() => removeSubtask(rawIdx)}
+                                          >
+                                            <Trash2 className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_80px] gap-3">
+                                          <div className="space-y-1">
+                                            <Label className="text-xs text-muted-foreground">Title</Label>
+                                            <Input
+                                              placeholder="Subtask title"
+                                              value={subtask.title}
+                                              onChange={(e) => updateSubtask(rawIdx, 'title', e.target.value)}
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <Label className="text-xs text-muted-foreground">Points</Label>
+                                            <Input
+                                              type="number"
+                                              placeholder="Points"
+                                              value={subtask.points}
+                                              onChange={(e) => updateSubtask(rawIdx, 'points', parseInt(e.target.value) || 0)}
+                                              min="0"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <Label className="text-xs text-muted-foreground">Stage</Label>
+                                            <Input
+                                              type="number"
+                                              placeholder="Stage"
+                                              value={subtask.stage ?? 1}
+                                              onChange={(e) => updateSubtask(rawIdx, 'stage', Math.max(1, parseInt(e.target.value) || 1))}
+                                              min="1"
+                                            />
+                                          </div>
+                                        </div>
+                                        <Textarea
+                                          placeholder="Subtask description (optional)"
+                                          value={subtask.description}
+                                          onChange={(e) => updateSubtask(rawIdx, 'description', e.target.value)}
+                                          rows={2}
+                                          className="text-sm"
+                                        />
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
                         {provided.placeholder}
                       </div>
                     )}
