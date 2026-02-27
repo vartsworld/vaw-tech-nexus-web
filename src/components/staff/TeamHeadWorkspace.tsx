@@ -157,8 +157,10 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     priority: "medium" as 'low' | 'medium' | 'high' | 'urgent',
     points: 0,
     due_date: "",
-    due_time: ""
+    due_time: "",
+    stage: 1
   });
+  const [quickAddStage, setQuickAddStage] = useState<number | null>(null);
   const [documentTitle, setDocumentTitle] = useState("");
   const [notes, setNotes] = useState<Array<{ id: string; content: string; created_at: string }>>([]);
   const [newNote, setNewNote] = useState("");
@@ -605,7 +607,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       console.error('Error bulk adding subtasks:', error);
       toast({
         title: "Error",
-        description: "Failed to add subtasks.",
+        description: error instanceof Error ? error.message : "Failed to add subtasks.",
         variant: "destructive",
       });
     }
@@ -670,7 +672,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           due_date: newSubtask.due_date || null,
           due_time: newSubtask.due_time || null,
           created_by: user.id,
-          stage: 1,
+          stage: newSubtask.stage || 1,
           status: 'pending'
         })
         .select(`
@@ -695,8 +697,10 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         priority: "medium",
         points: 0,
         due_date: "",
-        due_time: ""
+        due_time: "",
+        stage: newSubtask.stage
       });
+      setQuickAddStage(null);
 
       toast({
         title: "Success",
@@ -3260,7 +3264,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                               setBulkSubtasks(tpl.subtask_templates.map((st: any) => ({
                                 ...st,
                                 assigned_to: "",
-                                priority: tpl.priority || 'medium'
+                                priority: st.priority || tpl.priority || 'medium',
+                                stage: st.stage || 1
                               })));
                             }
                           }}
@@ -3303,6 +3308,22 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                             </SelectContent>
                           </Select>
                         </div>
+                        <div className="flex items-center gap-2 bg-black/40 p-1 rounded border border-white/10">
+                          <span className="text-[9px] text-white/60 px-1">Stage All:</span>
+                          <Select onValueChange={(val) => {
+                            const s = parseInt(val);
+                            setBulkSubtasks(bulkSubtasks.map(st => ({ ...st, stage: s })));
+                          }}>
+                            <SelectTrigger className="w-[85px] h-6 text-[9px] border-none bg-transparent focus:ring-0 shadow-none text-white">
+                              <SelectValue placeholder="Set Stage" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => (
+                                <SelectItem key={s} value={s.toString()} className="text-xs">Stage {s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
                       <div className="bg-black/20 rounded-md border border-white/10 p-2 max-h-[300px] overflow-y-auto space-y-1 custom-scrollbar">
@@ -3310,7 +3331,24 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                           <div key={idx} className="flex items-center gap-2 p-2 bg-white/5 rounded border border-white/5 hover:bg-white/10 transition-colors">
                             <div className="flex-1 min-w-0 ml-1">
                               <p className="text-[10px] font-medium truncate text-white/90">{st.title}</p>
-                              <p className="text-[8px] text-white/40">{st.points} pts</p>
+                              <div className="flex items-center gap-2 text-[8px] text-white/40">
+                                <span>{st.points} pts</span>
+                                <span className="text-purple-400 font-bold border border-purple-500/30 bg-purple-500/10 px-1 rounded">Stage {st.stage || 1}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                value={st.stage || 1}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 1;
+                                  const newBulk = [...bulkSubtasks];
+                                  newBulk[idx].stage = val;
+                                  setBulkSubtasks(newBulk);
+                                }}
+                                className="w-8 h-7 text-[10px] bg-black/40 border border-white/10 rounded text-center text-white focus:outline-none focus:border-purple-500"
+                                title="Change stage"
+                              />
                             </div>
                             <Select
                               value={st.assigned_to}
@@ -3373,7 +3411,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                                   ...prev,
                                   title: tpl.title || "",
                                   description: tpl.description || "",
-                                  points: tpl.points || 0
+                                  points: tpl.points || 0,
+                                  stage: tpl.stage || 1
                                 }));
                               }
                             } else {
@@ -3445,7 +3484,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="grid grid-cols-2 gap-3 md:col-span-2">
+                      <div className="grid grid-cols-3 gap-3 md:col-span-2">
                         <Input
                           type="number"
                           placeholder="Points"
@@ -3465,289 +3504,300 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                             type="time"
                             value={newSubtask.due_time}
                             onChange={(e) => setNewSubtask({ ...newSubtask, due_time: e.target.value })}
-                            className="h-9 text-xs bg-white/5 border-white/10 text-white w-24"
+                            className="h-9 text-xs bg-white/5 border-white/10 text-white w-20"
                           />
                         </div>
+                        <Input
+                          type="number"
+                          placeholder="Stage #"
+                          value={newSubtask.stage}
+                          onChange={(e) => setNewSubtask({ ...newSubtask, stage: parseInt(e.target.value) || 1 })}
+                          min="1"
+                          className="h-9 text-xs bg-white/5 border-white/10 text-white"
+                          title="Stage number (1, 2, 3...)"
+                        />
                       </div>
                       <Button
                         onClick={() => handleCreateSubtask(selectedTask.id)}
                         className="md:col-span-2 h-9 text-xs bg-primary hover:bg-primary/90 text-white"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Individual Subtask
+                        Add Individual Subtask (Stage {newSubtask.stage})
                       </Button>
                     </div>
                   </div>
                 </div>
 
-                {/* Subtasks List */}
+                {/* Subtasks — Stage Kanban Columns */}
                 {loadingSubtasks ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
                   </div>
-                ) : subtasks.length > 0 ? (
-                  <div className="space-y-3">
-                    {subtasks.map((subtask, idx) => {
-                      const isPendingApproval = subtask.status === 'pending_approval';
-                      const isCompleted = subtask.status === 'completed';
-                      const isInProgress = subtask.status === 'in_progress';
+                ) : (() => {
+                  const stageMap: Record<number, Subtask[]> = {};
+                  subtasks.forEach(st => {
+                    const s = (st as any).stage || 1;
+                    if (!stageMap[s]) stageMap[s] = [];
+                    stageMap[s].push(st);
+                  });
+                  const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
+                  if (stageNums.length === 0) stageNums.push(1);
 
-                      const submissionComments = Array.isArray(subtask.comments)
-                        ? subtask.comments.filter((c: any) => c.type === 'submission_note' || c.type === 'rejection')
-                        : [];
-                      const submissionAttachments = Array.isArray(subtask.attachments) ? subtask.attachments : [];
+                  const stageColors = [
+                    'border-indigo-500/40 bg-indigo-500/5',
+                    'border-green-500/40 bg-green-500/5',
+                    'border-orange-500/40 bg-orange-500/5',
+                    'border-cyan-500/40 bg-cyan-500/5',
+                    'border-pink-500/40 bg-pink-500/5',
+                  ];
+                  const stageBadgeColors = [
+                    'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+                    'bg-green-500/20 text-green-300 border-green-500/30',
+                    'bg-orange-500/20 text-orange-300 border-orange-500/30',
+                    'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+                    'bg-pink-500/20 text-pink-300 border-pink-500/30',
+                  ];
 
-                      return (
-                        <div
-                          key={subtask.id}
-                          className={`rounded-xl border transition-all duration-200 overflow-hidden ${isPendingApproval
-                            ? 'border-orange-500/50 bg-orange-500/5 shadow-lg shadow-orange-900/20'
-                            : isCompleted
-                              ? 'border-green-500/30 bg-green-500/5'
-                              : 'border-white/10 bg-white/3'
-                            }`}
-                        >
-                          {/* Subtask Header */}
-                          <div className="p-3 flex items-center gap-3">
-                            {/* Step Number / Status Icon */}
-                            <div className={`w-8 h-8 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-xs ${isCompleted ? 'bg-green-500 text-white' :
-                              isPendingApproval ? 'bg-orange-500 text-white animate-pulse' :
-                                isInProgress ? 'bg-blue-500 text-white' :
-                                  'bg-white/10 text-white/40'
-                              }`}>
-                              {isCompleted ? <CheckCircle className="w-4 h-4" /> : idx + 1}
-                            </div>
+                  return (
+                    <div className="overflow-x-auto pb-2">
+                      <div className="flex gap-3" style={{ minWidth: stageNums.length * 280 }}>
+                        {stageNums.map((stageNum) => {
+                          const colClass = stageColors[(stageNum - 1) % stageColors.length];
+                          const badgeClass = stageBadgeColors[(stageNum - 1) % stageBadgeColors.length];
+                          const stageSubtasks = stageMap[stageNum] || [];
+                          const isQuickAddOpen = quickAddStage === stageNum;
 
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className={`text-sm font-semibold truncate ${isCompleted ? 'line-through text-white/40' : 'text-white'}`}>
-                                  {subtask.title}
-                                </span>
-                                {getPriorityBadge(subtask.priority)}
-                                {isPendingApproval && (
-                                  <span className="text-[9px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded px-1.5 py-0.5 animate-pulse">
-                                    AWAITING REVIEW
+                          return (
+                            <div key={stageNum} className={`flex-1 min-w-[260px] rounded-xl border ${colClass} p-3 space-y-2`}>
+                              {/* Column header */}
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${badgeClass}`}>
+                                    Stage {stageNum}
                                   </span>
-                                )}
-                                {isCompleted && (
-                                  <span className="text-[9px] font-bold bg-green-500/20 text-green-400 border border-green-500/30 rounded px-1.5 py-0.5">
-                                    ✓ APPROVED
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-xs text-white/40">
-                                <span>👤 {subtask.staff_profiles?.full_name || 'Unassigned'}</span>
-                                {subtask.points > 0 && <span>⭐ {subtask.points} pts</span>}
-                                {subtask.due_date && subtask.due_date.trim() !== '' && (
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    {(() => {
-                                      try {
-                                        const d = new Date(subtask.due_date);
-                                        return isNaN(d.getTime()) ? 'Invalid date' : format(d, 'MMM dd, yyyy');
-                                      } catch { return 'Invalid date'; }
-                                    })()}
-                                    {subtask.due_time && ` at ${subtask.due_time}`}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Actions for non-pending-approval statuses */}
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              {!isPendingApproval && (
-                                <Select
-                                  value={subtask.status}
-                                  onValueChange={(value) => handleSubtaskStatusUpdate(subtask.id, value)}
-                                >
-                                  <SelectTrigger className="w-28 h-7 text-[10px] bg-black/30 border-white/10 text-white">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending" className="text-xs">Pending</SelectItem>
-                                    <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
-                                    <SelectItem value="completed" className="text-xs">Completed</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteSubtask(subtask.id)}
-                                className="h-7 w-7 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
-                                title="Delete subtask"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Pending Approval Panel — rich review UI */}
-                          {isPendingApproval && (
-                            <div className="border-t border-orange-500/20 bg-black/30 px-4 pb-4 pt-3 space-y-4">
-                              <p className="text-[11px] font-semibold text-orange-400 uppercase tracking-widest flex items-center gap-2">
-                                <AlertCircle className="h-3.5 w-3.5" />
-                                Staff Submission — Awaiting Your Review
-                              </p>
-
-                              {/* Submission Notes */}
-                              {submissionComments.length > 0 && (
-                                <div className="space-y-2">
-                                  <p className="text-[10px] text-white/40 uppercase tracking-widest">Notes from Staff</p>
-                                  <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar pr-1">
-                                    {submissionComments.map((comment: any, cidx: number) => (
-                                      <div
-                                        key={cidx}
-                                        className={`p-2 rounded-lg text-xs ${comment.type === 'rejection'
-                                          ? 'bg-red-500/10 border border-red-500/20 text-red-300'
-                                          : 'bg-white/5 border border-white/5 text-white/80'
-                                          }`}
-                                      >
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                          <span className="font-semibold text-[10px] text-white/60">{comment.user_name}</span>
-                                          <span className="text-[9px] text-white/30">{new Date(comment.timestamp).toLocaleString()}</span>
-                                        </div>
-                                        <p>{comment.message}</p>
-                                      </div>
-                                    ))}
-                                  </div>
+                                  <span className="text-[10px] text-white/40">{stageSubtasks.length} task{stageSubtasks.length !== 1 ? 's' : ''}</span>
                                 </div>
-                              )}
-
-                              {/* Submitted Attachments */}
-                              {submissionAttachments.length > 0 && (
-                                <div className="space-y-1.5">
-                                  <p className="text-[10px] text-white/40 uppercase tracking-widest">Proof of Work</p>
-                                  <div className="flex flex-wrap gap-2">
-                                    {submissionAttachments.map((att: any, aidx: number) => (
-                                      <a
-                                        key={aidx}
-                                        href={att.publicUrl || att.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg text-[10px] hover:bg-blue-500/20 transition-colors"
-                                      >
-                                        <Paperclip className="h-3 w-3" />
-                                        <span className="max-w-[100px] truncate">{att.name || 'Attachment'}</span>
-                                      </a>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Rejection Note Input */}
-                              <div className="space-y-1">
-                                <p className="text-[10px] text-white/40 uppercase tracking-widest">Rejection Reason (if returning)</p>
-                                <Textarea
-                                  placeholder="Optional: explain what needs to be fixed..."
-                                  value={rejectionNotes[subtask.id] || ''}
-                                  onChange={(e) => setRejectionNotes({ ...rejectionNotes, [subtask.id]: e.target.value })}
-                                  rows={2}
-                                  className="text-xs resize-none bg-black/40 border-white/10 text-white placeholder:text-white/20"
-                                />
-                              </div>
-
-                              {/* Approve / Return Buttons */}
-                              <div className="flex gap-2">
                                 <Button
                                   size="sm"
-                                  className="flex-1 h-9 bg-green-600 hover:bg-green-700 font-bold text-xs gap-2"
-                                  onClick={() => handleSubtaskApprove(subtask.id)}
-                                >
-                                  <CheckCircle className="h-3.5 w-3.5" />
-                                  APPROVE
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="flex-1 h-9 border-red-500/40 text-red-400 hover:bg-red-500/10 font-bold text-xs gap-2"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0 text-white/40 hover:text-white hover:bg-white/10"
+                                  title={`Add subtask to Stage ${stageNum}`}
                                   onClick={() => {
-                                    handleSubtaskReject(subtask.id, rejectionNotes[subtask.id] || '');
-                                    setRejectionNotes({ ...rejectionNotes, [subtask.id]: '' });
+                                    setQuickAddStage(isQuickAddOpen ? null : stageNum);
+                                    setNewSubtask(prev => ({ ...prev, stage: stageNum, title: '', assigned_to: '', description: '', points: 0, due_date: '', due_time: '' }));
                                   }}
                                 >
-                                  <X className="h-3.5 w-3.5" />
-                                  RETURN
+                                  <Plus className="h-4 w-4" />
                                 </Button>
                               </div>
-                            </div>
-                          )}
 
-                          {/* Completed subtask — show approval details */}
-                          {isCompleted && subtask.approved_at && (
-                            <div className="border-t border-green-500/10 bg-green-500/3 px-3 py-1.5">
-                              <p className="text-[9px] text-green-500/60">
-                                Approved {new Date(subtask.approved_at).toLocaleString()}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Normal comment thread for non-review statuses */}
-                          {!isPendingApproval && (
-                            <div className="border-t border-white/5 px-3 pb-3 pt-2">
-                              {/* Display existing comments (including rejections shown to head) */}
-                              {subtask.comments && subtask.comments.length > 0 && (
-                                <div className="space-y-1 mb-2 max-h-24 overflow-y-auto custom-scrollbar">
-                                  {(subtask.comments as any[]).map((comment: any, idx: number) => (
-                                    <div key={idx} className={`text-xs p-1.5 rounded ${comment.type === 'rejection' ? 'bg-red-500/10 text-red-300' : 'bg-white/5 text-white/70'}`}>
-                                      <span className="font-semibold text-white/50 mr-1">{comment.user_name}:</span>
-                                      {comment.message}
-                                    </div>
-                                  ))}
+                              {/* Quick-add form */}
+                              {isQuickAddOpen && (
+                                <div className="space-y-2 p-2 bg-black/40 rounded-lg border border-white/10 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                  <Input
+                                    autoFocus
+                                    placeholder="Subtask title *"
+                                    value={newSubtask.title}
+                                    onChange={e => setNewSubtask({ ...newSubtask, title: e.target.value })}
+                                    className="h-8 text-xs bg-white/5 border-white/10 text-white"
+                                  />
+                                  <Select
+                                    value={newSubtask.assigned_to}
+                                    onValueChange={val => setNewSubtask({ ...newSubtask, assigned_to: val })}
+                                  >
+                                    <SelectTrigger className="h-8 text-xs bg-white/5 border-white/10 text-white">
+                                      <SelectValue placeholder="Assign To *" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {staff.map((member) => (
+                                        <SelectItem key={member.user_id} value={member.user_id} className="text-xs">{member.full_name}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <div className="flex gap-1">
+                                    <Input
+                                      type="number"
+                                      placeholder="Pts"
+                                      value={newSubtask.points === 0 ? '' : newSubtask.points}
+                                      onChange={e => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
+                                      min="0"
+                                      className="h-8 text-xs bg-white/5 border-white/10 text-white w-16"
+                                    />
+                                    <Select
+                                      value={newSubtask.priority}
+                                      onValueChange={val => setNewSubtask({ ...newSubtask, priority: val as any })}
+                                    >
+                                      <SelectTrigger className="h-8 text-xs bg-white/5 border-white/10 text-white flex-1">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="low" className="text-xs">Low</SelectItem>
+                                        <SelectItem value="medium" className="text-xs">Medium</SelectItem>
+                                        <SelectItem value="high" className="text-xs">High</SelectItem>
+                                        <SelectItem value="urgent" className="text-xs">Urgent</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button size="sm" className="flex-1 h-7 text-xs bg-primary hover:bg-primary/90"
+                                      onClick={() => handleCreateSubtask(selectedTask.id)}>
+                                      Add
+                                    </Button>
+                                    <Button size="sm" variant="ghost" className="h-7 text-xs text-white/50"
+                                      onClick={() => setQuickAddStage(null)}>
+                                      Cancel
+                                    </Button>
+                                  </div>
                                 </div>
                               )}
-                              <div className="flex gap-2 mt-1">
-                                <Textarea
-                                  placeholder="Add a note..."
-                                  value={newMessageSubtask[subtask.id] || ''}
-                                  onChange={(e) => setNewMessageSubtask({ ...newMessageSubtask, [subtask.id]: e.target.value })}
-                                  className="flex-1 text-xs resize-none bg-black/30 border-white/10 text-white"
-                                  rows={1}
-                                />
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 self-end"
-                                  onClick={() => handleSendSubtaskMessage(subtask.id, false)}
-                                  disabled={!newMessageSubtask[subtask.id]?.trim() || uploadingSubtaskAttachment === subtask.id}
-                                >
-                                  <Send className="h-3 w-3" />
-                                </Button>
-                                <input
-                                  type="file"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handleAttachToSubtask(subtask.id, file);
-                                    e.target.value = '';
-                                  }}
-                                  className="hidden"
-                                  id={`subtask-file-${subtask.id}`}
-                                />
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="h-8 w-8 self-end"
-                                  onClick={() => document.getElementById(`subtask-file-${subtask.id}`)?.click()}
-                                  disabled={uploadingSubtaskAttachment === subtask.id}
-                                >
-                                  {uploadingSubtaskAttachment === subtask.id ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                  ) : (
-                                    <Paperclip className="h-3 w-3" />
-                                  )}
-                                </Button>
-                              </div>
+
+                              {/* No subtasks placeholder */}
+                              {stageSubtasks.length === 0 && !isQuickAddOpen && (
+                                <div className="text-center py-4 text-[10px] text-white/20 border border-dashed border-white/10 rounded-lg">
+                                  No subtasks
+                                </div>
+                              )}
+
+                              {/* Subtask cards */}
+                              {stageSubtasks.map((subtask) => {
+                                const isPendingApproval = subtask.status === 'pending_approval';
+                                const isCompleted = subtask.status === 'completed';
+                                const isInProgress = subtask.status === 'in_progress';
+                                const submissionComments = Array.isArray(subtask.comments)
+                                  ? subtask.comments.filter((c: any) => c.type === 'submission_note' || c.type === 'rejection')
+                                  : [];
+                                const submissionAttachments = Array.isArray(subtask.attachments) ? subtask.attachments : [];
+
+                                return (
+                                  <div
+                                    key={subtask.id}
+                                    className={`rounded-xl border transition-all duration-200 overflow-hidden ${isPendingApproval
+                                      ? 'border-orange-500/50 bg-orange-500/5'
+                                      : isCompleted
+                                        ? 'border-green-500/30 bg-green-500/5'
+                                        : 'border-white/10 bg-black/30'
+                                      }`}
+                                  >
+                                    <div className="p-3 space-y-2">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className={`text-xs font-semibold truncate ${isCompleted ? 'line-through text-white/40' : 'text-white'}`}>
+                                              {subtask.title}
+                                            </span>
+                                            {isPendingApproval && (
+                                              <span className="text-[8px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded px-1 py-0.5 animate-pulse">REVIEW</span>
+                                            )}
+                                            {isCompleted && (
+                                              <span className="text-[8px] font-bold bg-green-500/20 text-green-400 border border-green-500/30 rounded px-1 py-0.5">✓ DONE</span>
+                                            )}
+                                          </div>
+                                          <div className="text-[10px] text-white/40 mt-0.5">
+                                            👤 {subtask.staff_profiles?.full_name || 'Unassigned'}
+                                            {subtask.points > 0 && ` · ⭐${subtask.points}pts`}
+                                          </div>
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleDeleteSubtask(subtask.id)}
+                                          className="h-6 w-6 p-0 text-red-400/40 hover:text-red-400 hover:bg-red-500/10 flex-shrink-0"
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+
+                                      {/* Status selector */}
+                                      {!isPendingApproval && (
+                                        <Select
+                                          value={subtask.status}
+                                          onValueChange={(value) => handleSubtaskStatusUpdate(subtask.id, value)}
+                                        >
+                                          <SelectTrigger className="w-full h-7 text-[10px] bg-black/30 border-white/10 text-white">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="pending" className="text-xs">Pending</SelectItem>
+                                            <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
+                                            <SelectItem value="completed" className="text-xs">Completed</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      )}
+
+                                      {/* Pending Approval Panel */}
+                                      {isPendingApproval && (
+                                        <div className="space-y-2 pt-1 border-t border-orange-500/20">
+                                          <p className="text-[9px] font-bold text-orange-400 uppercase tracking-widest flex items-center gap-1">
+                                            <AlertCircle className="h-3 w-3" /> Awaiting Review
+                                          </p>
+                                          {submissionComments.length > 0 && (
+                                            <div className="space-y-1 max-h-20 overflow-y-auto custom-scrollbar">
+                                              {submissionComments.map((comment: any, cidx: number) => (
+                                                <div key={cidx} className={`p-1.5 rounded text-[10px] ${comment.type === 'rejection' ? 'bg-red-500/10 text-red-300' : 'bg-white/5 text-white/70'}`}>
+                                                  <span className="font-semibold text-white/50">{comment.user_name}: </span>{comment.message}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                          {submissionAttachments.length > 0 && (
+                                            <div className="flex flex-wrap gap-1">
+                                              {submissionAttachments.map((att: any, aidx: number) => (
+                                                <a key={aidx} href={att.publicUrl || att.url} target="_blank" rel="noopener noreferrer"
+                                                  className="flex items-center gap-1 px-1.5 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded text-[9px] hover:bg-blue-500/20">
+                                                  <Paperclip className="h-2.5 w-2.5" />
+                                                  <span className="max-w-[80px] truncate">{att.name || 'File'}</span>
+                                                </a>
+                                              ))}
+                                            </div>
+                                          )}
+                                          <Textarea
+                                            placeholder="Rejection reason (optional)..."
+                                            value={rejectionNotes[subtask.id] || ''}
+                                            onChange={(e) => setRejectionNotes({ ...rejectionNotes, [subtask.id]: e.target.value })}
+                                            rows={2}
+                                            className="text-[10px] resize-none bg-black/40 border-white/10 text-white placeholder:text-white/20"
+                                          />
+                                          <div className="flex gap-1.5">
+                                            <Button size="sm" className="flex-1 h-7 bg-green-600 hover:bg-green-700 font-bold text-[10px] gap-1"
+                                              onClick={() => handleSubtaskApprove(subtask.id)}>
+                                              <CheckCircle className="h-3 w-3" /> Approve
+                                            </Button>
+                                            <Button size="sm" variant="outline" className="flex-1 h-7 border-red-500/40 text-red-400 hover:bg-red-500/10 font-bold text-[10px] gap-1"
+                                              onClick={() => { handleSubtaskReject(subtask.id, rejectionNotes[subtask.id] || ''); setRejectionNotes({ ...rejectionNotes, [subtask.id]: '' }); }}>
+                                              <X className="h-3 w-3" /> Return
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Comment thread */}
+                                      {!isPendingApproval && (
+                                        <div className="flex gap-1 pt-1 border-t border-white/5">
+                                          <Textarea
+                                            placeholder="Add a note..."
+                                            value={newMessageSubtask[subtask.id] || ''}
+                                            onChange={e => setNewMessageSubtask({ ...newMessageSubtask, [subtask.id]: e.target.value })}
+                                            className="flex-1 text-[10px] resize-none bg-black/30 border-white/10 text-white min-h-0"
+                                            rows={1}
+                                          />
+                                          <Button size="icon" variant="ghost" className="h-7 w-7 self-end flex-shrink-0"
+                                            onClick={() => handleSendSubtaskMessage(subtask.id, false)}
+                                            disabled={!newMessageSubtask[subtask.id]?.trim()}>
+                                            <Send className="h-2.5 w-2.5" />
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-white/30 text-sm border border-dashed border-white/10 rounded-xl">
-                    No subtasks yet. Create one above to get started.
-                  </div>
-                )}
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="flex justify-end">

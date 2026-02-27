@@ -99,8 +99,11 @@ const TaskManagement = () => {
     priority: "medium" as 'low' | 'medium' | 'high' | 'urgent',
     points: 0,
     due_date: "",
-    due_time: ""
+    due_time: "",
+    stage: 1
   });
+  // Track which stage column has the quick-add form open
+  const [quickAddStage, setQuickAddStage] = useState<number | null>(null);
 
   const [newTask, setNewTask] = useState({
     title: "",
@@ -317,7 +320,7 @@ const TaskManagement = () => {
           due_date: newSubtask.due_date || null,
           due_time: newSubtask.due_time || null,
           created_by: user?.id,
-          stage: 1,
+          stage: newSubtask.stage || 1,
           status: 'pending'
         })
         .select(`
@@ -339,8 +342,10 @@ const TaskManagement = () => {
         priority: "medium",
         points: 0,
         due_date: "",
-        due_time: ""
+        due_time: "",
+        stage: newSubtask.stage
       });
+      setQuickAddStage(null);
       setSelectedSubtaskTemplateId("none");
 
       toast({
@@ -411,7 +416,7 @@ const TaskManagement = () => {
       console.error('Error bulk adding subtasks:', error);
       toast({
         title: "Error",
-        description: "Failed to add subtasks.",
+        description: error instanceof Error ? error.message : "Failed to add subtasks.",
         variant: "destructive",
       });
     }
@@ -2200,7 +2205,8 @@ const TaskManagement = () => {
                               setBulkSubtasks(tpl.subtask_templates.map((st: any) => ({
                                 ...st,
                                 assigned_to: "",
-                                priority: tpl.priority || 'medium'
+                                priority: st.priority || tpl.priority || 'medium',
+                                stage: st.stage || 1
                               })));
                             }
                           }}
@@ -2243,6 +2249,22 @@ const TaskManagement = () => {
                             </SelectContent>
                           </Select>
                         </div>
+                        <div className="flex items-center gap-2 bg-background/50 p-1 rounded border border-white/5">
+                          <span className="text-[9px] text-muted-foreground px-1">Stage All:</span>
+                          <Select onValueChange={(val) => {
+                            const s = parseInt(val);
+                            setBulkSubtasks(bulkSubtasks.map(st => ({ ...st, stage: s })));
+                          }}>
+                            <SelectTrigger className="w-[80px] h-6 text-[9px] border-none bg-transparent focus:ring-0 shadow-none">
+                              <SelectValue placeholder="Set Stage" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => (
+                                <SelectItem key={s} value={s.toString()} className="text-xs">Stage {s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
                       <div className="bg-background/20 rounded-md border border-white/5 p-2 max-h-[300px] overflow-y-auto space-y-1 custom-scrollbar">
@@ -2250,7 +2272,24 @@ const TaskManagement = () => {
                           <div key={idx} className="flex items-center gap-2 p-2 bg-muted/10 rounded border border-muted/20 hover:bg-muted/20 transition-colors">
                             <div className="flex-1 min-w-0 ml-1">
                               <p className="text-[10px] font-medium truncate">{st.title}</p>
-                              <p className="text-[8px] text-muted-foreground">{st.points} pts</p>
+                              <div className="flex items-center gap-2 text-[8px] text-muted-foreground">
+                                <span>{st.points} pts</span>
+                                <span className="text-purple-400 font-bold border border-purple-500/20 bg-purple-500/5 px-1 rounded">Stage {st.stage || 1}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                value={st.stage || 1}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 1;
+                                  const newBulk = [...bulkSubtasks];
+                                  newBulk[idx].stage = val;
+                                  setBulkSubtasks(newBulk);
+                                }}
+                                className="w-8 h-7 text-[10px] bg-background border border-muted/30 rounded text-center focus:outline-none focus:border-purple-500"
+                                title="Change stage for this subtask"
+                              />
                             </div>
                             <Select
                               value={st.assigned_to}
@@ -2313,7 +2352,8 @@ const TaskManagement = () => {
                                   ...prev,
                                   title: tpl.title || "",
                                   description: tpl.description || "",
-                                  points: tpl.points || 0
+                                  points: tpl.points || 0,
+                                  stage: tpl.stage || 1
                                 }));
                               }
                             } else {
@@ -2385,7 +2425,7 @@ const TaskManagement = () => {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="grid grid-cols-2 gap-3 md:col-span-2">
+                      <div className="grid grid-cols-3 gap-3 md:col-span-2">
                         <Input
                           type="number"
                           placeholder="Points"
@@ -2400,83 +2440,211 @@ const TaskManagement = () => {
                           onChange={(e) => setNewSubtask({ ...newSubtask, due_date: e.target.value })}
                           className="h-9 text-xs"
                         />
+                        <Input
+                          type="number"
+                          placeholder="Stage #"
+                          value={newSubtask.stage}
+                          onChange={(e) => setNewSubtask({ ...newSubtask, stage: parseInt(e.target.value) || 1 })}
+                          min="1"
+                          className="h-9 text-xs"
+                          title="Stage number (1, 2, 3...)"
+                        />
                       </div>
                       <Button
                         onClick={() => handleCreateSubtask(selectedTask.id)}
                         className="md:col-span-2 h-9 text-xs bg-primary hover:bg-primary/90"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Individual Subtask
+                        Add Individual Subtask (Stage {newSubtask.stage})
                       </Button>
                     </div>
                   </div>
                 </div>
 
-                {/* Subtasks List */}
+                {/* Subtasks — Stage Kanban Columns */}
                 {loadingSubtasks ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
-                ) : subtasks.length > 0 ? (
-                  <div className="space-y-2">
-                    {subtasks.map((subtask) => (
-                      <div key={subtask.id} className="p-3 bg-muted/20 rounded-lg border border-muted">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium">{subtask.title}</span>
-                              {getPriorityBadge(subtask.priority)}
-                            </div>
-                            {subtask.description && (
-                              <p className="text-sm text-muted-foreground mb-2">{subtask.description}</p>
-                            )}
-                            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <User className="h-3 w-3" />
-                                {subtask.staff_profiles?.full_name || 'Loading...'}
-                              </span>
-                              {subtask.points > 0 && <span>{subtask.points} Points</span>}
-                              {subtask.due_date && (
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="h-3 w-3" />
-                                  {format(new Date(subtask.due_date), 'MMM dd, yyyy')}
-                                </span>
+                ) : (() => {
+                  // Group subtasks by stage
+                  const stageMap: Record<number, any[]> = {};
+                  subtasks.forEach(st => {
+                    const s = (st as any).stage || 1;
+                    if (!stageMap[s]) stageMap[s] = [];
+                    stageMap[s].push(st);
+                  });
+                  const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
+                  // Always show at least stage 1 column
+                  if (stageNums.length === 0) stageNums.push(1);
+
+                  const stageColors = [
+                    'border-indigo-500/40 bg-indigo-500/5',
+                    'border-green-500/40 bg-green-500/5',
+                    'border-orange-500/40 bg-orange-500/5',
+                    'border-cyan-500/40 bg-cyan-500/5',
+                    'border-pink-500/40 bg-pink-500/5',
+                  ];
+                  const stageBadgeColors = [
+                    'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300',
+                    'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300',
+                    'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300',
+                    'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300',
+                    'bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-300',
+                  ];
+
+                  return (
+                    <div className="overflow-x-auto pb-2">
+                      <div className="flex gap-3 min-w-0" style={{ minWidth: stageNums.length * 260 }}>
+                        {stageNums.map((stageNum) => {
+                          const colClass = stageColors[(stageNum - 1) % stageColors.length];
+                          const badgeClass = stageBadgeColors[(stageNum - 1) % stageBadgeColors.length];
+                          const stageSubtasks = stageMap[stageNum] || [];
+                          const isQuickAddOpen = quickAddStage === stageNum;
+
+                          return (
+                            <div key={stageNum} className={`flex-1 min-w-[240px] rounded-xl border ${colClass} p-3 space-y-2`}>
+                              {/* Stage column header */}
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeClass}`}>
+                                    Stage {stageNum}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">{stageSubtasks.length} task{stageSubtasks.length !== 1 ? 's' : ''}</span>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                                  title={`Add subtask to Stage ${stageNum}`}
+                                  onClick={() => {
+                                    setQuickAddStage(isQuickAddOpen ? null : stageNum);
+                                    setNewSubtask(prev => ({ ...prev, stage: stageNum, title: '', assigned_to: '', description: '', points: 0, due_date: '' }));
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+
+                              {/* Quick-add form for this stage */}
+                              {isQuickAddOpen && (
+                                <div className="space-y-2 p-2 bg-background/60 rounded-lg border border-muted/60 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                  <Input
+                                    autoFocus
+                                    placeholder="Subtask title *"
+                                    value={newSubtask.title}
+                                    onChange={e => setNewSubtask({ ...newSubtask, title: e.target.value })}
+                                    className="h-8 text-xs"
+                                  />
+                                  <Select
+                                    value={newSubtask.assigned_to}
+                                    onValueChange={val => setNewSubtask({ ...newSubtask, assigned_to: val })}
+                                  >
+                                    <SelectTrigger className="h-8 text-xs">
+                                      <SelectValue placeholder="Assign To *" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {staff.map((member: any) => (
+                                        <SelectItem key={member.id} value={member.user_id} className="text-xs">{member.full_name}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <div className="flex gap-1">
+                                    <Input
+                                      type="number"
+                                      placeholder="Pts"
+                                      value={newSubtask.points === 0 ? '' : newSubtask.points}
+                                      onChange={e => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
+                                      min="0"
+                                      className="h-8 text-xs w-16"
+                                    />
+                                    <Select
+                                      value={newSubtask.priority}
+                                      onValueChange={val => setNewSubtask({ ...newSubtask, priority: val as any })}
+                                    >
+                                      <SelectTrigger className="h-8 text-xs flex-1">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="low" className="text-xs">Low</SelectItem>
+                                        <SelectItem value="medium" className="text-xs">Medium</SelectItem>
+                                        <SelectItem value="high" className="text-xs">High</SelectItem>
+                                        <SelectItem value="urgent" className="text-xs">Urgent</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button
+                                      size="sm"
+                                      className="flex-1 h-7 text-xs"
+                                      onClick={() => handleCreateSubtask(selectedTask.id)}
+                                    >
+                                      Add
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 text-xs"
+                                      onClick={() => setQuickAddStage(null)}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
                               )}
+
+                              {/* Subtask cards for this stage */}
+                              {stageSubtasks.length === 0 && !isQuickAddOpen && (
+                                <div className="text-center py-3 text-xs text-muted-foreground border border-dashed rounded-lg">
+                                  No subtasks
+                                </div>
+                              )}
+                              {stageSubtasks.map((subtask: any) => (
+                                <div key={subtask.id} className="p-2 bg-background/80 rounded-lg border border-muted/50 space-y-1.5">
+                                  <div className="flex items-start justify-between gap-1">
+                                    <span className="text-xs font-semibold leading-tight flex-1">{subtask.title}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                                      onClick={() => handleDeleteSubtask(subtask.id)}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                  {subtask.description && (
+                                    <p className="text-[10px] text-muted-foreground line-clamp-2">{subtask.description}</p>
+                                  )}
+                                  <div className="flex items-center gap-1 flex-wrap text-[10px] text-muted-foreground">
+                                    <span className="flex items-center gap-0.5">
+                                      <User className="h-2.5 w-2.5" />
+                                      {subtask.staff_profiles?.full_name || '–'}
+                                    </span>
+                                    {subtask.points > 0 && <span>· {subtask.points}pts</span>}
+                                  </div>
+                                  <Select
+                                    value={subtask.status}
+                                    onValueChange={val => handleSubtaskStatusUpdate(subtask.id, val)}
+                                  >
+                                    <SelectTrigger className="w-full h-7 text-[10px]">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">Pending</SelectItem>
+                                      <SelectItem value="in_progress">In Progress</SelectItem>
+                                      <SelectItem value="completed">Completed</SelectItem>
+                                      <SelectItem value="review_pending">Review Pending</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              ))}
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Select
-                              value={subtask.status}
-                              onValueChange={(value) => handleSubtaskStatusUpdate(subtask.id, value)}
-                            >
-                              <SelectTrigger className="w-32 h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="in_progress">In Progress</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                                <SelectItem value="review_pending">Review Pending</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0"
-                              onClick={() => handleDeleteSubtask(subtask.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground text-sm">
-                    No subtasks yet.
-                  </div>
-                )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Handover History */}
