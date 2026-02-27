@@ -150,7 +150,6 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [pendingSubtasks, setPendingSubtasks] = useState<Subtask[]>([]);
   const [approvedSubtasks, setApprovedSubtasks] = useState<Subtask[]>([]);
   const [returnedSubtasks, setReturnedSubtasks] = useState<Subtask[]>([]);
-  const [pendingSubtasks, setPendingSubtasks] = useState<Subtask[]>([]);
   const [newSubtask, setNewSubtask] = useState({
     title: "",
     description: "",
@@ -2492,36 +2491,36 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                               </div>
                             </TableCell>
                             <TableCell className="align-top">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7 border border-white/10 bg-white/5">
-                              <AvatarImage
-                                src={
-                                  getAssigneeProfiles(task.assigned_to)[0]?.avatar_url || undefined
-                                }
-                                alt={getAssigneeName(task.assigned_to)}
-                              />
-                              <AvatarFallback className="text-[10px]">
-                                {getAssigneeName(task.assigned_to)
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")
-                                  .slice(0, 2)
-                                  .toUpperCase() || "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                              <div className="font-medium text-white/90 text-sm truncate">
-                                {getAssigneeName(task.assigned_to)}
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-7 w-7 border border-white/10 bg-white/5">
+                                  <AvatarImage
+                                    src={
+                                      getAssigneeProfiles(task.assigned_to)[0]?.avatar_url || undefined
+                                    }
+                                    alt={getAssigneeName(task.assigned_to)}
+                                  />
+                                  <AvatarFallback className="text-[10px]">
+                                    {getAssigneeName(task.assigned_to)
+                                      .split(" ")
+                                      .map((n) => n[0])
+                                      .join("")
+                                      .slice(0, 2)
+                                      .toUpperCase() || "U"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0">
+                                  <div className="font-medium text-white/90 text-sm truncate">
+                                    {getAssigneeName(task.assigned_to)}
+                                  </div>
+                                  <div className="text-[11px] text-white/50 truncate">
+                                    @{getAssigneeUsername(task.assigned_to)} • {getAssigneeCount(task.assigned_to)}{" "}
+                                    assignee{getAssigneeCount(task.assigned_to) === 1 ? "" : "s"}
+                                  </div>
+                                  <div className="text-[10px] text-white/40 truncate">
+                                    Created by {getCreatorName(task.assigned_by)}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-[11px] text-white/50 truncate">
-                                @{getAssigneeUsername(task.assigned_to)} • {getAssigneeCount(task.assigned_to)}{" "}
-                                assignee{getAssigneeCount(task.assigned_to) === 1 ? "" : "s"}
-                              </div>
-                              <div className="text-[10px] text-white/40 truncate">
-                                Created by {getCreatorName(task.assigned_by)}
-                              </div>
-                            </div>
-                          </div>
                             </TableCell>
                             <TableCell className="align-top">
                               <div className="scale-90 origin-left">
@@ -3011,7 +3010,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <span className="text-muted-foreground">Assigned to:</span>{' '}
-                        <span className="font-medium">{getAssigneeName(selectedTask.assigned_to)}</span>
+                    <span className="font-medium">{getAssigneeName(selectedTask.assigned_to)}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Points:</span>{' '}
