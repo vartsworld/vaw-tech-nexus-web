@@ -48,16 +48,22 @@ const MyCoins = () => {
 
       setUserId(user.id);
 
-      // Fetch user profile for coin balance
-      const { data: profileData, error: profileError } = await supabase
-        .from("staff_profiles")
-        .select("total_points, full_name")
-        .eq("user_id", user.id)
-        .single();
+      // Fetch user coin transactions to calculate precise balance
+      const { data: txData, error: txError } = await supabase
+        .from("user_coin_transactions")
+        .select("coins")
+        .eq("user_id", user.id);
 
-      if (profileError) throw profileError;
-      
-      setUserCoins(profileData?.total_points || 0);
+      if (txError) throw txError;
+
+      const calculatedBalance = txData?.reduce((sum, tx) => sum + tx.coins, 0) || 0;
+      setUserCoins(calculatedBalance);
+
+      // Also update the profile total_points just in case it's out of sync
+      await supabase
+        .from("staff_profiles")
+        .update({ total_points: calculatedBalance })
+        .eq("user_id", user.id);
 
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -69,7 +75,7 @@ const MyCoins = () => {
 
   const fetchRewards = async () => {
     try {
-      // Use rewards_catalog as the primary table (has proper data)
+      // Use rewards_catalog as the primary table
       const { data, error } = await supabase
         .from("rewards_catalog")
         .select("id, title, description, category, points_cost, monetary_value, image_url, stock_quantity, redemption_limit, terms_conditions, is_active")
@@ -81,7 +87,7 @@ const MyCoins = () => {
         setRewards([]);
         return;
       }
-      
+
       // Map to expected interface format
       const mappedRewards = (data || []).map(r => ({
         id: r.id,
@@ -95,7 +101,7 @@ const MyCoins = () => {
         redemption_limit: r.redemption_limit,
         terms_conditions: r.terms_conditions
       }));
-      
+
       setRewards(mappedRewards);
     } catch (error) {
       console.error("Error fetching rewards:", error);
@@ -144,7 +150,7 @@ const MyCoins = () => {
       setUserCoins(prev => prev - coinsCost);
 
       toast.success("🎉 Redemption requested! Awaiting approval.");
-      
+
       // Refresh data
       fetchUserData();
       fetchRewards();
@@ -154,17 +160,20 @@ const MyCoins = () => {
     }
   };
 
-  const filteredRewards = activeCategory === "all" 
-    ? rewards 
-    : rewards.filter(r => r.category === activeCategory);
+  const filteredRewards = activeCategory === "all"
+    ? rewards
+    : activeCategory === "bonuses_combined"
+      ? rewards.filter(r => r.category === "bonus" || r.category === "salary_perk")
+      : activeCategory === "others_combined"
+        ? rewards.filter(r => r.category === "other" || r.category === "benefits")
+        : rewards.filter(r => r.category === activeCategory);
 
   const categories = [
     { value: "all", label: "All Rewards", icon: Gift },
-    { value: "salary_perk", label: "Salary Perks", icon: TrendingUp },
-    { value: "bonus", label: "Bonuses", icon: Award },
+    { value: "bonuses_combined", label: "Bonuses", icon: Award },
     { value: "merchandise", label: "Merchandise", icon: Gift },
-    { value: "benefits", label: "Benefits", icon: Award },
-    { value: "other", label: "Other", icon: Gift }
+    { value: "others_combined", label: "Others", icon: Gift },
+    { value: "log", label: "Coin Logs", icon: History }
   ];
 
   if (loading) {
@@ -181,10 +190,10 @@ const MyCoins = () => {
         {/* Navigation & Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={() => navigate("/staff/dashboard")}
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate(-1)}
               className="rounded-full hover:bg-primary/10 border-primary/20"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -212,13 +221,13 @@ const MyCoins = () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
             <TabsList className="bg-muted/50 p-1 border border-border/50 h-auto flex-wrap">
               {categories.map(cat => (
-                <TabsTrigger key={cat.value} value={cat.value} className="gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <TabsTrigger key={cat.value} value={cat.value} className="gap-2 py-2 px-4 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-foreground">
                   <cat.icon className="w-4 h-4" />
                   {cat.label}
                 </TabsTrigger>
               ))}
             </TabsList>
-            
+
             <div className="flex items-center gap-2">
               <Button variant="ghost" className="gap-2 text-muted-foreground" onClick={() => fetchRewards()}>
                 <History className="w-4 h-4" />
@@ -228,52 +237,52 @@ const MyCoins = () => {
           </div>
 
           <TabsContent value={activeCategory} className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Stats Cards */}
-            <PointsBalance points={userCoins} userId={userId || ""} />
-
-            {/* Catalog Grid */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <Package className="w-6 h-6 text-primary" />
-                  Available Rewards
-                </h2>
-                <Badge variant="outline" className="text-muted-foreground">
-                  {filteredRewards.length} Items Found
-                </Badge>
+            {activeCategory === "log" ? (
+              <div className="space-y-12">
+                <PointsBalance points={userCoins} userId={userId || ""} />
+                <CoinTransactionLog userId={userId || ""} />
+                <RedemptionHistory userId={userId || ""} />
               </div>
+            ) : (
+              <div className="space-y-12">
+                {/* Stats Cards */}
+                <PointsBalance points={userCoins} userId={userId || ""} />
 
-              {filteredRewards.length === 0 ? (
-                <div className="text-center py-24 bg-muted/10 border-4 border-dashed border-border/50 rounded-3xl">
-                  <Gift className="w-20 h-20 mx-auto mb-4 opacity-10" />
-                  <h3 className="text-2xl font-bold text-muted-foreground">No rewards found</h3>
-                  <p className="text-muted-foreground">Check back later or try a different category.</p>
+                {/* Catalog Grid */}
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold flex items-center gap-2 text-foreground">
+                      <Package className="w-6 h-6 text-primary" />
+                      Available Rewards
+                    </h2>
+                    <Badge variant="outline" className="text-muted-foreground">
+                      {filteredRewards.length} Items Found
+                    </Badge>
+                  </div>
+
+                  {filteredRewards.length === 0 ? (
+                    <div className="text-center py-24 bg-muted/10 border-4 border-dashed border-border/50 rounded-3xl">
+                      <Gift className="w-20 h-20 mx-auto mb-4 opacity-10" />
+                      <h3 className="text-2xl font-bold text-muted-foreground">No rewards found</h3>
+                      <p className="text-muted-foreground">Check back later or try a different category.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                      {filteredRewards.map((reward) => (
+                        <RewardCard
+                          key={reward.id}
+                          reward={reward}
+                          userPoints={userCoins}
+                          onRedeem={handleRedeem}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                  {filteredRewards.map((reward) => (
-                    <RewardCard
-                      key={reward.id}
-                      reward={reward}
-                      userPoints={userCoins}
-                      onRedeem={handleRedeem}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
-
-        {/* Coin Transaction Log Section */}
-        <div className="pt-12 border-t border-border/50">
-          <CoinTransactionLog userId={userId || ""} />
-        </div>
-
-        {/* Redemption History Section */}
-        <div className="pt-12 border-t border-border/50">
-          <RedemptionHistory userId={userId || ""} />
-        </div>
       </div>
     </div>
   );
