@@ -38,7 +38,7 @@ interface ProjectMonitor {
   clients?: Client;
 }
 
-const ProjectMonitor = () => {
+const ProjectMonitorPage = ({ standalone = false }: { standalone?: boolean }) => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<ProjectMonitor[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -48,7 +48,7 @@ const ProjectMonitor = () => {
   const [editingProject, setEditingProject] = useState<ProjectMonitor | null>(null);
   const [renewalProject, setRenewalProject] = useState<ProjectMonitor | null>(null);
   const [websiteStatuses, setWebsiteStatuses] = useState<Record<string, 'checking' | 'online' | 'offline' | 'error'>>({});
-  
+
   // Filter and Sort states
   const [searchQuery, setSearchQuery] = useState("");
   const [filterClient, setFilterClient] = useState("all");
@@ -102,7 +102,7 @@ const ProjectMonitor = () => {
 
       setProjects(projectsRes.data || []);
       setClients(clientsRes.data || []);
-      
+
       // Check status for each project
       (projectsRes.data || []).forEach(project => {
         checkWebsiteStatus(project.id, project.website_url);
@@ -117,7 +117,7 @@ const ProjectMonitor = () => {
 
   const checkWebsiteStatus = async (projectId: string, url: string) => {
     setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'checking' }));
-    
+
     try {
       // We'll use a simple approach - try to load an image from the domain
       // This is a workaround since we can't make direct fetch requests due to CORS
@@ -125,18 +125,18 @@ const ProjectMonitor = () => {
       const timeoutId = setTimeout(() => {
         setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'error' }));
       }, 10000);
-      
+
       img.onload = () => {
         clearTimeout(timeoutId);
         setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'online' }));
       };
-      
+
       img.onerror = () => {
         clearTimeout(timeoutId);
         // Even if image fails, domain might be up - mark as online with caveat
         setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'online' }));
       };
-      
+
       // Try to load favicon as a proxy for site availability
       const domain = new URL(url).origin;
       img.src = `${domain}/favicon.ico?t=${Date.now()}`;
@@ -147,7 +147,7 @@ const ProjectMonitor = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -174,14 +174,14 @@ const ProjectMonitor = () => {
           .from('project_monitors')
           .update(payload)
           .eq('id', editingProject.id);
-        
+
         if (error) throw error;
         toast.success('Project updated successfully');
       } else {
         const { error } = await supabase
           .from('project_monitors')
           .insert(payload);
-        
+
         if (error) throw error;
         toast.success('Project added successfully');
       }
@@ -214,13 +214,13 @@ const ProjectMonitor = () => {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this project?')) return;
-    
+
     try {
       const { error } = await supabase
         .from('project_monitors')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw error;
       toast.success('Project deleted');
       fetchData();
@@ -248,12 +248,12 @@ const ProjectMonitor = () => {
   const calculateNextRenewalDate = (currentDate: string | null, cycle: string) => {
     const baseDate = currentDate ? new Date(currentDate) : new Date();
     let nextDate = baseDate;
-    
+
     // If current date is in past, calculate from today
     if (currentDate && isPast(new Date(currentDate))) {
       nextDate = new Date();
     }
-    
+
     switch (cycle) {
       case 'monthly':
         nextDate = addMonths(nextDate, 1);
@@ -269,17 +269,17 @@ const ProjectMonitor = () => {
         nextDate = addYears(nextDate, 1);
         break;
     }
-    
+
     return format(nextDate, 'yyyy-MM-dd');
   };
 
   const handleUpdateRenewal = (project: ProjectMonitor) => {
     setRenewalProject(project);
-    
+
     const domainCycle = project.domain_renewal_cycle || 'yearly';
     const serverCycle = project.server_renewal_cycle || 'yearly';
     const facebookCycle = project.facebook_token_renewal_cycle || '90days';
-    
+
     setRenewalFormData({
       domain_renewal_date: calculateNextRenewalDate(project.domain_renewal_date, domainCycle),
       server_renewal_date: calculateNextRenewalDate(project.server_renewal_date, serverCycle),
@@ -305,12 +305,12 @@ const ProjectMonitor = () => {
 
     try {
       const updatePayload: Record<string, any> = {};
-      
+
       if (renewalFormData.update_domain) {
         updatePayload.domain_renewal_date = renewalFormData.domain_renewal_date || null;
         updatePayload.domain_renewal_cycle = renewalFormData.domain_renewal_cycle;
       }
-      
+
       if (renewalFormData.update_server) {
         updatePayload.server_renewal_date = renewalFormData.server_renewal_date || null;
         updatePayload.server_renewal_cycle = renewalFormData.server_renewal_cycle;
@@ -338,10 +338,10 @@ const ProjectMonitor = () => {
 
   const getRenewalStatus = (date: string | null) => {
     if (!date) return null;
-    
+
     const renewalDate = new Date(date);
     const daysUntil = differenceInDays(renewalDate, new Date());
-    
+
     if (isPast(renewalDate)) {
       return { status: 'expired', label: 'Expired', color: 'bg-destructive text-destructive-foreground' };
     } else if (daysUntil <= 7) {
@@ -375,11 +375,11 @@ const ProjectMonitor = () => {
       project.server_renewal_date,
       project.facebook_token_renewal_date
     ].filter(Boolean);
-    
+
     if (dates.length === 0) return 'none';
-    
+
     const closestDays = Math.min(...dates.map(d => differenceInDays(new Date(d!), new Date())));
-    
+
     if (closestDays < 0) return 'expired';
     if (closestDays <= 7) return 'critical';
     if (closestDays <= 30) return 'warning';
@@ -397,17 +397,17 @@ const ProjectMonitor = () => {
         const matchesClient = project.clients?.company_name.toLowerCase().includes(query);
         if (!matchesName && !matchesUrl && !matchesClient) return false;
       }
-      
+
       // Client filter
       if (filterClient !== "all" && project.client_id !== filterClient) return false;
-      
+
       // Urgency filter
       if (filterUrgency !== "all") {
         const urgency = getProjectUrgency(project);
         if (filterUrgency === "expiring" && urgency !== "warning" && urgency !== "critical") return false;
         if (filterUrgency === "expired" && urgency !== "expired") return false;
       }
-      
+
       return true;
     })
     .sort((a, b) => {
@@ -445,174 +445,236 @@ const ProjectMonitor = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-4 sm:p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Project Monitor</h1>
-              <p className="text-muted-foreground text-sm">Track client websites and renewal dates</p>
-            </div>
-          </div>
-          
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Project
+    <div className={standalone ? "" : "min-h-screen bg-background"}>
+      <div className={standalone ? "" : "container mx-auto p-4 sm:p-6"}>
+        {!standalone && (
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+                <ArrowLeft className="w-5 h-5" />
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>{editingProject ? 'Edit Project' : 'Add New Project'}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label>Client (Optional)</Label>
-                  <Select value={formData.client_id} onValueChange={(v) => setFormData(prev => ({ ...prev, client_id: v }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map(client => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.company_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label>Project Name *</Label>
-                  <Input
-                    value={formData.project_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, project_name: e.target.value }))}
-                    placeholder="My Awesome Project"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label>Website URL *</Label>
-                  <Input
-                    value={formData.website_url}
-                    onChange={(e) => setFormData(prev => ({ ...prev, website_url: e.target.value }))}
-                    placeholder="https://example.com"
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="flex items-center gap-2">
-                        <Globe className="w-4 h-4" />
-                        Domain Renewal
-                      </Label>
-                      <Input
-                        type="date"
-                        value={formData.domain_renewal_date}
-                        onChange={(e) => setFormData(prev => ({ ...prev, domain_renewal_date: e.target.value }))}
-                      />
+              <div>
+                <h1 className="text-2xl font-bold text-foreground">Project Monitor</h1>
+                <p className="text-muted-foreground text-sm">Track client websites and renewal dates</p>
+              </div>
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Project
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>{editingProject ? 'Edit Project' : 'Add New Project'}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <Label>Client (Optional)</Label>
+                    <Select value={formData.client_id} onValueChange={(v) => setFormData(prev => ({ ...prev, client_id: v }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a client" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.map(client => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.company_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Project Name *</Label>
+                    <Input
+                      value={formData.project_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, project_name: e.target.value }))}
+                      placeholder="My Awesome Project"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Website URL *</Label>
+                    <Input
+                      value={formData.website_url}
+                      onChange={(e) => setFormData(prev => ({ ...prev, website_url: e.target.value }))}
+                      placeholder="https://example.com"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="flex items-center gap-2">
+                          <Globe className="w-4 h-4" />
+                          Domain Renewal
+                        </Label>
+                        <Input
+                          type="date"
+                          value={formData.domain_renewal_date}
+                          onChange={(e) => setFormData(prev => ({ ...prev, domain_renewal_date: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>Domain Cycle</Label>
+                        <Select value={formData.domain_renewal_cycle} onValueChange={(v) => setFormData(prev => ({ ...prev, domain_renewal_cycle: v }))}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="quarterly">Quarterly</SelectItem>
+                            <SelectItem value="yearly">Yearly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                    <div>
-                      <Label>Domain Cycle</Label>
-                      <Select value={formData.domain_renewal_cycle} onValueChange={(v) => setFormData(prev => ({ ...prev, domain_renewal_cycle: v }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="quarterly">Quarterly</SelectItem>
-                          <SelectItem value="yearly">Yearly</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="flex items-center gap-2">
+                          <Server className="w-4 h-4" />
+                          Server Renewal
+                        </Label>
+                        <Input
+                          type="date"
+                          value={formData.server_renewal_date}
+                          onChange={(e) => setFormData(prev => ({ ...prev, server_renewal_date: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label>Server Cycle</Label>
+                        <Select value={formData.server_renewal_cycle} onValueChange={(v) => setFormData(prev => ({ ...prev, server_renewal_cycle: v }))}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="quarterly">Quarterly</SelectItem>
+                            <SelectItem value="yearly">Yearly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="flex items-center gap-2">
-                        <Server className="w-4 h-4" />
-                        Server Renewal
-                      </Label>
-                      <Input
-                        type="date"
-                        value={formData.server_renewal_date}
-                        onChange={(e) => setFormData(prev => ({ ...prev, server_renewal_date: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>Server Cycle</Label>
-                      <Select value={formData.server_renewal_cycle} onValueChange={(v) => setFormData(prev => ({ ...prev, server_renewal_cycle: v }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="quarterly">Quarterly</SelectItem>
-                          <SelectItem value="yearly">Yearly</SelectItem>
-                        </SelectContent>
-                      </Select>
+
+                  <div>
+                    <Label>Notes</Label>
+                    <Textarea
+                      value={formData.notes}
+                      onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Additional notes..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="flex gap-2 justify-end">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">
+                      {editingProject ? 'Update' : 'Add Project'}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
+
+        {standalone && (
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Project Integrity Monitor</h2>
+              <p className="text-gray-500 mt-1">Real-time status tracking and asset renewal lifecycle</p>
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}>
+              <DialogTrigger asChild>
+                <Button className="bg-indigo-600 hover:bg-indigo-700 rounded-xl px-6">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Monitor Asset
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md bg-[#0f0f0f] border-white/5 text-white">
+                <DialogHeader>
+                  <DialogTitle>{editingProject ? 'Refine Asset Parameters' : 'Register New Asset'}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-1">
+                    <Label className="text-gray-400">Client Partner</Label>
+                    <Select value={formData.client_id} onValueChange={(v) => setFormData(prev => ({ ...prev, client_id: v }))}>
+                      <SelectTrigger className="bg-white/5 border-white/10">
+                        <SelectValue placeholder="Select Client Partner" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                        {clients.map(client => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.company_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-gray-400">Project Designation</Label>
+                    <Input
+                      value={formData.project_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, project_name: e.target.value }))}
+                      placeholder="Infrastructure Unit"
+                      required
+                      className="bg-white/5 border-white/10"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-gray-400">Endpoint URL</Label>
+                    <Input
+                      value={formData.website_url}
+                      onChange={(e) => setFormData(prev => ({ ...prev, website_url: e.target.value }))}
+                      placeholder="vaw.tech"
+                      required
+                      className="bg-white/5 border-white/10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-gray-400">Domain Renewal</Label>
+                        <Input
+                          type="date"
+                          value={formData.domain_renewal_date}
+                          onChange={(e) => setFormData(prev => ({ ...prev, domain_renewal_date: e.target.value }))}
+                          className="bg-white/5 border-white/10"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-gray-400">Cycle</Label>
+                        <Select value={formData.domain_renewal_cycle} onValueChange={(v) => setFormData(prev => ({ ...prev, domain_renewal_cycle: v }))}>
+                          <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
+                          <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="quarterly">Quarterly</SelectItem>
+                            <SelectItem value="yearly">Yearly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="flex items-center gap-2">
-                        <Facebook className="w-4 h-4" />
-                        Facebook Token
-                      </Label>
-                      <Input
-                        type="date"
-                        value={formData.facebook_token_renewal_date}
-                        onChange={(e) => setFormData(prev => ({ ...prev, facebook_token_renewal_date: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>Token Cycle</Label>
-                      <Select value={formData.facebook_token_renewal_cycle} onValueChange={(v) => setFormData(prev => ({ ...prev, facebook_token_renewal_cycle: v }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="90days">90 Days</SelectItem>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                          <SelectItem value="quarterly">Quarterly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <Label>Notes</Label>
-                  <Textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    placeholder="Additional notes..."
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="flex gap-2 justify-end">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    {editingProject ? 'Update' : 'Add Project'}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+                  <Button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700">Commit to Monitor</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
 
         {/* Filter and Sort Bar */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -640,7 +702,7 @@ const ProjectMonitor = () => {
                 ))}
               </SelectContent>
             </Select>
-            
+
             <Select value={filterUrgency} onValueChange={setFilterUrgency}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="All Status" />
@@ -651,7 +713,7 @@ const ProjectMonitor = () => {
                 <SelectItem value="expired">Expired</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-[180px]">
                 <ArrowUpDown className="w-4 h-4 mr-2" />
@@ -703,7 +765,7 @@ const ProjectMonitor = () => {
               const domainStatus = getRenewalStatus(project.domain_renewal_date);
               const serverStatus = getRenewalStatus(project.server_renewal_date);
               const facebookStatus = getRenewalStatus(project.facebook_token_renewal_date);
-              
+
               return (
                 <Card key={project.id} className="overflow-hidden">
                   {/* Website Preview */}
@@ -727,7 +789,7 @@ const ProjectMonitor = () => {
                       </Button>
                     </div>
                   </div>
-                  
+
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
                       <div>
@@ -746,17 +808,17 @@ const ProjectMonitor = () => {
                       </div>
                     </div>
                   </CardHeader>
-                  
+
                   <CardContent className="space-y-3">
-                    <a 
-                      href={project.website_url} 
-                      target="_blank" 
+                    <a
+                      href={project.website_url}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-sm text-primary hover:underline truncate block"
                     >
                       {project.website_url}
                     </a>
-                    
+
                     <div className="flex flex-wrap gap-2">
                       {domainStatus && (
                         <Badge variant="secondary" className={`${domainStatus.color} flex items-center gap-1`}>
@@ -777,11 +839,11 @@ const ProjectMonitor = () => {
                         </Badge>
                       )}
                     </div>
-                    
+
                     {project.notes && (
                       <p className="text-sm text-muted-foreground line-clamp-2">{project.notes}</p>
                     )}
-                    
+
                     <div className="flex items-center justify-between pt-2 border-t">
                       <span className="text-xs text-muted-foreground">
                         Added {format(new Date(project.created_at), 'MMM dd, yyyy')}
@@ -800,8 +862,8 @@ const ProjectMonitor = () => {
                           variant="ghost"
                           onClick={() => checkWebsiteStatus(project.id, project.website_url)}
                         >
-                        <RefreshCw className="w-3 h-3 mr-1" />
-                        Refresh
+                          <RefreshCw className="w-3 h-3 mr-1" />
+                          Refresh
                         </Button>
                       </div>
                     </div>
@@ -835,11 +897,11 @@ const ProjectMonitor = () => {
                   <div className="grid grid-cols-2 gap-2 pl-6">
                     <div>
                       <Label className="text-xs text-muted-foreground">Cycle</Label>
-                      <Select 
-                        value={renewalFormData.domain_renewal_cycle} 
+                      <Select
+                        value={renewalFormData.domain_renewal_cycle}
                         onValueChange={(v) => {
-                          setRenewalFormData(prev => ({ 
-                            ...prev, 
+                          setRenewalFormData(prev => ({
+                            ...prev,
                             domain_renewal_cycle: v,
                             domain_renewal_date: calculateNextRenewalDate(renewalProject?.domain_renewal_date || null, v)
                           }));
@@ -866,7 +928,7 @@ const ProjectMonitor = () => {
                   </div>
                 )}
               </div>
-              
+
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Checkbox
@@ -883,11 +945,11 @@ const ProjectMonitor = () => {
                   <div className="grid grid-cols-2 gap-2 pl-6">
                     <div>
                       <Label className="text-xs text-muted-foreground">Cycle</Label>
-                      <Select 
-                        value={renewalFormData.server_renewal_cycle} 
+                      <Select
+                        value={renewalFormData.server_renewal_cycle}
                         onValueChange={(v) => {
-                          setRenewalFormData(prev => ({ 
-                            ...prev, 
+                          setRenewalFormData(prev => ({
+                            ...prev,
                             server_renewal_cycle: v,
                             server_renewal_date: calculateNextRenewalDate(renewalProject?.server_renewal_date || null, v)
                           }));
@@ -931,11 +993,11 @@ const ProjectMonitor = () => {
                   <div className="grid grid-cols-2 gap-2 pl-6">
                     <div>
                       <Label className="text-xs text-muted-foreground">Cycle</Label>
-                      <Select 
-                        value={renewalFormData.facebook_token_renewal_cycle} 
+                      <Select
+                        value={renewalFormData.facebook_token_renewal_cycle}
                         onValueChange={(v) => {
-                          setRenewalFormData(prev => ({ 
-                            ...prev, 
+                          setRenewalFormData(prev => ({
+                            ...prev,
                             facebook_token_renewal_cycle: v,
                             facebook_token_renewal_date: calculateNextRenewalDate(renewalProject?.facebook_token_renewal_date || null, v)
                           }));
@@ -979,4 +1041,4 @@ const ProjectMonitor = () => {
   );
 };
 
-export default ProjectMonitor;
+export default ProjectMonitorPage;

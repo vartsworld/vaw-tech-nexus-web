@@ -33,7 +33,9 @@ import {
   X,
   ChevronRight,
   Sparkles,
-  Star
+  Star,
+  Activity,
+  FolderSearch
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -57,6 +59,8 @@ import RedemptionApprovals from "@/components/hr/RedemptionApprovals";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import BannerManagement from "@/components/hr/BannerManagement";
 import TaskTemplateManagement from "@/components/hr/TaskTemplateManagement";
+import ManageProjects from "@/components/hr/ManageProjects";
+import ProjectMonitor from "@/pages/ProjectMonitor";
 
 const HRDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -227,6 +231,8 @@ const HRDashboard = () => {
       label: "RELATIONSHIPS",
       items: [
         { id: "clients", label: "Clients", icon: Briefcase },
+        { id: "manage-projects", label: "Manage Projects", icon: FolderSearch },
+        { id: "project-monitor", label: "Project Monitor", icon: Activity },
         { id: "applications", label: "Applications", icon: UserPlus },
       ]
     },
@@ -255,6 +261,8 @@ const HRDashboard = () => {
       case "tasks": return <TaskManagement />;
       case "templates": return <TaskTemplateManagement />;
       case "clients": return <ClientManagement />;
+      case "manage-projects": return <ManageProjects />;
+      case "project-monitor": return <ProjectMonitor standalone={true} />;
       case "departments": return <DepartmentManagement />;
       case "performance": return <PerformanceMetrics />;
       case "points": return <PointsMonitoring />;
