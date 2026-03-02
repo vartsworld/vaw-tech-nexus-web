@@ -77,7 +77,8 @@ const ClientDashboard = () => {
             return;
         }
 
-        const { data: profile, error } = await supabase
+        // Try to get profile by user_id first
+        let { data: existingProfile, error } = await supabase
             .from("client_profiles")
             .select("*")
             .eq("user_id", user.id)
@@ -87,7 +88,17 @@ const ClientDashboard = () => {
             console.error("Error fetching profile:", error);
         }
 
-        if (!profile) {
+        // If not found by user_id, try by metadata client_profile_id
+        if (!existingProfile && user.user_metadata?.client_profile_id) {
+            const { data: metaProfile } = await supabase
+                .from("client_profiles")
+                .select("*")
+                .eq("id", user.user_metadata.client_profile_id)
+                .maybeSingle();
+            if (metaProfile) existingProfile = metaProfile;
+        }
+
+        if (!existingProfile) {
             const newProfile = {
                 user_id: user.id,
                 email: user.email,
@@ -103,13 +114,14 @@ const ClientDashboard = () => {
 
             if (insertError) {
                 console.error("Error creating profile:", insertError);
-                setProfile({ ...newProfile, id: "temp" });
-                toast.error("Limited access: Could not initialize permanent profile.");
+                // Don't use "temp" - show error state instead
+                toast.error("Could not initialize profile. Please contact support.");
+                setProfile(null);
             } else {
                 setProfile(insertedProfile);
             }
         } else {
-            setProfile(profile);
+            setProfile(existingProfile);
         }
         setLoading(false);
     };
@@ -128,7 +140,7 @@ const ClientDashboard = () => {
         { icon: Settings, label: "Settings", path: "/client/dashboard/settings" },
     ];
 
-    if (loading) {
+    if (loading || !profile) {
         return (
             <div className="h-screen w-full bg-black flex items-center justify-center">
                 <div className="relative">

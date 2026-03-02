@@ -59,7 +59,7 @@ const SupportNexus = ({ profile }: { profile: any }) => {
     }, [profile]);
 
     const fetchFeedback = async () => {
-        if (!profile) return;
+        if (!profile?.id) return;
         const { data } = await supabase
             .from("client_feedback")
             .select("*")

@@ -72,7 +72,7 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
     }, [profile]);
 
     const fetchProjects = async () => {
-        if (!profile) return;
+        if (!profile?.id) return;
         const { data, error } = await supabase
             .from("client_projects")
             .select(`
