@@ -145,7 +145,9 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [newProject, setNewProject] = useState({
     title: "",
     description: "",
-    project_type: "website" as "website" | "marketing" | "design" | "ai" | "vr-ar" | "other"
+    project_type: "website" as "website" | "marketing" | "design" | "ai" | "vr-ar" | "other",
+    package_type: "basic",
+    addons: ""
   });
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
@@ -613,7 +615,9 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           title: newProject.title,
           description: newProject.description,
           project_type: newProject.project_type,
-          status: 'planning'
+          status: 'planning',
+          package_type: newProject.package_type,
+          addons: newProject.addons
         })
         .select()
         .single();
@@ -637,7 +641,9 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       setNewProject({
         title: "",
         description: "",
-        project_type: "website"
+        project_type: "website",
+        package_type: "basic",
+        addons: ""
       });
     } catch (error: any) {
       console.error('Error creating project:', error);
@@ -4117,7 +4123,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                 id="proj_title"
                 value={newProject.title}
                 onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-                placeholder="Enter project title"
+                placeholder="e.g. VAW Tech Nexus Web"
               />
             </div>
             <div>
@@ -4138,6 +4144,35 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="proj_package">Service Package</Label>
+                <Select
+                  value={newProject.package_type}
+                  onValueChange={(value: any) => setNewProject({ ...newProject, package_type: value })}
+                >
+                  <SelectTrigger id="proj_package">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="basic">Basic Tier</SelectItem>
+                    <SelectItem value="standard">Standard Tier</SelectItem>
+                    <SelectItem value="premium">Premium Tier</SelectItem>
+                    <SelectItem value="enterprise">Enterprise</SelectItem>
+                    <SelectItem value="custom">Custom Package</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="proj_addons">Addons & Extras</Label>
+                <Input
+                  id="proj_addons"
+                  value={newProject.addons}
+                  onChange={(e) => setNewProject({ ...newProject, addons: e.target.value })}
+                  placeholder="e.g. SEO, Maintenance"
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="proj_desc">Description (Optional)</Label>
