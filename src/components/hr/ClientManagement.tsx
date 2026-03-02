@@ -20,7 +20,9 @@ import {
   Key,
   Lock,
   Eye,
-  EyeOff
+  EyeOff,
+  Folder,
+  Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +51,17 @@ const ClientManagement = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
   const { toast } = useToast();
+
+  const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
+  const [selectedClientForProjects, setSelectedClientForProjects] = useState<any>(null);
+  const [clientProjects, setClientProjects] = useState<any[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
+  const [newProject, setNewProject] = useState({
+    title: "",
+    description: "",
+    project_type: "website" as "website" | "marketing" | "design" | "ai" | "vr-ar" | "other"
+  });
 
   useEffect(() => {
     fetchClients();
@@ -217,6 +230,95 @@ const ClientManagement = () => {
       });
     } finally {
       setIsSavingPassword(false);
+    }
+  };
+
+  const fetchClientProjects = async (clientId) => {
+    setIsLoadingProjects(true);
+    try {
+      const { data, error } = await supabase
+        .from('client_projects')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setClientProjects(data || []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load projects.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingProjects(false);
+    }
+  };
+
+  const handleCreateProject = async () => {
+    if (!selectedClientForProjects || !newProject.title) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('client_projects')
+        .insert({
+          client_id: selectedClientForProjects.id,
+          title: newProject.title,
+          description: newProject.description,
+          project_type: newProject.project_type,
+          status: 'planning'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setClientProjects([data, ...clientProjects]);
+      setIsAddProjectDialogOpen(false);
+      setNewProject({
+        title: "",
+        description: "",
+        project_type: "website"
+      });
+
+      toast({
+        title: "Success",
+        description: "Project created successfully.",
+      });
+    } catch (error: any) {
+      console.error('Error creating project:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create project.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteProject = async (projectId) => {
+    if (!confirm("Are you sure you want to delete this project?")) return;
+
+    try {
+      const { error } = await supabase
+        .from('client_projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      setClientProjects(clientProjects.filter(p => p.id !== projectId));
+      toast({
+        title: "Success",
+        description: "Project deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete project.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -482,6 +584,19 @@ const ClientManagement = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
+                          setSelectedClientForProjects(client);
+                          fetchClientProjects(client.id);
+                          setIsProjectDialogOpen(true);
+                        }}
+                        className="text-indigo-600"
+                        title="Manage Projects"
+                      >
+                        <Folder className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
                           setEditingClient(client);
                           setIsEditDialogOpen(true);
                         }}
@@ -671,6 +786,119 @@ const ClientManagement = () => {
                 }}
               >
                 Set Default: vaw123*
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Project Management Dialog */}
+      <Dialog open={isProjectDialogOpen} onOpenChange={setIsProjectDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <div className="flex items-center justify-between pr-8">
+              <DialogTitle>Projects - {selectedClientForProjects?.company_name}</DialogTitle>
+              <Button size="sm" onClick={() => setIsAddProjectDialogOpen(true)} className="flex items-center gap-1">
+                <Plus className="h-3 w-3" />
+                New Project
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+            {isLoadingProjects ? (
+              <div className="flex justify-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+              </div>
+            ) : clientProjects.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No projects found for this client.
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {clientProjects.map((project) => (
+                  <Card key={project.id} className="border-gray-100 shadow-sm">
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold">{project.title}</div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[10px] uppercase">
+                            {project.project_type}
+                          </Badge>
+                          <Badge className="text-[10px] uppercase" variant={project.status === 'active' ? 'default' : 'secondary'}>
+                            {project.status}
+                          </Badge>
+                        </div>
+                        {project.description && (
+                          <p className="text-xs text-gray-500 mt-2 line-clamp-1">{project.description}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteProject(project.id)}
+                          className="text-destructive h-8 w-8 p-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Project Dialog */}
+      <Dialog open={isAddProjectDialogOpen} onOpenChange={setIsAddProjectDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Project</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="proj_title">Project Title</Label>
+              <Input
+                id="proj_title"
+                value={newProject.title}
+                onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                placeholder="Enter project title"
+              />
+            </div>
+            <div>
+              <Label htmlFor="proj_type">Project Type</Label>
+              <Select value={newProject.project_type} onValueChange={(value: any) => setNewProject({ ...newProject, project_type: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="website">Website</SelectItem>
+                  <SelectItem value="marketing">Marketing</SelectItem>
+                  <SelectItem value="design">Design</SelectItem>
+                  <SelectItem value="ai">AI Solutions</SelectItem>
+                  <SelectItem value="vr-ar">VR/AR</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="proj_desc">Description (Optional)</Label>
+              <Textarea
+                id="proj_desc"
+                value={newProject.description}
+                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                placeholder="Enter project description"
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsAddProjectDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateProject}>
+                Create Project
               </Button>
             </div>
           </div>

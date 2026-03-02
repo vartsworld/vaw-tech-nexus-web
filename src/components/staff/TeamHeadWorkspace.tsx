@@ -141,6 +141,12 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewTaskOpen, setIsViewTaskOpen] = useState(false);
   const [isApprovalOpen, setIsApprovalOpen] = useState(false);
+  const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
+  const [newProject, setNewProject] = useState({
+    title: "",
+    description: "",
+    project_type: "website" as "website" | "marketing" | "design" | "ai" | "vr-ar" | "other"
+  });
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [uploadingSubtaskAttachment, setUploadingSubtaskAttachment] = useState<string | null>(null);
@@ -545,9 +551,9 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       setLoadingProjects(true);
       const { data, error } = await supabase
         .from('client_projects')
-        .select('id, name')
+        .select('id, title')
         .eq('client_id', clientId)
-        .order('name');
+        .order('title');
 
       if (error) throw error;
       setClientProjects(data || []);
@@ -584,6 +590,62 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       setSubtaskTemplates(data || []);
     } catch (error) {
       console.error('Error fetching subtask templates:', error);
+    }
+  };
+
+  const handleCreateProject = async () => {
+    const clientId = isCreateTaskOpen ? newTask.client_id : selectedTask?.client_id;
+
+    if (!clientId || !newProject.title) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a client and provide a project title.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('client_projects')
+        .insert({
+          client_id: clientId,
+          title: newProject.title,
+          description: newProject.description,
+          project_type: newProject.project_type,
+          status: 'planning'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Project created successfully",
+      });
+
+      setClientProjects(prev => [...prev, data]);
+
+      if (isCreateTaskOpen) {
+        setNewTask(prev => ({ ...prev, client_project_id: data.id }));
+      } else if (isEditTaskOpen && selectedTask) {
+        setSelectedTask({ ...selectedTask, client_project_id: data.id });
+      }
+
+      setIsAddProjectDialogOpen(false);
+      setNewProject({
+        title: "",
+        description: "",
+        project_type: "website"
+      });
+    } catch (error: any) {
+      console.error('Error creating project:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create project",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1998,7 +2060,18 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   </div>
                   {newTask.client_id && (
                     <div className="animate-in fade-in slide-in-from-top-2">
-                      <Label htmlFor="client_project">Client Project (Optional)</Label>
+                      <div className="flex items-center justify-between mb-1">
+                        <Label htmlFor="client_project" className="mb-0">Client Project (Optional)</Label>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => setIsAddProjectDialogOpen(true)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          New Project
+                        </Button>
+                      </div>
                       <Select
                         value={newTask.client_project_id}
                         onValueChange={(value) => setNewTask({ ...newTask, client_project_id: value })}
@@ -2011,7 +2084,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                           <SelectItem value="none">None / Individual Task</SelectItem>
                           {clientProjects.map(project => (
                             <SelectItem key={project.id} value={project.id}>
-                              {project.name}
+                              {project.title}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -2874,7 +2947,18 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
               </div>
               {selectedTask.client_id && (
                 <div className="animate-in fade-in slide-in-from-top-2">
-                  <Label htmlFor="edit_client_project">Client Project (Optional)</Label>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label htmlFor="edit_client_project" className="mb-0">Client Project (Optional)</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => setIsAddProjectDialogOpen(true)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      New Project
+                    </Button>
+                  </div>
                   <Select
                     value={selectedTask.client_project_id}
                     onValueChange={(value) => setSelectedTask({ ...selectedTask, client_project_id: value })}
@@ -2887,7 +2971,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                       <SelectItem value="none">None / Individual Task</SelectItem>
                       {clientProjects.map(project => (
                         <SelectItem key={project.id} value={project.id}>
-                          {project.name}
+                          {project.title}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -4020,6 +4104,62 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           setSelectedTask(null);
         }}
       />
+      {/* Add Project Dialog */}
+      <Dialog open={isAddProjectDialogOpen} onOpenChange={setIsAddProjectDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Project</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="proj_title">Project Title</Label>
+              <Input
+                id="proj_title"
+                value={newProject.title}
+                onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                placeholder="Enter project title"
+              />
+            </div>
+            <div>
+              <Label htmlFor="proj_type">Project Type</Label>
+              <Select
+                value={newProject.project_type}
+                onValueChange={(value: any) => setNewProject({ ...newProject, project_type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="website">Website</SelectItem>
+                  <SelectItem value="marketing">Marketing</SelectItem>
+                  <SelectItem value="design">Design</SelectItem>
+                  <SelectItem value="ai">AI Solutions</SelectItem>
+                  <SelectItem value="vr-ar">VR/AR</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="proj_desc">Description (Optional)</Label>
+              <Textarea
+                id="proj_desc"
+                value={newProject.description}
+                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                placeholder="Enter project description"
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsAddProjectDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateProject}>
+                Create Project
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div >
   );
 };
