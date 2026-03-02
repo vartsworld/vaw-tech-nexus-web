@@ -3374,6 +3374,9 @@ export type Database = {
           id: string
           points: number | null
           priority: Database["public"]["Enums"]["task_priority"] | null
+          stage: number
+          stage_color: string | null
+          stage_name: string | null
           status: Database["public"]["Enums"]["task_status"] | null
           task_id: string
           title: string
@@ -3394,6 +3397,9 @@ export type Database = {
           id?: string
           points?: number | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
+          stage?: number
+          stage_color?: string | null
+          stage_name?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           task_id: string
           title: string
@@ -3414,6 +3420,9 @@ export type Database = {
           id?: string
           points?: number | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
+          stage?: number
+          stage_color?: string | null
+          stage_name?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           task_id?: string
           title?: string
@@ -3567,20 +3576,6 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "fk_staff_tasks_assigned_to"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "staff_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "fk_staff_tasks_assigned_to"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "top_coin_earners"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "staff_tasks_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
@@ -3603,6 +3598,10 @@ export type Database = {
           id: string
           points: number | null
           sort_order: number | null
+          stage: number
+          stage_color: string | null
+          stage_label: string | null
+          stage_name: string | null
           task_template_id: string
           title: string
         }
@@ -3612,6 +3611,10 @@ export type Database = {
           id?: string
           points?: number | null
           sort_order?: number | null
+          stage?: number
+          stage_color?: string | null
+          stage_label?: string | null
+          stage_name?: string | null
           task_template_id: string
           title: string
         }
@@ -3621,6 +3624,10 @@ export type Database = {
           id?: string
           points?: number | null
           sort_order?: number | null
+          stage?: number
+          stage_color?: string | null
+          stage_label?: string | null
+          stage_name?: string | null
           task_template_id?: string
           title?: string
         }
