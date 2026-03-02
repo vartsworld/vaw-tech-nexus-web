@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 import {
   ClipboardList,
@@ -42,7 +43,8 @@ import {
   ChevronRight,
   LayoutGrid,
   List,
-  Layers
+  Layers,
+  Trello
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,7 +69,7 @@ const TaskManagement = () => {
   };
 
   const [tasks, setTasks] = useState<any[]>([]);
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'grid' | 'kanban'>('table');
   const [staff, setStaff] = useState([]);
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
@@ -129,7 +131,8 @@ const TaskManagement = () => {
     is_recurring: false,
     recurrence_type: "weekly" as string,
     recurrence_interval: 1,
-    recurrence_end_date: ""
+    recurrence_end_date: "",
+    current_stage: 1
   });
 
   const [newClient, setNewClient] = useState({
@@ -837,35 +840,38 @@ const TaskManagement = () => {
       // Award points if task is completed
       if (newStatus === 'completed' && data) {
         const pointsToAward = data.points || 10;
+        const assigneeIds = parseAssignedTo(data.assigned_to);
 
-        // Get current staff profile points
-        const { data: staffProfile } = await supabase
-          .from('staff_profiles')
-          .select('total_points')
-          .eq('user_id', data.assigned_to)
-          .single();
+        for (const userId of assigneeIds) {
+          // Get current staff profile points
+          const { data: staffProfile } = await supabase
+            .from('staff_profiles')
+            .select('total_points')
+            .eq('user_id', userId)
+            .single();
 
-        // Update staff total points
-        await supabase
-          .from('staff_profiles')
-          .update({
-            total_points: (staffProfile?.total_points || 0) + pointsToAward
-          })
-          .eq('user_id', data.assigned_to);
+          // Update staff total points
+          await supabase
+            .from('staff_profiles')
+            .update({
+              total_points: (staffProfile?.total_points || 0) + pointsToAward
+            })
+            .eq('user_id', userId);
 
-        // Log points
-        await supabase
-          .from('user_points_log')
-          .insert({
-            user_id: data.assigned_to,
-            points: pointsToAward,
-            reason: `Task completed: ${data.title}`,
-            category: 'task'
-          });
+          // Log points
+          await supabase
+            .from('user_points_log')
+            .insert({
+              user_id: userId,
+              points: pointsToAward,
+              reason: `Task completed: ${data.title}`,
+              category: 'task'
+            });
+        }
 
         toast({
           title: "Success",
-          description: `Task approved & completed! +${pointsToAward} points awarded.`,
+          description: `Task approved & completed! +${pointsToAward} points awarded to ${assigneeIds.length} users.`,
         });
       } else if (newStatus === 'review_pending') {
         toast({
@@ -902,13 +908,14 @@ const TaskManagement = () => {
         }
 
         if (notificationTitle) {
+          const assigneeIds = parseAssignedTo(data.assigned_to);
           await supabase
             .from('staff_notifications')
             .insert({
               title: notificationTitle,
               content: notificationContent,
               type: notificationType,
-              target_users: [data.assigned_to],
+              target_users: assigneeIds,
               created_by: userProfile?.user_id,
               is_urgent: false
             });
@@ -1048,6 +1055,17 @@ const TaskManagement = () => {
     }
   };
 
+  const onDragEnd = async (result: any) => {
+    if (!result.destination) return;
+    const { draggableId, destination } = result;
+    const newStatus = destination.droppableId;
+
+    const task = tasks.find(t => t.id === draggableId);
+    if (task && task.status !== newStatus) {
+      handleStatusChange(draggableId, newStatus);
+    }
+  };
+
   const handleHandoverConfirm = async () => {
     if (!handoverTaskId || !handoverDepartmentId) {
       toast({
@@ -1141,7 +1159,7 @@ const TaskManagement = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (statusValue: string) => {
     const statusConfig: any = {
       pending: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
       in_progress: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: Target },
@@ -1151,13 +1169,13 @@ const TaskManagement = () => {
       cancelled: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: AlertCircle }
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
+    const config = statusConfig[statusValue] || statusConfig.pending;
     const Icon = config.icon;
 
     return (
       <Badge className={config.color} variant="secondary">
         <Icon className="h-3 w-3 mr-1" />
-        {status.replace(/_/g, ' ').toUpperCase()}
+        {statusValue.replace(/_/g, ' ').toUpperCase()}
       </Badge>
     );
   };
@@ -1730,6 +1748,15 @@ const TaskManagement = () => {
                   <LayoutGrid className="h-4 w-4 mr-1" />
                   Grid
                 </Button>
+                <Button
+                  variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('kanban')}
+                  className="h-8 px-2"
+                >
+                  <Trello className="h-4 w-4 mr-1" />
+                  Kanban
+                </Button>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">
@@ -1746,7 +1773,7 @@ const TaskManagement = () => {
             <CardTitle>Tasks</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Dynamic Content: Table or Grid */}
+            {/* Dynamic Content: Table, Grid or Kanban */}
             <div className="space-y-4">
               {viewMode === 'table' ? (
                 <div className="hidden md:block overflow-x-auto">
@@ -1867,7 +1894,7 @@ const TaskManagement = () => {
                     </TableBody>
                   </Table>
                 </div>
-              ) : (
+              ) : viewMode === 'grid' ? (
                 /* Grid/Card View */
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {filteredTasks.map((task) => (
@@ -1958,6 +1985,123 @@ const TaskManagement = () => {
                     </Card>
                   ))}
                 </div>
+              ) : (
+                /* Kanban View */
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <div className="flex gap-4 overflow-x-auto pb-6 custom-scrollbar min-h-[600px] items-start">
+                    {['pending', 'in_progress', 'review_pending', 'handover', 'completed'].map((status) => {
+                      const statusTasks = filteredTasks.filter(t => t.status === status);
+                      const statusColor = {
+                        pending: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-600',
+                        in_progress: 'bg-blue-500/10 border-blue-500/20 text-blue-600',
+                        review_pending: 'bg-orange-500/10 border-orange-500/20 text-orange-600',
+                        handover: 'bg-purple-500/10 border-purple-500/20 text-purple-600',
+                        completed: 'bg-green-500/10 border-green-500/20 text-green-600'
+                      }[status];
+
+                      return (
+                        <div key={status} className="flex-shrink-0 w-80 flex flex-col max-h-full">
+                          <div className={`p-3 rounded-t-xl border-x border-t font-bold flex items-center justify-between ${statusColor}`}>
+                            <div className="flex items-center gap-2">
+                              <span className="uppercase text-xs tracking-wider">{status.replace(/_/g, ' ')}</span>
+                              <Badge variant="secondary" className="bg-white/50 dark:bg-black/20 text-[10px] h-4">
+                                {statusTasks.length}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <Droppable droppableId={status}>
+                            {(provided, snapshot) => (
+                              <div
+                                {...provided.droppableProps}
+                                ref={provided.innerRef}
+                                className={`flex-1 p-3 border rounded-b-xl bg-muted/20 space-y-3 min-h-[500px] transition-colors ${snapshot.isDraggingOver ? 'bg-muted/40 shadow-inner' : ''
+                                  }`}
+                              >
+                                {statusTasks.map((task, index) => (
+                                  <Draggable key={task.id} draggableId={task.id} index={index}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        className="transition-transform"
+                                      >
+                                        <Card className={`group relative bg-card hover:shadow-lg transition-all border-muted-foreground/10 ${snapshot.isDragging ? 'rotate-2 scale-105 z-50 shadow-2xl ring-2 ring-primary/20' : ''
+                                          }`}>
+                                          <CardHeader className="p-3 space-y-1">
+                                            <div className="flex items-start justify-between gap-2">
+                                              <CardTitle className="text-sm font-bold truncate">
+                                                {task.title}
+                                              </CardTitle>
+                                              {getPriorityBadge(task.priority)}
+                                            </div>
+                                            {task.staff_projects?.name && (
+                                              <p className="text-[10px] text-primary/60 font-medium">#{task.staff_projects.name}</p>
+                                            )}
+                                          </CardHeader>
+                                          <CardContent className="p-3 pt-0 space-y-3">
+                                            {task.description && (
+                                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                                {task.description}
+                                              </p>
+                                            )}
+
+                                            <div className="flex items-center justify-between">
+                                              <div className="flex -space-x-2">
+                                                {(task.assigned_to_profiles?.length > 0
+                                                  ? task.assigned_to_profiles
+                                                  : task.assigned_to_profile ? [task.assigned_to_profile] : []
+                                                ).slice(0, 3).map((profile: any, i: number) => (
+                                                  <Avatar key={i} className="h-6 w-6 border-2 border-background">
+                                                    <AvatarImage src={profile.avatar_url} />
+                                                    <AvatarFallback className="text-[8px] font-bold">
+                                                      {profile.full_name?.substring(0, 2).toUpperCase()}
+                                                    </AvatarFallback>
+                                                  </Avatar>
+                                                ))}
+                                                {(task.assigned_to_profiles?.length || 1) > 3 && (
+                                                  <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[8px] font-bold">
+                                                    +{(task.assigned_to_profiles?.length || 1) - 3}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <div className="flex flex-col items-end gap-1">
+                                                {getStageBadge(task.current_stage || 1)}
+                                              </div>
+                                            </div>
+
+                                            <div className="flex items-center justify-between pt-2 border-t border-muted/50">
+                                              <div className="flex items-center gap-1">
+                                                <Clock className="h-3 w-3 text-muted-foreground" />
+                                                <span className="text-[9px] text-muted-foreground">
+                                                  {task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No date'}
+                                                </span>
+                                              </div>
+                                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setSelectedTask(task); fetchSubtasks(task.id); setIsDetailDialogOpen(true); }}>
+                                                  <Eye className="h-3.5 w-3.5" />
+                                                </Button>
+                                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openEditDialog(task)}>
+                                                  <Edit className="h-3.5 w-3.5" />
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          </CardContent>
+                                        </Card>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                              </div>
+                            )}
+                          </Droppable>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </DragDropContext>
               )}
             </div>
 
