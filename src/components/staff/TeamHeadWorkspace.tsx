@@ -1767,7 +1767,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | undefined | null) => {
+    const safeStatus = status || 'pending';
     const statusConfig = {
       pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
       in_progress: { color: 'bg-blue-100 text-blue-800', icon: Target },
@@ -1776,13 +1777,13 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       pending_approval: { color: 'bg-orange-100 text-orange-800', icon: AlertCircle }
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
+    const config = statusConfig[safeStatus] || statusConfig.pending;
     const Icon = config.icon;
 
     return (
       <Badge className={config.color}>
         <Icon className="h-3 w-3 mr-1" />
-        {status.replace('_', ' ').toUpperCase()}
+        {safeStatus.replace('_', ' ').toUpperCase()}
       </Badge>
     );
   };
