@@ -98,6 +98,8 @@ interface Task {
   assigned_to: string;
   assigned_by: string;
   department_id?: string;
+  client_id?: string;
+  client_project_id?: string;
   created_at: string;
   staff_profiles?: any;
 }
@@ -132,6 +134,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [clients, setClients] = useState<any[]>([]);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [clientProjects, setClientProjects] = useState<any[]>([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
   const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -173,6 +177,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     description: "",
     assigned_to: [] as string[],
     client_id: "",
+    client_project_id: "",
     priority: "medium" as 'low' | 'medium' | 'high' | 'urgent',
     due_date: "",
     due_time: "",
@@ -371,6 +376,13 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     }
   }, [userId, userProfile?.department_id]);
 
+  // Fetch client projects when editing a task
+  useEffect(() => {
+    if (isEditTaskOpen && selectedTask?.client_id) {
+      fetchClientProjects(selectedTask.client_id);
+    }
+  }, [isEditTaskOpen, selectedTask?.client_id]);
+
   // Set up presence tracking for online users
   useEffect(() => {
     const channel = supabase.channel('team-presence');
@@ -521,6 +533,28 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       setClients(data || []);
     } catch (error) {
       console.error('Error fetching clients:', error);
+    }
+  };
+
+  const fetchClientProjects = async (clientId: string) => {
+    if (!clientId) {
+      setClientProjects([]);
+      return;
+    }
+    try {
+      setLoadingProjects(true);
+      const { data, error } = await supabase
+        .from('client_projects')
+        .select('id, name')
+        .eq('client_id', clientId)
+        .order('name');
+
+      if (error) throw error;
+      setClientProjects(data || []);
+    } catch (error) {
+      console.error('Error fetching client projects:', error);
+    } finally {
+      setLoadingProjects(false);
     }
   };
 
@@ -1207,6 +1241,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       // Auto-select the newly created client in the task form
       setNewTask({ ...newTask, client_id: data.id });
+      await fetchClientProjects(data.id);
 
     } catch (error: any) {
       console.error('Error adding client:', error);
@@ -1253,6 +1288,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         description: newTask.description,
         assigned_to: JSON.stringify(newTask.assigned_to),
         client_id: newTask.client_id,
+        client_project_id: (newTask.client_project_id && newTask.client_project_id !== 'none') ? newTask.client_project_id : null,
         priority: newTask.priority,
         due_date: newTask.due_date || null,
         due_time: newTask.due_time || null,
@@ -1344,6 +1380,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         description: "",
         assigned_to: [],
         client_id: "",
+        client_project_id: "",
         priority: "medium",
         due_date: "",
         due_time: "",
@@ -1378,6 +1415,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           title: selectedTask.title,
           description: selectedTask.description,
           assigned_to: selectedTask.assigned_to,
+          client_id: selectedTask.client_id,
+          client_project_id: (selectedTask.client_project_id && selectedTask.client_project_id !== 'none') ? selectedTask.client_project_id : null,
           priority: selectedTask.priority,
           due_date: selectedTask.due_date || null,
           due_time: selectedTask.due_time || null,
@@ -1938,7 +1977,13 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                         Add New Client
                       </Button>
                     </div>
-                    <Select value={newTask.client_id} onValueChange={(value) => setNewTask({ ...newTask, client_id: value })}>
+                    <Select
+                      value={newTask.client_id}
+                      onValueChange={(value) => {
+                        setNewTask({ ...newTask, client_id: value, client_project_id: "" });
+                        fetchClientProjects(value);
+                      }}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select client" />
                       </SelectTrigger>
@@ -1951,6 +1996,28 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                       </SelectContent>
                     </Select>
                   </div>
+                  {newTask.client_id && (
+                    <div className="animate-in fade-in slide-in-from-top-2">
+                      <Label htmlFor="client_project">Client Project (Optional)</Label>
+                      <Select
+                        value={newTask.client_project_id}
+                        onValueChange={(value) => setNewTask({ ...newTask, client_project_id: value })}
+                        disabled={loadingProjects}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={loadingProjects ? "Loading projects..." : "Select project (if any)"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None / Individual Task</SelectItem>
+                          {clientProjects.map(project => (
+                            <SelectItem key={project.id} value={project.id}>
+                              {project.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="priority">Priority</Label>
@@ -2784,6 +2851,49 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   rows={3}
                 />
               </div>
+              <div>
+                <Label htmlFor="edit_client">Client</Label>
+                <Select
+                  value={selectedTask.client_id}
+                  onValueChange={(value) => {
+                    setSelectedTask({ ...selectedTask, client_id: value, client_project_id: "" });
+                    fetchClientProjects(value);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.company_name} - {client.contact_person}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {selectedTask.client_id && (
+                <div className="animate-in fade-in slide-in-from-top-2">
+                  <Label htmlFor="edit_client_project">Client Project (Optional)</Label>
+                  <Select
+                    value={selectedTask.client_project_id}
+                    onValueChange={(value) => setSelectedTask({ ...selectedTask, client_project_id: value })}
+                    disabled={loadingProjects}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={loadingProjects ? "Loading projects..." : "Select project (if any)"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None / Individual Task</SelectItem>
+                      {clientProjects.map(project => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div>
                 <Label htmlFor="edit_assigned_to">Reassign To</Label>
                 <Select
