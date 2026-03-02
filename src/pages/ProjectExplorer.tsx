@@ -296,7 +296,26 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
 
 const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
     const [activeTab, setActiveTab] = useState("overview");
+    const [taskTimeline, setTaskTimeline] = useState<any[]>([]);
+    const [timelineLoading, setTimelineLoading] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        fetchTaskTimeline();
+    }, [project?.id]);
+
+    const fetchTaskTimeline = async () => {
+        if (!project?.id) return;
+        setTimelineLoading(true);
+        const { data, error } = await supabase
+            .from("client_task_timeline")
+            .select("*")
+            .eq("client_project_id", project.id)
+            .order("created_at", { ascending: true });
+
+        if (data) setTaskTimeline(data);
+        setTimelineLoading(false);
+    };
 
     const tabs = [
         { id: "overview", label: "Overview", icon: ActivityIcon },
@@ -454,13 +473,13 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                             </div>
 
                                             <div className="space-y-4">
-                                                <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Technical Attributes</h3>
+                                                <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Task Overview</h3>
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                     {[
-                                                        { label: "Stability", value: "99.9%", color: "text-green-500" },
-                                                        { label: "Sync Speed", value: "Realtime", color: "text-tech-gold" },
-                                                        { label: "Data Integrity", value: "Verified", color: "text-blue-500" },
-                                                        { label: "Nexus Node", value: "Active", color: "text-tech-red" },
+                                                        { label: "Total Tasks", value: taskTimeline.length.toString(), color: "text-tech-gold" },
+                                                        { label: "Completed", value: taskTimeline.filter(t => t.status === 'completed').length.toString(), color: "text-green-500" },
+                                                        { label: "In Progress", value: taskTimeline.filter(t => t.status === 'in_progress').length.toString(), color: "text-blue-500" },
+                                                        { label: "Pending", value: taskTimeline.filter(t => !['completed', 'in_progress'].includes(t.status)).length.toString(), color: "text-yellow-500" },
                                                     ].map((attr, i) => (
                                                         <div key={i} className="bg-white/5 p-4 rounded-xl border border-white/5 text-center">
                                                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">{attr.label}</p>
@@ -526,28 +545,54 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
 
                                     {activeTab === "milestones" && (
                                         <div className="space-y-8">
-                                            <div className="relative pl-8 space-y-12 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-tech-gold/10">
-                                                {[
-                                                    { title: "Nexus Blueprint", date: "Initial Phase", status: "completed", desc: "Project parameters defined and architectural requirements met." },
-                                                    { title: "Production Zero", date: "Month 1", status: "completed", desc: "Core engine development and asset gathering cycle completed." },
-                                                    { title: "Beta Integration", date: "Month 2", status: "current", desc: "Current phase. Functional testing and UI/UX optimization." },
-                                                    { title: "Final Deployment", date: "Protocol Target", status: "pending", desc: "Final nexus deployment and performance validation." },
-                                                ].map((m, i) => (
-                                                    <div key={i} className="relative">
-                                                        <div className={cn(
-                                                            "absolute -left-[29px] top-1.5 w-5 h-5 rounded-full border-2 border-black flex items-center justify-center z-10",
-                                                            m.status === 'completed' ? "bg-tech-gold" : m.status === 'current' ? "bg-tech-gold animate-pulse shadow-[0_0_10px_#FFD700]" : "bg-black border-tech-gold/30"
-                                                        )}>
-                                                            {m.status === 'completed' && <CheckCircle2 className="w-3 h-3 text-black" />}
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-tech-gold">{m.date}</span>
-                                                            <h4 className="text-lg font-black text-white">{m.title}</h4>
-                                                            <p className="text-sm text-gray-400 font-medium max-w-md">{m.desc}</p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                            {timelineLoading ? (
+                                                <div className="py-12 flex justify-center">
+                                                    <div className="w-6 h-6 border-2 border-tech-gold/20 border-t-tech-gold rounded-full animate-spin" />
+                                                </div>
+                                            ) : taskTimeline.length > 0 ? (
+                                                <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-tech-gold/10">
+                                                    {taskTimeline.map((task, i) => {
+                                                        const taskStatus = task.status === 'completed' ? 'completed' : task.status === 'in_progress' ? 'current' : 'pending';
+                                                        return (
+                                                            <div key={task.id} className="relative">
+                                                                <div className={cn(
+                                                                    "absolute -left-[29px] top-1.5 w-5 h-5 rounded-full border-2 border-black flex items-center justify-center z-10",
+                                                                    taskStatus === 'completed' ? "bg-tech-gold" : taskStatus === 'current' ? "bg-tech-gold animate-pulse shadow-[0_0_10px_#FFD700]" : "bg-black border-tech-gold/30"
+                                                                )}>
+                                                                    {taskStatus === 'completed' && <CheckCircle2 className="w-3 h-3 text-black" />}
+                                                                </div>
+                                                                <div className="space-y-1">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-tech-gold">
+                                                                            {task.due_date ? new Date(task.due_date).toLocaleDateString() : `Task ${i + 1}`}
+                                                                        </span>
+                                                                        <Badge variant="outline" className={cn(
+                                                                            "text-[9px] h-4 border-0",
+                                                                            task.priority === 'high' || task.priority === 'urgent' ? "bg-red-500/20 text-red-400" :
+                                                                            task.priority === 'medium' ? "bg-yellow-500/20 text-yellow-400" : "bg-blue-500/20 text-blue-400"
+                                                                        )}>
+                                                                            {task.priority || 'normal'}
+                                                                        </Badge>
+                                                                    </div>
+                                                                    <h4 className="text-lg font-black text-white">{task.title}</h4>
+                                                                    <p className="text-sm text-gray-400 font-medium">
+                                                                        {taskStatus === 'completed' && task.completed_at
+                                                                            ? `Completed on ${new Date(task.completed_at).toLocaleDateString()}`
+                                                                            : taskStatus === 'current' ? 'Currently in progress'
+                                                                            : 'Queued for execution'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="py-20 text-center opacity-40">
+                                                    <Clock className="w-12 h-12 mx-auto mb-4" />
+                                                    <p className="font-bold text-sm">NO MILESTONES LINKED YET</p>
+                                                    <p className="text-xs text-gray-500 mt-2">Tasks will appear here once linked to this project by your team</p>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 

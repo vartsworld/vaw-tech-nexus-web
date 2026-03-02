@@ -2496,6 +2496,13 @@ export type Database = {
             foreignKeyName: "project_coin_allocations_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: true
+            referencedRelation: "client_task_timeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_coin_allocations_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: true
             referencedRelation: "staff_tasks"
             referencedColumns: ["id"]
           },
@@ -3461,6 +3468,13 @@ export type Database = {
             foreignKeyName: "staff_subtasks_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
+            referencedRelation: "client_task_timeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_subtasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
             referencedRelation: "staff_tasks"
             referencedColumns: ["id"]
           },
@@ -3475,6 +3489,7 @@ export type Database = {
           attachments: Json | null
           breaks_taken: number | null
           client_id: string | null
+          client_project_id: string | null
           comments: Json | null
           completed_at: string | null
           created_at: string | null
@@ -3506,6 +3521,7 @@ export type Database = {
           attachments?: Json | null
           breaks_taken?: number | null
           client_id?: string | null
+          client_project_id?: string | null
           comments?: Json | null
           completed_at?: string | null
           created_at?: string | null
@@ -3537,6 +3553,7 @@ export type Database = {
           attachments?: Json | null
           breaks_taken?: number | null
           client_id?: string | null
+          client_project_id?: string | null
           comments?: Json | null
           completed_at?: string | null
           created_at?: string | null
@@ -3580,6 +3597,20 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_tasks_client_project_id_fkey"
+            columns: ["client_project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "client_task_timeline"
             referencedColumns: ["id"]
           },
           {
@@ -4102,6 +4133,13 @@ export type Database = {
             columns: ["related_redemption_id"]
             isOneToOne: false
             referencedRelation: "reward_redemptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_coin_transactions_related_task_id_fkey"
+            columns: ["related_task_id"]
+            isOneToOne: false
+            referencedRelation: "client_task_timeline"
             referencedColumns: ["id"]
           },
           {
@@ -4803,6 +4841,35 @@ export type Database = {
           win_percentage: number | null
         }
         Relationships: []
+      }
+      client_task_timeline: {
+        Row: {
+          client_id: string | null
+          client_project_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          due_date: string | null
+          id: string | null
+          priority: Database["public"]["Enums"]["task_priority"] | null
+          status: Database["public"]["Enums"]["task_status"] | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_tasks_client_project_id_fkey"
+            columns: ["client_project_id"]
+            isOneToOne: false
+            referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       geography_columns: {
         Row: {
