@@ -40,7 +40,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
     }, [profile]);
 
     const fetchStats = async () => {
-        if (!profile) return;
+        if (!profile?.id) return;
 
         // Fetch projects
         const { data: projects, error: projectsError } = await supabase
@@ -69,7 +69,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
             .from("client_notifications")
             .select("*")
             .eq("client_id", profile.id)
-            .eq("read", false);
+            .eq("is_read", false);
 
         if (projects) {
             const active = projects.filter(p => !['completed', 'cancel'].includes(p.status)).length;

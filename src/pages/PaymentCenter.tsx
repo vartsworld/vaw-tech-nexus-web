@@ -179,7 +179,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                     type: 'payment_confirmation',
                     category: 'payment',
                     priority: 'high',
-                    read: false
+                    is_read: false
                 });
 
             toast.success("Payment confirmation submitted! We'll verify it shortly.");
