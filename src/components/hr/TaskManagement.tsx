@@ -12,6 +12,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import {
   ClipboardList,
@@ -37,7 +39,10 @@ import {
   Check,
   Edit,
   LayoutTemplate,
-  ChevronRight
+  ChevronRight,
+  LayoutGrid,
+  List,
+  Layers
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,7 +66,8 @@ const TaskManagement = () => {
     return JSON.stringify(ids);
   };
 
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [staff, setStaff] = useState([]);
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
@@ -711,6 +717,7 @@ const TaskManagement = () => {
         recurrence_interval: newTask.is_recurring ? newTask.recurrence_interval : 1,
         recurrence_end_date: newTask.is_recurring && newTask.recurrence_end_date ? newTask.recurrence_end_date : null,
         next_recurrence_date: newTask.is_recurring && newTask.due_date ? calculateNextRecurrence(newTask.due_date, newTask.recurrence_type, newTask.recurrence_interval) : null,
+        current_stage: newTask.current_stage || 1,
         attachments: []
       };
 
@@ -775,7 +782,8 @@ const TaskManagement = () => {
         is_recurring: false,
         recurrence_type: "weekly",
         recurrence_interval: 1,
-        recurrence_end_date: ""
+        recurrence_end_date: "",
+        current_stage: 1
       });
 
       toast({
@@ -986,6 +994,7 @@ const TaskManagement = () => {
       recurrence_type: task.recurrence_type || "weekly",
       recurrence_interval: task.recurrence_interval || 1,
       recurrence_end_date: task.recurrence_end_date ? task.recurrence_end_date.split('T')[0] : "",
+      current_stage: task.current_stage || 1,
     });
     setIsEditDialogOpen(true);
   };
@@ -1016,6 +1025,7 @@ const TaskManagement = () => {
         recurrence_type: editTask.is_recurring ? editTask.recurrence_type : null,
         recurrence_interval: editTask.is_recurring ? editTask.recurrence_interval : 1,
         recurrence_end_date: editTask.is_recurring && editTask.recurrence_end_date ? editTask.recurrence_end_date : null,
+        current_stage: editTask.current_stage || 1,
         updated_at: new Date().toISOString()
       };
 
@@ -1131,23 +1141,33 @@ const TaskManagement = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      pending: { color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-      in_progress: { color: 'bg-blue-100 text-blue-800', icon: Target },
-      completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
-      review_pending: { color: 'bg-orange-100 text-orange-800', icon: Eye },
-      handover: { color: 'bg-purple-100 text-purple-800', icon: User },
-      cancelled: { color: 'bg-red-100 text-red-800', icon: AlertCircle }
+  const getStatusBadge = (status: string) => {
+    const statusConfig: any = {
+      pending: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400', icon: Clock },
+      in_progress: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400', icon: Target },
+      completed: { color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400', icon: CheckCircle },
+      review_pending: { color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400', icon: Eye },
+      handover: { color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400', icon: User },
+      cancelled: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: AlertCircle }
     };
 
     const config = statusConfig[status] || statusConfig.pending;
     const Icon = config.icon;
 
     return (
-      <Badge className={config.color}>
+      <Badge className={config.color} variant="secondary">
         <Icon className="h-3 w-3 mr-1" />
         {status.replace(/_/g, ' ').toUpperCase()}
+      </Badge>
+    );
+  };
+
+  const getStageBadge = (stage: number | null | undefined) => {
+    if (!stage) return null;
+    return (
+      <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/30">
+        <Layers className="h-3 w-3 mr-1" />
+        Stage {stage}
       </Badge>
     );
   };
@@ -1195,167 +1215,1859 @@ const TaskManagement = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <ClipboardList className="h-6 w-6 text-blue-600" />
-          <h2 className="text-2xl font-bold">Task Management</h2>
-        </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Create Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create New Task</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="title">Task Title</Label>
-                <Input
-                  id="title"
-                  value={newTask.title}
-                  onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                  placeholder="Enter task title"
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={newTask.description}
-                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                  placeholder="Enter task description"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="h-6 w-6 text-blue-600" />
+            <h2 className="text-2xl font-bold">Task Management</h2>
+          </div>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Create Task
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create New Task</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="assigned_to">Assign To</Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto py-1 px-2 text-xs"
-                      onClick={async () => {
-                        const { data: { user } } = await supabase.auth.getUser();
-                        if (user?.id) {
-                          setNewTask({ ...newTask, assigned_to: [user.id] });
-                        }
-                      }}
-                    >
-                      <User className="h-3 w-3 mr-1" />
-                      Assign to myself
-                    </Button>
-                  </div>
-                  <Popover>
-                    <PopoverTrigger asChild>
+                  <Label htmlFor="title">Task Title</Label>
+                  <Input
+                    id="title"
+                    value={newTask.title}
+                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                    placeholder="Enter task title"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={newTask.description}
+                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                    placeholder="Enter task description"
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="assigned_to">Assign To</Label>
                       <Button
-                        variant="outline"
-                        role="combobox"
-                        className="w-full justify-between mt-2 h-auto min-h-[40px] py-2"
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto py-1 px-2 text-xs"
+                        onClick={async () => {
+                          const { data: { user } } = await supabase.auth.getUser();
+                          if (user?.id) {
+                            setNewTask({ ...newTask, assigned_to: [user.id] });
+                          }
+                        }}
                       >
-                        <div className="flex flex-wrap gap-1 max-w-[90%]">
-                          {newTask.assigned_to.length > 0 ? (
-                            newTask.assigned_to.map((id) => {
-                              const member = staff.find(s => s.user_id === id);
-                              return (
-                                <Badge key={id} variant="secondary" className="mr-1 mb-1">
-                                  {member?.full_name || id}
-                                </Badge>
-                              );
-                            })
-                          ) : (
-                            <span className="text-muted-foreground">Select staff members...</span>
-                          )}
-                        </div>
-                        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                        <User className="h-3 w-3 mr-1" />
+                        Assign to myself
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0" align="start">
-                      <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto">
-                        {staff.map((member) => (
-                          <div
-                            key={member.id}
-                            className="flex items-center space-x-2 p-2 hover:bg-muted rounded-md cursor-pointer"
-                            onClick={() => {
-                              const isSelected = newTask.assigned_to.includes(member.user_id);
-                              if (isSelected) {
-                                setNewTask({
-                                  ...newTask,
-                                  assigned_to: newTask.assigned_to.filter(id => id !== member.user_id)
-                                });
-                              } else {
-                                setNewTask({
-                                  ...newTask,
-                                  assigned_to: [...newTask.assigned_to, member.user_id]
-                                });
-                              }
-                            }}
-                          >
-                            <Checkbox
-                              id={`staff-${member.id}`}
-                              checked={newTask.assigned_to.includes(member.user_id)}
-                              onCheckedChange={() => { }} // Handled by div onClick
-                            />
-                            <div className="flex flex-col">
-                              <Label htmlFor={`staff-${member.id}`} className="cursor-pointer font-medium">
-                                {member.full_name}
-                              </Label>
-                              <span className="text-xs text-muted-foreground">@{member.username}</span>
-                            </div>
-                            {newTask.assigned_to.includes(member.user_id) && (
-                              <Check className="h-4 w-4 ml-auto text-primary" />
+                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className="w-full justify-between mt-2 h-auto min-h-[40px] py-2"
+                        >
+                          <div className="flex flex-wrap gap-1 max-w-[90%]">
+                            {newTask.assigned_to.length > 0 ? (
+                              newTask.assigned_to.map((id) => {
+                                const member = staff.find(s => s.user_id === id);
+                                return (
+                                  <Badge key={id} variant="secondary" className="mr-1 mb-1">
+                                    {member?.full_name || id}
+                                  </Badge>
+                                );
+                              })
+                            ) : (
+                              <span className="text-muted-foreground">Select staff members...</span>
                             )}
+                          </div>
+                          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0" align="start">
+                        <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto">
+                          {staff.map((member) => (
+                            <div
+                              key={member.id}
+                              className="flex items-center space-x-2 p-2 hover:bg-muted rounded-md cursor-pointer"
+                              onClick={() => {
+                                const isSelected = newTask.assigned_to.includes(member.user_id);
+                                if (isSelected) {
+                                  setNewTask({
+                                    ...newTask,
+                                    assigned_to: newTask.assigned_to.filter(id => id !== member.user_id)
+                                  });
+                                } else {
+                                  setNewTask({
+                                    ...newTask,
+                                    assigned_to: [...newTask.assigned_to, member.user_id]
+                                  });
+                                }
+                              }}
+                            >
+                              <Checkbox
+                                id={`staff-${member.id}`}
+                                checked={newTask.assigned_to.includes(member.user_id)}
+                                onCheckedChange={() => { }} // Handled by div onClick
+                              />
+                              <div className="flex flex-col">
+                                <Label htmlFor={`staff-${member.id}`} className="cursor-pointer font-medium">
+                                  {member.full_name}
+                                </Label>
+                                <span className="text-xs text-muted-foreground">@{member.username}</span>
+                              </div>
+                              {newTask.assigned_to.includes(member.user_id) && (
+                                <Check className="h-4 w-4 ml-auto text-primary" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="client">Client</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto py-1 px-2 text-xs"
+                        onClick={() => setIsAddClientOpen(true)}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add New Client
+                      </Button>
+                    </div>
+                    <Select value={newTask.client_id} onValueChange={(value) => setNewTask({ ...newTask, client_id: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select client" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no-client">No Client</SelectItem>
+                        {clients.map(client => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.company_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="department">Department</Label>
+                    <Select value={newTask.department_id || "no-department"} onValueChange={(value) => setNewTask({ ...newTask, department_id: value })}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no-department">Auto (My Department)</SelectItem>
+                        {departments.map(dept => (
+                          <SelectItem key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="project">Project</Label>
+                    <Select value={newTask.project_id || "no-project"} onValueChange={(value) => setNewTask({ ...newTask, project_id: value })}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no-project">No Project</SelectItem>
+                        {projects.map(project => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="priority">Priority</Label>
+                    <Select value={newTask.priority} onValueChange={(value) => setNewTask({ ...newTask, priority: value })}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="points">Points</Label>
+                    <div className="flex items-center gap-4 mt-2">
+                      <Input
+                        id="points"
+                        type="number"
+                        value={newTask.points}
+                        onChange={(e) => setNewTask({ ...newTask, points: parseInt(e.target.value) || 10 })}
+                        min="1"
+                        max="1000"
+                        className="flex-1"
+                        disabled={newTask.trial_period}
+                      />
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="trial_period"
+                          checked={newTask.trial_period}
+                          onCheckedChange={(checked) => setNewTask({ ...newTask, trial_period: checked, points: checked ? 0 : 10 })}
+                        />
+                        <Label htmlFor="trial_period" className="text-sm text-muted-foreground whitespace-nowrap">
+                          Trial Period
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="due_date">Due Date (Optional)</Label>
+                    <Input
+                      id="due_date"
+                      type="date"
+                      value={newTask.due_date}
+                      onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="due_time">Due Time (Optional)</Label>
+                    <Input
+                      id="due_time"
+                      type="time"
+                      value={newTask.due_time}
+                      onChange={(e) => setNewTask({ ...newTask, due_time: e.target.value })}
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+
+                {/* Recurring Task Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Repeat className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="is_recurring" className="font-medium">Recurring Task</Label>
+                    </div>
+                    <Switch
+                      id="is_recurring"
+                      checked={newTask.is_recurring}
+                      onCheckedChange={(checked) => setNewTask({ ...newTask, is_recurring: checked })}
+                    />
+                  </div>
+
+                  {newTask.is_recurring && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                      <div>
+                        <Label htmlFor="recurrence_type">Frequency</Label>
+                        <Select value={newTask.recurrence_type} onValueChange={(value) => setNewTask({ ...newTask, recurrence_type: value })}>
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="recurrence_interval">Every</Label>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Input
+                            id="recurrence_interval"
+                            type="number"
+                            min="1"
+                            max="30"
+                            value={newTask.recurrence_interval}
+                            onChange={(e) => setNewTask({ ...newTask, recurrence_interval: parseInt(e.target.value) || 1 })}
+                          />
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">
+                            {newTask.recurrence_type === 'daily' ? 'day(s)' : newTask.recurrence_type === 'weekly' ? 'week(s)' : 'month(s)'}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="recurrence_end_date">End Date (Optional)</Label>
+                        <Input
+                          id="recurrence_end_date"
+                          type="date"
+                          value={newTask.recurrence_end_date}
+                          onChange={(e) => setNewTask({ ...newTask, recurrence_end_date: e.target.value })}
+                          className="mt-2"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <Label>Attachments</Label>
+                  <div className="mt-2 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        id="file-upload"
+                        className="hidden"
+                        multiple
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            const files = Array.from(e.target.files).map(file => ({
+                              file: file as File,
+                              title: (file as File).name
+                            }));
+                            setNewTask({ ...newTask, attachments: [...newTask.attachments, ...files] });
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById('file-upload')?.click()}
+                        disabled={uploadingFiles}
+                      >
+                        <Paperclip className="h-4 w-4 mr-2" />
+                        Attach Files
+                      </Button>
+                    </div>
+
+                    {newTask.attachments.length > 0 && (
+                      <div className="space-y-2">
+                        {newTask.attachments.map((att, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2 bg-muted/50 rounded border text-sm">
+                            <span className="truncate flex-1">{att.title}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                              onClick={() => {
+                                const newAttachments = [...newTask.attachments];
+                                newAttachments.splice(idx, 1);
+                                setNewTask({ ...newTask, attachments: newAttachments });
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
                         ))}
                       </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label htmlFor="client">Client</Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto py-1 px-2 text-xs"
-                      onClick={() => setIsAddClientOpen(true)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add New Client
-                    </Button>
+                    )}
                   </div>
-                  <Select value={newTask.client_id} onValueChange={(value) => setNewTask({ ...newTask, client_id: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no-client">No Client</SelectItem>
-                      {clients.map(client => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.company_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAddTask} disabled={uploadingFiles}>
+                    {uploadingFiles ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      "Create Task"
+                    )}
+                  </Button>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            </DialogContent>
+          </Dialog>
+
+          {/* Add Client Dialog */}
+          <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add New Client</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
                 <div>
-                  <Label htmlFor="department">Department</Label>
-                  <Select value={newTask.department_id || "no-department"} onValueChange={(value) => setNewTask({ ...newTask, department_id: value })}>
+                  <Label htmlFor="company_name">Company Name *</Label>
+                  <Input
+                    id="company_name"
+                    value={newClient.company_name}
+                    onChange={(e) => setNewClient({ ...newClient, company_name: e.target.value })}
+                    placeholder="Enter company name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="contact_person">Contact Person *</Label>
+                  <Input
+                    id="contact_person"
+                    value={newClient.contact_person}
+                    onChange={(e) => setNewClient({ ...newClient, contact_person: e.target.value })}
+                    placeholder="Enter contact person name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newClient.email}
+                    onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+                    placeholder="Enter email address"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Phone (Optional)</Label>
+                  <Input
+                    id="phone"
+                    value={newClient.phone}
+                    onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="notes">Notes (Optional)</Label>
+                  <Textarea
+                    id="notes"
+                    value={newClient.notes}
+                    onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
+                    placeholder="Enter any notes"
+                    rows={2}
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setIsAddClientOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAddClient}>
+                    Add Client
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Filters */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Filter Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search tasks..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="handover">Handover</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterPriority} onValueChange={setFilterPriority}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Priorities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priorities</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-2 border rounded-lg p-1 bg-muted/50">
+                <Button
+                  variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('table')}
+                  className="h-8 px-2"
+                >
+                  <List className="h-4 w-4 mr-1" />
+                  Table
+                </Button>
+                <Button
+                  variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-8 px-2"
+                >
+                  <LayoutGrid className="h-4 w-4 mr-1" />
+                  Grid
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">
+                  Showing {filteredTasks.length} tasks
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tasks Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Tasks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Dynamic Content: Table or Grid */}
+            <div className="space-y-4">
+              {viewMode === 'table' ? (
+                <div className="hidden md:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Task</TableHead>
+                        <TableHead>Assigned To</TableHead>
+                        <TableHead>Stage</TableHead>
+                        <TableHead>Priority</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Due Date</TableHead>
+                        <TableHead>Points</TableHead>
+                        <TableHead>Actions</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTasks.map((task) => (
+                        <TableRow key={task.id} className="hover:bg-muted/50 transition-colors">
+                          <TableCell>
+                            <div className="max-w-[200px]">
+                              <div className="font-semibold truncate">{task.title}</div>
+                              {task.description && (
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {task.description}
+                                </div>
+                              )}
+                              {task.staff_projects?.name && (
+                                <Badge variant="secondary" className="mt-1 text-[10px] h-4">
+                                  {task.staff_projects.name}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex -space-x-3 hover:space-x-1 transition-all">
+                              {(task.assigned_to_profiles?.length > 0
+                                ? task.assigned_to_profiles
+                                : task.assigned_to_profile ? [task.assigned_to_profile] : []
+                              ).map((profile: any, i: number) => (
+                                <Tooltip key={i}>
+                                  <TooltipTrigger asChild>
+                                    <Avatar className="h-8 w-8 border-2 border-background ring-2 ring-primary/10 hover:z-10 transition-all hover:scale-110 shadow-sm cursor-pointer">
+                                      <AvatarImage src={profile.avatar_url} />
+                                      <AvatarFallback className="text-[10px] bg-muted font-bold text-muted-foreground">
+                                        {profile.full_name?.substring(0, 2).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="text-xs font-semibold">{profile.full_name}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              ))}
+                              {!task.assigned_to_profile && !task.assigned_to_profiles?.length && (
+                                <span className="text-gray-400 text-xs italic">Unassigned</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {getStageBadge(task.current_stage || 1)}
+                          </TableCell>
+                          <TableCell>
+                            {getPriorityBadge(task.priority)}
+                          </TableCell>
+                          <TableCell>
+                            {getStatusBadge(task.status)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {task.due_date ? (
+                              <div className="flex items-center gap-1.5 text-xs">
+                                <Calendar className="h-3 w-3 text-muted-foreground" />
+                                {format(new Date(task.due_date), 'MMM dd')}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-xs">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs font-mono">{task.points}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={task.status}
+                              onValueChange={(value) => handleStatusChange(task.id, value)}
+                            >
+                              <SelectTrigger className="h-8 w-32 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="in_progress">In Progress</SelectItem>
+                                {(userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) ? (
+                                  <SelectItem value="completed">Completed</SelectItem>
+                                ) : null}
+                                <SelectItem value="review_pending">Review</SelectItem>
+                                <SelectItem value="handover">Handover</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-500" onClick={() => { setSelectedTask(task); fetchSubtasks(task.id); setIsDetailDialogOpen(true); }}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-amber-500" onClick={() => openEditDialog(task)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => { setTaskToDelete(task); setIsDeleteDialogOpen(true); }}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                /* Grid/Card View */
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filteredTasks.map((task) => (
+                    <Card key={task.id} className="overflow-hidden hover:shadow-md transition-all group border-muted-foreground/10 bg-card/50 backdrop-blur-sm">
+                      <CardHeader className="p-4 flex flex-row items-start justify-between space-y-0 pb-2">
+                        <div className="space-y-1 pr-6 overflow-hidden">
+                          <CardTitle className="text-base font-bold line-clamp-1 group-hover:text-primary transition-colors">
+                            {task.title}
+                          </CardTitle>
+                          {task.staff_projects?.name && (
+                            <p className="text-[10px] text-primary/70 font-medium">#{task.staff_projects.name}</p>
+                          )}
+                        </div>
+                        <div className="shrink-0">
+                          {getPriorityBadge(task.priority)}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0 space-y-4">
+                        {task.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">
+                            {task.description}
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex -space-x-2">
+                            {(task.assigned_to_profiles?.length > 0
+                              ? task.assigned_to_profiles
+                              : task.assigned_to_profile ? [task.assigned_to_profile] : []
+                            ).map((profile: any, i: number) => (
+                              <Avatar key={i} className="h-7 w-7 border-2 border-background ring-1 ring-border">
+                                <AvatarImage src={profile.avatar_url} />
+                                <AvatarFallback className="text-[10px]">
+                                  {profile.full_name?.substring(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                            ))}
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            {getStageBadge(task.current_stage || 1)}
+                            <span className="text-[10px] text-muted-foreground">Points: {task.points}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-muted/50">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-[10px] text-muted-foreground">
+                              {task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No date'}
+                            </span>
+                          </div>
+                          {getStatusBadge(task.status)}
+                        </div>
+
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            size="sm"
+                            className="flex-1 h-8 text-[11px] bg-primary/10 text-primary hover:bg-primary/20 border-none shadow-none"
+                            onClick={() => {
+                              setSelectedTask(task);
+                              fetchSubtasks(task.id);
+                              setIsDetailDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="h-3 w-3 mr-1" /> View
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            onClick={() => openEditDialog(task)}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-red-500 hover:bg-red-500/10"
+                            onClick={() => {
+                              setTaskToDelete(task);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+              {filteredTasks.map((task) => (
+                <div key={task.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg border shadow-sm space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-medium text-lg">{task.title}</h3>
+                      {task.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                          {task.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      {getPriorityBadge(task.priority)}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="flex items-center gap-2 col-span-2">
+                      <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <div className="flex flex-wrap gap-1">
+                        {(task.assigned_to_profiles?.length > 0
+                          ? task.assigned_to_profiles
+                          : task.assigned_to_profile ? [task.assigned_to_profile] : []
+                        ).map((profile: any, i: number) => (
+                          <span key={i} className="text-sm font-medium">
+                            {profile.full_name}{i < (task.assigned_to_profiles?.length || 1) - 1 ? ',' : ''}
+                          </span>
+                        ))}
+                        {!task.assigned_to_profile && !task.assigned_to_profiles?.length && (
+                          <span className="text-gray-400 text-sm">Unassigned</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 justify-end">
+                      <Badge variant="outline">{task.points} pts</Badge>
+                    </div>
+
+                    {task.due_date && (
+                      <div className="flex items-center gap-2 col-span-2 text-muted-foreground">
+                        <Calendar className="h-4 w-4" />
+                        <span>
+                          {format(new Date(task.due_date), 'MMM dd, yyyy')}
+                          {task.due_time && ` at ${task.due_time}`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 pt-2 border-t">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">Status:</span>
+                      {getStatusBadge(task.status)}
+                    </div>
+
+                    <Select
+                      value={task.status}
+                      onValueChange={(value) => handleStatusChange(task.id, value)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        {(userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) ? (
+                          <SelectItem value="completed">Completed (Approve & Award)</SelectItem>
+                        ) : null}
+                        <SelectItem value="review_pending">Submit for Review</SelectItem>
+                        <SelectItem value="handover">Handover</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <div className="flex gap-2 justify-end">
+                      {task.status === 'review_pending' &&
+                        (userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) && (
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white flex-1"
+                            onClick={() => updateTaskStatus(task.id, 'completed')}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Approve
+                          </Button>
+                        )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => openEditDialog(task)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          setSelectedTask(task);
+                          fetchSubtasks(task.id);
+                          setIsDetailDialogOpen(true);
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                        onClick={() => {
+                          setTaskToDelete(task);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {filteredTasks.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No tasks found matching your criteria.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Handover Dialog */}
+        <Dialog open={isHandoverDialogOpen} onOpenChange={setIsHandoverDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Handover Task to Department</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="handover-department">Select Target Department</Label>
+                <Select value={handoverDepartmentId} onValueChange={setHandoverDepartmentId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map(dept => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground mt-2">
+                  The task will be handed over to this department's team lead and managers.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsHandoverDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleHandoverConfirm}>
+                  Confirm Handover
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Task Detail Dialog */}
+        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Task Details</DialogTitle>
+            </DialogHeader>
+            {selectedTask && (
+              <div className="space-y-6">
+                {/* Basic Info */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-xl font-semibold mb-2">{selectedTask.title}</h3>
+                    <p className="text-muted-foreground">{selectedTask.description || 'No description provided'}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Status</Label>
+                      <div className="mt-1">{getStatusBadge(selectedTask.status)}</div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Priority</Label>
+                      <div className="mt-1">{getPriorityBadge(selectedTask.priority)}</div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Points</Label>
+                      <div className="mt-1">
+                        <Badge variant="outline">{selectedTask.points} pts</Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Due Date</Label>
+                      <div className="mt-1 text-sm">
+                        {selectedTask.due_date ? format(new Date(selectedTask.due_date), 'MMM dd, yyyy') : 'No due date'}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Execution Stage</Label>
+                      <div className="mt-1">
+                        {getStageBadge(selectedTask.current_stage || 1)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Assignment Info */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Assignment Information
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Assigned To</Label>
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        {(selectedTask.assigned_to_profiles?.length > 0
+                          ? selectedTask.assigned_to_profiles
+                          : selectedTask.assigned_to_profile ? [selectedTask.assigned_to_profile] : []
+                        ).map((profile: any, i: number) => (
+                          <div key={i} className="flex flex-col">
+                            <span className="font-medium">{profile.full_name}</span>
+                            <span className="text-sm text-muted-foreground">@{profile.username}</span>
+                            <Badge variant="outline" className="mt-1 text-xs w-fit">{profile.role}</Badge>
+                          </div>
+                        ))}
+                        {!selectedTask.assigned_to_profile && !selectedTask.assigned_to_profiles?.length && (
+                          <span className="text-gray-400 text-sm">Unassigned</span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Assigned By</Label>
+                      <div className="mt-1">
+                        <div className="font-medium">{selectedTask.assigned_by_profile?.full_name}</div>
+                        <div className="text-sm text-muted-foreground">@{selectedTask.assigned_by_profile?.username}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Project & Client Info */}
+                {(selectedTask.staff_projects || selectedTask.clients) && (
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Project & Client Information
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedTask.staff_projects && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Project</Label>
+                          <div className="mt-1">
+                            <div className="font-medium">{selectedTask.staff_projects.name}</div>
+                            <Badge variant="outline" className="mt-1 text-xs">{selectedTask.staff_projects.status}</Badge>
+                          </div>
+                        </div>
+                      )}
+                      {selectedTask.clients && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Client</Label>
+                          <div className="mt-1">
+                            <div className="font-medium">{selectedTask.clients.company_name}</div>
+                            <div className="text-sm text-muted-foreground">{selectedTask.clients.contact_person}</div>
+                            {selectedTask.clients.email && (
+                              <div className="text-xs text-muted-foreground mt-1">{selectedTask.clients.email}</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Timeline */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Timeline
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Created At</Label>
+                      <div className="mt-1">{format(new Date(selectedTask.created_at), 'MMM dd, yyyy HH:mm')}</div>
+                    </div>
+                    {selectedTask.updated_at && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Last Updated</Label>
+                        <div className="mt-1">{format(new Date(selectedTask.updated_at), 'MMM dd, yyyy HH:mm')}</div>
+                      </div>
+                    )}
+                    {selectedTask.completed_at && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Completed At</Label>
+                        <div className="mt-1">{format(new Date(selectedTask.completed_at), 'MMM dd, yyyy HH:mm')}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Subtasks Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Subtasks
+                      {subtasks.length > 0 && (
+                        <Badge variant="outline" className="ml-2">
+                          {subtasks.filter(st => st.status === 'completed').length}/{subtasks.length} Completed
+                        </Badge>
+                      )}
+                    </h4>
+                  </div>
+
+                  {/* Template Selection Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="font-semibold text-sm flex items-center gap-2">
+                          <LayoutTemplate className="h-4 w-4 text-purple-500" />
+                          Task Templates (Bulk)
+                        </h5>
+                        <p className="text-[10px] text-muted-foreground">Select a preset to add multiple subtasks at once.</p>
+                      </div>
+                      {bulkSubtasks.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-[10px] hover:text-primary"
+                          onClick={() => {
+                            setBulkSubtasks([]);
+                            setSelectedTaskTemplateId("none");
+                          }}
+                        >
+                          Clear Selection
+                        </Button>
+                      )}
+                    </div>
+
+                    {!selectedTaskTemplateId || selectedTaskTemplateId === 'none' ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {taskTemplates.map((tpl: any) => (
+                          <div
+                            key={tpl.id}
+                            className="p-3 bg-muted/10 hover:bg-muted/30 rounded-lg border border-muted/50 cursor-pointer transition-all group hover:border-purple-500/50"
+                            onClick={() => {
+                              setSelectedTaskTemplateId(tpl.id);
+                              if (tpl.subtask_templates) {
+                                setBulkSubtasks(tpl.subtask_templates.map((st: any) => ({
+                                  ...st,
+                                  assigned_to: "",
+                                  priority: st.priority || tpl.priority || 'medium',
+                                  stage: st.stage || 1
+                                })));
+                              }
+                            }}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold truncate group-hover:text-purple-400 transition-colors">{tpl.title}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge variant="outline" className="text-[9px] h-4 py-0 px-1 border-muted/30">
+                                    {tpl.subtask_templates?.length || 0} tasks
+                                  </Badge>
+                                  <span className="text-[9px] text-muted-foreground">{tpl.points} pts</span>
+                                </div>
+                              </div>
+                              <Plus className="h-3 w-3 text-muted-foreground group-hover:text-purple-500 transition-all" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-purple-500/5 rounded-lg border border-purple-500/20 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <h6 className="text-[11px] font-bold text-purple-400">
+                              Template: {taskTemplates.find(t => t.id === selectedTaskTemplateId)?.title}
+                            </h6>
+                          </div>
+                          <div className="flex items-center gap-2 bg-background/50 p-1 rounded border border-white/5">
+                            <span className="text-[9px] text-muted-foreground px-1">Assign All To:</span>
+                            <Select onValueChange={(val) => {
+                              setBulkSubtasks(bulkSubtasks.map(st => ({ ...st, assigned_to: val })));
+                            }}>
+                              <SelectTrigger className="w-[110px] h-6 text-[9px] border-none bg-transparent focus:ring-0 shadow-none">
+                                <SelectValue placeholder="Select staff" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {staff.map((member: any) => (
+                                  <SelectItem key={member.id} value={member.user_id} className="text-xs">{member.full_name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex items-center gap-2 bg-background/50 p-1 rounded border border-white/5">
+                            <span className="text-[9px] text-muted-foreground px-1">Stage All:</span>
+                            <Select onValueChange={(val) => {
+                              const s = parseInt(val);
+                              setBulkSubtasks(bulkSubtasks.map(st => ({ ...st, stage: s })));
+                            }}>
+                              <SelectTrigger className="w-[80px] h-6 text-[9px] border-none bg-transparent focus:ring-0 shadow-none">
+                                <SelectValue placeholder="Set Stage" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => (
+                                  <SelectItem key={s} value={s.toString()} className="text-xs">Stage {s}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="bg-background/20 rounded-md border border-white/5 p-2 max-h-[300px] overflow-y-auto space-y-1 custom-scrollbar">
+                          {bulkSubtasks.map((st, idx) => (
+                            <div key={idx} className="flex items-center gap-2 p-2 bg-muted/10 rounded border border-muted/20 hover:bg-muted/20 transition-colors">
+                              <div className="flex-1 min-w-0 ml-1">
+                                <p className="text-[10px] font-medium truncate">{st.title}</p>
+                                <div className="flex items-center gap-2 text-[8px] text-muted-foreground">
+                                  <span>{st.points} pts</span>
+                                  <span className="text-purple-400 font-bold border border-purple-500/20 bg-purple-500/5 px-1 rounded">Stage {st.stage || 1}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  value={st.stage || 1}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value) || 1;
+                                    const newBulk = [...bulkSubtasks];
+                                    newBulk[idx].stage = val;
+                                    setBulkSubtasks(newBulk);
+                                  }}
+                                  className="w-8 h-7 text-[10px] bg-background border border-muted/30 rounded text-center focus:outline-none focus:border-purple-500"
+                                  title="Change stage for this subtask"
+                                />
+                              </div>
+                              <Select
+                                value={st.assigned_to}
+                                onValueChange={(val) => {
+                                  const newBulk = [...bulkSubtasks];
+                                  newBulk[idx].assigned_to = val;
+                                  setBulkSubtasks(newBulk);
+                                }}
+                              >
+                                <SelectTrigger className="w-[130px] h-7 text-[10px] bg-background/50 border-muted/30">
+                                  <SelectValue placeholder="Assign To..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {staff.map((member: any) => (
+                                    <SelectItem key={member.id} value={member.user_id} className="text-xs">
+                                      {member.full_name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex justify-end gap-2 mt-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-[10px] hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => {
+                              setBulkSubtasks([]);
+                              setSelectedTaskTemplateId("none");
+                            }}
+                          >
+                            Change Template
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="h-8 text-[10px] bg-purple-600 hover:bg-purple-700 font-semibold"
+                            onClick={handleBulkAddSubtasks}
+                          >
+                            Add {bulkSubtasks.length} Subtasks
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="border-t border-muted/50 my-2 pt-4">
+                      <h5 className="font-medium text-[11px] text-muted-foreground uppercase tracking-widest mb-3">Create Individual Subtask</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
+                        <div className="md:col-span-2 mb-2">
+                          <Select
+                            value={selectedSubtaskTemplateId}
+                            onValueChange={(value) => {
+                              setSelectedSubtaskTemplateId(value);
+                              if (value !== 'none') {
+                                const tpl = subtaskTemplates.find(t => t.id === value);
+                                if (tpl) {
+                                  setNewSubtask(prev => ({
+                                    ...prev,
+                                    title: tpl.title || "",
+                                    description: tpl.description || "",
+                                    points: tpl.points || 0,
+                                    stage: tpl.stage || 1
+                                  }));
+                                }
+                              } else {
+                                setNewSubtask(prev => ({
+                                  ...prev,
+                                  title: "",
+                                  description: "",
+                                  points: 0
+                                }));
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-9 text-xs">
+                              <SelectValue placeholder="Quick fill from subtask template..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Manual / Custom Entry</SelectItem>
+                              {subtaskTemplates.map((tpl: any) => (
+                                <SelectItem key={tpl.id} value={tpl.id}>{tpl.title}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="md:col-span-2">
+                          <Input
+                            placeholder="Subtask title *"
+                            value={newSubtask.title}
+                            onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
+                            className="h-9 text-xs"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Textarea
+                            placeholder="Description (optional)"
+                            value={newSubtask.description}
+                            onChange={(e) => setNewSubtask({ ...newSubtask, description: e.target.value })}
+                            rows={2}
+                            className="text-xs resize-none"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 md:col-span-2">
+                          <Select
+                            value={newSubtask.assigned_to}
+                            onValueChange={(value) => setNewSubtask({ ...newSubtask, assigned_to: value })}
+                          >
+                            <SelectTrigger className="h-9 text-xs">
+                              <SelectValue placeholder="Assign To *" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {staff.map((member: any) => (
+                                <SelectItem key={member.id} value={member.user_id} className="text-xs">
+                                  {member.full_name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select
+                            value={newSubtask.priority}
+                            onValueChange={(value) => setNewSubtask({ ...newSubtask, priority: value as any })}
+                          >
+                            <SelectTrigger className="h-9 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low" className="text-xs text-blue-500">Low</SelectItem>
+                              <SelectItem value="medium" className="text-xs text-yellow-500">Medium</SelectItem>
+                              <SelectItem value="high" className="text-xs text-orange-500">High</SelectItem>
+                              <SelectItem value="urgent" className="text-xs text-red-500 font-bold">Urgent</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3 md:col-span-2">
+                          <Input
+                            type="number"
+                            placeholder="Points"
+                            value={newSubtask.points === 0 ? "" : newSubtask.points}
+                            onChange={(e) => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
+                            min="0"
+                            className="h-9 text-xs"
+                          />
+                          <Input
+                            type="date"
+                            value={newSubtask.due_date}
+                            onChange={(e) => setNewSubtask({ ...newSubtask, due_date: e.target.value })}
+                            className="h-9 text-xs"
+                          />
+                          <Input
+                            type="number"
+                            placeholder="Stage #"
+                            value={newSubtask.stage}
+                            onChange={(e) => setNewSubtask({ ...newSubtask, stage: parseInt(e.target.value) || 1 })}
+                            min="1"
+                            className="h-9 text-xs"
+                            title="Stage number (1, 2, 3...)"
+                          />
+                        </div>
+                        <Button
+                          onClick={() => handleCreateSubtask(selectedTask.id)}
+                          className="md:col-span-2 h-9 text-xs bg-primary hover:bg-primary/90"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Individual Subtask (Stage {newSubtask.stage})
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Subtasks — Stage Kanban Columns */}
+                  {loadingSubtasks ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    </div>
+                  ) : (() => {
+                    // Group subtasks by stage
+                    const stageMap: Record<number, any[]> = {};
+                    subtasks.forEach(st => {
+                      const s = (st as any).stage || 1;
+                      if (!stageMap[s]) stageMap[s] = [];
+                      stageMap[s].push(st);
+                    });
+                    const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
+                    // Always show at least stage 1 column
+                    if (stageNums.length === 0) stageNums.push(1);
+
+                    const stageColors = [
+                      'border-indigo-500/40 bg-indigo-500/5',
+                      'border-green-500/40 bg-green-500/5',
+                      'border-orange-500/40 bg-orange-500/5',
+                      'border-cyan-500/40 bg-cyan-500/5',
+                      'border-pink-500/40 bg-pink-500/5',
+                    ];
+                    const stageBadgeColors = [
+                      'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300',
+                      'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300',
+                      'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300',
+                      'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300',
+                      'bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-300',
+                    ];
+
+                    return (
+                      <div className="overflow-x-auto pb-2">
+                        <div className="flex gap-3 min-w-0" style={{ minWidth: stageNums.length * 260 }}>
+                          {stageNums.map((stageNum) => {
+                            const colClass = stageColors[(stageNum - 1) % stageColors.length];
+                            const badgeClass = stageBadgeColors[(stageNum - 1) % stageBadgeColors.length];
+                            const stageSubtasks = stageMap[stageNum] || [];
+                            const isQuickAddOpen = quickAddStage === stageNum;
+
+                            return (
+                              <div key={stageNum} className={`flex-1 min-w-[240px] rounded-xl border ${colClass} p-3 space-y-2`}>
+                                {/* Stage column header */}
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeClass}`}>
+                                      Stage {stageNum}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">{stageSubtasks.length} task{stageSubtasks.length !== 1 ? 's' : ''}</span>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                                    title={`Add subtask to Stage ${stageNum}`}
+                                    onClick={() => {
+                                      setQuickAddStage(isQuickAddOpen ? null : stageNum);
+                                      setNewSubtask(prev => ({ ...prev, stage: stageNum, title: '', assigned_to: '', description: '', points: 0, due_date: '' }));
+                                    }}
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+
+                                {/* Quick-add form for this stage */}
+                                {isQuickAddOpen && (
+                                  <div className="space-y-2 p-2 bg-background/60 rounded-lg border border-muted/60 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <Input
+                                      autoFocus
+                                      placeholder="Subtask title *"
+                                      value={newSubtask.title}
+                                      onChange={e => setNewSubtask({ ...newSubtask, title: e.target.value })}
+                                      className="h-8 text-xs"
+                                    />
+                                    <Select
+                                      value={newSubtask.assigned_to}
+                                      onValueChange={val => setNewSubtask({ ...newSubtask, assigned_to: val })}
+                                    >
+                                      <SelectTrigger className="h-8 text-xs">
+                                        <SelectValue placeholder="Assign To *" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {staff.map((member: any) => (
+                                          <SelectItem key={member.id} value={member.user_id} className="text-xs">{member.full_name}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <div className="flex gap-1">
+                                      <Input
+                                        type="number"
+                                        placeholder="Pts"
+                                        value={newSubtask.points === 0 ? '' : newSubtask.points}
+                                        onChange={e => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
+                                        min="0"
+                                        className="h-8 text-xs w-16"
+                                      />
+                                      <Select
+                                        value={newSubtask.priority}
+                                        onValueChange={val => setNewSubtask({ ...newSubtask, priority: val as any })}
+                                      >
+                                        <SelectTrigger className="h-8 text-xs flex-1">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="low" className="text-xs">Low</SelectItem>
+                                          <SelectItem value="medium" className="text-xs">Medium</SelectItem>
+                                          <SelectItem value="high" className="text-xs">High</SelectItem>
+                                          <SelectItem value="urgent" className="text-xs">Urgent</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="flex gap-1">
+                                      <Button
+                                        size="sm"
+                                        className="flex-1 h-7 text-xs"
+                                        onClick={() => handleCreateSubtask(selectedTask.id)}
+                                      >
+                                        Add
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 text-xs"
+                                        onClick={() => setQuickAddStage(null)}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Subtask cards for this stage */}
+                                {stageSubtasks.length === 0 && !isQuickAddOpen && (
+                                  <div className="text-center py-3 text-xs text-muted-foreground border border-dashed rounded-lg">
+                                    No subtasks
+                                  </div>
+                                )}
+                                {stageSubtasks.map((subtask: any) => (
+                                  <div key={subtask.id} className="p-2 bg-background/80 rounded-lg border border-muted/50 space-y-1.5">
+                                    <div className="flex items-start justify-between gap-1">
+                                      <span className="text-xs font-semibold leading-tight flex-1">{subtask.title}</span>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                                        onClick={() => handleDeleteSubtask(subtask.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                    {subtask.description && (
+                                      <p className="text-[10px] text-muted-foreground line-clamp-2">{subtask.description}</p>
+                                    )}
+                                    <div className="flex items-center gap-1 flex-wrap text-[10px] text-muted-foreground">
+                                      <span className="flex items-center gap-0.5">
+                                        <User className="h-2.5 w-2.5" />
+                                        {subtask.staff_profiles?.full_name || '–'}
+                                      </span>
+                                      {subtask.points > 0 && <span>· {subtask.points}pts</span>}
+                                    </div>
+                                    <Select
+                                      value={subtask.status}
+                                      onValueChange={val => handleSubtaskStatusUpdate(subtask.id, val)}
+                                    >
+                                      <SelectTrigger className="w-full h-7 text-[10px]">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="pending">Pending</SelectItem>
+                                        <SelectItem value="in_progress">In Progress</SelectItem>
+                                        <SelectItem value="completed">Completed</SelectItem>
+                                        <SelectItem value="review_pending">Review Pending</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                {/* Handover History */}
+                {selectedTask.comments && selectedTask.comments.some((c: any) => c.type === 'handover') && (
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Handover History
+                    </h4>
+                    <div className="space-y-2">
+                      {selectedTask.comments
+                        .filter((c: any) => c.type === 'handover')
+                        .map((handover: any, idx: number) => (
+                          <div key={idx} className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded border border-blue-200 dark:border-blue-800">
+                            <div className="flex items-start gap-2">
+                              <Target className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                              <div className="flex-1 space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-sm font-medium">{handover.user_name}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(handover.timestamp), 'MMM dd, yyyy HH:mm')}
+                                  </span>
+                                </div>
+                                <div className="text-sm">
+                                  <span className="text-muted-foreground">From:</span>{' '}
+                                  <Badge variant="outline" className="text-xs">
+                                    {handover.from_department}
+                                  </Badge>
+                                  {' → '}
+                                  <span className="text-muted-foreground">To:</span>{' '}
+                                  <Badge variant="outline" className="text-xs">
+                                    {handover.to_department}
+                                  </Badge>
+                                </div>
+                                {handover.message && handover.message !== 'Task handed over' && (
+                                  <p className="text-sm text-muted-foreground italic">
+                                    Note: {handover.message}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Comments */}
+                {selectedTask.comments && selectedTask.comments.filter((c: any) => c.type !== 'handover').length > 0 && (
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Comments ({selectedTask.comments.filter((c: any) => c.type !== 'handover').length})
+                    </h4>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                      {selectedTask.comments.filter((c: any) => c.type !== 'handover').map((comment: any, index: number) => (
+                        <div key={index} className="border rounded p-3 bg-muted/50">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="font-medium text-sm">{comment.user_name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {format(new Date(comment.created_at || comment.timestamp), 'MMM dd, yyyy HH:mm')}
+                            </div>
+                          </div>
+                          <p className="text-sm">{comment.content || comment.message}</p>
+                          {comment.attachment_url && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="mt-2"
+                              onClick={() => handleDownloadAttachment({ url: comment.attachment_url, name: comment.attachment_name })}
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              {comment.attachment_name || 'Download'}
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Attachments */}
+                {selectedTask.attachments && selectedTask.attachments.length > 0 && (
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Attachments ({selectedTask.attachments.length})
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {selectedTask.attachments.map((attachment: any, index: number) => (
+                        <div key={index} className="border rounded p-3 flex items-center justify-between bg-muted/50">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <div className="text-sm font-medium truncate">{attachment.name || `Attachment ${index + 1}`}</div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDownloadAttachment(attachment)}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Task Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Task</DialogTitle>
+            </DialogHeader>
+            {editTask && (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-title">Task Title</Label>
+                  <Input
+                    id="edit-title"
+                    value={editTask.title}
+                    onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
+                    placeholder="Enter task title"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editTask.description}
+                    onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
+                    placeholder="Enter task description"
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className="w-full justify-between mt-2 h-auto min-h-[40px] py-2"
+                        >
+                          <div className="flex flex-wrap gap-1 max-w-[90%]">
+                            {editTask.assigned_to.length > 0 ? (
+                              editTask.assigned_to.map((id) => {
+                                const member = staff.find(s => s.user_id === id);
+                                return (
+                                  <Badge key={id} variant="secondary" className="mr-1 mb-1">
+                                    {member?.full_name || id}
+                                  </Badge>
+                                );
+                              })
+                            ) : (
+                              <span className="text-muted-foreground">Select staff members...</span>
+                            )}
+                          </div>
+                          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[300px] p-0" align="start">
+                        <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto">
+                          {staff.map((member) => (
+                            <div
+                              key={member.id}
+                              className="flex items-center space-x-2 p-2 hover:bg-muted rounded-md cursor-pointer"
+                              onClick={() => {
+                                const isSelected = editTask.assigned_to.includes(member.user_id);
+                                if (isSelected) {
+                                  setEditTask({
+                                    ...editTask,
+                                    assigned_to: editTask.assigned_to.filter(id => id !== member.user_id)
+                                  });
+                                } else {
+                                  setEditTask({
+                                    ...editTask,
+                                    assigned_to: [...editTask.assigned_to, member.user_id]
+                                  });
+                                }
+                              }}
+                            >
+                              <Checkbox
+                                id={`edit-staff-${member.id}`}
+                                checked={editTask.assigned_to.includes(member.user_id)}
+                                onCheckedChange={() => { }} // Handled by div onClick
+                              />
+                              <div className="flex flex-col">
+                                <Label htmlFor={`edit-staff-${member.id}`} className="cursor-pointer font-medium">
+                                  {member.full_name}
+                                </Label>
+                                <span className="text-xs text-muted-foreground">@{member.username}</span>
+                              </div>
+                              {editTask.assigned_to.includes(member.user_id) && (
+                                <Check className="h-4 w-4 ml-auto text-primary" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-client">Client</Label>
+                    <Select value={editTask.client_id || "no-client"} onValueChange={(value) => setEditTask({ ...editTask, client_id: value })}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select client" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no-client">No Client</SelectItem>
+                        {clients.map(client => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.company_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-status">Status</Label>
+                    <Select value={editTask.status} onValueChange={(value) => setEditTask({ ...editTask, status: value })}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="review_pending">Review Pending</SelectItem>
+                        <SelectItem value="handover">Handover</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-priority">Priority</Label>
+                    <Select value={editTask.priority} onValueChange={(value) => setEditTask({ ...editTask, priority: value })}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-points">Points</Label>
+                    <div className="flex items-center gap-4 mt-2">
+                      <Input
+                        id="edit-points"
+                        type="number"
+                        value={editTask.points}
+                        onChange={(e) => setEditTask({ ...editTask, points: parseInt(e.target.value) || 10 })}
+                        min="1"
+                        max="100"
+                        className="flex-1"
+                        disabled={editTask.trial_period}
+                      />
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="edit-trial"
+                          checked={editTask.trial_period}
+                          onCheckedChange={(checked) => setEditTask({ ...editTask, trial_period: checked, points: checked ? 0 : 10 })}
+                        />
+                        <Label htmlFor="edit-trial" className="text-sm text-muted-foreground whitespace-nowrap">
+                          Trial Period
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-project">Project</Label>
+                    <Select value={editTask.project_id || "no-project"} onValueChange={(value) => setEditTask({ ...editTask, project_id: value })}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue placeholder="Select project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no-project">No Project</SelectItem>
+                        {projects.map(project => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="edit-department">Department</Label>
+                  <Select value={editTask.department_id || "no-department"} onValueChange={(value) => setEditTask({ ...editTask, department_id: value })}>
                     <SelectTrigger className="mt-2">
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="no-department">Auto (My Department)</SelectItem>
+                      <SelectItem value="no-department">No Department</SelectItem>
                       {departments.map(dept => (
                         <SelectItem key={dept.id} value={dept.id}>
                           {dept.name}
@@ -1365,1711 +3077,130 @@ const TaskManagement = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="project">Project</Label>
-                  <Select value={newTask.project_id || "no-project"} onValueChange={(value) => setNewTask({ ...newTask, project_id: value })}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no-project">No Project</SelectItem>
-                      {projects.map(project => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="priority">Priority</Label>
-                  <Select value={newTask.priority} onValueChange={(value) => setNewTask({ ...newTask, priority: value })}>
+                  <Label htmlFor="edit-current_stage">Current Stage</Label>
+                  <Select value={editTask.current_stage?.toString() || "1"} onValueChange={(value) => setEditTask({ ...editTask, current_stage: parseInt(value) })}>
                     <SelectTrigger className="mt-2">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => (
+                        <SelectItem key={s} value={s.toString()}>Stage {s}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="points">Points</Label>
-                  <div className="flex items-center gap-4 mt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-due_date">Due Date</Label>
                     <Input
-                      id="points"
-                      type="number"
-                      value={newTask.points}
-                      onChange={(e) => setNewTask({ ...newTask, points: parseInt(e.target.value) || 10 })}
-                      min="1"
-                      max="100"
-                      className="flex-1"
-                      disabled={newTask.trial_period}
+                      id="edit-due_date"
+                      type="date"
+                      value={editTask.due_date}
+                      onChange={(e) => setEditTask({ ...editTask, due_date: e.target.value })}
+                      className="mt-2"
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-due_time">Due Time</Label>
+                    <Input
+                      id="edit-due_time"
+                      type="time"
+                      value={editTask.due_time}
+                      onChange={(e) => setEditTask({ ...editTask, due_time: e.target.value })}
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+
+                {/* Recurring Task Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Switch
-                        id="trial_period"
-                        checked={newTask.trial_period}
-                        onCheckedChange={(checked) => setNewTask({ ...newTask, trial_period: checked, points: checked ? 0 : 10 })}
-                      />
-                      <Label htmlFor="trial_period" className="text-sm text-muted-foreground whitespace-nowrap">
-                        Trial Period
-                      </Label>
+                      <Repeat className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="edit-recurring" className="font-medium">Recurring Task</Label>
                     </div>
+                    <Switch
+                      id="edit-recurring"
+                      checked={editTask.is_recurring}
+                      onCheckedChange={(checked) => setEditTask({ ...editTask, is_recurring: checked })}
+                    />
                   </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="due_date">Due Date (Optional)</Label>
-                  <Input
-                    id="due_date"
-                    type="date"
-                    value={newTask.due_date}
-                    onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="due_time">Due Time (Optional)</Label>
-                  <Input
-                    id="due_time"
-                    type="time"
-                    value={newTask.due_time}
-                    onChange={(e) => setNewTask({ ...newTask, due_time: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-
-              {/* Recurring Task Section */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Repeat className="h-4 w-4 text-muted-foreground" />
-                    <Label htmlFor="is_recurring" className="font-medium">Recurring Task</Label>
-                  </div>
-                  <Switch
-                    id="is_recurring"
-                    checked={newTask.is_recurring}
-                    onCheckedChange={(checked) => setNewTask({ ...newTask, is_recurring: checked })}
-                  />
-                </div>
-
-                {newTask.is_recurring && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                    <div>
-                      <Label htmlFor="recurrence_type">Frequency</Label>
-                      <Select value={newTask.recurrence_type} onValueChange={(value) => setNewTask({ ...newTask, recurrence_type: value })}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="daily">Daily</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="recurrence_interval">Every</Label>
-                      <div className="flex items-center gap-2 mt-2">
+                  {editTask.is_recurring && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                      <div>
+                        <Label>Frequency</Label>
+                        <Select value={editTask.recurrence_type} onValueChange={(value) => setEditTask({ ...editTask, recurrence_type: value })}>
+                          <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Every</Label>
                         <Input
-                          id="recurrence_interval"
                           type="number"
                           min="1"
                           max="30"
-                          value={newTask.recurrence_interval}
-                          onChange={(e) => setNewTask({ ...newTask, recurrence_interval: parseInt(e.target.value) || 1 })}
+                          value={editTask.recurrence_interval}
+                          onChange={(e) => setEditTask({ ...editTask, recurrence_interval: parseInt(e.target.value) || 1 })}
+                          className="mt-2"
                         />
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">
-                          {newTask.recurrence_type === 'daily' ? 'day(s)' : newTask.recurrence_type === 'weekly' ? 'week(s)' : 'month(s)'}
-                        </span>
                       </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="recurrence_end_date">End Date (Optional)</Label>
-                      <Input
-                        id="recurrence_end_date"
-                        type="date"
-                        value={newTask.recurrence_end_date}
-                        onChange={(e) => setNewTask({ ...newTask, recurrence_end_date: e.target.value })}
-                        className="mt-2"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <Label>Attachments</Label>
-                <div className="mt-2 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="file"
-                      id="file-upload"
-                      className="hidden"
-                      multiple
-                      onChange={(e) => {
-                        if (e.target.files) {
-                          const files = Array.from(e.target.files).map(file => ({
-                            file: file as File,
-                            title: (file as File).name
-                          }));
-                          setNewTask({ ...newTask, attachments: [...newTask.attachments, ...files] });
-                        }
-                        e.target.value = '';
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById('file-upload')?.click()}
-                      disabled={uploadingFiles}
-                    >
-                      <Paperclip className="h-4 w-4 mr-2" />
-                      Attach Files
-                    </Button>
-                  </div>
-
-                  {newTask.attachments.length > 0 && (
-                    <div className="space-y-2">
-                      {newTask.attachments.map((att, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-2 bg-muted/50 rounded border text-sm">
-                          <span className="truncate flex-1">{att.title}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                            onClick={() => {
-                              const newAttachments = [...newTask.attachments];
-                              newAttachments.splice(idx, 1);
-                              setNewTask({ ...newTask, attachments: newAttachments });
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddTask} disabled={uploadingFiles}>
-                  {uploadingFiles ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Create Task"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Add Client Dialog */}
-        <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Client</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="company_name">Company Name *</Label>
-                <Input
-                  id="company_name"
-                  value={newClient.company_name}
-                  onChange={(e) => setNewClient({ ...newClient, company_name: e.target.value })}
-                  placeholder="Enter company name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="contact_person">Contact Person *</Label>
-                <Input
-                  id="contact_person"
-                  value={newClient.contact_person}
-                  onChange={(e) => setNewClient({ ...newClient, contact_person: e.target.value })}
-                  placeholder="Enter contact person name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newClient.email}
-                  onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone (Optional)</Label>
-                <Input
-                  id="phone"
-                  value={newClient.phone}
-                  onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
-                  placeholder="Enter phone number"
-                />
-              </div>
-              <div>
-                <Label htmlFor="notes">Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  value={newClient.notes}
-                  onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
-                  placeholder="Enter any notes"
-                  rows={2}
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={() => setIsAddClientOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddClient}>
-                  Add Client
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filter Tasks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search tasks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Statuses" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="handover">Handover</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterPriority} onValueChange={setFilterPriority}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Priorities" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
-                Showing {filteredTasks.length} tasks
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tasks Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tasks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Desktop Table View */}
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Task</TableHead>
-                  <TableHead>Assigned To</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Points</TableHead>
-                  <TableHead>Actions</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTasks.map((task) => (
-                  <TableRow key={task.id}>
-                    <TableCell>
                       <div>
-                        <div className="font-medium">{task.title}</div>
-                        {task.description && (
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {task.description}
-                          </div>
-                        )}
-                        {task.staff_projects?.name && (
-                          <Badge variant="outline" className="mt-1 text-xs">
-                            {task.staff_projects.name}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-gray-400 shrink-0" />
-                        <div className="flex flex-wrap gap-1">
-                          {(task.assigned_to_profiles?.length > 0
-                            ? task.assigned_to_profiles
-                            : task.assigned_to_profile ? [task.assigned_to_profile] : []
-                          ).map((profile: any, i: number) => (
-                            <div key={i} className="text-sm">
-                              <span className="font-medium">{profile.full_name}</span>
-                              {i < (task.assigned_to_profiles?.length || 1) - 1 && <span className="text-muted-foreground">, </span>}
-                            </div>
-                          ))}
-                          {!task.assigned_to_profile && !task.assigned_to_profiles?.length && (
-                            <span className="text-gray-400 text-sm">Unassigned</span>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {getPriorityBadge(task.priority)}
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(task.status)}
-                    </TableCell>
-                    <TableCell>
-                      {task.due_date ? (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
-                          {format(new Date(task.due_date), 'MMM dd, yyyy')}
-                          {task.due_time && <span className="text-xs text-muted-foreground">{task.due_time}</span>}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">No due date</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{task.points} pts</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={task.status}
-                        onValueChange={(value) => handleStatusChange(task.id, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-
-                          {(userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) ? (
-                            <SelectItem value="completed">Completed (Approve & Award)</SelectItem>
-                          ) : null}
-
-                          <SelectItem value="review_pending">Submit for Review</SelectItem>
-                          <SelectItem value="handover">Handover</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {task.status === 'review_pending' &&
-                          (userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) && (
-                            <Button
-                              size="sm"
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                              onClick={() => updateTaskStatus(task.id, 'completed')}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                          )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openEditDialog(task)}
-                          title="Edit task"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedTask(task);
-                            fetchSubtasks(task.id);
-                            setIsDetailDialogOpen(true);
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                          onClick={() => {
-                            setTaskToDelete(task);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                          title="Delete task"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="md:hidden space-y-4">
-            {filteredTasks.map((task) => (
-              <div key={task.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg border shadow-sm space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-medium text-lg">{task.title}</h3>
-                    {task.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                        {task.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    {getPriorityBadge(task.priority)}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center gap-2 col-span-2">
-                    <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <div className="flex flex-wrap gap-1">
-                      {(task.assigned_to_profiles?.length > 0
-                        ? task.assigned_to_profiles
-                        : task.assigned_to_profile ? [task.assigned_to_profile] : []
-                      ).map((profile: any, i: number) => (
-                        <span key={i} className="text-sm font-medium">
-                          {profile.full_name}{i < (task.assigned_to_profiles?.length || 1) - 1 ? ',' : ''}
-                        </span>
-                      ))}
-                      {!task.assigned_to_profile && !task.assigned_to_profiles?.length && (
-                        <span className="text-gray-400 text-sm">Unassigned</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 justify-end">
-                    <Badge variant="outline">{task.points} pts</Badge>
-                  </div>
-
-                  {task.due_date && (
-                    <div className="flex items-center gap-2 col-span-2 text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>
-                        {format(new Date(task.due_date), 'MMM dd, yyyy')}
-                        {task.due_time && ` at ${task.due_time}`}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-3 pt-2 border-t">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Status:</span>
-                    {getStatusBadge(task.status)}
-                  </div>
-
-                  <Select
-                    value={task.status}
-                    onValueChange={(value) => handleStatusChange(task.id, value)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      {(userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) ? (
-                        <SelectItem value="completed">Completed (Approve & Award)</SelectItem>
-                      ) : null}
-                      <SelectItem value="review_pending">Submit for Review</SelectItem>
-                      <SelectItem value="handover">Handover</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <div className="flex gap-2 justify-end">
-                    {task.status === 'review_pending' &&
-                      (userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) && (
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white flex-1"
-                          onClick={() => updateTaskStatus(task.id, 'completed')}
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Approve
-                        </Button>
-                      )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => openEditDialog(task)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => {
-                        setSelectedTask(task);
-                        fetchSubtasks(task.id);
-                        setIsDetailDialogOpen(true);
-                      }}
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      View
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                      onClick={() => {
-                        setTaskToDelete(task);
-                        setIsDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          {filteredTasks.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No tasks found matching your criteria.
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Handover Dialog */}
-      <Dialog open={isHandoverDialogOpen} onOpenChange={setIsHandoverDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Handover Task to Department</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="handover-department">Select Target Department</Label>
-              <Select value={handoverDepartmentId} onValueChange={setHandoverDepartmentId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose department" />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map(dept => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-sm text-muted-foreground mt-2">
-                The task will be handed over to this department's team lead and managers.
-              </p>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsHandoverDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleHandoverConfirm}>
-                Confirm Handover
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Task Detail Dialog */}
-      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Task Details</DialogTitle>
-          </DialogHeader>
-          {selectedTask && (
-            <div className="space-y-6">
-              {/* Basic Info */}
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-xl font-semibold mb-2">{selectedTask.title}</h3>
-                  <p className="text-muted-foreground">{selectedTask.description || 'No description provided'}</p>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Status</Label>
-                    <div className="mt-1">{getStatusBadge(selectedTask.status)}</div>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Priority</Label>
-                    <div className="mt-1">{getPriorityBadge(selectedTask.priority)}</div>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Points</Label>
-                    <div className="mt-1">
-                      <Badge variant="outline">{selectedTask.points} pts</Badge>
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Due Date</Label>
-                    <div className="mt-1 text-sm">
-                      {selectedTask.due_date ? format(new Date(selectedTask.due_date), 'MMM dd, yyyy') : 'No due date'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Assignment Info */}
-              <div className="border rounded-lg p-4 space-y-3">
-                <h4 className="font-semibold flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Assignment Information
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Assigned To</Label>
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {(selectedTask.assigned_to_profiles?.length > 0
-                        ? selectedTask.assigned_to_profiles
-                        : selectedTask.assigned_to_profile ? [selectedTask.assigned_to_profile] : []
-                      ).map((profile: any, i: number) => (
-                        <div key={i} className="flex flex-col">
-                          <span className="font-medium">{profile.full_name}</span>
-                          <span className="text-sm text-muted-foreground">@{profile.username}</span>
-                          <Badge variant="outline" className="mt-1 text-xs w-fit">{profile.role}</Badge>
-                        </div>
-                      ))}
-                      {!selectedTask.assigned_to_profile && !selectedTask.assigned_to_profiles?.length && (
-                        <span className="text-gray-400 text-sm">Unassigned</span>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Assigned By</Label>
-                    <div className="mt-1">
-                      <div className="font-medium">{selectedTask.assigned_by_profile?.full_name}</div>
-                      <div className="text-sm text-muted-foreground">@{selectedTask.assigned_by_profile?.username}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Project & Client Info */}
-              {(selectedTask.staff_projects || selectedTask.clients) && (
-                <div className="border rounded-lg p-4 space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Project & Client Information
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedTask.staff_projects && (
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Project</Label>
-                        <div className="mt-1">
-                          <div className="font-medium">{selectedTask.staff_projects.name}</div>
-                          <Badge variant="outline" className="mt-1 text-xs">{selectedTask.staff_projects.status}</Badge>
-                        </div>
-                      </div>
-                    )}
-                    {selectedTask.clients && (
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Client</Label>
-                        <div className="mt-1">
-                          <div className="font-medium">{selectedTask.clients.company_name}</div>
-                          <div className="text-sm text-muted-foreground">{selectedTask.clients.contact_person}</div>
-                          {selectedTask.clients.email && (
-                            <div className="text-xs text-muted-foreground mt-1">{selectedTask.clients.email}</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Timeline */}
-              <div className="border rounded-lg p-4 space-y-3">
-                <h4 className="font-semibold flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Timeline
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Created At</Label>
-                    <div className="mt-1">{format(new Date(selectedTask.created_at), 'MMM dd, yyyy HH:mm')}</div>
-                  </div>
-                  {selectedTask.updated_at && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Last Updated</Label>
-                      <div className="mt-1">{format(new Date(selectedTask.updated_at), 'MMM dd, yyyy HH:mm')}</div>
-                    </div>
-                  )}
-                  {selectedTask.completed_at && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Completed At</Label>
-                      <div className="mt-1">{format(new Date(selectedTask.completed_at), 'MMM dd, yyyy HH:mm')}</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Subtasks Section */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Subtasks
-                    {subtasks.length > 0 && (
-                      <Badge variant="outline" className="ml-2">
-                        {subtasks.filter(st => st.status === 'completed').length}/{subtasks.length} Completed
-                      </Badge>
-                    )}
-                  </h4>
-                </div>
-
-                {/* Template Selection Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h5 className="font-semibold text-sm flex items-center gap-2">
-                        <LayoutTemplate className="h-4 w-4 text-purple-500" />
-                        Task Templates (Bulk)
-                      </h5>
-                      <p className="text-[10px] text-muted-foreground">Select a preset to add multiple subtasks at once.</p>
-                    </div>
-                    {bulkSubtasks.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-[10px] hover:text-primary"
-                        onClick={() => {
-                          setBulkSubtasks([]);
-                          setSelectedTaskTemplateId("none");
-                        }}
-                      >
-                        Clear Selection
-                      </Button>
-                    )}
-                  </div>
-
-                  {!selectedTaskTemplateId || selectedTaskTemplateId === 'none' ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {taskTemplates.map((tpl: any) => (
-                        <div
-                          key={tpl.id}
-                          className="p-3 bg-muted/10 hover:bg-muted/30 rounded-lg border border-muted/50 cursor-pointer transition-all group hover:border-purple-500/50"
-                          onClick={() => {
-                            setSelectedTaskTemplateId(tpl.id);
-                            if (tpl.subtask_templates) {
-                              setBulkSubtasks(tpl.subtask_templates.map((st: any) => ({
-                                ...st,
-                                assigned_to: "",
-                                priority: st.priority || tpl.priority || 'medium',
-                                stage: st.stage || 1
-                              })));
-                            }
-                          }}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold truncate group-hover:text-purple-400 transition-colors">{tpl.title}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-[9px] h-4 py-0 px-1 border-muted/30">
-                                  {tpl.subtask_templates?.length || 0} tasks
-                                </Badge>
-                                <span className="text-[9px] text-muted-foreground">{tpl.points} pts</span>
-                              </div>
-                            </div>
-                            <Plus className="h-3 w-3 text-muted-foreground group-hover:text-purple-500 transition-all" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-purple-500/5 rounded-lg border border-purple-500/20 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <h6 className="text-[11px] font-bold text-purple-400">
-                            Template: {taskTemplates.find(t => t.id === selectedTaskTemplateId)?.title}
-                          </h6>
-                        </div>
-                        <div className="flex items-center gap-2 bg-background/50 p-1 rounded border border-white/5">
-                          <span className="text-[9px] text-muted-foreground px-1">Assign All To:</span>
-                          <Select onValueChange={(val) => {
-                            setBulkSubtasks(bulkSubtasks.map(st => ({ ...st, assigned_to: val })));
-                          }}>
-                            <SelectTrigger className="w-[110px] h-6 text-[9px] border-none bg-transparent focus:ring-0 shadow-none">
-                              <SelectValue placeholder="Select staff" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {staff.map((member: any) => (
-                                <SelectItem key={member.id} value={member.user_id} className="text-xs">{member.full_name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="flex items-center gap-2 bg-background/50 p-1 rounded border border-white/5">
-                          <span className="text-[9px] text-muted-foreground px-1">Stage All:</span>
-                          <Select onValueChange={(val) => {
-                            const s = parseInt(val);
-                            setBulkSubtasks(bulkSubtasks.map(st => ({ ...st, stage: s })));
-                          }}>
-                            <SelectTrigger className="w-[80px] h-6 text-[9px] border-none bg-transparent focus:ring-0 shadow-none">
-                              <SelectValue placeholder="Set Stage" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => (
-                                <SelectItem key={s} value={s.toString()} className="text-xs">Stage {s}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="bg-background/20 rounded-md border border-white/5 p-2 max-h-[300px] overflow-y-auto space-y-1 custom-scrollbar">
-                        {bulkSubtasks.map((st, idx) => (
-                          <div key={idx} className="flex items-center gap-2 p-2 bg-muted/10 rounded border border-muted/20 hover:bg-muted/20 transition-colors">
-                            <div className="flex-1 min-w-0 ml-1">
-                              <p className="text-[10px] font-medium truncate">{st.title}</p>
-                              <div className="flex items-center gap-2 text-[8px] text-muted-foreground">
-                                <span>{st.points} pts</span>
-                                <span className="text-purple-400 font-bold border border-purple-500/20 bg-purple-500/5 px-1 rounded">Stage {st.stage || 1}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <input
-                                type="number"
-                                value={st.stage || 1}
-                                onChange={(e) => {
-                                  const val = parseInt(e.target.value) || 1;
-                                  const newBulk = [...bulkSubtasks];
-                                  newBulk[idx].stage = val;
-                                  setBulkSubtasks(newBulk);
-                                }}
-                                className="w-8 h-7 text-[10px] bg-background border border-muted/30 rounded text-center focus:outline-none focus:border-purple-500"
-                                title="Change stage for this subtask"
-                              />
-                            </div>
-                            <Select
-                              value={st.assigned_to}
-                              onValueChange={(val) => {
-                                const newBulk = [...bulkSubtasks];
-                                newBulk[idx].assigned_to = val;
-                                setBulkSubtasks(newBulk);
-                              }}
-                            >
-                              <SelectTrigger className="w-[130px] h-7 text-[10px] bg-background/50 border-muted/30">
-                                <SelectValue placeholder="Assign To..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {staff.map((member: any) => (
-                                  <SelectItem key={member.id} value={member.user_id} className="text-xs">
-                                    {member.full_name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="flex justify-end gap-2 mt-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 text-[10px] hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => {
-                            setBulkSubtasks([]);
-                            setSelectedTaskTemplateId("none");
-                          }}
-                        >
-                          Change Template
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="h-8 text-[10px] bg-purple-600 hover:bg-purple-700 font-semibold"
-                          onClick={handleBulkAddSubtasks}
-                        >
-                          Add {bulkSubtasks.length} Subtasks
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="border-t border-muted/50 my-2 pt-4">
-                    <h5 className="font-medium text-[11px] text-muted-foreground uppercase tracking-widest mb-3">Create Individual Subtask</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
-                      <div className="md:col-span-2 mb-2">
-                        <Select
-                          value={selectedSubtaskTemplateId}
-                          onValueChange={(value) => {
-                            setSelectedSubtaskTemplateId(value);
-                            if (value !== 'none') {
-                              const tpl = subtaskTemplates.find(t => t.id === value);
-                              if (tpl) {
-                                setNewSubtask(prev => ({
-                                  ...prev,
-                                  title: tpl.title || "",
-                                  description: tpl.description || "",
-                                  points: tpl.points || 0,
-                                  stage: tpl.stage || 1
-                                }));
-                              }
-                            } else {
-                              setNewSubtask(prev => ({
-                                ...prev,
-                                title: "",
-                                description: "",
-                                points: 0
-                              }));
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="h-9 text-xs">
-                            <SelectValue placeholder="Quick fill from subtask template..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Manual / Custom Entry</SelectItem>
-                            {subtaskTemplates.map((tpl: any) => (
-                              <SelectItem key={tpl.id} value={tpl.id}>{tpl.title}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="md:col-span-2">
-                        <Input
-                          placeholder="Subtask title *"
-                          value={newSubtask.title}
-                          onChange={(e) => setNewSubtask({ ...newSubtask, title: e.target.value })}
-                          className="h-9 text-xs"
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <Textarea
-                          placeholder="Description (optional)"
-                          value={newSubtask.description}
-                          onChange={(e) => setNewSubtask({ ...newSubtask, description: e.target.value })}
-                          rows={2}
-                          className="text-xs resize-none"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 md:col-span-2">
-                        <Select
-                          value={newSubtask.assigned_to}
-                          onValueChange={(value) => setNewSubtask({ ...newSubtask, assigned_to: value })}
-                        >
-                          <SelectTrigger className="h-9 text-xs">
-                            <SelectValue placeholder="Assign To *" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {staff.map((member: any) => (
-                              <SelectItem key={member.id} value={member.user_id} className="text-xs">
-                                {member.full_name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Select
-                          value={newSubtask.priority}
-                          onValueChange={(value) => setNewSubtask({ ...newSubtask, priority: value as any })}
-                        >
-                          <SelectTrigger className="h-9 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="low" className="text-xs text-blue-500">Low</SelectItem>
-                            <SelectItem value="medium" className="text-xs text-yellow-500">Medium</SelectItem>
-                            <SelectItem value="high" className="text-xs text-orange-500">High</SelectItem>
-                            <SelectItem value="urgent" className="text-xs text-red-500 font-bold">Urgent</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid grid-cols-3 gap-3 md:col-span-2">
-                        <Input
-                          type="number"
-                          placeholder="Points"
-                          value={newSubtask.points === 0 ? "" : newSubtask.points}
-                          onChange={(e) => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
-                          min="0"
-                          className="h-9 text-xs"
-                        />
+                        <Label>End Date</Label>
                         <Input
                           type="date"
-                          value={newSubtask.due_date}
-                          onChange={(e) => setNewSubtask({ ...newSubtask, due_date: e.target.value })}
-                          className="h-9 text-xs"
-                        />
-                        <Input
-                          type="number"
-                          placeholder="Stage #"
-                          value={newSubtask.stage}
-                          onChange={(e) => setNewSubtask({ ...newSubtask, stage: parseInt(e.target.value) || 1 })}
-                          min="1"
-                          className="h-9 text-xs"
-                          title="Stage number (1, 2, 3...)"
+                          value={editTask.recurrence_end_date}
+                          onChange={(e) => setEditTask({ ...editTask, recurrence_end_date: e.target.value })}
+                          className="mt-2"
                         />
                       </div>
-                      <Button
-                        onClick={() => handleCreateSubtask(selectedTask.id)}
-                        className="md:col-span-2 h-9 text-xs bg-primary hover:bg-primary/90"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Individual Subtask (Stage {newSubtask.stage})
-                      </Button>
                     </div>
-                  </div>
-                </div>
-
-                {/* Subtasks — Stage Kanban Columns */}
-                {loadingSubtasks ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  </div>
-                ) : (() => {
-                  // Group subtasks by stage
-                  const stageMap: Record<number, any[]> = {};
-                  subtasks.forEach(st => {
-                    const s = (st as any).stage || 1;
-                    if (!stageMap[s]) stageMap[s] = [];
-                    stageMap[s].push(st);
-                  });
-                  const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
-                  // Always show at least stage 1 column
-                  if (stageNums.length === 0) stageNums.push(1);
-
-                  const stageColors = [
-                    'border-indigo-500/40 bg-indigo-500/5',
-                    'border-green-500/40 bg-green-500/5',
-                    'border-orange-500/40 bg-orange-500/5',
-                    'border-cyan-500/40 bg-cyan-500/5',
-                    'border-pink-500/40 bg-pink-500/5',
-                  ];
-                  const stageBadgeColors = [
-                    'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300',
-                    'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300',
-                    'bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-300',
-                    'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300',
-                    'bg-pink-100 text-pink-700 dark:bg-pink-500/20 dark:text-pink-300',
-                  ];
-
-                  return (
-                    <div className="overflow-x-auto pb-2">
-                      <div className="flex gap-3 min-w-0" style={{ minWidth: stageNums.length * 260 }}>
-                        {stageNums.map((stageNum) => {
-                          const colClass = stageColors[(stageNum - 1) % stageColors.length];
-                          const badgeClass = stageBadgeColors[(stageNum - 1) % stageBadgeColors.length];
-                          const stageSubtasks = stageMap[stageNum] || [];
-                          const isQuickAddOpen = quickAddStage === stageNum;
-
-                          return (
-                            <div key={stageNum} className={`flex-1 min-w-[240px] rounded-xl border ${colClass} p-3 space-y-2`}>
-                              {/* Stage column header */}
-                              <div className="flex items-center justify-between mb-1">
-                                <div className="flex items-center gap-2">
-                                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeClass}`}>
-                                    Stage {stageNum}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">{stageSubtasks.length} task{stageSubtasks.length !== 1 ? 's' : ''}</span>
-                                </div>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
-                                  title={`Add subtask to Stage ${stageNum}`}
-                                  onClick={() => {
-                                    setQuickAddStage(isQuickAddOpen ? null : stageNum);
-                                    setNewSubtask(prev => ({ ...prev, stage: stageNum, title: '', assigned_to: '', description: '', points: 0, due_date: '' }));
-                                  }}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </div>
-
-                              {/* Quick-add form for this stage */}
-                              {isQuickAddOpen && (
-                                <div className="space-y-2 p-2 bg-background/60 rounded-lg border border-muted/60 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                                  <Input
-                                    autoFocus
-                                    placeholder="Subtask title *"
-                                    value={newSubtask.title}
-                                    onChange={e => setNewSubtask({ ...newSubtask, title: e.target.value })}
-                                    className="h-8 text-xs"
-                                  />
-                                  <Select
-                                    value={newSubtask.assigned_to}
-                                    onValueChange={val => setNewSubtask({ ...newSubtask, assigned_to: val })}
-                                  >
-                                    <SelectTrigger className="h-8 text-xs">
-                                      <SelectValue placeholder="Assign To *" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {staff.map((member: any) => (
-                                        <SelectItem key={member.id} value={member.user_id} className="text-xs">{member.full_name}</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  <div className="flex gap-1">
-                                    <Input
-                                      type="number"
-                                      placeholder="Pts"
-                                      value={newSubtask.points === 0 ? '' : newSubtask.points}
-                                      onChange={e => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
-                                      min="0"
-                                      className="h-8 text-xs w-16"
-                                    />
-                                    <Select
-                                      value={newSubtask.priority}
-                                      onValueChange={val => setNewSubtask({ ...newSubtask, priority: val as any })}
-                                    >
-                                      <SelectTrigger className="h-8 text-xs flex-1">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="low" className="text-xs">Low</SelectItem>
-                                        <SelectItem value="medium" className="text-xs">Medium</SelectItem>
-                                        <SelectItem value="high" className="text-xs">High</SelectItem>
-                                        <SelectItem value="urgent" className="text-xs">Urgent</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="flex gap-1">
-                                    <Button
-                                      size="sm"
-                                      className="flex-1 h-7 text-xs"
-                                      onClick={() => handleCreateSubtask(selectedTask.id)}
-                                    >
-                                      Add
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-7 text-xs"
-                                      onClick={() => setQuickAddStage(null)}
-                                    >
-                                      Cancel
-                                    </Button>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Subtask cards for this stage */}
-                              {stageSubtasks.length === 0 && !isQuickAddOpen && (
-                                <div className="text-center py-3 text-xs text-muted-foreground border border-dashed rounded-lg">
-                                  No subtasks
-                                </div>
-                              )}
-                              {stageSubtasks.map((subtask: any) => (
-                                <div key={subtask.id} className="p-2 bg-background/80 rounded-lg border border-muted/50 space-y-1.5">
-                                  <div className="flex items-start justify-between gap-1">
-                                    <span className="text-xs font-semibold leading-tight flex-1">{subtask.title}</span>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-6 w-6 p-0 flex-shrink-0 text-muted-foreground hover:text-destructive"
-                                      onClick={() => handleDeleteSubtask(subtask.id)}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                  {subtask.description && (
-                                    <p className="text-[10px] text-muted-foreground line-clamp-2">{subtask.description}</p>
-                                  )}
-                                  <div className="flex items-center gap-1 flex-wrap text-[10px] text-muted-foreground">
-                                    <span className="flex items-center gap-0.5">
-                                      <User className="h-2.5 w-2.5" />
-                                      {subtask.staff_profiles?.full_name || '–'}
-                                    </span>
-                                    {subtask.points > 0 && <span>· {subtask.points}pts</span>}
-                                  </div>
-                                  <Select
-                                    value={subtask.status}
-                                    onValueChange={val => handleSubtaskStatusUpdate(subtask.id, val)}
-                                  >
-                                    <SelectTrigger className="w-full h-7 text-[10px]">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="pending">Pending</SelectItem>
-                                      <SelectItem value="in_progress">In Progress</SelectItem>
-                                      <SelectItem value="completed">Completed</SelectItem>
-                                      <SelectItem value="review_pending">Review Pending</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-
-              {/* Handover History */}
-              {selectedTask.comments && selectedTask.comments.some((c: any) => c.type === 'handover') && (
-                <div className="border rounded-lg p-4 space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Handover History
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedTask.comments
-                      .filter((c: any) => c.type === 'handover')
-                      .map((handover: any, idx: number) => (
-                        <div key={idx} className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded border border-blue-200 dark:border-blue-800">
-                          <div className="flex items-start gap-2">
-                            <Target className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1 space-y-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm font-medium">{handover.user_name}</span>
-                                <span className="text-xs text-muted-foreground">
-                                  {format(new Date(handover.timestamp), 'MMM dd, yyyy HH:mm')}
-                                </span>
-                              </div>
-                              <div className="text-sm">
-                                <span className="text-muted-foreground">From:</span>{' '}
-                                <Badge variant="outline" className="text-xs">
-                                  {handover.from_department}
-                                </Badge>
-                                {' → '}
-                                <span className="text-muted-foreground">To:</span>{' '}
-                                <Badge variant="outline" className="text-xs">
-                                  {handover.to_department}
-                                </Badge>
-                              </div>
-                              {handover.message && handover.message !== 'Task handed over' && (
-                                <p className="text-sm text-muted-foreground italic">
-                                  Note: {handover.message}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Comments */}
-              {selectedTask.comments && selectedTask.comments.filter((c: any) => c.type !== 'handover').length > 0 && (
-                <div className="border rounded-lg p-4 space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Comments ({selectedTask.comments.filter((c: any) => c.type !== 'handover').length})
-                  </h4>
-                  <div className="space-y-3 max-h-60 overflow-y-auto">
-                    {selectedTask.comments.filter((c: any) => c.type !== 'handover').map((comment: any, index: number) => (
-                      <div key={index} className="border rounded p-3 bg-muted/50">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="font-medium text-sm">{comment.user_name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {format(new Date(comment.created_at || comment.timestamp), 'MMM dd, yyyy HH:mm')}
-                          </div>
-                        </div>
-                        <p className="text-sm">{comment.content || comment.message}</p>
-                        {comment.attachment_url && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="mt-2"
-                            onClick={() => handleDownloadAttachment({ url: comment.attachment_url, name: comment.attachment_name })}
-                          >
-                            <Download className="h-3 w-3 mr-1" />
-                            {comment.attachment_name || 'Download'}
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Attachments */}
-              {selectedTask.attachments && selectedTask.attachments.length > 0 && (
-                <div className="border rounded-lg p-4 space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    Attachments ({selectedTask.attachments.length})
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {selectedTask.attachments.map((attachment: any, index: number) => (
-                      <div key={index} className="border rounded p-3 flex items-center justify-between bg-muted/50">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <div className="text-sm font-medium truncate">{attachment.name || `Attachment ${index + 1}`}</div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDownloadAttachment(attachment)}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Task Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Task</DialogTitle>
-          </DialogHeader>
-          {editTask && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-title">Task Title</Label>
-                <Input
-                  id="edit-title"
-                  value={editTask.title}
-                  onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
-                  placeholder="Enter task title"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-description">Description</Label>
-                <Textarea
-                  id="edit-description"
-                  value={editTask.description}
-                  onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
-                  placeholder="Enter task description"
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        className="w-full justify-between mt-2 h-auto min-h-[40px] py-2"
-                      >
-                        <div className="flex flex-wrap gap-1 max-w-[90%]">
-                          {editTask.assigned_to.length > 0 ? (
-                            editTask.assigned_to.map((id) => {
-                              const member = staff.find(s => s.user_id === id);
-                              return (
-                                <Badge key={id} variant="secondary" className="mr-1 mb-1">
-                                  {member?.full_name || id}
-                                </Badge>
-                              );
-                            })
-                          ) : (
-                            <span className="text-muted-foreground">Select staff members...</span>
-                          )}
-                        </div>
-                        <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0" align="start">
-                      <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto">
-                        {staff.map((member) => (
-                          <div
-                            key={member.id}
-                            className="flex items-center space-x-2 p-2 hover:bg-muted rounded-md cursor-pointer"
-                            onClick={() => {
-                              const isSelected = editTask.assigned_to.includes(member.user_id);
-                              if (isSelected) {
-                                setEditTask({
-                                  ...editTask,
-                                  assigned_to: editTask.assigned_to.filter(id => id !== member.user_id)
-                                });
-                              } else {
-                                setEditTask({
-                                  ...editTask,
-                                  assigned_to: [...editTask.assigned_to, member.user_id]
-                                });
-                              }
-                            }}
-                          >
-                            <Checkbox
-                              id={`edit-staff-${member.id}`}
-                              checked={editTask.assigned_to.includes(member.user_id)}
-                              onCheckedChange={() => { }} // Handled by div onClick
-                            />
-                            <div className="flex flex-col">
-                              <Label htmlFor={`edit-staff-${member.id}`} className="cursor-pointer font-medium">
-                                {member.full_name}
-                              </Label>
-                              <span className="text-xs text-muted-foreground">@{member.username}</span>
-                            </div>
-                            {editTask.assigned_to.includes(member.user_id) && (
-                              <Check className="h-4 w-4 ml-auto text-primary" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <Label htmlFor="edit-client">Client</Label>
-                  <Select value={editTask.client_id || "no-client"} onValueChange={(value) => setEditTask({ ...editTask, client_id: value })}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no-client">No Client</SelectItem>
-                      {clients.map(client => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.company_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-status">Status</Label>
-                  <Select value={editTask.status} onValueChange={(value) => setEditTask({ ...editTask, status: value })}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="review_pending">Review Pending</SelectItem>
-                      <SelectItem value="handover">Handover</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-priority">Priority</Label>
-                  <Select value={editTask.priority} onValueChange={(value) => setEditTask({ ...editTask, priority: value })}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-points">Points</Label>
-                  <div className="flex items-center gap-4 mt-2">
-                    <Input
-                      id="edit-points"
-                      type="number"
-                      value={editTask.points}
-                      onChange={(e) => setEditTask({ ...editTask, points: parseInt(e.target.value) || 10 })}
-                      min="1"
-                      max="100"
-                      className="flex-1"
-                      disabled={editTask.trial_period}
-                    />
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        id="edit-trial"
-                        checked={editTask.trial_period}
-                        onCheckedChange={(checked) => setEditTask({ ...editTask, trial_period: checked, points: checked ? 0 : 10 })}
-                      />
-                      <Label htmlFor="edit-trial" className="text-sm text-muted-foreground whitespace-nowrap">
-                        Trial Period
-                      </Label>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="edit-project">Project</Label>
-                  <Select value={editTask.project_id || "no-project"} onValueChange={(value) => setEditTask({ ...editTask, project_id: value })}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no-project">No Project</SelectItem>
-                      {projects.map(project => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="edit-department">Department</Label>
-                <Select value={editTask.department_id || "no-department"} onValueChange={(value) => setEditTask({ ...editTask, department_id: value })}>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="no-department">No Department</SelectItem>
-                    {departments.map(dept => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-due_date">Due Date</Label>
-                  <Input
-                    id="edit-due_date"
-                    type="date"
-                    value={editTask.due_date}
-                    onChange={(e) => setEditTask({ ...editTask, due_date: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-due_time">Due Time</Label>
-                  <Input
-                    id="edit-due_time"
-                    type="time"
-                    value={editTask.due_time}
-                    onChange={(e) => setEditTask({ ...editTask, due_time: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-              </div>
-
-              {/* Recurring Task Section */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Repeat className="h-4 w-4 text-muted-foreground" />
-                    <Label htmlFor="edit-recurring" className="font-medium">Recurring Task</Label>
-                  </div>
-                  <Switch
-                    id="edit-recurring"
-                    checked={editTask.is_recurring}
-                    onCheckedChange={(checked) => setEditTask({ ...editTask, is_recurring: checked })}
-                  />
-                </div>
-                {editTask.is_recurring && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                    <div>
-                      <Label>Frequency</Label>
-                      <Select value={editTask.recurrence_type} onValueChange={(value) => setEditTask({ ...editTask, recurrence_type: value })}>
-                        <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="daily">Daily</SelectItem>
-                          <SelectItem value="weekly">Weekly</SelectItem>
-                          <SelectItem value="monthly">Monthly</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Every</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="30"
-                        value={editTask.recurrence_interval}
-                        onChange={(e) => setEditTask({ ...editTask, recurrence_interval: parseInt(e.target.value) || 1 })}
-                        className="mt-2"
-                      />
-                    </div>
-                    <div>
-                      <Label>End Date</Label>
-                      <Input
-                        type="date"
-                        value={editTask.recurrence_end_date}
-                        onChange={(e) => setEditTask({ ...editTask, recurrence_end_date: e.target.value })}
-                        className="mt-2"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleEditTask} disabled={savingEdit}>
-                  {savingEdit ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
                   )}
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Task</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{taskToDelete?.title}"? This action cannot be undone and will also delete all attached files.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteTask} className="bg-red-500 hover:bg-red-600">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleEditTask} disabled={savingEdit}>
+                    {savingEdit ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Task</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{taskToDelete?.title}"? This action cannot be undone and will also delete all attached files.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteTask} className="bg-red-500 hover:bg-red-600">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </TooltipProvider>
   );
 };
 
