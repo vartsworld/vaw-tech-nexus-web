@@ -222,12 +222,13 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     return staff.filter((s) => ids.includes(s.user_id));
   };
 
-  const getAssigneeName = (assignedTo: string): string => {
+  const getAssigneeName = (assignedTo: string | undefined | null): string => {
+    if (!assignedTo) return "Unassigned";
     const assignees = getAssigneeProfiles(assignedTo);
     if (assignees.length === 0) return "Unassigned";
-    if (assignees.length === 1) return assignees[0].full_name;
+    if (assignees.length === 1) return assignees[0]?.full_name || "Unknown";
     const [first, ...rest] = assignees;
-    return `${first.full_name} + ${rest.length} more`;
+    return `${first?.full_name || "Unknown"} + ${rest.length} more`;
   };
 
   const getAssigneeUsername = (assignedTo: string): string => {
@@ -1895,7 +1896,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     );
   };
 
-  const getPriorityBadge = (priority: string) => {
+  const getPriorityBadge = (priority: string | undefined | null) => {
+    const safePriority = priority || 'medium';
     const priorityConfig = {
       low: 'bg-gray-100 text-gray-800',
       medium: 'bg-blue-100 text-blue-800',
@@ -1904,9 +1906,9 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     };
 
     return (
-      <Badge className={priorityConfig[priority] || priorityConfig.medium}>
+      <Badge className={priorityConfig[safePriority] || priorityConfig.medium}>
         <Flag className="h-3 w-3 mr-1" />
-        {priority.toUpperCase()}
+        {safePriority.toUpperCase()}
       </Badge>
     );
   };
@@ -2328,9 +2330,11 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                             size="sm"
                             className="flex-shrink-0 bg-green-500 hover:bg-green-600 text-white h-8 text-xs"
                             onClick={async () => {
-                              setSelectedTask(parentTask);
-                              await fetchSubtasks(parentTask.id);
-                              setIsViewTaskOpen(true);
+                              try {
+                                setSelectedTask(parentTask);
+                                await fetchSubtasks(parentTask.id);
+                                setIsViewTaskOpen(true);
+                              } catch (e) { console.error('Error opening task view:', e); }
                             }}
                           >
                             <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
@@ -2409,9 +2413,11 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                             variant="outline"
                             className="flex-shrink-0 h-8 text-xs border-emerald-400/50 text-emerald-200 hover:bg-emerald-500/20"
                             onClick={async () => {
-                              setSelectedTask(parentTask);
-                              await fetchSubtasks(parentTask.id);
-                              setIsViewTaskOpen(true);
+                              try {
+                                setSelectedTask(parentTask);
+                                await fetchSubtasks(parentTask.id);
+                                setIsViewTaskOpen(true);
+                              } catch (e) { console.error('Error opening task view:', e); }
                             }}
                           >
                             View
@@ -2484,9 +2490,11 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                             variant="outline"
                             className="flex-shrink-0 h-8 text-xs border-red-400/50 text-red-200 hover:bg-red-500/20"
                             onClick={async () => {
-                              setSelectedTask(parentTask);
-                              await fetchSubtasks(parentTask.id);
-                              setIsViewTaskOpen(true);
+                              try {
+                                setSelectedTask(parentTask);
+                                await fetchSubtasks(parentTask.id);
+                                setIsViewTaskOpen(true);
+                              } catch (e) { console.error('Error opening task view:', e); }
                             }}
                           >
                             View
@@ -2706,9 +2714,11 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                                     variant="ghost"
                                     className="h-8 w-8"
                                     onClick={async () => {
-                                      setSelectedTask(task);
-                                      await fetchSubtasks(task.id);
-                                      setIsViewTaskOpen(true);
+                                      try {
+                                        setSelectedTask(task);
+                                        await fetchSubtasks(task.id);
+                                        setIsViewTaskOpen(true);
+                                      } catch (e) { console.error('Error opening task view:', e); }
                                     }}
                                     title="View details"
                                   >
@@ -2857,9 +2867,11 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                               variant="outline"
                               className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10 h-8 text-xs"
                               onClick={async () => {
-                                setSelectedTask(task);
-                                await fetchSubtasks(task.id);
-                                setIsViewTaskOpen(true);
+                                try {
+                                  setSelectedTask(task);
+                                  await fetchSubtasks(task.id);
+                                  setIsViewTaskOpen(true);
+                                } catch (e) { console.error('Error opening task view:', e); }
                               }}
                             >
                               <Eye className="h-3.5 w-3.5 mr-1.5" />
