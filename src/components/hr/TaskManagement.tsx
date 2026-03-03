@@ -103,6 +103,7 @@ const TaskManagement = () => {
   const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState<string>("none");
   const [bulkSubtasks, setBulkSubtasks] = useState<any[]>([]);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isSubtaskFullScreen, setIsSubtaskFullScreen] = useState(false);
 
   const [newSubtask, setNewSubtask] = useState({
     title: "",
@@ -170,8 +171,9 @@ const TaskManagement = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_tasks' }, () => {
         fetchTasks();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_subtasks' }, () => {
-        if (selectedTask) fetchSubtasks(selectedTask.id);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_subtasks' }, (payload: any) => {
+        const taskId = payload?.new?.task_id || payload?.old?.task_id || selectedTask?.id;
+        if (taskId) fetchSubtasks(taskId);
       })
       .subscribe();
 
@@ -1820,6 +1822,7 @@ const TaskManagement = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Task</TableHead>
+                        <TableHead>Department</TableHead>
                         <TableHead>Assigned To</TableHead>
                         <TableHead>Stage</TableHead>
                         <TableHead>Priority</TableHead>
@@ -1847,6 +1850,15 @@ const TaskManagement = () => {
                                 </Badge>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {task.departments?.name ? (
+                              <Badge variant="outline" className="text-[10px] h-4 py-0 px-1.5 border-primary/20 bg-primary/5 text-primary/80">
+                                {task.departments.name}
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-400 text-xs italic">N/A</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <div className="flex -space-x-3 hover:space-x-1 transition-all">
@@ -1946,8 +1958,15 @@ const TaskManagement = () => {
                           {task.staff_projects?.name && (
                             <p className="text-[10px] text-primary/70 font-medium">#{task.staff_projects.name}</p>
                           )}
+                          {task.departments?.name && (
+                            <div className="pt-0.5">
+                              <Badge variant="outline" className="text-[10px] h-4 py-0 px-1.5 border-primary/20 bg-primary/5 text-primary/80">
+                                {task.departments.name}
+                              </Badge>
+                            </div>
+                          )}
                         </div>
-                        <div className="shrink-0">
+                        <div className="shrink-0 flex flex-col items-end gap-1">
                           {getPriorityBadge(task.priority)}
                         </div>
                       </CardHeader>
@@ -2498,6 +2517,16 @@ const TaskManagement = () => {
                         </Badge>
                       )}
                     </h4>
+                    <Button
+                      variant={isSubtaskFullScreen ? 'secondary' : 'ghost'}
+                      size="sm"
+                      onClick={() => setIsSubtaskFullScreen(!isSubtaskFullScreen)}
+                      className="h-7 px-2 text-[10px]"
+                      title={isSubtaskFullScreen ? 'Exit Full Screen' : 'Full Screen Subtask Kanban'}
+                    >
+                      {isSubtaskFullScreen ? <Minimize2 className="h-3.5 w-3.5 mr-1" /> : <Maximize2 className="h-3.5 w-3.5 mr-1" />}
+                      {isSubtaskFullScreen ? 'Exit' : 'Full Screen'}
+                    </Button>
                   </div>
 
                   {/* Template Selection Section */}
@@ -2826,7 +2855,23 @@ const TaskManagement = () => {
 
                     return (
                       <DragDropContext onDragEnd={onSubtaskDragEnd}>
-                        <div className="overflow-x-auto pb-2">
+                        <div className={cn(
+                          "overflow-x-auto pb-2",
+                          isSubtaskFullScreen && "fixed inset-0 z-[200] bg-background flex flex-col p-6 overflow-y-auto"
+                        )}>
+                          {isSubtaskFullScreen && (
+                            <div className="flex justify-between items-center mb-4 shrink-0">
+                              <div className="flex items-center gap-3">
+                                <Target className="h-6 w-6 text-primary" />
+                                <h2 className="text-2xl font-bold">
+                                  Subtask Kanban — {selectedTask?.title}
+                                </h2>
+                              </div>
+                              <Button variant="outline" onClick={() => setIsSubtaskFullScreen(false)} className="gap-2">
+                                <Minimize2 className="h-4 w-4" /> Exit Full Screen
+                              </Button>
+                            </div>
+                          )}
                           <div className="flex gap-3 min-w-0" style={{ minWidth: stageNums.length * 260 }}>
                             {stageNums.map((stageNum) => {
                               const colClass = stageColors[(stageNum - 1) % stageColors.length];
@@ -2967,6 +3012,11 @@ const TaskManagement = () => {
                                                 </div>
                                                 {subtask.description && (
                                                   <p className="text-[10px] text-muted-foreground line-clamp-2">{subtask.description}</p>
+                                                )}
+                                                {selectedTask?.departments?.name && (
+                                                  <span className="inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded border border-primary/20 bg-primary/5 text-primary/80">
+                                                    {selectedTask.departments.name}
+                                                  </span>
                                                 )}
                                                 <div className="flex items-center gap-1 flex-wrap text-[10px] text-muted-foreground">
                                                   <span className="flex items-center gap-0.5">
