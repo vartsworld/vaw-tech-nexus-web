@@ -44,7 +44,7 @@ const SharedProjectForm = ({ clientId, initialData, onSuccess, onCancel }: Share
         try {
             // Fetch client profiles as projects reference them via FK
             const [clientsRes, pkgRes, addonRes] = await Promise.all([
-                supabase.from('client_profiles').select('id, company_name').order('company_name'),
+                supabase.from('clients').select('id, company_name').eq('status', 'active').order('company_name'),
                 supabase.from('pricing_packages').select('name, slug').eq('is_enabled', true).order('sort_order'),
                 supabase.from('pricing_addons').select('name, price').eq('is_enabled', true).order('sort_order')
             ]);

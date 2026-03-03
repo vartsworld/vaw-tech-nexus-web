@@ -63,12 +63,13 @@ const ManageProjects = () => {
                     .from('client_projects')
                     .select(`
             *,
-            client_profiles:client_id (id, company_name)
+            clients:client_id (id, company_name)
           `)
                     .order('created_at', { ascending: false }),
                 supabase
-                    .from('client_profiles')
+                    .from('clients')
                     .select('id, company_name')
+                    .eq('status', 'active')
                     .order('company_name')
             ]);
 
@@ -297,7 +298,7 @@ const ManageProjects = () => {
                                         <TableCell className="py-4 px-6 text-sm text-gray-300 font-medium">
                                             <div className="flex items-center gap-2">
                                                 <Building2 className="w-3.5 h-3.5 text-gray-500" />
-                                                {p.client_profiles?.company_name || 'Individual Partner'}
+                                                {p.clients?.company_name || 'Individual Partner'}
                                             </div>
                                         </TableCell>
                                         <TableCell className="py-4 px-6">
