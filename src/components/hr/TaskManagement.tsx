@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { cn } from "@/lib/utils";
 
 import {
   ClipboardList,
@@ -44,7 +45,9 @@ import {
   LayoutGrid,
   List,
   Layers,
-  Trello
+  Trello,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -99,6 +102,7 @@ const TaskManagement = () => {
   const [selectedSubtaskTemplateId, setSelectedSubtaskTemplateId] = useState<string>("none");
   const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState<string>("none");
   const [bulkSubtasks, setBulkSubtasks] = useState<any[]>([]);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   const [newSubtask, setNewSubtask] = useState({
     title: "",
@@ -160,6 +164,22 @@ const TaskManagement = () => {
     filterTasks();
   }, [tasks, searchTerm, filterStatus, filterPriority]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('tasks-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_tasks' }, () => {
+        fetchTasks();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_subtasks' }, () => {
+        if (selectedTask) fetchSubtasks(selectedTask.id);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedTask]);
+
   const fetchTasks = async () => {
     try {
       // Get current user profile to check role and department
@@ -204,6 +224,7 @@ const TaskManagement = () => {
       const profilesMap = (profilesData.data || []).reduce((acc, p) => ({ ...acc, [p.user_id]: p }), {});
       const projectsMap = (projectsData.data || []).reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
       const clientsMap = (clientsData.data || []).reduce((acc, c) => ({ ...acc, [c.id]: c }), {});
+      const deptsMap = departments.reduce((acc: any, d: any) => ({ ...acc, [d.id]: d }), {});
 
       // Merge data — attach all assignee profiles
       let enrichedTasks = tasksData.map(task => {
@@ -215,7 +236,8 @@ const TaskManagement = () => {
           assigned_to_profile: assigneeIds[0] ? (profilesMap[assigneeIds[0]] || null) : null, // keep legacy compat
           assigned_by_profile: profilesMap[task.assigned_by] || null,
           staff_projects: task.project_id ? projectsMap[task.project_id] || null : null,
-          clients: task.client_id ? clientsMap[task.client_id] || null : null
+          clients: task.client_id ? clientsMap[task.client_id] || null : null,
+          departments: task.department_id ? deptsMap[task.department_id] || null : null
         };
       });
 
@@ -805,143 +827,7 @@ const TaskManagement = () => {
     }
   };
 
-  const updateTaskStatus = async (taskId, newStatus, departmentId?: string) => {
-    // Only allow HR or Dept Head to mark as completed directly and award points
-    // Regular staff can mark as review_pending
-    const isAuthorized = userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head;
 
-    // If setting to completed and not authorized, force review_pending or show error
-    // But since we control the UI options, we assume the call is valid for the context
-    // Ideally we double check here
-
-    try {
-      const updateData: any = {
-        status: newStatus,
-        updated_at: new Date().toISOString()
-      };
-
-      if (newStatus === 'completed') {
-        updateData.completed_at = new Date().toISOString();
-      }
-
-      if (newStatus === 'handover' && departmentId) {
-        updateData.department_id = departmentId;
-      }
-
-      const { data, error } = await supabase
-        .from('staff_tasks')
-        .update(updateData)
-        .eq('id', taskId)
-        .select('*')
-        .single();
-
-      if (error) throw error;
-
-      // Award points if task is completed
-      if (newStatus === 'completed' && data) {
-        const pointsToAward = data.points || 10;
-        const assigneeIds = parseAssignedTo(data.assigned_to);
-
-        for (const userId of assigneeIds) {
-          // Get current staff profile points
-          const { data: staffProfile } = await supabase
-            .from('staff_profiles')
-            .select('total_points')
-            .eq('user_id', userId)
-            .single();
-
-          // Update staff total points
-          await supabase
-            .from('staff_profiles')
-            .update({
-              total_points: (staffProfile?.total_points || 0) + pointsToAward
-            })
-            .eq('user_id', userId);
-
-          // Log points
-          await supabase
-            .from('user_points_log')
-            .insert({
-              user_id: userId,
-              points: pointsToAward,
-              reason: `Task completed: ${data.title}`,
-              category: 'task'
-            });
-        }
-
-        toast({
-          title: "Success",
-          description: `Task approved & completed! +${pointsToAward} points awarded to ${assigneeIds.length} users.`,
-        });
-      } else if (newStatus === 'review_pending') {
-        toast({
-          title: "Submitted",
-          description: "Task submitted for approval.",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: newStatus === 'handover'
-            ? "Task handed over successfully."
-            : "Task status updated successfully.",
-        });
-      }
-
-      // Create notification for the user
-      if (newStatus === 'completed' || newStatus === 'review_pending' || newStatus === 'handover') {
-        let notificationTitle = "";
-        let notificationContent = "";
-        let notificationType = "task_assigned";
-
-        if (newStatus === 'completed') {
-          notificationTitle = "Task Approved & Completed";
-          notificationContent = `Your task "${data.title}" has been approved and completed. ${data.points ? `You earned ${data.points} points!` : ''}`;
-          notificationType = "achievement";
-        } else if (newStatus === 'review_pending') {
-          notificationTitle = "Task Submitted for Review";
-          notificationContent = `Task "${data.title}" has been submitted for review.`;
-          notificationType = "task_assigned";
-        } else if (newStatus === 'handover') {
-          notificationTitle = "Task Handed Over";
-          notificationContent = `Task "${data.title}" has been handed over.`;
-          notificationType = "task_assigned";
-        }
-
-        if (notificationTitle) {
-          const assigneeIds = parseAssignedTo(data.assigned_to);
-          await supabase
-            .from('staff_notifications')
-            .insert({
-              title: notificationTitle,
-              content: notificationContent,
-              type: notificationType,
-              target_users: assigneeIds,
-              created_by: userProfile?.user_id,
-              is_urgent: false
-            });
-        }
-      }
-
-      await fetchTasks(); // Refresh tasks to get updated data
-    } catch (error) {
-      console.error('Error updating task:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update task status.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleStatusChange = (taskId: string, newStatus: string) => {
-    if (newStatus === 'handover') {
-      setHandoverTaskId(taskId);
-      setHandoverDepartmentId("");
-      setIsHandoverDialogOpen(true);
-    } else {
-      updateTaskStatus(taskId, newStatus);
-    }
-  };
 
   const handleDeleteTask = async () => {
     if (!taskToDelete) return;
@@ -1055,6 +941,122 @@ const TaskManagement = () => {
     }
   };
 
+  const updateTaskStatus = async (taskId, newStatus, departmentId?: string) => {
+    const isAuthorized = userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head;
+
+    try {
+      const updateData: any = {
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      };
+
+      if (newStatus === 'completed') {
+        updateData.completed_at = new Date().toISOString();
+      }
+
+      if (newStatus === 'handover' && departmentId) {
+        updateData.department_id = departmentId;
+      }
+
+      const { data, error } = await supabase
+        .from('staff_tasks')
+        .update(updateData)
+        .eq('id', taskId)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      if (newStatus === 'completed' && data) {
+        const pointsToAward = data.points || 10;
+        const assigneeIds = parseAssignedTo(data.assigned_to);
+
+        for (const userId of assigneeIds) {
+          const { data: staffProfile } = await supabase
+            .from('staff_profiles')
+            .select('total_points')
+            .eq('user_id', userId)
+            .single();
+
+          await supabase
+            .from('staff_profiles')
+            .update({
+              total_points: (staffProfile?.total_points || 0) + pointsToAward
+            })
+            .eq('user_id', userId);
+
+          await supabase
+            .from('user_points_log')
+            .insert({
+              user_id: userId,
+              points: pointsToAward,
+              reason: `Task completed: ${data.title}`,
+              category: 'task'
+            });
+        }
+
+        toast({
+          title: "Success",
+          description: `Task approved & completed! +${pointsToAward} points awarded to ${assigneeIds.length} users.`,
+        });
+      } else if (newStatus === 'review_pending') {
+        toast({ title: "Submitted", description: "Task submitted for approval." });
+      } else {
+        toast({
+          title: "Success",
+          description: newStatus === 'handover' ? "Task handed over successfully." : "Task status updated successfully.",
+        });
+      }
+
+      if (newStatus === 'completed' || newStatus === 'review_pending' || newStatus === 'handover') {
+        let notificationTitle = "";
+        let notificationContent = "";
+        let notificationType = "task_assigned";
+
+        if (newStatus === 'completed') {
+          notificationTitle = "Task Approved & Completed";
+          notificationContent = `Your task "${data.title}" has been approved and completed. ${data.points ? `You earned ${data.points} points!` : ''}`;
+          notificationType = "achievement";
+        } else if (newStatus === 'review_pending') {
+          notificationTitle = "Task Submitted for Review";
+          notificationContent = `Task "${data.title}" has been submitted for review.`;
+        } else if (newStatus === 'handover') {
+          notificationTitle = "Task Handed Over";
+          notificationContent = `Task "${data.title}" has been handed over.`;
+        }
+
+        if (notificationTitle) {
+          const assigneeIds = parseAssignedTo(data.assigned_to);
+          await supabase
+            .from('staff_notifications')
+            .insert({
+              title: notificationTitle,
+              content: notificationContent,
+              type: notificationType,
+              target_users: assigneeIds,
+              created_by: userProfile?.user_id,
+              is_urgent: false
+            });
+        }
+      }
+
+      await fetchTasks();
+    } catch (error: any) {
+      console.error('Error updating task:', error);
+      toast({ title: "Error", description: "Failed to update task status.", variant: "destructive" });
+    }
+  };
+
+  const handleStatusChange = (taskId: string, newStatus: string) => {
+    if (newStatus === 'handover') {
+      setHandoverTaskId(taskId);
+      setHandoverDepartmentId("");
+      setIsHandoverDialogOpen(true);
+    } else {
+      updateTaskStatus(taskId, newStatus);
+    }
+  };
+
   const onDragEnd = async (result: any) => {
     if (!result.destination) return;
     const { draggableId, destination } = result;
@@ -1063,6 +1065,34 @@ const TaskManagement = () => {
     const task = tasks.find(t => t.id === draggableId);
     if (task && task.status !== newStatus) {
       handleStatusChange(draggableId, newStatus);
+    }
+  };
+
+  const onSubtaskDragEnd = (result: any) => {
+    if (!result.destination) return;
+    const { draggableId, destination } = result;
+    const destinationId = destination.droppableId;
+
+    if (destinationId.startsWith('stage-')) {
+      const newStage = parseInt(destinationId.replace('stage-', ''));
+      const subtask = subtasks.find(st => st.id === draggableId);
+      if (subtask && subtask.stage !== newStage) {
+        handleSubtaskStageUpdate(draggableId, newStage);
+      }
+    }
+  };
+
+  const handleSubtaskStageUpdate = async (subtaskId: string, newStage: number) => {
+    try {
+      const { error } = await supabase
+        .from('staff_subtasks')
+        .update({ stage: newStage })
+        .eq('id', subtaskId);
+
+      if (error) throw error;
+      setSubtasks(prev => prev.map(st => st.id === subtaskId ? { ...st, stage: newStage } : st));
+    } catch (error) {
+      console.error('Error updating subtask stage:', error);
     }
   };
 
@@ -1757,6 +1787,15 @@ const TaskManagement = () => {
                   <Trello className="h-4 w-4 mr-1" />
                   Kanban
                 </Button>
+                <Button
+                  variant={isFullScreen ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setIsFullScreen(!isFullScreen)}
+                  className="h-8 px-2"
+                  title={isFullScreen ? "Exit Full Screen" : "Full Screen Kanban"}
+                >
+                  {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </Button>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600">
@@ -1988,118 +2027,150 @@ const TaskManagement = () => {
               ) : (
                 /* Kanban View */
                 <DragDropContext onDragEnd={onDragEnd}>
-                  <div className="flex gap-4 overflow-x-auto pb-6 custom-scrollbar min-h-[600px] items-start">
-                    {['pending', 'in_progress', 'review_pending', 'handover', 'completed'].map((status) => {
-                      const statusTasks = filteredTasks.filter(t => t.status === status);
-                      const statusColor = {
-                        pending: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-600',
-                        in_progress: 'bg-blue-500/10 border-blue-500/20 text-blue-600',
-                        review_pending: 'bg-orange-500/10 border-orange-500/20 text-orange-600',
-                        handover: 'bg-purple-500/10 border-purple-500/20 text-purple-600',
-                        completed: 'bg-green-500/10 border-green-500/20 text-green-600'
-                      }[status];
-
-                      return (
-                        <div key={status} className="flex-shrink-0 w-80 flex flex-col max-h-full">
-                          <div className={`p-3 rounded-t-xl border-x border-t font-bold flex items-center justify-between ${statusColor}`}>
-                            <div className="flex items-center gap-2">
-                              <span className="uppercase text-xs tracking-wider">{status.replace(/_/g, ' ')}</span>
-                              <Badge variant="secondary" className="bg-white/50 dark:bg-black/20 text-[10px] h-4">
-                                {statusTasks.length}
-                              </Badge>
-                            </div>
-                          </div>
-
-                          <Droppable droppableId={status}>
-                            {(provided, snapshot) => (
-                              <div
-                                {...provided.droppableProps}
-                                ref={provided.innerRef}
-                                className={`flex-1 p-3 border rounded-b-xl bg-muted/20 space-y-3 min-h-[500px] transition-colors ${snapshot.isDraggingOver ? 'bg-muted/40 shadow-inner' : ''
-                                  }`}
-                              >
-                                {statusTasks.map((task, index) => (
-                                  <Draggable key={task.id} draggableId={task.id} index={index}>
-                                    {(provided, snapshot) => (
-                                      <div
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        {...provided.dragHandleProps}
-                                        className="transition-transform"
-                                      >
-                                        <Card className={`group relative bg-card hover:shadow-lg transition-all border-muted-foreground/10 ${snapshot.isDragging ? 'rotate-2 scale-105 z-50 shadow-2xl ring-2 ring-primary/20' : ''
-                                          }`}>
-                                          <CardHeader className="p-3 space-y-1">
-                                            <div className="flex items-start justify-between gap-2">
-                                              <CardTitle className="text-sm font-bold truncate">
-                                                {task.title}
-                                              </CardTitle>
-                                              {getPriorityBadge(task.priority)}
-                                            </div>
-                                            {task.staff_projects?.name && (
-                                              <p className="text-[10px] text-primary/60 font-medium">#{task.staff_projects.name}</p>
-                                            )}
-                                          </CardHeader>
-                                          <CardContent className="p-3 pt-0 space-y-3">
-                                            {task.description && (
-                                              <p className="text-xs text-muted-foreground line-clamp-2">
-                                                {task.description}
-                                              </p>
-                                            )}
-
-                                            <div className="flex items-center justify-between">
-                                              <div className="flex -space-x-2">
-                                                {(task.assigned_to_profiles?.length > 0
-                                                  ? task.assigned_to_profiles
-                                                  : task.assigned_to_profile ? [task.assigned_to_profile] : []
-                                                ).slice(0, 3).map((profile: any, i: number) => (
-                                                  <Avatar key={i} className="h-6 w-6 border-2 border-background">
-                                                    <AvatarImage src={profile.avatar_url} />
-                                                    <AvatarFallback className="text-[8px] font-bold">
-                                                      {profile.full_name?.substring(0, 2).toUpperCase()}
-                                                    </AvatarFallback>
-                                                  </Avatar>
-                                                ))}
-                                                {(task.assigned_to_profiles?.length || 1) > 3 && (
-                                                  <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[8px] font-bold">
-                                                    +{(task.assigned_to_profiles?.length || 1) - 3}
-                                                  </div>
-                                                )}
-                                              </div>
-                                              <div className="flex flex-col items-end gap-1">
-                                                {getStageBadge(task.current_stage || 1)}
-                                              </div>
-                                            </div>
-
-                                            <div className="flex items-center justify-between pt-2 border-t border-muted/50">
-                                              <div className="flex items-center gap-1">
-                                                <Clock className="h-3 w-3 text-muted-foreground" />
-                                                <span className="text-[9px] text-muted-foreground">
-                                                  {task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No date'}
-                                                </span>
-                                              </div>
-                                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setSelectedTask(task); fetchSubtasks(task.id); setIsDetailDialogOpen(true); }}>
-                                                  <Eye className="h-3.5 w-3.5" />
-                                                </Button>
-                                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openEditDialog(task)}>
-                                                  <Edit className="h-3.5 w-3.5" />
-                                                </Button>
-                                              </div>
-                                            </div>
-                                          </CardContent>
-                                        </Card>
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                ))}
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
+                  <div className={cn(
+                    "flex gap-4 overflow-x-auto pb-6 custom-scrollbar min-h-[600px] items-start transition-all",
+                    isFullScreen && "fixed inset-0 z-[100] bg-background p-8 flex-col overflow-y-auto"
+                  )}>
+                    {isFullScreen && (
+                      <div className="flex justify-between items-center mb-6 shrink-0 w-full max-w-[1600px] mx-auto">
+                        <div className="flex items-center gap-3">
+                          <Trello className="h-8 w-8 text-primary" />
+                          <h1 className="text-3xl font-bold tracking-tight">Main Task Board</h1>
                         </div>
-                      );
-                    })}
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={() => setIsFullScreen(false)}
+                          className="flex items-center gap-2 border-primary/20 hover:bg-primary/5"
+                        >
+                          <Minimize2 className="h-5 w-5" />
+                          Exit Full Screen
+                        </Button>
+                      </div>
+                    )}
+                    <div className={cn(
+                      "flex gap-4 min-h-0",
+                      isFullScreen ? "w-full max-w-[1600px] mx-auto pb-12" : ""
+                    )}>
+                      {['pending', 'in_progress', 'review_pending', 'handover', 'completed'].map((status) => {
+                        const statusTasks = filteredTasks.filter(t => t.status === status);
+                        const statusColor = {
+                          pending: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-600',
+                          in_progress: 'bg-blue-500/10 border-blue-500/20 text-blue-600',
+                          review_pending: 'bg-orange-500/10 border-orange-500/20 text-orange-600',
+                          handover: 'bg-purple-500/10 border-purple-500/20 text-purple-600',
+                          completed: 'bg-green-500/10 border-green-500/20 text-green-600'
+                        }[status];
+
+                        return (
+                          <div key={status} className="flex-shrink-0 w-80 flex flex-col max-h-full">
+                            <div className={`p-3 rounded-t-xl border-x border-t font-bold flex items-center justify-between ${statusColor}`}>
+                              <div className="flex items-center gap-2">
+                                <span className="uppercase text-xs tracking-wider">{status.replace(/_/g, ' ')}</span>
+                                <Badge variant="secondary" className="bg-white/50 dark:bg-black/20 text-[10px] h-4">
+                                  {statusTasks.length}
+                                </Badge>
+                              </div>
+                            </div>
+
+                            <Droppable droppableId={status}>
+                              {(provided, snapshot) => (
+                                <div
+                                  {...provided.droppableProps}
+                                  ref={provided.innerRef}
+                                  className={`flex-1 p-3 border rounded-b-xl bg-muted/20 space-y-3 min-h-[500px] transition-colors ${snapshot.isDraggingOver ? 'bg-muted/40 shadow-inner' : ''
+                                    }`}
+                                >
+                                  {statusTasks.map((task, index) => (
+                                    <Draggable key={task.id} draggableId={task.id} index={index}>
+                                      {(provided, snapshot) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                          className="transition-transform"
+                                        >
+                                          <Card className={`group relative bg-card hover:shadow-lg transition-all border-muted-foreground/10 ${snapshot.isDragging ? 'rotate-2 scale-105 z-50 shadow-2xl ring-2 ring-primary/20' : ''
+                                            }`}>
+                                            <CardHeader className="p-3 space-y-1">
+                                              <div className="flex items-start justify-between gap-2">
+                                                <CardTitle className="text-sm font-bold truncate">
+                                                  {task.title}
+                                                </CardTitle>
+                                                {getPriorityBadge(task.priority)}
+                                              </div>
+                                              {task.staff_projects?.name && (
+                                                <p className="text-[10px] text-primary/60 font-medium truncate">#{task.staff_projects.name}</p>
+                                              )}
+                                              {task.departments?.name && (
+                                                <div className="pt-0.5">
+                                                  <Badge variant="outline" className="text-[10px] h-4 py-0 px-1.5 border-primary/20 bg-primary/5 text-primary/80">
+                                                    {task.departments.name}
+                                                  </Badge>
+                                                </div>
+                                              )}
+                                            </CardHeader>
+                                            <CardContent className="p-3 pt-0 space-y-3">
+                                              {task.description && (
+                                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                                  {task.description}
+                                                </p>
+                                              )}
+
+                                              <div className="flex items-center justify-between">
+                                                <div className="flex -space-x-2">
+                                                  {(task.assigned_to_profiles?.length > 0
+                                                    ? task.assigned_to_profiles
+                                                    : task.assigned_to_profile ? [task.assigned_to_profile] : []
+                                                  ).slice(0, 3).map((profile: any, i: number) => (
+                                                    <Avatar key={i} className="h-6 w-6 border-2 border-background">
+                                                      <AvatarImage src={profile.avatar_url} />
+                                                      <AvatarFallback className="text-[8px] font-bold">
+                                                        {profile.full_name?.substring(0, 2).toUpperCase()}
+                                                      </AvatarFallback>
+                                                    </Avatar>
+                                                  ))}
+                                                  {(task.assigned_to_profiles?.length || 1) > 3 && (
+                                                    <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[8px] font-bold">
+                                                      +{(task.assigned_to_profiles?.length || 1) - 3}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                                <div className="flex flex-col items-end gap-1">
+                                                  {getStageBadge(task.current_stage || 1)}
+                                                </div>
+                                              </div>
+
+                                              <div className="flex items-center justify-between pt-2 border-t border-muted/50">
+                                                <div className="flex items-center gap-1">
+                                                  <Clock className="h-3 w-3 text-muted-foreground" />
+                                                  <span className="text-[9px] text-muted-foreground">
+                                                    {task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No date'}
+                                                  </span>
+                                                </div>
+                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setSelectedTask(task); fetchSubtasks(task.id); setIsDetailDialogOpen(true); }}>
+                                                    <Eye className="h-3.5 w-3.5" />
+                                                  </Button>
+                                                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openEditDialog(task)}>
+                                                    <Edit className="h-3.5 w-3.5" />
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            </CardContent>
+                                          </Card>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </DragDropContext>
               )}
@@ -2240,7 +2311,7 @@ const TaskManagement = () => {
         </Card>
 
         {/* Handover Dialog */}
-        <Dialog open={isHandoverDialogOpen} onOpenChange={setIsHandoverDialogOpen}>
+        <Dialog open={isHandoverDialogOpen} onOpenChange={setIsHandoverDialogOpen} >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Handover Task to Department</DialogTitle>
@@ -2277,7 +2348,7 @@ const TaskManagement = () => {
         </Dialog>
 
         {/* Task Detail Dialog */}
-        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen} >
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Task Details</DialogTitle>
@@ -2736,7 +2807,6 @@ const TaskManagement = () => {
                       stageMap[s].push(st);
                     });
                     const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
-                    // Always show at least stage 1 column
                     if (stageNums.length === 0) stageNums.push(1);
 
                     const stageColors = [
@@ -2755,157 +2825,187 @@ const TaskManagement = () => {
                     ];
 
                     return (
-                      <div className="overflow-x-auto pb-2">
-                        <div className="flex gap-3 min-w-0" style={{ minWidth: stageNums.length * 260 }}>
-                          {stageNums.map((stageNum) => {
-                            const colClass = stageColors[(stageNum - 1) % stageColors.length];
-                            const badgeClass = stageBadgeColors[(stageNum - 1) % stageBadgeColors.length];
-                            const stageSubtasks = stageMap[stageNum] || [];
-                            const isQuickAddOpen = quickAddStage === stageNum;
+                      <DragDropContext onDragEnd={onSubtaskDragEnd}>
+                        <div className="overflow-x-auto pb-2">
+                          <div className="flex gap-3 min-w-0" style={{ minWidth: stageNums.length * 260 }}>
+                            {stageNums.map((stageNum) => {
+                              const colClass = stageColors[(stageNum - 1) % stageColors.length];
+                              const badgeClass = stageBadgeColors[(stageNum - 1) % stageBadgeColors.length];
+                              const stageSubtasks = stageMap[stageNum] || [];
+                              const isQuickAddOpen = quickAddStage === stageNum;
 
-                            return (
-                              <div key={stageNum} className={`flex-1 min-w-[240px] rounded-xl border ${colClass} p-3 space-y-2`}>
-                                {/* Stage column header */}
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeClass}`}>
-                                      Stage {stageNum}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">{stageSubtasks.length} task{stageSubtasks.length !== 1 ? 's' : ''}</span>
-                                  </div>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
-                                    title={`Add subtask to Stage ${stageNum}`}
-                                    onClick={() => {
-                                      setQuickAddStage(isQuickAddOpen ? null : stageNum);
-                                      setNewSubtask(prev => ({ ...prev, stage: stageNum, title: '', assigned_to: '', description: '', points: 0, due_date: '' }));
-                                    }}
-                                  >
-                                    <Plus className="h-4 w-4" />
-                                  </Button>
-                                </div>
-
-                                {/* Quick-add form for this stage */}
-                                {isQuickAddOpen && (
-                                  <div className="space-y-2 p-2 bg-background/60 rounded-lg border border-muted/60 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                                    <Input
-                                      autoFocus
-                                      placeholder="Subtask title *"
-                                      value={newSubtask.title}
-                                      onChange={e => setNewSubtask({ ...newSubtask, title: e.target.value })}
-                                      className="h-8 text-xs"
-                                    />
-                                    <Select
-                                      value={newSubtask.assigned_to}
-                                      onValueChange={val => setNewSubtask({ ...newSubtask, assigned_to: val })}
+                              return (
+                                <Droppable key={stageNum} droppableId={`stage-${stageNum}`}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      {...provided.droppableProps}
+                                      ref={provided.innerRef}
+                                      className={cn(
+                                        "flex-1 min-w-[240px] rounded-xl border p-3 space-y-2 transition-colors",
+                                        colClass,
+                                        snapshot.isDraggingOver && "bg-muted/30 shadow-inner"
+                                      )}
                                     >
-                                      <SelectTrigger className="h-8 text-xs">
-                                        <SelectValue placeholder="Assign To *" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {staff.map((member: any) => (
-                                          <SelectItem key={member.id} value={member.user_id} className="text-xs">{member.full_name}</SelectItem>
+                                      {/* Stage column header */}
+                                      <div className="flex items-center justify-between mb-1">
+                                        <div className="flex items-center gap-2">
+                                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badgeClass}`}>
+                                            Stage {stageNum}
+                                          </span>
+                                          <span className="text-xs text-muted-foreground">{stageSubtasks.length} task{stageSubtasks.length !== 1 ? 's' : ''}</span>
+                                        </div>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                                          title={`Add subtask to Stage ${stageNum}`}
+                                          onClick={() => {
+                                            setQuickAddStage(isQuickAddOpen ? null : stageNum);
+                                            setNewSubtask(prev => ({ ...prev, stage: stageNum, title: '', assigned_to: '', description: '', points: 0, due_date: '' }));
+                                          }}
+                                        >
+                                          <Plus className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+
+                                      {/* Quick-add form for this stage */}
+                                      {isQuickAddOpen && (
+                                        <div className="space-y-2 p-2 bg-background/60 rounded-lg border border-muted/60 mb-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                          <Input
+                                            autoFocus
+                                            placeholder="Subtask title *"
+                                            value={newSubtask.title}
+                                            onChange={e => setNewSubtask({ ...newSubtask, title: e.target.value })}
+                                            className="h-8 text-xs"
+                                          />
+                                          <Select
+                                            value={newSubtask.assigned_to}
+                                            onValueChange={val => setNewSubtask({ ...newSubtask, assigned_to: val })}
+                                          >
+                                            <SelectTrigger className="h-8 text-xs">
+                                              <SelectValue placeholder="Assign To *" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {staff.map((member: any) => (
+                                                <SelectItem key={member.id} value={member.user_id} className="text-xs">{member.full_name}</SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                          <div className="flex gap-1">
+                                            <Input
+                                              type="number"
+                                              placeholder="Pts"
+                                              value={newSubtask.points === 0 ? '' : newSubtask.points}
+                                              onChange={e => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
+                                              min="0"
+                                              className="h-8 text-xs w-16"
+                                            />
+                                            <Select
+                                              value={newSubtask.priority}
+                                              onValueChange={val => setNewSubtask({ ...newSubtask, priority: val as any })}
+                                            >
+                                              <SelectTrigger className="h-8 text-xs flex-1">
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="low" className="text-xs">Low</SelectItem>
+                                                <SelectItem value="medium" className="text-xs">Medium</SelectItem>
+                                                <SelectItem value="high" className="text-xs">High</SelectItem>
+                                                <SelectItem value="urgent" className="text-xs">Urgent</SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+                                          <div className="flex gap-1">
+                                            <Button
+                                              size="sm"
+                                              className="flex-1 h-7 text-xs"
+                                              onClick={() => handleCreateSubtask(selectedTask.id)}
+                                            >
+                                              Add
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-7 text-xs"
+                                              onClick={() => setQuickAddStage(null)}
+                                            >
+                                              Cancel
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Subtask cards for this stage */}
+                                      {stageSubtasks.length === 0 && !isQuickAddOpen && (
+                                        <div className="text-center py-3 text-xs text-muted-foreground border border-dashed rounded-lg bg-background/20">
+                                          No subtasks
+                                        </div>
+                                      )}
+                                      <div className="space-y-2 min-h-[50px]">
+                                        {stageSubtasks.map((subtask: any, index: number) => (
+                                          <Draggable key={subtask.id} draggableId={subtask.id} index={index}>
+                                            {(provided, snapshot) => (
+                                              <div
+                                                ref={provided.innerRef}
+                                                {...provided.draggableProps}
+                                                {...provided.dragHandleProps}
+                                                className={cn(
+                                                  "p-2 bg-background/80 rounded-lg border border-muted/50 space-y-1.5 transition-shadow",
+                                                  snapshot.isDragging && "shadow-lg ring-1 ring-primary/20 bg-background"
+                                                )}
+                                              >
+                                                <div className="flex items-start justify-between gap-1">
+                                                  <span className="text-xs font-semibold leading-tight flex-1">{subtask.title}</span>
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-6 w-6 p-0 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                                                    onClick={() => handleDeleteSubtask(subtask.id)}
+                                                  >
+                                                    <Trash2 className="h-3 w-3" />
+                                                  </Button>
+                                                </div>
+                                                {subtask.description && (
+                                                  <p className="text-[10px] text-muted-foreground line-clamp-2">{subtask.description}</p>
+                                                )}
+                                                <div className="flex items-center gap-1 flex-wrap text-[10px] text-muted-foreground">
+                                                  <span className="flex items-center gap-0.5">
+                                                    <User className="h-2.5 w-2.5" />
+                                                    {subtask.staff_profiles?.full_name || '–'}
+                                                  </span>
+                                                  {subtask.points > 0 && <span>· {subtask.points}pts</span>}
+                                                </div>
+                                                <Select
+                                                  value={subtask.status}
+                                                  onValueChange={val => handleSubtaskStatusUpdate(subtask.id, val)}
+                                                >
+                                                  <SelectTrigger className="w-full h-7 text-[10px] bg-background/50">
+                                                    <SelectValue />
+                                                  </SelectTrigger>
+                                                  <SelectContent>
+                                                    <SelectItem value="pending">Pending</SelectItem>
+                                                    <SelectItem value="in_progress">In Progress</SelectItem>
+                                                    <SelectItem value="completed">Completed</SelectItem>
+                                                    <SelectItem value="review_pending">Review Pending</SelectItem>
+                                                  </SelectContent>
+                                                </Select>
+                                              </div>
+                                            )}
+                                          </Draggable>
                                         ))}
-                                      </SelectContent>
-                                    </Select>
-                                    <div className="flex gap-1">
-                                      <Input
-                                        type="number"
-                                        placeholder="Pts"
-                                        value={newSubtask.points === 0 ? '' : newSubtask.points}
-                                        onChange={e => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
-                                        min="0"
-                                        className="h-8 text-xs w-16"
-                                      />
-                                      <Select
-                                        value={newSubtask.priority}
-                                        onValueChange={val => setNewSubtask({ ...newSubtask, priority: val as any })}
-                                      >
-                                        <SelectTrigger className="h-8 text-xs flex-1">
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="low" className="text-xs">Low</SelectItem>
-                                          <SelectItem value="medium" className="text-xs">Medium</SelectItem>
-                                          <SelectItem value="high" className="text-xs">High</SelectItem>
-                                          <SelectItem value="urgent" className="text-xs">Urgent</SelectItem>
-                                        </SelectContent>
-                                      </Select>
+                                        {provided.placeholder}
+                                      </div>
                                     </div>
-                                    <div className="flex gap-1">
-                                      <Button
-                                        size="sm"
-                                        className="flex-1 h-7 text-xs"
-                                        onClick={() => handleCreateSubtask(selectedTask.id)}
-                                      >
-                                        Add
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-7 text-xs"
-                                        onClick={() => setQuickAddStage(null)}
-                                      >
-                                        Cancel
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Subtask cards for this stage */}
-                                {stageSubtasks.length === 0 && !isQuickAddOpen && (
-                                  <div className="text-center py-3 text-xs text-muted-foreground border border-dashed rounded-lg">
-                                    No subtasks
-                                  </div>
-                                )}
-                                {stageSubtasks.map((subtask: any) => (
-                                  <div key={subtask.id} className="p-2 bg-background/80 rounded-lg border border-muted/50 space-y-1.5">
-                                    <div className="flex items-start justify-between gap-1">
-                                      <span className="text-xs font-semibold leading-tight flex-1">{subtask.title}</span>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 w-6 p-0 flex-shrink-0 text-muted-foreground hover:text-destructive"
-                                        onClick={() => handleDeleteSubtask(subtask.id)}
-                                      >
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                    {subtask.description && (
-                                      <p className="text-[10px] text-muted-foreground line-clamp-2">{subtask.description}</p>
-                                    )}
-                                    <div className="flex items-center gap-1 flex-wrap text-[10px] text-muted-foreground">
-                                      <span className="flex items-center gap-0.5">
-                                        <User className="h-2.5 w-2.5" />
-                                        {subtask.staff_profiles?.full_name || '–'}
-                                      </span>
-                                      {subtask.points > 0 && <span>· {subtask.points}pts</span>}
-                                    </div>
-                                    <Select
-                                      value={subtask.status}
-                                      onValueChange={val => handleSubtaskStatusUpdate(subtask.id, val)}
-                                    >
-                                      <SelectTrigger className="w-full h-7 text-[10px]">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="pending">Pending</SelectItem>
-                                        <SelectItem value="in_progress">In Progress</SelectItem>
-                                        <SelectItem value="completed">Completed</SelectItem>
-                                        <SelectItem value="review_pending">Review Pending</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                ))}
-                              </div>
-                            );
-                          })}
+                                  )}
+                                </Droppable>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
+                      </DragDropContext>
                     );
-                  })()}
+                  })()
+                  }
                 </div>
 
                 {/* Handover History */}

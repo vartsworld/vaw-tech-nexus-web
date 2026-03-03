@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useRealtimeQuery } from "@/hooks/useRealtimeQuery";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -63,13 +63,19 @@ import ManageProjects from "@/components/hr/ManageProjects";
 import ProjectMonitor from "@/pages/ProjectMonitor";
 
 const HRDashboard = () => {
-  const [activeTab, setActiveTab] = useState("overview");
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const pathParts = location.pathname.split('/');
+  let activeTab = pathParts[2] || "dashboard";
+  if (activeTab === "overview") activeTab = "dashboard";
+
   const [hrProfile, setHrProfile] = useState<any>(null);
   const [departmentName, setDepartmentName] = useState<string>("");
   const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark for premium feel
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   // Real-time queries for dashboard data
   const { data: staffData } = useRealtimeQuery({
@@ -214,7 +220,7 @@ const HRDashboard = () => {
     {
       label: "CORE",
       items: [
-        { id: "overview", label: "Overview", icon: LayoutDashboard },
+        { id: "dashboard", label: "Overview", icon: LayoutDashboard },
         { id: "staff", label: "Staff Directory", icon: Users },
         { id: "departments", label: "Departments", icon: Building2 },
       ]
@@ -255,7 +261,7 @@ const HRDashboard = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case "overview": return <div className="space-y-6"><StatsGrid stats={stats} /><div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><Activities activities={recentActivities} /><PerformanceInsights stats={stats} /></div></div>;
+      case "dashboard": return <div className="space-y-6"><StatsGrid stats={stats} /><div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><Activities activities={recentActivities} /><PerformanceInsights stats={stats} /></div></div>;
       case "staff": return <StaffManagement />;
       case "attendance": return <AttendanceReports />;
       case "tasks": return <TaskManagement />;
@@ -338,7 +344,7 @@ const HRDashboard = () => {
                   {group.items.map((item) => (
                     <button
                       key={item.id}
-                      onClick={() => setActiveTab(item.id)}
+                      onClick={() => navigate(`/hr/${item.id}`)}
                       className={`
                         w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative
                         ${activeTab === item.id
@@ -418,7 +424,7 @@ const HRDashboard = () => {
               />
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => setActiveTab('notifications')} className="relative text-gray-400 hover:text-white hover:bg-white/5">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/hr/notifications')} className="relative text-gray-400 hover:text-white hover:bg-white/5">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-indigo-500 rounded-full border-2 border-[#0c0c0c]" />
               </Button>
