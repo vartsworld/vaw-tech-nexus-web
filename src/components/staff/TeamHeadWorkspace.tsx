@@ -2361,7 +2361,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
               <CardContent>
                 <div className="space-y-3">
                   {approvedSubtasks.map((subtask: any) => {
-                    const parentTask = subtask.staff_tasks as any;
+                    const parentTaskPartial = subtask.staff_tasks as any;
+                    const parentTask = tasks.find((t) => t.id === parentTaskPartial?.id) || parentTaskPartial;
                     const assigneeProfile = subtask.staff_profiles as any | null;
                     return (
                       <div
@@ -2443,7 +2444,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
               <CardContent>
                 <div className="space-y-3">
                   {returnedSubtasks.map((subtask: any) => {
-                    const parentTask = subtask.staff_tasks as any;
+                    const parentTaskPartial = subtask.staff_tasks as any;
+                    const parentTask = tasks.find((t) => t.id === parentTaskPartial?.id) || parentTaskPartial;
                     const assigneeProfile = subtask.staff_profiles as any | null;
                     const lastRejection = Array.isArray(subtask.comments)
                       ? [...subtask.comments].reverse().find((c: any) => c.type === "rejection")
@@ -3076,7 +3078,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   />
                 </div>
               </div>
-              {selectedTask.attachments && selectedTask.attachments.length > 0 && (
+              {Array.isArray(selectedTask.attachments) && selectedTask.attachments.length > 0 && (
                 <div>
                   <Label>Attachments</Label>
                   <div className="space-y-1 mt-2">
@@ -3216,8 +3218,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {getStatusBadge(selectedTask.status)}
-                  {getPriorityBadge(selectedTask.priority)}
+                  {getStatusBadge(selectedTask.status || 'pending')}
+                  {getPriorityBadge(selectedTask.priority || 'medium')}
                   {selectedTask.trial_period && (
                     <Badge variant="outline" className="bg-yellow-500/20 border-yellow-500/30 text-yellow-300">
                       Trial Period
@@ -3254,7 +3256,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
               </div>
 
               {/* Task Attachments */}
-              {selectedTask.attachments && selectedTask.attachments.length > 0 && (
+              {Array.isArray(selectedTask.attachments) && selectedTask.attachments.length > 0 && (
                 <div className="mb-6">
                   <h4 className="font-semibold flex items-center gap-2 mb-3">
                     <Paperclip className="h-4 w-4" />
@@ -3271,9 +3273,9 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                       >
                         <FileText className="h-4 w-4 text-primary flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{attachment.title || attachment.name}</p>
+                          <p className="text-sm font-medium truncate">{attachment.title || attachment.name || 'Attachment'}</p>
                           <p className="text-xs text-muted-foreground">
-                            {(attachment.size / 1024).toFixed(1)} KB
+                            {attachment.size ? `${(attachment.size / 1024).toFixed(1)} KB` : 'File'}
                           </p>
                         </div>
                         <Download className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -3284,7 +3286,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
               )}
 
               {/* Handover History */}
-              {selectedTask.comments && selectedTask.comments.some((c: any) => c.type === 'handover') && (
+              {Array.isArray(selectedTask.comments) && selectedTask.comments.some((c: any) => c.type === 'handover') && (
                 <div className="mb-6">
                   <h4 className="font-semibold flex items-center gap-2 mb-3">
                     <ArrowRight className="h-4 w-4" />
@@ -3335,7 +3337,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   Messages & Comments
                 </h4>
 
-                {selectedTask.comments && selectedTask.comments.filter((c: any) => c.type !== 'handover').length > 0 && (
+                {Array.isArray(selectedTask.comments) && selectedTask.comments.filter((c: any) => c.type !== 'handover').length > 0 && (
                   <div className="space-y-3 mb-4 max-h-[400px] overflow-y-auto">
                     {selectedTask.comments
                       .filter((c: any) => c.type !== 'handover')
