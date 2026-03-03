@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, Star, Shield, Zap, Globe, TrendingUp, Bot, Package, Sparkles } from "lucide-react";
+import { Check, Clock, Star, Shield, Zap, Globe, TrendingUp, Bot, Package, Sparkles, Plus } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ParticleBackground from "@/components/ParticleBackground";
@@ -19,6 +19,13 @@ interface PricingTier {
   popular?: boolean;
   features: string[];
   description: string;
+}
+
+interface PricingAddon {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
 }
 
 const IconComponent = ({ name, className }: { name?: string; className?: string }) => {
@@ -49,6 +56,7 @@ const ICON_COLOR_MAP: Record<string, string> = {
 const Pricing = () => {
   const [timeLeft, setTimeLeft] = useState({ days: 3, hours: 0, minutes: 0, seconds: 0 });
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
+  const [addons, setAddons] = useState<PricingAddon[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Countdown timer
@@ -70,31 +78,37 @@ const Pricing = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch packages from Supabase (with fallback to static data)
+  // Fetch packages and addons from Supabase (with fallback to static data)
   useEffect(() => {
     fetchPricing();
     // Real-time subscription to keep prices live
     const channel = supabase
       .channel("pricing-public")
       .on("postgres_changes", { event: "*", schema: "public", table: "pricing_packages" }, fetchPricing)
+      .on("postgres_changes", { event: "*", schema: "public", table: "pricing_addons" }, fetchPricing)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
 
   const fetchPricing = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: pkgData, error: pkgError } = await supabase
         .from("pricing_packages")
         .select("*")
         .eq("is_enabled", true)
         .order("sort_order");
 
-      if (error || !data || data.length === 0) {
-        // Fallback to static data if table doesn't exist yet
+      const { data: addonData, error: addonError } = await supabase
+        .from("pricing_addons")
+        .select("*")
+        .eq("is_enabled", true)
+        .order("sort_order");
+
+      if (pkgError || !pkgData || pkgData.length === 0) {
         setPricingTiers(STATIC_TIERS);
       } else {
         setPricingTiers(
-          data.map(pkg => ({
+          pkgData.map(pkg => ({
             id: pkg.id,
             name: pkg.name,
             slug: pkg.slug,
@@ -106,6 +120,10 @@ const Pricing = () => {
             description: pkg.description || "",
           }))
         );
+      }
+
+      if (!addonError && addonData) {
+        setAddons(addonData);
       }
     } catch {
       setPricingTiers(STATIC_TIERS);
@@ -225,6 +243,36 @@ const Pricing = () => {
                   </CardContent>
                 </Card>
               ))}
+            </div>
+          )}
+
+          {/* Addons Section */}
+          {addons.length > 0 && !loading && (
+            <div className="mt-24">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold mb-4 flex items-center justify-center gap-3">
+                  <Plus className="h-6 w-6 text-tech-purple" />
+                  Addon <span className="text-gradient">Services</span>
+                </h2>
+                <p className="text-muted-foreground">Enhance your project with specialized extras</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {addons.map((addon) => (
+                  <Card key={addon.id} className="tech-card border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors overflow-hidden group">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <h3 className="font-bold text-lg group-hover:text-tech-purple transition-colors">{addon.name}</h3>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{addon.description}</p>
+                        </div>
+                        <div className="text-tech-green font-bold text-sm bg-tech-green/10 px-3 py-1 rounded-full border border-tech-green/20">
+                          {addon.price > 0 ? formatPrice(addon.price) : "Custom"}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
 

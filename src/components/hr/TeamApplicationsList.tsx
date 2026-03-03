@@ -6,17 +6,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  Users, 
-  Eye, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Users,
+  Eye,
+  CheckCircle,
+  XCircle,
   Clock,
   Download,
   Phone,
   Mail,
   Calendar,
-  FileText
+  FileText,
+  Link
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -70,7 +71,7 @@ const TeamApplicationsList = () => {
     try {
       const { error } = await supabase
         .from('team_applications_staff')
-        .update({ 
+        .update({
           status,
           reviewed_at: new Date().toISOString(),
           reviewed_by: (await supabase.auth.getUser()).data.user?.id
@@ -79,7 +80,7 @@ const TeamApplicationsList = () => {
 
       if (error) throw error;
 
-      setApplications(applications.map(app => 
+      setApplications(applications.map(app =>
         app.id === applicationId ? { ...app, status } : app
       ));
 
@@ -173,6 +174,21 @@ const TeamApplicationsList = () => {
           <Users className="h-6 w-6 text-blue-600" />
           <h2 className="text-2xl font-bold">Team Applications</h2>
         </div>
+        <Button
+          variant="outline"
+          className="flex items-center gap-2"
+          onClick={() => {
+            const link = `${window.location.origin}/team-application`;
+            navigator.clipboard.writeText(link);
+            toast({
+              title: "Link Copied",
+              description: "Team application link copied to clipboard.",
+            });
+          }}
+        >
+          <Link className="h-4 w-4" />
+          Invite Staff
+        </Button>
       </div>
 
       <Card>
@@ -372,7 +388,7 @@ const TeamApplicationsList = () => {
               {/* Action Buttons */}
               {selectedApplication.status === 'pending' && (
                 <div className="flex gap-2 pt-4 border-t">
-                  <Button 
+                  <Button
                     onClick={() => {
                       approveAndCreateStaff(selectedApplication);
                       setIsViewDialogOpen(false);
@@ -382,7 +398,7 @@ const TeamApplicationsList = () => {
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Approve & Create Staff
                   </Button>
-                  <Button 
+                  <Button
                     variant="destructive"
                     onClick={() => {
                       updateApplicationStatus(selectedApplication.id, 'rejected');

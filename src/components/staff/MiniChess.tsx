@@ -24,6 +24,8 @@ import { Chess } from 'chess.js';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChessGameOverDialog } from "@/components/staff/ChessGameOverDialog";
+import confetti from 'canvas-confetti';
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface MiniChessProps {
   userId: string;
@@ -48,79 +50,34 @@ interface ChessInvite {
 
 type GameMode = 'menu' | 'playing' | 'finding';
 
-const ChessPiece = ({ piece, color }: { piece: string, color: 'white' | 'black' }) => {
-  const isWhite = color === 'white';
-  const fill = isWhite ? '#FFFFFF' : '#333333';
-  const stroke = isWhite ? '#000000' : '#FFFFFF';
+const ChessPiece = ({ piece, color }: { piece: string, color: 'w' | 'b' }) => {
+  const isWhite = color === 'w';
 
-  // Unified minimalist style
-  switch (piece) {
-    case 'p':
-      return (
-        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-sm">
-          <path d="M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z" fill={fill} stroke={stroke} strokeWidth="1.5" />
-        </svg>
-      );
-    case 'r':
-      return (
-        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-sm">
-          <path d="M9 39h27v-3H9v3zM12 36h21v-4H12v4zM11 14V9h4v2h5V9h5v2h5V9h4v5" fill={fill} stroke={stroke} strokeWidth="1.5" />
-          <path d="M34 14l-3 3H14l-3-3" fill={fill} stroke={stroke} strokeWidth="1.5" />
-          <path d="M31 17v12.5l-2.5 2.5h-12l-2.5-2.5V17" fill={fill} stroke={stroke} strokeWidth="1.5" />
-          <path d="M31 29.5l1.5 2.5h-20l1.5-2.5" fill={fill} stroke={stroke} strokeWidth="1.5" />
-          <path d="M11 14h23" fill="none" stroke={stroke} strokeWidth="1.5" />
-        </svg>
-      );
-    case 'n':
-      return (
-        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-sm">
-          <path d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21" fill={fill} stroke={stroke} strokeWidth="1.5" />
-          <path d="M24 18c.3 1.2 1.5 2 2.5 1" fill={fill} stroke={stroke} strokeWidth="1.5" />
-          <path d="M9.5 25.5A.5.5 0 1 1 9 25.5.5.5 0 1 1 9.5 25.5" fill={fill} stroke={stroke} strokeWidth="1.5" />
-          <path d="M15 15.5c4.5 2 5.5 12 11 12.5" fill="none" stroke={stroke} strokeWidth="1.5" />
-        </svg>
-      );
-    case 'b':
-      return (
-        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-sm">
-          <g fill="none" fillRule="evenodd" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <g fill={fill}>
-              <path d="M9 36c3.39-.97 10.11.43 13.5-1 3.39 1.43 10.11.03 13.5 1-1.35-3.69-5.4-6.31-7.5-12 1.48-1.57 2.5-4.5 2.5-7.5 0-4.63-3.12-8-6.5-8s-6.5 3.37-6.5 8c0 3 1.02 5.93 2.5 7.5-2.1 5.69-6.15 8.31-7.5 12z" />
-              <path d="M15 32c2.5 2.5 12.5 2.5 15 0" />
-              <path d="M25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0" />
-            </g>
-            <path d="M17.5 26h10M15 30h15" />
-          </g>
-        </svg>
-      );
-    case 'q':
-      return (
-        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-sm">
-          <g fill={fill} stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M8 12c2.5 2.5 4.5 1.5 6 4.5 1.5-3 3.5-2 6-4.5 2.5 2.5 4.5 1.5 6 4.5 1.5-3 3.5-2 6-4.5V9H8v3z" />
-            <path d="M9 26c8.5-1.5 21-1.5 27 0l2-12H7l2 12z" />
-            <path d="M9 26c0 2 1.5 2 2.5 4 2.5 5.5 1.5 10.5 4 10.5 1.5 0 2.5-.5 7-2.5 4.5 2 5.5 2.5 7 2.5 2.5 0 1.5-5 4-10.5 1-2 2.5-2 2.5-4h-27z" />
-            <path d="M11.5 30c3.5-1 18.5-1 22 0M12 33.5c6-1 15-1 21 0" fill="none" />
-            <circle cx="22.5" cy="5.5" r="2.5" />
-          </g>
-        </svg>
-      );
-    case 'k':
-      return (
-        <svg viewBox="0 0 45 45" className="w-full h-full drop-shadow-sm">
-          <g fill="none" fillRule="evenodd" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22.5 11.63V6M20 8h5" stroke={stroke} />
-            <g fill={fill}>
-              <path d="M22.5 25s4.5-7.5 3-10c-1.5-2.5-6-2.5-7.5 0-1.5 2.5 3 10 3 10" />
-              <path d="M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-1-1-6.5-6-3-6 4-3.5 5-11 5s-5-1-11-5c-5-3.5-2 2-6 3-3 6 6 10.5 6 10.5v7z" />
-            </g>
-            <path d="M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0" />
-          </g>
-        </svg>
-      );
-    default:
-      return null;
-  }
+  const getIconName = () => {
+    switch (piece.toLowerCase()) {
+      case 'p': return "chess_pawn";
+      case 'r': return "chess_rook";
+      case 'n': return "chess_knight";
+      case 'b': return "chess_bishop_2";
+      case 'q': return "chess_queen";
+      case 'k': return "chess_king_2";
+      default: return "";
+    }
+  };
+
+  return (
+    <span
+      className={`material-symbols-outlined text-2xl sm:text-4xl md:text-5xl select-none transition-all duration-300 hover:scale-110 drop-shadow-md cursor-pointer
+        ${isWhite ? 'text-[#fdf5e6]' : 'text-slate-950'}
+      `}
+      style={{
+        fontVariationSettings: `'FILL' ${isWhite ? 0 : 1}, 'wght' 400, 'GRAD' 0, 'opsz' 48`,
+        WebkitTextStroke: isWhite ? '0.5px rgba(0,0,0,0.3)' : 'none'
+      }}
+    >
+      {getIconName()}
+    </span>
+  );
 };
 
 const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
@@ -160,15 +117,34 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
     // Subscribe to chess invites
     const channel = supabase
-      .channel('chess_invites_channel')
+      .channel('chess_realtime_channel')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'chess_games'
+          table: 'chess_games',
+          filter: `player1_id=eq.${userId}`
         },
-        () => {
+        (payload: any) => {
+          if (payload.new && payload.new.status === 'active' && activeGameId === payload.new.id) {
+            handleRealtimeMove(payload.new);
+          }
+          fetchPendingInvites();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chess_games',
+          filter: `player2_id=eq.${userId}`
+        },
+        (payload: any) => {
+          if (payload.new && payload.new.status === 'active' && activeGameId === payload.new.id) {
+            handleRealtimeMove(payload.new);
+          }
           fetchPendingInvites();
         }
       )
@@ -177,20 +153,69 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId]);
+  }, [userId, activeGameId]);
+
+  const handleRealtimeMove = (game: any) => {
+    if (game.game_state && game.game_state.fen !== chess.fen()) {
+      chess.load(game.game_state.fen);
+      setBoard(chess.board());
+      setGameHistory(game.game_state.history || []);
+
+      if (chess.isGameOver()) {
+        const winnerColor = chess.turn() === 'w' ? 'Black' : 'White';
+        setIsGameOver(true);
+        setWinner(winnerColor);
+        triggerGameOver(winnerColor === 'White' ? game.player1_id : game.player2_id, chess.isDraw());
+      }
+    }
+  };
+
+  const triggerGameOver = (winnerId: string | null, isDraw: boolean) => {
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#fbbf24', '#f59e0b', '#3b82f6', '#8b5cf6']
+    });
+
+    setGameOverData({
+      winner_id: winnerId,
+      player1_id: userId,
+      player2_id: opponentId || '',
+      player1_name: 'You',
+      player2_name: isDraw ? 'Draw' : (opponentName || 'Opponent'),
+      game_id: activeGameId || 'local',
+      duration_seconds: 0
+    });
+    setShowGameOverDialog(true);
+  };
 
   // Function to finalize game and trigger ELO calculation
   const finalizeGame = async (winnerId: string | null, isDraw: boolean = false) => {
     if (!activeGameId || isVsBot) {
-      // For bot games, don't update database
+      if (isVsBot) {
+        triggerGameOver(winnerId, isDraw);
+      }
       return;
     }
 
     try {
+      // Calculate ELO directly if possible or let trigger do it
+      const myRating = stats.rating;
+      // For calculation, assume opponent is around same rating if not found
+      const opponentRating = 1200;
+
+      // Standard ELO formula: Ra' = Ra + K * (Sa - Ea)
+      // Ea = 1 / (1 + 10^((Rb-Ra)/400))
+      const kFactor = 32;
+      const ea = 1 / (1 + Math.pow(10, (opponentRating - myRating) / 400));
+      const sa = isDraw ? 0.5 : (winnerId === userId ? 1 : 0);
+      const newRating = Math.round(myRating + kFactor * (sa - ea));
+
       const updateData: any = {
         status: 'completed',
         winner_id: winnerId,
-        ended_at: new Date().toISOString(), // Use ended_at as per schema
+        ended_at: new Date().toISOString(),
         game_state: {
           fen: chess.fen(),
           history: gameHistory,
@@ -205,84 +230,13 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
       if (error) throw error;
 
-      // Refresh stats to show new ELO rating
-      await fetchStats();
+      // Update local profile with new ELO (usually handled by DB trigger, but we update stat for UI)
+      setStats(prev => ({ ...prev, rating: newRating }));
 
-      // Fetch game history to get ELO changes
-      // Wait a moment for trigger to process
-      setTimeout(async () => {
-        const { data: historyData } = await supabase
-          .from('chess_game_history')
-          .select('*')
-          .eq('game_id', activeGameId);
-
-        if (historyData && historyData.length > 0) {
-          const myHistory = historyData.find(h => h.player_id === userId);
-          const opponentHistory = historyData.find(h => h.player_id !== userId);
-
-          if (myHistory && opponentHistory) {
-            const isWinner = winnerId === userId;
-            setEloChanges({
-              winner_elo_before: isWinner ? myHistory.elo_before : opponentHistory.elo_before,
-              winner_elo_after: isWinner ? myHistory.elo_after : opponentHistory.elo_after,
-              loser_elo_before: isWinner ? opponentHistory.elo_before : myHistory.elo_before,
-              loser_elo_after: isWinner ? opponentHistory.elo_after : myHistory.elo_after
-            });
-
-            if (isWinner) {
-              // Check if game points are enabled by HR
-              const { data: chessSettingsData } = await supabase
-                .from('app_settings')
-                .select('value')
-                .eq('key', 'points_config')
-                .single();
-              const chessGamesEnabled = chessSettingsData?.value?.games_points_enabled !== false;
-
-              if (chessGamesEnabled) {
-                await supabase.from('user_coin_transactions').insert({
-                  user_id: userId,
-                  coins: 10,
-                  transaction_type: 'bonus',
-                  description: `Won 10 coins for winning a Chess game against ${opponentName}`
-                });
-
-                // Update staff_profiles.total_points
-                const { data: chessProfileData } = await supabase
-                  .from('staff_profiles')
-                  .select('total_points')
-                  .eq('user_id', userId)
-                  .single();
-
-                if (chessProfileData) {
-                  await supabase
-                    .from('staff_profiles')
-                    .update({ total_points: (chessProfileData.total_points || 0) + 10 })
-                    .eq('user_id', userId);
-                }
-              }
-
-              setCoinsEarned(chessGamesEnabled ? 10 : 0);
-            } else {
-              setCoinsEarned(0);
-            }
-          }
-        }
-
-        setGameOverData({
-          winner_id: winnerId,
-          player1_id: userId,
-          player2_id: opponentId || '',
-          player1_name: 'You',
-          player2_name: isDraw ? 'Draw' : (opponentName || 'Opponent'),
-          game_id: activeGameId,
-          duration_seconds: 0
-        });
-
-        setShowGameOverDialog(true);
-      }, 500);
+      triggerGameOver(winnerId, isDraw);
 
       const message = isDraw
-        ? 'Game ended in a draw! ELO ratings updated.'
+        ? 'Game ended in a draw!'
         : `${winnerId === userId ? `You won! +10 Coins 🪙` : opponentName + ' wins!'}`;
 
       toast.success(message);
@@ -364,18 +318,17 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
 
   const fetchStats = async () => {
     try {
-      const { data: games } = await supabase
-        .from('chess_games')
-        .select('winner_id')
-        .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
-        .eq('status', 'completed');
+      const { data: profileStats } = await supabase
+        .from('chess_stats')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
 
-      if (games) {
-        const wins = games.filter(g => g.winner_id === userId).length;
+      if (profileStats) {
         setStats({
-          wins,
-          games: games.length,
-          rating: 1200 + (wins * 10)
+          wins: profileStats.games_won || 0,
+          games: profileStats.games_played || 0,
+          rating: profileStats.elo_rating || 1200
         });
       }
     } catch (error) {
@@ -584,22 +537,26 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
           setSelectedSquare(null);
           setPossibleMoves([]);
 
+          // Sync move to database
+          if (activeGameId) {
+            await supabase
+              .from('chess_games')
+              .update({
+                game_state: {
+                  fen: chess.fen(),
+                  history: [...gameHistory, moveResult.san],
+                  turn: chess.turn()
+                }
+              })
+              .eq('id', activeGameId);
+          }
+
           if (chess.isGameOver()) {
             setIsGameOver(true);
-            if (chess.isCheckmate()) {
-              const winnerColor = chess.turn() === 'w' ? 'Black' : 'White';
-              setWinner(winnerColor);
-
-              // Determine winner ID for database
-              const winnerId = winnerColor === 'White' ? userId : opponentId;
-              await finalizeGame(winnerId, false);
-
-              toast.success(`Checkmate! ${winnerColor} wins!`);
-            } else {
-              // Draw
-              await finalizeGame(null, true);
-              toast.info("Game ended in a draw!");
-            }
+            const winnerColor = chess.turn() === 'w' ? 'Black' : 'White';
+            setWinner(winnerColor);
+            const winnerId = winnerColor === 'White' ? userId : opponentId;
+            await finalizeGame(winnerId, chess.isDraw());
           } else if (isVsBot) {
             // Bot move
             setTimeout(makeBotMove, 500);
@@ -950,12 +907,20 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
       </CardHeader>
 
       <CardContent className="p-2 sm:p-4 space-y-4">
-        {/* Chess Board with elegant wood texture styling */}
-        <div className="relative mx-auto w-full max-w-[300px]">
-          {/* Board frame/border */}
-          <div className="rounded-xl overflow-hidden shadow-2xl border-4 border-[#5d4037] bg-[#5d4037]">
-            {/* Actual board grid - 1:1 Aspect Ratio ensured by aspect-square */}
-            <div className="grid grid-cols-8 aspect-square w-full">
+        {/* Chess Board with high-res styling */}
+        <div className="flex justify-center items-center w-full">
+          <div
+            className="relative shadow-2xl rounded-xl overflow-hidden border-4 border-[#5d4037] bg-[#5d4037]"
+            style={{
+              width: 'min(80vw, 80vh)',
+              aspectRatio: '1/1'
+            }}
+          >
+            {/* Actual board grid */}
+            <div
+              className="grid grid-cols-8 grid-rows-8 h-full w-full"
+              style={{ gridTemplateRows: 'repeat(8, 1fr)' }}
+            >
               {[...Array(64)].map((_, i) => {
                 const row = Math.floor(i / 8);
                 const col = i % 8;
@@ -969,29 +934,27 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                     key={`${row}-${col}`}
                     onClick={() => handleSquareClick(row, col)}
                     className={`
-                      relative flex items-center justify-center aspect-square
+                      relative flex items-center justify-center
                       ${isLight ? 'bg-[#efebe9]' : 'bg-[#a1887f]'}
                       ${isSelected ? 'after:absolute after:inset-0 after:bg-yellow-400/40' : ''}
                       ${isPossible && !piece ? 'after:absolute after:w-[30%] after:h-[30%] after:bg-black/10 after:rounded-full shadow-inner' : ''}
                       ${isPossible && piece ? 'after:absolute after:inset-[10%] after:border-4 after:border-black/20 after:rounded-full' : ''}
                       cursor-pointer select-none transition-all duration-200
-                      hover:brightness-105 active:scale-95
+                      hover:brightness-105 active:scale-95 h-full w-full
                     `}
                   >
                     {piece && (
-                      <div className="w-4/5 h-4/5 flex items-center justify-center transition-transform hover:scale-110 drop-shadow-sm">
-                        <ChessPiece piece={piece.type} color={piece.color === 'w' ? 'white' : 'black'} />
-                      </div>
+                      <ChessPiece piece={piece.type} color={piece.color} />
                     )}
 
                     {/* Minimalist Coordinate Labels */}
                     {col === 0 && (
-                      <span className={`absolute top-0.5 left-0.5 text-[7px] font-bold opacity-30 select-none ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>
+                      <span className={`absolute top-0.5 left-0.5 text-[7px] sm:text-[10px] font-bold opacity-30 select-none ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>
                         {8 - row}
                       </span>
                     )}
                     {row === 7 && (
-                      <span className={`absolute bottom-0.5 right-0.5 text-[7px] font-bold opacity-30 select-none ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>
+                      <span className={`absolute bottom-0.5 right-0.5 text-[7px] sm:text-[10px] font-bold opacity-30 select-none ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>
                         {String.fromCharCode(97 + col)}
                       </span>
                     )}

@@ -173,6 +173,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     stage: 1
   });
   const [quickAddStage, setQuickAddStage] = useState<number | null>(null);
+  const [pricingPackages, setPricingPackages] = useState<{ name: string; slug: string }[]>([]);
+  const [availableAddons, setAvailableAddons] = useState<{ name: string; price: number }[]>([]);
   const [documentTitle, setDocumentTitle] = useState("");
   const [notes, setNotes] = useState<Array<{ id: string; content: string; created_at: string }>>([]);
   const [newNote, setNewNote] = useState("");
@@ -376,7 +378,24 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     fetchNotes();
     fetchTaskTemplates();
     fetchSubtaskTemplates();
+    fetchPricingData();
   }, [userId, userProfile?.department_id]);
+
+  const fetchPricingData = async () => {
+    try {
+      const pkgRes = await supabase.from('pricing_packages').select('name, slug').eq('is_enabled', true).order('sort_order');
+      if (pkgRes.data && pkgRes.data.length > 0) {
+        setPricingPackages([...pkgRes.data, { name: 'Custom Package', slug: 'custom' }]);
+      }
+
+      const addonRes = await supabase.from('pricing_addons').select('name, price').eq('is_enabled', true).order('sort_order');
+      if (addonRes.data) {
+        setAvailableAddons(addonRes.data);
+      }
+    } catch (err) {
+      console.error('Error fetching pricing data:', err);
+    }
+  };
 
   // Fetch staff only when userProfile is loaded
   useEffect(() => {
@@ -4170,24 +4189,51 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="basic_design_website">Basic Design Website</SelectItem>
-                    <SelectItem value="interactive_creative_website">Interactive &amp; Creative Website</SelectItem>
-                    <SelectItem value="ecommerce_platform">E-commerce Platform</SelectItem>
-                    <SelectItem value="portfolio_showcase">Portfolio Showcase</SelectItem>
-                    <SelectItem value="crypto_trading_portal">Crypto Trading Portal</SelectItem>
-                    <SelectItem value="ai_integrated_website">AI-Integrated Website</SelectItem>
-                    <SelectItem value="social_media_news_website">Social Media-Based News Website</SelectItem>
-                    <SelectItem value="custom">Custom Package</SelectItem>
+                    {pricingPackages.map(pkg => (
+                      <SelectItem key={pkg.slug} value={pkg.slug}>{pkg.name}</SelectItem>
+                    ))}
+                    {pricingPackages.length === 0 && (
+                      <>
+                        <SelectItem value="basic_design_website">Basic Design Website</SelectItem>
+                        <SelectItem value="interactive_creative_website">Interactive &amp; Creative Website</SelectItem>
+                        <SelectItem value="ecommerce_platform">E-commerce Platform</SelectItem>
+                        <SelectItem value="portfolio_showcase">Portfolio Showcase</SelectItem>
+                        <SelectItem value="crypto_trading_portal">Crypto Trading Portal</SelectItem>
+                        <SelectItem value="ai_integrated_website">AI-Integrated Website</SelectItem>
+                        <SelectItem value="social_media_news_website">Social Media-Based News Website</SelectItem>
+                        <SelectItem value="custom">Custom Package</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="proj_addons">Addons & Extras</Label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <Label htmlFor="proj_addons">Addons & Extras</Label>
+                  {availableAddons.length > 0 && (
+                    <Select onValueChange={(val) => {
+                      const current = newProject.addons ? newProject.addons.split(',').map(s => s.trim()).filter(Boolean) : [];
+                      if (!current.includes(val)) {
+                        setNewProject({ ...newProject, addons: [...current, val].join(', ') });
+                      }
+                    }}>
+                      <SelectTrigger className="w-[100px] h-6 text-[9px] bg-white/5 border-white/10">
+                        <SelectValue placeholder="Quick Add" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                        {availableAddons.map(a => (
+                          <SelectItem key={a.name} value={a.name} className="text-xs">{a.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
                 <Input
                   id="proj_addons"
                   value={newProject.addons}
                   onChange={(e) => setNewProject({ ...newProject, addons: e.target.value })}
                   placeholder="e.g. SEO, Maintenance"
+                  className="h-9 text-xs"
                 />
               </div>
             </div>

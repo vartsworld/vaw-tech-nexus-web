@@ -30,6 +30,7 @@ const ManageProjects = () => {
     const [projects, setProjects] = useState<any[]>([]);
     const [clients, setClients] = useState<any[]>([]);
     const [pricingPackages, setPricingPackages] = useState<{ name: string; slug: string }[]>([]);
+    const [availableAddons, setAvailableAddons] = useState<{ name: string; price: number }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState("all");
@@ -83,6 +84,12 @@ const ManageProjects = () => {
                 setPricingPackages([...pkgRes.data, { name: 'Custom Package', slug: 'custom' }]);
             } else {
                 setPricingPackages(FALLBACK_PACKAGES);
+            }
+
+            // Load pricing addons
+            const addonRes = await supabase.from('pricing_addons').select('name, price').eq('is_enabled', true).order('sort_order');
+            if (addonRes.data) {
+                setAvailableAddons(addonRes.data);
             }
         } catch (error) {
             console.error('Error fetching projects:', error);
@@ -278,7 +285,26 @@ const ManageProjects = () => {
                                         </Select>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Addons & Extras</Label>
+                                        <div className="flex items-center justify-between">
+                                            <Label>Addons & Extras</Label>
+                                            {availableAddons.length > 0 && (
+                                                <Select onValueChange={(val) => {
+                                                    const current = formData.addons ? formData.addons.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                                    if (!current.includes(val)) {
+                                                        setFormData({ ...formData, addons: [...current, val].join(', ') });
+                                                    }
+                                                }}>
+                                                    <SelectTrigger className="w-[120px] h-7 text-[10px] bg-white/5 border-white/10">
+                                                        <SelectValue placeholder="Quick Add" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                                                        {availableAddons.map(a => (
+                                                            <SelectItem key={a.name} value={a.name} className="text-xs">{a.name}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        </div>
                                         <Input
                                             value={formData.addons}
                                             onChange={(e) => setFormData({ ...formData, addons: e.target.value })}
@@ -522,7 +548,26 @@ const ManageProjects = () => {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label>Addons & Extras</Label>
+                                <div className="flex items-center justify-between">
+                                    <Label>Addons & Extras</Label>
+                                    {availableAddons.length > 0 && (
+                                        <Select onValueChange={(val) => {
+                                            const current = formData.addons ? formData.addons.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                            if (!current.includes(val)) {
+                                                setFormData({ ...formData, addons: [...current, val].join(', ') });
+                                            }
+                                        }}>
+                                            <SelectTrigger className="w-[120px] h-7 text-[10px] bg-white/5 border-white/10">
+                                                <SelectValue placeholder="Quick Add" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                                                {availableAddons.map(a => (
+                                                    <SelectItem key={a.name} value={a.name} className="text-xs">{a.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                </div>
                                 <Input
                                     value={formData.addons}
                                     onChange={(e) => setFormData({ ...formData, addons: e.target.value })}

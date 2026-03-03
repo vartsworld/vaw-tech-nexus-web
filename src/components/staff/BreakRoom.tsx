@@ -339,16 +339,16 @@ const BreakRoom = ({
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-stretch flex-1">
         {/* 1. Team Chat */}
-        <div className="xl:col-span-5 h-full flex flex-col min-h-[500px]">
-          <Card className="bg-black/60 backdrop-blur-xl border-white/10 h-full shadow-2xl flex flex-col overflow-hidden">
-            <CardHeader className="bg-white/5 border-b border-white/10 py-4">
+        <div className="xl:col-span-5 flex flex-col max-h-[90vh]">
+          <Card className="bg-black/60 backdrop-blur-xl border-white/10 shadow-2xl flex flex-col overflow-hidden h-full">
+            <CardHeader className="bg-white/5 border-b border-white/10 py-4 shrink-0">
               <CardTitle className="text-white flex items-center gap-2 text-xl font-black italic">
                 <MessageCircle className="w-6 h-6 text-blue-500" />
                 TEAM MESSAGES
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 flex flex-col flex-1">
-              <div className="flex-1 space-y-4 mb-4 overflow-y-auto pr-2 custom-scrollbar min-h-[350px]">
+            <CardContent className="p-4 flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 space-y-4 mb-4 overflow-y-auto pr-2 custom-scrollbar">
                 {!chatMessages || chatMessages.length === 0 ? (
                   <div className="text-center py-20">
                     <MessageCircle className="w-12 h-12 text-white/10 mx-auto mb-4" />
@@ -356,7 +356,7 @@ const BreakRoom = ({
                   </div>
                 ) : (
                   chatMessages.map((msg) => (
-                    <div key={msg.id} className="bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/20 transition-all group">
+                    <div key={msg.id} className="bg-white/5 rounded-2xl p-4 border border-white/5 hover:border-white/20 transition-all group shrink-0">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-blue-500 font-black text-xs uppercase tracking-tighter">
                           {msg.profiles?.full_name || msg.profiles?.username || 'ANONYMOUS'}
@@ -371,7 +371,7 @@ const BreakRoom = ({
                 )}
               </div>
 
-              <div className="flex gap-2 pt-4 border-t border-white/10">
+              <div className="flex gap-2 pt-4 border-t border-white/10 shrink-0">
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
@@ -392,14 +392,14 @@ const BreakRoom = ({
         </div>
 
         {/* 2. Coffee Break Timer */}
-        <div className="xl:col-span-7 h-full">
-          <Card className="bg-zinc-900 border-orange-500/20 shadow-2xl overflow-hidden relative group h-full min-h-[500px]">
+        <div className="xl:col-span-7 flex flex-col max-h-[90vh]">
+          <Card className="bg-zinc-900 border-orange-500/20 shadow-2xl overflow-hidden relative group h-full flex flex-col">
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-red-500/10 pointer-events-none"></div>
-            <CardContent className="p-10 relative z-10 h-full flex flex-col justify-center">
-              <div className="text-center space-y-8">
+            <CardContent className="p-10 relative z-10 h-full flex flex-col justify-center items-center overflow-y-auto">
+              <div className="text-center space-y-6 w-full max-w-lg">
                 <div className="relative inline-block">
                   <div className="absolute inset-0 bg-orange-500/30 blur-3xl rounded-full scale-150 animate-pulse"></div>
-                  <Coffee className={`w-32 h-32 mx-auto transition-all relative z-10 ${isBreakActive ? 'text-orange-400 animate-bounce' : 'text-orange-500'}`} />
+                  <Coffee className={`w-24 h-24 sm:w-32 sm:h-32 mx-auto transition-all relative z-10 ${isBreakActive ? 'text-orange-400 animate-bounce' : 'text-orange-500'}`} />
                 </div>
 
                 <div>

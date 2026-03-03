@@ -22,7 +22,8 @@ import {
   Building2,
   Copy,
   Check,
-  KeyRound
+  KeyRound,
+  Link
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -375,26 +376,43 @@ const StaffManagement = () => {
           <Users className="h-6 w-6 text-blue-600" />
           <h2 className="text-2xl font-bold">Staff Management</h2>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Add Staff Member
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add New Staff Member</DialogTitle>
-            </DialogHeader>
-            <EnhancedStaffForm
-              departments={departments}
-              newStaff={newStaff}
-              setNewStaff={setNewStaff}
-              onSubmit={handleAddStaff}
-              onCancel={() => setIsAddDialogOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => {
+              const link = `${window.location.origin}/team-application`;
+              navigator.clipboard.writeText(link);
+              toast({
+                title: "Link Copied",
+                description: "Team application link copied to clipboard.",
+              });
+            }}
+          >
+            <Link className="h-4 w-4" />
+            Invite Staff
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Staff Member
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add New Staff Member</DialogTitle>
+              </DialogHeader>
+              <EnhancedStaffForm
+                departments={departments}
+                newStaff={newStaff}
+                setNewStaff={setNewStaff}
+                onSubmit={handleAddStaff}
+                onCancel={() => setIsAddDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
 
         {/* Edit Staff Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
