@@ -35,7 +35,8 @@ import {
   Sparkles,
   Star,
   Activity,
-  FolderSearch
+  FolderSearch,
+  DollarSign
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -61,6 +62,7 @@ import BannerManagement from "@/components/hr/BannerManagement";
 import TaskTemplateManagement from "@/components/hr/TaskTemplateManagement";
 import ManageProjects from "@/components/hr/ManageProjects";
 import ProjectMonitor from "@/pages/ProjectMonitor";
+import PricingManagement from "@/components/hr/PricingManagement";
 
 const HRDashboard = () => {
   const navigate = useNavigate();
@@ -239,6 +241,7 @@ const HRDashboard = () => {
         { id: "clients", label: "Clients", icon: Briefcase },
         { id: "manage-projects", label: "Manage Projects", icon: FolderSearch },
         { id: "project-monitor", label: "Project Monitor", icon: Activity },
+        { id: "pricing", label: "Pricing Manager", icon: DollarSign },
         { id: "applications", label: "Applications", icon: UserPlus },
       ]
     },
@@ -276,6 +279,7 @@ const HRDashboard = () => {
       case "notifications": return <NotificationCenter />;
       case "banners": return <BannerManagement />;
       case "applications": return <TeamApplicationsList />;
+      case "pricing": return <PricingManagement />;
       default: return <StatsGrid stats={stats} />;
     }
   };

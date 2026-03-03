@@ -29,6 +29,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const ManageProjects = () => {
     const [projects, setProjects] = useState<any[]>([]);
     const [clients, setClients] = useState<any[]>([]);
+    const [pricingPackages, setPricingPackages] = useState<{ name: string; slug: string }[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterType, setFilterType] = useState("all");
@@ -75,6 +76,14 @@ const ManageProjects = () => {
 
             setProjects(projectsRes.data || []);
             setClients(clientsRes.data || []);
+
+            // Load pricing packages
+            const pkgRes = await supabase.from('pricing_packages').select('name, slug').eq('is_enabled', true).order('sort_order');
+            if (pkgRes.data && pkgRes.data.length > 0) {
+                setPricingPackages([...pkgRes.data, { name: 'Custom Package', slug: 'custom' }]);
+            } else {
+                setPricingPackages(FALLBACK_PACKAGES);
+            }
         } catch (error) {
             console.error('Error fetching projects:', error);
             toast({
@@ -262,14 +271,9 @@ const ManageProjects = () => {
                                         <Select value={formData.package_type} onValueChange={(v) => setFormData({ ...formData, package_type: v })}>
                                             <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
                                             <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                                <SelectItem value="basic_design_website">Basic Design Website</SelectItem>
-                                                <SelectItem value="interactive_creative_website">Interactive &amp; Creative Website</SelectItem>
-                                                <SelectItem value="ecommerce_platform">E-commerce Platform</SelectItem>
-                                                <SelectItem value="portfolio_showcase">Portfolio Showcase</SelectItem>
-                                                <SelectItem value="crypto_trading_portal">Crypto Trading Portal</SelectItem>
-                                                <SelectItem value="ai_integrated_website">AI-Integrated Website</SelectItem>
-                                                <SelectItem value="social_media_news_website">Social Media-Based News Website</SelectItem>
-                                                <SelectItem value="custom">Custom Package</SelectItem>
+                                                {pricingPackages.map(pkg => (
+                                                    <SelectItem key={pkg.slug} value={pkg.slug}>{pkg.name}</SelectItem>
+                                                ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
@@ -511,14 +515,9 @@ const ManageProjects = () => {
                                 <Select value={formData.package_type} onValueChange={(v) => setFormData({ ...formData, package_type: v })}>
                                     <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
                                     <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                        <SelectItem value="basic_design_website">Basic Design Website</SelectItem>
-                                        <SelectItem value="interactive_creative_website">Interactive &amp; Creative Website</SelectItem>
-                                        <SelectItem value="ecommerce_platform">E-commerce Platform</SelectItem>
-                                        <SelectItem value="portfolio_showcase">Portfolio Showcase</SelectItem>
-                                        <SelectItem value="crypto_trading_portal">Crypto Trading Portal</SelectItem>
-                                        <SelectItem value="ai_integrated_website">AI-Integrated Website</SelectItem>
-                                        <SelectItem value="social_media_news_website">Social Media-Based News Website</SelectItem>
-                                        <SelectItem value="custom">Custom Package</SelectItem>
+                                        {pricingPackages.map(pkg => (
+                                            <SelectItem key={pkg.slug} value={pkg.slug}>{pkg.name}</SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -548,3 +547,14 @@ const ManageProjects = () => {
 };
 
 export default ManageProjects;
+
+const FALLBACK_PACKAGES = [
+    { name: 'Basic Design Website', slug: 'basic_design_website' },
+    { name: 'Interactive & Creative Website', slug: 'interactive_creative_website' },
+    { name: 'E-commerce Platform', slug: 'ecommerce_platform' },
+    { name: 'Portfolio Showcase', slug: 'portfolio_showcase' },
+    { name: 'Crypto Trading Portal', slug: 'crypto_trading_portal' },
+    { name: 'AI-Integrated Website', slug: 'ai_integrated_website' },
+    { name: 'Social Media-Based News Website', slug: 'social_media_news_website' },
+    { name: 'Custom Package', slug: 'custom' },
+];
