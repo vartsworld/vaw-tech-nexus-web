@@ -89,19 +89,21 @@ const SharedProjectForm = ({ clientId, initialData, onSuccess, onCancel }: Share
                 // total_amount: 0, // Could be added if needed
             };
 
+            const selectColumns = 'id, title, description, project_type, status, client_id, progress, created_at, updated_at, renewal_date, next_payment_date, clients:client_id(id, company_name)';
+
             let result;
             if (initialData?.id) {
                 result = await supabase
                     .from('client_projects')
                     .update(payload)
                     .eq('id', initialData.id)
-                    .select('*, client_profiles:client_id(id, company_name)')
+                    .select(selectColumns)
                     .single();
             } else {
                 result = await supabase
                     .from('client_projects')
                     .insert(payload)
-                    .select('*, client_profiles:client_id(id, company_name)')
+                    .select(selectColumns)
                     .single();
             }
 

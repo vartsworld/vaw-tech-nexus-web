@@ -62,7 +62,7 @@ const ManageProjects = () => {
                 supabase
                     .from('client_projects')
                     .select(`
-            *,
+            id, title, description, status, project_type, progress, created_at, client_id,
             clients:client_id (id, company_name)
           `)
                     .order('created_at', { ascending: false }),
@@ -147,7 +147,7 @@ const ManageProjects = () => {
 
     const filteredProjects = projects.filter(p => {
         const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.client_profiles?.company_name?.toLowerCase().includes(searchTerm.toLowerCase());
+            p.clients?.company_name?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = filterType === "all" || p.project_type === filterType;
         return matchesSearch && matchesType;
     });

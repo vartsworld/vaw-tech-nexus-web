@@ -128,7 +128,7 @@ const ClientManagement = () => {
           ...newClient,
           created_by: user.id
         })
-        .select('*')
+        .select('id, company_name, contact_person, email, phone, address, status, notes, created_at')
         .single();
 
       if (error) {
@@ -239,7 +239,7 @@ const ClientManagement = () => {
     try {
       const { data, error } = await supabase
         .from('client_projects')
-        .select('*')
+        .select('id, title, description, status, project_type, progress, created_at, client_id')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
 
