@@ -60,6 +60,7 @@ import { useStaffData } from "@/hooks/useStaffData";
 
 import { TaskApprovalDialog } from "./TaskApprovalDialog";
 import ClientOnboardingCreator from "./ClientOnboardingCreator";
+import SharedProjectForm from "../projects/SharedProjectForm";
 
 interface Subtask {
   id: string;
@@ -615,64 +616,12 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     }
   };
 
-  const handleCreateProject = async () => {
-    const clientId = isCreateTaskOpen ? newTask.client_id : selectedTask?.client_id;
-
-    if (!clientId || !newProject.title) {
-      toast({
-        title: "Validation Error",
-        description: "Please select a client and provide a project title.",
-        variant: "destructive",
-      });
-      return;
+  const handleProjectSuccess = async (project: any) => {
+    setIsAddProjectDialogOpen(false);
+    if (newTask.client_id) {
+      await fetchClientProjects(newTask.client_id);
     }
-
-    try {
-      const { data, error } = await supabase
-        .from('client_projects')
-        .insert({
-          client_id: clientId,
-          title: newProject.title,
-          description: newProject.description,
-          project_type: newProject.project_type,
-          status: 'planning',
-          package_type: newProject.package_type,
-          addons: newProject.addons
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Project created successfully",
-      });
-
-      setClientProjects(prev => [...prev, data]);
-
-      if (isCreateTaskOpen) {
-        setNewTask(prev => ({ ...prev, client_project_id: data.id }));
-      } else if (isEditTaskOpen && selectedTask) {
-        setSelectedTask({ ...selectedTask, client_project_id: data.id });
-      }
-
-      setIsAddProjectDialogOpen(false);
-      setNewProject({
-        title: "",
-        description: "",
-        project_type: "website",
-        package_type: "basic",
-        addons: ""
-      });
-    } catch (error: any) {
-      console.error('Error creating project:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create project",
-        variant: "destructive",
-      });
-    }
+    setNewTask({ ...newTask, client_project_id: project.id });
   };
 
   const handleBulkAddSubtasks = async () => {
@@ -4145,117 +4094,15 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       />
       {/* Add Project Dialog */}
       <Dialog open={isAddProjectDialogOpen} onOpenChange={setIsAddProjectDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-[#0f0f0f] border-white/5 text-white">
           <DialogHeader>
-            <DialogTitle>Add New Project</DialogTitle>
+            <DialogTitle>Initialize New Project</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="proj_title">Project Title</Label>
-              <Input
-                id="proj_title"
-                value={newProject.title}
-                onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-                placeholder="e.g. VAW Tech Nexus Web"
-              />
-            </div>
-            <div>
-              <Label htmlFor="proj_type">Project Type</Label>
-              <Select
-                value={newProject.project_type}
-                onValueChange={(value: any) => setNewProject({ ...newProject, project_type: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="website">Website</SelectItem>
-                  <SelectItem value="marketing">Marketing</SelectItem>
-                  <SelectItem value="design">Design</SelectItem>
-                  <SelectItem value="ai">AI Solutions</SelectItem>
-                  <SelectItem value="vr-ar">VR/AR</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="proj_package">Service Package</Label>
-                <Select
-                  value={newProject.package_type}
-                  onValueChange={(value: any) => setNewProject({ ...newProject, package_type: value })}
-                >
-                  <SelectTrigger id="proj_package">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {pricingPackages.map(pkg => (
-                      <SelectItem key={pkg.slug} value={pkg.slug}>{pkg.name}</SelectItem>
-                    ))}
-                    {pricingPackages.length === 0 && (
-                      <>
-                        <SelectItem value="basic_design_website">Basic Design Website</SelectItem>
-                        <SelectItem value="interactive_creative_website">Interactive &amp; Creative Website</SelectItem>
-                        <SelectItem value="ecommerce_platform">E-commerce Platform</SelectItem>
-                        <SelectItem value="portfolio_showcase">Portfolio Showcase</SelectItem>
-                        <SelectItem value="crypto_trading_portal">Crypto Trading Portal</SelectItem>
-                        <SelectItem value="ai_integrated_website">AI-Integrated Website</SelectItem>
-                        <SelectItem value="social_media_news_website">Social Media-Based News Website</SelectItem>
-                        <SelectItem value="custom">Custom Package</SelectItem>
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <Label htmlFor="proj_addons">Addons & Extras</Label>
-                  {availableAddons.length > 0 && (
-                    <Select onValueChange={(val) => {
-                      const current = newProject.addons ? newProject.addons.split(',').map(s => s.trim()).filter(Boolean) : [];
-                      if (!current.includes(val)) {
-                        setNewProject({ ...newProject, addons: [...current, val].join(', ') });
-                      }
-                    }}>
-                      <SelectTrigger className="w-[100px] h-6 text-[9px] bg-white/5 border-white/10">
-                        <SelectValue placeholder="Quick Add" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                        {availableAddons.map(a => (
-                          <SelectItem key={a.name} value={a.name} className="text-xs">{a.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-                <Input
-                  id="proj_addons"
-                  value={newProject.addons}
-                  onChange={(e) => setNewProject({ ...newProject, addons: e.target.value })}
-                  placeholder="e.g. SEO, Maintenance"
-                  className="h-9 text-xs"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="proj_desc">Description (Optional)</Label>
-              <Textarea
-                id="proj_desc"
-                value={newProject.description}
-                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                placeholder="Enter project description"
-                rows={3}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsAddProjectDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateProject}>
-                Create Project
-              </Button>
-            </div>
-          </div>
+          <SharedProjectForm
+            clientId={newTask.client_id}
+            onSuccess={handleProjectSuccess}
+            onCancel={() => setIsAddProjectDialogOpen(false)}
+          />
         </DialogContent>
       </Dialog>
     </div >

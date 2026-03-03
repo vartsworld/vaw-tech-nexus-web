@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import SharedProjectForm from "../projects/SharedProjectForm";
 
 const ClientManagement = () => {
   const [clients, setClients] = useState([]);
@@ -256,44 +257,9 @@ const ClientManagement = () => {
     }
   };
 
-  const handleCreateProject = async () => {
-    if (!selectedClientForProjects || !newProject.title) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('client_projects')
-        .insert({
-          client_id: selectedClientForProjects.id,
-          title: newProject.title,
-          description: newProject.description,
-          project_type: newProject.project_type,
-          status: 'planning'
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setClientProjects([data, ...clientProjects]);
-      setIsAddProjectDialogOpen(false);
-      setNewProject({
-        title: "",
-        description: "",
-        project_type: "website"
-      });
-
-      toast({
-        title: "Success",
-        description: "Project created successfully.",
-      });
-    } catch (error: any) {
-      console.error('Error creating project:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create project.",
-        variant: "destructive",
-      });
-    }
+  const handleProjectSuccess = (newProject: any) => {
+    setClientProjects([newProject, ...clientProjects]);
+    setIsAddProjectDialogOpen(false);
   };
 
   const handleDeleteProject = async (projectId) => {
@@ -853,55 +819,15 @@ const ClientManagement = () => {
 
       {/* Add Project Dialog */}
       <Dialog open={isAddProjectDialogOpen} onOpenChange={setIsAddProjectDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-[#0f0f0f] border-white/5 text-white">
           <DialogHeader>
-            <DialogTitle>Add New Project</DialogTitle>
+            <DialogTitle>Initialize New Project</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="proj_title">Project Title</Label>
-              <Input
-                id="proj_title"
-                value={newProject.title}
-                onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-                placeholder="Enter project title"
-              />
-            </div>
-            <div>
-              <Label htmlFor="proj_type">Project Type</Label>
-              <Select value={newProject.project_type} onValueChange={(value: any) => setNewProject({ ...newProject, project_type: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="website">Website</SelectItem>
-                  <SelectItem value="marketing">Marketing</SelectItem>
-                  <SelectItem value="design">Design</SelectItem>
-                  <SelectItem value="ai">AI Solutions</SelectItem>
-                  <SelectItem value="vr-ar">VR/AR</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="proj_desc">Description (Optional)</Label>
-              <Textarea
-                id="proj_desc"
-                value={newProject.description}
-                onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                placeholder="Enter project description"
-                rows={3}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setIsAddProjectDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateProject}>
-                Create Project
-              </Button>
-            </div>
-          </div>
+          <SharedProjectForm
+            clientId={selectedClientForProjects?.id}
+            onSuccess={handleProjectSuccess}
+            onCancel={() => setIsAddProjectDialogOpen(false)}
+          />
         </DialogContent>
       </Dialog>
     </div>

@@ -25,6 +25,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import SharedProjectForm from "../projects/SharedProjectForm";
 
 const ManageProjects = () => {
     const [projects, setProjects] = useState<any[]>([]);
@@ -62,13 +63,12 @@ const ManageProjects = () => {
                     .from('client_projects')
                     .select(`
             *,
-            clients:client_id (id, company_name)
+            client_profiles:client_id (id, company_name)
           `)
                     .order('created_at', { ascending: false }),
                 supabase
-                    .from('clients')
+                    .from('client_profiles')
                     .select('id, company_name')
-                    .eq('status', 'active')
                     .order('company_name')
             ]);
 
@@ -103,55 +103,15 @@ const ManageProjects = () => {
         }
     };
 
-    const handleCreate = async () => {
-        if (!formData.client_id || !formData.title) {
-            toast({
-                title: "Error",
-                description: "Please fill in all required fields.",
-                variant: "destructive",
-            });
-            return;
-        }
-
-        try {
-            const { data, error } = await supabase
-                .from('client_projects')
-                .insert(formData)
-                .select(`*, clients:client_id(id, company_name)`)
-                .single();
-
-            if (error) throw error;
-
-            setProjects([data, ...projects]);
-            setIsAddDialogOpen(false);
-            resetForm();
-            toast({ title: "Success", description: "Project created successfully." });
-        } catch (error: any) {
-            toast({ title: "Error", description: error.message, variant: "destructive" });
-        }
+    const handleCreateSuccess = (newProject: any) => {
+        setProjects([newProject, ...projects]);
+        setIsAddDialogOpen(false);
     };
 
-    const handleUpdate = async () => {
-        if (!editingProject) return;
-
-        try {
-            const { data, error } = await supabase
-                .from('client_projects')
-                .update(formData)
-                .eq('id', editingProject.id)
-                .select(`*, clients:client_id(id, company_name)`)
-                .single();
-
-            if (error) throw error;
-
-            setProjects(projects.map(p => p.id === editingProject.id ? data : p));
-            setIsEditDialogOpen(false);
-            setEditingProject(null);
-            resetForm();
-            toast({ title: "Success", description: "Project updated successfully." });
-        } catch (error: any) {
-            toast({ title: "Error", description: error.message, variant: "destructive" });
-        }
+    const handleUpdateSuccess = (updatedProject: any) => {
+        setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
+        setIsEditDialogOpen(false);
+        setEditingProject(null);
     };
 
     const handleDelete = async (id: string) => {
@@ -186,7 +146,7 @@ const ManageProjects = () => {
 
     const filteredProjects = projects.filter(p => {
         const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.clients?.company_name?.toLowerCase().includes(searchTerm.toLowerCase());
+            p.client_profiles?.company_name?.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = filterType === "all" || p.project_type === filterType;
         return matchesSearch && matchesType;
     });
@@ -226,103 +186,11 @@ const ManageProjects = () => {
                         </DialogTrigger>
                         <DialogContent className="bg-[#0f0f0f] border-white/5 text-white max-w-md">
                             <DialogHeader><DialogTitle>Initialize Strategy</DialogTitle></DialogHeader>
-                            <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                    <Label>Client Partner</Label>
-                                    <Select value={formData.client_id} onValueChange={(v) => setFormData({ ...formData, client_id: v })}>
-                                        <SelectTrigger className="bg-white/5 border-white/10"><SelectValue placeholder="Select Client" /></SelectTrigger>
-                                        <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                            {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Project Designation</Label>
-                                    <Input
-                                        value={formData.title}
-                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                        placeholder="e.g. Q1 Marketing Redesign"
-                                        className="bg-white/5 border-white/10 text-white"
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Category</Label>
-                                        <Select value={formData.project_type} onValueChange={(v) => setFormData({ ...formData, project_type: v })}>
-                                            <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
-                                            <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                                <SelectItem value="website">Website</SelectItem>
-                                                <SelectItem value="marketing">Marketing</SelectItem>
-                                                <SelectItem value="design">Design</SelectItem>
-                                                <SelectItem value="ai">AI Solution</SelectItem>
-                                                <SelectItem value="other">Other</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Status</Label>
-                                        <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
-                                            <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
-                                            <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                                <SelectItem value="planning">Planning</SelectItem>
-                                                <SelectItem value="active">Active</SelectItem>
-                                                <SelectItem value="on_hold">On Hold</SelectItem>
-                                                <SelectItem value="completed">Completed</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Service Package</Label>
-                                        <Select value={formData.package_type} onValueChange={(v) => setFormData({ ...formData, package_type: v })}>
-                                            <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
-                                            <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                                {pricingPackages.map(pkg => (
-                                                    <SelectItem key={pkg.slug} value={pkg.slug}>{pkg.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <Label>Addons & Extras</Label>
-                                            {availableAddons.length > 0 && (
-                                                <Select onValueChange={(val) => {
-                                                    const current = formData.addons ? formData.addons.split(',').map(s => s.trim()).filter(Boolean) : [];
-                                                    if (!current.includes(val)) {
-                                                        setFormData({ ...formData, addons: [...current, val].join(', ') });
-                                                    }
-                                                }}>
-                                                    <SelectTrigger className="w-[120px] h-7 text-[10px] bg-white/5 border-white/10">
-                                                        <SelectValue placeholder="Quick Add" />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                                        {availableAddons.map(a => (
-                                                            <SelectItem key={a.name} value={a.name} className="text-xs">{a.name}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        </div>
-                                        <Input
-                                            value={formData.addons}
-                                            onChange={(e) => setFormData({ ...formData, addons: e.target.value })}
-                                            placeholder="SEO, Maintenance..."
-                                            className="bg-white/5 border-white/10 text-white"
-                                        />
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Brief Overview</Label>
-                                    <Textarea
-                                        value={formData.description}
-                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        placeholder="Deployment of new visual identity..."
-                                        className="bg-white/5 border-white/10 text-white h-24"
-                                    />
-                                </div>
-                                <Button onClick={handleCreate} className="w-full bg-indigo-600 hover:bg-indigo-700">Deploy Project</Button>
+                            <div className="py-2">
+                                <SharedProjectForm
+                                    onSuccess={handleCreateSuccess}
+                                    onCancel={() => setIsAddDialogOpen(false)}
+                                />
                             </div>
                         </DialogContent>
                     </Dialog>
@@ -429,7 +297,7 @@ const ManageProjects = () => {
                                         <TableCell className="py-4 px-6 text-sm text-gray-300 font-medium">
                                             <div className="flex items-center gap-2">
                                                 <Building2 className="w-3.5 h-3.5 text-gray-500" />
-                                                {p.clients?.company_name || 'Individual Partner'}
+                                                {p.client_profiles?.company_name || 'Individual Partner'}
                                             </div>
                                         </TableCell>
                                         <TableCell className="py-4 px-6">
@@ -490,100 +358,12 @@ const ManageProjects = () => {
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent className="bg-[#0f0f0f] border-white/5 text-white max-w-md">
                     <DialogHeader><DialogTitle>Refine Unit Parameters</DialogTitle></DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                            <Label>Client Partner</Label>
-                            <Select value={formData.client_id} onValueChange={(v) => setFormData({ ...formData, client_id: v })}>
-                                <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
-                                <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Project Designation</Label>
-                            <Input
-                                value={formData.title}
-                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                className="bg-white/5 border-white/10 text-white"
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Category</Label>
-                                <Select value={formData.project_type} onValueChange={(v) => setFormData({ ...formData, project_type: v })}>
-                                    <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                        <SelectItem value="website">Website</SelectItem>
-                                        <SelectItem value="marketing">Marketing</SelectItem>
-                                        <SelectItem value="design">Design</SelectItem>
-                                        <SelectItem value="ai">AI Solution</SelectItem>
-                                        <SelectItem value="other">Other</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Status</Label>
-                                <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
-                                    <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                        <SelectItem value="planning">Planning</SelectItem>
-                                        <SelectItem value="active">Active</SelectItem>
-                                        <SelectItem value="on_hold">On Hold</SelectItem>
-                                        <SelectItem value="completed">Completed</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label>Service Package</Label>
-                                <Select value={formData.package_type} onValueChange={(v) => setFormData({ ...formData, package_type: v })}>
-                                    <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
-                                    <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                        {pricingPackages.map(pkg => (
-                                            <SelectItem key={pkg.slug} value={pkg.slug}>{pkg.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <Label>Addons & Extras</Label>
-                                    {availableAddons.length > 0 && (
-                                        <Select onValueChange={(val) => {
-                                            const current = formData.addons ? formData.addons.split(',').map(s => s.trim()).filter(Boolean) : [];
-                                            if (!current.includes(val)) {
-                                                setFormData({ ...formData, addons: [...current, val].join(', ') });
-                                            }
-                                        }}>
-                                            <SelectTrigger className="w-[120px] h-7 text-[10px] bg-white/5 border-white/10">
-                                                <SelectValue placeholder="Quick Add" />
-                                            </SelectTrigger>
-                                            <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
-                                                {availableAddons.map(a => (
-                                                    <SelectItem key={a.name} value={a.name} className="text-xs">{a.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    )}
-                                </div>
-                                <Input
-                                    value={formData.addons}
-                                    onChange={(e) => setFormData({ ...formData, addons: e.target.value })}
-                                    className="bg-white/5 border-white/10 text-white"
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Brief Overview</Label>
-                            <Textarea
-                                value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                className="bg-white/5 border-white/10 text-white h-24"
-                            />
-                        </div>
-                        <Button onClick={handleUpdate} className="w-full bg-indigo-600 hover:bg-indigo-700">Commit Changes</Button>
+                    <div className="py-2">
+                        <SharedProjectForm
+                            initialData={editingProject}
+                            onSuccess={handleUpdateSuccess}
+                            onCancel={() => { setIsEditDialogOpen(false); setEditingProject(null); }}
+                        />
                     </div>
                 </DialogContent>
             </Dialog>
