@@ -4170,10 +4170,13 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="basic">Basic Tier</SelectItem>
-                    <SelectItem value="standard">Standard Tier</SelectItem>
-                    <SelectItem value="premium">Premium Tier</SelectItem>
-                    <SelectItem value="enterprise">Enterprise</SelectItem>
+                    <SelectItem value="basic_design_website">Basic Design Website</SelectItem>
+                    <SelectItem value="interactive_creative_website">Interactive &amp; Creative Website</SelectItem>
+                    <SelectItem value="ecommerce_platform">E-commerce Platform</SelectItem>
+                    <SelectItem value="portfolio_showcase">Portfolio Showcase</SelectItem>
+                    <SelectItem value="crypto_trading_portal">Crypto Trading Portal</SelectItem>
+                    <SelectItem value="ai_integrated_website">AI-Integrated Website</SelectItem>
+                    <SelectItem value="social_media_news_website">Social Media-Based News Website</SelectItem>
                     <SelectItem value="custom">Custom Package</SelectItem>
                   </SelectContent>
                 </Select>
