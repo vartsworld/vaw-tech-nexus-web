@@ -67,12 +67,12 @@ const ChessPiece = ({ piece, color }: { piece: string, color: 'w' | 'b' }) => {
 
   return (
     <span
-      className={`material-symbols-outlined text-2xl sm:text-4xl md:text-5xl select-none transition-all duration-300 hover:scale-110 drop-shadow-md cursor-pointer
-        ${isWhite ? 'text-[#fdf5e6]' : 'text-slate-950'}
+      className={`material-symbols-outlined text-3xl sm:text-5xl md:text-6xl select-none transition-all duration-300 hover:scale-110 drop-shadow-md cursor-pointer
+        ${isWhite ? 'text-white' : 'text-[#1a1a1a]'}
       `}
       style={{
-        fontVariationSettings: `'FILL' ${isWhite ? 0 : 1}, 'wght' 400, 'GRAD' 0, 'opsz' 48`,
-        WebkitTextStroke: isWhite ? '0.5px rgba(0,0,0,0.3)' : 'none'
+        fontVariationSettings: `'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 48`,
+        WebkitTextStroke: isWhite ? '1.5px #1a1a1a' : '0.5px #ffffff'
       }}
     >
       {getIconName()}
@@ -638,28 +638,6 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
     setWinner(null);
   };
 
-  const getPieceSymbol = (piece: any) => {
-    if (!piece) return null;
-
-    // Use stylized piece representations
-    const pieceMap: Record<string, { symbol: string; isWhite: boolean }> = {
-      'wk': { symbol: '♔', isWhite: true },
-      'wq': { symbol: '♕', isWhite: true },
-      'wr': { symbol: '♖', isWhite: true },
-      'wb': { symbol: '♗', isWhite: true },
-      'wn': { symbol: '♘', isWhite: true },
-      'wp': { symbol: '♙', isWhite: true },
-      'bk': { symbol: '♚', isWhite: false },
-      'bq': { symbol: '♛', isWhite: false },
-      'br': { symbol: '♜', isWhite: false },
-      'bb': { symbol: '♝', isWhite: false },
-      'bn': { symbol: '♞', isWhite: false },
-      'bp': { symbol: '♟', isWhite: false },
-    };
-
-    const key = piece.color + piece.type;
-    return pieceMap[key] || null;
-  };
 
   const isSquareHighlighted = (row: number, col: number) => {
     const square = String.fromCharCode(97 + col) + (8 - row);
@@ -937,8 +915,8 @@ const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
                       relative flex items-center justify-center
                       ${isLight ? 'bg-[#efebe9]' : 'bg-[#a1887f]'}
                       ${isSelected ? 'after:absolute after:inset-0 after:bg-yellow-400/40' : ''}
-                      ${isPossible && !piece ? 'after:absolute after:w-[30%] after:h-[30%] after:bg-black/10 after:rounded-full shadow-inner' : ''}
-                      ${isPossible && piece ? 'after:absolute after:inset-[10%] after:border-4 after:border-black/20 after:rounded-full' : ''}
+                      ${isPossible && !piece ? 'after:absolute after:w-[30%] after:h-[30%] after:bg-black/25 after:rounded-full shadow-inner' : ''}
+                      ${isPossible && piece ? 'after:absolute after:inset-[10%] after:border-4 after:border-black/30 after:rounded-full' : ''}
                       cursor-pointer select-none transition-all duration-200
                       hover:brightness-105 active:scale-95 h-full w-full
                     `}
