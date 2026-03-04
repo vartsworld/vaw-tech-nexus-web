@@ -365,8 +365,8 @@ export const TaskApprovalDialog = ({
                 {task.status.replace('_', ' ').toUpperCase()}
               </Badge>
               <Badge className={`${task.priority === 'urgent' ? 'bg-red-500' :
-                  task.priority === 'high' ? 'bg-orange-500' :
-                    task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                task.priority === 'high' ? 'bg-orange-500' :
+                  task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
                 }`}>
                 {task.priority.toUpperCase()}
               </Badge>
@@ -410,7 +410,7 @@ export const TaskApprovalDialog = ({
             <Separator className="bg-white/10" />
 
             {/* Comments */}
-            {task.comments && task.comments.length > 0 && (
+            {task.comments && Array.isArray(task.comments) && task.comments.length > 0 && (
               <>
                 <div>
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -427,7 +427,7 @@ export const TaskApprovalDialog = ({
                       )}>
                         <p className="text-white/90 text-sm">{comment.text}</p>
                         <p className="text-white/50 text-xs mt-1">
-                          {format(new Date(comment.created_at), 'MMM dd, yyyy HH:mm')}
+                          {(() => { try { return format(new Date(comment.created_at), 'MMM dd, yyyy HH:mm'); } catch { return ''; } })()}
                         </p>
                       </div>
                     ))}
@@ -438,7 +438,7 @@ export const TaskApprovalDialog = ({
             )}
 
             {/* Attachments */}
-            {task.attachments && task.attachments.length > 0 && (
+            {task.attachments && Array.isArray(task.attachments) && task.attachments.length > 0 && (
               <>
                 <div>
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
