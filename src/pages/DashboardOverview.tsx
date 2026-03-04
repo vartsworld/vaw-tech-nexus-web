@@ -12,7 +12,10 @@ import {
     Activity,
     ChevronRight,
     Shield,
-    User
+    User,
+    Bell,
+    Layers,
+    X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -34,6 +37,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
     const [ongoingTasks, setOngoingTasks] = useState<any[]>([]);
     const [recentProjects, setRecentProjects] = useState<any[]>([]);
     const [paymentReminders, setPaymentReminders] = useState<any[]>([]);
+    const [notifications, setNotifications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -77,12 +81,15 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                 .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
                 .eq("status", "open");
 
-            // 5. Fetch unread notifications
-            const { data: notifications } = await supabase
+            // 5. Fetch unread notifications — most recent 5
+            const { data: notificationsData } = await supabase
                 .from("client_notifications")
-                .select("*")
+                .select("id, title, message, type, priority, created_at, is_read, action_url")
                 .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
-                .eq("is_read", false);
+                .order("created_at", { ascending: false })
+                .limit(5);
+
+            setNotifications(notificationsData || []);
 
             // 6. Fetch ongoing tasks — dual-ID mapping then manually resolve departments
             const clientIdSet = [profile.id, crmId].filter(Boolean);
@@ -147,7 +154,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                     completedProjects: completed,
                     pendingReminders: reminders?.length || 0,
                     openErrors: errors?.length || 0,
-                    unreadNotifications: notifications?.length || 0
+                    unreadNotifications: notificationsData?.length || 0
                 });
                 setRecentProjects(projects.slice(0, 3));
                 setPaymentReminders(reminders || []);
@@ -355,57 +362,96 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                         {loading ? (
                             [1, 2].map(i => <div key={i} className="h-32 bg-white/5 rounded-2xl animate-pulse" />)
                         ) : recentProjects.length > 0 ? (
-                            recentProjects.map((project, idx) => (
-                                <motion.div
-                                    key={project.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: 0.4 + idx * 0.1 }}
-                                >
-                                    <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all group overflow-hidden">
-                                        <CardContent className="p-6">
-                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                                <div className="space-y-1">
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <h3 className="text-lg font-bold text-white group-hover:text-tech-gold transition-colors">{project.title}</h3>
-                                                        <Badge className="bg-tech-gold/10 text-tech-gold border-tech-gold/20 text-[10px] uppercase font-black tracking-widest">
-                                                            {project.project_type}
-                                                        </Badge>
-                                                        <Badge variant="outline" className={cn(
-                                                            "text-[9px] uppercase font-black border-white/10",
-                                                            project.status === 'completed' ? "text-green-500" :
-                                                                project.status === 'at_risk' ? "text-red-500" :
-                                                                    "text-tech-gold"
-                                                        )}>
-                                                            {project.status.replace('_', ' ')}
-                                                        </Badge>
+                            recentProjects.map((project, idx) => {
+                                // Derive current phase from project status
+                                const phaseMap: Record<string, { label: string; sub: string; color: string }> = {
+                                    planning: { label: 'PLANNING', sub: 'PHASE BLUEPRINT', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+                                    in_progress: { label: 'IN DEVELOPMENT', sub: 'ACTIVE BUILD', color: 'text-tech-gold bg-tech-gold/10 border-tech-gold/20' },
+                                    review: { label: 'IN REVIEW', sub: 'QA & TESTING', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+                                    review_pending: { label: 'PENDING REVIEW', sub: 'AWAITING SIGN-OFF', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
+                                    at_risk: { label: 'AT RISK', sub: 'ATTENTION NEEDED', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+                                    on_hold: { label: 'ON HOLD', sub: 'PAUSED', color: 'text-gray-400 bg-gray-500/10 border-gray-500/20' },
+                                    completed: { label: 'COMPLETED', sub: 'DELIVERED', color: 'text-green-400 bg-green-500/10 border-green-500/20' },
+                                    cancel: { label: 'CANCELLED', sub: 'PROJECT CLOSED', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+                                };
+                                const phase = phaseMap[project.status] || phaseMap.in_progress;
+
+                                // Find an active task for this project to show stage
+                                const activeTask = ongoingTasks.find((t: any) => t.client_project_id === project.id);
+
+                                return (
+                                    <motion.div
+                                        key={project.id}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.4 + idx * 0.1 }}
+                                    >
+                                        <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all group overflow-hidden">
+                                            <CardContent className="p-0">
+                                                {/* Project Header */}
+                                                <div className="p-5 space-y-3">
+                                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                                        <div className="space-y-0.5">
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <h3 className="text-base font-bold text-white group-hover:text-tech-gold transition-colors">{project.title}</h3>
+                                                                <Badge className="bg-tech-gold/10 text-tech-gold border-tech-gold/20 text-[9px] uppercase font-black tracking-widest">
+                                                                    {project.project_type}
+                                                                </Badge>
+                                                            </div>
+                                                            <p className="text-xs text-gray-400 line-clamp-1">{project.description || "Project parameters initialized and stable."}</p>
+                                                        </div>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-gray-400 hover:text-tech-gold hover:bg-tech-gold/10 rounded-xl shrink-0"
+                                                            onClick={() => window.location.href = `/client/dashboard/projects/${project.id}`}
+                                                        >
+                                                            <ArrowUpRight className="w-4 h-4" />
+                                                        </Button>
                                                     </div>
-                                                    <p className="text-xs text-gray-400 line-clamp-1">{project.description || "Project parameters initialized and stable."}</p>
-                                                </div>
-                                                <div className="flex items-center gap-8">
-                                                    <div className="w-48 space-y-2">
+
+                                                    {/* Current Phase + Stage Row */}
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider", phase.color)}>
+                                                            <Layers className="w-3 h-3" />
+                                                            <div>
+                                                                <div className="leading-none">{phase.label}</div>
+                                                                <div className="text-[8px] opacity-60 leading-none mt-0.5">{phase.sub}</div>
+                                                            </div>
+                                                        </div>
+                                                        {activeTask?.current_stage && (
+                                                            <Badge variant="outline" className="text-[9px] font-black border-tech-purple/30 text-tech-purple bg-tech-purple/5">
+                                                                STAGE {activeTask.current_stage}
+                                                            </Badge>
+                                                        )}
+                                                        {activeTask?.departments?.name && (
+                                                            <Badge variant="outline" className="text-[9px] font-black border-white/10 text-gray-400">
+                                                                {activeTask.departments.name}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Progress bar */}
+                                                    <div className="space-y-1">
                                                         <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest">
-                                                            <span className="text-gray-500">Current Progress</span>
-                                                            <span className="text-tech-gold">{project.progress}%</span>
+                                                            <span className="text-gray-500">Progress</span>
+                                                            <span className="text-tech-gold">{project.progress || 0}%</span>
                                                         </div>
                                                         <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
                                                             <motion.div
                                                                 initial={{ width: 0 }}
-                                                                animate={{ width: `${project.progress}%` }}
+                                                                animate={{ width: `${project.progress || 0}%` }}
                                                                 transition={{ duration: 1, delay: 0.5 }}
                                                                 className="h-full bg-gradient-to-r from-tech-gold to-tech-red shadow-[0_0_10px_#FFD700]"
                                                             />
                                                         </div>
                                                     </div>
-                                                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-tech-gold hover:bg-tech-gold/10 rounded-xl">
-                                                        <ArrowUpRight className="w-5 h-5" />
-                                                    </Button>
                                                 </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </motion.div>
-                            ))
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                );
+                            })
                         ) : (
                             <Card className="bg-black/20 border-tech-gold/10 border-dashed border-2">
                                 <CardContent className="p-12 text-center text-gray-500">
@@ -494,45 +540,100 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                         Actions
                     </h2>
 
-                    <div className="grid gap-4">
+                    <div className="grid gap-3">
                         <Button
-                            className="w-full bg-white/5 border border-tech-gold/20 hover:bg-tech-gold/10 hover:border-tech-gold text-white font-bold h-16 justify-between px-6 rounded-2xl group transition-all"
+                            className="w-full bg-white/5 border border-tech-gold/20 hover:bg-tech-gold/10 hover:border-tech-gold text-white font-bold h-12 justify-between px-5 rounded-xl group transition-all"
                             onClick={() => window.location.href = '/client/dashboard/financials'}
                         >
-                            <div className="flex items-center gap-4">
-                                <div className="p-2 bg-tech-gold/10 rounded-lg group-hover:scale-110 transition-transform">
-                                    <FileText className="w-5 h-5 text-tech-gold" />
+                            <div className="flex items-center gap-3">
+                                <div className="p-1.5 bg-tech-gold/10 rounded-lg group-hover:scale-110 transition-transform">
+                                    <FileText className="w-4 h-4 text-tech-gold" />
                                 </div>
                                 <span className="text-sm">View Invoices</span>
                             </div>
-                            <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0" />
+                            <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all" />
                         </Button>
 
                         <Button
-                            className="w-full bg-white/5 border border-tech-gold/20 hover:bg-tech-gold/10 hover:border-tech-gold text-white font-bold h-16 justify-between px-6 rounded-2xl group transition-all"
+                            className="w-full bg-white/5 border border-tech-gold/20 hover:bg-tech-gold/10 hover:border-tech-gold text-white font-bold h-12 justify-between px-5 rounded-xl group transition-all"
                             onClick={() => window.location.href = '/client/dashboard/support'}
                         >
-                            <div className="flex items-center gap-4">
-                                <div className="p-2 bg-blue-500/10 rounded-lg group-hover:scale-110 transition-transform">
-                                    <Activity className="w-5 h-5 text-blue-500" />
+                            <div className="flex items-center gap-3">
+                                <div className="p-1.5 bg-blue-500/10 rounded-lg group-hover:scale-110 transition-transform">
+                                    <Activity className="w-4 h-4 text-blue-500" />
                                 </div>
                                 <span className="text-sm">Request Update</span>
                             </div>
-                            <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0" />
+                            <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all" />
                         </Button>
 
                         <Button
-                            className="w-full bg-white/5 border border-tech-gold/20 hover:bg-tech-gold/10 hover:border-tech-gold text-white font-bold h-16 justify-between px-6 rounded-2xl group transition-all"
+                            className="w-full bg-white/5 border border-tech-gold/20 hover:bg-tech-gold/10 hover:border-tech-gold text-white font-bold h-12 justify-between px-5 rounded-xl group transition-all"
                             onClick={() => window.location.href = '/client/dashboard/support'}
                         >
-                            <div className="flex items-center gap-4">
-                                <div className="p-2 bg-tech-red/10 rounded-lg group-hover:scale-110 transition-transform">
-                                    <AlertCircle className="w-5 h-5 text-tech-red" />
+                            <div className="flex items-center gap-3">
+                                <div className="p-1.5 bg-tech-red/10 rounded-lg group-hover:scale-110 transition-transform">
+                                    <AlertCircle className="w-4 h-4 text-tech-red" />
                                 </div>
                                 <span className="text-sm">Get Support</span>
                             </div>
-                            <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0" />
+                            <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all" />
                         </Button>
+                    </div>
+
+                    {/* Notifications Panel */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-black uppercase tracking-widest text-white flex items-center gap-2">
+                                <Bell className="w-4 h-4 text-tech-gold" />
+                                Notifications
+                            </h3>
+                            {stats.unreadNotifications > 0 && (
+                                <Badge className="bg-tech-gold/20 text-tech-gold border-tech-gold/30 text-[9px] font-black">
+                                    {stats.unreadNotifications} NEW
+                                </Badge>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            {notifications.length > 0 ? (
+                                notifications.map((notif) => (
+                                    <div
+                                        key={notif.id}
+                                        className={cn(
+                                            "p-3 rounded-xl border transition-all cursor-pointer group",
+                                            notif.is_read
+                                                ? "bg-white/3 border-white/5 hover:border-white/10"
+                                                : "bg-tech-gold/5 border-tech-gold/20 hover:border-tech-gold/40"
+                                        )}
+                                        onClick={async () => {
+                                            await supabase.from("client_notifications").update({ is_read: true }).eq("id", notif.id);
+                                            setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+                                            if (notif.action_url) window.location.href = notif.action_url;
+                                        }}
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <p className={cn("text-xs font-bold truncate", notif.is_read ? "text-gray-400" : "text-white")}>
+                                                    {notif.title}
+                                                </p>
+                                                <p className="text-[10px] text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
+                                                <p className="text-[9px] text-gray-600 mt-1 font-bold">
+                                                    {new Date(notif.created_at).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            {!notif.is_read && (
+                                                <div className="w-2 h-2 rounded-full bg-tech-gold shrink-0 mt-1 animate-pulse" />
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-6 text-gray-600 text-xs font-bold tracking-widest">
+                                    NO NEW NOTIFICATIONS
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <Card className="bg-gradient-to-br from-tech-gold/20 to-tech-red/20 border-tech-gold/30 relative overflow-hidden group">
