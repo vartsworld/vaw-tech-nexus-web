@@ -154,12 +154,25 @@ const TaskManagement = () => {
   useEffect(() => {
     fetchTasks();
     fetchStaff();
-    fetchProjects();
     fetchClients();
     fetchDepartments();
     fetchSubtaskTemplates();
     fetchTaskTemplates();
   }, []);
+
+  // Fetch projects when client_id changes in newTask
+  useEffect(() => {
+    if (newTask.client_id && newTask.client_id !== "no-client" && isAddDialogOpen) {
+      fetchClientProjects(newTask.client_id);
+    }
+  }, [newTask.client_id, isAddDialogOpen]);
+
+  // Fetch projects when client_id changes in editTask
+  useEffect(() => {
+    if (editTask?.client_id && editTask.client_id !== "no-client" && isEditDialogOpen) {
+      fetchClientProjects(editTask.client_id);
+    }
+  }, [editTask?.client_id, isEditDialogOpen]);
 
   useEffect(() => {
     filterTasks();
@@ -218,7 +231,7 @@ const TaskManagement = () => {
       // Fetch related data in parallel
       const [profilesData, projectsData, clientsData] = await Promise.all([
         supabase.from('staff_profiles').select('id, user_id, full_name, username, avatar_url, role').in('user_id', [...allAssignedToIds, ...assignedByIds]),
-        projectIds.length > 0 ? supabase.from('staff_projects').select('id, name, status').in('id', projectIds) : { data: [] },
+        projectIds.length > 0 ? supabase.from('client_projects').select('id, title, status').in('id', projectIds) : { data: [] },
         clientIds.length > 0 ? supabase.from('clients').select('id, company_name, contact_person, email, phone').in('id', clientIds) : { data: [] }
       ]);
 
@@ -525,18 +538,18 @@ const TaskManagement = () => {
     }
   };
 
-  const fetchProjects = async () => {
+  const fetchClientProjects = async (clientId: string) => {
     try {
       const { data, error } = await supabase
-        .from('staff_projects')
-        .select('id, name')
-        .eq('status', 'active')
-        .order('name');
+        .from('client_projects')
+        .select('id, title')
+        .eq('client_id', clientId)
+        .order('title');
 
       if (error) throw error;
       setProjects(data || []);
     } catch (error) {
-      console.error('Error fetching projects:', error);
+      console.error('Error fetching client projects:', error);
     }
   };
 
@@ -871,6 +884,12 @@ const TaskManagement = () => {
 
   const openEditDialog = (task: any) => {
     const assigneeIds = parseAssignedTo(task.assigned_to);
+
+    // Fetch projects for this task's client
+    if (task.client_id && task.client_id !== "no-client") {
+      fetchClientProjects(task.client_id);
+    }
+
     setEditTask({
       id: task.id,
       title: task.title || "",
@@ -1443,9 +1462,9 @@ const TaskManagement = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="no-project">No Project</SelectItem>
-                        {projects.map(project => (
+                        {projects.map((project: any) => (
                           <SelectItem key={project.id} value={project.id}>
-                            {project.name}
+                            {project.title || project.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -1844,9 +1863,9 @@ const TaskManagement = () => {
                                   {task.description}
                                 </div>
                               )}
-                              {task.staff_projects?.name && (
+                              {(task.staff_projects?.title || task.staff_projects?.name) && (
                                 <Badge variant="secondary" className="mt-1 text-[10px] h-4">
-                                  {task.staff_projects.name}
+                                  {task.staff_projects?.title || task.staff_projects?.name}
                                 </Badge>
                               )}
                             </div>
@@ -1955,8 +1974,8 @@ const TaskManagement = () => {
                           <CardTitle className="text-base font-bold line-clamp-1 group-hover:text-primary transition-colors">
                             {task.title}
                           </CardTitle>
-                          {task.staff_projects?.name && (
-                            <p className="text-[10px] text-primary/70 font-medium">#{task.staff_projects.name}</p>
+                          {(task.staff_projects?.title || task.staff_projects?.name) && (
+                            <p className="text-[10px] text-primary/70 font-medium">#{task.staff_projects?.title || task.staff_projects?.name}</p>
                           )}
                           {task.departments?.name && (
                             <div className="pt-0.5">
@@ -2118,8 +2137,8 @@ const TaskManagement = () => {
                                                 </CardTitle>
                                                 {getPriorityBadge(task.priority)}
                                               </div>
-                                              {task.staff_projects?.name && (
-                                                <p className="text-[10px] text-primary/60 font-medium truncate">#{task.staff_projects.name}</p>
+                                              {(task.staff_projects?.title || task.staff_projects?.name) && (
+                                                <p className="text-[10px] text-primary/60 font-medium truncate">#{task.staff_projects?.title || task.staff_projects?.name}</p>
                                               )}
                                               {task.departments?.name && (
                                                 <div className="pt-0.5">
@@ -2458,7 +2477,7 @@ const TaskManagement = () => {
                         <div>
                           <Label className="text-xs text-muted-foreground">Project</Label>
                           <div className="mt-1">
-                            <div className="font-medium">{selectedTask.staff_projects.name}</div>
+                            <div className="font-medium">{selectedTask.staff_projects?.title || selectedTask.staff_projects?.name}</div>
                             <Badge variant="outline" className="mt-1 text-xs">{selectedTask.staff_projects.status}</Badge>
                           </div>
                         </div>
@@ -3345,9 +3364,9 @@ const TaskManagement = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="no-project">No Project</SelectItem>
-                        {projects.map(project => (
+                        {projects.map((project: any) => (
                           <SelectItem key={project.id} value={project.id}>
-                            {project.name}
+                            {project.title || project.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
