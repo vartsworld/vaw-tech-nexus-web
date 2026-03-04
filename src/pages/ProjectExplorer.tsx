@@ -560,44 +560,47 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
 
                                                             return (
                                                                 <Card key={task.id} className="bg-white/5 border-white/10 hover:border-tech-gold/30 transition-all rounded-2xl overflow-hidden group">
-                                                                    <CardContent className="p-4 space-y-4">
+                                                                    <CardContent className="p-4 space-y-3">
+                                                                        {/* Title + Status */}
                                                                         <div className="flex items-start justify-between gap-2">
-                                                                            <div className="space-y-1 flex-1">
-                                                                                <h4 className="text-sm font-bold text-white leading-tight group-hover:text-tech-gold transition-colors">{task.title}</h4>
-                                                                                <div className="flex flex-wrap items-center gap-2">
-                                                                                    {task.current_stage && (
-                                                                                        <span className="text-[9px] font-black text-tech-gold italic">STAGE {task.current_stage}</span>
-                                                                                    )}
-                                                                                    {task.departments?.name && (
-                                                                                        <>
-                                                                                            <span className="text-[9px] text-gray-700">|</span>
-                                                                                            <span className="text-[9px] font-bold text-tech-purple uppercase tracking-wider">{task.departments.name}</span>
-                                                                                        </>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
+                                                                            <h4 className="text-sm font-bold text-white leading-tight group-hover:text-tech-gold transition-colors flex-1">{task.title}</h4>
                                                                             <Badge className={cn("text-[9px] h-5 border shrink-0", statusColors[safeStatus] || statusColors.pending)}>
                                                                                 {safeStatus.replace('_', ' ').toUpperCase()}
                                                                             </Badge>
                                                                         </div>
 
-                                                                        <div className="flex flex-wrap items-center justify-between gap-3">
+                                                                        {/* Stage + Department row — always visible */}
+                                                                        <div className="flex items-center gap-3 py-1.5 px-2 rounded-lg bg-black/30 border border-white/5">
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <div className="w-1.5 h-1.5 rounded-full bg-tech-gold shrink-0" />
+                                                                                <span className="text-[9px] font-black text-tech-gold uppercase tracking-wider">
+                                                                                    {task.current_stage ? `Stage ${task.current_stage}` : 'Stage —'}
+                                                                                </span>
+                                                                            </div>
+                                                                            <div className="w-px h-3 bg-white/10" />
+                                                                            <div className="flex items-center gap-1.5">
+                                                                                <div className="w-1.5 h-1.5 rounded-full bg-tech-purple shrink-0" />
+                                                                                <span className="text-[9px] font-bold text-tech-purple uppercase tracking-wider">
+                                                                                    {task.departments?.name || 'Dept. —'}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Priority + Subtask counter */}
+                                                                        <div className="flex flex-wrap items-center justify-between gap-2">
                                                                             <div className="flex items-center gap-2">
                                                                                 <Badge className={cn("text-[9px] h-5 border-none", priorityColors[safePriority] || priorityColors.medium)}>
                                                                                     {safePriority.toUpperCase()}
                                                                                 </Badge>
-                                                                                {totalSubtasks > 0 && (
-                                                                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
-                                                                                        <div className="w-1.5 h-1.5 rounded-full bg-tech-gold" />
-                                                                                        <span className="text-[9px] font-black text-gray-400">
-                                                                                            {completedSubtasks}/{totalSubtasks} SUBTASKS
-                                                                                        </span>
-                                                                                    </div>
-                                                                                )}
+                                                                                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
+                                                                                    <div className={cn("w-1.5 h-1.5 rounded-full", totalSubtasks > 0 ? "bg-tech-gold" : "bg-gray-700")} />
+                                                                                    <span className="text-[9px] font-black text-gray-400">
+                                                                                        {totalSubtasks > 0 ? `${completedSubtasks}/${totalSubtasks} SUBTASKS` : 'NO SUBTASKS'}
+                                                                                    </span>
+                                                                                </div>
                                                                             </div>
-
                                                                             {totalSubtasks > 0 && (
-                                                                                <div className="w-24 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                                                <div className="w-20 h-1 bg-white/5 rounded-full overflow-hidden">
                                                                                     <div
                                                                                         className="h-full bg-tech-gold transition-all duration-500"
                                                                                         style={{ width: `${(completedSubtasks / totalSubtasks) * 100}%` }}
@@ -606,6 +609,7 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                                                             )}
                                                                         </div>
 
+                                                                        {/* Footer */}
                                                                         <div className="flex items-center justify-between text-[10px] text-gray-500 font-bold pt-1 border-t border-white/5">
                                                                             <div className="flex items-center gap-1">
                                                                                 <Clock className="w-3 h-3 text-gray-600" />
