@@ -84,16 +84,22 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                 .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
                 .eq("is_read", false);
 
-            // 6. Fetch ongoing tasks from staff_tasks linked to this client or projects
+            // 6. Fetch ongoing tasks with department info
             if (crmId || profile.id) {
                 const { data: tasks } = await supabase
                     .from("staff_tasks")
-                    .select("*")
+                    .select(`
+                        *,
+                        departments (
+                            name
+                        )
+                    `)
                     .or(`client_id.eq.${crmId || profile.id},client_id.eq.${profile.id}`)
-                    .neq("status", "completed")
+                    .neq("status", "completed") // Only active tasks
                     .order("created_at", { ascending: false })
                     .limit(5);
 
+                console.log("Fetched Tasks with Dept:", tasks);
                 setOngoingTasks(tasks || []);
             }
 
@@ -415,6 +421,14 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                                         </span>
                                                         <span className="text-[10px] text-gray-600 font-bold">|</span>
                                                         <span className="text-[10px] text-tech-gold/70 font-black italic">Stage {task.current_stage || 1}</span>
+                                                        {task.departments?.name && (
+                                                            <>
+                                                                <span className="text-[10px] text-gray-600 font-bold">|</span>
+                                                                <Badge variant="secondary" className="text-[9px] text-tech-purple h-auto p-0 px-1 bg-tech-purple/5 hover:bg-transparent border-none">
+                                                                    {task.departments.name}
+                                                                </Badge>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

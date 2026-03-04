@@ -322,14 +322,39 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
     const fetchTaskTimeline = async () => {
         if (!project?.id) return;
         setTimelineLoading(true);
-        const { data, error } = await supabase
-            .from("client_task_timeline")
-            .select("*")
-            .eq("client_project_id", project.id)
-            .order("created_at", { ascending: true });
 
-        if (data) setTaskTimeline(data);
-        setTimelineLoading(false);
+        try {
+            // First try to fetch from staff_tasks linked to this project
+            // This ensures "sync milestone with task stages completion"
+            const { data: tasks, error } = await supabase
+                .from("staff_tasks")
+                .select(`
+                    *,
+                    departments (
+                        name
+                    )
+                `)
+                .eq("client_project_id", project.id)
+                .order("created_at", { ascending: true });
+
+            if (!error && tasks && tasks.length > 0) {
+                // Map staff_tasks to what the timeline expects if needed
+                setTaskTimeline(tasks);
+            } else {
+                // Fallback to client_task_timeline if no staff tasks are linked yet
+                const { data: timeline } = await supabase
+                    .from("client_task_timeline")
+                    .select("*")
+                    .eq("client_project_id", project.id)
+                    .order("created_at", { ascending: true });
+
+                if (timeline) setTaskTimeline(timeline);
+            }
+        } catch (err) {
+            console.error("Timeline Sync Error:", err);
+        } finally {
+            setTimelineLoading(false);
+        }
     };
 
     const tabs = [
@@ -589,10 +614,22 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                                                             {task.priority || 'normal'}
                                                                         </Badge>
                                                                     </div>
-                                                                    <h4 className="text-lg font-black text-white">{task.title}</h4>
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <h4 className="text-lg font-black text-white">{task.title}</h4>
+                                                                        {task.current_stage && (
+                                                                            <Badge variant="secondary" className="bg-tech-gold/10 text-tech-gold border-none text-[9px] h-4">
+                                                                                Stage {task.current_stage}
+                                                                            </Badge>
+                                                                        )}
+                                                                        {task.departments?.name && (
+                                                                            <Badge variant="secondary" className="bg-tech-purple/10 text-tech-purple border-none text-[9px] h-4">
+                                                                                {task.departments.name}
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
                                                                     <p className="text-sm text-gray-400 font-medium">
-                                                                        {taskStatus === 'completed' && task.completed_at
-                                                                            ? `Completed on ${new Date(task.completed_at).toLocaleDateString()}`
+                                                                        {taskStatus === 'completed' || task.status === 'completed'
+                                                                            ? `Completed ${task.completed_at ? 'on ' + new Date(task.completed_at).toLocaleDateString() : ''}`
                                                                             : taskStatus === 'current' ? 'Currently in progress'
                                                                                 : 'Queued for execution'}
                                                                     </p>

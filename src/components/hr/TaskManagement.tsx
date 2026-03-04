@@ -1474,7 +1474,7 @@ const TaskManagement = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="priority">Priority</Label>
                     <Select value={newTask.priority} onValueChange={(value) => setNewTask({ ...newTask, priority: value })}>
@@ -1488,6 +1488,17 @@ const TaskManagement = () => {
                         <SelectItem value="urgent">Urgent</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="current_stage">Evolution Stage</Label>
+                    <Input
+                      id="current_stage"
+                      type="number"
+                      min="1"
+                      value={newTask.current_stage || 1}
+                      onChange={(e) => setNewTask({ ...newTask, current_stage: parseInt(e.target.value) || 1 })}
+                      className="mt-2"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="points">Points</Label>
@@ -3300,11 +3311,11 @@ const TaskManagement = () => {
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="edit-status">Status</Label>
                     <Select value={editTask.status} onValueChange={(value) => setEditTask({ ...editTask, status: value })}>
-                      <SelectTrigger className="mt-2">
+                      <SelectTrigger className="mt-2 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -3320,7 +3331,7 @@ const TaskManagement = () => {
                   <div>
                     <Label htmlFor="edit-priority">Priority</Label>
                     <Select value={editTask.priority} onValueChange={(value) => setEditTask({ ...editTask, priority: value })}>
-                      <SelectTrigger className="mt-2">
+                      <SelectTrigger className="mt-2 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -3330,6 +3341,17 @@ const TaskManagement = () => {
                         <SelectItem value="urgent">Urgent</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-stage">Evolution Stage</Label>
+                    <Input
+                      id="edit-stage"
+                      type="number"
+                      min="1"
+                      value={editTask.current_stage || 1}
+                      onChange={(e) => setEditTask({ ...editTask, current_stage: parseInt(e.target.value) || 1 })}
+                      className="mt-2 h-8 text-xs"
+                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
