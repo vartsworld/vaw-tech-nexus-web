@@ -537,10 +537,10 @@ export const TaskDetailDialog = ({
           {/* Status and Priority Badges */}
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline" className="border-blue-400/50 text-blue-300">
-              {task.status.replace('_', ' ').toUpperCase()}
+              {(task.status || 'pending').replace('_', ' ').toUpperCase()}
             </Badge>
-            <Badge className={getPriorityColor(task.priority)}>
-              {task.priority.toUpperCase()} PRIORITY
+            <Badge className={getPriorityColor(task.priority || 'medium')}>
+              {(task.priority || 'medium').toUpperCase()} PRIORITY
             </Badge>
             {task.trial_period ? <Badge variant="outline" className="border-yellow-400/50 text-yellow-300 flex items-center gap-1">
               <Award className="w-3 h-3" />
@@ -846,9 +846,9 @@ export const TaskDetailDialog = ({
 
               {comments.length > 0 && <div className="space-y-2 mb-4 max-h-40 overflow-y-auto">
                 {comments.map((c, idx) => <div key={idx} className="bg-black/30 rounded-lg p-3 border border-white/10">
-                  <p className="text-white/90 text-sm">{c.text}</p>
+                  <p className="text-white/90 text-sm">{c.text || c.message}</p>
                   <p className="text-white/50 text-xs mt-1">
-                    {format(new Date(c.created_at), 'MMM dd, yyyy HH:mm')}
+                    {(() => { try { return format(new Date(c.created_at || c.timestamp), 'MMM dd, yyyy HH:mm'); } catch { return ''; } })()}
                   </p>
                 </div>)}
               </div>}
