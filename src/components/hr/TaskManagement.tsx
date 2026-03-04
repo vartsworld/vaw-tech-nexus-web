@@ -225,7 +225,7 @@ const TaskManagement = () => {
         tasksData.flatMap(t => parseAssignedTo(t.assigned_to))
       )].filter(Boolean);
       const assignedByIds = [...new Set(tasksData.map(t => t.assigned_by).filter(Boolean))];
-      const projectIds = [...new Set(tasksData.map(t => t.project_id).filter(Boolean))];
+      const projectIds = [...new Set(tasksData.map(t => t.client_project_id || t.project_id).filter(Boolean))];
       const clientIds = [...new Set(tasksData.map(t => t.client_id).filter(Boolean))];
 
       // Fetch related data in parallel
@@ -250,7 +250,7 @@ const TaskManagement = () => {
           assigned_to_profiles: assigneeIds.map((id: string) => profilesMap[id] || null).filter(Boolean),
           assigned_to_profile: assigneeIds[0] ? (profilesMap[assigneeIds[0]] || null) : null, // keep legacy compat
           assigned_by_profile: profilesMap[task.assigned_by] || null,
-          staff_projects: task.project_id ? projectsMap[task.project_id] || null : null,
+          staff_projects: (task.client_project_id || task.project_id) ? projectsMap[task.client_project_id || task.project_id] || null : null,
           clients: task.client_id ? clientsMap[task.client_id] || null : null,
           departments: task.department_id ? deptsMap[task.department_id] || null : null
         };
@@ -744,6 +744,7 @@ const TaskManagement = () => {
         assigned_to: JSON.stringify(newTask.assigned_to),
         assigned_by: user?.id || crypto.randomUUID(),
         project_id: !newTask.project_id || newTask.project_id === "no-project" ? null : newTask.project_id,
+        client_project_id: !newTask.project_id || newTask.project_id === "no-project" ? null : newTask.project_id,
         client_id: !newTask.client_id || newTask.client_id === "no-client" ? null : newTask.client_id,
         priority: newTask.priority as 'low' | 'medium' | 'high' | 'urgent',
         status: newTask.status as 'pending' | 'in_progress' | 'completed',
@@ -895,7 +896,7 @@ const TaskManagement = () => {
       title: task.title || "",
       description: task.description || "",
       assigned_to: assigneeIds,
-      project_id: task.project_id || "",
+      project_id: task.client_project_id || task.project_id || "",
       client_id: task.client_id || "",
       department_id: task.department_id || "",
       status: task.status || "pending",
@@ -927,6 +928,7 @@ const TaskManagement = () => {
         description: editTask.description,
         assigned_to: serializeAssignedTo(editTask.assigned_to),
         project_id: editTask.project_id === "no-project" ? null : editTask.project_id || null,
+        client_project_id: editTask.project_id === "no-project" ? null : editTask.project_id || null,
         client_id: editTask.client_id === "no-client" ? null : editTask.client_id || null,
         department_id: editTask.department_id === "no-department" ? null : editTask.department_id || null,
         status: editTask.status,

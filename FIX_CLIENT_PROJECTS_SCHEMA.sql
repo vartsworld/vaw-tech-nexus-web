@@ -29,8 +29,15 @@ END $$;
 -- (Cleanup orphaned projects if any, though unlikely)
 -- DELETE FROM public.client_projects WHERE client_id NOT IN (SELECT id FROM public.clients);
 
--- 4. Refresh schema cache hint for PostgREST
+-- 4. Fix staff_tasks schema (Missing columns used in UI)
+ALTER TABLE public.staff_tasks 
+ADD COLUMN IF NOT EXISTS current_stage INTEGER DEFAULT 1,
+ADD COLUMN IF NOT EXISTS client_project_id UUID REFERENCES public.client_projects(id) ON DELETE SET NULL;
+
+-- 5. Refresh schema cache hint for PostgREST
 NOTIFY pgrst, 'reload schema';
 
--- 5. Final check on types alignment
+-- 6. Final check on types alignment
 COMMENT ON TABLE public.client_projects IS 'Managed client project entities linked to the main CRM table.';
+COMMENT ON COLUMN public.staff_tasks.current_stage IS 'Current stage index for the task (used in Kanban views).';
+COMMENT ON COLUMN public.staff_tasks.client_project_id IS 'Link to the CRM client project.';
