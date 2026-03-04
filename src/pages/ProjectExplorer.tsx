@@ -531,9 +531,11 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                                 </div>
                                             </div>
 
-                                            {/* Task Cards */}
                                             <div className="space-y-4">
-                                                <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Linked Tasks</h3>
+                                                <div className="flex items-center justify-between">
+                                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 font-bold">LINKED SYNCED TASKS</h3>
+                                                    <Badge variant="outline" className="text-[8px] border-tech-gold/20 text-tech-gold/50 font-black tracking-tighter h-4">SYNCED</Badge>
+                                                </div>
                                                 {taskTimeline.length > 0 ? (
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {taskTimeline.map((task: any) => {
