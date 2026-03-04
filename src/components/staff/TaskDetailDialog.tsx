@@ -748,7 +748,10 @@ export const TaskDetailDialog = ({
               <div>
                 <p className="text-xs text-white/50">Created</p>
                 <p className="text-sm font-medium text-white">
-                  {format(new Date(task.created_at), 'MMM dd, yyyy')}
+                  {task.created_at ? (() => {
+                    try { return format(new Date(task.created_at), 'MMM dd, yyyy'); }
+                    catch { return 'Unknown date'; }
+                  })() : 'Unknown date'}
                 </p>
               </div>
             </div>
@@ -757,7 +760,7 @@ export const TaskDetailDialog = ({
           <Separator className="bg-white/10" />
 
           {/* Attachments Section */}
-          {task.attachments && task.attachments.length > 0 && <>
+          {task.attachments && Array.isArray(task.attachments) && task.attachments.length > 0 && <>
             <div>
               <h3 className="text-lg font-semibold mb-3 text-white/90 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-blue-400" />
