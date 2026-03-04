@@ -71,59 +71,122 @@ const ClientDashboard = () => {
     }, []);
 
     const checkUser = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            navigate("/client/login");
-            return;
-        }
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                navigate("/client/login");
+                return;
+            }
 
-        // Try to get profile by user_id first
-        let { data: existingProfile, error } = await supabase
-            .from("client_profiles")
-            .select("*")
-            .eq("user_id", user.id)
-            .maybeSingle();
-
-        if (error) {
-            console.error("Error fetching profile:", error);
-        }
-
-        // If not found by user_id, try by metadata client_profile_id
-        if (!existingProfile && user.user_metadata?.client_profile_id) {
-            const { data: metaProfile } = await supabase
+            // 1. Try to get profile by user_id first
+            let { data: existingProfile, error } = await supabase
                 .from("client_profiles")
                 .select("*")
-                .eq("id", user.user_metadata.client_profile_id)
+                .eq("user_id", user.id)
                 .maybeSingle();
-            if (metaProfile) existingProfile = metaProfile;
-        }
 
-        if (!existingProfile) {
-            const newProfile = {
-                user_id: user.id,
-                email: user.email,
-                contact_person: user.user_metadata?.full_name || user.email?.split('@')[0] || "Valued Client",
-                company_name: user.user_metadata?.company_name || "New Client Account",
-            };
-
-            const { data: insertedProfile, error: insertError } = await supabase
-                .from("client_profiles")
-                .insert(newProfile)
-                .select()
-                .single();
-
-            if (insertError) {
-                console.error("Error creating profile:", insertError);
-                // Don't use "temp" - show error state instead
-                toast.error("Could not initialize profile. Please contact support.");
-                setProfile(null);
-            } else {
-                setProfile(insertedProfile);
+            if (error) {
+                console.error("Error fetching profile by user_id:", error);
             }
-        } else {
-            setProfile(existingProfile);
+
+            // 2. If not found by user_id, try by metadata client_profile_id
+            if (!existingProfile && user.user_metadata?.client_profile_id) {
+                const { data: metaProfile } = await supabase
+                    .from("client_profiles")
+                    .select("*")
+                    .eq("id", user.user_metadata.client_profile_id)
+                    .maybeSingle();
+                if (metaProfile) existingProfile = metaProfile;
+            }
+
+            // 3. Fallback: try to find by email (common during first login)
+            if (!existingProfile && user.email) {
+                const { data: emailProfile } = await supabase
+                    .from("client_profiles")
+                    .select("*")
+                    .eq("email", user.email)
+                    .maybeSingle();
+
+                if (emailProfile) {
+                    // Profile exists by email but isn't linked to this user_id yet
+                    // Only link if it doesn't have a user_id or it's the same
+                    if (!emailProfile.user_id || emailProfile.user_id === user.id) {
+                        const { data: updatedProfile, error: updateError } = await supabase
+                            .from("client_profiles")
+                            .update({ user_id: user.id })
+                            .eq("id", emailProfile.id)
+                            .select()
+                            .single();
+
+                        if (!updateError) {
+                            existingProfile = updatedProfile;
+                        }
+                    }
+                }
+            }
+
+            // 4. Fallback 2: Check the 'clients' table (CRM source of truth)
+            if (!existingProfile && user.email) {
+                const { data: crmClient } = await supabase
+                    .from("clients")
+                    .select("*")
+                    .eq("email", user.email)
+                    .maybeSingle();
+
+                if (crmClient) {
+                    // We found them in the CRM! Create a portal profile using this data
+                    const newProfile = {
+                        user_id: user.id,
+                        email: crmClient.email,
+                        contact_person: crmClient.contact_person,
+                        company_name: crmClient.company_name,
+                        phone: crmClient.phone,
+                        address: crmClient.address
+                    };
+
+                    const { data: migratedProfile, error: migrateError } = await supabase
+                        .from("client_profiles")
+                        .insert(newProfile)
+                        .select()
+                        .single();
+
+                    if (!migrateError) {
+                        existingProfile = migratedProfile;
+                    }
+                }
+            }
+
+            // 5. Initialize profile if still not found at all
+            if (!existingProfile) {
+                const newProfile = {
+                    user_id: user.id,
+                    email: user.email,
+                    contact_person: user.user_metadata?.full_name || user.email?.split('@')[0] || "Valued Client",
+                    company_name: user.user_metadata?.company_name || "New Client Account",
+                };
+
+                const { data: insertedProfile, error: insertError } = await supabase
+                    .from("client_profiles")
+                    .insert(newProfile)
+                    .select()
+                    .single();
+
+                if (insertError) {
+                    console.error("Error creating profile:", insertError);
+                    toast.error("Could not initialize profile. Please contact support.");
+                    setProfile(null);
+                } else {
+                    setProfile(insertedProfile);
+                }
+            } else {
+                setProfile(existingProfile);
+            }
+        } catch (err) {
+            console.error("Unexpected error in checkUser:", err);
+            toast.error("Session initialization failed.");
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const handleLogout = async () => {
@@ -140,7 +203,7 @@ const ClientDashboard = () => {
         { icon: Settings, label: "Settings", path: "/client/dashboard/settings" },
     ];
 
-    if (loading || !profile) {
+    if (loading) {
         return (
             <div className="h-screen w-full bg-black flex items-center justify-center">
                 <div className="relative">
@@ -148,6 +211,28 @@ const ClientDashboard = () => {
                     <div className="absolute inset-0 flex items-center justify-center">
                         <div className="w-8 h-8 bg-tech-gold rounded-full animate-pulse" />
                     </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!profile) {
+        return (
+            <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
+                <div className="w-20 h-20 bg-tech-red/10 border border-tech-red/20 rounded-2xl flex items-center justify-center mb-6">
+                    <User className="w-10 h-10 text-tech-red" />
+                </div>
+                <h1 className="text-2xl font-black text-white mb-2">ACCESS DENIED</h1>
+                <p className="text-gray-400 text-center max-w-md mb-8">
+                    We could not initialize your profile secure nexus. This usually happens if your account is pending authorization.
+                </p>
+                <div className="flex gap-4">
+                    <Button variant="outline" className="border-tech-gold/20 text-tech-gold" onClick={() => navigate("/client/login")}>
+                        Return to Entry
+                    </Button>
+                    <Button className="bg-tech-gold text-black font-bold" onClick={() => window.location.reload()}>
+                        Retry Sync
+                    </Button>
                 </div>
             </div>
         );
