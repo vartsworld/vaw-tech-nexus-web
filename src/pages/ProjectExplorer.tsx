@@ -73,17 +73,32 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
 
     const fetchProjects = async () => {
         if (!profile?.id) return;
-        const { data, error } = await supabase
-            .from("client_projects")
-            .select(`
-        *,
-        client_project_files(*)
-      `)
-            .eq("client_id", profile.id)
-            .order("updated_at", { ascending: false });
+        setLoading(true);
+        try {
+            // Find CRM client ID
+            const { data: crmClient } = await supabase
+                .from("clients")
+                .select("id")
+                .eq("email", profile.email)
+                .maybeSingle();
 
-        if (data) setProjects(data);
-        setLoading(false);
+            const crmId = crmClient?.id;
+
+            const { data, error } = await supabase
+                .from("client_projects")
+                .select(`
+                    *,
+                    client_project_files(*)
+                `)
+                .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
+                .order("updated_at", { ascending: false });
+
+            if (data) setProjects(data);
+        } catch (err) {
+            console.error("Project fetch error:", err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const getStatusInfo = (status: string) => {
@@ -569,7 +584,7 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                                                         <Badge variant="outline" className={cn(
                                                                             "text-[9px] h-4 border-0",
                                                                             task.priority === 'high' || task.priority === 'urgent' ? "bg-red-500/20 text-red-400" :
-                                                                            task.priority === 'medium' ? "bg-yellow-500/20 text-yellow-400" : "bg-blue-500/20 text-blue-400"
+                                                                                task.priority === 'medium' ? "bg-yellow-500/20 text-yellow-400" : "bg-blue-500/20 text-blue-400"
                                                                         )}>
                                                                             {task.priority || 'normal'}
                                                                         </Badge>
@@ -579,7 +594,7 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                                                         {taskStatus === 'completed' && task.completed_at
                                                                             ? `Completed on ${new Date(task.completed_at).toLocaleDateString()}`
                                                                             : taskStatus === 'current' ? 'Currently in progress'
-                                                                            : 'Queued for execution'}
+                                                                                : 'Queued for execution'}
                                                                     </p>
                                                                 </div>
                                                             </div>

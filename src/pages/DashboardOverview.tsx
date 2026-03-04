@@ -31,6 +31,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
         openErrors: 0,
         unreadNotifications: 0
     });
+    const [ongoingTasks, setOngoingTasks] = useState<any[]>([]);
     const [recentProjects, setRecentProjects] = useState<any[]>([]);
     const [paymentReminders, setPaymentReminders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -41,54 +42,83 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
 
     const fetchStats = async () => {
         if (!profile?.id) return;
+        setLoading(true);
 
-        // Fetch projects
-        const { data: projects, error: projectsError } = await supabase
-            .from("client_projects")
-            .select("*")
-            .eq("client_id", profile.id);
+        try {
+            // 1. First, find if there's a record in the 'clients' table for this user
+            // This is our source of truth for most project linkages
+            const { data: crmClient } = await supabase
+                .from("clients")
+                .select("id")
+                .eq("email", profile.email)
+                .maybeSingle();
 
-        // Fetch payment reminders
-        const { data: reminders } = await supabase
-            .from("payment_reminders")
-            .select("*")
-            .eq("client_id", profile.id)
-            .in("status", ["pending", "sent", "overdue"])
-            .order("due_date", { ascending: true })
-            .limit(3);
+            const crmId = crmClient?.id;
 
-        // Fetch error logs
-        const { data: errors } = await supabase
-            .from("client_error_logs")
-            .select("*")
-            .eq("client_id", profile.id)
-            .eq("status", "open");
+            // 2. Fetch projects — Check by both potential client_id mapping
+            const { data: projects } = await supabase
+                .from("client_projects")
+                .select("*")
+                .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`);
 
-        // Fetch unread notifications
-        const { data: notifications } = await supabase
-            .from("client_notifications")
-            .select("*")
-            .eq("client_id", profile.id)
-            .eq("is_read", false);
+            // 3. Fetch payment reminders
+            const { data: reminders } = await supabase
+                .from("payment_reminders")
+                .select("*")
+                .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
+                .in("status", ["pending", "sent", "overdue"])
+                .order("due_date", { ascending: true })
+                .limit(3);
 
-        if (projects) {
-            const active = projects.filter(p => !['completed', 'cancel'].includes(p.status)).length;
-            const completed = projects.filter(p => p.status === 'completed').length;
-            const paid = projects.reduce((acc, curr) => acc + Number(curr.amount_paid || 0), 0);
+            // 4. Fetch error logs
+            const { data: errors } = await supabase
+                .from("client_error_logs")
+                .select("*")
+                .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
+                .eq("status", "open");
 
-            setStats({
-                activeProjects: active,
-                totalPaid: paid,
-                pendingPaymentsCount: projects.filter(p => p.total_amount > p.amount_paid).length,
-                completedProjects: completed,
-                pendingReminders: reminders?.length || 0,
-                openErrors: errors?.length || 0,
-                unreadNotifications: notifications?.length || 0
-            });
-            setRecentProjects(projects.slice(0, 3));
-            setPaymentReminders(reminders || []);
+            // 5. Fetch unread notifications
+            const { data: notifications } = await supabase
+                .from("client_notifications")
+                .select("*")
+                .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
+                .eq("is_read", false);
+
+            // 6. Fetch ongoing tasks from staff_tasks linked to this client or projects
+            if (crmId || profile.id) {
+                const { data: tasks } = await supabase
+                    .from("staff_tasks")
+                    .select("*")
+                    .or(`client_id.eq.${crmId || profile.id},client_id.eq.${profile.id}`)
+                    .neq("status", "completed")
+                    .order("created_at", { ascending: false })
+                    .limit(5);
+
+                setOngoingTasks(tasks || []);
+            }
+
+            if (projects) {
+                const active = projects.filter(p => !['completed', 'cancel'].includes(p.status)).length;
+                const completed = projects.filter(p => p.status === 'completed').length;
+                const paid = projects.reduce((acc, curr) => acc + Number(curr.amount_paid || 0), 0);
+
+                setStats({
+                    activeProjects: active,
+                    totalPaid: paid,
+                    pendingPaymentsCount: projects.filter(p => (Number(p.total_amount) || 0) > (Number(p.amount_paid) || 0)).length,
+                    completedProjects: completed,
+                    pendingReminders: reminders?.length || 0,
+                    openErrors: errors?.length || 0,
+                    unreadNotifications: notifications?.length || 0
+                });
+                setRecentProjects(projects.slice(0, 3));
+                setPaymentReminders(reminders || []);
+            }
+        } catch (error) {
+            console.error("Dashboard Fetch Error:", error);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const statCards = [
@@ -298,10 +328,18 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                         <CardContent className="p-6">
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                                 <div className="space-y-1">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex flex-wrap items-center gap-2">
                                                         <h3 className="text-lg font-bold text-white group-hover:text-tech-gold transition-colors">{project.title}</h3>
                                                         <Badge className="bg-tech-gold/10 text-tech-gold border-tech-gold/20 text-[10px] uppercase font-black tracking-widest">
                                                             {project.project_type}
+                                                        </Badge>
+                                                        <Badge variant="outline" className={cn(
+                                                            "text-[9px] uppercase font-black border-white/10",
+                                                            project.status === 'completed' ? "text-green-500" :
+                                                                project.status === 'at_risk' ? "text-red-500" :
+                                                                    "text-tech-gold"
+                                                        )}>
+                                                            {project.status.replace('_', ' ')}
                                                         </Badge>
                                                     </div>
                                                     <p className="text-xs text-gray-400 line-clamp-1">{project.description || "Project parameters initialized and stable."}</p>
@@ -339,6 +377,67 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                 </CardContent>
                             </Card>
                         )}
+                    </div>
+
+                    {/* Ongoing Tasks Section */}
+                    <div className="mt-12 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-bold flex items-center gap-2">
+                                <Activity className="w-5 h-5 text-tech-purple animate-pulse" />
+                                Ongoing Task Evolution
+                            </h2>
+                            <Badge variant="outline" className="border-tech-purple/30 text-tech-purple bg-tech-purple/5">
+                                Real-time Signals
+                            </Badge>
+                        </div>
+
+                        <div className="grid gap-3">
+                            {ongoingTasks.length > 0 ? (
+                                ongoingTasks.map((task, idx) => (
+                                    <motion.div
+                                        key={task.id}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.7 + idx * 0.1 }}
+                                        className="group"
+                                    >
+                                        <div className="bg-black/40 backdrop-blur-xl border border-white/5 hover:border-tech-purple/30 rounded-2xl p-4 flex items-center justify-between transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-xl bg-tech-purple/10 flex items-center justify-center border border-tech-purple/20 group-hover:bg-tech-purple/20 transition-colors">
+                                                    <Clock className="w-5 h-5 text-tech-purple" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-sm font-bold text-white group-hover:text-tech-purple transition-colors">{task.title}</h4>
+                                                    <div className="flex items-center gap-3 mt-1">
+                                                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest flex items-center gap-1">
+                                                            <div className="w-1 h-1 rounded-full bg-tech-gold" />
+                                                            {task.status.replace('_', ' ')}
+                                                        </span>
+                                                        <span className="text-[10px] text-gray-600 font-bold">|</span>
+                                                        <span className="text-[10px] text-tech-gold/70 font-black italic">Stage {task.current_stage || 1}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <Badge className={cn(
+                                                    "text-[9px] uppercase font-black px-2 py-0.5",
+                                                    task.priority === 'urgent' ? "bg-red-500/20 text-red-400 border-red-500/30" :
+                                                        task.priority === 'high' ? "bg-orange-500/20 text-orange-400 border-orange-500/30" :
+                                                            "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                                                )}>
+                                                    {task.priority}
+                                                </Badge>
+                                                <ChevronRight className="w-4 h-4 text-gray-700 group-hover:text-tech-purple transition-all transform group-hover:translate-x-1" />
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            ) : (
+                                <div className="text-center py-8 bg-white/5 rounded-3xl border border-dashed border-white/10">
+                                    <p className="text-xs text-gray-500 font-medium tracking-widest italic">Stable signal. No active task fluctuations detected.</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 

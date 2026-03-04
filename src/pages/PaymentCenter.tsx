@@ -47,23 +47,33 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
     }, [profile]);
 
     const fetchPaymentData = async () => {
+        if (!profile?.id) return;
         setLoading(true);
         try {
+            // Find CRM client ID
+            const { data: crmClient } = await supabase
+                .from("clients")
+                .select("id")
+                .eq("email", profile.email)
+                .maybeSingle();
+
+            const crmId = crmClient?.id;
+
             // Fetch payment reminders
             const { data: reminders, error: remindersError } = await supabase
                 .from("payment_reminders")
                 .select("*")
-                .eq("client_id", profile.id)
+                .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
                 .order("due_date", { ascending: true });
 
             if (remindersError) throw remindersError;
             setPaymentReminders(reminders || []);
 
-            // Fetch payment history (we'll need to create this table or use documents)
+            // Fetch payment history
             const { data: documents, error: docsError } = await supabase
                 .from("client_documents")
                 .select("*")
-                .eq("client_id", profile.id)
+                .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
                 .eq("doc_type", "invoice")
                 .order("created_at", { ascending: false });
 
