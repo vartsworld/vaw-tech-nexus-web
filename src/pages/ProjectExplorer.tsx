@@ -93,13 +93,36 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
                 .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
                 .order("updated_at", { ascending: false });
 
-            if (data) setProjects(data);
+            if (data && data.length > 0) {
+                // Compute real subtask progress for each project in parallel
+                const enriched = await Promise.all(
+                    data.map(async (project) => {
+                        const { data: subtasks } = await supabase
+                            .rpc("get_subtasks_for_project", { p_project_id: project.id });
+
+                        const total = subtasks?.length || 0;
+                        const done = (subtasks || []).filter((s: any) => s.status === 'completed').length;
+                        const computed_progress = total > 0 ? Math.round((done / total) * 100) : (project.progress || 0);
+
+                        return {
+                            ...project,
+                            computed_progress,
+                            subtask_total: total,
+                            subtask_done: done,
+                        };
+                    })
+                );
+                setProjects(enriched);
+            } else if (data) {
+                setProjects(data);
+            }
         } catch (err) {
             console.error("Project fetch error:", err);
         } finally {
             setLoading(false);
         }
     };
+
 
     const getStatusInfo = (status: string) => {
         const map: any = {
@@ -238,50 +261,43 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
 
                                         <CardContent className="flex-1 mt-4">
                                             <div className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                                                        <span>Integration Metric</span>
-                                                        <span className="text-tech-gold">{project.progress}%</span>
-                                                    </div>
-                                                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                                                        <div
-                                                            className="h-full bg-gradient-to-r from-tech-gold to-tech-red shadow-[0_0_10px_#FFD700]"
-                                                            style={{ width: `${project.progress}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-
                                                 <div className="space-y-3 pt-2">
-                                                    {/* Overall Progress Bar */}
+                                                    {/* Overall Subtask Progress */}
                                                     <div className="space-y-1.5">
                                                         <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
                                                             <span className="text-gray-500">Overall Progress</span>
                                                             <span className={cn(
                                                                 "font-black",
-                                                                project.progress === 100 ? "text-green-400" : "text-tech-gold"
-                                                            )}>{project.progress || 0}%</span>
+                                                                project.computed_progress === 100 ? "text-green-400" : "text-tech-gold"
+                                                            )}>{project.computed_progress || 0}%</span>
                                                         </div>
                                                         <div className="relative h-3 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
                                                             <div
                                                                 className={cn(
                                                                     "absolute top-0 left-0 h-full rounded-full transition-all duration-700",
-                                                                    project.progress === 100
+                                                                    project.computed_progress === 100
                                                                         ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]"
                                                                         : "bg-gradient-to-r from-tech-gold to-yellow-300 shadow-[0_0_10px_rgba(255,184,0,0.3)]"
                                                                 )}
-                                                                style={{ width: `${project.progress || 0}%` }}
+                                                                style={{ width: `${project.computed_progress || 0}%` }}
                                                             />
                                                         </div>
                                                         <div className="flex justify-between text-[9px] text-gray-600 font-bold">
-                                                            <span>{project.progress === 100 ? "✓ Completed" : "In Progress"}</span>
+                                                            <span>
+                                                                {project.subtask_total > 0
+                                                                    ? `${project.subtask_done} / ${project.subtask_total} subtasks done`
+                                                                    : project.computed_progress === 100 ? "✓ Completed" : "In Progress"}
+                                                            </span>
                                                             <span>{project.client_project_files?.length || 0} files</span>
                                                         </div>
                                                     </div>
 
                                                     {/* Financial State */}
                                                     <div className="bg-white/5 p-2.5 rounded-xl border border-white/5 flex items-center justify-between">
-                                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Financial State</p>
-                                                        <p className="text-xs font-black text-tech-gold">₹{(project.amount_paid / 1000).toFixed(1)}k Paid</p>
+                                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Amount Paid</p>
+                                                        <p className="text-xs font-black text-tech-gold">
+                                                            ₹{Number(project.amount_paid || 0).toLocaleString('en-IN')}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>
