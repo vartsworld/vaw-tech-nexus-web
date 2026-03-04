@@ -364,6 +364,10 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                     staff_subtasks: subtasksByTask[task.id] || []
                 }));
 
+                console.log("🔍 RAW tasks from DB:", tasks.map(t => ({ id: t.id, title: t.title?.slice(0, 30), dept_id: t.department_id, stage: t.current_stage })));
+                console.log("🏢 Dept map:", deptsMap);
+                console.log("✅ Enriched tasks:", enriched.map(t => ({ title: t.title?.slice(0, 30), dept: t.departments?.name, stage: t.current_stage })));
+
                 setTaskTimeline(enriched);
             } else {
                 // Fallback to client_task_timeline if no staff tasks linked yet
