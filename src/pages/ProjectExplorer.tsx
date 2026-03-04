@@ -341,7 +341,7 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                         ? supabase.from("departments").select("id, name").in("id", deptIds)
                         : { data: [] },
                     taskIds.length > 0
-                        ? supabase.from("staff_subtasks").select("task_id, status").in("task_id", taskIds)
+                        ? supabase.from("staff_subtasks").select("task_id, status, stage, stage_name").in("task_id", taskIds)
                         : { data: [] }
                 ]);
 
@@ -363,10 +363,6 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                     departments: task.department_id ? { name: deptsMap[task.department_id] || null } : null,
                     staff_subtasks: subtasksByTask[task.id] || []
                 }));
-
-                console.log("🔍 RAW tasks from DB:", tasks.map(t => ({ id: t.id, title: t.title?.slice(0, 30), dept_id: t.department_id, stage: t.current_stage })));
-                console.log("🏢 Dept map:", deptsMap);
-                console.log("✅ Enriched tasks:", enriched.map(t => ({ title: t.title?.slice(0, 30), dept: t.departments?.name, stage: t.current_stage })));
 
                 setTaskTimeline(enriched);
             } else {
@@ -584,10 +580,14 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
 
                                                             const totalSubtasks = task.staff_subtasks?.length || 0;
                                                             const completedSubtasks = task.staff_subtasks?.filter((s: any) => s.status === 'completed').length || 0;
+                                                            const progressPercentage = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
+
+                                                            // Extract stage name from subtasks that match current_stage
+                                                            const currentStageName = task.staff_subtasks?.find((s: any) => s.stage === task.current_stage)?.stage_name || "";
 
                                                             return (
                                                                 <Card key={task.id} className="bg-white/5 border-white/10 hover:border-tech-gold/30 transition-all rounded-2xl overflow-hidden group">
-                                                                    <CardContent className="p-4 space-y-3">
+                                                                    <CardContent className="p-4 space-y-4">
                                                                         {/* Title + Status */}
                                                                         <div className="flex items-start justify-between gap-2">
                                                                             <h4 className="text-sm font-bold text-white leading-tight group-hover:text-tech-gold transition-colors flex-1">{task.title}</h4>
@@ -596,56 +596,74 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                                                             </Badge>
                                                                         </div>
 
-                                                                        {/* Stage + Department row — always visible */}
-                                                                        <div className="flex items-center gap-3 py-1.5 px-2 rounded-lg bg-black/30 border border-white/5">
-                                                                            <div className="flex items-center gap-1.5">
-                                                                                <div className="w-1.5 h-1.5 rounded-full bg-tech-gold shrink-0" />
-                                                                                <span className="text-[9px] font-black text-tech-gold uppercase tracking-wider">
-                                                                                    {task.current_stage ? `Stage ${task.current_stage}` : 'Stage —'}
-                                                                                </span>
-                                                                            </div>
-                                                                            <div className="w-px h-3 bg-white/10" />
-                                                                            <div className="flex items-center gap-1.5">
-                                                                                <div className="w-1.5 h-1.5 rounded-full bg-tech-purple shrink-0" />
-                                                                                <span className="text-[9px] font-bold text-tech-purple uppercase tracking-wider">
-                                                                                    {task.departments?.name || 'Dept. —'}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Priority + Subtask counter */}
-                                                                        <div className="flex flex-wrap items-center justify-between gap-2">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <Badge className={cn("text-[9px] h-5 border-none", priorityColors[safePriority] || priorityColors.medium)}>
-                                                                                    {safePriority.toUpperCase()}
-                                                                                </Badge>
-                                                                                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
-                                                                                    <div className={cn("w-1.5 h-1.5 rounded-full", totalSubtasks > 0 ? "bg-tech-gold" : "bg-gray-700")} />
-                                                                                    <span className="text-[9px] font-black text-gray-400">
-                                                                                        {totalSubtasks > 0 ? `${completedSubtasks}/${totalSubtasks} SUBTASKS` : 'NO SUBTASKS'}
+                                                                        {/* Big Stage & Department Display */}
+                                                                        <div className="grid grid-cols-2 gap-2">
+                                                                            <div className="p-2.5 rounded-xl bg-tech-gold/10 border border-tech-gold/20 flex flex-col gap-0.5">
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <div className="w-1.5 h-1.5 rounded-full bg-tech-gold animate-pulse" />
+                                                                                    <span className="text-[8px] font-black text-tech-gold/70 uppercase tracking-widest">CURRENT STAGE</span>
+                                                                                </div>
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="text-xs font-black text-tech-gold uppercase">
+                                                                                        {task.current_stage ? `STAGE ${task.current_stage}` : 'STAGE NONE'}
                                                                                     </span>
+                                                                                    {currentStageName && (
+                                                                                        <span className="text-[9px] font-bold text-white/50 truncate uppercase tracking-tight leading-none mt-0.5">
+                                                                                            {currentStageName}
+                                                                                        </span>
+                                                                                    )}
                                                                                 </div>
                                                                             </div>
-                                                                            {totalSubtasks > 0 && (
-                                                                                <div className="w-20 h-1 bg-white/5 rounded-full overflow-hidden">
-                                                                                    <div
-                                                                                        className="h-full bg-tech-gold transition-all duration-500"
-                                                                                        style={{ width: `${(completedSubtasks / totalSubtasks) * 100}%` }}
-                                                                                    />
+                                                                            <div className="p-2.5 rounded-xl bg-tech-purple/10 border border-tech-purple/20 flex flex-col gap-0.5">
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <div className="w-1.5 h-1.5 rounded-full bg-tech-purple" />
+                                                                                    <span className="text-[8px] font-black text-tech-purple/70 uppercase tracking-widest">DEPARTMENT</span>
                                                                                 </div>
-                                                                            )}
+                                                                                <span className="text-xs font-black text-tech-purple uppercase truncate">
+                                                                                    {task.departments?.name || 'NOT ASSIGNED'}
+                                                                                </span>
+                                                                            </div>
                                                                         </div>
 
-                                                                        {/* Footer */}
-                                                                        <div className="flex items-center justify-between text-[10px] text-gray-500 font-bold pt-1 border-t border-white/5">
-                                                                            <div className="flex items-center gap-1">
-                                                                                <Clock className="w-3 h-3 text-gray-600" />
-                                                                                <span>{task.due_date ? `DUE: ${new Date(task.due_date).toLocaleDateString()}` : 'NO DEADLINE'}</span>
+                                                                        {/* Subtask progress — ALWAYS VISIBLE and better styled */}
+                                                                        <div className="space-y-2 py-1 px-1">
+                                                                            <div className="flex items-center justify-between text-[10px] font-black tracking-wider uppercase">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-white/40">Subtask Progress</span>
+                                                                                    <Badge variant="outline" className="text-[9px] px-2 py-0 h-4 border-white/10 text-tech-gold">
+                                                                                        {completedSubtasks}/{totalSubtasks}
+                                                                                    </Badge>
+                                                                                </div>
+                                                                                <span className={cn(progressPercentage === 100 ? "text-green-400" : "text-tech-gold")}>
+                                                                                    {Math.round(progressPercentage)}%
+                                                                                </span>
                                                                             </div>
-                                                                            {task.completed_at && <span className="text-green-400 flex items-center gap-1">
-                                                                                <CheckCircle2 className="w-3 h-3" />
-                                                                                {new Date(task.completed_at).toLocaleDateString()}
-                                                                            </span>}
+                                                                            <div className="relative w-full h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                                                                <div
+                                                                                    className={cn(
+                                                                                        "absolute top-0 left-0 h-full transition-all duration-700 ease-out",
+                                                                                        progressPercentage === 100 ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]" : "bg-tech-gold shadow-[0_0_10px_rgba(255,184,0,0.2)]"
+                                                                                    )}
+                                                                                    style={{ width: `${progressPercentage}%` }}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Priority + Footer Group */}
+                                                                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                                                                            <Badge className={cn("text-[9px] h-5 border-none", priorityColors[safePriority] || priorityColors.medium)}>
+                                                                                {safePriority.toUpperCase()}
+                                                                            </Badge>
+                                                                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500">
+                                                                                <Clock className="w-3 h-3 text-gray-600" />
+                                                                                <span>{task.due_date ? new Date(task.due_date).toLocaleDateString() : '—'}</span>
+                                                                                {task.completed_at && (
+                                                                                    <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-white/10 text-green-400">
+                                                                                        <CheckCircle2 className="w-3 h-3" />
+                                                                                        <span>{new Date(task.completed_at).toLocaleDateString()}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
                                                                     </CardContent>
                                                                 </Card>
