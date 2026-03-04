@@ -84,24 +84,47 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                 .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
                 .eq("is_read", false);
 
-            // 6. Fetch ongoing tasks with department info
-            if (crmId || profile.id) {
-                const { data: tasks } = await supabase
+            // 6. Fetch ongoing tasks with department info — use dual-ID mapping
+            const clientIdSet = [profile.id, crmId].filter(Boolean);
+            const projectIds = (projects || []).map((p: any) => p.id).filter(Boolean);
+
+            let tasks: any[] = [];
+
+            // First try by client_id (direct link)
+            if (clientIdSet.length > 0) {
+                const { data: byClient } = await supabase
                     .from("staff_tasks")
                     .select(`
-                        *,
+                        id, title, status, priority, current_stage, due_date, completed_at, client_project_id, client_id,
                         departments (
                             name
                         )
                     `)
-                    .or(`client_id.eq.${crmId || profile.id},client_id.eq.${profile.id}`)
-                    .neq("status", "completed") // Only active tasks
+                    .or(clientIdSet.map(id => `client_id.eq.${id}`).join(','))
+                    .neq("status", "completed")
                     .order("created_at", { ascending: false })
                     .limit(5);
-
-                console.log("Fetched Tasks with Dept:", tasks);
-                setOngoingTasks(tasks || []);
+                tasks = byClient || [];
             }
+
+            // Also try by project link if we got projects
+            if (tasks.length === 0 && projectIds.length > 0) {
+                const { data: byProject } = await supabase
+                    .from("staff_tasks")
+                    .select(`
+                        id, title, status, priority, current_stage, due_date, completed_at, client_project_id, client_id,
+                        departments (
+                            name
+                        )
+                    `)
+                    .in("client_project_id", projectIds)
+                    .neq("status", "completed")
+                    .order("created_at", { ascending: false })
+                    .limit(5);
+                tasks = byProject || [];
+            }
+
+            setOngoingTasks(tasks);
 
             if (projects) {
                 const active = projects.filter(p => !['completed', 'cancel'].includes(p.status)).length;

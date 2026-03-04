@@ -225,21 +225,23 @@ const TaskManagement = () => {
         tasksData.flatMap(t => parseAssignedTo(t.assigned_to))
       )].filter(Boolean);
       const assignedByIds = [...new Set(tasksData.map(t => t.assigned_by).filter(Boolean))];
+      const deptIds = [...new Set(tasksData.map(t => t.department_id).filter(Boolean))];
       const projectIds = [...new Set(tasksData.map(t => t.client_project_id || t.project_id).filter(Boolean))];
       const clientIds = [...new Set(tasksData.map(t => t.client_id).filter(Boolean))];
 
-      // Fetch related data in parallel
-      const [profilesData, projectsData, clientsData] = await Promise.all([
+      // Fetch related data in parallel — including departments inline to avoid race condition
+      const [profilesData, projectsData, clientsData, deptsData] = await Promise.all([
         supabase.from('staff_profiles').select('id, user_id, full_name, username, avatar_url, role').in('user_id', [...allAssignedToIds, ...assignedByIds]),
         projectIds.length > 0 ? supabase.from('client_projects').select('id, title, status').in('id', projectIds) : { data: [] },
-        clientIds.length > 0 ? supabase.from('clients').select('id, company_name, contact_person, email, phone').in('id', clientIds) : { data: [] }
+        clientIds.length > 0 ? supabase.from('clients').select('id, company_name, contact_person, email, phone').in('id', clientIds) : { data: [] },
+        deptIds.length > 0 ? supabase.from('departments').select('id, name').in('id', deptIds) : { data: [] }
       ]);
 
       // Create lookup maps using user_id
       const profilesMap = (profilesData.data || []).reduce((acc, p) => ({ ...acc, [p.user_id]: p }), {});
       const projectsMap = (projectsData.data || []).reduce((acc, p) => ({ ...acc, [p.id]: p }), {});
       const clientsMap = (clientsData.data || []).reduce((acc, c) => ({ ...acc, [c.id]: c }), {});
-      const deptsMap = departments.reduce((acc: any, d: any) => ({ ...acc, [d.id]: d }), {});
+      const deptsMap = (deptsData.data || []).reduce((acc: any, d: any) => ({ ...acc, [d.id]: d }), {});
 
       // Merge data — attach all assignee profiles
       let enrichedTasks = tasksData.map(task => {
