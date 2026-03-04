@@ -385,9 +385,9 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
     const tabs = [
         { id: "overview", label: "Overview", icon: ActivityIcon },
         { id: "files", label: "Files", icon: FolderIcon },
-        { id: "milestones", label: "Milestones", icon: TimelineIcon },
         { id: "feedback", label: "Feedback", icon: MessageIcon },
     ];
+
 
     function ActivityIcon() { return <Activity className="w-4 h-4" />; }
     function FolderIcon() { return <FolderOpen className="w-4 h-4" />; }
@@ -728,156 +728,7 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                         </div>
                                     )}
 
-                                    {activeTab === "milestones" && (
-                                        <div className="space-y-8">
-                                            {timelineLoading ? (
-                                                <div className="py-12 flex justify-center">
-                                                    <div className="w-6 h-6 border-2 border-tech-gold/20 border-t-tech-gold rounded-full animate-spin" />
-                                                </div>
-                                            ) : taskTimeline.length > 0 ? (
-                                                <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-tech-gold/10">
-                                                    {taskTimeline.map((task, i) => {
-                                                        const taskStatus = task.status === 'completed' ? 'completed' : task.status === 'in_progress' ? 'current' : 'pending';
 
-                                                        const allSubtasks: any[] = task.staff_subtasks || [];
-                                                        const totalSub = allSubtasks.length;
-                                                        const doneSubs = allSubtasks.filter((s: any) => s.status === 'completed');
-                                                        const doneCount = doneSubs.length;
-                                                        const pct = totalSub > 0 ? Math.round((doneCount / totalSub) * 100) : 0;
-
-                                                        const stageMap: Record<number, { name: string; total: number; done: number }> = {};
-                                                        allSubtasks.forEach((s: any) => {
-                                                            const n = s.stage || 1;
-                                                            if (!stageMap[n]) stageMap[n] = { name: s.stage_name || '', total: 0, done: 0 };
-                                                            stageMap[n].total++;
-                                                            if (s.status === 'completed') stageMap[n].done++;
-                                                        });
-                                                        const stages = Object.entries(stageMap)
-                                                            .map(([num, d]) => ({ num: parseInt(num), ...d }))
-                                                            .sort((a, b) => a.num - b.num);
-
-                                                        return (
-                                                            <div key={task.id} className="relative">
-                                                                <div className={cn(
-                                                                    "absolute -left-[29px] top-4 w-5 h-5 rounded-full border-2 border-black flex items-center justify-center z-10",
-                                                                    taskStatus === 'completed' ? "bg-tech-gold" : taskStatus === 'current' ? "bg-tech-gold animate-pulse shadow-[0_0_10px_#FFD700]" : "bg-black border-tech-gold/30"
-                                                                )}>
-                                                                    {taskStatus === 'completed' && <CheckCircle2 className="w-3 h-3 text-black" />}
-                                                                </div>
-
-                                                                <div className="border border-white/8 rounded-2xl overflow-hidden bg-black/30 hover:border-tech-gold/20 transition-all">
-                                                                    {/* Task Header */}
-                                                                    <div className="p-4 pb-3 space-y-2">
-                                                                        <div className="flex flex-wrap items-center gap-1.5">
-                                                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-tech-gold">
-                                                                                {task.due_date ? new Date(task.due_date).toLocaleDateString() : `Task ${i + 1}`}
-                                                                            </span>
-                                                                            <Badge variant="outline" className={cn("text-[9px] h-4 border-0",
-                                                                                task.priority === 'high' || task.priority === 'urgent' ? "bg-red-500/20 text-red-400" :
-                                                                                    task.priority === 'medium' ? "bg-yellow-500/20 text-yellow-400" : "bg-blue-500/20 text-blue-400"
-                                                                            )}>
-                                                                                {task.priority || 'normal'}
-                                                                            </Badge>
-                                                                            {task.current_stage && (
-                                                                                <Badge variant="secondary" className="bg-tech-gold/10 text-tech-gold border-none text-[9px] h-4">
-                                                                                    Stage {task.current_stage}
-                                                                                </Badge>
-                                                                            )}
-                                                                            {task.departments?.name && (
-                                                                                <Badge variant="secondary" className="bg-tech-purple/10 text-tech-purple border-none text-[9px] h-4">
-                                                                                    {task.departments.name}
-                                                                                </Badge>
-                                                                            )}
-                                                                        </div>
-                                                                        <h4 className="text-base font-black text-white leading-tight">{task.title}</h4>
-                                                                        <p className="text-xs text-gray-500 font-medium italic">
-                                                                            {taskStatus === 'completed'
-                                                                                ? `✓ Completed${task.completed_at ? ' on ' + new Date(task.completed_at).toLocaleDateString() : ''}`
-                                                                                : taskStatus === 'current' ? '● Currently in progress'
-                                                                                    : '○ Queued for execution'}
-                                                                        </p>
-                                                                    </div>
-
-                                                                    {/* Subtask Progress */}
-                                                                    <div className="px-4 pb-3 space-y-1.5">
-                                                                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
-                                                                            <span className="text-gray-500">Subtask Progress</span>
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="text-gray-400">{doneCount}/{totalSub} done</span>
-                                                                                <span className={cn("font-black", pct === 100 ? "text-green-400" : "text-tech-gold")}>{pct}%</span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="relative h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                                                                            <div
-                                                                                className={cn("absolute top-0 left-0 h-full rounded-full transition-all duration-700",
-                                                                                    pct === 100 ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]" : "bg-tech-gold shadow-[0_0_8px_rgba(255,184,0,0.3)]"
-                                                                                )}
-                                                                                style={{ width: `${pct}%` }}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* Stage Breakdown */}
-                                                                    {stages.length > 0 && (
-                                                                        <div className="border-t border-white/5 px-4 py-3 space-y-2">
-                                                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-600">Stage Breakdown</p>
-                                                                            <div className="flex flex-wrap gap-2">
-                                                                                {stages.map(stage => {
-                                                                                    const isDone = stage.done === stage.total && stage.total > 0;
-                                                                                    const isActive = stage.num === task.current_stage;
-                                                                                    return (
-                                                                                        <div key={stage.num} className={cn(
-                                                                                            "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[10px] font-black",
-                                                                                            isDone ? "bg-green-500/10 border-green-500/30 text-green-400"
-                                                                                                : isActive ? "bg-tech-gold/10 border-tech-gold/30 text-tech-gold"
-                                                                                                    : "bg-white/3 border-white/8 text-gray-600"
-                                                                                        )}>
-                                                                                            {isDone ? <CheckCircle2 className="w-3 h-3" />
-                                                                                                : isActive ? <div className="w-2 h-2 rounded-full bg-tech-gold animate-pulse" />
-                                                                                                    : <div className="w-2 h-2 rounded-full bg-gray-700" />}
-                                                                                            <span className="uppercase">S{stage.num}</span>
-                                                                                            {stage.name && stage.name !== `Stage ${stage.num}` && (
-                                                                                                <span className="opacity-60 font-bold truncate max-w-[70px] normal-case">{stage.name}</span>
-                                                                                            )}
-                                                                                            <span className="opacity-50">{stage.done}/{stage.total}</span>
-                                                                                        </div>
-                                                                                    );
-                                                                                })}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-
-                                                                    {/* Completed Subtasks List */}
-                                                                    {doneSubs.length > 0 && (
-                                                                        <div className="border-t border-white/5 px-4 py-3 space-y-1.5">
-                                                                            <p className="text-[9px] font-black uppercase tracking-widest text-green-500/60">
-                                                                                ✓ Completed Subtasks ({doneCount})
-                                                                            </p>
-                                                                            <div className="space-y-1 max-h-28 overflow-y-auto pr-1 scrollbar-thin">
-                                                                                {doneSubs.map((sub: any) => (
-                                                                                    <div key={sub.id} className="flex items-center gap-2 text-[11px]">
-                                                                                        <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0" />
-                                                                                        <span className="text-gray-400 font-medium truncate">{sub.title}</span>
-                                                                                        {sub.stage && <span className="text-[9px] text-gray-600 shrink-0 font-bold">S{sub.stage}</span>}
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ) : (
-                                                <div className="py-20 text-center opacity-40">
-                                                    <Clock className="w-12 h-12 mx-auto mb-4" />
-                                                    <p className="font-bold text-sm">NO MILESTONES LINKED YET</p>
-                                                    <p className="text-xs text-gray-500 mt-2">Tasks will appear here once linked to this project by your team</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
 
                                     {activeTab === "feedback" && (
                                         <div className="space-y-6">
