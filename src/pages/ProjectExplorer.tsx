@@ -251,14 +251,37 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-4 pt-2">
-                                                    <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-                                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Nexus Data</p>
-                                                        <p className="text-xs font-bold text-white">{project.client_project_files?.length || 0} Assets</p>
+                                                <div className="space-y-3 pt-2">
+                                                    {/* Overall Progress Bar */}
+                                                    <div className="space-y-1.5">
+                                                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                                            <span className="text-gray-500">Overall Progress</span>
+                                                            <span className={cn(
+                                                                "font-black",
+                                                                project.progress === 100 ? "text-green-400" : "text-tech-gold"
+                                                            )}>{project.progress || 0}%</span>
+                                                        </div>
+                                                        <div className="relative h-3 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                                            <div
+                                                                className={cn(
+                                                                    "absolute top-0 left-0 h-full rounded-full transition-all duration-700",
+                                                                    project.progress === 100
+                                                                        ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]"
+                                                                        : "bg-gradient-to-r from-tech-gold to-yellow-300 shadow-[0_0_10px_rgba(255,184,0,0.3)]"
+                                                                )}
+                                                                style={{ width: `${project.progress || 0}%` }}
+                                                            />
+                                                        </div>
+                                                        <div className="flex justify-between text-[9px] text-gray-600 font-bold">
+                                                            <span>{project.progress === 100 ? "✓ Completed" : "In Progress"}</span>
+                                                            <span>{project.client_project_files?.length || 0} files</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="bg-white/5 p-3 rounded-xl border border-white/5">
-                                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Financial State</p>
-                                                        <p className="text-xs font-bold text-white">₹{(project.amount_paid / 1000).toFixed(1)}k Paid</p>
+
+                                                    {/* Financial State */}
+                                                    <div className="bg-white/5 p-2.5 rounded-xl border border-white/5 flex items-center justify-between">
+                                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Financial State</p>
+                                                        <p className="text-xs font-black text-tech-gold">₹{(project.amount_paid / 1000).toFixed(1)}k Paid</p>
                                                     </div>
                                                 </div>
                                             </div>
