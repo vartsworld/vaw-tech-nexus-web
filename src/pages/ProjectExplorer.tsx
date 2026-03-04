@@ -343,8 +343,6 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                     supabase.rpc("get_subtasks_for_project", { p_project_id: project.id })
                 ]);
 
-                console.log("[RPC] subtasksResult:", subtasksResult.data, "error:", subtasksResult.error);
-                console.log("[TASKS] task ids:", tasks.map(t => t.id));
 
                 // Build lookup maps
                 const deptsMap: Record<string, string> = (deptsResult.data || []).reduce(
@@ -365,7 +363,6 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                     staff_subtasks: subtasksByTask[task.id] || []
                 }));
 
-                console.log("[ENRICHED]", enriched.map(t => ({ id: t.id, subtaskCount: t.staff_subtasks.length })));
 
                 setTaskTimeline(enriched);
             } else {
