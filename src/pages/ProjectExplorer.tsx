@@ -332,23 +332,16 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                 .order("created_at", { ascending: true });
 
             if (!error && tasks && tasks.length > 0) {
-                // Step 2: manually fetch departments & subtasks in parallel
+                // Step 2: fetch departments + subtasks (use RPC to bypass RLS for subtasks)
                 const deptIds = [...new Set(tasks.map(t => t.department_id).filter(Boolean))];
-                const taskIds = tasks.map(t => t.id);
-
-                console.log("[DEBUG] Task IDs:", taskIds);
 
                 const [deptsResult, subtasksResult] = await Promise.all([
                     deptIds.length > 0
                         ? supabase.from("departments").select("id, name").in("id", deptIds)
-                        : { data: [] },
-                    taskIds.length > 0
-                        ? supabase.from("staff_subtasks").select("id, task_id, title, status, stage").in("task_id", taskIds)
-                        : { data: [] }
+                        : { data: [], error: null },
+                    // RPC bypasses RLS — clients can now see subtasks for their project
+                    supabase.rpc("get_subtasks_for_project", { p_project_id: project.id })
                 ]);
-
-                console.log("[DEBUG] subtasksResult data:", subtasksResult.data);
-                console.log("[DEBUG] subtasksResult error:", (subtasksResult as any).error);
 
                 // Build lookup maps
                 const deptsMap: Record<string, string> = (deptsResult.data || []).reduce(
@@ -362,16 +355,12 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                     }, {}
                 );
 
-                console.log("[DEBUG] subtasksByTask:", subtasksByTask);
-
                 // Merge: attach department name and subtasks to each task
                 const enriched = tasks.map(task => ({
                     ...task,
                     departments: task.department_id ? { name: deptsMap[task.department_id] || null } : null,
                     staff_subtasks: subtasksByTask[task.id] || []
                 }));
-
-                console.log("[DEBUG] enriched tasks:", enriched.map(t => ({ id: t.id, subtasks: t.staff_subtasks.length })));
 
                 setTaskTimeline(enriched);
             } else {
