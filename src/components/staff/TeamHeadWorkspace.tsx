@@ -486,7 +486,52 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         attachments: task.attachments ? (task.attachments as any) : []
       }));
 
-      setTasks(tasksWithAttachments as Task[]);
+      // Enrich each task with subtask stage summary (lightweight parallel fetch)
+      const enrichedTasks = await Promise.all(
+        tasksWithAttachments.map(async (task) => {
+          try {
+            const { data: subs } = await supabase
+              .from('staff_subtasks')
+              .select('stage, status, title')
+              .eq('task_id', task.id);
+            if (!subs || subs.length === 0) return { ...task, _stageInfo: null };
+
+            const stageMap: Record<number, { total: number; completed: number; titles: string[] }> = {};
+            subs.forEach((s: any) => {
+              const stg = s.stage || 1;
+              if (!stageMap[stg]) stageMap[stg] = { total: 0, completed: 0, titles: [] };
+              stageMap[stg].total++;
+              stageMap[stg].titles.push(s.title);
+              if (s.status === 'completed') stageMap[stg].completed++;
+            });
+
+            const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
+            const totalStages = stageNums.length;
+            const completedStages = stageNums.filter(s => stageMap[s].completed === stageMap[s].total).length;
+            // Current stage = first stage with incomplete subtasks, or last+1 if all done
+            const currentStage = task.current_stage || stageNums.find(s => stageMap[s].completed < stageMap[s].total) || (stageNums[stageNums.length - 1] + 1);
+            // Stage title = first subtask title in the current stage
+            const currentStageTitles = stageMap[currentStage]?.titles || [];
+            const stageTitle = currentStageTitles.length > 0 ? currentStageTitles[0] : null;
+
+            return {
+              ...task,
+              current_stage: currentStage,
+              _stageInfo: {
+                totalStages,
+                completedStages,
+                stageTitle,
+                stageNums,
+                stageMap
+              }
+            };
+          } catch {
+            return { ...task, _stageInfo: null };
+          }
+        })
+      );
+
+      setTasks(enrichedTasks as Task[]);
 
       // Also fetch subtask review queues for this head
       await fetchReviewQueues();
@@ -1024,7 +1069,39 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         }
       }
 
-      setSubtasks(subtasks.map(st => st.id === subtaskId ? data : st));
+      const updatedSubtasks = subtasks.map(st => st.id === subtaskId ? data : st);
+      setSubtasks(updatedSubtasks);
+
+      // --- Auto-advance current_stage on parent task ---
+      try {
+        const approvedStage = (data as any).stage || 1;
+        const taskId = data.task_id;
+        // Check: are ALL subtasks in this stage now completed?
+        const stageSubtasks = updatedSubtasks.filter((st: any) => (st.stage || 1) === approvedStage);
+        const allStageComplete = stageSubtasks.length > 0 && stageSubtasks.every((st: any) => st.status === 'completed');
+
+        if (allStageComplete && taskId) {
+          // Find the next stage that still has non-completed subtasks
+          const allStages = [...new Set(updatedSubtasks.map((st: any) => (st.stage || 1) as number))].sort((a, b) => a - b);
+          const nextIncompleteStage = allStages.find(s => {
+            const subs = updatedSubtasks.filter((st: any) => (st.stage || 1) === s);
+            return subs.some((st: any) => st.status !== 'completed');
+          });
+          // If no incomplete stage, use the max stage + 1 (all done)
+          const newCurrentStage = nextIncompleteStage ?? ((allStages[allStages.length - 1] || 1) + 1);
+
+          await supabase
+            .from('staff_tasks')
+            .update({ current_stage: newCurrentStage, updated_at: new Date().toISOString() } as any)
+            .eq('id', taskId);
+
+          // Update local tasks state
+          setTasks(prev => prev.map(t => t.id === taskId ? { ...t, current_stage: newCurrentStage } : t));
+        }
+      } catch (stageErr) {
+        console.error('Error advancing stage:', stageErr);
+      }
+
       toast({ title: "✅ Subtask Approved", description: `The subtask has been approved and ${data.points} points awarded.` });
     } catch (error: any) {
       console.error('Error approving subtask:', error);
@@ -2577,11 +2654,12 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                     <Table className="min-w-[800px]">
                       <TableHeader>
                         <TableRow className="border-white/10 hover:bg-white/5">
-                          <TableHead className="text-white/80 w-[30%]">Task</TableHead>
-                          <TableHead className="text-white/80 w-[20%]">Assigned To</TableHead>
-                          <TableHead className="text-white/80 w-[15%]">Status</TableHead>
-                          <TableHead className="text-white/80 w-[15%]">Priority</TableHead>
-                          <TableHead className="text-white/80 text-right w-[20%]">Actions</TableHead>
+                          <TableHead className="text-white/80 w-[28%]">Task</TableHead>
+                          <TableHead className="text-white/80 w-[18%]">Assigned To</TableHead>
+                          <TableHead className="text-white/80 w-[14%]">Stage</TableHead>
+                          <TableHead className="text-white/80 w-[12%]">Status</TableHead>
+                          <TableHead className="text-white/80 w-[10%]">Priority</TableHead>
+                          <TableHead className="text-white/80 text-right w-[18%]">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -2650,6 +2728,51 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                                   </div>
                                 </div>
                               </div>
+                            </TableCell>
+                            <TableCell className="align-top">
+                              {(() => {
+                                const stageInfo = (task as any)._stageInfo;
+                                const currentStage = (task as any).current_stage;
+                                if (!stageInfo) {
+                                  return (
+                                    <span className="text-[10px] text-white/30 italic">No subtasks</span>
+                                  );
+                                }
+                                const { totalStages, completedStages, stageTitle, stageMap } = stageInfo;
+                                const allDone = completedStages >= totalStages;
+                                const progressPct = totalStages > 0 ? Math.round((completedStages / totalStages) * 100) : 0;
+                                return (
+                                  <div className="space-y-1.5">
+                                    <div className="flex items-center gap-1.5">
+                                      {allDone ? (
+                                        <Badge className="bg-green-500/20 text-green-300 border-green-500/30 text-[10px] px-1.5 py-0">
+                                          ✅ All Done
+                                        </Badge>
+                                      ) : (
+                                        <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 text-[10px] px-1.5 py-0">
+                                          Stage {currentStage}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {stageTitle && !allDone && (
+                                      <div className="text-[10px] text-white/50 truncate max-w-[120px]" title={stageTitle}>
+                                        {stageTitle}
+                                      </div>
+                                    )}
+                                    <div className="flex items-center gap-1.5">
+                                      <div className="w-16 bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                        <div
+                                          className={`h-full rounded-full transition-all duration-500 ${allDone ? 'bg-green-500' : 'bg-indigo-500'}`}
+                                          style={{ width: `${progressPct}%` }}
+                                        />
+                                      </div>
+                                      <span className="text-[9px] text-white/40">
+                                        {completedStages}/{totalStages}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </TableCell>
                             <TableCell className="align-top">
                               <div className="scale-90 origin-left">
@@ -3749,16 +3872,19 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                           const badgeClass = stageBadgeColors[(stageNum - 1) % stageBadgeColors.length];
                           const stageSubtasks = stageMap[stageNum] || [];
                           const isQuickAddOpen = quickAddStage === stageNum;
+                          const stageComplete = stageSubtasks.length > 0 && stageSubtasks.every((st: any) => st.status === 'completed');
 
                           return (
-                            <div key={stageNum} className={`flex-1 min-w-[260px] rounded-xl border ${colClass} p-3 space-y-2`}>
+                            <div key={stageNum} className={`flex-1 min-w-[260px] rounded-xl border ${stageComplete ? 'border-green-500/50 bg-green-500/5' : colClass} p-3 space-y-2`}>
                               {/* Column header */}
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
-                                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${badgeClass}`}>
-                                    Stage {stageNum}
+                                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${stageComplete ? 'bg-green-500/20 text-green-300 border-green-500/30' : badgeClass}`}>
+                                    {stageComplete ? '✅ ' : ''}Stage {stageNum}
                                   </span>
-                                  <span className="text-[10px] text-white/40">{stageSubtasks.length} task{stageSubtasks.length !== 1 ? 's' : ''}</span>
+                                  <span className="text-[10px] text-white/40">
+                                    {stageSubtasks.filter((st: any) => st.status === 'completed').length}/{stageSubtasks.length} done
+                                  </span>
                                 </div>
                                 <Button
                                   size="sm"
