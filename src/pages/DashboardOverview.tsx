@@ -84,47 +84,56 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                 .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
                 .eq("is_read", false);
 
-            // 6. Fetch ongoing tasks with department info — use dual-ID mapping
+            // 6. Fetch ongoing tasks — dual-ID mapping then manually resolve departments
             const clientIdSet = [profile.id, crmId].filter(Boolean);
-            const projectIds = (projects || []).map((p: any) => p.id).filter(Boolean);
+            const projectIdList = (projects || []).map((p: any) => p.id).filter(Boolean);
 
-            let tasks: any[] = [];
+            let rawTasks: any[] = [];
 
-            // First try by client_id (direct link)
+            // Try by client_id first (direct link)
             if (clientIdSet.length > 0) {
                 const { data: byClient } = await supabase
                     .from("staff_tasks")
-                    .select(`
-                        id, title, status, priority, current_stage, due_date, completed_at, client_project_id, client_id,
-                        departments (
-                            name
-                        )
-                    `)
-                    .or(clientIdSet.map(id => `client_id.eq.${id}`).join(','))
+                    .select("id, title, status, priority, current_stage, due_date, completed_at, department_id, client_project_id, client_id")
+                    .or(clientIdSet.map((id: string) => `client_id.eq.${id}`).join(','))
                     .neq("status", "completed")
                     .order("created_at", { ascending: false })
                     .limit(5);
-                tasks = byClient || [];
+                rawTasks = byClient || [];
             }
 
-            // Also try by project link if we got projects
-            if (tasks.length === 0 && projectIds.length > 0) {
+            // Fallback: by client's project IDs
+            if (rawTasks.length === 0 && projectIdList.length > 0) {
                 const { data: byProject } = await supabase
                     .from("staff_tasks")
-                    .select(`
-                        id, title, status, priority, current_stage, due_date, completed_at, client_project_id, client_id,
-                        departments (
-                            name
-                        )
-                    `)
-                    .in("client_project_id", projectIds)
+                    .select("id, title, status, priority, current_stage, due_date, completed_at, department_id, client_project_id, client_id")
+                    .in("client_project_id", projectIdList)
                     .neq("status", "completed")
                     .order("created_at", { ascending: false })
                     .limit(5);
-                tasks = byProject || [];
+                rawTasks = byProject || [];
             }
 
-            setOngoingTasks(tasks);
+            // Manually resolve department names
+            if (rawTasks.length > 0) {
+                const deptIds = [...new Set(rawTasks.map((t: any) => t.department_id).filter(Boolean))];
+                const deptsMap: Record<string, string> = {};
+                if (deptIds.length > 0) {
+                    const { data: depts } = await supabase
+                        .from("departments")
+                        .select("id, name")
+                        .in("id", deptIds);
+                    (depts || []).forEach((d: any) => { deptsMap[d.id] = d.name; });
+                }
+                const enriched = rawTasks.map((t: any) => ({
+                    ...t,
+                    departments: t.department_id ? { name: deptsMap[t.department_id] || null } : null
+                }));
+                setOngoingTasks(enriched);
+            } else {
+                setOngoingTasks([]);
+            }
+
 
             if (projects) {
                 const active = projects.filter(p => !['completed', 'cancel'].includes(p.status)).length;

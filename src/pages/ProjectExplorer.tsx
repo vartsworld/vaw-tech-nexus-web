@@ -324,26 +324,49 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
         setTimelineLoading(true);
 
         try {
-            // First try to fetch from staff_tasks linked to this project
-            // This ensures "sync milestone with task stages completion"
+            // Step 1: fetch raw tasks linked to this project
             const { data: tasks, error } = await supabase
                 .from("staff_tasks")
-                .select(`
-                    *,
-                    departments (
-                        name
-                    ),
-                    staff_subtasks (
-                        status
-                    )
-                `)
+                .select("id, title, status, priority, current_stage, due_date, completed_at, department_id, client_project_id")
                 .eq("client_project_id", project.id)
                 .order("created_at", { ascending: true });
 
             if (!error && tasks && tasks.length > 0) {
-                setTaskTimeline(tasks);
+                // Step 2: manually fetch departments & subtasks in parallel (avoids FK join issues)
+                const deptIds = [...new Set(tasks.map(t => t.department_id).filter(Boolean))];
+                const taskIds = tasks.map(t => t.id);
+
+                const [deptsResult, subtasksResult] = await Promise.all([
+                    deptIds.length > 0
+                        ? supabase.from("departments").select("id, name").in("id", deptIds)
+                        : { data: [] },
+                    taskIds.length > 0
+                        ? supabase.from("staff_subtasks").select("task_id, status").in("task_id", taskIds)
+                        : { data: [] }
+                ]);
+
+                // Build lookup maps
+                const deptsMap: Record<string, string> = (deptsResult.data || []).reduce(
+                    (acc: any, d: any) => ({ ...acc, [d.id]: d.name }), {}
+                );
+                const subtasksByTask: Record<string, any[]> = (subtasksResult.data || []).reduce(
+                    (acc: any, s: any) => {
+                        if (!acc[s.task_id]) acc[s.task_id] = [];
+                        acc[s.task_id].push(s);
+                        return acc;
+                    }, {}
+                );
+
+                // Merge: attach department name and subtasks to each task
+                const enriched = tasks.map(task => ({
+                    ...task,
+                    departments: task.department_id ? { name: deptsMap[task.department_id] || null } : null,
+                    staff_subtasks: subtasksByTask[task.id] || []
+                }));
+
+                setTaskTimeline(enriched);
             } else {
-                // Fallback to client_task_timeline if no staff tasks are linked yet
+                // Fallback to client_task_timeline if no staff tasks linked yet
                 const { data: timeline } = await supabase
                     .from("client_task_timeline")
                     .select("*")
