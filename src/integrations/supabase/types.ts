@@ -1193,12 +1193,14 @@ export type Database = {
       }
       client_projects: {
         Row: {
+          addons: string | null
           amount_paid: number | null
           client_id: string | null
           created_at: string | null
           description: string | null
           id: string
           next_payment_date: string | null
+          package_type: string | null
           progress: number | null
           project_type: string
           renewal_date: string | null
@@ -1208,12 +1210,14 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          addons?: string | null
           amount_paid?: number | null
           client_id?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           next_payment_date?: string | null
+          package_type?: string | null
           progress?: number | null
           project_type: string
           renewal_date?: string | null
@@ -1223,12 +1227,14 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          addons?: string | null
           amount_paid?: number | null
           client_id?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           next_payment_date?: string | null
+          package_type?: string | null
           progress?: number | null
           project_type?: string
           renewal_date?: string | null
@@ -1242,7 +1248,7 @@ export type Database = {
             foreignKeyName: "client_projects_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "client_profiles"
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]
@@ -2286,6 +2292,42 @@ export type Database = {
           },
         ]
       }
+      pricing_addons: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_enabled: boolean | null
+          name: string
+          price: number
+          slug: string | null
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          name: string
+          price?: number
+          slug?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          name?: string
+          price?: number
+          slug?: string | null
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       pricing_packages: {
         Row: {
           created_at: string | null
@@ -2294,11 +2336,15 @@ export type Database = {
           display_order: number | null
           features: string[] | null
           icon: string | null
+          icon_name: string | null
           id: string
           is_active: boolean | null
+          is_enabled: boolean | null
           is_popular: boolean | null
           name: string
           original_price: number
+          slug: string | null
+          sort_order: number | null
           updated_at: string | null
         }
         Insert: {
@@ -2308,11 +2354,15 @@ export type Database = {
           display_order?: number | null
           features?: string[] | null
           icon?: string | null
+          icon_name?: string | null
           id?: string
           is_active?: boolean | null
+          is_enabled?: boolean | null
           is_popular?: boolean | null
           name: string
           original_price?: number
+          slug?: string | null
+          sort_order?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -2322,11 +2372,15 @@ export type Database = {
           display_order?: number | null
           features?: string[] | null
           icon?: string | null
+          icon_name?: string | null
           id?: string
           is_active?: boolean | null
+          is_enabled?: boolean | null
           is_popular?: boolean | null
           name?: string
           original_price?: number
+          slug?: string | null
+          sort_order?: number | null
           updated_at?: string | null
         }
         Relationships: []
@@ -3493,6 +3547,7 @@ export type Database = {
           comments: Json | null
           completed_at: string | null
           created_at: string | null
+          current_stage: number | null
           department_id: string | null
           description: string | null
           due_date: string | null
@@ -3525,6 +3580,7 @@ export type Database = {
           comments?: Json | null
           completed_at?: string | null
           created_at?: string | null
+          current_stage?: number | null
           department_id?: string | null
           description?: string | null
           due_date?: string | null
@@ -3557,6 +3613,7 @@ export type Database = {
           comments?: Json | null
           completed_at?: string | null
           created_at?: string | null
+          current_stage?: number | null
           department_id?: string | null
           description?: string | null
           due_date?: string | null
@@ -4859,7 +4916,7 @@ export type Database = {
             foreignKeyName: "client_projects_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
-            referencedRelation: "client_profiles"
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
           {

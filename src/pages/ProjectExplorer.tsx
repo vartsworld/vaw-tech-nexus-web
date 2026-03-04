@@ -528,6 +528,71 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                                     ))}
                                                 </div>
                                             </div>
+
+                                            {/* Task Cards */}
+                                            <div className="space-y-4">
+                                                <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Linked Tasks</h3>
+                                                {taskTimeline.length > 0 ? (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {taskTimeline.map((task: any) => {
+                                                            const statusColors: Record<string, string> = {
+                                                                completed: "bg-green-500/20 text-green-400 border-green-500/30",
+                                                                in_progress: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+                                                                pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+                                                                approved: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+                                                                returned: "bg-red-500/20 text-red-400 border-red-500/30",
+                                                            };
+                                                            const priorityColors: Record<string, string> = {
+                                                                urgent: "bg-red-500/20 text-red-400",
+                                                                high: "bg-orange-500/20 text-orange-400",
+                                                                medium: "bg-yellow-500/20 text-yellow-400",
+                                                                low: "bg-blue-500/20 text-blue-400",
+                                                            };
+                                                            const safeStatus = task.status || 'pending';
+                                                            const safePriority = task.priority || 'medium';
+
+                                                            return (
+                                                                <Card key={task.id} className="bg-white/5 border-white/10 hover:border-tech-gold/30 transition-all rounded-2xl overflow-hidden">
+                                                                    <CardContent className="p-4 space-y-3">
+                                                                        <div className="flex items-start justify-between gap-2">
+                                                                            <h4 className="text-sm font-bold text-white leading-tight flex-1">{task.title}</h4>
+                                                                            <Badge className={cn("text-[9px] h-5 border shrink-0", statusColors[safeStatus] || statusColors.pending)}>
+                                                                                {safeStatus.replace('_', ' ').toUpperCase()}
+                                                                            </Badge>
+                                                                        </div>
+
+                                                                        <div className="flex flex-wrap items-center gap-2">
+                                                                            <Badge className={cn("text-[9px] h-5 border-none", priorityColors[safePriority] || priorityColors.medium)}>
+                                                                                {safePriority.toUpperCase()}
+                                                                            </Badge>
+                                                                            {task.current_stage && (
+                                                                                <Badge className="bg-tech-gold/10 text-tech-gold border-none text-[9px] h-5">
+                                                                                    Stage {task.current_stage}
+                                                                                </Badge>
+                                                                            )}
+                                                                            {task.departments?.name && (
+                                                                                <Badge className="bg-tech-purple/10 text-tech-purple border-none text-[9px] h-5">
+                                                                                    {task.departments.name}
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+
+                                                                        <div className="flex items-center justify-between text-[10px] text-gray-500 font-bold pt-1 border-t border-white/5">
+                                                                            <span>{task.due_date ? `Due: ${new Date(task.due_date).toLocaleDateString()}` : 'No due date'}</span>
+                                                                            {task.completed_at && <span className="text-green-400">✓ {new Date(task.completed_at).toLocaleDateString()}</span>}
+                                                                        </div>
+                                                                    </CardContent>
+                                                                </Card>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-white/5 border border-white/5 rounded-2xl p-8 text-center opacity-50">
+                                                        <p className="text-sm font-bold">No tasks linked to this project yet</p>
+                                                        <p className="text-xs text-gray-500 mt-1">Tasks will appear once your team links them</p>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
 
