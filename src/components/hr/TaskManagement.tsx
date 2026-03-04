@@ -3093,7 +3093,7 @@ const TaskManagement = () => {
                 </div>
 
                 {/* Handover History */}
-                {selectedTask.comments && selectedTask.comments.some((c: any) => c.type === 'handover') && (
+                {selectedTask.comments && Array.isArray(selectedTask.comments) && selectedTask.comments.some((c: any) => c.type === 'handover') && (
                   <div className="border rounded-lg p-4 space-y-3">
                     <h4 className="font-semibold flex items-center gap-2">
                       <Target className="h-4 w-4" />
@@ -3110,7 +3110,7 @@ const TaskManagement = () => {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-sm font-medium">{handover.user_name}</span>
                                   <span className="text-xs text-muted-foreground">
-                                    {format(new Date(handover.timestamp), 'MMM dd, yyyy HH:mm')}
+                                    {(() => { try { return format(new Date(handover.timestamp), 'MMM dd, yyyy HH:mm'); } catch { return ''; } })()}
                                   </span>
                                 </div>
                                 <div className="text-sm">
@@ -3138,7 +3138,7 @@ const TaskManagement = () => {
                 )}
 
                 {/* Comments */}
-                {selectedTask.comments && selectedTask.comments.filter((c: any) => c.type !== 'handover').length > 0 && (
+                {selectedTask.comments && Array.isArray(selectedTask.comments) && selectedTask.comments.filter((c: any) => c.type !== 'handover').length > 0 && (
                   <div className="border rounded-lg p-4 space-y-3">
                     <h4 className="font-semibold flex items-center gap-2">
                       <MessageSquare className="h-4 w-4" />
@@ -3150,7 +3150,7 @@ const TaskManagement = () => {
                           <div className="flex items-start justify-between mb-2">
                             <div className="font-medium text-sm">{comment.user_name}</div>
                             <div className="text-xs text-muted-foreground">
-                              {format(new Date(comment.created_at || comment.timestamp), 'MMM dd, yyyy HH:mm')}
+                              {(() => { try { return format(new Date(comment.created_at || comment.timestamp), 'MMM dd, yyyy HH:mm'); } catch { return ''; } })()}
                             </div>
                           </div>
                           <p className="text-sm">{comment.content || comment.message}</p>
@@ -3172,7 +3172,7 @@ const TaskManagement = () => {
                 )}
 
                 {/* Attachments */}
-                {selectedTask.attachments && selectedTask.attachments.length > 0 && (
+                {selectedTask.attachments && Array.isArray(selectedTask.attachments) && selectedTask.attachments.length > 0 && (
                   <div className="border rounded-lg p-4 space-y-3">
                     <h4 className="font-semibold flex items-center gap-2">
                       <FileText className="h-4 w-4" />
