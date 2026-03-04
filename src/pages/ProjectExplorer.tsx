@@ -341,7 +341,7 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                         ? supabase.from("departments").select("id, name").in("id", deptIds)
                         : { data: [] },
                     taskIds.length > 0
-                        ? supabase.from("staff_subtasks").select("task_id, status, stage, stage_name").in("task_id", taskIds)
+                        ? supabase.from("staff_subtasks").select("id, task_id, title, status, stage").in("task_id", taskIds)
                         : { data: [] }
                 ]);
 
@@ -582,8 +582,6 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                                             const completedSubtasks = task.staff_subtasks?.filter((s: any) => s.status === 'completed').length || 0;
                                                             const progressPercentage = totalSubtasks > 0 ? (completedSubtasks / totalSubtasks) * 100 : 0;
 
-                                                            // Extract stage name from subtasks that match current_stage
-                                                            const currentStageName = task.staff_subtasks?.find((s: any) => s.stage === task.current_stage)?.stage_name || "";
 
                                                             return (
                                                                 <Card key={task.id} className="bg-white/5 border-white/10 hover:border-tech-gold/30 transition-all rounded-2xl overflow-hidden group">
@@ -607,11 +605,9 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                                                                     <span className="text-xs font-black text-tech-gold uppercase">
                                                                                         {task.current_stage ? `STAGE ${task.current_stage}` : 'STAGE NONE'}
                                                                                     </span>
-                                                                                    {currentStageName && (
-                                                                                        <span className="text-[9px] font-bold text-white/50 truncate uppercase tracking-tight leading-none mt-0.5">
-                                                                                            {currentStageName}
-                                                                                        </span>
-                                                                                    )}
+                                                                                    <span className="text-[9px] font-bold text-white/40 leading-none mt-0.5 uppercase tracking-tight">
+                                                                                        {task.staff_subtasks?.filter((s: any) => s.stage === task.current_stage).length || 0} subtasks
+                                                                                    </span>
                                                                                 </div>
                                                                             </div>
                                                                             <div className="p-2.5 rounded-xl bg-tech-purple/10 border border-tech-purple/20 flex flex-col gap-0.5">
