@@ -54,10 +54,11 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
         .single();
 
       // Defaults if config missing
+      const configValue = typeof configData?.value === 'object' && configData?.value !== null ? configData.value : {};
       const config = {
         attendance_points: 10,
         late_penalty: 2,
-        ...(configData?.value || {}) // @ts-ignore
+        ...(configValue as Record<string, any>)
       };
 
       const now = new Date();
