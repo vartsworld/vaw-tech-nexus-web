@@ -112,7 +112,7 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
         .select('value')
         .eq('key', 'points_config')
         .single();
-      const moodEnabled = settingsData?.value?.mood_points_enabled !== false;
+      const moodEnabled = (settingsData?.value as any)?.mood_points_enabled !== false;
       const moodPoints = personalQuote ? 15 : 10;
 
       if (moodEnabled) {
