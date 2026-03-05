@@ -797,7 +797,7 @@ const TaskManagement = () => {
             size: attachment.file.size
           };
 
-          await supabase.from('task_attachments').insert(attachmentData);
+          await (supabase.from('task_attachments' as any) as any).insert(attachmentData);
         }
       }
       toast({
