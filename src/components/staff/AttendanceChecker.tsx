@@ -54,10 +54,11 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
         .single();
 
       // Defaults if config missing
+      const configValue = typeof configData?.value === 'object' && configData?.value !== null ? configData.value : {};
       const config = {
         attendance_points: 10,
         late_penalty: 2,
-        ...(configData?.value || {}) // @ts-ignore
+        ...(configValue as Record<string, any>)
       };
 
       const now = new Date();
@@ -111,7 +112,7 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
         .select('value')
         .eq('key', 'points_config')
         .single();
-      const attendanceEnabled = settingsData?.value?.attendance_points_enabled !== false;
+      const attendanceEnabled = (settingsData?.value as any)?.attendance_points_enabled !== false;
 
       if (attendanceEnabled && points > 0) {
         // Log to user_points_log (for HR PointsMonitoring)
@@ -131,9 +132,9 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
             user_id: userId,
             coins: points,
             transaction_type: 'earning',
-            description: isLate ? 'Attendance (Outside Standard Hours)' : 'Attendance (On Time)',
+            reason: isLate ? 'Attendance (Outside Standard Hours)' : 'Attendance (On Time)',
             source_type: 'attendance'
-          });
+          } as any);
 
         // Update staff_profiles.total_points
         const { data: profileData } = await supabase

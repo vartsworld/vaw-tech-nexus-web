@@ -87,7 +87,7 @@ const SuperAdminStaffManager = () => {
 
             // Calc stats
             const adminCount = data?.filter(s => s.role === 'admin' || s.role === 'hr').length || 0;
-            const headCount = data?.filter(s => s.role === 'head' || s.role === 'manager').length || 0;
+            const headCount = data?.filter(s => s.role === 'department_head' || s.role === 'manager').length || 0;
             setStats({
                 total: data?.length || 0,
                 admins: adminCount,

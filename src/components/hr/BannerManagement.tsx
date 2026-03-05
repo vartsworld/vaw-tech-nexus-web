@@ -61,7 +61,7 @@ const BannerManagement = () => {
   };
 
   const fetchStaff = async () => {
-    const { data } = await supabase.from('staff_profiles').select('id, user_id, full_name, department_id').eq('is_active', true).order('full_name');
+    const { data } = await (supabase.from('staff_profiles') as any).select('id, user_id, full_name, department_id').eq('is_active', true).order('full_name');
     if (data) setStaffList(data);
   };
 

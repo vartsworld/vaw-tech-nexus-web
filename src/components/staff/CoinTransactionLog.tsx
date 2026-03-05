@@ -43,7 +43,7 @@ const CoinTransactionLog = ({ userId }: CoinTransactionLogProps) => {
         console.error("Error fetching transactions:", error);
         setTransactions([]);
       } else {
-        setTransactions(data || []);
+        setTransactions((data || []).map((d: any) => ({ ...d, description: d.reason || d.description || null })));
       }
     } catch (error) {
       console.error("Error fetching transactions:", error);

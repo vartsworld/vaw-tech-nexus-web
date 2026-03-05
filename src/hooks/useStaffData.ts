@@ -227,7 +227,7 @@ export const useStaffData = () => {
     try {
       const { error } = await supabase
         .from('staff_tasks')
-        .update({ status: status.toLowerCase().replace(' ', '_'), updated_at: new Date().toISOString() })
+        .update({ status: status.toLowerCase().replace(' ', '_') as any, updated_at: new Date().toISOString() })
         .eq('id', taskId);
 
       if (error) throw error;

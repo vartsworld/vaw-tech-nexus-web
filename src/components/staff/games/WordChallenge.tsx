@@ -50,9 +50,9 @@ const WordChallenge = ({ onClose, userId }: { onClose: () => void, userId: strin
         .select('value')
         .eq('key', 'points_config')
         .single();
-      const gamesEnabled = settingsData?.value?.games_points_enabled !== false;
+      const gamesEnabled = (settingsData?.value as any)?.games_points_enabled !== false;
 
-      await supabase.from('word_game_scores').insert({
+      await supabase.from('word_game_scores' as any).insert({
         user_id: userId,
         score: score,
         difficulty: 'easy',
@@ -65,8 +65,8 @@ const WordChallenge = ({ onClose, userId }: { onClose: () => void, userId: strin
           user_id: userId,
           coins: coinsEarned,
           transaction_type: 'bonus',
-          description: `Won ${coinsEarned} coins playing Word Challenge (Score: ${score})`
-        });
+          reason: `Won ${coinsEarned} coins playing Word Challenge (Score: ${score})`
+        } as any);
 
         // Update staff_profiles.total_points
         const { data: profileData } = await supabase

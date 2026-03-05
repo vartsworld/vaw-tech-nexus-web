@@ -149,10 +149,9 @@ export const TaskApprovalDialog = ({
               user_id: task.assigned_to,
               coins: task.points,
               transaction_type: 'earning',
-              description: `Task Completed: ${task.title}`,
+              reason: `Task Completed: ${task.title}`,
               source_type: 'task',
-              source_id: task.id
-            });
+            } as any);
         }
       }
 
