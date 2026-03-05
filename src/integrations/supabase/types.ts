@@ -134,6 +134,111 @@ export type Database = {
         }
         Relationships: []
       }
+      api_keys: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          permissions: string[] | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          permissions?: string[] | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          permissions?: string[] | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      api_logs: {
+        Row: {
+          created_at: string | null
+          duration_ms: number | null
+          id: string
+          ip_address: string | null
+          method: string
+          path: string
+          payload: Json | null
+          response: Json | null
+          status: number
+        }
+        Insert: {
+          created_at?: string | null
+          duration_ms?: number | null
+          id?: string
+          ip_address?: string | null
+          method: string
+          path: string
+          payload?: Json | null
+          response?: Json | null
+          status: number
+        }
+        Update: {
+          created_at?: string | null
+          duration_ms?: number | null
+          id?: string
+          ip_address?: string | null
+          method?: string
+          path?: string
+          payload?: Json | null
+          response?: Json | null
+          status?: number
+        }
+        Relationships: []
+      }
+      api_webhooks: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          events: string[] | null
+          failure_count: number | null
+          id: string
+          secret: string | null
+          status: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          events?: string[] | null
+          failure_count?: number | null
+          id?: string
+          secret?: string | null
+          status?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          events?: string[] | null
+          failure_count?: number | null
+          id?: string
+          secret?: string | null
+          status?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           description: string | null
@@ -1112,6 +1217,7 @@ export type Database = {
         Row: {
           address: string | null
           avatar_url: string | null
+          billing_sync_id: string | null
           company_name: string
           contact_person: string
           created_at: string | null
@@ -1124,6 +1230,7 @@ export type Database = {
         Insert: {
           address?: string | null
           avatar_url?: string | null
+          billing_sync_id?: string | null
           company_name: string
           contact_person: string
           created_at?: string | null
@@ -1136,6 +1243,7 @@ export type Database = {
         Update: {
           address?: string | null
           avatar_url?: string | null
+          billing_sync_id?: string | null
           company_name?: string
           contact_person?: string
           created_at?: string | null
@@ -1312,6 +1420,7 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          billing_sync_id: string | null
           company_name: string
           contact_person: string
           created_at: string | null
@@ -1326,6 +1435,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          billing_sync_id?: string | null
           company_name: string
           contact_person: string
           created_at?: string | null
@@ -1340,6 +1450,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          billing_sync_id?: string | null
           company_name?: string
           contact_person?: string
           created_at?: string | null
@@ -5349,6 +5460,16 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_subtasks_for_project: {
+        Args: { p_project_id: string }
+        Returns: {
+          id: string
+          stage: number
+          status: string
+          task_id: string
+          title: string
+        }[]
       }
       get_user_coin_balance: { Args: { p_user_id: string }; Returns: number }
       gettransactionid: { Args: never; Returns: unknown }
