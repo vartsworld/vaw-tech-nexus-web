@@ -112,7 +112,7 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
         .select('value')
         .eq('key', 'points_config')
         .single();
-      const attendanceEnabled = settingsData?.value?.attendance_points_enabled !== false;
+      const attendanceEnabled = (settingsData?.value as any)?.attendance_points_enabled !== false;
 
       if (attendanceEnabled && points > 0) {
         // Log to user_points_log (for HR PointsMonitoring)
