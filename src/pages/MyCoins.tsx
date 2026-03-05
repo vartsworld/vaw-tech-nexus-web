@@ -132,9 +132,9 @@ const MyCoins = () => {
           user_id: userId,
           coins: -coinsCost,
           transaction_type: "redemption",
-          description: `Redeemed reward: ${rewards.find(r => r.id === rewardId)?.name || 'Reward'}`,
+          reason: `Redeemed reward: ${rewards.find(r => r.id === rewardId)?.name || 'Reward'}`,
           source_type: "redemption"
-        });
+        } as any);
 
       if (transactionError) throw transactionError;
 

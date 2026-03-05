@@ -1062,10 +1062,9 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
               user_id: data.assigned_to,
               coins: data.points,
               transaction_type: 'earning',
-              description: `Subtask Completed: ${data.title}`,
+              reason: `Subtask Completed: ${data.title}`,
               source_type: 'subtask',
-              source_id: data.id
-            });
+            } as any);
         }
       }
 

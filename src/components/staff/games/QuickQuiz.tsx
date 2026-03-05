@@ -104,15 +104,15 @@ const QuickQuiz = ({ onClose, userId }: { onClose: () => void, userId: string })
         .select('value')
         .eq('key', 'points_config')
         .single();
-      const gamesEnabled = settingsData?.value?.games_points_enabled !== false;
+      const gamesEnabled = (settingsData?.value as any)?.games_points_enabled !== false;
 
       if (coinsEarned > 0 && gamesEnabled) {
         await supabase.from('user_coin_transactions').insert({
           user_id: userId,
           coins: coinsEarned,
           transaction_type: 'bonus',
-          description: `Won ${coinsEarned} coins playing Quick Quiz (Score: ${score}/${questions.length * 10})`
-        });
+          reason: `Won ${coinsEarned} coins playing Quick Quiz (Score: ${score}/${questions.length * 10})`
+        } as any);
 
         // Update staff_profiles.total_points
         const { data: profileData } = await supabase

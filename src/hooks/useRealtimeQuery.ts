@@ -44,7 +44,7 @@ export function useRealtimeQuery<TData = any>({
 
     // Fetch function for React Query
     const fetchData = async (): Promise<TData> => {
-        let query = supabase.from(table).select(select);
+        let query = (supabase.from(table as any) as any).select(select);
 
         if (filter) {
             // Parse filter string (format: "column=eq.value" or "column=in.(value1,value2)")

@@ -133,10 +133,9 @@ const TasksManager = ({
             user_id: userId,
             coins: task.points,
             transaction_type: 'earning',
-            description: `Task Completed: ${task.title}`,
+            reason: `Task Completed: ${task.title}`,
             source_type: 'task',
-            source_id: taskId
-          });
+          } as any);
 
           // Log to user_points_log (for HR PointsMonitoring visibility)
           await supabase.from('user_points_log').insert({
