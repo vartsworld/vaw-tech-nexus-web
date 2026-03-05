@@ -133,9 +133,9 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
             user_id: userId,
             coins: moodPoints,
             transaction_type: 'earning',
-            description: personalQuote ? 'Daily Mood & Quote Submission' : 'Daily Mood Check-in',
+            reason: personalQuote ? 'Daily Mood & Quote Submission' : 'Daily Mood Check-in',
             source_type: 'bonus'
-          });
+          } as any);
 
         // Update staff_profiles.total_points
         const { data: moodProfileData } = await supabase

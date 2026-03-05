@@ -124,7 +124,7 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
           client_name: clientName || null,
           additional_info: additionalInfo || null,
           custom_fields: customFields.length > 0 ? customFields : [],
-        })
+        } as any)
         .select()
         .single();
 

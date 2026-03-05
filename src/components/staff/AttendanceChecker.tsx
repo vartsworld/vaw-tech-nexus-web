@@ -132,9 +132,9 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
             user_id: userId,
             coins: points,
             transaction_type: 'earning',
-            description: isLate ? 'Attendance (Outside Standard Hours)' : 'Attendance (On Time)',
+            reason: isLate ? 'Attendance (Outside Standard Hours)' : 'Attendance (On Time)',
             source_type: 'attendance'
-          });
+          } as any);
 
         // Update staff_profiles.total_points
         const { data: profileData } = await supabase

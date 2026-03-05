@@ -33,21 +33,19 @@ export const CoinConfigDialog = ({ open, onOpenChange }: CoinConfigDialogProps) 
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('app_settings' as any)
+                .from('app_settings')
                 .select('*')
                 .filter('key', 'ilike', '%reward%');
 
             if (error) throw error;
 
-            // If no reward configs found, it might be the first time or filter too restrictive
-            // Fetch all if reward-specific ones are missing
             if (!data || data.length === 0) {
                 const { data: allData } = await supabase
-                    .from('app_settings' as any)
+                    .from('app_settings')
                     .select('*');
-                setConfigs(allData || []);
+                setConfigs((allData || []) as any);
             } else {
-                setConfigs(data);
+                setConfigs(data as any);
             }
         } catch (error) {
             console.error('Error fetching configs:', error);

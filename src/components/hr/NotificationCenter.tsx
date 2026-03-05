@@ -168,14 +168,14 @@ const NotificationCenter = () => {
             title: newNotification.title,
             message: newNotification.content,
             type: newNotification.type,
-            priority: newNotification.is_urgent ? 'urgent' : 'medium',
+            priority: (newNotification.is_urgent ? 'urgent' : 'medium') as "high" | "low" | "medium" | "urgent",
             created_by: user?.id,
             expires_at: newNotification.expires_at || null
           }));
 
           const { error } = await supabase
             .from('client_notifications')
-            .insert(notificationsToInsert);
+            .insert(notificationsToInsert as any);
 
           if (error) throw error;
         }

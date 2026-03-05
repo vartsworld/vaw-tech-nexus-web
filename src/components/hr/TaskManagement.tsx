@@ -1061,7 +1061,7 @@ const TaskManagement = () => {
               target_users: assigneeIds,
               created_by: userProfile?.user_id,
               is_urgent: false
-            });
+            } as any);
         }
       }
 

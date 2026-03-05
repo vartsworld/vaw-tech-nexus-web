@@ -161,7 +161,7 @@ const StaffManagement = () => {
           role: newStaff.role as string,
           first_time_passcode: firstTimePasscode,
           application_status: 'approved'
-        })
+        } as any)
         .select()
         .single();
 
