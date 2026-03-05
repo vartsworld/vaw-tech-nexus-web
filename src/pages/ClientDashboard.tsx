@@ -141,7 +141,8 @@ const ClientDashboard = () => {
                         contact_person: crmClient.contact_person,
                         company_name: crmClient.company_name,
                         phone: crmClient.phone,
-                        address: crmClient.address
+                        address: crmClient.address,
+                        billing_sync_id: crmClient.billing_sync_id
                     };
 
                     const { data: migratedProfile, error: migrateError } = await supabase

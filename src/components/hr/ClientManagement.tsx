@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Briefcase,
@@ -22,11 +23,13 @@ import {
   Eye,
   EyeOff,
   Folder,
-  Loader2
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SharedProjectForm from "../projects/SharedProjectForm";
+import { syncClientToBilling, fetchClientFromBilling, searchClientsInBilling } from "@/utils/syncUtils";
 
 const ClientManagement = () => {
   const [clients, setClients] = useState([]);
@@ -36,6 +39,14 @@ const ClientManagement = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [selectedClientForPassword, setSelectedClientForPassword] = useState<any>(null);
+  const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
+  const [selectedClientForSync, setSelectedClientForSync] = useState<any>(null);
+  const [syncCode, setSyncCode] = useState("");
+  const [externalClientPreview, setExternalClientPreview] = useState<any>(null);
+  const [externalSearchResults, setExternalSearchResults] = useState<any[]>([]);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [isSearchingExternal, setIsSearchingExternal] = useState(false);
+  const [externalSearchQuery, setExternalSearchQuery] = useState("");
 
   const [editingClient, setEditingClient] = useState(null);
   const [newClient, setNewClient] = useState({
@@ -128,7 +139,7 @@ const ClientManagement = () => {
           ...newClient,
           created_by: user.id
         })
-        .select('id, company_name, contact_person, email, phone, address, status, notes, created_at')
+        .select('id, company_name, contact_person, email, phone, address, status, notes, created_at, billing_sync_id')
         .single();
 
       if (error) {
@@ -150,7 +161,7 @@ const ClientManagement = () => {
 
       toast({
         title: "Success",
-        description: "Client created successfully.",
+        description: "Client created successfully. Use the Sync Bridge to connect with billing software.",
       });
     } catch (error) {
       console.error('Error adding client:', error);
@@ -325,6 +336,92 @@ const ClientManagement = () => {
         title: "Error",
         description: error.message || "Failed to update client. Please check your permissions.",
         variant: "destructive",
+      });
+    }
+  };
+
+  const handleVerifyExternalCode = async () => {
+    if (!syncCode || syncCode.length < 3) return;
+    setIsVerifyingCode(true);
+    setExternalClientPreview(null);
+    try {
+      const client = await fetchClientFromBilling(syncCode);
+      if (client) {
+        setExternalClientPreview(client);
+        toast({
+          title: "Client Verified",
+          description: `Found: ${client.name} (${client.client_code})`
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Verification Failed",
+        description: error.message || "Could not find client in billing software.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
+
+  const handleSearchExternalClients = async () => {
+    if (!externalSearchQuery || externalSearchQuery.length < 2) return;
+    setIsSearchingExternal(true);
+    try {
+      const results = await searchClientsInBilling(externalSearchQuery);
+      setExternalSearchResults(Array.isArray(results) ? results : (results ? [results] : []));
+    } catch (error: any) {
+      toast({
+        title: "Search Failed",
+        description: error.message || "Failed to search external clients.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSearchingExternal(false);
+    }
+  };
+
+  const handleSyncClient = async (codeToUse: string, externalClient?: any) => {
+    if (!selectedClientForSync || !codeToUse) return;
+
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ billing_sync_id: codeToUse })
+        .eq('id', selectedClientForSync.id);
+
+      if (error) throw error;
+
+      // Also update client_profiles if it exists
+      if (selectedClientForSync.email) {
+        await supabase
+          .from('client_profiles')
+          .update({ billing_sync_id: codeToUse })
+          .eq('email', selectedClientForSync.email);
+      }
+
+      // If we have full external client data, we could potentially sync more fields here.
+      // For now, we just perform the link confirmation.
+      await syncClientToBilling(selectedClientForSync, codeToUse);
+
+      await fetchClients();
+      setIsSyncDialogOpen(false);
+      setSyncCode("");
+      setExternalClientPreview(null);
+      setExternalSearchResults([]);
+      setExternalSearchQuery("");
+      setSelectedClientForSync(null);
+
+      toast({
+        title: "Link Successful",
+        description: `Client bridged with billing software (ID: ${codeToUse}).`
+      });
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to link client.",
+        variant: "destructive"
       });
     }
   };
@@ -524,6 +621,19 @@ const ClientManagement = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedClientForSync(client);
+                          setSyncCode(client.billing_sync_id || "");
+                          setIsSyncDialogOpen(true);
+                        }}
+                        className={client.billing_sync_id ? "text-green-600" : "text-amber-600"}
+                        title={client.billing_sync_id ? `Synced: ${client.billing_sync_id}` : "Sync with Billing"}
+                      >
+                        <RefreshCw className={`h-4 w-4 ${client.billing_sync_id ? "" : "animate-pulse"}`} />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -830,7 +940,133 @@ const ClientManagement = () => {
           />
         </DialogContent>
       </Dialog>
-    </div>
+
+      {/* Sync Bridge Dialog */}
+      <Dialog open={isSyncDialogOpen} onOpenChange={(open) => {
+        setIsSyncDialogOpen(open);
+        if (!open) {
+          setSyncCode("");
+          setExternalClientPreview(null);
+          setExternalSearchResults([]);
+          setExternalSearchQuery("");
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Billing Software Sync Bridge</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 pt-4">
+            <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-indigo-500 rounded-lg text-white">
+                  <RefreshCw className="h-4 w-4" />
+                </div>
+                <h4 className="font-bold text-indigo-900">Bridge Connection Matrix</h4>
+              </div>
+              <p className="text-sm text-indigo-800">
+                Connect <strong>{selectedClientForSync?.company_name}</strong> to the billing software using its unique Client Code to synchronize financial entries.
+              </p>
+            </div>
+
+            <Tabs defaultValue="search" className="space-y-4">
+              <TabsList className="grid grid-cols-2">
+                <TabsTrigger value="search">Search Database</TabsTrigger>
+                <TabsTrigger value="manual">Manual Code</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="search" className="space-y-4 pt-2">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Search client name or code..."
+                    value={externalSearchQuery}
+                    onChange={(e) => setExternalSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearchExternalClients()}
+                  />
+                  <Button size="icon" onClick={handleSearchExternalClients} disabled={isSearchingExternal}>
+                    {isSearchingExternal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
+                </div>
+
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {Array.isArray(externalSearchResults) && externalSearchResults.map((client: any) => (
+                    <button
+                      key={client.id || client.client_code}
+                      onClick={() => handleSyncClient(client.client_code, client)}
+                      className="w-full text-left p-3 rounded-xl border border-gray-100 hover:bg-indigo-50 transition-all group relative overflow-hidden"
+                    >
+                      <div className="flex justify-between items-center relative z-10">
+                        <div className="space-y-1">
+                          <p className="text-sm font-bold text-gray-900 group-hover:text-indigo-900">
+                            {client.name || client.company_name || "Unnamed Client"}
+                          </p>
+                          <p className="text-[10px] text-gray-500 font-medium">
+                            {client.email || "No email provided"}
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 text-[10px] font-bold">
+                          {client.client_code}
+                        </Badge>
+                      </div>
+                    </button>
+                  ))}
+                  {externalSearchResults.length === 0 && !isSearchingExternal && (
+                    <p className="text-xs text-gray-500 text-center py-4">Search for an external client to link.</p>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="manual" className="space-y-4 pt-2">
+                <div className="space-y-3">
+                  <div className="flex gap-2 text-black">
+                    <Input
+                      placeholder="Enter Client Code (e.g. F30745)"
+                      value={syncCode}
+                      onChange={(e) => setSyncCode(e.target.value.toUpperCase())}
+                      className="text-center font-bold"
+                    />
+                    <Button onClick={handleVerifyExternalCode} disabled={isVerifyingCode || !syncCode}>
+                      {isVerifyingCode ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify"}
+                    </Button>
+                  </div>
+
+                  {externalClientPreview && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Matched Client</p>
+                          <h4 className="text-sm font-bold text-green-900">{externalClientPreview.name}</h4>
+                        </div>
+                        <Badge className="bg-green-600">{externalClientPreview.client_code}</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-[10px] text-green-800">
+                        <div className="flex items-center gap-1">
+                          <Mail className="w-3 h-3" /> {externalClientPreview.email}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Phone className="w-3 h-3" /> {externalClientPreview.phone}
+                        </div>
+                      </div>
+                      <Button
+                        className="w-full bg-green-600 hover:bg-green-700 h-10 rounded-xl mt-2"
+                        onClick={() => handleSyncClient(externalClientPreview.client_code, externalClientPreview)}
+                      >
+                        Confirm & Link
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex justify-end pt-2">
+              <Button variant="ghost" onClick={() => setIsSyncDialogOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div >
   );
 };
 

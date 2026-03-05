@@ -36,7 +36,9 @@ import {
   Star,
   Activity,
   FolderSearch,
-  DollarSign
+  DollarSign,
+  Zap,
+  Tag
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -63,6 +65,8 @@ import TaskTemplateManagement from "@/components/hr/TaskTemplateManagement";
 import ManageProjects from "@/components/hr/ManageProjects";
 import ProjectMonitor from "@/pages/ProjectMonitor";
 import PricingManagement from "@/components/hr/PricingManagement";
+import ApiIntegration from "@/components/hr/ApiIntegration";
+import FinancialOversight from "@/components/hr/FinancialOversight";
 
 const HRDashboard = () => {
   const navigate = useNavigate();
@@ -241,7 +245,8 @@ const HRDashboard = () => {
         { id: "clients", label: "Clients", icon: Briefcase },
         { id: "manage-projects", label: "Manage Projects", icon: FolderSearch },
         { id: "project-monitor", label: "Project Monitor", icon: Activity },
-        { id: "pricing", label: "Pricing Manager", icon: DollarSign },
+        { id: "financials", label: "Financial Oversight", icon: DollarSign },
+        { id: "pricing", label: "Pricing Manager", icon: Tag },
         { id: "applications", label: "Applications", icon: UserPlus },
       ]
     },
@@ -254,8 +259,9 @@ const HRDashboard = () => {
       ]
     },
     {
-      label: "SYSTEM",
+      label: "COMPANY",
       items: [
+        { id: "api-integration", label: "API Integration", icon: Zap },
         { id: "banners", label: "Banners", icon: Megaphone },
         { id: "notifications", label: "Notifications", icon: Bell },
       ]
@@ -280,6 +286,8 @@ const HRDashboard = () => {
       case "banners": return <BannerManagement />;
       case "applications": return <TeamApplicationsList />;
       case "pricing": return <PricingManagement />;
+      case "financials": return <FinancialOversight />;
+      case "api-integration": return <ApiIntegration />;
       default: return <StatsGrid stats={stats} />;
     }
   };

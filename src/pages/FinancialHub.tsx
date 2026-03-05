@@ -24,39 +24,26 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { supabase } from "@/integrations/supabase/client";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { useRealtimeQuery } from "@/hooks/useRealtimeQuery";
 
 const FinancialHub = ({ profile }: { profile: any }) => {
-    const [projects, setProjects] = useState<any[]>([]);
-    const [documents, setDocuments] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    // Fetch projects for billing info in realtime
+    const { data: projects = [] } = useRealtimeQuery({
+        queryKey: ['client-projects', profile?.id],
+        table: 'client_projects',
+        filter: `client_id=eq.${profile?.id}`,
+        enabled: !!profile?.id
+    });
 
-    useEffect(() => {
-        fetchFinancialData();
-    }, [profile]);
+    // Fetch documents (invoices, agreements) in realtime
+    const { data: documents = [] } = useRealtimeQuery({
+        queryKey: ['client-documents', profile?.id],
+        table: 'client_documents',
+        filter: `client_id=eq.${profile?.id}`,
+        enabled: !!profile?.id
+    });
 
-    const fetchFinancialData = async () => {
-        if (!profile) return;
-
-        // Fetch projects for billing info
-        const { data: projectData } = await supabase
-            .from("client_projects")
-            .select("*")
-            .eq("client_id", profile.id);
-
-        // Fetch documents (invoices, agreements)
-        const { data: docData } = await supabase
-            .from("client_documents")
-            .select("*")
-            .eq("client_id", profile.id)
-            .eq("status", "approved");
-
-        if (projectData) setProjects(projectData);
-        if (docData) setDocuments(docData);
-        setLoading(false);
-    };
+    const loading = !profile;
 
     const totalBudget = projects.reduce((acc, p) => acc + Number(p.total_amount || 0), 0);
     const totalPaid = projects.reduce((acc, p) => acc + Number(p.amount_paid || 0), 0);
