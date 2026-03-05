@@ -119,8 +119,9 @@ export const fetchClientFromBilling = async (clientCode: string) => {
         if (!response.ok) throw new Error("Client not found in billing software");
 
         const data = await response.json();
-        // Assuming the response is an array or a single object based on the filter
-        return Array.isArray(data) ? data[0] : data;
+        // Handle both plain arrays and wrapped { data: [...] } responses
+        const items = Array.isArray(data) ? data : (data?.data || (data ? [data] : []));
+        return Array.isArray(items) ? items[0] : items;
     } catch (error) {
         console.error("Error fetching client from billing:", error);
         throw error;
@@ -143,7 +144,9 @@ export const searchClientsInBilling = async (query: string) => {
 
         if (!response.ok) throw new Error("Failed to search clients");
         const data = await response.json();
-        return Array.isArray(data) ? data : (data ? [data] : []);
+        // Handle both plain arrays and wrapped { data: [...] } responses from billing API
+        const items = Array.isArray(data) ? data : (data?.data || (data ? [data] : []));
+        return Array.isArray(items) ? items : [];
     } catch (error) {
         console.error("Error searching clients in billing:", error);
         return [];
