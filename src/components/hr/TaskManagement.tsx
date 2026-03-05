@@ -498,7 +498,7 @@ const TaskManagement = () => {
     try {
       const { data, error } = await supabase
         .from('staff_subtasks')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .update({ status: newStatus as any, updated_at: new Date().toISOString() })
         .eq('id', subtaskId)
         .select(`
           *,
