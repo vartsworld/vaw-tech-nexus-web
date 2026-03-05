@@ -441,7 +441,7 @@ const TaskManagement = () => {
 
       const { data, error } = await supabase
         .from('staff_subtasks')
-        .insert(subtasksToInsert)
+        .insert(subtasksToInsert as any)
         .select(`
           *,
           staff_profiles:assigned_to (
