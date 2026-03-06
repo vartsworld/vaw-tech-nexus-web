@@ -1012,31 +1012,42 @@ const ClientManagement = () => {
                   <Badge className="bg-green-600 text-white">{selectedClientForSync.billing_sync_id}</Badge>
                 </div>
 
-                {/* Client details */}
+                {/* Client details from billing API */}
                 <div className="space-y-1.5 text-sm text-green-900 border-t border-green-200 pt-2">
-                  {selectedClientForSync?.company_name && (
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="h-3.5 w-3.5 text-green-600" />
-                      <span className="font-medium">{selectedClientForSync.company_name}</span>
+                  {isLoadingLinkedClient ? (
+                    <div className="flex items-center gap-2 py-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                      <span className="text-green-700 text-xs">Fetching from billing software...</span>
                     </div>
-                  )}
-                  {selectedClientForSync?.contact_person && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-600 text-xs">👤</span>
-                      <span>{selectedClientForSync.contact_person}</span>
-                    </div>
-                  )}
-                  {selectedClientForSync?.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-3.5 w-3.5 text-green-600" />
-                      <span>{selectedClientForSync.email}</span>
-                    </div>
-                  )}
-                  {selectedClientForSync?.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-3.5 w-3.5 text-green-600" />
-                      <span>{selectedClientForSync.phone}</span>
-                    </div>
+                  ) : linkedBillingClient ? (
+                    <>
+                      {(linkedBillingClient.company_name || linkedBillingClient.name) && (
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="h-3.5 w-3.5 text-green-600" />
+                          <span className="font-medium">{linkedBillingClient.company_name || linkedBillingClient.name}</span>
+                        </div>
+                      )}
+                      {(linkedBillingClient.contact_person) && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-600 text-xs">👤</span>
+                          <span>{linkedBillingClient.contact_person}</span>
+                        </div>
+                      )}
+                      {linkedBillingClient.email && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-3.5 w-3.5 text-green-600" />
+                          <span>{linkedBillingClient.email}</span>
+                        </div>
+                      )}
+                      {linkedBillingClient.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-3.5 w-3.5 text-green-600" />
+                          <span>{linkedBillingClient.phone}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-xs text-green-700 italic">Could not fetch details from billing software.</p>
                   )}
                 </div>
 
