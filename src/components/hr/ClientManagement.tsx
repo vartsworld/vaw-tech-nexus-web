@@ -987,6 +987,28 @@ const ClientManagement = () => {
               </p>
             </div>
 
+            {/* Show linked info if already synced */}
+            {selectedClientForSync?.billing_sync_id && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-xl space-y-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Currently Linked</p>
+                    <p className="text-sm font-bold text-green-900 mt-1">Billing Code: {selectedClientForSync.billing_sync_id}</p>
+                  </div>
+                  <Badge className="bg-green-600 text-white">{selectedClientForSync.billing_sync_id}</Badge>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full"
+                  onClick={handleUnlinkClient}
+                >
+                  Unlink from Billing Software
+                </Button>
+              </div>
+            )}
+
+            {!selectedClientForSync?.billing_sync_id && (
             <Tabs defaultValue="search" className="space-y-4">
               <TabsList className="grid grid-cols-2">
                 <TabsTrigger value="search">Search Database</TabsTrigger>
@@ -1076,6 +1098,7 @@ const ClientManagement = () => {
                 </div>
               </TabsContent>
             </Tabs>
+            )}
 
             <div className="flex justify-end pt-2">
               <Button variant="ghost" onClick={() => setIsSyncDialogOpen(false)}>
