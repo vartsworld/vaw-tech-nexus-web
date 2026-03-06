@@ -121,7 +121,20 @@ export const fetchClientFromBilling = async (clientCode: string) => {
         const data = await response.json();
         // Handle both plain arrays and wrapped { data: [...] } responses
         const items = Array.isArray(data) ? data : (data?.data || (data ? [data] : []));
-        return Array.isArray(items) ? items[0] : items;
+
+        if (!Array.isArray(items)) return items;
+        if (items.length === 0) return null;
+        if (items.length === 1) return items[0];
+
+        // If the external API ignores ?client_code and returns ALL clients, manually find the right one
+        const exactMatch = items.find((item: any) =>
+            String(item.id) === String(clientCode) ||
+            String(item.client_code) === String(clientCode) ||
+            String(item.customer_id) === String(clientCode) ||
+            String(item.billing_sync_id) === String(clientCode)
+        );
+
+        return exactMatch || null;
     } catch (error) {
         console.error("Error fetching client from billing:", error);
         throw error;
