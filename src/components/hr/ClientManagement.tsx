@@ -645,11 +645,23 @@ const ClientManagement = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
+                        onClick={async () => {
                           setSelectedClientForSync(client);
                           setSyncCode(client.billing_sync_id || "");
+                          setLinkedBillingClient(null);
                           setIsSyncDialogOpen(true);
-                        }}
+                          if (client.billing_sync_id) {
+                            setIsLoadingLinkedClient(true);
+                            try {
+                              const billingData = await fetchClientFromBilling(client.billing_sync_id);
+                              setLinkedBillingClient(billingData || null);
+                            } catch (e) {
+                              console.warn('Could not fetch linked billing client:', e);
+                            } finally {
+                              setIsLoadingLinkedClient(false);
+                            }
+                          }
+                        }
                         className={client.billing_sync_id ? "text-green-600" : "text-amber-600"}
                         title={client.billing_sync_id ? `Synced: ${client.billing_sync_id}` : "Sync with Billing"}
                       >
