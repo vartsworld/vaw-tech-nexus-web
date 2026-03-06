@@ -43,6 +43,8 @@ const ClientManagement = () => {
   const [selectedClientForSync, setSelectedClientForSync] = useState<any>(null);
   const [syncCode, setSyncCode] = useState("");
   const [externalClientPreview, setExternalClientPreview] = useState<any>(null);
+  const [linkedBillingClient, setLinkedBillingClient] = useState<any>(null);
+  const [isLoadingLinkedClient, setIsLoadingLinkedClient] = useState(false);
   const [externalSearchResults, setExternalSearchResults] = useState<any[]>([]);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isSearchingExternal, setIsSearchingExternal] = useState(false);
@@ -643,10 +645,22 @@ const ClientManagement = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
+                        onClick={async () => {
                           setSelectedClientForSync(client);
                           setSyncCode(client.billing_sync_id || "");
+                          setLinkedBillingClient(null);
                           setIsSyncDialogOpen(true);
+                          if (client.billing_sync_id) {
+                            setIsLoadingLinkedClient(true);
+                            try {
+                              const billingData = await fetchClientFromBilling(client.billing_sync_id);
+                              setLinkedBillingClient(billingData || null);
+                            } catch (e) {
+                              console.warn('Could not fetch linked billing client:', e);
+                            } finally {
+                              setIsLoadingLinkedClient(false);
+                            }
+                          }
                         }}
                         className={client.billing_sync_id ? "text-green-600" : "text-amber-600"}
                         title={client.billing_sync_id ? `Synced: ${client.billing_sync_id}` : "Sync with Billing"}
@@ -998,31 +1012,42 @@ const ClientManagement = () => {
                   <Badge className="bg-green-600 text-white">{selectedClientForSync.billing_sync_id}</Badge>
                 </div>
 
-                {/* Client details */}
+                {/* Client details from billing API */}
                 <div className="space-y-1.5 text-sm text-green-900 border-t border-green-200 pt-2">
-                  {selectedClientForSync?.company_name && (
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="h-3.5 w-3.5 text-green-600" />
-                      <span className="font-medium">{selectedClientForSync.company_name}</span>
+                  {isLoadingLinkedClient ? (
+                    <div className="flex items-center gap-2 py-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-green-600" />
+                      <span className="text-green-700 text-xs">Fetching from billing software...</span>
                     </div>
-                  )}
-                  {selectedClientForSync?.contact_person && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-600 text-xs">👤</span>
-                      <span>{selectedClientForSync.contact_person}</span>
-                    </div>
-                  )}
-                  {selectedClientForSync?.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-3.5 w-3.5 text-green-600" />
-                      <span>{selectedClientForSync.email}</span>
-                    </div>
-                  )}
-                  {selectedClientForSync?.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-3.5 w-3.5 text-green-600" />
-                      <span>{selectedClientForSync.phone}</span>
-                    </div>
+                  ) : linkedBillingClient ? (
+                    <>
+                      {(linkedBillingClient.company_name || linkedBillingClient.name) && (
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="h-3.5 w-3.5 text-green-600" />
+                          <span className="font-medium">{linkedBillingClient.company_name || linkedBillingClient.name}</span>
+                        </div>
+                      )}
+                      {(linkedBillingClient.contact_person) && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-600 text-xs">👤</span>
+                          <span>{linkedBillingClient.contact_person}</span>
+                        </div>
+                      )}
+                      {linkedBillingClient.email && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-3.5 w-3.5 text-green-600" />
+                          <span>{linkedBillingClient.email}</span>
+                        </div>
+                      )}
+                      {linkedBillingClient.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-3.5 w-3.5 text-green-600" />
+                          <span>{linkedBillingClient.phone}</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-xs text-green-700 italic">Could not fetch details from billing software.</p>
                   )}
                 </div>
 
