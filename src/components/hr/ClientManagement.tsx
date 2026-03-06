@@ -43,6 +43,8 @@ const ClientManagement = () => {
   const [selectedClientForSync, setSelectedClientForSync] = useState<any>(null);
   const [syncCode, setSyncCode] = useState("");
   const [externalClientPreview, setExternalClientPreview] = useState<any>(null);
+  const [linkedBillingClient, setLinkedBillingClient] = useState<any>(null);
+  const [isLoadingLinkedClient, setIsLoadingLinkedClient] = useState(false);
   const [externalSearchResults, setExternalSearchResults] = useState<any[]>([]);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isSearchingExternal, setIsSearchingExternal] = useState(false);
