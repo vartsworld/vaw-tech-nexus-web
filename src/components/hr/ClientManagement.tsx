@@ -400,9 +400,12 @@ const ClientManagement = () => {
           .eq('email', selectedClientForSync.email);
       }
 
-      // If we have full external client data, we could potentially sync more fields here.
-      // For now, we just perform the link confirmation.
-      await syncClientToBilling(selectedClientForSync, codeToUse);
+      // Try external sync but don't block the link operation
+      try {
+        await syncClientToBilling(selectedClientForSync, codeToUse);
+      } catch (extError) {
+        console.warn('External sync notification failed (link still saved):', extError);
+      }
 
       await fetchClients();
       setIsSyncDialogOpen(false);
@@ -423,6 +426,22 @@ const ClientManagement = () => {
         description: error.message || "Failed to link client.",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleUnlinkClient = async () => {
+    if (!selectedClientForSync) return;
+    try {
+      await supabase.from('clients').update({ billing_sync_id: null }).eq('id', selectedClientForSync.id);
+      if (selectedClientForSync.email) {
+        await supabase.from('client_profiles').update({ billing_sync_id: null }).eq('email', selectedClientForSync.email);
+      }
+      await fetchClients();
+      setIsSyncDialogOpen(false);
+      setSelectedClientForSync(null);
+      toast({ title: "Unlinked", description: "Client disconnected from billing software." });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 
@@ -968,6 +987,28 @@ const ClientManagement = () => {
               </p>
             </div>
 
+            {/* Show linked info if already synced */}
+            {selectedClientForSync?.billing_sync_id && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-xl space-y-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">Currently Linked</p>
+                    <p className="text-sm font-bold text-green-900 mt-1">Billing Code: {selectedClientForSync.billing_sync_id}</p>
+                  </div>
+                  <Badge className="bg-green-600 text-white">{selectedClientForSync.billing_sync_id}</Badge>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full"
+                  onClick={handleUnlinkClient}
+                >
+                  Unlink from Billing Software
+                </Button>
+              </div>
+            )}
+
+            {!selectedClientForSync?.billing_sync_id && (
             <Tabs defaultValue="search" className="space-y-4">
               <TabsList className="grid grid-cols-2">
                 <TabsTrigger value="search">Search Database</TabsTrigger>
@@ -1057,6 +1098,7 @@ const ClientManagement = () => {
                 </div>
               </TabsContent>
             </Tabs>
+            )}
 
             <div className="flex justify-end pt-2">
               <Button variant="ghost" onClick={() => setIsSyncDialogOpen(false)}>

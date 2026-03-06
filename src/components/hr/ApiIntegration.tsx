@@ -72,20 +72,62 @@ const ApiIntegration = () => {
     const [resourceData, setResourceData] = useState<any[]>([]);
     const [isFetching, setIsFetching] = useState(false);
 
+    // Load credentials from Supabase app_settings on mount
     useEffect(() => {
-        if (externalApiKey && externalApiSecret) {
-            testConnection();
-        }
+        const loadSavedCredentials = async () => {
+            try {
+                const { data } = await supabase
+                    .from('app_settings')
+                    .select('key, value')
+                    .in('key', ['billing_api_url', 'billing_api_key', 'billing_api_secret']);
+                
+                if (data && data.length > 0) {
+                    data.forEach((setting: any) => {
+                        const val = typeof setting.value === 'string' ? setting.value : JSON.stringify(setting.value);
+                        if (setting.key === 'billing_api_url' && val) {
+                            setExternalApiUrl(val.replace(/^"|"$/g, ''));
+                            localStorage.setItem('vaw_external_api_url', val.replace(/^"|"$/g, ''));
+                        }
+                        if (setting.key === 'billing_api_key' && val) {
+                            setExternalApiKey(val.replace(/^"|"$/g, ''));
+                            localStorage.setItem('vaw_external_api_key', val.replace(/^"|"$/g, ''));
+                        }
+                        if (setting.key === 'billing_api_secret' && val) {
+                            setExternalApiSecret(val.replace(/^"|"$/g, ''));
+                            localStorage.setItem('vaw_external_api_secret', val.replace(/^"|"$/g, ''));
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('Error loading API credentials from DB:', err);
+            }
+        };
+        loadSavedCredentials().then(() => {
+            const key = localStorage.getItem('vaw_external_api_key');
+            const secret = localStorage.getItem('vaw_external_api_secret');
+            if (key && secret) testConnection();
+        });
     }, []);
 
     const saveCredentials = async () => {
+        // Save to localStorage for immediate use
         localStorage.setItem('vaw_external_api_url', externalApiUrl);
         localStorage.setItem('vaw_external_api_key', externalApiKey);
         localStorage.setItem('vaw_external_api_secret', externalApiSecret);
+
+        // Persist to Supabase app_settings for cross-session/cross-device access
+        const settings = [
+            { key: 'billing_api_url', value: JSON.stringify(externalApiUrl), description: 'Billing software API URL' },
+            { key: 'billing_api_key', value: JSON.stringify(externalApiKey), description: 'Billing software API key' },
+            { key: 'billing_api_secret', value: JSON.stringify(externalApiSecret), description: 'Billing software API secret' },
+        ];
+        for (const s of settings) {
+            await supabase.from('app_settings').upsert(s, { onConflict: 'key' });
+        }
+
         const success = await testConnection();
         if (success) {
-            toast.success("API Integration Completed successfully!");
-            // Auto-switch to explorer tab
+            toast.success("API credentials saved & connection verified!");
             const explorerTab = document.querySelector('[value="explorer"]') as HTMLButtonElement;
             if (explorerTab) explorerTab.click();
             fetchResource(activeResource);
