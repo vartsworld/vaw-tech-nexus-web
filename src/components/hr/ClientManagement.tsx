@@ -997,6 +997,35 @@ const ClientManagement = () => {
                   </div>
                   <Badge className="bg-green-600 text-white">{selectedClientForSync.billing_sync_id}</Badge>
                 </div>
+
+                {/* Client details */}
+                <div className="space-y-1.5 text-sm text-green-900 border-t border-green-200 pt-2">
+                  {selectedClientForSync?.company_name && (
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="h-3.5 w-3.5 text-green-600" />
+                      <span className="font-medium">{selectedClientForSync.company_name}</span>
+                    </div>
+                  )}
+                  {selectedClientForSync?.contact_person && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-600 text-xs">👤</span>
+                      <span>{selectedClientForSync.contact_person}</span>
+                    </div>
+                  )}
+                  {selectedClientForSync?.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-3.5 w-3.5 text-green-600" />
+                      <span>{selectedClientForSync.email}</span>
+                    </div>
+                  )}
+                  {selectedClientForSync?.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-3.5 w-3.5 text-green-600" />
+                      <span>{selectedClientForSync.phone}</span>
+                    </div>
+                  )}
+                </div>
+
                 <Button
                   variant="destructive"
                   size="sm"
