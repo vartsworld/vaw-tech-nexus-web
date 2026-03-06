@@ -400,9 +400,12 @@ const ClientManagement = () => {
           .eq('email', selectedClientForSync.email);
       }
 
-      // If we have full external client data, we could potentially sync more fields here.
-      // For now, we just perform the link confirmation.
-      await syncClientToBilling(selectedClientForSync, codeToUse);
+      // Try external sync but don't block the link operation
+      try {
+        await syncClientToBilling(selectedClientForSync, codeToUse);
+      } catch (extError) {
+        console.warn('External sync notification failed (link still saved):', extError);
+      }
 
       await fetchClients();
       setIsSyncDialogOpen(false);
@@ -423,6 +426,22 @@ const ClientManagement = () => {
         description: error.message || "Failed to link client.",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleUnlinkClient = async () => {
+    if (!selectedClientForSync) return;
+    try {
+      await supabase.from('clients').update({ billing_sync_id: null }).eq('id', selectedClientForSync.id);
+      if (selectedClientForSync.email) {
+        await supabase.from('client_profiles').update({ billing_sync_id: null }).eq('email', selectedClientForSync.email);
+      }
+      await fetchClients();
+      setIsSyncDialogOpen(false);
+      setSelectedClientForSync(null);
+      toast({ title: "Unlinked", description: "Client disconnected from billing software." });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 
