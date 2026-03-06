@@ -661,7 +661,7 @@ const ClientManagement = () => {
                               setIsLoadingLinkedClient(false);
                             }
                           }
-                        }
+                        }}
                         className={client.billing_sync_id ? "text-green-600" : "text-amber-600"}
                         title={client.billing_sync_id ? `Synced: ${client.billing_sync_id}` : "Sync with Billing"}
                       >
