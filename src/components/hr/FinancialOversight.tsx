@@ -80,8 +80,8 @@ const FinancialOversight = () => {
                     const expensesArr = await expRes.json();
                     const invoicesArr = await invRes.json();
 
-                    const expenses = Array.isArray(expensesArr) ? expensesArr : [];
-                    const invoices = Array.isArray(invoicesArr) ? invoicesArr : [];
+                    const expenses = Array.isArray(expensesArr) ? expensesArr : (expensesArr?.data || []);
+                    const invoices = Array.isArray(invoicesArr) ? invoicesArr : (invoicesArr?.data || []);
 
                     const totalExpenses = expenses.reduce((acc: number, e: any) => acc + Number(e.amount || 0), 0);
                     const totalRevenue = invoices.reduce((acc: number, i: any) => acc + Number(i.amount || 0), 0);
@@ -109,11 +109,11 @@ const FinancialOversight = () => {
         if (externalStats?.rawInvoices) {
             const syncedSyncIds = clients
                 .filter((c: any) => c.billing_sync_id)
-                .map((c: any) => c.billing_sync_id);
+                .map((c: any) => String(c.billing_sync_id));
 
             return externalStats.rawInvoices
-                .filter((inv: any) => syncedSyncIds.includes(inv.client_id || inv.client_sync_id || inv.client_code))
-                .reduce((acc: number, inv: any) => acc + Number(inv.amount || 0), 0);
+                .filter((inv: any) => syncedSyncIds.includes(String(inv.client_id || inv.client_sync_id || inv.client_code || inv.customer_id)))
+                .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
         }
         return 0; // If not using external API, show 0 as it's "not synced"
     })();
@@ -122,11 +122,11 @@ const FinancialOversight = () => {
         if (externalStats?.rawInvoices) {
             const syncedSyncIds = clients
                 .filter((c: any) => c.billing_sync_id)
-                .map((c: any) => c.billing_sync_id);
+                .map((c: any) => String(c.billing_sync_id));
 
             return externalStats.rawInvoices
-                .filter((inv: any) => syncedSyncIds.includes(inv.client_id || inv.client_sync_id || inv.client_code) && (inv.status === 'paid' || inv.status === 'collected'))
-                .reduce((acc: number, inv: any) => acc + Number(inv.amount || 0), 0);
+                .filter((inv: any) => syncedSyncIds.includes(String(inv.client_id || inv.client_sync_id || inv.client_code || inv.customer_id)) && (inv.status === 'paid' || inv.status === 'collected'))
+                .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
         }
         return 0;
     })();
@@ -143,10 +143,10 @@ const FinancialOversight = () => {
         // Only using API data for the Global Matrix
 
         // Process External Invoices (API Revenue)
-        const syncedSyncIds = clients.filter((c: any) => c.billing_sync_id).map((c: any) => c.billing_sync_id);
+        const syncedSyncIds = clients.filter((c: any) => c.billing_sync_id).map((c: any) => String(c.billing_sync_id));
 
         (externalStats?.rawInvoices || [])
-            .filter((inv: any) => syncedSyncIds.includes(inv.client_id || inv.client_sync_id || inv.client_code))
+            .filter((inv: any) => syncedSyncIds.includes(String(inv.client_id || inv.client_sync_id || inv.client_code || inv.customer_id)))
             .forEach((inv: any) => {
                 const date = new Date(inv.created_at || inv.date || Date.now());
                 const key = `${date.getFullYear()}-${date.getMonth()}`;
@@ -158,7 +158,7 @@ const FinancialOversight = () => {
                         timestamp: date.getTime()
                     };
                 }
-                dataMap[key].revenue += Number(inv.amount || 0);
+                dataMap[key].revenue += Number(inv.amount || inv.total || 0);
             });
 
         // Process External Expenses (API Outflow)
@@ -200,7 +200,7 @@ const FinancialOversight = () => {
     const getClientBillingRanking = () => {
         const clientMap: Record<string, { id: string, name: string, paid: number, total: number }> = {};
         const syncedClients = clients.filter((c: any) => c.billing_sync_id);
-        const syncedSyncIds = syncedClients.map((c: any) => c.billing_sync_id);
+        const syncedSyncIds = syncedClients.map((c: any) => String(c.billing_sync_id));
 
         // 1. Skip Supabase data entirely for the Global Billing Matrix
         // This ensures only data actually in the billing software appears.
@@ -208,10 +208,10 @@ const FinancialOversight = () => {
         // 2. Build map from External API Invoices
         if (externalStats?.rawInvoices) {
             externalStats.rawInvoices
-                .filter((inv: any) => syncedSyncIds.includes(inv.client_id || inv.client_sync_id || inv.client_code))
+                .filter((inv: any) => syncedSyncIds.includes(String(inv.client_id || inv.client_sync_id || inv.client_code || inv.customer_id)))
                 .forEach((inv: any) => {
-                    const syncId = inv.client_id || inv.client_sync_id || inv.client_code;
-                    const internalClient = syncedClients.find((c: any) => c.billing_sync_id === syncId);
+                    const syncId = String(inv.client_id || inv.client_sync_id || inv.client_code || inv.customer_id);
+                    const internalClient = syncedClients.find((c: any) => String(c.billing_sync_id) === syncId);
                     if (!internalClient) return;
 
                     if (!clientMap[internalClient.id]) {
@@ -223,7 +223,7 @@ const FinancialOversight = () => {
                         };
                     }
 
-                    const amount = Number(inv.amount || 0);
+                    const amount = Number(inv.amount || inv.total || 0);
                     if (amount === 0) return; // Ignore zero entries
 
                     if (inv.status === 'paid' || inv.status === 'collected') {
