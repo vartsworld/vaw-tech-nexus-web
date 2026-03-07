@@ -61,6 +61,8 @@ import { useStaffData } from "@/hooks/useStaffData";
 import { TaskApprovalDialog } from "./TaskApprovalDialog";
 import ClientOnboardingCreator from "./ClientOnboardingCreator";
 import SharedProjectForm from "../projects/SharedProjectForm";
+import TaskCreatePage from "../hr/TaskCreatePage";
+import TaskDetailPage from "../hr/TaskDetailPage";
 
 interface Subtask {
   id: string;
