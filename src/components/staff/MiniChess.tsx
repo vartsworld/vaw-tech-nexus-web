@@ -658,7 +658,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
   // Render game menu
   if (gameMode === 'menu') {
     return (
-      <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-amber-500/20 shadow-2xl shadow-amber-500/10 overflow-hidden">
+      <Card className={`bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-amber-500/20 shadow-2xl shadow-amber-500/10 overflow-hidden ${compact ? 'border-0 shadow-none bg-transparent' : ''}`}>
         {/* Decorative chess pattern background */}
         <div className="absolute inset-0 opacity-5">
           <div className="grid grid-cols-8 h-full">
@@ -668,46 +668,44 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
           </div>
         </div>
 
-        <CardHeader className="pb-3 relative">
+        <CardHeader className={`relative ${compact ? 'p-3 pb-2' : 'pb-3'}`}>
           <CardTitle className="text-white flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/40">
-                <Crown className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-2">
+              <div className={`rounded-xl bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/40 ${compact ? 'w-7 h-7' : 'w-10 h-10'}`}>
+                <Crown className={compact ? 'w-3.5 h-3.5 text-white' : 'w-5 h-5 text-white'} />
               </div>
               <div>
-                <span className="text-lg font-bold bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent">
+                <span className={`font-bold bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent ${compact ? 'text-sm' : 'text-lg'}`}>
                   Chess Arena
                 </span>
-                <p className="text-[10px] text-slate-500 font-normal">Challenge your teammates</p>
+                <p className={`text-slate-500 font-normal ${compact ? 'text-[8px]' : 'text-[10px]'}`}>Challenge your teammates</p>
               </div>
             </div>
             {pendingInvites.length > 0 && (
-              <div className="relative">
-                <Badge className="bg-gradient-to-r from-rose-500 to-pink-500 text-white border-0 animate-pulse shadow-lg shadow-rose-500/30">
-                  {pendingInvites.length} invite{pendingInvites.length > 1 ? 's' : ''}
-                </Badge>
-              </div>
+              <Badge className="bg-gradient-to-r from-rose-500 to-pink-500 text-white border-0 animate-pulse shadow-lg shadow-rose-500/30 text-[10px]">
+                {pendingInvites.length}
+              </Badge>
             )}
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="space-y-4 relative">
+        <CardContent className={`space-y-3 relative ${compact ? 'p-3 pt-0' : ''}`}>
           {/* Pending Invites */}
           {pendingInvites.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] uppercase tracking-wider text-amber-400/70 font-bold">🎯 Incoming Challenges</p>
+              <p className="text-[9px] uppercase tracking-wider text-amber-400/70 font-bold">🎯 Incoming Challenges</p>
               {pendingInvites.map(invite => (
-                <div key={invite.id} className="flex items-center justify-between bg-gradient-to-r from-slate-800 to-slate-700 rounded-xl p-3 border border-amber-500/20">
+                <div key={invite.id} className={`flex items-center justify-between bg-gradient-to-r from-slate-800 to-slate-700 rounded-lg border border-amber-500/20 ${compact ? 'p-2' : 'p-3 rounded-xl'}`}>
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-sm text-white font-bold shadow-lg">
+                    <div className={`rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-lg ${compact ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-sm'}`}>
                       {invite.from_profile?.full_name?.charAt(0)}
                     </div>
-                    <span className="text-sm text-white font-medium">{invite.from_profile?.full_name}</span>
+                    <span className={`text-white font-medium ${compact ? 'text-xs' : 'text-sm'}`}>{invite.from_profile?.full_name}</span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1">
                     <Button
                       size="sm"
-                      className="h-8 px-3 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-lg shadow-emerald-500/30"
+                      className={`bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white ${compact ? 'h-6 px-2 text-[10px]' : 'h-8 px-3'}`}
                       onClick={() => acceptInvite(invite)}
                     >
                       <Play className="w-3 h-3 mr-1" /> Accept
@@ -715,10 +713,10 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-8 px-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+                      className={`text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 ${compact ? 'h-6 w-6 p-0' : 'h-8 px-2'}`}
                       onClick={() => declineInvite(invite.id)}
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
@@ -728,75 +726,75 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
 
           {/* Game Mode Tabs */}
           <Tabs defaultValue="play" className="w-full">
-            <TabsList className="w-full bg-slate-800/80 border border-slate-700/50 p-1 h-auto">
-              <TabsTrigger value="play" className="flex-1 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white py-2">
-                <Gamepad2 className="w-3 h-3 mr-1" /> Play
+            <TabsList className={`w-full bg-slate-800/80 border border-slate-700/50 p-0.5 h-auto ${compact ? 'gap-0' : 'p-1'}`}>
+              <TabsTrigger value="play" className={`flex-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white ${compact ? 'text-[10px] py-1.5' : 'text-xs py-2'}`}>
+                <Gamepad2 className={`mr-1 ${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'}`} /> Play
               </TabsTrigger>
-              <TabsTrigger value="invite" className="flex-1 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white py-2">
-                <UserPlus className="w-3 h-3 mr-1" /> Invite
+              <TabsTrigger value="invite" className={`flex-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white ${compact ? 'text-[10px] py-1.5' : 'text-xs py-2'}`}>
+                <UserPlus className={`mr-1 ${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'}`} /> Invite
               </TabsTrigger>
-              <TabsTrigger value="stats" className="flex-1 text-xs data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white py-2">
-                <Trophy className="w-3 h-3 mr-1" /> Stats
+              <TabsTrigger value="stats" className={`flex-1 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white ${compact ? 'text-[10px] py-1.5' : 'text-xs py-2'}`}>
+                <Trophy className={`mr-1 ${compact ? 'w-2.5 h-2.5' : 'w-3 h-3'}`} /> Stats
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="play" className="space-y-3 mt-4">
+            <TabsContent value="play" className={`space-y-2 ${compact ? 'mt-2' : 'mt-4'}`}>
               <Button
                 onClick={startBotGame}
-                className="w-full h-14 bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 hover:from-emerald-600 hover:via-green-600 hover:to-teal-600 shadow-lg shadow-emerald-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className={`w-full bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 hover:from-emerald-600 hover:via-green-600 hover:to-teal-600 shadow-lg shadow-emerald-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] ${compact ? 'h-10' : 'h-14'}`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                    <Bot className="w-5 h-5" />
+                <div className="flex items-center gap-2">
+                  <div className={`rounded-lg bg-white/20 flex items-center justify-center ${compact ? 'w-6 h-6' : 'w-8 h-8'}`}>
+                    <Bot className={compact ? 'w-3.5 h-3.5' : 'w-5 h-5'} />
                   </div>
                   <div className="text-left">
-                    <div className="font-bold">Play vs Bot</div>
-                    <div className="text-[10px] opacity-80">Practice your skills</div>
+                    <div className={`font-bold ${compact ? 'text-xs' : ''}`}>Play vs Bot</div>
+                    <div className={`opacity-80 ${compact ? 'text-[8px]' : 'text-[10px]'}`}>Practice your skills</div>
                   </div>
                 </div>
               </Button>
               <Button
                 onClick={findRandomMatch}
-                className="w-full h-14 bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 hover:from-violet-600 hover:via-purple-600 hover:to-fuchsia-600 shadow-lg shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className={`w-full bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 hover:from-violet-600 hover:via-purple-600 hover:to-fuchsia-600 shadow-lg shadow-purple-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] ${compact ? 'h-10' : 'h-14'}`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                    <Shuffle className="w-5 h-5" />
+                <div className="flex items-center gap-2">
+                  <div className={`rounded-lg bg-white/20 flex items-center justify-center ${compact ? 'w-6 h-6' : 'w-8 h-8'}`}>
+                    <Shuffle className={compact ? 'w-3.5 h-3.5' : 'w-5 h-5'} />
                   </div>
                   <div className="text-left">
-                    <div className="font-bold">Random Match</div>
-                    <div className="text-[10px] opacity-80">Find an opponent</div>
+                    <div className={`font-bold ${compact ? 'text-xs' : ''}`}>Random Match</div>
+                    <div className={`opacity-80 ${compact ? 'text-[8px]' : 'text-[10px]'}`}>Find an opponent</div>
                   </div>
                 </div>
               </Button>
             </TabsContent>
 
-            <TabsContent value="invite" className="mt-4">
-              <ScrollArea className="h-44">
+            <TabsContent value="invite" className={compact ? 'mt-2' : 'mt-4'}>
+              <ScrollArea className={compact ? 'h-32' : 'h-44'}>
                 {teamMembers.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="w-10 h-10 text-slate-600 mx-auto mb-2" />
-                    <p className="text-slate-500 text-sm">No team members online</p>
+                  <div className="text-center py-4">
+                    <Users className={`text-slate-600 mx-auto mb-1 ${compact ? 'w-6 h-6' : 'w-10 h-10'}`} />
+                    <p className={`text-slate-500 ${compact ? 'text-xs' : 'text-sm'}`}>No team members online</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     {teamMembers.map(member => (
-                      <div key={member.user_id} className="flex items-center justify-between bg-slate-800/50 hover:bg-slate-700/50 rounded-xl p-3 border border-slate-700/50 transition-all">
-                        <div className="flex items-center gap-3">
+                      <div key={member.user_id} className={`flex items-center justify-between bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 transition-all ${compact ? 'rounded-lg p-2' : 'rounded-xl p-3'}`}>
+                        <div className="flex items-center gap-2">
                           <div className="relative">
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-sm text-white font-bold">
+                            <div className={`rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold ${compact ? 'w-7 h-7 text-[10px]' : 'w-9 h-9 text-sm'}`}>
                               {member.full_name?.charAt(0)}
                             </div>
-                            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-800" />
+                            <div className={`absolute -bottom-0.5 -right-0.5 rounded-full bg-emerald-500 border-2 border-slate-800 ${compact ? 'w-2 h-2' : 'w-3 h-3'}`} />
                           </div>
                           <div>
-                            <span className="text-sm text-white font-medium block">{member.full_name}</span>
-                            <span className="text-[10px] text-emerald-400">Online</span>
+                            <span className={`text-white font-medium block ${compact ? 'text-[11px]' : 'text-sm'}`}>{member.full_name}</span>
+                            <span className={`text-emerald-400 ${compact ? 'text-[8px]' : 'text-[10px]'}`}>Online</span>
                           </div>
                         </div>
                         <Button
                           size="sm"
-                          className="h-8 px-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/20"
+                          className={`bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg shadow-blue-500/20 ${compact ? 'h-6 px-2 text-[10px]' : 'h-8 px-3'}`}
                           onClick={() => sendInvite(member.user_id, member.full_name)}
                         >
                           <Send className="w-3 h-3 mr-1" /> Challenge
@@ -808,28 +806,28 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="stats" className="mt-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-gradient-to-br from-yellow-500/20 to-amber-500/10 rounded-xl p-4 border border-yellow-500/20 text-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-yellow-500/30">
-                    <Trophy className="w-5 h-5 text-white" />
+            <TabsContent value="stats" className={compact ? 'mt-2' : 'mt-4'}>
+              <div className="grid grid-cols-3 gap-2">
+                <div className={`bg-gradient-to-br from-yellow-500/20 to-amber-500/10 rounded-xl border border-yellow-500/20 text-center ${compact ? 'p-2' : 'p-4'}`}>
+                  <div className={`rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center mx-auto shadow-lg shadow-yellow-500/30 ${compact ? 'w-7 h-7 mb-1' : 'w-10 h-10 mb-2'}`}>
+                    <Trophy className={compact ? 'w-3.5 h-3.5 text-white' : 'w-5 h-5 text-white'} />
                   </div>
-                  <div className="text-[10px] text-yellow-400/70 uppercase tracking-wider font-bold">Wins</div>
-                  <div className="text-2xl font-black text-white">{stats.wins}</div>
+                  <div className={`text-yellow-400/70 uppercase tracking-wider font-bold ${compact ? 'text-[7px]' : 'text-[10px]'}`}>Wins</div>
+                  <div className={`font-black text-white ${compact ? 'text-lg' : 'text-2xl'}`}>{stats.wins}</div>
                 </div>
-                <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/10 rounded-xl p-4 border border-blue-500/20 text-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-blue-500/30">
-                    <Gamepad2 className="w-5 h-5 text-white" />
+                <div className={`bg-gradient-to-br from-blue-500/20 to-cyan-500/10 rounded-xl border border-blue-500/20 text-center ${compact ? 'p-2' : 'p-4'}`}>
+                  <div className={`rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30 ${compact ? 'w-7 h-7 mb-1' : 'w-10 h-10 mb-2'}`}>
+                    <Gamepad2 className={compact ? 'w-3.5 h-3.5 text-white' : 'w-5 h-5 text-white'} />
                   </div>
-                  <div className="text-[10px] text-blue-400/70 uppercase tracking-wider font-bold">Games</div>
-                  <div className="text-2xl font-black text-white">{stats.games}</div>
+                  <div className={`text-blue-400/70 uppercase tracking-wider font-bold ${compact ? 'text-[7px]' : 'text-[10px]'}`}>Games</div>
+                  <div className={`font-black text-white ${compact ? 'text-lg' : 'text-2xl'}`}>{stats.games}</div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/10 rounded-xl p-4 border border-purple-500/20 text-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-purple-500/30">
-                    <Crown className="w-5 h-5 text-white" />
+                <div className={`bg-gradient-to-br from-purple-500/20 to-pink-500/10 rounded-xl border border-purple-500/20 text-center ${compact ? 'p-2' : 'p-4'}`}>
+                  <div className={`rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center mx-auto shadow-lg shadow-purple-500/30 ${compact ? 'w-7 h-7 mb-1' : 'w-10 h-10 mb-2'}`}>
+                    <Crown className={compact ? 'w-3.5 h-3.5 text-white' : 'w-5 h-5 text-white'} />
                   </div>
-                  <div className="text-[10px] text-purple-400/70 uppercase tracking-wider font-bold">Rating</div>
-                  <div className="text-2xl font-black text-white">{stats.rating}</div>
+                  <div className={`text-purple-400/70 uppercase tracking-wider font-bold ${compact ? 'text-[7px]' : 'text-[10px]'}`}>Rating</div>
+                  <div className={`font-black text-white ${compact ? 'text-lg' : 'text-2xl'}`}>{stats.rating}</div>
                 </div>
               </div>
             </TabsContent>
