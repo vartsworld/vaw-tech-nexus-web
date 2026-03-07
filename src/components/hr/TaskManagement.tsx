@@ -1290,6 +1290,36 @@ const TaskManagement = () => {
     }
   };
 
+  // Render Create Page
+  if (currentView === 'create') {
+    return (
+      <TaskCreatePage
+        onBack={() => setCurrentView('list')}
+        onCreated={() => { fetchTasks(); setCurrentView('list'); }}
+        userProfile={userProfile}
+      />
+    );
+  }
+
+  // Render Detail Page
+  if (currentView === 'detail' && selectedTask) {
+    return (
+      <TaskDetailPage
+        task={selectedTask}
+        onBack={() => { setCurrentView('list'); setSelectedTask(null); }}
+        onStatusUpdate={(taskId, status) => {
+          handleStatusChange(taskId, status);
+        }}
+        onEdit={(t) => { openEditDialog(t); }}
+        onDelete={(t) => { setTaskToDelete(t); setIsDeleteDialogOpen(true); }}
+        userProfile={userProfile}
+        staff={staff}
+        subtaskTemplates={subtaskTemplates}
+        taskTemplates={taskTemplates}
+      />
+    );
+  }
+
   return (
     <TooltipProvider>
       <div className="space-y-6">
@@ -1299,13 +1329,10 @@ const TaskManagement = () => {
             <ClipboardList className="h-6 w-6 text-blue-600" />
             <h2 className="text-2xl font-bold">Task Management</h2>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Create Task
-              </Button>
-            </DialogTrigger>
+          <Button className="flex items-center gap-2" onClick={() => setCurrentView('create')}>
+            <Plus className="h-4 w-4" />
+            Create Task
+          </Button>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create New Task</DialogTitle>
