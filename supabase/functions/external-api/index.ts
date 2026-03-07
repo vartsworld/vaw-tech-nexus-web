@@ -73,11 +73,11 @@ serve(async (req: Request) => {
 
                 // Map results to the structure expected by the Sync Bridge UI
                 const augmentedClients = (clients || []).map((c: any) => {
-                    // Generate a consistent code if none exists
                     const generatedCode = `B${c.id.slice(0, 5).toUpperCase()}`
                     return {
                         ...c,
-                        name: c.company_name || c.contact_person || c.email || "Unnamed Client", // Mapping for UI consistency
+                        name: c.company_name || c.contact_person || c.email || "Unnamed Client",
+                        company_name: c.company_name,
                         client_code: c.billing_sync_id || generatedCode
                     }
                 })
