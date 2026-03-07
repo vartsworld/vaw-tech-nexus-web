@@ -73,6 +73,7 @@ const TaskManagement = () => {
     return JSON.stringify(ids);
   };
 
+  const [currentView, setCurrentView] = useState<'list' | 'create' | 'detail'>('list');
   const [tasks, setTasks] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'table' | 'grid' | 'kanban'>('table');
   const [staff, setStaff] = useState([]);
