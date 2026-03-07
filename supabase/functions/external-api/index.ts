@@ -140,7 +140,8 @@ serve(async (req: Request) => {
             console.log(`Received API event: ${effectiveEvent}`, effectiveData)
 
             if (path === 'clients' || path === 'sync' || effectiveEvent === 'client.sync') {
-                const { sync_id, name, company_name: compName, email, contact_person, phone, address } = effectiveData
+                const { client_code, sync_id, name, company_name: compName, email, contact_person, phone, address } = effectiveData
+                const syncCode = client_code || sync_id
                 const clientName = name || compName
 
                 // 1. Check if client profile already exists
@@ -160,7 +161,7 @@ serve(async (req: Request) => {
                             email,
                             phone,
                             address,
-                            billing_sync_id: sync_id
+                            billing_sync_id: syncCode
                         })
                     if (insertError) throw insertError
                     console.log(`Created new billing profile for ${clientName}`)
@@ -168,11 +169,11 @@ serve(async (req: Request) => {
                     // Update existing with the sync_id
                     await supabaseAdmin
                         .from('client_profiles')
-                        .update({ billing_sync_id: sync_id })
+                        .update({ billing_sync_id: syncCode })
                         .eq('id', existing.id)
                 }
 
-                return new Response(JSON.stringify({ success: true, client_code: sync_id }), {
+                return new Response(JSON.stringify({ success: true, client_code: syncCode }), {
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                     status: 200
                 })
