@@ -151,27 +151,20 @@ serve(async (req: Request) => {
                     .eq('email', email)
                     .maybeSingle()
 
-                if (!existing) {
-                    // 2. Create new profile in the "Billing System" (mocked as client_profiles)
-                    const { error: insertError } = await supabaseAdmin
-                        .from('client_profiles')
-                        .insert({
-                            company_name: clientName,
-                            contact_person,
-                            email,
-                            phone,
-                            address,
-                            billing_sync_id: syncCode
-                        })
-                    if (insertError) throw insertError
-                    console.log(`Created new billing profile for ${clientName}`)
-                } else {
-                    // Update existing with the sync_id
-                    await supabaseAdmin
-                        .from('client_profiles')
-                        .update({ billing_sync_id: syncCode })
-                        .eq('id', existing.id)
-                }
+                // Upsert: insert or update based on email
+                const { error: upsertError } = await supabaseAdmin
+                    .from('client_profiles')
+                    .upsert({
+                        ...(existing ? { id: existing.id } : {}),
+                        company_name: clientName,
+                        contact_person,
+                        email,
+                        phone,
+                        address,
+                        billing_sync_id: syncCode
+                    }, { onConflict: 'email' })
+                if (upsertError) throw upsertError
+                console.log(`Upserted billing profile for ${clientName}`)
 
                 return new Response(JSON.stringify({ success: true, client_code: syncCode }), {
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
