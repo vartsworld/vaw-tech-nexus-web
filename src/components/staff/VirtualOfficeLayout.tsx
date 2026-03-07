@@ -14,12 +14,15 @@ import {
   ClipboardList,
   X,
   Coins,
-  Hash
+  Hash,
+  Swords,
+  ArrowLeft
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import TeamChat from "./TeamChat";
 import { ActivityLogPanel } from "./ActivityLogPanel";
 import MobileBottomNav from "./MobileBottomNav";
+import MiniChess from "./MiniChess";
 
 
 interface VirtualOfficeLayoutProps {
@@ -45,6 +48,7 @@ const VirtualOfficeLayout = ({
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'status' | 'chat'>('status');
   const [mobileSidebarTab, setMobileSidebarTab] = useState<'status' | 'chat'>('status');
+  const [chessArenaMode, setChessArenaMode] = useState(false);
   const navigate = useNavigate();
   const mainContentRef = useRef<HTMLDivElement>(null);
 
@@ -112,7 +116,7 @@ const VirtualOfficeLayout = ({
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 overflow-hidden flex-shrink-0 z-20">
-        <div className="p-6 pb-4 space-y-4 flex-shrink-0">
+        <div className="p-6 pb-4 space-y-4 flex-shrink-0 overflow-y-auto">
           {/* Room Navigation */}
           <div>
             <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
@@ -145,64 +149,104 @@ const VirtualOfficeLayout = ({
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div>
-            <h3 className="text-white font-semibold mb-4">Quick Actions</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="col-span-2 mb-2">
-
+          {/* Quick Actions / Chess Arena Toggle */}
+          <div className="relative">
+            {chessArenaMode ? (
+              /* ── Chess Arena Mode ── */
+              <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-white font-semibold flex items-center gap-2">
+                    <Swords className="w-4 h-4 text-amber-400" />
+                    Chess Arena
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-white/60 hover:text-white hover:bg-white/10"
+                    onClick={() => setChessArenaMode(false)}
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 mr-1" />
+                    Back
+                  </Button>
+                </div>
+                <div className="rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 via-black/20 to-orange-500/5 overflow-hidden">
+                  {userId && (
+                    <MiniChess userId={userId} userProfile={userProfile} />
+                  )}
+                </div>
               </div>
-              <Button variant="outline" size="sm" className="bg-red-500/20 border-red-500/30 text-white hover:bg-red-500/30">
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Chat
-              </Button>
-              <Button variant="outline" size="sm" className="bg-yellow-500/20 border-yellow-500/30 text-white hover:bg-yellow-500/30">
-                <Calendar className="w-4 h-4 mr-2" />
-                Schedule
-              </Button>
-              <Button variant="outline" size="sm" className="bg-green-500/20 border-green-500/30 text-white hover:bg-green-500/30">
-                <Bell className="w-4 h-4 mr-2" />
-                Alerts
-              </Button>
+            ) : (
+              /* ── Normal Quick Actions ── */
+              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <h3 className="text-white font-semibold mb-4">Quick Actions</h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Chess Arena Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="col-span-2 relative overflow-hidden bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-red-500/20 border-amber-500/30 text-amber-200 hover:from-amber-500/30 hover:via-orange-500/25 hover:to-red-500/30 group"
+                    onClick={() => setChessArenaMode(true)}
+                  >
+                    <Swords className="w-4 h-4 mr-2 group-hover:rotate-45 transition-transform duration-300" />
+                    Chess Arena
+                    <span className="ml-auto text-[10px] bg-amber-500/30 px-1.5 py-0.5 rounded-full text-amber-200">
+                      ♟
+                    </span>
+                  </Button>
 
-              {/* My Coins Button */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="col-span-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/30 text-white hover:from-amber-500/30 hover:to-yellow-500/30"
-                onClick={() => navigate('/mycoins')}
-              >
-                <Coins className="w-4 h-4 mr-2" />
-                My Coins
-              </Button>
+                  <Button variant="outline" size="sm" className="bg-red-500/20 border-red-500/30 text-white hover:bg-red-500/30">
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                    Chat
+                  </Button>
+                  <Button variant="outline" size="sm" className="bg-yellow-500/20 border-yellow-500/30 text-white hover:bg-yellow-500/30">
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Schedule
+                  </Button>
+                  <Button variant="outline" size="sm" className="bg-green-500/20 border-green-500/30 text-white hover:bg-green-500/30">
+                    <Bell className="w-4 h-4 mr-2" />
+                    Alerts
+                  </Button>
 
-              {/* Activity Log Dialog */}
-              {userId && (
-                <Dialog open={showActivityLog} onOpenChange={setShowActivityLog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="col-span-2 bg-purple-500/20 border-purple-500/30 text-white hover:bg-purple-500/30">
-                      <ClipboardList className="w-4 h-4 mr-2" />
-                      Today's Activity
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[500px] max-h-[600px]">
-                    <DialogHeader>
-                      <div className="flex items-center justify-between">
-                        <DialogTitle>Today's Activity Log</DialogTitle>
-                        <DialogClose asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </DialogClose>
-                      </div>
-                    </DialogHeader>
-                    <div className="overflow-y-auto max-h-[500px]">
-                      <ActivityLogPanel userId={userId} />
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
-            </div>
+                  {/* My Coins Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="col-span-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/30 text-white hover:from-amber-500/30 hover:to-yellow-500/30"
+                    onClick={() => navigate('/mycoins')}
+                  >
+                    <Coins className="w-4 h-4 mr-2" />
+                    My Coins
+                  </Button>
+
+                  {/* Activity Log Dialog */}
+                  {userId && (
+                    <Dialog open={showActivityLog} onOpenChange={setShowActivityLog}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="col-span-2 bg-purple-500/20 border-purple-500/30 text-white hover:bg-purple-500/30">
+                          <ClipboardList className="w-4 h-4 mr-2" />
+                          Today's Activity
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[500px] max-h-[600px]">
+                        <DialogHeader>
+                          <div className="flex items-center justify-between">
+                            <DialogTitle>Today's Activity Log</DialogTitle>
+                            <DialogClose asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </DialogClose>
+                          </div>
+                        </DialogHeader>
+                        <div className="overflow-y-auto max-h-[500px]">
+                          <ActivityLogPanel userId={userId} />
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
