@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft, CheckCircle, Clock, Target, Flag, Eye, Edit, Trash2,
   Plus, Calendar, User, Layers, FileText, Download, MessageSquare,
-  Loader2, Share2, LayoutTemplate, Minimize2, Maximize2
+  Loader2, Share2, LayoutTemplate, Minimize2, Maximize2, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,9 +38,33 @@ const TaskDetailPage = ({
   const [quickAddStage, setQuickAddStage] = useState<number | null>(null);
   const [bulkSubtasks, setBulkSubtasks] = useState<any[]>([]);
   const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState("none");
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const stageScrollRef = useRef<HTMLDivElement>(null);
   const [newSubtask, setNewSubtask] = useState({
     title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1
   });
+
+  const checkScrollability = useCallback(() => {
+    const el = stageScrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+
+  const scrollStages = (direction: 'left' | 'right') => {
+    const el = stageScrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: direction === 'left' ? -260 : 260, behavior: 'smooth' });
+    setTimeout(checkScrollability, 350);
+  };
+
+  useEffect(() => {
+    checkScrollability();
+    const el = stageScrollRef.current;
+    if (el) el.addEventListener('scroll', checkScrollability);
+    return () => { if (el) el.removeEventListener('scroll', checkScrollability); };
+  }, [subtasks, checkScrollability]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -350,13 +374,37 @@ const TaskDetailPage = ({
               </div>
             )}
 
-            {/* Stage Columns - Scrollable both directions */}
+            {/* Stage Columns with Arrow Navigation */}
             {loadingSubtasks ? (
               <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
-              <DragDropContext onDragEnd={onSubtaskDragEnd}>
-                <ScrollArea className="w-full" type="scroll">
-                  <div className="flex gap-3 pb-4 w-max min-w-full">
+              <div className="relative">
+                {/* Left Arrow */}
+                {canScrollLeft && (
+                  <button
+                    onClick={() => scrollStages('left')}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-background/90 border border-white/15 shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-primary/20 hover:border-primary/40 transition-all -ml-4"
+                  >
+                    <ChevronLeft className="h-5 w-5 text-foreground" />
+                  </button>
+                )}
+
+                {/* Right Arrow */}
+                {canScrollRight && (
+                  <button
+                    onClick={() => scrollStages('right')}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-background/90 border border-white/15 shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-primary/20 hover:border-primary/40 transition-all -mr-4"
+                  >
+                    <ChevronRight className="h-5 w-5 text-foreground" />
+                  </button>
+                )}
+
+                <DragDropContext onDragEnd={onSubtaskDragEnd}>
+                  <div
+                    ref={stageScrollRef}
+                    className="flex gap-3 pb-2 overflow-x-auto"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
                     {stageNums.map((stageNum) => {
                       const color = stageColors[(stageNum - 1) % stageColors.length];
                       const stageSubtasks = stageMap[stageNum] || [];
@@ -504,8 +552,61 @@ const TaskDetailPage = ({
                       );
                     })}
                   </div>
-                </ScrollArea>
-              </DragDropContext>
+                </DragDropContext>
+
+                {/* Creative Stage Progress Bar */}
+                <div className="flex items-center gap-3 mt-3 px-1">
+                  <button
+                    onClick={() => scrollStages('left')}
+                    disabled={!canScrollLeft}
+                    className={cn(
+                      "h-8 w-8 rounded-lg border flex items-center justify-center transition-all shrink-0",
+                      canScrollLeft
+                        ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
+                        : "border-white/5 bg-white/[0.02] text-muted-foreground/30 cursor-not-allowed"
+                    )}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+
+                  <div className="flex-1 flex items-center gap-1">
+                    {stageNums.map((stageNum, i) => {
+                      const color = stageColors[(stageNum - 1) % stageColors.length];
+                      const stageSubtasks = stageMap[stageNum] || [];
+                      const completedInStage = stageSubtasks.filter(s => s.status === 'completed').length;
+                      const progress = stageSubtasks.length > 0 ? (completedInStage / stageSubtasks.length) * 100 : 0;
+                      return (
+                        <div key={stageNum} className="flex-1 flex flex-col items-center gap-1">
+                          <div className={`w-full h-1.5 rounded-full bg-white/5 overflow-hidden`}>
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                progress === 100 ? 'bg-emerald-500' : progress > 0 ? 'bg-primary' : 'bg-transparent'
+                              }`}
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                          <span className={`text-[8px] font-bold uppercase tracking-wider ${color.text}`}>
+                            {stageLabels[stageNum]?.substring(0, 3) || stageNum}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => scrollStages('right')}
+                    disabled={!canScrollRight}
+                    className={cn(
+                      "h-8 w-8 rounded-lg border flex items-center justify-center transition-all shrink-0",
+                      canScrollRight
+                        ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer"
+                        : "border-white/5 bg-white/[0.02] text-muted-foreground/30 cursor-not-allowed"
+                    )}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 
