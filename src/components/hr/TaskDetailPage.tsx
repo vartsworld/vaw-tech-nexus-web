@@ -280,7 +280,77 @@ const TaskDetailPage = ({
               </div>
             </ScrollArea>
 
-            {/* Stage Columns - Scrollable */}
+            {/* Template Loader */}
+            {taskTemplates && taskTemplates.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                <LayoutTemplate className="h-4 w-4 text-muted-foreground shrink-0" />
+                <Select value={selectedTaskTemplateId} onValueChange={(v) => {
+                  setSelectedTaskTemplateId(v);
+                  if (v !== 'none') {
+                    const tpl = taskTemplates.find((t: any) => t.id === v);
+                    if (tpl?.subtask_templates) {
+                      setBulkSubtasks(tpl.subtask_templates.map((st: any) => ({
+                        title: st.title, description: st.description || '', assigned_to: '',
+                        priority: st.priority || 'medium', points: st.points || 0, stage: st.stage ?? 1
+                      })));
+                    }
+                  } else {
+                    setBulkSubtasks([]);
+                  }
+                }}>
+                  <SelectTrigger className="h-8 text-xs bg-transparent border-white/10 w-[200px]">
+                    <SelectValue placeholder="Load from template..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="text-xs">No template</SelectItem>
+                    {taskTemplates.map((t: any) => (
+                      <SelectItem key={t.id} value={t.id} className="text-xs">{t.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {bulkSubtasks.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground">{bulkSubtasks.length} subtasks ready</span>
+                )}
+              </div>
+            )}
+
+            {/* Bulk Subtask Preview & Assignment */}
+            {bulkSubtasks.length > 0 && (
+              <div className="space-y-2 p-3 rounded-xl bg-white/[0.03] border border-white/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Template Subtasks</span>
+                  <Button size="sm" className="h-7 text-[10px] bg-primary/80 hover:bg-primary" onClick={handleBulkAddSubtasks}>
+                    <Plus className="h-3 w-3 mr-1" /> Add All ({bulkSubtasks.length})
+                  </Button>
+                </div>
+                <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
+                  {bulkSubtasks.map((bs, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-black/20 border border-white/5">
+                      <span className="text-xs flex-1 truncate">{bs.title}</span>
+                      <Select value={bs.assigned_to || ''} onValueChange={v => {
+                        const updated = [...bulkSubtasks];
+                        updated[i] = { ...updated[i], assigned_to: v };
+                        setBulkSubtasks(updated);
+                      }}>
+                        <SelectTrigger className="h-7 text-[10px] bg-transparent border-white/10 w-[120px]">
+                          <SelectValue placeholder="Assign..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {staff.map(m => <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-400" onClick={() => {
+                        setBulkSubtasks(bulkSubtasks.filter((_, j) => j !== i));
+                      }}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Stage Columns - Scrollable both directions */}
             {loadingSubtasks ? (
               <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
@@ -299,12 +369,12 @@ const TaskDetailPage = ({
                               {...provided.droppableProps}
                               ref={provided.innerRef}
                               className={cn(
-                                "w-[240px] shrink-0 rounded-xl border p-3 space-y-2 transition-colors",
+                                "w-[240px] shrink-0 rounded-xl border p-3 transition-colors flex flex-col",
                                 color.border, color.bg,
                                 snapshot.isDraggingOver && "bg-white/5 shadow-inner"
                               )}
                             >
-                              <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center justify-between mb-2">
                                 <span className={`text-[10px] font-bold uppercase tracking-wider ${color.text}`}>
                                   {stageLabels[stageNum] || `Stage ${stageNum}`}
                                 </span>
@@ -320,7 +390,7 @@ const TaskDetailPage = ({
 
                               {/* Quick Add */}
                               {isQuickAddOpen && (
-                                <div className="space-y-2 p-2.5 bg-black/30 rounded-lg border border-white/10 animate-in fade-in duration-200">
+                                <div className="space-y-2 p-2.5 bg-black/30 rounded-lg border border-white/10 animate-in fade-in duration-200 mb-2">
                                   <Input autoFocus placeholder="Subtask title *" value={newSubtask.title}
                                     onChange={e => setNewSubtask({ ...newSubtask, title: e.target.value })}
                                     className="h-8 text-xs bg-transparent border-white/10" />
@@ -330,6 +400,20 @@ const TaskDetailPage = ({
                                       {staff.map(m => <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>)}
                                     </SelectContent>
                                   </Select>
+                                  <div className="grid grid-cols-2 gap-1">
+                                    <Select value={newSubtask.priority} onValueChange={v => setNewSubtask({ ...newSubtask, priority: v })}>
+                                      <SelectTrigger className="h-7 text-[10px] bg-transparent border-white/10"><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="low" className="text-xs">Low</SelectItem>
+                                        <SelectItem value="medium" className="text-xs">Medium</SelectItem>
+                                        <SelectItem value="high" className="text-xs">High</SelectItem>
+                                        <SelectItem value="urgent" className="text-xs">Urgent</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <Input type="number" placeholder="Points" value={newSubtask.points || ''}
+                                      onChange={e => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
+                                      className="h-7 text-[10px] bg-transparent border-white/10" />
+                                  </div>
                                   <div className="flex gap-1">
                                     <Button size="sm" className="flex-1 h-7 text-[10px] bg-primary/80 hover:bg-primary" onClick={handleCreateSubtask}>
                                       <Plus className="h-3 w-3 mr-1" /> Add
@@ -339,72 +423,81 @@ const TaskDetailPage = ({
                                 </div>
                               )}
 
-                              {/* Subtask Cards */}
-                              {stageSubtasks.map((st, index) => (
-                                <Draggable key={st.id} draggableId={st.id} index={index}>
-                                  {(provided, snapshot) => (
-                                    <div
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      className={cn(
-                                        "rounded-lg border border-white/10 bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group",
-                                        snapshot.isDragging && "rotate-2 scale-105 shadow-2xl"
-                                      )}
-                                    >
-                                      <div className="flex items-start justify-between gap-2">
-                                        <span className="text-xs font-medium leading-tight break-words min-w-0">{st.title}</span>
-                                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                          <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400"
-                                            onClick={() => handleDeleteSubtask(st.id)}>
-                                            <Trash2 className="h-3 w-3" />
-                                          </Button>
+                              {/* Scrollable subtask list */}
+                              <div className="flex-1 overflow-y-auto max-h-[400px] space-y-2 pr-0.5" style={{ scrollbarWidth: 'thin' }}>
+                                {stageSubtasks.map((st, index) => (
+                                  <Draggable key={st.id} draggableId={st.id} index={index}>
+                                    {(provided, snapshot) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        className={cn(
+                                          "rounded-lg border border-white/10 bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group",
+                                          snapshot.isDragging && "rotate-2 scale-105 shadow-2xl"
+                                        )}
+                                      >
+                                        <div className="flex items-start justify-between gap-2">
+                                          <span className="text-xs font-medium leading-tight break-words min-w-0">{st.title}</span>
+                                          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                            <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400"
+                                              onClick={() => handleDeleteSubtask(st.id)}>
+                                              <Trash2 className="h-3 w-3" />
+                                            </Button>
+                                          </div>
                                         </div>
-                                      </div>
 
-                                      <div className="flex items-center justify-between gap-1">
-                                        {st.staff_profiles && (
-                                          <div className="flex items-center gap-1.5 min-w-0">
-                                            <Avatar className="h-5 w-5 border border-white/10 shrink-0">
-                                              <AvatarImage src={st.staff_profiles.avatar_url} />
-                                              <AvatarFallback className="text-[8px]">
-                                                {st.staff_profiles.full_name?.substring(0, 2).toUpperCase()}
-                                              </AvatarFallback>
-                                            </Avatar>
-                                            <span className="text-[10px] text-muted-foreground truncate">{st.staff_profiles.full_name}</span>
+                                        {st.points > 0 && (
+                                          <div className="flex items-center gap-1">
+                                            <Target className="h-3 w-3 text-primary" />
+                                            <span className="text-[9px] text-primary font-semibold">{st.points} pts</span>
                                           </div>
                                         )}
-                                        <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${
-                                          st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                                            : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
-                                            : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                                        }`}>
-                                          {st.status === 'completed' ? 'DONE' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
-                                        </Badge>
+
+                                        <div className="flex items-center justify-between gap-1">
+                                          {st.staff_profiles && (
+                                            <div className="flex items-center gap-1.5 min-w-0">
+                                              <Avatar className="h-5 w-5 border border-white/10 shrink-0">
+                                                <AvatarImage src={st.staff_profiles.avatar_url} />
+                                                <AvatarFallback className="text-[8px]">
+                                                  {st.staff_profiles.full_name?.substring(0, 2).toUpperCase()}
+                                                </AvatarFallback>
+                                              </Avatar>
+                                              <span className="text-[10px] text-muted-foreground truncate">{st.staff_profiles.full_name}</span>
+                                            </div>
+                                          )}
+                                          <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${
+                                            st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                              : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                                              : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                          }`}>
+                                            {st.status === 'completed' ? 'DONE' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
+                                          </Badge>
+                                        </div>
+
+                                        {/* Status toggle */}
+                                        <Select value={st.status} onValueChange={(v) => handleSubtaskStatusUpdate(st.id, v)}>
+                                          <SelectTrigger className="h-6 text-[9px] bg-transparent border-white/5">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="pending" className="text-xs">Pending</SelectItem>
+                                            <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
+                                            <SelectItem value="completed" className="text-xs">Completed</SelectItem>
+                                          </SelectContent>
+                                        </Select>
                                       </div>
+                                    )}
+                                  </Draggable>
+                                ))}
 
-                                      {/* Status toggle */}
-                                      <Select value={st.status} onValueChange={(v) => handleSubtaskStatusUpdate(st.id, v)}>
-                                        <SelectTrigger className="h-6 text-[9px] bg-transparent border-white/5">
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="pending" className="text-xs">Pending</SelectItem>
-                                          <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
-                                          <SelectItem value="completed" className="text-xs">Completed</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-                                  )}
-                                </Draggable>
-                              ))}
-
-                              {stageSubtasks.length === 0 && !isQuickAddOpen && (
-                                <div className="py-6 text-center text-[10px] text-muted-foreground/50 border border-dashed border-white/10 rounded-lg">
-                                  No tasks yet
-                                </div>
-                              )}
-                              {provided.placeholder}
+                                {stageSubtasks.length === 0 && !isQuickAddOpen && (
+                                  <div className="py-6 text-center text-[10px] text-muted-foreground/50 border border-dashed border-white/10 rounded-lg">
+                                    No tasks yet
+                                  </div>
+                                )}
+                                {provided.placeholder}
+                              </div>
                             </div>
                           )}
                         </Droppable>
