@@ -73,7 +73,7 @@ export const syncFinancialEntryToBilling = async (paymentData: any, syncId: stri
     }
 
     try {
-        const BASE_URL = "https://mezolzequhtjtifeznll.supabase.co/functions/v1/external-api";
+        const BASE_URL = `https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/external-api`;
         const response = await fetch(`${BASE_URL}/financial/entries/sync`, {
             method: 'POST',
             headers: {
