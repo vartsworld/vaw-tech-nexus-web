@@ -29,7 +29,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SharedProjectForm from "../projects/SharedProjectForm";
-import { syncClientToBilling, fetchClientFromBilling, searchClientsInBilling } from "@/utils/syncUtils";
+import { syncClientToBilling, fetchClientFromBilling, searchClientsInBilling, generateSyncId } from "@/utils/syncUtils";
 
 const ClientManagement = () => {
   const [clients, setClients] = useState([]);
@@ -49,6 +49,7 @@ const ClientManagement = () => {
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isSearchingExternal, setIsSearchingExternal] = useState(false);
   const [externalSearchQuery, setExternalSearchQuery] = useState("");
+  const [isGeneratingBilling, setIsGeneratingBilling] = useState(false);
 
   const [editingClient, setEditingClient] = useState(null);
   const [newClient, setNewClient] = useState({
@@ -444,6 +445,49 @@ const ClientManagement = () => {
       toast({ title: "Unlinked", description: "Client disconnected from billing software." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleGenerateAndSync = async () => {
+    if (!selectedClientForSync) return;
+    setIsGeneratingBilling(true);
+    try {
+      const newSyncId = generateSyncId();
+      
+      // Create in billing software
+      await syncClientToBilling(selectedClientForSync, newSyncId);
+
+      // Save billing_sync_id locally
+      const { error } = await supabase
+        .from('clients')
+        .update({ billing_sync_id: newSyncId })
+        .eq('id', selectedClientForSync.id);
+      if (error) throw error;
+
+      // Also update client_profiles if exists
+      if (selectedClientForSync.email) {
+        await supabase
+          .from('client_profiles')
+          .update({ billing_sync_id: newSyncId })
+          .eq('email', selectedClientForSync.email);
+      }
+
+      await fetchClients();
+      setIsSyncDialogOpen(false);
+      setSelectedClientForSync(null);
+
+      toast({
+        title: "Billing Account Created",
+        description: `Client created in billing software with code: ${newSyncId}`,
+      });
+    } catch (error: any) {
+      console.error('Error generating billing account:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create billing account.",
+        variant: "destructive",
+      });
+    } finally {
     }
   };
 
@@ -1063,11 +1107,33 @@ const ClientManagement = () => {
             )}
 
             {!selectedClientForSync?.billing_sync_id && (
-            <Tabs defaultValue="search" className="space-y-4">
-              <TabsList className="grid grid-cols-2">
+            <Tabs defaultValue="create" className="space-y-4">
+              <TabsList className="grid grid-cols-3">
+                <TabsTrigger value="create">Generate & Create</TabsTrigger>
                 <TabsTrigger value="search">Search Database</TabsTrigger>
                 <TabsTrigger value="manual">Manual Code</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="create" className="space-y-4 pt-2">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
+                  <p className="text-xs text-blue-800 font-medium">
+                    This will generate a new billing code and create the client account in your billing software automatically.
+                  </p>
+                  <div className="text-sm space-y-1 text-blue-900">
+                    <p><strong>Client:</strong> {selectedClientForSync?.company_name}</p>
+                    <p><strong>Email:</strong> {selectedClientForSync?.email}</p>
+                    <p><strong>Contact:</strong> {selectedClientForSync?.contact_person}</p>
+                  </div>
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700 h-10 rounded-xl mt-2"
+                    onClick={handleGenerateAndSync}
+                    disabled={isGeneratingBilling}
+                  >
+                    {isGeneratingBilling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                    Generate Billing Account & Sync
+                  </Button>
+                </div>
+              </TabsContent>
 
               <TabsContent value="search" className="space-y-4 pt-2">
                 <div className="flex gap-2">
