@@ -148,10 +148,11 @@ serve(async (req) => {
             }
         )
 
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Error in payment-reminder-scheduler:', error)
+        const msg = error instanceof Error ? error.message : 'Unknown error';
         return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: msg }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 500,

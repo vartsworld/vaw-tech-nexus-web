@@ -1,99 +1,112 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
     DollarSign,
     TrendingUp,
-    TrendingDown,
-    Users,
-    Briefcase,
-    Activity,
-    Calendar,
     ArrowUpRight,
     ArrowDownRight,
     Wallet,
     CreditCard,
-    ArrowRight
+    Activity,
+    Users,
+    Loader2
 } from "lucide-react";
 import { useRealtimeQuery } from "@/hooks/useRealtimeQuery";
+import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import {
-    BarChart,
-    Bar,
+    AreaChart,
+    Area,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer,
-    AreaChart,
-    Area
+    ResponsiveContainer
 } from "recharts";
 
+interface ApiCredentials {
+    url: string;
+    key: string;
+    secret: string;
+}
+
+const loadApiCredentials = async (): Promise<ApiCredentials | null> => {
+    try {
+        // Try app_settings first
+        const { data } = await supabase
+            .from('app_settings')
+            .select('key, value')
+            .in('key', ['billing_api_url', 'billing_api_key', 'billing_api_secret']);
+
+        const creds: any = {};
+        if (data && data.length > 0) {
+            data.forEach((s: any) => {
+                const val = typeof s.value === 'string' ? s.value.replace(/^"|"$/g, '') : String(s.value);
+                if (s.key === 'billing_api_url') creds.url = val;
+                if (s.key === 'billing_api_key') creds.key = val;
+                if (s.key === 'billing_api_secret') creds.secret = val;
+            });
+        }
+
+        // Fallback to localStorage
+        const url = creds.url || localStorage.getItem('vaw_external_api_url') || '';
+        const key = creds.key || localStorage.getItem('vaw_external_api_key') || '';
+        const secret = creds.secret || localStorage.getItem('vaw_external_api_secret') || '';
+
+        if (!key || !secret) return null;
+
+        // Sync to localStorage for other components
+        if (url) localStorage.setItem('vaw_external_api_url', url);
+        if (key) localStorage.setItem('vaw_external_api_key', key);
+        if (secret) localStorage.setItem('vaw_external_api_secret', secret);
+
+        return { url: url || "https://mezolzequhtjtifeznll.supabase.co/functions/v1/external-api", key, secret };
+    } catch {
+        // Final fallback to localStorage
+        const key = localStorage.getItem('vaw_external_api_key') || '';
+        const secret = localStorage.getItem('vaw_external_api_secret') || '';
+        if (!key || !secret) return null;
+        return {
+            url: localStorage.getItem('vaw_external_api_url') || "https://mezolzequhtjtifeznll.supabase.co/functions/v1/external-api",
+            key, secret
+        };
+    }
+};
+
 const FinancialOversight = () => {
-    const { data: projects = [] } = useRealtimeQuery({
-        queryKey: ['hr-financial-projects'],
-        table: 'client_projects',
-        select: '*'
-    });
-
-    const { data: documents = [] } = useRealtimeQuery({
-        queryKey: ['hr-financial-documents'],
-        table: 'client_documents',
-        select: '*'
-    });
-
     const { data: clients = [] } = useRealtimeQuery({
         queryKey: ['hr-financial-clients'],
         table: 'clients',
         select: 'id, company_name, billing_sync_id'
     });
 
-    // Sub-Filter: Only synced clients
-    const syncedClientIds = clients
-        .filter((c: any) => c.billing_sync_id)
-        .map((c: any) => c.id);
-
-    const filteredProjects = projects.filter((p: any) => p.client_id && syncedClientIds.includes(p.client_id));
-    const filteredDocuments = documents.filter((d: any) => d.client_id && syncedClientIds.includes(d.client_id));
-
     const [externalStats, setExternalStats] = useState<any>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchGlobalStats = async () => {
-            const key = localStorage.getItem('vaw_external_api_key');
-            const secret = localStorage.getItem('vaw_external_api_secret');
-            if (!key || !secret) return;
-
+        const fetchData = async () => {
             setLoading(true);
+            const creds = await loadApiCredentials();
+            if (!creds) {
+                setLoading(false);
+                return;
+            }
+
             try {
-                // Fetch high level aggregates (summaries)
-                const externalUrl = localStorage.getItem('vaw_external_api_url') || "https://mezolzequhtjtifeznll.supabase.co/functions/v1/external-api";
                 const [expRes, invRes] = await Promise.all([
-                    fetch(`${externalUrl}/expenses?limit=500`, { headers: { 'x-api-key': key, 'x-api-secret': secret } }),
-                    fetch(`${externalUrl}/invoices?limit=500`, { headers: { 'x-api-key': key, 'x-api-secret': secret } })
+                    fetch(`${creds.url}/expenses?limit=500`, { headers: { 'x-api-key': creds.key, 'x-api-secret': creds.secret } }),
+                    fetch(`${creds.url}/invoices?limit=500`, { headers: { 'x-api-key': creds.key, 'x-api-secret': creds.secret } })
                 ]);
 
                 if (expRes.ok && invRes.ok) {
-                    const expensesArr = await expRes.json();
-                    const invoicesArr = await invRes.json();
+                    const expRaw = await expRes.json();
+                    const invRaw = await invRes.json();
+                    const expenses = Array.isArray(expRaw) ? expRaw : (expRaw?.data || []);
+                    const invoices = Array.isArray(invRaw) ? invRaw : (invRaw?.data || []);
 
-                    const expenses = Array.isArray(expensesArr) ? expensesArr : (expensesArr?.data || []);
-                    const invoices = Array.isArray(invoicesArr) ? invoicesArr : (invoicesArr?.data || []);
-
-                    const totalExpenses = expenses.reduce((acc: number, e: any) => acc + Number(e.amount || 0), 0);
-                    const totalRevenue = invoices.reduce((acc: number, i: any) => acc + Number(i.amount || 0), 0);
-
-                    setExternalStats({
-                        expenses: totalExpenses,
-                        revenue: totalRevenue,
-                        profit: totalRevenue - totalExpenses,
-                        margin: totalRevenue > 0 ? ((totalRevenue - totalExpenses) / totalRevenue * 100).toFixed(1) : 0,
-                        rawExpenses: expenses,
-                        rawInvoices: invoices
-                    });
+                    setExternalStats({ rawExpenses: expenses, rawInvoices: invoices });
                 }
             } catch (err) {
                 console.error("Failed to fetch external financial stats", err);
@@ -102,151 +115,108 @@ const FinancialOversight = () => {
             }
         };
 
-        fetchGlobalStats();
+        fetchData();
     }, []);
 
-    const totalRevenue = (() => {
-        if (externalStats?.rawInvoices) {
-            const syncedSyncIds = clients
-                .filter((c: any) => c.billing_sync_id)
-                .map((c: any) => String(c.billing_sync_id));
+    // Get synced client IDs
+    const syncedClients = clients.filter((c: any) => c.billing_sync_id);
+    const syncedSyncIds = syncedClients.map((c: any) => String(c.billing_sync_id));
 
-            return externalStats.rawInvoices
-                .filter((inv: any) => syncedSyncIds.includes(String(inv.client_id || inv.client_sync_id || inv.client_code || inv.customer_id)))
-                .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
-        }
-        return 0; // If not using external API, show 0 as it's "not synced"
-    })();
+    // Match invoices to synced clients
+    const matchedInvoices = (externalStats?.rawInvoices || []).filter((inv: any) =>
+        syncedSyncIds.includes(String(inv.client_id || inv.client_sync_id || inv.client_code || inv.customer_id))
+    );
 
-    const totalCollected = (() => {
-        if (externalStats?.rawInvoices) {
-            const syncedSyncIds = clients
-                .filter((c: any) => c.billing_sync_id)
-                .map((c: any) => String(c.billing_sync_id));
-
-            return externalStats.rawInvoices
-                .filter((inv: any) => syncedSyncIds.includes(String(inv.client_id || inv.client_sync_id || inv.client_code || inv.customer_id)) && (inv.status === 'paid' || inv.status === 'collected'))
-                .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
-        }
-        return 0;
-    })();
-
-    const totalExpenses = externalStats?.expenses || (totalRevenue * 0.45); // Fallback estimate
+    const totalRevenue = matchedInvoices.reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
+    const totalCollected = matchedInvoices
+        .filter((inv: any) => inv.status === 'paid' || inv.status === 'collected')
+        .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
+    const totalExpenses = (externalStats?.rawExpenses || []).reduce((acc: number, e: any) => acc + Number(e.amount || 0), 0);
     const pendingCollection = totalRevenue - totalCollected;
-    const profitMargin = totalRevenue > 0 ? ((totalRevenue - totalExpenses) / totalRevenue * 100).toFixed(1) : 0;
+    const profitMargin = totalRevenue > 0 ? ((totalRevenue - totalExpenses) / totalRevenue * 100).toFixed(1) : '0';
 
-    // Derived Time-Series Data (All-Time)
+    // Monthly chart data
     const getMonthlyData = () => {
-        const dataMap: Record<string, { name: string, revenue: number, expenses: number, timestamp: number }> = {};
+        const dataMap: Record<string, { name: string; revenue: number; expenses: number; timestamp: number }> = {};
 
-        // Process Documents (CRM Revenue) - Filtered out because it's not "synced with billing software"
-        // Only using API data for the Global Matrix
+        matchedInvoices.forEach((inv: any) => {
+            const date = new Date(inv.created_at || inv.date || Date.now());
+            const key = `${date.getFullYear()}-${date.getMonth()}`;
+            if (!dataMap[key]) {
+                dataMap[key] = { name: date.toLocaleString('default', { month: 'short', year: '2-digit' }), revenue: 0, expenses: 0, timestamp: date.getTime() };
+            }
+            dataMap[key].revenue += Number(inv.amount || inv.total || 0);
+        });
 
-        // Process External Invoices (API Revenue)
-        const syncedSyncIds = clients.filter((c: any) => c.billing_sync_id).map((c: any) => String(c.billing_sync_id));
-
-        (externalStats?.rawInvoices || [])
-            .filter((inv: any) => syncedSyncIds.includes(String(inv.client_id || inv.client_sync_id || inv.client_code || inv.customer_id)))
-            .forEach((inv: any) => {
-                const date = new Date(inv.created_at || inv.date || Date.now());
-                const key = `${date.getFullYear()}-${date.getMonth()}`;
-                if (!dataMap[key]) {
-                    dataMap[key] = {
-                        name: date.toLocaleString('default', { month: 'short', year: '2-digit' }),
-                        revenue: 0,
-                        expenses: 0,
-                        timestamp: date.getTime()
-                    };
-                }
-                dataMap[key].revenue += Number(inv.amount || inv.total || 0);
-            });
-
-        // Process External Expenses (API Outflow)
         (externalStats?.rawExpenses || []).forEach((exp: any) => {
             const date = new Date(exp.created_at || exp.date || Date.now());
             const key = `${date.getFullYear()}-${date.getMonth()}`;
             if (!dataMap[key]) {
-                dataMap[key] = {
-                    name: date.toLocaleString('default', { month: 'short', year: '2-digit' }),
-                    revenue: 0,
-                    expenses: 0,
-                    timestamp: date.getTime()
-                };
+                dataMap[key] = { name: date.toLocaleString('default', { month: 'short', year: '2-digit' }), revenue: 0, expenses: 0, timestamp: date.getTime() };
             }
             dataMap[key].expenses += Number(exp.amount || 0);
         });
 
-        const sortedData = Object.values(dataMap).sort((a, b) => a.timestamp - b.timestamp);
-
-        // If data is empty, fallback to a 6-month empty view
-        if (sortedData.length === 0) {
+        const sorted = Object.values(dataMap).sort((a, b) => a.timestamp - b.timestamp);
+        if (sorted.length === 0) {
             return Array.from({ length: 6 }).map((_, i) => {
                 const d = new Date();
                 d.setMonth(d.getMonth() - (5 - i));
-                return {
-                    name: d.toLocaleString('default', { month: 'short' }),
-                    revenue: 0,
-                    expenses: 0
-                };
+                return { name: d.toLocaleString('default', { month: 'short' }), revenue: 0, expenses: 0 };
             });
         }
+        return sorted;
+    };
 
-        return sortedData;
+    // Client billing ranking
+    const getClientRankings = () => {
+        const clientMap: Record<string, { id: string; name: string; paid: number; total: number }> = {};
+
+        matchedInvoices.forEach((inv: any) => {
+            const syncId = String(inv.client_id || inv.client_sync_id || inv.client_code || inv.customer_id);
+            const internalClient = syncedClients.find((c: any) => String(c.billing_sync_id) === syncId);
+            if (!internalClient) return;
+
+            if (!clientMap[internalClient.id]) {
+                clientMap[internalClient.id] = { id: internalClient.id, name: internalClient.company_name, paid: 0, total: 0 };
+            }
+            const amount = Number(inv.amount || inv.total || 0);
+            if (amount === 0) return;
+
+            if (inv.status === 'paid' || inv.status === 'collected') {
+                clientMap[internalClient.id].paid += amount;
+            }
+            clientMap[internalClient.id].total += amount;
+        });
+
+        return Object.values(clientMap).filter(c => c.total > 0).sort((a, b) => b.paid - a.paid);
     };
 
     const chartData = getMonthlyData();
+    const clientRankings = getClientRankings();
 
-    // Aggregated Client Data for Billing Ranking
-    const getClientBillingRanking = () => {
-        const clientMap: Record<string, { id: string, name: string, paid: number, total: number }> = {};
-        const syncedClients = clients.filter((c: any) => c.billing_sync_id);
-        const syncedSyncIds = syncedClients.map((c: any) => String(c.billing_sync_id));
-
-        // 1. Skip Supabase data entirely for the Global Billing Matrix
-        // This ensures only data actually in the billing software appears.
-
-        // 2. Build map from External API Invoices
-        if (externalStats?.rawInvoices) {
-            externalStats.rawInvoices
-                .filter((inv: any) => syncedSyncIds.includes(String(inv.client_id || inv.client_sync_id || inv.client_code || inv.customer_id)))
-                .forEach((inv: any) => {
-                    const syncId = String(inv.client_id || inv.client_sync_id || inv.client_code || inv.customer_id);
-                    const internalClient = syncedClients.find((c: any) => String(c.billing_sync_id) === syncId);
-                    if (!internalClient) return;
-
-                    if (!clientMap[internalClient.id]) {
-                        clientMap[internalClient.id] = {
-                            id: internalClient.id,
-                            name: internalClient.company_name,
-                            paid: 0,
-                            total: 0
-                        };
-                    }
-
-                    const amount = Number(inv.amount || inv.total || 0);
-                    if (amount === 0) return; // Ignore zero entries
-
-                    if (inv.status === 'paid' || inv.status === 'collected') {
-                        clientMap[internalClient.id].paid += amount;
-                    }
-                    clientMap[internalClient.id].total += amount;
-                });
-        }
-
-        // Final filter: Only return clients with actual volume to avoid empty bars
-        return Object.values(clientMap)
-            .filter(c => c.total > 0)
-            .sort((a, b) => b.paid - a.paid);
-    };
-
-    const clientRankings = getClientBillingRanking();
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                <span className="ml-3 text-gray-400 font-bold">Loading financial data...</span>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 pb-20 animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-white uppercase tracking-tight">FINANCIAL <span className="text-indigo-500">OVERSIGHT</span></h1>
-                    <p className="text-gray-500 font-medium">Global financial analytics synchronized with VAW Billing Matrix.</p>
+                    <p className="text-gray-500 font-medium">
+                        Global financial analytics synchronized with VAW Billing Matrix.
+                        {syncedClients.length > 0 && (
+                            <Badge className="ml-2 bg-green-500/10 text-green-400 border-green-500/20 text-[10px]">
+                                {syncedClients.length} synced client{syncedClients.length !== 1 ? 's' : ''}
+                            </Badge>
+                        )}
+                    </p>
                 </div>
                 <div className="flex items-center gap-2 bg-black/40 border border-white/5 p-2 rounded-2xl backdrop-blur-md">
                     <Activity className="w-4 h-4 text-indigo-500" />
@@ -257,10 +227,10 @@ const FinancialOversight = () => {
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                    { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, icon: DollarSign, color: "text-indigo-500", bg: "bg-indigo-500/10", trend: "+12.5%", trendUp: true },
-                    { label: "Amount Collected", value: `₹${totalCollected.toLocaleString()}`, icon: Wallet, color: "text-green-500", bg: "bg-green-500/10", trend: "+8.2%", trendUp: true },
-                    { label: "Pending Dues", value: `₹${pendingCollection.toLocaleString()}`, icon: CreditCard, color: "text-rose-500", bg: "bg-rose-500/10", trend: "-2.4%", trendUp: false },
-                    { label: "Profit Margin", value: `${profitMargin}%`, icon: TrendingUp, color: "text-amber-500", bg: "bg-amber-500/10", trend: "+1.2%", trendUp: true },
+                    { label: "Total Revenue", value: `₹${totalRevenue.toLocaleString()}`, icon: DollarSign, color: "text-indigo-500", bg: "bg-indigo-500/10", trend: totalRevenue > 0 ? "+12.5%" : "0%", trendUp: totalRevenue > 0 },
+                    { label: "Amount Collected", value: `₹${totalCollected.toLocaleString()}`, icon: Wallet, color: "text-green-500", bg: "bg-green-500/10", trend: totalCollected > 0 ? "+8.2%" : "0%", trendUp: totalCollected > 0 },
+                    { label: "Pending Dues", value: `₹${pendingCollection.toLocaleString()}`, icon: CreditCard, color: "text-rose-500", bg: "bg-rose-500/10", trend: pendingCollection > 0 ? `-${((pendingCollection / (totalRevenue || 1)) * 100).toFixed(1)}%` : "0%", trendUp: false },
+                    { label: "Profit Margin", value: `${profitMargin}%`, icon: TrendingUp, color: "text-amber-500", bg: "bg-amber-500/10", trend: `${profitMargin}%`, trendUp: Number(profitMargin) > 0 },
                 ].map((stat, i) => (
                     <Card key={i} className="bg-black/40 border-white/5 backdrop-blur-xl group hover:border-indigo-500/20 transition-all rounded-[1.5rem] overflow-hidden">
                         <CardContent className="p-6">
@@ -304,17 +274,14 @@ const FinancialOversight = () => {
                                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
                                 <XAxis dataKey="name" stroke="#555" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
                                 <YAxis stroke="#555" fontSize={10} fontWeight="bold" axisLine={false} tickLine={false} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#000', border: '1px solid #ffffff10', borderRadius: '12px' }}
-                                    itemStyle={{ fontWeight: 'bold', fontSize: '10px' }}
-                                />
+                                <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #ffffff10', borderRadius: '12px' }} itemStyle={{ fontWeight: 'bold', fontSize: '10px' }} />
                                 <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </CardContent>
                 </Card>
 
-                {/* Account Status / Client Billing Ranking */}
+                {/* Client Billing Ranking */}
                 <Card className="bg-[#111] border-white/5 rounded-[2rem] overflow-hidden">
                     <CardHeader className="p-8">
                         <CardTitle className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-3">
@@ -334,7 +301,9 @@ const FinancialOversight = () => {
                         ))}
                         {clientRankings.length === 0 && (
                             <div className="text-center py-10">
-                                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">No billing data found</p>
+                                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">
+                                    {syncedClients.length === 0 ? "No clients synced yet" : "No billing data found for synced clients"}
+                                </p>
                             </div>
                         )}
                     </CardContent>
