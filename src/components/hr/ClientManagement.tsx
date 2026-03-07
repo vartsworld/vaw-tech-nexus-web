@@ -1115,17 +1115,17 @@ const ClientManagement = () => {
               </TabsList>
 
               <TabsContent value="create" className="space-y-4 pt-2">
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
-                  <p className="text-xs text-blue-800 font-medium">
+                <div className="p-4 bg-primary/10 border border-primary/20 rounded-xl space-y-3">
+                  <p className="text-xs text-foreground/70 font-medium">
                     This will generate a new billing code and create the client account in your billing software automatically.
                   </p>
-                  <div className="text-sm space-y-1 text-blue-900">
+                  <div className="text-sm space-y-1 text-foreground">
                     <p><strong>Client:</strong> {selectedClientForSync?.company_name}</p>
                     <p><strong>Email:</strong> {selectedClientForSync?.email}</p>
                     <p><strong>Contact:</strong> {selectedClientForSync?.contact_person}</p>
                   </div>
                   <Button
-                    className="w-full bg-blue-600 hover:bg-blue-700 h-10 rounded-xl mt-2"
+                    className="w-full h-10 rounded-xl mt-2"
                     onClick={handleGenerateAndSync}
                     disabled={isGeneratingBilling}
                   >
