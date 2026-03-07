@@ -448,7 +448,48 @@ const ClientManagement = () => {
     }
   };
 
-  const handleDeleteClient = async (clientId) => {
+  const handleGenerateAndSync = async () => {
+    if (!selectedClientForSync) return;
+    setIsGeneratingBilling(true);
+    try {
+      const newSyncId = generateSyncId();
+      
+      // Create in billing software
+      await syncClientToBilling(selectedClientForSync, newSyncId);
+
+      // Save billing_sync_id locally
+      const { error } = await supabase
+        .from('clients')
+        .update({ billing_sync_id: newSyncId })
+        .eq('id', selectedClientForSync.id);
+      if (error) throw error;
+
+      // Also update client_profiles if exists
+      if (selectedClientForSync.email) {
+        await supabase
+          .from('client_profiles')
+          .update({ billing_sync_id: newSyncId })
+          .eq('email', selectedClientForSync.email);
+      }
+
+      await fetchClients();
+      setIsSyncDialogOpen(false);
+      setSelectedClientForSync(null);
+
+      toast({
+        title: "Billing Account Created",
+        description: `Client created in billing software with code: ${newSyncId}`,
+      });
+    } catch (error: any) {
+      console.error('Error generating billing account:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create billing account.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingBilling(false);
+    }
     if (!confirm("Are you sure you want to delete this client?")) return;
 
     try {
