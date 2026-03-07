@@ -161,7 +161,7 @@ serve(async (req: Request) => {
                             billing_sync_id: sync_id
                         })
                     if (insertError) throw insertError
-                    console.log(`Created new billing profile for ${company_name}`)
+                    console.log(`Created new billing profile for ${clientName}`)
                 } else {
                     // Update existing with the sync_id
                     await supabaseAdmin
