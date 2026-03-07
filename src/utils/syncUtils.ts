@@ -36,7 +36,7 @@ export const syncClientToBilling = async (client: any, syncId: string) => {
                 'x-api-secret': secret
             },
             body: JSON.stringify({
-                sync_id: syncId,
+                client_code: syncId,
                 name: client.company_name,
                 contact_person: client.contact_person,
                 email: client.email,
