@@ -2540,7 +2540,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                               try {
                                 setSelectedTask(parentTask);
                                 await fetchSubtasks(parentTask.id);
-                                setIsViewTaskOpen(true);
+                                setCurrentView('detail');
                               } catch (e) { console.error('Error opening task view:', e); }
                             }}
                           >
