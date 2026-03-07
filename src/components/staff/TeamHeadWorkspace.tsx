@@ -2015,6 +2015,103 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Recently Approved - Quick Action Dialog */}
+          {approvedSubtasks.length > 0 && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-emerald-500/20 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/30 relative"
+                >
+                  <CheckCircle className="w-4 h-4 mr-1.5" />
+                  <span className="hidden sm:inline">Approved</span>
+                  <Badge className="ml-1.5 h-5 min-w-[20px] px-1 bg-emerald-500 text-white text-[10px] font-bold border-0">
+                    {approvedSubtasks.length}
+                  </Badge>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px] max-h-[80vh] bg-gray-900/95 backdrop-blur-xl border-emerald-500/30 text-white">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-emerald-300">
+                    <CheckCircle className="h-5 w-5" />
+                    Recently Approved Subtasks ({approvedSubtasks.length})
+                  </DialogTitle>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh] pr-2">
+                  <div className="space-y-3">
+                    {approvedSubtasks.map((subtask: any) => {
+                      const parentTaskPartial = subtask.staff_tasks as any;
+                      const parentTask = tasks.find((t) => t.id === parentTaskPartial?.id) || parentTaskPartial;
+                      const assigneeProfile = subtask.staff_profiles as any | null;
+                      return (
+                        <div
+                          key={subtask.id}
+                          className="bg-black/30 border border-emerald-500/40 rounded-lg p-3 flex items-center justify-between gap-3"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <Avatar className="h-8 w-8 border border-white/10 bg-white/5 flex-shrink-0">
+                              <AvatarImage
+                                src={assigneeProfile?.avatar_url || undefined}
+                                alt={assigneeProfile?.full_name || subtask.title}
+                              />
+                              <AvatarFallback className="text-[10px]">
+                                {(assigneeProfile?.full_name || "U")
+                                  .split(" ")
+                                  .map((n: string) => n[0])
+                                  .join("")
+                                  .slice(0, 2)
+                                  .toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0 space-y-0.5">
+                              <div className="text-sm font-semibold text-white truncate">
+                                {subtask.title}
+                              </div>
+                              {parentTask && (
+                                <div className="text-[11px] text-white/60 truncate">
+                                  In task: <span className="font-medium">{parentTask.title}</span>
+                                </div>
+                              )}
+                              <div className="text-[11px] text-white/50 flex flex-wrap gap-x-2 gap-y-0.5">
+                                {assigneeProfile && (
+                                  <span>
+                                    👤 {assigneeProfile.full_name} (@{assigneeProfile.username})
+                                  </span>
+                                )}
+                                {subtask.points > 0 && <span>⭐ {subtask.points} pts</span>}
+                                {subtask.approved_at && (
+                                  <span>
+                                    ✅ {new Date(subtask.approved_at).toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          {parentTask && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-shrink-0 h-8 text-xs border-emerald-400/50 text-emerald-200 hover:bg-emerald-500/20"
+                              onClick={async () => {
+                                try {
+                                  setSelectedTask(parentTask);
+                                  await fetchSubtasks(parentTask.id);
+                                  setCurrentView('detail');
+                                } catch (e) { console.error('Error opening task view:', e); }
+                              }}
+                            >
+                              View
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
+          )}
           {widgetManager}
           <Button className="flex items-center gap-2" onClick={() => setCurrentView('create')}>
             <Plus className="h-4 w-4" />
@@ -2117,88 +2214,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
             </Card>
           )}
 
-          {/* Recently Approved Subtasks */}
-          {approvedSubtasks.length > 0 && (
-            <Card className="bg-gradient-to-br from-emerald-500/20 via-green-500/10 to-teal-500/20 backdrop-blur-lg border-emerald-500/30 text-white relative z-10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-emerald-300" />
-                  Recently Approved Subtasks ({approvedSubtasks.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {approvedSubtasks.map((subtask: any) => {
-                    const parentTaskPartial = subtask.staff_tasks as any;
-                    const parentTask = tasks.find((t) => t.id === parentTaskPartial?.id) || parentTaskPartial;
-                    const assigneeProfile = subtask.staff_profiles as any | null;
-                    return (
-                      <div
-                        key={subtask.id}
-                        className="bg-black/30 border border-emerald-500/40 rounded-lg p-3 flex items-center justify-between gap-3"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Avatar className="h-8 w-8 border border-white/10 bg-white/5 flex-shrink-0">
-                            <AvatarImage
-                              src={assigneeProfile?.avatar_url || undefined}
-                              alt={assigneeProfile?.full_name || subtask.title}
-                            />
-                            <AvatarFallback className="text-[10px]">
-                              {(assigneeProfile?.full_name || "U")
-                                .split(" ")
-                                .map((n: string) => n[0])
-                                .join("")
-                                .slice(0, 2)
-                                .toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 space-y-0.5">
-                            <div className="text-sm font-semibold text-white truncate">
-                              {subtask.title}
-                            </div>
-                            {parentTask && (
-                              <div className="text-[11px] text-white/60 truncate">
-                                In task: <span className="font-medium">{parentTask.title}</span>
-                              </div>
-                            )}
-                            <div className="text-[11px] text-white/50 flex flex-wrap gap-x-2 gap-y-0.5">
-                              {assigneeProfile && (
-                                <span>
-                                  👤 {assigneeProfile.full_name} (@{assigneeProfile.username})
-                                </span>
-                              )}
-                              {subtask.points > 0 && <span>⭐ {subtask.points} pts</span>}
-                              {subtask.approved_at && (
-                                <span>
-                                  ✅ {new Date(subtask.approved_at).toLocaleString()}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        {parentTask && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-shrink-0 h-8 text-xs border-emerald-400/50 text-emerald-200 hover:bg-emerald-500/20"
-                            onClick={async () => {
-                              try {
-                                setSelectedTask(parentTask);
-                                await fetchSubtasks(parentTask.id);
-                                setCurrentView('detail');
-                              } catch (e) { console.error('Error opening task view:', e); }
-                            }}
-                          >
-                            View
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+
+
 
           {/* Subtasks Returned for Rework */}
           {returnedSubtasks.length > 0 && (
