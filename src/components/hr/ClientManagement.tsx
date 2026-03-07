@@ -470,6 +470,19 @@ const ClientManagement = () => {
       // Create in billing software
       await syncClientToBilling(selectedClientForSync, newSyncId);
 
+      // Clear stale billing_sync_id from other records
+      await supabase
+        .from('clients')
+        .update({ billing_sync_id: null })
+        .eq('billing_sync_id', newSyncId)
+        .neq('id', selectedClientForSync.id);
+
+      await supabase
+        .from('client_profiles')
+        .update({ billing_sync_id: null })
+        .eq('billing_sync_id', newSyncId)
+        .neq('email', selectedClientForSync.email || '');
+
       // Save billing_sync_id locally
       const { error } = await supabase
         .from('clients')
