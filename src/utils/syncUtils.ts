@@ -37,7 +37,7 @@ export const syncClientToBilling = async (client: any, syncId: string) => {
             },
             body: JSON.stringify({
                 sync_id: syncId,
-                company_name: client.company_name,
+                name: client.company_name,
                 contact_person: client.contact_person,
                 email: client.email,
                 phone: client.phone,
