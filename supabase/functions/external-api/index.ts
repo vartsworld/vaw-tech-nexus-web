@@ -73,11 +73,11 @@ serve(async (req: Request) => {
 
                 // Map results to the structure expected by the Sync Bridge UI
                 const augmentedClients = (clients || []).map((c: any) => {
-                    // Generate a consistent code if none exists
                     const generatedCode = `B${c.id.slice(0, 5).toUpperCase()}`
                     return {
                         ...c,
-                        name: c.company_name || c.contact_person || c.email || "Unnamed Client", // Mapping for UI consistency
+                        name: c.company_name || c.contact_person || c.email || "Unnamed Client",
+                        company_name: c.company_name,
                         client_code: c.billing_sync_id || generatedCode
                     }
                 })
@@ -138,7 +138,8 @@ serve(async (req: Request) => {
             console.log(`Received API event: ${event}`, data)
 
             if (path === 'sync' || event === 'client.sync') {
-                const { sync_id, company_name, email, contact_person, phone, address } = data
+                const { sync_id, name, company_name: compName, email, contact_person, phone, address } = data
+                const clientName = name || compName
 
                 // 1. Check if client profile already exists
                 const { data: existing } = await supabaseAdmin
@@ -152,7 +153,7 @@ serve(async (req: Request) => {
                     const { error: insertError } = await supabaseAdmin
                         .from('client_profiles')
                         .insert({
-                            company_name,
+                            company_name: clientName,
                             contact_person,
                             email,
                             phone,
@@ -160,7 +161,7 @@ serve(async (req: Request) => {
                             billing_sync_id: sync_id
                         })
                     if (insertError) throw insertError
-                    console.log(`Created new billing profile for ${company_name}`)
+                    console.log(`Created new billing profile for ${clientName}`)
                 } else {
                     // Update existing with the sync_id
                     await supabaseAdmin
