@@ -131,9 +131,9 @@ const FinancialOversight = () => {
     }, []);
 
     // Build synced client lookup
-    const syncedClients = clients.filter((c: any) => c.billing_sync_id);
-    const syncIdSet = new Set(syncedClients.map((c: any) => String(c.billing_sync_id)));
-    const syncIdToClient = new Map(syncedClients.map((c: any) => [String(c.billing_sync_id), c]));
+    const syncedClients = (clients as any[]).filter((c) => c.billing_sync_id);
+    const syncIdSet = new Set(syncedClients.map((c) => String(c.billing_sync_id)));
+    const syncIdToClient = new Map<string, any>(syncedClients.map((c) => [String(c.billing_sync_id), c]));
 
     const isMatched = (record: any) => syncIdSet.has(getClientCode(record));
 
