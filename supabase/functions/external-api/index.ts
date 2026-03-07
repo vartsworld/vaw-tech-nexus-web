@@ -144,14 +144,31 @@ serve(async (req: Request) => {
                 const syncCode = client_code || sync_id
                 const clientName = name || compName
 
-                // 1. Check if client profile already exists
+                // 1. Clear any stale billing_sync_id that matches this syncCode on OTHER profiles
+                if (syncCode) {
+                    await supabaseAdmin
+                        .from('client_profiles')
+                        .update({ billing_sync_id: null })
+                        .eq('billing_sync_id', syncCode)
+                        .neq('email', email || '')
+                }
+
+                // 2. Also clear stale billing_sync_id on the clients table
+                if (syncCode) {
+                    await supabaseAdmin
+                        .from('clients')
+                        .update({ billing_sync_id: null })
+                        .eq('billing_sync_id', syncCode)
+                        .neq('email', email || '')
+                }
+
+                // 3. Upsert client_profiles based on email
                 const { data: existing } = await supabaseAdmin
                     .from('client_profiles')
                     .select('id')
                     .eq('email', email)
                     .maybeSingle()
 
-                // Upsert: insert or update based on email
                 const { error: upsertError } = await supabaseAdmin
                     .from('client_profiles')
                     .upsert({
