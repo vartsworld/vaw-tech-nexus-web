@@ -212,7 +212,7 @@ const TaskDetailPage = ({
     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <button onClick={onBack} className="hover:text-white transition-colors">Tasks</button>
+        <button onClick={onBack} className="hover:text-foreground transition-colors">Tasks</button>
         <span>›</span>
         {task.staff_projects?.title && (
           <>
@@ -225,189 +225,193 @@ const TaskDetailPage = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left - Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6 min-w-0">
           {/* Title & Status */}
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
             <div className="flex items-start justify-between gap-4">
-              <h1 className="text-2xl font-bold tracking-tight leading-tight">{task.title}</h1>
+              <h1 className="text-2xl font-bold tracking-tight leading-tight break-words min-w-0">{task.title}</h1>
               <Badge variant="outline" className={`${statusConfig[task.status]?.color || ''} text-[10px] font-bold tracking-wider px-3 py-1.5 shrink-0`}>
                 {statusConfig[task.status]?.label || task.status?.toUpperCase()}
               </Badge>
             </div>
 
-            <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+            <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
               {task.description || 'No description provided.'}
             </p>
           </div>
 
           {/* Subtasks Stage Board */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 space-y-4 min-w-0">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Layers className="h-4 w-4 text-primary" />
                 Project Stages & Subtasks
               </h3>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground shrink-0">
                 {completedSubtasks}/{subtasks.length} completed
               </span>
             </div>
 
-            {/* Stage Tabs */}
-            <div className="flex gap-0 border-b border-white/10">
-              {stageNums.map((stageNum) => {
-                const color = stageColors[(stageNum - 1) % stageColors.length];
-                const count = (stageMap[stageNum] || []).length;
-                return (
-                  <div key={stageNum} className={`flex items-center gap-2 px-4 py-2.5 border-b-2 ${color.border}`}>
-                    <span className={`text-xs font-bold uppercase tracking-wider ${color.text}`}>
-                      {stageLabels[stageNum] || `STAGE ${stageNum}`}
-                    </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${color.badge}`}>{count}</span>
-                  </div>
-                );
-              })}
-              <button
-                onClick={() => {
-                  const nextStage = stageNums.length > 0 ? Math.max(...stageNums) + 1 : 1;
-                  setQuickAddStage(nextStage);
-                  setNewSubtask(prev => ({ ...prev, stage: nextStage }));
-                }}
-                className="px-3 py-2.5 text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
-              >
-                <Plus className="h-3 w-3" /> Add Stage
-              </button>
-            </div>
+            {/* Stage Tabs - Scrollable */}
+            <ScrollArea className="w-full" type="scroll">
+              <div className="flex gap-0 border-b border-white/10 w-max min-w-full">
+                {stageNums.map((stageNum) => {
+                  const color = stageColors[(stageNum - 1) % stageColors.length];
+                  const count = (stageMap[stageNum] || []).length;
+                  return (
+                    <div key={stageNum} className={`flex items-center gap-1.5 px-3 py-2.5 border-b-2 shrink-0 ${color.border}`}>
+                      <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap ${color.text}`}>
+                        {stageLabels[stageNum] || `STAGE ${stageNum}`}
+                      </span>
+                      <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full ${color.badge}`}>{count}</span>
+                    </div>
+                  );
+                })}
+                <button
+                  onClick={() => {
+                    const nextStage = stageNums.length > 0 ? Math.max(...stageNums) + 1 : 1;
+                    setQuickAddStage(nextStage);
+                    setNewSubtask(prev => ({ ...prev, stage: nextStage }));
+                  }}
+                  className="px-3 py-2.5 text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 shrink-0 whitespace-nowrap"
+                >
+                  <Plus className="h-3 w-3" /> Add Stage
+                </button>
+              </div>
+            </ScrollArea>
 
-            {/* Stage Columns */}
+            {/* Stage Columns - Scrollable */}
             {loadingSubtasks ? (
               <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
             ) : (
               <DragDropContext onDragEnd={onSubtaskDragEnd}>
-                <div className="flex gap-4 overflow-x-auto pb-2" style={{ minWidth: stageNums.length * 260 }}>
-                  {stageNums.map((stageNum) => {
-                    const color = stageColors[(stageNum - 1) % stageColors.length];
-                    const stageSubtasks = stageMap[stageNum] || [];
-                    const isQuickAddOpen = quickAddStage === stageNum;
+                <ScrollArea className="w-full" type="scroll">
+                  <div className="flex gap-3 pb-4 w-max min-w-full">
+                    {stageNums.map((stageNum) => {
+                      const color = stageColors[(stageNum - 1) % stageColors.length];
+                      const stageSubtasks = stageMap[stageNum] || [];
+                      const isQuickAddOpen = quickAddStage === stageNum;
 
-                    return (
-                      <Droppable key={stageNum} droppableId={`stage-${stageNum}`}>
-                        {(provided, snapshot) => (
-                          <div
-                            {...provided.droppableProps}
-                            ref={provided.innerRef}
-                            className={cn(
-                              "flex-1 min-w-[220px] rounded-xl border p-3 space-y-2 transition-colors",
-                              color.border, color.bg,
-                              snapshot.isDraggingOver && "bg-white/5 shadow-inner"
-                            )}
-                          >
-                            <div className="flex items-center justify-between mb-1">
-                              <span className={`text-[10px] font-bold uppercase tracking-wider ${color.text}`}>
-                                {stageLabels[stageNum] || `Stage ${stageNum}`}
-                              </span>
-                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-primary"
-                                onClick={() => {
-                                  setQuickAddStage(isQuickAddOpen ? null : stageNum);
-                                  setNewSubtask(prev => ({ ...prev, stage: stageNum, title: '', assigned_to: '' }));
-                                }}
-                              >
-                                <Plus className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-
-                            {/* Quick Add */}
-                            {isQuickAddOpen && (
-                              <div className="space-y-2 p-2.5 bg-black/30 rounded-lg border border-white/10 animate-in fade-in duration-200">
-                                <Input autoFocus placeholder="Subtask title *" value={newSubtask.title}
-                                  onChange={e => setNewSubtask({ ...newSubtask, title: e.target.value })}
-                                  className="h-8 text-xs bg-transparent border-white/10" />
-                                <Select value={newSubtask.assigned_to} onValueChange={v => setNewSubtask({ ...newSubtask, assigned_to: v })}>
-                                  <SelectTrigger className="h-8 text-xs bg-transparent border-white/10"><SelectValue placeholder="Assign to..." /></SelectTrigger>
-                                  <SelectContent>
-                                    {staff.map(m => <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>)}
-                                  </SelectContent>
-                                </Select>
-                                <div className="flex gap-1">
-                                  <Button size="sm" className="flex-1 h-7 text-[10px] bg-primary/80 hover:bg-primary" onClick={handleCreateSubtask}>
-                                    <Plus className="h-3 w-3 mr-1" /> Add
-                                  </Button>
-                                  <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => setQuickAddStage(null)}>Cancel</Button>
-                                </div>
+                      return (
+                        <Droppable key={stageNum} droppableId={`stage-${stageNum}`}>
+                          {(provided, snapshot) => (
+                            <div
+                              {...provided.droppableProps}
+                              ref={provided.innerRef}
+                              className={cn(
+                                "w-[240px] shrink-0 rounded-xl border p-3 space-y-2 transition-colors",
+                                color.border, color.bg,
+                                snapshot.isDraggingOver && "bg-white/5 shadow-inner"
+                              )}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className={`text-[10px] font-bold uppercase tracking-wider ${color.text}`}>
+                                  {stageLabels[stageNum] || `Stage ${stageNum}`}
+                                </span>
+                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-primary"
+                                  onClick={() => {
+                                    setQuickAddStage(isQuickAddOpen ? null : stageNum);
+                                    setNewSubtask(prev => ({ ...prev, stage: stageNum, title: '', assigned_to: '' }));
+                                  }}
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                </Button>
                               </div>
-                            )}
 
-                            {/* Subtask Cards */}
-                            {stageSubtasks.map((st, index) => (
-                              <Draggable key={st.id} draggableId={st.id} index={index}>
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    className={cn(
-                                      "rounded-lg border border-white/10 bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group",
-                                      snapshot.isDragging && "rotate-2 scale-105 shadow-2xl"
-                                    )}
-                                  >
-                                    <div className="flex items-start justify-between gap-2">
-                                      <span className="text-xs font-medium leading-tight">{st.title}</span>
-                                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400"
-                                          onClick={() => handleDeleteSubtask(st.id)}>
-                                          <Trash2 className="h-3 w-3" />
-                                        </Button>
-                                      </div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between">
-                                      {st.staff_profiles && (
-                                        <div className="flex items-center gap-1.5">
-                                          <Avatar className="h-5 w-5 border border-white/10">
-                                            <AvatarImage src={st.staff_profiles.avatar_url} />
-                                            <AvatarFallback className="text-[8px]">
-                                              {st.staff_profiles.full_name?.substring(0, 2).toUpperCase()}
-                                            </AvatarFallback>
-                                          </Avatar>
-                                          <span className="text-[10px] text-muted-foreground">{st.staff_profiles.full_name}</span>
-                                        </div>
-                                      )}
-                                      <Badge variant="outline" className={`text-[8px] h-4 px-1.5 ${
-                                        st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                                          : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
-                                          : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                                      }`}>
-                                        {st.status === 'completed' ? 'DONE' : st.status === 'in_progress' ? 'IN PROGRESS' : 'PENDING'}
-                                      </Badge>
-                                    </div>
-
-                                    {/* Status toggle */}
-                                    <Select value={st.status} onValueChange={(v) => handleSubtaskStatusUpdate(st.id, v)}>
-                                      <SelectTrigger className="h-6 text-[9px] bg-transparent border-white/5">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="pending" className="text-xs">Pending</SelectItem>
-                                        <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
-                                        <SelectItem value="completed" className="text-xs">Completed</SelectItem>
-                                      </SelectContent>
-                                    </Select>
+                              {/* Quick Add */}
+                              {isQuickAddOpen && (
+                                <div className="space-y-2 p-2.5 bg-black/30 rounded-lg border border-white/10 animate-in fade-in duration-200">
+                                  <Input autoFocus placeholder="Subtask title *" value={newSubtask.title}
+                                    onChange={e => setNewSubtask({ ...newSubtask, title: e.target.value })}
+                                    className="h-8 text-xs bg-transparent border-white/10" />
+                                  <Select value={newSubtask.assigned_to} onValueChange={v => setNewSubtask({ ...newSubtask, assigned_to: v })}>
+                                    <SelectTrigger className="h-8 text-xs bg-transparent border-white/10"><SelectValue placeholder="Assign to..." /></SelectTrigger>
+                                    <SelectContent>
+                                      {staff.map(m => <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
+                                  <div className="flex gap-1">
+                                    <Button size="sm" className="flex-1 h-7 text-[10px] bg-primary/80 hover:bg-primary" onClick={handleCreateSubtask}>
+                                      <Plus className="h-3 w-3 mr-1" /> Add
+                                    </Button>
+                                    <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => setQuickAddStage(null)}>Cancel</Button>
                                   </div>
-                                )}
-                              </Draggable>
-                            ))}
+                                </div>
+                              )}
 
-                            {stageSubtasks.length === 0 && !isQuickAddOpen && (
-                              <div className="py-6 text-center text-[10px] text-muted-foreground/50 border border-dashed border-white/10 rounded-lg">
-                                No tasks yet
-                              </div>
-                            )}
-                            {provided.placeholder}
-                          </div>
-                        )}
-                      </Droppable>
-                    );
-                  })}
-                </div>
+                              {/* Subtask Cards */}
+                              {stageSubtasks.map((st, index) => (
+                                <Draggable key={st.id} draggableId={st.id} index={index}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      className={cn(
+                                        "rounded-lg border border-white/10 bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group",
+                                        snapshot.isDragging && "rotate-2 scale-105 shadow-2xl"
+                                      )}
+                                    >
+                                      <div className="flex items-start justify-between gap-2">
+                                        <span className="text-xs font-medium leading-tight break-words min-w-0">{st.title}</span>
+                                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                          <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400"
+                                            onClick={() => handleDeleteSubtask(st.id)}>
+                                            <Trash2 className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-between gap-1">
+                                        {st.staff_profiles && (
+                                          <div className="flex items-center gap-1.5 min-w-0">
+                                            <Avatar className="h-5 w-5 border border-white/10 shrink-0">
+                                              <AvatarImage src={st.staff_profiles.avatar_url} />
+                                              <AvatarFallback className="text-[8px]">
+                                                {st.staff_profiles.full_name?.substring(0, 2).toUpperCase()}
+                                              </AvatarFallback>
+                                            </Avatar>
+                                            <span className="text-[10px] text-muted-foreground truncate">{st.staff_profiles.full_name}</span>
+                                          </div>
+                                        )}
+                                        <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${
+                                          st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                            : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                                            : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                        }`}>
+                                          {st.status === 'completed' ? 'DONE' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
+                                        </Badge>
+                                      </div>
+
+                                      {/* Status toggle */}
+                                      <Select value={st.status} onValueChange={(v) => handleSubtaskStatusUpdate(st.id, v)}>
+                                        <SelectTrigger className="h-6 text-[9px] bg-transparent border-white/5">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="pending" className="text-xs">Pending</SelectItem>
+                                          <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
+                                          <SelectItem value="completed" className="text-xs">Completed</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))}
+
+                              {stageSubtasks.length === 0 && !isQuickAddOpen && (
+                                <div className="py-6 text-center text-[10px] text-muted-foreground/50 border border-dashed border-white/10 rounded-lg">
+                                  No tasks yet
+                                </div>
+                              )}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
               </DragDropContext>
             )}
           </div>
@@ -437,7 +441,7 @@ const TaskDetailPage = ({
 
         {/* Right Sidebar */}
         <div className="space-y-6">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5 sticky top-4">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-5 lg:sticky lg:top-4">
             <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Task Details</h3>
 
             {/* Assigned To */}
@@ -459,6 +463,9 @@ const TaskDetailPage = ({
                     </Tooltip>
                   </TooltipProvider>
                 ))}
+                {profiles.length === 0 && (
+                  <span className="text-xs text-muted-foreground">No assignees</span>
+                )}
               </div>
             </div>
 
@@ -480,17 +487,25 @@ const TaskDetailPage = ({
               </div>
             </div>
 
+            {/* Stage */}
+            <div className="space-y-1.5">
+              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Stage</Label>
+              <div className="text-sm font-semibold">
+                {stageLabels[task.current_stage] || `Stage ${task.current_stage || 1}`}
+              </div>
+            </div>
+
             {/* Client */}
             {task.clients && (
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Client</Label>
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                     {task.clients.company_name?.substring(0, 2).toUpperCase()}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold">{task.clients.company_name}</p>
-                    <p className="text-[10px] text-muted-foreground">{task.clients.contact_person}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{task.clients.company_name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{task.clients.contact_person}</p>
                   </div>
                 </div>
               </div>
@@ -500,9 +515,9 @@ const TaskDetailPage = ({
             {task.staff_projects && (
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Project</Label>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="h-2 w-2 rounded-full bg-primary" />
-                  <span className="font-medium">{task.staff_projects.title}</span>
+                <div className="flex items-center gap-2 text-sm min-w-0">
+                  <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
+                  <span className="font-medium truncate">{task.staff_projects.title}</span>
                 </div>
               </div>
             )}
@@ -512,12 +527,12 @@ const TaskDetailPage = ({
               <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Timeline</Label>
               <div className="space-y-1.5 text-xs">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  <span>Due: {task.due_date ? format(new Date(task.due_date), 'MMM dd, yyyy') : 'No due date'}</span>
+                  <Calendar className="h-3 w-3 shrink-0" />
+                  <span>Due: {task.due_date ? (() => { try { return format(new Date(task.due_date), 'MMM dd, yyyy'); } catch { return 'Invalid date'; } })() : 'No due date'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  <span>Created: {format(new Date(task.created_at), 'MMM dd, yyyy')}</span>
+                  <Clock className="h-3 w-3 shrink-0" />
+                  <span>Created: {(() => { try { return format(new Date(task.created_at), 'MMM dd, yyyy'); } catch { return ''; } })()}</span>
                 </div>
               </div>
             </div>
