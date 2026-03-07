@@ -1782,7 +1782,7 @@ const TaskManagement = () => {
                                                   </span>
                                                 </div>
                                                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setSelectedTask(task); fetchSubtasks(task.id); setIsDetailDialogOpen(true); }}>
+                                                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}>
                                                     <Eye className="h-3.5 w-3.5" />
                                                   </Button>
                                                   <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openEditDialog(task)}>
