@@ -138,7 +138,8 @@ serve(async (req: Request) => {
             console.log(`Received API event: ${event}`, data)
 
             if (path === 'sync' || event === 'client.sync') {
-                const { sync_id, company_name, email, contact_person, phone, address } = data
+                const { sync_id, name, company_name: compName, email, contact_person, phone, address } = data
+                const clientName = name || compName
 
                 // 1. Check if client profile already exists
                 const { data: existing } = await supabaseAdmin
