@@ -133,6 +133,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [staff, setStaff] = useState<Staff[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [currentView, setCurrentView] = useState<'list' | 'create' | 'detail'>('list');
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [clientProjects, setClientProjects] = useState<any[]>([]);
