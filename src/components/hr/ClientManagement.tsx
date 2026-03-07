@@ -1115,17 +1115,17 @@ const ClientManagement = () => {
               </TabsList>
 
               <TabsContent value="create" className="space-y-4 pt-2">
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
-                  <p className="text-xs text-blue-800 font-medium">
+                <div className="p-4 bg-primary/10 border border-primary/20 rounded-xl space-y-3">
+                  <p className="text-xs text-foreground/70 font-medium">
                     This will generate a new billing code and create the client account in your billing software automatically.
                   </p>
-                  <div className="text-sm space-y-1 text-blue-900">
+                  <div className="text-sm space-y-1 text-foreground">
                     <p><strong>Client:</strong> {selectedClientForSync?.company_name}</p>
                     <p><strong>Email:</strong> {selectedClientForSync?.email}</p>
                     <p><strong>Contact:</strong> {selectedClientForSync?.contact_person}</p>
                   </div>
                   <Button
-                    className="w-full bg-blue-600 hover:bg-blue-700 h-10 rounded-xl mt-2"
+                    className="w-full h-10 rounded-xl mt-2"
                     onClick={handleGenerateAndSync}
                     disabled={isGeneratingBilling}
                   >
@@ -1153,25 +1153,25 @@ const ClientManagement = () => {
                     <button
                       key={client.id || client.client_code}
                       onClick={() => handleSyncClient(client.client_code, client)}
-                      className="w-full text-left p-3 rounded-xl border border-gray-100 hover:bg-indigo-50 transition-all group relative overflow-hidden"
+                      className="w-full text-left p-3 rounded-xl border border-border hover:bg-accent transition-all group relative overflow-hidden"
                     >
                       <div className="flex justify-between items-center relative z-10">
                         <div className="space-y-1">
-                          <p className="text-sm font-bold text-gray-900 group-hover:text-indigo-900">
+                          <p className="text-sm font-bold text-foreground group-hover:text-primary">
                             {client.name || client.company_name || "Unnamed Client"}
                           </p>
-                          <p className="text-[10px] text-gray-500 font-medium">
+                          <p className="text-[10px] text-muted-foreground font-medium">
                             {client.email || "No email provided"}
                           </p>
                         </div>
-                        <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 text-[10px] font-bold">
+                        <Badge variant="secondary" className="text-[10px] font-bold">
                           {client.client_code}
                         </Badge>
                       </div>
                     </button>
                   ))}
                   {externalSearchResults.length === 0 && !isSearchingExternal && (
-                    <p className="text-xs text-gray-500 text-center py-4">Search for an external client to link.</p>
+                    <p className="text-xs text-muted-foreground text-center py-4">Search for an external client to link.</p>
                   )}
                 </div>
               </TabsContent>

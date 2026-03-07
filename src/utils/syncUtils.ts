@@ -27,7 +27,7 @@ export const syncClientToBilling = async (client: any, syncId: string) => {
     }
 
     try {
-        const externalUrl = localStorage.getItem('vaw_external_api_url') || "https://mezolzequhtjtifeznll.supabase.co/functions/v1/external-api";
+        const externalUrl = localStorage.getItem('vaw_external_api_url') || `https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/external-api`;
         const response = await fetch(`${externalUrl}/clients`, {
             method: 'POST',
             headers: {
@@ -73,7 +73,7 @@ export const syncFinancialEntryToBilling = async (paymentData: any, syncId: stri
     }
 
     try {
-        const BASE_URL = "https://mezolzequhtjtifeznll.supabase.co/functions/v1/external-api";
+        const BASE_URL = `https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/external-api`;
         const response = await fetch(`${BASE_URL}/financial/entries/sync`, {
             method: 'POST',
             headers: {
@@ -111,7 +111,7 @@ export const fetchClientFromBilling = async (clientCode: string) => {
 
     if (!key || !secret) throw new Error("API credentials missing");
     try {
-        const externalUrl = localStorage.getItem('vaw_external_api_url') || "https://mezolzequhtjtifeznll.supabase.co/functions/v1/external-api";
+        const externalUrl = localStorage.getItem('vaw_external_api_url') || `https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/external-api`;
         const response = await fetch(`${externalUrl}/clients?client_code=${clientCode}`, {
             headers: { 'x-api-key': key, 'x-api-secret': secret }
         });
@@ -150,7 +150,7 @@ export const searchClientsInBilling = async (query: string) => {
 
     if (!key || !secret) throw new Error("API credentials missing");
     try {
-        const externalUrl = localStorage.getItem('vaw_external_api_url') || "https://mezolzequhtjtifeznll.supabase.co/functions/v1/external-api";
+        const externalUrl = localStorage.getItem('vaw_external_api_url') || `https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/external-api`;
         const response = await fetch(`${externalUrl}/clients?search=${encodeURIComponent(query)}&limit=10`, {
             headers: { 'x-api-key': key, 'x-api-secret': secret }
         });
