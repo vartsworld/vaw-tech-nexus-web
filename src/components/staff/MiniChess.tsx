@@ -840,14 +840,15 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
   // Finding match screen
   if (gameMode === 'finding') {
     return (
-      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-        <CardContent className="py-8 text-center">
-          <Loader2 className="w-12 h-12 text-blue-400 mx-auto mb-4 animate-spin" />
-          <p className="text-white font-medium">Finding opponent...</p>
-          <p className="text-white/50 text-sm mt-2">This may take a few seconds</p>
+      <Card className={`bg-white/10 backdrop-blur-sm border-white/20 ${compact ? 'border-0 shadow-none' : ''}`}>
+        <CardContent className={`text-center ${compact ? 'py-4' : 'py-8'}`}>
+          <Loader2 className={`text-blue-400 mx-auto mb-2 animate-spin ${compact ? 'w-8 h-8' : 'w-12 h-12'}`} />
+          <p className={`text-white font-medium ${compact ? 'text-sm' : ''}`}>Finding opponent...</p>
+          <p className={`text-white/50 mt-1 ${compact ? 'text-xs' : 'text-sm mt-2'}`}>This may take a few seconds</p>
           <Button
             variant="ghost"
-            className="mt-4 text-white/70"
+            size={compact ? 'sm' : 'default'}
+            className="mt-3 text-white/70"
             onClick={resetGame}
           >
             Cancel
@@ -859,38 +860,38 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
 
   // Playing screen
   return (
-    <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-amber-500/20 shadow-2xl shadow-amber-500/10">
-      <CardHeader className="pb-2 border-b border-white/5">
+    <Card className={`bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-amber-500/20 shadow-2xl shadow-amber-500/10 ${compact ? 'border-0 shadow-none bg-transparent' : ''}`}>
+      <CardHeader className={`border-b border-white/5 ${compact ? 'p-2 pb-1.5' : 'pb-2'}`}>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-white flex items-center gap-2 text-sm font-bold">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30">
-              <Crown className="w-4 h-4 text-white" />
+          <CardTitle className={`text-white flex items-center gap-2 font-bold ${compact ? 'text-xs' : 'text-sm'}`}>
+            <div className={`rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 ${compact ? 'w-6 h-6' : 'w-8 h-8'}`}>
+              <Crown className={compact ? 'w-3 h-3 text-white' : 'w-4 h-4 text-white'} />
             </div>
-            <span className="bg-gradient-to-r from-amber-200 to-yellow-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-amber-200 to-yellow-400 bg-clip-text text-transparent truncate">
               vs {opponentName}
             </span>
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <div className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${chess.turn() === 'w'
+          <div className="flex items-center gap-1">
+            <div className={`rounded-full font-bold transition-all ${compact ? 'px-2 py-0.5 text-[9px]' : 'px-3 py-1 text-xs'} ${chess.turn() === 'w'
               ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg shadow-emerald-500/30'
               : 'bg-slate-700 text-slate-400'
               }`}>
               {chess.turn() === 'w' ? '⚪ Your Turn' : '⚫ Waiting'}
             </div>
-            <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-700" onClick={resetGame}>
-              <X className="w-4 h-4" />
+            <Button size="sm" variant="ghost" className={`p-0 text-slate-400 hover:text-white hover:bg-slate-700 ${compact ? 'h-6 w-6' : 'h-8 w-8'}`} onClick={resetGame}>
+              <X className={compact ? 'w-3 h-3' : 'w-4 h-4'} />
             </Button>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-2 sm:p-4 space-y-4">
-        {/* Chess Board with high-res styling */}
+      <CardContent className={compact ? 'p-1.5' : 'p-2 sm:p-4 space-y-4'}>
+        {/* Chess Board */}
         <div className="flex justify-center items-center w-full">
           <div
-            className="relative shadow-2xl rounded-xl overflow-hidden border-4 border-[#5d4037] bg-[#5d4037]"
+            className={`relative shadow-2xl rounded-lg overflow-hidden bg-[#5d4037] ${compact ? 'border-2 border-[#5d4037]' : 'border-4 border-[#5d4037] rounded-xl'}`}
             style={{
-              width: 'min(80vw, 80vh)',
+              width: compact ? '100%' : 'min(80vw, 80vh)',
               aspectRatio: '1/1'
             }}
           >
@@ -917,22 +918,21 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
                       ${isSelected ? 'after:absolute after:inset-0 after:bg-yellow-400/40' : ''}
                       ${isPossible && !piece ? 'after:absolute after:w-[30%] after:h-[30%] after:bg-black/25 after:rounded-full shadow-inner' : ''}
                       ${isPossible && piece ? 'after:absolute after:inset-[10%] after:border-4 after:border-black/30 after:rounded-full' : ''}
-                      cursor-pointer select-none transition-all duration-200
-                      hover:brightness-105 active:scale-95 h-full w-full
+                      cursor-pointer select-none h-full w-full
                     `}
                   >
                     {piece && (
-                      <ChessPiece piece={piece.type} color={piece.color} />
+                      <ChessPiece piece={piece.type} color={piece.color} compact={compact} />
                     )}
 
-                    {/* Minimalist Coordinate Labels */}
+                    {/* Coordinate Labels */}
                     {col === 0 && (
-                      <span className={`absolute top-0.5 left-0.5 text-[7px] sm:text-[10px] font-bold opacity-30 select-none ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>
+                      <span className={`absolute top-0 left-0.5 font-bold opacity-30 select-none ${compact ? 'text-[5px]' : 'text-[7px] sm:text-[10px]'} ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>
                         {8 - row}
                       </span>
                     )}
                     {row === 7 && (
-                      <span className={`absolute bottom-0.5 right-0.5 text-[7px] sm:text-[10px] font-bold opacity-30 select-none ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>
+                      <span className={`absolute bottom-0 right-0.5 font-bold opacity-30 select-none ${compact ? 'text-[5px]' : 'text-[7px] sm:text-[10px]'} ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>
                         {String.fromCharCode(97 + col)}
                       </span>
                     )}
