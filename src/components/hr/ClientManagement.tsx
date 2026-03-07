@@ -1153,25 +1153,25 @@ const ClientManagement = () => {
                     <button
                       key={client.id || client.client_code}
                       onClick={() => handleSyncClient(client.client_code, client)}
-                      className="w-full text-left p-3 rounded-xl border border-gray-100 hover:bg-indigo-50 transition-all group relative overflow-hidden"
+                      className="w-full text-left p-3 rounded-xl border border-border hover:bg-accent transition-all group relative overflow-hidden"
                     >
                       <div className="flex justify-between items-center relative z-10">
                         <div className="space-y-1">
-                          <p className="text-sm font-bold text-gray-900 group-hover:text-indigo-900">
+                          <p className="text-sm font-bold text-foreground group-hover:text-primary">
                             {client.name || client.company_name || "Unnamed Client"}
                           </p>
-                          <p className="text-[10px] text-gray-500 font-medium">
+                          <p className="text-[10px] text-muted-foreground font-medium">
                             {client.email || "No email provided"}
                           </p>
                         </div>
-                        <Badge variant="secondary" className="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 text-[10px] font-bold">
+                        <Badge variant="secondary" className="text-[10px] font-bold">
                           {client.client_code}
                         </Badge>
                       </div>
                     </button>
                   ))}
                   {externalSearchResults.length === 0 && !isSearchingExternal && (
-                    <p className="text-xs text-gray-500 text-center py-4">Search for an external client to link.</p>
+                    <p className="text-xs text-muted-foreground text-center py-4">Search for an external client to link.</p>
                   )}
                 </div>
               </TabsContent>
