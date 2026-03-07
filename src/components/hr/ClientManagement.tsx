@@ -388,6 +388,19 @@ const ClientManagement = () => {
     if (!selectedClientForSync || !codeToUse) return;
 
     try {
+      // Clear stale billing_sync_id from other clients to prevent unique constraint violation
+      await supabase
+        .from('clients')
+        .update({ billing_sync_id: null })
+        .eq('billing_sync_id', codeToUse)
+        .neq('id', selectedClientForSync.id);
+
+      await supabase
+        .from('client_profiles')
+        .update({ billing_sync_id: null })
+        .eq('billing_sync_id', codeToUse)
+        .neq('email', selectedClientForSync.email || '');
+
       const { error } = await supabase
         .from('clients')
         .update({ billing_sync_id: codeToUse })
