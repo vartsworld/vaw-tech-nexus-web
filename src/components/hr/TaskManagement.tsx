@@ -1911,8 +1911,7 @@ const TaskManagement = () => {
                         className="flex-1"
                         onClick={() => {
                           setSelectedTask(task);
-                          fetchSubtasks(task.id);
-                          setIsDetailDialogOpen(true);
+                          setCurrentView('detail');
                         }}
                       >
                         <Eye className="h-4 w-4 mr-2" />
