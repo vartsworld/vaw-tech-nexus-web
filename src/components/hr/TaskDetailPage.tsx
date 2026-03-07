@@ -69,12 +69,14 @@ const TaskDetailPage = ({
     }
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data, error } = await supabase.from('staff_subtasks').insert({
+      const insertData = {
         task_id: task.id, title: newSubtask.title, description: newSubtask.description,
         assigned_to: newSubtask.assigned_to, priority: newSubtask.priority, points: newSubtask.points || 0,
         due_date: newSubtask.due_date || null, due_time: newSubtask.due_time || null,
         created_by: user?.id, stage: newSubtask.stage || 1, status: 'pending'
-      }).select('*, staff_profiles:assigned_to (full_name, username, avatar_url)').single();
+      } as any;
+      const { data, error } = await supabase.from('staff_subtasks').insert(insertData)
+        .select('*, staff_profiles:assigned_to (full_name, username, avatar_url)').single();
       if (error) throw error;
       setSubtasks([data, ...subtasks]);
       setNewSubtask({ title: "", description: "", assigned_to: "", priority: "medium", points: 0, due_date: "", due_time: "", stage: newSubtask.stage });
