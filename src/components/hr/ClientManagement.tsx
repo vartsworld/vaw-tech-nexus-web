@@ -488,8 +488,10 @@ const ClientManagement = () => {
         variant: "destructive",
       });
     } finally {
-      setIsGeneratingBilling(false);
     }
+  };
+
+  const handleDeleteClient = async (clientId) => {
     if (!confirm("Are you sure you want to delete this client?")) return;
 
     try {
