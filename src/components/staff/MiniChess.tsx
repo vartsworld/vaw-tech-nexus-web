@@ -51,7 +51,7 @@ interface ChessInvite {
 
 type GameMode = 'menu' | 'playing' | 'finding';
 
-const ChessPiece = ({ piece, color }: { piece: string, color: 'w' | 'b' }) => {
+const ChessPiece = ({ piece, color, compact }: { piece: string, color: 'w' | 'b', compact?: boolean }) => {
   const isWhite = color === 'w';
 
   const getIconName = () => {
@@ -68,12 +68,13 @@ const ChessPiece = ({ piece, color }: { piece: string, color: 'w' | 'b' }) => {
 
   return (
     <span
-      className={`material-symbols-outlined text-3xl sm:text-5xl md:text-6xl select-none transition-all duration-300 hover:scale-110 drop-shadow-md cursor-pointer
+      className={`material-symbols-outlined select-none drop-shadow-md cursor-pointer
         ${isWhite ? 'text-white' : 'text-[#1a1a1a]'}
       `}
       style={{
+        fontSize: compact ? 'clamp(14px, 2.8vw, 24px)' : 'clamp(20px, 4vw, 48px)',
         fontVariationSettings: `'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 48`,
-        WebkitTextStroke: isWhite ? '1.5px #1a1a1a' : '0.5px #ffffff'
+        WebkitTextStroke: isWhite ? (compact ? '0.8px #1a1a1a' : '1.5px #1a1a1a') : '0.5px #ffffff'
       }}
     >
       {getIconName()}
