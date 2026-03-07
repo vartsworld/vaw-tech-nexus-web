@@ -171,7 +171,7 @@ const VirtualOfficeLayout = ({
                 </div>
                 <div className="rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 via-black/20 to-orange-500/5 overflow-hidden">
                   {userId && (
-                    <MiniChess userId={userId} userProfile={userProfile} />
+                    <MiniChess userId={userId} userProfile={userProfile} compact />
                   )}
                 </div>
               </div>
