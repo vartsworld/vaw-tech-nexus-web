@@ -1960,6 +1960,47 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     );
   };
 
+  // Full-page Create Task view
+  if (currentView === 'create') {
+    return (
+      <TaskCreatePage
+        onBack={() => setCurrentView('list')}
+        onCreated={() => {
+          setCurrentView('list');
+          fetchTasks();
+        }}
+        userProfile={userProfile}
+      />
+    );
+  }
+
+  // Full-page Task Detail view
+  if (currentView === 'detail' && selectedTask) {
+    return (
+      <TaskDetailPage
+        task={selectedTask}
+        onBack={() => { setCurrentView('list'); setSelectedTask(null); }}
+        onStatusUpdate={(taskId, status) => {
+          handleStatusUpdate(taskId, status);
+        }}
+        onEdit={(task) => {
+          setSelectedTask(task);
+          setIsEditTaskOpen(true);
+          setCurrentView('list');
+        }}
+        onDelete={(task) => {
+          setSelectedTask(task);
+          setIsDeleteDialogOpen(true);
+          setCurrentView('list');
+        }}
+        userProfile={userProfile}
+        staff={staff}
+        subtaskTemplates={subtaskTemplates}
+        taskTemplates={taskTemplates}
+      />
+    );
+  }
+
   return (
     <div className="px-1 py-4 space-y-8 max-w-7xl mx-auto min-h-full">
       {/* Header */}
