@@ -1488,7 +1488,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       } as Task));
 
       setTasks([...newTasksForState, ...tasks]);
-      setIsCreateTaskOpen(false);
+      setCurrentView('list');
       setNewTask({
         title: "",
         description: "",
