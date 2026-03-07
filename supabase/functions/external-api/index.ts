@@ -161,7 +161,7 @@ serve(async (req: Request) => {
                             email,
                             phone,
                             address,
-                            billing_sync_id: sync_id
+                            billing_sync_id: syncCode
                         })
                     if (insertError) throw insertError
                     console.log(`Created new billing profile for ${clientName}`)
