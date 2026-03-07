@@ -30,6 +30,7 @@ import { AspectRatio } from "@/components/ui/aspect-ratio";
 interface MiniChessProps {
   userId: string;
   userProfile: any;
+  compact?: boolean;
 }
 
 interface TeamMember {
