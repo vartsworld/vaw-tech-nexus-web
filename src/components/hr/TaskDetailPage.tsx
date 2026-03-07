@@ -251,7 +251,7 @@ const TaskDetailPage = ({
         {/* Left - Main Content */}
         <div className="lg:col-span-2 space-y-6 min-w-0">
           {/* Title & Status */}
-          <div className="rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl p-6 space-y-4 shadow-xl">
+          <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-lg p-6 space-y-4">
             <div className="flex items-start justify-between gap-4">
               <h1 className="text-2xl font-bold tracking-tight leading-tight break-words min-w-0">{task.title}</h1>
               <Badge variant="outline" className={`${statusConfig[task.status]?.color || ''} text-[10px] font-bold tracking-wider px-3 py-1.5 shrink-0`}>
@@ -265,7 +265,7 @@ const TaskDetailPage = ({
           </div>
 
           {/* Subtasks Stage Board */}
-          <div className="rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl p-4 sm:p-6 space-y-4 min-w-0 shadow-xl">
+          <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-lg p-4 sm:p-6 space-y-4 min-w-0">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Layers className="h-4 w-4 text-primary" />
@@ -515,8 +515,8 @@ const TaskDetailPage = ({
                                             </div>
                                           )}
                                           <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                                              : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
-                                                : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                            : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                                              : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                                             }`}>
                                             {st.status === 'completed' ? 'DONE' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
                                           </Badge>
@@ -610,7 +610,7 @@ const TaskDetailPage = ({
 
           {/* Handover History */}
           {task.comments && Array.isArray(task.comments) && task.comments.filter((c: any) => c.type === 'handover').length > 0 && (
-            <div className="rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl p-6 space-y-3 shadow-xl">
+            <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-lg p-6 space-y-3">
               <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Handover History</h3>
               {task.comments.filter((c: any) => c.type === 'handover').map((h: any, i: number) => (
                 <div key={i} className="bg-blue-500/5 border border-blue-500/20 p-3 rounded-xl text-sm space-y-1">
@@ -633,7 +633,7 @@ const TaskDetailPage = ({
 
         {/* Right Sidebar */}
         <div className="space-y-6">
-          <div className="rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl p-5 space-y-5 lg:sticky lg:top-4 shadow-xl">
+          <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-lg p-5 space-y-5 lg:sticky lg:top-4">
             <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Task Details</h3>
 
             {/* Assigned To */}
