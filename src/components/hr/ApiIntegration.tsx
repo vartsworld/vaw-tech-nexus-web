@@ -325,7 +325,7 @@ const ApiIntegration = () => {
                                     <CardDescription>Browse and monitor real-time data from the billing core.</CardDescription>
                                 </div>
                                 <div className="flex items-center gap-2 bg-black/40 p-1.5 rounded-xl border border-white/5 flex-wrap">
-                                    {['invoices', 'clients', 'payments', 'staff', 'recurring', 'tasks', 'products', 'expenses', 'inventory'].map(res => (
+                                    {['invoices', 'clients', 'payments', 'staff', 'recurring-invoices', 'tasks', 'products', 'expenses', 'inventory'].map(res => (
                                         <button
                                             key={res}
                                             onClick={() => setActiveResource(res)}
