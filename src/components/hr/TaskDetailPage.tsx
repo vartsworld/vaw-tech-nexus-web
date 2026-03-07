@@ -38,9 +38,33 @@ const TaskDetailPage = ({
   const [quickAddStage, setQuickAddStage] = useState<number | null>(null);
   const [bulkSubtasks, setBulkSubtasks] = useState<any[]>([]);
   const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState("none");
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const stageScrollRef = useRef<HTMLDivElement>(null);
   const [newSubtask, setNewSubtask] = useState({
     title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1
   });
+
+  const checkScrollability = useCallback(() => {
+    const el = stageScrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+
+  const scrollStages = (direction: 'left' | 'right') => {
+    const el = stageScrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: direction === 'left' ? -260 : 260, behavior: 'smooth' });
+    setTimeout(checkScrollability, 350);
+  };
+
+  useEffect(() => {
+    checkScrollability();
+    const el = stageScrollRef.current;
+    if (el) el.addEventListener('scroll', checkScrollability);
+    return () => { if (el) el.removeEventListener('scroll', checkScrollability); };
+  }, [subtasks, checkScrollability]);
   const { toast } = useToast();
 
   useEffect(() => {
