@@ -28,7 +28,7 @@ export const syncClientToBilling = async (client: any, syncId: string) => {
 
     try {
         const externalUrl = localStorage.getItem('vaw_external_api_url') || `https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/external-api`;
-        const response = await fetch(`${externalUrl}/sync`, {
+        const response = await fetch(`${externalUrl}/clients`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -36,15 +36,12 @@ export const syncClientToBilling = async (client: any, syncId: string) => {
                 'x-api-secret': secret
             },
             body: JSON.stringify({
-                event: 'client.sync',
-                data: {
-                    sync_id: syncId,
-                    name: client.company_name,
-                    contact_person: client.contact_person,
-                    email: client.email,
-                    phone: client.phone,
-                    address: client.address
-                }
+                sync_id: syncId,
+                name: client.company_name,
+                contact_person: client.contact_person,
+                email: client.email,
+                phone: client.phone,
+                address: client.address
             })
         });
 
