@@ -49,6 +49,7 @@ const ClientManagement = () => {
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [isSearchingExternal, setIsSearchingExternal] = useState(false);
   const [externalSearchQuery, setExternalSearchQuery] = useState("");
+  const [isGeneratingBilling, setIsGeneratingBilling] = useState(false);
 
   const [editingClient, setEditingClient] = useState(null);
   const [newClient, setNewClient] = useState({
