@@ -65,7 +65,7 @@ serve(async (req: Request) => {
                 }
 
                 if (search) {
-                    query = query.or(`company_name.ilike.%${search}%,contact_person.ilike.%${search}%,email.ilike.%${search}%,billing_sync_id.ilike.%${search}%`)
+                    query = query.or(`company_name.ilike.*${search}*,contact_person.ilike.*${search}*,email.ilike.*${search}*,billing_sync_id.ilike.*${search}*`)
                 }
 
                 const { data: clients, error } = await query.limit(50)
