@@ -1981,7 +1981,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         task={selectedTask}
         onBack={() => { setCurrentView('list'); setSelectedTask(null); }}
         onStatusUpdate={(taskId, status) => {
-          handleStatusUpdate(taskId, status);
+          handleTaskStatusUpdate(taskId, status);
         }}
         onEdit={(task) => {
           setSelectedTask(task);
