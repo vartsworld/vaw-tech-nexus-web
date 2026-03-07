@@ -153,7 +153,7 @@ serve(async (req: Request) => {
                     const { error: insertError } = await supabaseAdmin
                         .from('client_profiles')
                         .insert({
-                            company_name,
+                            company_name: clientName,
                             contact_person,
                             email,
                             phone,
