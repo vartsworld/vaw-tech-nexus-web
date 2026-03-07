@@ -169,11 +169,11 @@ serve(async (req: Request) => {
                     // Update existing with the sync_id
                     await supabaseAdmin
                         .from('client_profiles')
-                        .update({ billing_sync_id: sync_id })
+                        .update({ billing_sync_id: syncCode })
                         .eq('id', existing.id)
                 }
 
-                return new Response(JSON.stringify({ success: true, client_code: sync_id }), {
+                return new Response(JSON.stringify({ success: true, client_code: syncCode }), {
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                     status: 200
                 })
