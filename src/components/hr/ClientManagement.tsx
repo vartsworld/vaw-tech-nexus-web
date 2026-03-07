@@ -29,7 +29,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SharedProjectForm from "../projects/SharedProjectForm";
-import { syncClientToBilling, fetchClientFromBilling, searchClientsInBilling } from "@/utils/syncUtils";
+import { syncClientToBilling, fetchClientFromBilling, searchClientsInBilling, generateSyncId } from "@/utils/syncUtils";
 
 const ClientManagement = () => {
   const [clients, setClients] = useState([]);
