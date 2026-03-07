@@ -82,7 +82,7 @@ export const syncFinancialEntryToBilling = async (paymentData: any, syncId: stri
                 'x-api-secret': secret
             },
             body: JSON.stringify({
-                sync_id: syncId,
+                client_code: syncId,
                 amount: paymentData.amount,
                 title: paymentData.title,
                 doc_type: paymentData.doc_type,
