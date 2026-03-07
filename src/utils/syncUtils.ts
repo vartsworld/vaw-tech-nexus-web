@@ -111,7 +111,7 @@ export const fetchClientFromBilling = async (clientCode: string) => {
 
     if (!key || !secret) throw new Error("API credentials missing");
     try {
-        const externalUrl = localStorage.getItem('vaw_external_api_url') || "https://mezolzequhtjtifeznll.supabase.co/functions/v1/external-api";
+        const externalUrl = localStorage.getItem('vaw_external_api_url') || `https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/external-api`;
         const response = await fetch(`${externalUrl}/clients?client_code=${clientCode}`, {
             headers: { 'x-api-key': key, 'x-api-secret': secret }
         });
