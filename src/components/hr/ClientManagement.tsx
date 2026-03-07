@@ -1107,11 +1107,33 @@ const ClientManagement = () => {
             )}
 
             {!selectedClientForSync?.billing_sync_id && (
-            <Tabs defaultValue="search" className="space-y-4">
-              <TabsList className="grid grid-cols-2">
+            <Tabs defaultValue="create" className="space-y-4">
+              <TabsList className="grid grid-cols-3">
+                <TabsTrigger value="create">Generate & Create</TabsTrigger>
                 <TabsTrigger value="search">Search Database</TabsTrigger>
                 <TabsTrigger value="manual">Manual Code</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="create" className="space-y-4 pt-2">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-3">
+                  <p className="text-xs text-blue-800 font-medium">
+                    This will generate a new billing code and create the client account in your billing software automatically.
+                  </p>
+                  <div className="text-sm space-y-1 text-blue-900">
+                    <p><strong>Client:</strong> {selectedClientForSync?.company_name}</p>
+                    <p><strong>Email:</strong> {selectedClientForSync?.email}</p>
+                    <p><strong>Contact:</strong> {selectedClientForSync?.contact_person}</p>
+                  </div>
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700 h-10 rounded-xl mt-2"
+                    onClick={handleGenerateAndSync}
+                    disabled={isGeneratingBilling}
+                  >
+                    {isGeneratingBilling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                    Generate Billing Account & Sync
+                  </Button>
+                </div>
+              </TabsContent>
 
               <TabsContent value="search" className="space-y-4 pt-2">
                 <div className="flex gap-2">
