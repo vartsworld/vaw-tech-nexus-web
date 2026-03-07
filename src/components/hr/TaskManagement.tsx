@@ -1544,7 +1544,7 @@ const TaskManagement = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-500" onClick={() => { setSelectedTask(task); fetchSubtasks(task.id); setIsDetailDialogOpen(true); }}>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-500" onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}>
                                 <Eye className="h-4 w-4" />
                               </Button>
                               <Button size="icon" variant="ghost" className="h-8 w-8 text-amber-500" onClick={() => openEditDialog(task)}>
