@@ -81,7 +81,7 @@ const ChessPiece = ({ piece, color }: { piece: string, color: 'w' | 'b' }) => {
   );
 };
 
-const MiniChess = ({ userId, userProfile }: MiniChessProps) => {
+const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => {
 
   const [gameMode, setGameMode] = useState<GameMode>('menu');
   const [isVsBot, setIsVsBot] = useState(false);
