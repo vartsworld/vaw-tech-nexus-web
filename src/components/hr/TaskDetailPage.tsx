@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft, CheckCircle, Clock, Target, Flag, Eye, Edit, Trash2,
   Plus, Calendar, User, Layers, FileText, Download, MessageSquare,
-  Loader2, Share2, LayoutTemplate, Minimize2, Maximize2
+  Loader2, Share2, LayoutTemplate, Minimize2, Maximize2, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
