@@ -52,10 +52,9 @@ serve(async (req: Request) => {
                 const search = url.searchParams.get('search')
                 const clientCode = url.searchParams.get('client_code')
 
-                let query = supabaseAdmin.from('client_profiles').select('*')
+                let query = supabaseAdmin.from('clients').select('*')
 
                 if (clientCode) {
-                    // Try to match by billing_sync_id or by ID if it's a UUID
                     const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(clientCode)
                     if (isUuid) {
                         query = query.or(`id.eq.${clientCode},billing_sync_id.eq.${clientCode}`)
@@ -71,7 +70,6 @@ serve(async (req: Request) => {
                 const { data: clients, error } = await query.limit(50)
                 if (error) throw error
 
-                // Map results to the structure expected by the Sync Bridge UI
                 const augmentedClients = (clients || []).map((c: any) => {
                     const generatedCode = `B${c.id.slice(0, 5).toUpperCase()}`
                     return {
