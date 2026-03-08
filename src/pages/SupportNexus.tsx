@@ -153,7 +153,8 @@ const SupportNexus = ({ profile }: { profile: any }) => {
 
             if (error) throw error;
 
-            toast.success("Help request successfully transmitted.");
+            const routeTarget = newSignal.type === 'bug_report' ? 'Development Team' : 'HR Team';
+            toast.success(`Ticket submitted and routed to ${routeTarget}`);
             setNewSignal({ type: "feedback", priority: "medium", subject: "", message: "" });
             setAttachment(null);
             fetchFeedback();
@@ -170,6 +171,14 @@ const SupportNexus = ({ profile }: { profile: any }) => {
         { id: "update_request", label: "Asset Mutation", icon: Lightbulb, color: "text-blue-400" },
         { id: "support", label: "Direct Support", icon: HeadphonesIcon, color: "text-tech-purple" },
     ];
+
+    const getRoutingLabel = (signal: any) => {
+        if (signal.routing_status === 'routed') {
+            if (signal.type === 'bug_report') return { label: 'Routed → Dev Team', color: 'bg-blue-500/20 text-blue-400' };
+            return { label: 'Routed → HR Team', color: 'bg-purple-500/20 text-purple-400' };
+        }
+        return null;
+    };
 
     return (
         <div className="space-y-8 pb-12">
@@ -344,9 +353,17 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                                     <h4 className="font-bold text-white text-sm mb-1 group-hover:text-tech-gold transition-colors truncate">
                                         {signal.subject}
                                     </h4>
-                                    <p className="text-xs text-gray-500 truncate mb-3">
+                                    <p className="text-xs text-gray-500 truncate mb-2">
                                         {signal.message}
                                     </p>
+                                    {(() => {
+                                        const routing = getRoutingLabel(signal);
+                                        return routing ? (
+                                            <Badge variant="outline" className={cn("border-0 text-[9px] uppercase font-black px-1.5 py-0.5 mb-2", routing.color)}>
+                                                {routing.label}
+                                            </Badge>
+                                        ) : null;
+                                    })()}
                                     {signal.status !== 'resolved' && (
                                         <Button
                                             size="sm"

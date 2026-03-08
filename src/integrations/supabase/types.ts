@@ -1013,6 +1013,9 @@ export type Database = {
           responded_at: string | null
           responded_by: string | null
           response: string | null
+          routed_task_id: string | null
+          routed_to_department_id: string | null
+          routing_status: string | null
           status: string | null
           subject: string
           type: string
@@ -1031,6 +1034,9 @@ export type Database = {
           responded_at?: string | null
           responded_by?: string | null
           response?: string | null
+          routed_task_id?: string | null
+          routed_to_department_id?: string | null
+          routing_status?: string | null
           status?: string | null
           subject: string
           type: string
@@ -1049,6 +1055,9 @@ export type Database = {
           responded_at?: string | null
           responded_by?: string | null
           response?: string | null
+          routed_task_id?: string | null
+          routed_to_department_id?: string | null
+          routing_status?: string | null
           status?: string | null
           subject?: string
           type?: string
@@ -1067,6 +1076,27 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "client_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_feedback_routed_task_id_fkey"
+            columns: ["routed_task_id"]
+            isOneToOne: false
+            referencedRelation: "client_task_timeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_feedback_routed_task_id_fkey"
+            columns: ["routed_task_id"]
+            isOneToOne: false
+            referencedRelation: "staff_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_feedback_routed_to_department_id_fkey"
+            columns: ["routed_to_department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
             referencedColumns: ["id"]
           },
         ]
