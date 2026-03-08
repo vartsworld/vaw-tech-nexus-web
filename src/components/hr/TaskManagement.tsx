@@ -1512,106 +1512,113 @@ const TaskManagement = () => {
           ) : viewMode === 'table' ? (
             <>
               {/* Desktop Table */}
-              <div className="hidden md:block rounded-xl border border-muted-foreground/10 overflow-hidden bg-card">
+              <div className="hidden md:block rounded-xl border border-border/60 overflow-hidden bg-card shadow-sm">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/30 hover:bg-muted/30 border-b border-muted-foreground/10">
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Task</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Department</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Assigned To</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Stage</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Priority</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Status</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Due Date</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground text-center">Points</TableHead>
-                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Actions</TableHead>
+                    <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Task</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Department</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Assigned To</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Stage</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Priority</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Status</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Due Date</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5 text-center">Points</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Actions</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredTasks.map((task) => (
+                    {filteredTasks.map((task, idx) => (
                       <TableRow
                         key={task.id}
-                        className="hover:bg-muted/20 transition-colors border-b border-muted-foreground/5 cursor-pointer group"
+                        className={cn(
+                          "transition-all border-b border-border/30 cursor-pointer group",
+                          idx % 2 === 0 ? "bg-transparent" : "bg-muted/15",
+                          "hover:bg-primary/[0.04] hover:shadow-[inset_3px_0_0_0_hsl(var(--primary))]"
+                        )}
                         onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}
                       >
-                        <TableCell>
-                          <div className="max-w-[220px]">
-                            <div className="font-semibold text-sm truncate group-hover:text-primary transition-colors">{task.title}</div>
+                        <TableCell className="py-3.5">
+                          <div className="max-w-[240px]">
+                            <div className="font-semibold text-sm truncate group-hover:text-primary transition-colors leading-tight">{task.title}</div>
                             {task.description && (
-                              <div className="text-[11px] text-muted-foreground truncate mt-0.5">
+                              <div className="text-[11px] text-muted-foreground/60 truncate mt-1 leading-tight">
                                 {task.description}
                               </div>
                             )}
                             {(task.staff_projects?.title || task.staff_projects?.name) && (
-                              <Badge variant="secondary" className="mt-1.5 text-[10px] h-4 bg-primary/5 text-primary/70">
-                                {task.staff_projects?.title || task.staff_projects?.name}
-                              </Badge>
+                              <div className="flex items-center gap-1.5 mt-1.5">
+                                <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/40" />
+                                <span className="text-[10px] text-primary/60 font-medium truncate">
+                                  {task.staff_projects?.title || task.staff_projects?.name}
+                                </span>
+                              </div>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell onClick={e => e.stopPropagation()}>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
                           {task.departments?.name ? (
-                            <Badge variant="outline" className="text-[10px] h-5 py-0 px-2 border-primary/20 bg-primary/5 text-primary/80 font-medium">
+                            <Badge className="text-[10px] h-6 py-0 px-2.5 rounded-full font-semibold bg-primary/15 text-primary border-primary/25 hover:bg-primary/20 shadow-none">
                               {task.departments.name}
                             </Badge>
                           ) : (
-                            <span className="text-muted-foreground/40 text-xs">—</span>
+                            <span className="text-muted-foreground/30 text-xs">—</span>
                           )}
                         </TableCell>
-                        <TableCell onClick={e => e.stopPropagation()}>
-                          <div className="flex -space-x-2 hover:space-x-1 transition-all">
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
+                          <div className="flex -space-x-1.5 hover:space-x-0.5 transition-all">
                             {(task.assigned_to_profiles?.length > 0
                               ? task.assigned_to_profiles
                               : task.assigned_to_profile ? [task.assigned_to_profile] : []
                             ).map((profile: any, i: number) => (
                               <Tooltip key={i}>
                                 <TooltipTrigger asChild>
-                                  <Avatar className="h-8 w-8 border-2 border-background ring-1 ring-muted-foreground/10 hover:z-10 transition-all hover:scale-110 shadow-sm cursor-pointer">
-                                    <AvatarImage src={profile.avatar_url} />
-                                    <AvatarFallback className="text-[10px] bg-muted font-bold text-muted-foreground">
+                                  <Avatar className="h-8 w-8 border-[2.5px] border-background ring-1 ring-border/50 hover:z-10 transition-all hover:scale-110 shadow-sm cursor-pointer">
+                                    <AvatarImage src={profile.avatar_url || profile.profile_photo_url} />
+                                    <AvatarFallback className="text-[10px] bg-primary/10 font-bold text-primary/80">
                                       {profile.full_name?.substring(0, 2).toUpperCase()}
                                     </AvatarFallback>
                                   </Avatar>
                                 </TooltipTrigger>
-                                <TooltipContent>
-                                  <p className="text-xs font-semibold">{profile.full_name}</p>
+                                <TooltipContent side="top" className="text-xs font-semibold">
+                                  {profile.full_name}
                                 </TooltipContent>
                               </Tooltip>
                             ))}
                             {!task.assigned_to_profile && !task.assigned_to_profiles?.length && (
-                              <span className="text-muted-foreground/40 text-xs italic">Unassigned</span>
+                              <span className="text-muted-foreground/30 text-xs italic">Unassigned</span>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell onClick={e => e.stopPropagation()}>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
                           {getStageBadge(task.current_stage || 1, task.stage_names)}
                         </TableCell>
-                        <TableCell onClick={e => e.stopPropagation()}>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
                           {getPriorityBadge(task.priority)}
                         </TableCell>
-                        <TableCell onClick={e => e.stopPropagation()}>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
                           {getStatusBadge(task.status)}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                        <TableCell className="whitespace-nowrap py-3.5" onClick={e => e.stopPropagation()}>
                           {task.due_date ? (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Calendar className="h-3.5 w-3.5" />
-                              {format(new Date(task.due_date), 'MMM dd')}
+                              <Calendar className="h-3.5 w-3.5 text-muted-foreground/50" />
+                              <span className="font-medium">{format(new Date(task.due_date), 'MMM dd')}</span>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground/40 text-xs">—</span>
+                            <span className="text-muted-foreground/30 text-xs">—</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-center" onClick={e => e.stopPropagation()}>
-                          <Badge variant="outline" className="text-xs font-mono tabular-nums">{task.points}</Badge>
+                        <TableCell className="text-center py-3.5" onClick={e => e.stopPropagation()}>
+                          <span className="inline-flex items-center justify-center min-w-[32px] px-2 py-0.5 rounded-md bg-muted/50 text-xs font-mono font-semibold tabular-nums text-foreground/80">{task.points}</span>
                         </TableCell>
-                        <TableCell onClick={e => e.stopPropagation()}>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
                           <Select
                             value={task.status}
                             onValueChange={(value) => handleStatusChange(task.id, value)}
                           >
-                            <SelectTrigger className="h-8 w-32 text-xs bg-transparent border-muted-foreground/10">
+                            <SelectTrigger className="h-8 w-[130px] text-xs bg-muted/30 border-border/40 hover:border-border/80 transition-colors rounded-lg">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1626,15 +1633,15 @@ const TaskManagement = () => {
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell onClick={e => e.stopPropagation()}>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
                           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-primary/70 hover:text-primary hover:bg-primary/10" onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}>
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-amber-500 hover:bg-amber-500/10" onClick={() => openEditDialog(task)}>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-accent-foreground hover:bg-accent" onClick={() => openEditDialog(task)}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500 hover:bg-red-500/10" onClick={() => { setTaskToDelete(task); setIsDeleteDialogOpen(true); }}>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive/60 hover:text-destructive hover:bg-destructive/10" onClick={() => { setTaskToDelete(task); setIsDeleteDialogOpen(true); }}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
