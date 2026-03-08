@@ -143,12 +143,16 @@ const FinancialOversight = () => {
     const matchedRecurring = (externalStats?.recurring || []).filter(isMatched);
     const allExpenses = externalStats?.expenses || [];
 
-    // Calculations
+    // Calculations — avoid double-counting between invoices and payments
     const totalRevenue = matchedInvoices.reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
-    const totalCollected = matchedPayments.reduce((acc: number, p: any) => acc + Number(p.amount || 0), 0)
-        + matchedInvoices
-            .filter((inv: any) => inv.status === 'paid' || inv.status === 'collected')
-            .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
+    
+    // Use payments as source of truth for collected; fall back to paid invoices only if no payments exist
+    const paymentTotal = matchedPayments.reduce((acc: number, p: any) => acc + Number(p.amount || 0), 0);
+    const paidInvoiceTotal = matchedInvoices
+        .filter((inv: any) => inv.status === 'paid' || inv.status === 'collected')
+        .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
+    const totalCollected = paymentTotal > 0 ? paymentTotal : paidInvoiceTotal;
+    
     const totalExpenses = allExpenses.reduce((acc: number, e: any) => acc + Number(e.amount || 0), 0);
     const pendingCollection = Math.max(0, totalRevenue - totalCollected);
     const profitMargin = totalRevenue > 0 ? ((totalRevenue - totalExpenses) / totalRevenue * 100).toFixed(1) : '0';
