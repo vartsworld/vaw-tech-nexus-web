@@ -421,7 +421,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                                         </div>
                                                         {activeTask?.current_stage && (
                                                             <Badge variant="outline" className="text-[9px] font-black border-tech-purple/30 text-tech-purple bg-tech-purple/5">
-                                                                STAGE {activeTask.current_stage}
+                                                                {activeTask?.stage_names?.[String(activeTask.current_stage)] || `STAGE ${activeTask.current_stage}`}
                                                             </Badge>
                                                         )}
                                                         {activeTask?.departments?.name && (
