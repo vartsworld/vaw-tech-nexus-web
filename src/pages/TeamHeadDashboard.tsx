@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import TeamHeadMobileHome from "@/components/staff/TeamHeadMobileHome";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +74,8 @@ const EMOJI_OPTIONS = [
 
 const TeamHeadDashboard = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [showMobileHome, setShowMobileHome] = useState(true);
   const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
@@ -387,6 +391,16 @@ const TeamHeadDashboard = () => {
           </div>
         </div>
       </div>
+    );
+  }
+
+  // Show mobile home on small screens
+  if (isMobile && showMobileHome && profile?.user_id) {
+    return (
+      <TeamHeadMobileHome
+        profile={profile}
+        onEnterDesktop={() => setShowMobileHome(false)}
+      />
     );
   }
 
