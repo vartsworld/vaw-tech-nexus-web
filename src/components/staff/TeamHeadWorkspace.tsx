@@ -262,13 +262,14 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   // - approvedSubtasks: completed & approved_by = current user
   // - returnedSubtasks: in_progress with latest rejection comment from current user
   const fetchReviewQueues = async () => {
-    if (!userProfile?.department_id) {
+    if (!userProfile?.department_id && !userId) {
       setPendingSubtasks([]);
       setApprovedSubtasks([]);
       setReturnedSubtasks([]);
       return;
     }
     try {
+      // Fetch pending_approval subtasks - filter for tasks in head's department OR assigned_by this head
       const { data: pending, error: pendingError } = await supabase
         .from("staff_subtasks")
         .select(
@@ -292,11 +293,17 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           )
         `
         )
-        .eq("status", "pending_approval" as any)
-        .eq("staff_tasks.department_id", userProfile.department_id as any);
+        .eq("status", "pending_approval" as any);
 
       if (pendingError) throw pendingError;
-      setPendingSubtasks((pending || []) as any);
+      
+      // Filter: tasks in head's department OR tasks assigned_by this head
+      const filteredPending = (pending || []).filter((st: any) => {
+        const task = st.staff_tasks;
+        if (!task) return false;
+        return task.department_id === userProfile?.department_id || task.assigned_by === userId;
+      });
+      setPendingSubtasks(filteredPending as any);
 
       // Approved by this head
       const { data: approved, error: approvedError } = await supabase
