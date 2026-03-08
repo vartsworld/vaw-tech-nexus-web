@@ -5,65 +5,81 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --background: 220 14% 96%;
+    --foreground: 220 15% 15%;
 
-    --card: 0 0% 98%;
-    --card-foreground: 240 10% 3.9%;
+    --card: 220 14% 100%;
+    --card-foreground: 220 15% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover: 220 14% 100%;
+    --popover-foreground: 220 15% 15%;
 
     --primary: 43 100% 50%;
     --primary-foreground: 0 0% 12%;
 
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
+    --secondary: 220 13% 91%;
+    --secondary-foreground: 220 15% 25%;
 
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted: 220 13% 91%;
+    --muted-foreground: 220 10% 46%;
 
-    --accent: 346 84% 56%;
-    --accent-foreground: 355 100% 97%;
+    --accent: 220 13% 88%;
+    --accent-foreground: 220 15% 15%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 355 100% 97%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
+    --border: 220 13% 87%;
+    --input: 220 13% 87%;
     --ring: 43 100% 50%;
 
     --radius: 0.75rem;
+
+    --neu-shadow-light: 6px 6px 12px hsl(220 14% 88%), -6px -6px 12px hsl(0 0% 100%);
+    --neu-shadow-light-sm: 3px 3px 6px hsl(220 14% 88%), -3px -3px 6px hsl(0 0% 100%);
+    --neu-shadow-inset: inset 3px 3px 6px hsl(220 14% 88%), inset -3px -3px 6px hsl(0 0% 100%);
+    --neu-shadow-light-pressed: inset 2px 2px 5px hsl(220 14% 86%), inset -2px -2px 5px hsl(0 0% 100%);
+
+    --surface-glass: 220 14% 98% / 0.85;
+    --surface-elevated: 220 14% 100%;
   }
 
   .dark {
-    --background: 0 0% 7%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 8%;
+    --foreground: 220 15% 90%;
 
-    --card: 0 0% 9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 11%;
+    --card-foreground: 220 15% 90%;
 
-    --popover: 0 0% 9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 220 15% 90%;
 
     --primary: 43 100% 50%;
     --primary-foreground: 0 0% 12%;
 
-    --secondary: 217 92% 49%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 10% 16%;
+    --secondary-foreground: 220 15% 85%;
 
-    --muted: 217 33% 18%;
-    --muted-foreground: 215 20% 80%;
+    --muted: 220 10% 16%;
+    --muted-foreground: 220 10% 55%;
 
-    --accent: 346 84% 56%;
-    --accent-foreground: 355 100% 97%;
+    --accent: 220 10% 18%;
+    --accent-foreground: 220 15% 90%;
 
     --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 28% 17%;
-    --input: 215 28% 17%;
+    --border: 220 10% 16%;
+    --input: 220 10% 16%;
     --ring: 43 100% 50%;
+
+    --neu-shadow-light: 6px 6px 16px hsl(0 0% 4%), -6px -6px 16px hsl(0 0% 16%);
+    --neu-shadow-light-sm: 3px 3px 8px hsl(0 0% 4%), -3px -3px 8px hsl(0 0% 16%);
+    --neu-shadow-inset: inset 3px 3px 8px hsl(0 0% 4%), inset -3px -3px 8px hsl(0 0% 16%);
+    --neu-shadow-light-pressed: inset 2px 2px 5px hsl(0 0% 4%), inset -2px -2px 5px hsl(0 0% 16%);
+
+    --surface-glass: 0 0% 10% / 0.85;
+    --surface-elevated: 0 0% 13%;
   }
 }
 
@@ -115,17 +131,47 @@
     @apply opacity-100;
   }
   
-  .neo-border {
+  .neu-border {
     @apply border border-tech-gold/30 shadow-[0_0_15px_rgba(255,215,0,0.3)] relative;
   }
   
-  .neo-border::after {
+  .neu-border::after {
     content: '';
     @apply absolute inset-0 border border-tech-gold/0 rounded-xl transition-all duration-300;
   }
   
-  .neo-border:hover::after {
+  .neu-border:hover::after {
     @apply border-tech-gold/50 scale-105 blur-sm;
+  }
+
+  .neu-card {
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+    box-shadow: var(--neu-shadow-light);
+    border: 1px solid hsl(var(--border));
+    transition: all 0.3s ease;
+  }
+
+  .neu-card:hover {
+    box-shadow: var(--neu-shadow-light-sm);
+  }
+
+  .neu-card-pressed {
+    background: hsl(var(--card));
+    border-radius: var(--radius);
+    box-shadow: var(--neu-shadow-light-pressed);
+    border: 1px solid hsl(var(--border));
+  }
+
+  .neu-elevated {
+    background: hsl(var(--surface-elevated));
+    box-shadow: var(--neu-shadow-light);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .neu-inset {
+    box-shadow: var(--neu-shadow-inset);
+    background: hsl(var(--background));
   }
   
   .futuristic-input {

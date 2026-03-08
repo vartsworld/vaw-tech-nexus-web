@@ -30,9 +30,9 @@ const MobileBottomNav = () => {
 
             <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
                 {/* Gradient fade edge */}
-                <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+                <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-background to-transparent pointer-events-none" />
 
-                <div className="bg-black/80 backdrop-blur-2xl border-t border-white/[0.06]">
+                <div className="bg-card/90 backdrop-blur-2xl border-t border-border shadow-neu">
                     <div className="flex items-end justify-around px-3 pt-2 pb-1 safe-area-inset-bottom">
                         {navItems.map((item) => {
                             const active = isActive(item.path, item.exact);
@@ -48,7 +48,7 @@ const MobileBottomNav = () => {
                                     {active && (
                                         <motion.div
                                             layoutId="navGlow"
-                                            className="absolute -top-1 w-10 h-10 rounded-full bg-tech-gold/15 blur-xl"
+                                            className="absolute -top-1 w-10 h-10 rounded-full bg-primary/15 blur-xl"
                                             transition={{ type: "spring", stiffness: 400, damping: 28 }}
                                         />
                                     )}
@@ -60,16 +60,16 @@ const MobileBottomNav = () => {
                                         className={cn(
                                             "relative w-10 h-10 flex items-center justify-center rounded-2xl transition-all duration-300",
                                             active
-                                                ? "bg-tech-gold/15 shadow-[0_0_20px_rgba(212,175,55,0.15)]"
-                                                : "group-hover:bg-white/5"
+                                                ? "bg-primary/15 shadow-neu-sm"
+                                                : "group-hover:bg-muted"
                                         )}
                                     >
                                         <Icon
                                             className={cn(
                                                 "w-[18px] h-[18px] transition-all duration-300",
                                                 active
-                                                    ? "text-tech-gold drop-shadow-[0_0_6px_rgba(212,175,55,0.4)]"
-                                                    : "text-gray-500 group-hover:text-gray-400"
+                                                    ? "text-primary drop-shadow-[0_0_6px_hsl(43_100%_50%/0.4)]"
+                                                    : "text-muted-foreground group-hover:text-foreground"
                                             )}
                                             strokeWidth={active ? 2.2 : 1.8}
                                         />
@@ -79,7 +79,7 @@ const MobileBottomNav = () => {
                                             <motion.div
                                                 initial={{ scale: 0, opacity: 0 }}
                                                 animate={{ scale: 1, opacity: 1 }}
-                                                className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-tech-gold shadow-[0_0_4px_rgba(212,175,55,0.6)]"
+                                                className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-primary shadow-[0_0_4px_hsl(43_100%_50%/0.6)]"
                                             />
                                         )}
                                     </motion.div>
@@ -89,7 +89,7 @@ const MobileBottomNav = () => {
                                         animate={active ? { opacity: 1 } : { opacity: 0.45 }}
                                         className={cn(
                                             "text-[9px] font-semibold tracking-[0.08em] uppercase transition-colors duration-300",
-                                            active ? "text-tech-gold" : "text-gray-600 group-hover:text-gray-500"
+                                            active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
                                         )}
                                     >
                                         {item.label}
