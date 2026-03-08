@@ -127,8 +127,16 @@ const ClientHome = ({ profile }: { profile: any }) => {
           .select("id,title,project_type,renewal_date,next_payment_date,status")
           .or(clientFilter)
           .neq("status", "cancel")
-          .or("renewal_date.not.is.null,next_payment_date.not.is.null")
+          .not("renewal_date", "is", null)
           .order("renewal_date", { ascending: true })
+          .limit(5),
+        supabase
+          .from("client_projects")
+          .select("id,title,project_type,renewal_date,next_payment_date,status")
+          .or(clientFilter)
+          .neq("status", "cancel")
+          .not("next_payment_date", "is", null)
+          .order("next_payment_date", { ascending: true })
           .limit(5),
       ]);
 
