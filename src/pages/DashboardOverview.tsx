@@ -280,19 +280,19 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
             {/* Welcome Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-white mb-2">
-                        WELCOME BACK, <span className="text-tech-gold uppercase">{profile.contact_person.split(' ')[0]}</span>
+                    <h1 className="text-3xl font-black tracking-tight text-foreground mb-2">
+                        WELCOME BACK, <span className="text-primary uppercase">{profile.contact_person.split(' ')[0]}</span>
                     </h1>
-                    <p className="text-gray-400 font-medium flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-tech-gold animate-pulse" />
+                    <p className="text-muted-foreground font-medium flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-primary animate-pulse" />
                         All your projects are running smoothly.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl transition-all shadow-lg shadow-tech-gold/20">
+                    <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 px-6 rounded-xl transition-all shadow-neu-sm">
                         New Message
                     </Button>
-                    <Button variant="outline" className="border-tech-gold/20 hover:bg-tech-gold/5 text-white h-12 px-6 rounded-xl font-bold">
+                    <Button variant="outline" className="border-border hover:bg-primary/5 text-foreground h-12 px-6 rounded-xl font-bold shadow-neu-sm">
                         Our Roadmap
                     </Button>
                 </div>
@@ -307,17 +307,17 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1 }}
                     >
-                        <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all group cursor-default">
+                        <Card className="neu-card hover:shadow-neu transition-all group cursor-default">
                             <CardContent className="p-6">
                                 <div className="flex items-center justify-between mb-4">
-                                    <div className={cn("p-2.5 rounded-xl", stat.bg)}>
+                                    <div className={cn("p-2.5 rounded-xl shadow-neu-sm", stat.bg)}>
                                         <stat.icon className={cn("w-6 h-6", stat.color)} />
                                     </div>
-                                    <TrendingUp className="w-4 h-4 text-gray-600 group-hover:text-tech-gold transition-colors" />
+                                    <TrendingUp className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                                 </div>
                                 <div className="space-y-1">
-                                    <h3 className="text-3xl font-black text-white">{stat.value}</h3>
-                                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">{stat.label}</p>
+                                    <h3 className="text-3xl font-black text-foreground">{stat.value}</h3>
+                                    <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{stat.label}</p>
                                 </div>
                                 <p className="text-[10px] text-gray-600 mt-4 leading-none font-bold italic">{stat.description}</p>
                             </CardContent>
