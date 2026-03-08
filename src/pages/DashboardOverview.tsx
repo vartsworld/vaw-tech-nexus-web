@@ -176,12 +176,16 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
             description: "Projects currently in progress"
         },
         {
-            label: "Total Paid",
-            value: `₹${stats.totalPaid.toLocaleString()}`,
+            label: "Next Billing",
+            value: paymentReminders.length > 0
+                ? `₹${Number(paymentReminders[0]?.amount || 0).toLocaleString()}`
+                : "—",
             icon: CreditCard,
-            color: "text-green-500",
-            bg: "bg-green-500/10",
-            description: "Total amount paid to date"
+            color: "text-tech-gold",
+            bg: "bg-tech-gold/10",
+            description: paymentReminders.length > 0
+                ? `Due ${new Date(paymentReminders[0]?.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+                : "No upcoming payments"
         },
         {
             label: "Pending Actions",
