@@ -324,14 +324,22 @@ const TaskDetailPage = ({
 
           {/* Subtasks Stage Board */}
           <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-lg p-4 sm:p-6 space-y-4 min-w-0">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Layers className="h-4 w-4 text-primary" />
                 Project Stages & Subtasks
               </h3>
-              <span className="text-xs text-muted-foreground shrink-0">
-                {completedSubtasks}/{subtasks.length} completed
-              </span>
+              <div className="flex items-center gap-3">
+                {reviewPendingSubtasks.length > 0 && (
+                  <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/40 text-[10px] font-bold animate-pulse cursor-default">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {reviewPendingSubtasks.length} Review Request{reviewPendingSubtasks.length > 1 ? 's' : ''}
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {completedSubtasks}/{subtasks.length} completed
+                </span>
+              </div>
             </div>
 
             {/* Stage Tabs - Scrollable */}
