@@ -329,7 +329,7 @@ const HRDashboard = () => {
                 exit={{ opacity: 0 }}
                 className="mx-auto"
               >
-                <ShieldCheck className="w-6 h-6 text-indigo-500" />
+                <ShieldCheck className="w-6 h-6 text-primary" />
               </motion.div>
             )}
           </AnimatePresence>
