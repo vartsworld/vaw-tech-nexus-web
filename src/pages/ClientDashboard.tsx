@@ -14,8 +14,11 @@ import {
     User,
     Shield,
     Clock,
-    ExternalLink
+    ExternalLink,
+    Sun,
+    Moon
 } from "lucide-react";
+import { useTheme } from "@/hooks/use-theme";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
