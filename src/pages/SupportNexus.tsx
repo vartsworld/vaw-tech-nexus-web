@@ -252,6 +252,27 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                             />
                         </div>
 
+                        {/* Attachment */}
+                        <div className="space-y-2">
+                            <Label className="text-gray-400">Attachment <span className="text-gray-600">(JPG, PNG, PDF — max 10MB)</span></Label>
+                            {attachment ? (
+                                <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl">
+                                    <FileText className="w-5 h-5 text-tech-gold shrink-0" />
+                                    <span className="text-sm text-white truncate flex-1">{attachment.name}</span>
+                                    <span className="text-[10px] text-gray-500 font-bold">{(attachment.size / 1024 / 1024).toFixed(1)}MB</span>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-red-400" onClick={() => setAttachment(null)}>
+                                        <XIcon className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <label className="flex items-center gap-3 p-3 bg-white/5 border border-dashed border-white/10 rounded-xl cursor-pointer hover:border-tech-gold/30 transition-colors">
+                                    <Paperclip className="w-5 h-5 text-gray-500" />
+                                    <span className="text-sm text-gray-500">Click to attach a file</span>
+                                    <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.pdf" onChange={handleAttachment} />
+                                </label>
+                            )}
+                        </div>
+
                         <Button
                             onClick={() => handleSignalTransmission()}
                             disabled={isSubmitting}
