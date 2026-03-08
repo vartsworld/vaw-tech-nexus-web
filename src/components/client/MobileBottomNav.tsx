@@ -68,8 +68,8 @@ const MobileBottomNav = () => {
                                             className={cn(
                                                 "w-[18px] h-[18px] transition-all duration-300",
                                                 active
-                                                    ? "text-tech-gold drop-shadow-[0_0_6px_rgba(212,175,55,0.4)]"
-                                                    : "text-gray-500 group-hover:text-gray-400"
+                                                    ? "text-primary drop-shadow-[0_0_6px_hsl(43_100%_50%/0.4)]"
+                                                    : "text-muted-foreground group-hover:text-foreground"
                                             )}
                                             strokeWidth={active ? 2.2 : 1.8}
                                         />
