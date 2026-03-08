@@ -516,6 +516,17 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                             </div>
                         </CardContent>
                     </Card>
+                    <Card className="bg-black/40 border-tech-gold/10">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="p-2.5 bg-emerald-500/10 rounded-xl">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Total Paid</p>
+                                <p className="text-lg font-black text-emerald-400">{formatCurrency(totalPaid)}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
             )}
 
