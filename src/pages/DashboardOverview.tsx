@@ -47,7 +47,19 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
     }, [profile]);
 
     const fetchNextBilling = async () => {
-        if (!profile?.billing_sync_id) return;
+        if (!profile?.id) return;
+
+        // Resolve billing_sync_id: from profile or CRM clients table
+        let billingId = profile.billing_sync_id;
+        if (!billingId && profile.email) {
+            const { data: crmClient } = await supabase
+                .from('clients')
+                .select('billing_sync_id')
+                .eq('email', profile.email)
+                .maybeSingle();
+            billingId = crmClient?.billing_sync_id;
+        }
+        if (!billingId) return;
         try {
             const { data: settings } = await supabase
                 .from('app_settings')
