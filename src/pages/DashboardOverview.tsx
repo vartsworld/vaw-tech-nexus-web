@@ -333,16 +333,16 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
                 >
-                    <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 border-orange-500/30 relative overflow-hidden">
+                     <Card className="neu-card bg-gradient-to-br from-orange-500/10 to-red-500/10 border-orange-500/20 relative overflow-hidden">
                         <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,.02)_50%,transparent_75%,transparent_100%)] bg-[length:250%_250%] animate-[shimmer_60s_linear_infinite]" />
                         <CardHeader className="relative">
                             <div className="flex items-start justify-between">
                                 <div>
-                                    <CardTitle className="text-white flex items-center gap-2">
+                                    <CardTitle className="text-foreground flex items-center gap-2">
                                         <Clock className="w-5 h-5 text-orange-500" />
                                         Payment Reminders
                                     </CardTitle>
-                                    <CardDescription className="text-gray-300 font-medium mt-1">
+                                    <CardDescription className="text-muted-foreground font-medium mt-1">
                                         You have {stats.pendingReminders} pending payment{stats.pendingReminders !== 1 ? 's' : ''}
                                     </CardDescription>
                                 </div>
@@ -359,12 +359,12 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                 return (
                                     <div
                                         key={reminder.id}
-                                        className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-4 flex items-center justify-between"
+                                        className="neu-card-pressed rounded-xl p-4 flex items-center justify-between"
                                     >
                                         <div>
-                                            <p className="text-sm font-bold text-white">{reminder.title}</p>
-                                            <p className="text-xs text-gray-400 mt-1">
-                                                Amount: <span className="text-tech-gold font-bold">₹{Number(reminder.amount).toLocaleString()}</span>
+                                            <p className="text-sm font-bold text-foreground">{reminder.title}</p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                Amount: <span className="text-primary font-bold">₹{Number(reminder.amount).toLocaleString()}</span>
                                             </p>
                                         </div>
                                         <div className="text-right">
@@ -379,13 +379,13 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                                         : `${daysUntil} days left`
                                                 }
                                             </Badge>
-                                            <p className="text-[10px] text-gray-500 mt-1">{dueDate.toLocaleDateString()}</p>
+                                            <p className="text-[10px] text-muted-foreground mt-1">{dueDate.toLocaleDateString()}</p>
                                         </div>
                                     </div>
                                 );
                             })}
                             <Button
-                                className="w-full bg-white/5 hover:bg-white/10 border border-white/20 text-white font-bold"
+                                className="w-full neu-card hover:shadow-neu-sm border border-border text-foreground font-bold"
                                 onClick={() => window.location.href = '/client/dashboard/financials'}
                             >
                                 View All Payments
