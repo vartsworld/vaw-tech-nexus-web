@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ActivityTrackerOptions {
@@ -8,17 +8,21 @@ interface ActivityTrackerOptions {
 
 export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOptions) => {
   const lastActivityRef = useRef<Date>(new Date());
+  const lastDbUpdateRef = useRef<number>(0);
   const statusCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const activityUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingUpdateRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Update last activity timestamp
-  const updateActivity = async () => {
+  // Debounced DB write — at most once every 30 seconds
+  const updateActivity = useCallback(async () => {
     if (!userId) return;
-    
-    lastActivityRef.current = new Date();
-    
+
+    const now = Date.now();
+    // Skip if we updated less than 30s ago
+    if (now - lastDbUpdateRef.current < 30000) return;
+    lastDbUpdateRef.current = now;
+
     try {
-      // Update presence status in database
       await supabase
         .from('user_presence_status')
         .upsert({
@@ -29,10 +33,10 @@ export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOp
     } catch (error) {
       console.error('Error updating activity:', error);
     }
-  };
+  }, [userId]);
 
   // Check status based on inactivity duration
-  const checkAndUpdateStatus = async () => {
+  const checkAndUpdateStatus = useCallback(async () => {
     if (!userId) return;
 
     try {
@@ -50,15 +54,12 @@ export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOp
 
       let newStatus = presenceData.current_status;
 
-      // Determine status based on inactivity
       if (presenceData.current_status === 'coffee_break') {
-        // Don't change status if on break
         return;
       }
 
       if (hoursInactive >= 5) {
         newStatus = 'sleeping';
-        // Auto-logout after 5 hours
         await handleAutoLogout();
       } else if (hoursInactive >= 4) {
         newStatus = 'resting';
@@ -68,7 +69,6 @@ export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOp
         newStatus = 'online';
       }
 
-      // Update status if changed
       if (newStatus !== presenceData.current_status) {
         await updateUserStatus(newStatus);
         if (onStatusChange) {
@@ -78,12 +78,10 @@ export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOp
     } catch (error) {
       console.error('Error checking status:', error);
     }
-  };
+  }, [userId, onStatusChange]);
 
-  // Update user status
   const updateUserStatus = async (status: string) => {
     try {
-      // Generate reactivation code for AFK/Resting/Sleeping
       const reactivationCode = ['afk', 'resting', 'sleeping'].includes(status)
         ? Math.floor(1000 + Math.random() * 9000)
         : null;
@@ -97,7 +95,6 @@ export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOp
           updated_at: new Date().toISOString()
         });
 
-      // Log activity change
       await supabase
         .from('user_activity_log')
         .insert({
@@ -110,10 +107,8 @@ export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOp
     }
   };
 
-  // Handle auto-logout after 5 hours
   const handleAutoLogout = async () => {
     try {
-      // Log the logout event
       await supabase
         .from('user_activity_log')
         .insert({
@@ -123,10 +118,7 @@ export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOp
           metadata: { reason: 'auto_logout_inactivity' }
         });
 
-      // Sign out
       await supabase.auth.signOut();
-      
-      // Redirect to login
       window.location.href = '/staff/login';
     } catch (error) {
       console.error('Error during auto-logout:', error);
@@ -151,21 +143,27 @@ export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOp
 
     initializePresence();
 
-    // Track user activity
+    // Lightweight local-only activity tracking — schedule a debounced DB write
     const handleActivity = () => {
-      updateActivity();
+      lastActivityRef.current = new Date();
+      // Schedule a debounced write if not already pending
+      if (!pendingUpdateRef.current) {
+        pendingUpdateRef.current = setTimeout(() => {
+          pendingUpdateRef.current = null;
+          updateActivity();
+        }, 5000); // batch writes: wait 5s after last interaction
+      }
     };
 
-    // Listen to mouse, keyboard, and touch events
-    window.addEventListener('mousemove', handleActivity);
-    window.addEventListener('keydown', handleActivity);
-    window.addEventListener('click', handleActivity);
-    window.addEventListener('touchstart', handleActivity);
+    window.addEventListener('mousemove', handleActivity, { passive: true });
+    window.addEventListener('keydown', handleActivity, { passive: true });
+    window.addEventListener('click', handleActivity, { passive: true });
+    window.addEventListener('touchstart', handleActivity, { passive: true });
 
-    // Update activity in database every 1 minute (debounced)
+    // Periodic DB update every 60s
     activityUpdateIntervalRef.current = setInterval(updateActivity, 60000);
 
-    // Check status every 30 seconds
+    // Check status every 30s
     statusCheckIntervalRef.current = setInterval(checkAndUpdateStatus, 30000);
 
     return () => {
@@ -180,8 +178,11 @@ export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOp
       if (statusCheckIntervalRef.current) {
         clearInterval(statusCheckIntervalRef.current);
       }
+      if (pendingUpdateRef.current) {
+        clearTimeout(pendingUpdateRef.current);
+      }
     };
-  }, [userId]);
+  }, [userId, updateActivity, checkAndUpdateStatus]);
 
   return { updateActivity, checkAndUpdateStatus };
 };
