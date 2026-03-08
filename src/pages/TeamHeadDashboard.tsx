@@ -133,7 +133,10 @@ const TeamHeadDashboard = () => {
     return success;
   };
 
+  const isShowingMobileHome = isMobile && showMobileHome;
+
   useEffect(() => {
+    if (isShowingMobileHome) return;
     checkDailyRequirements();
     fetchDepartment();
     if (profile) {
@@ -142,7 +145,7 @@ const TeamHeadDashboard = () => {
         about_me: (profile as any).about_me || "",
       });
     }
-  }, [profile?.user_id, profile?.full_name, profile?.department_id]);
+  }, [profile?.user_id, profile?.full_name, profile?.department_id, isShowingMobileHome]);
 
   const fetchDepartment = async () => {
     if (!profile?.department_id) return;
