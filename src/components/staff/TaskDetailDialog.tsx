@@ -647,7 +647,240 @@ export const TaskDetailDialog = ({
             </div>
           </div>}
 
+          <Separator className="bg-white/10" />
 
+          {/* Subtasks Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-white/90 flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-blue-400" />
+                Subtasks Workflow
+              </span>
+              <Badge variant="outline" className="text-[10px] border-white/10 text-white/50">
+                {subtasks.filter(s => s.status === 'completed').length}/{subtasks.length} Done
+              </Badge>
+            </h3>
+
+            {isLoadingSubtasks ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-blue-400" />
+              </div>
+            ) : subtasks.length === 0 ? (
+              <p className="text-sm text-white/40 italic text-center py-2 bg-black/20 rounded-lg border border-dashed border-white/10">
+                No subtasks assigned to this task.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {subtasks.map((st, idx) => {
+                  const isAssignedToMe = st.assigned_to === userId;
+                  const stage = (st as any).stage || 1;
+                  const hasBlockingStage = subtasks.some(other => {
+                    const otherStage = (other as any).stage || 1;
+                    return otherStage < stage && other.status !== 'completed';
+                  });
+                  const isLocked = hasBlockingStage;
+                  const isExpanded = expandedSubtask === st.id;
+
+                  return (
+                    <div
+                      key={st.id}
+                      className={`rounded-xl border transition-all duration-300 ${isLocked ? 'opacity-50 grayscale' : 'opacity-100'
+                        } ${st.status === 'completed' ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 bg-black/40'}`}
+                    >
+                      <div className="p-4 flex items-center gap-4">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${st.status === 'completed' ? 'bg-green-500 text-white' :
+                          st.status === 'in_progress' ? 'bg-blue-500 text-white animate-pulse' :
+                            'bg-white/10 text-white/40'
+                          }`}>
+                          {st.status === 'completed' ? <CheckCircle className="w-5 h-5" /> : idx + 1}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <h4 className={`text-sm font-semibold truncate ${st.status === 'completed' ? 'text-green-400 line-through' : 'text-white'}`}>
+                            {st.title}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] text-blue-300/80 border border-blue-400/40 rounded-full px-2 py-0.5 bg-blue-500/10">
+                              Stage {stage}
+                            </span>
+                            <span className="text-[10px] text-white/20">•</span>
+                            <span className="text-[10px] text-white/40">{st.points || 0} pts</span>
+                            <span className="text-[10px] text-white/20">•</span>
+                            <span className={`text-[10px] font-medium ${isAssignedToMe ? 'text-purple-400' : 'text-white/30'}`}>
+                              {isAssignedToMe ? 'Assigned to You' : 'Assigned to Others'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {st.status === 'pending' && isAssignedToMe && !isLocked && (
+                            <Button size="sm" onClick={() => handleSubtaskStart(st.id)} className="h-8 text-[10px] bg-blue-600 hover:bg-blue-700">
+                              Start
+                            </Button>
+                          )}
+                          {st.status === 'in_progress' && isAssignedToMe && (
+                            <Button
+                              size="sm"
+                              onClick={() => setExpandedSubtask(isExpanded ? null : st.id)}
+                              className="h-8 text-[10px] bg-purple-600 hover:bg-purple-700"
+                            >
+                              {isExpanded ? 'Cancel' : 'Submit Work'}
+                            </Button>
+                          )}
+                          {st.status === 'pending_approval' && (
+                            <Badge className="bg-orange-500/20 text-orange-400 border-none text-[9px] px-2 h-6">
+                              Review Pending
+                            </Badge>
+                          )}
+                          {isLocked && (
+                            <AlertCircle
+                              className="w-4 h-4 text-white/20"
+                              aria-label="Previous subtask must be approved"
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="px-4 pb-4 pt-0 space-y-4 animate-in fade-in slide-in-from-top-2">
+                          <Separator className="bg-white/5" />
+                          <div className="space-y-2">
+                            <Label className="text-[11px] text-white/60">Submission Notes / Documentation</Label>
+                            <Textarea
+                              placeholder="What did you do? Any notes for the head..."
+                              value={subtaskNotes}
+                              onChange={(e) => setSubtaskNotes(e.target.value)}
+                              className="bg-black/50 border-white/10 text-xs min-h-[80px]"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label className="text-[11px] text-white/60">Proof of Work / Attachments</Label>
+                            <div className="flex flex-wrap gap-2">
+                              {subtaskFileURLs.map((file, fidx) => (
+                                <div key={fidx} className="flex items-center gap-2 bg-white/5 p-2 rounded border border-white/10">
+                                  <FileText className="w-3 h-3 text-blue-400" />
+                                  <span className="text-[9px] text-white/60 max-w-[100px] truncate">{file.name}</span>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-4 w-4 text-red-400 hover:bg-red-500/20"
+                                    onClick={() => setSubtaskFileURLs(subtaskFileURLs.filter((_, i) => i !== fidx))}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 border-dashed border-white/20 text-[10px] text-white/40 hover:text-white"
+                                onClick={() => subtaskFileInputRef.current?.click()}
+                                disabled={isUploading}
+                              >
+                                {isUploading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
+                                Upload Files
+                              </Button>
+                              <input
+                                type="file"
+                                multiple
+                                hidden
+                                ref={subtaskFileInputRef}
+                                onChange={handleSubtaskFileUpload}
+                              />
+                            </div>
+                          </div>
+
+                          <Button
+                            className="w-full h-9 bg-green-600 hover:bg-green-700 font-bold text-xs"
+                            onClick={() => handleSubtaskSubmit(st.id)}
+                            disabled={isSubmitting}
+                          >
+                            {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Send className="h-3 w-3 mr-2" />}
+                            SUBMIT FOR APPROVAL
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <Separator className="bg-white/10" />
+
+          {/* Task Details */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {task.assignedBy && <div className="flex items-center gap-2 text-white/70">
+              <User className="w-5 h-5 text-blue-400" />
+              <div>
+                <p className="text-xs text-white/50">Assigned By</p>
+                <p className="text-sm font-medium text-white">
+                  {task.assignedBy.full_name}
+                </p>
+              </div>
+            </div>}
+
+            {task.due_date && <div className="flex items-center gap-2 text-white/70">
+              <Calendar className="w-5 h-5 text-orange-400" />
+              <div>
+                <p className="text-xs text-white/50">Due Date</p>
+                <p className="text-sm font-medium text-white">
+                  {format(new Date(task.due_date), 'MMM dd, yyyy')}
+                  {task.due_time && ` at ${task.due_time}`}
+                </p>
+              </div>
+            </div>}
+
+            <div className="flex items-center gap-2 text-white/70">
+              <Clock className="w-5 h-5 text-green-400" />
+              <div>
+                <p className="text-xs text-white/50">Created</p>
+                <p className="text-sm font-medium text-white">
+                  {task.created_at ? (() => {
+                    try { return format(new Date(task.created_at), 'MMM dd, yyyy'); }
+                    catch { return 'Unknown date'; }
+                  })() : 'Unknown date'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Separator className="bg-white/10" />
+
+          {/* Attachments Section */}
+          {task.attachments && Array.isArray(task.attachments) && task.attachments.length > 0 && <>
+            <div>
+              <h3 className="text-lg font-semibold mb-3 text-white/90 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-400" />
+                Attachments ({task.attachments.length})
+              </h3>
+              <div className="space-y-2">
+                {task.attachments.map((attachment, index) => <div key={index} className="flex items-center justify-between bg-black/30 rounded-lg p-3 border border-white/10 hover:bg-black/40 transition-colors">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <FileText className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white text-sm font-medium truncate">
+                        {attachment.name}
+                      </p>
+                      {attachment.size && <p className="text-white/50 text-xs">
+                        {(attachment.size / 1024).toFixed(2)} KB
+                      </p>}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" className="border-blue-400/50 text-blue-300 hover:bg-blue-500/20 flex-shrink-0" onClick={() => handleDownloadAttachment(attachment)}>
+                    <Download className="w-4 h-4 mr-1" />
+                    Download
+                  </Button>
+                </div>)}
+              </div>
+            </div>
+
+            <Separator className="bg-white/10" />
+          </>}
+
+          {/* Comments Section */}
           {task.status === 'in_progress' && <>
             <Separator className="bg-white/10" />
 
