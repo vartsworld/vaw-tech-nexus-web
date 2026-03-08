@@ -153,7 +153,8 @@ const SupportNexus = ({ profile }: { profile: any }) => {
 
             if (error) throw error;
 
-            toast.success("Help request successfully transmitted.");
+            const routeTarget = newSignal.type === 'bug_report' ? 'Development Team' : 'HR Team';
+            toast.success(`Ticket submitted and routed to ${routeTarget}`);
             setNewSignal({ type: "feedback", priority: "medium", subject: "", message: "" });
             setAttachment(null);
             fetchFeedback();
