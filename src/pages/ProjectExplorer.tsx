@@ -58,6 +58,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const ProjectExplorer = ({ profile }: { profile: any }) => {
+    const { "*": projectIdParam } = useParams();
+    const navigate = useNavigate();
     const [projects, setProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -71,6 +73,17 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
     useEffect(() => {
         fetchProjects();
     }, [profile]);
+
+    // Auto-select project from URL param
+    useEffect(() => {
+        if (projectIdParam && projects.length > 0) {
+            const match = projects.find(p => p.id === projectIdParam);
+            if (match) {
+                setSelectedProject(match);
+                setIsDetailView(true);
+            }
+        }
+    }, [projectIdParam, projects]);
 
     const fetchProjects = async () => {
         if (!profile?.id) return;
