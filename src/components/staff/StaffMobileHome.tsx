@@ -246,7 +246,7 @@ const StaffMobileHome = ({
           <div className="flex items-center gap-3">
              <Avatar className="w-11 h-11 border-2 border-emerald-500/20">
               <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
-              <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
+              <AvatarFallback className="bg-emerald-500/10 text-emerald-400 text-sm font-bold">
                 {profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
               </AvatarFallback>
             </Avatar>
