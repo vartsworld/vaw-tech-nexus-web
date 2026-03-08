@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft, CheckCircle, Clock, Target, Flag, Eye, Edit, Trash2,
   Plus, Calendar, User, Layers, FileText, Download, MessageSquare,
