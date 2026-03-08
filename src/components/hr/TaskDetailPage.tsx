@@ -11,8 +11,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft, CheckCircle, Clock, Target, Flag, Eye, Edit, Trash2,
   Plus, Calendar, User, Layers, FileText, Download, MessageSquare,
-  Loader2, Share2, LayoutTemplate, Minimize2, Maximize2, ChevronLeft, ChevronRight
+  Loader2, Share2, LayoutTemplate, Minimize2, Maximize2, ChevronLeft, ChevronRight,
+  AlertCircle
 } from "lucide-react";
+import { SubtaskReviewDialog } from "@/components/staff/SubtaskReviewDialog";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +42,8 @@ const TaskDetailPage = ({
   const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState("none");
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [reviewDialogSubtask, setReviewDialogSubtask] = useState<any>(null);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const stageScrollRef = useRef<HTMLDivElement>(null);
   const [newSubtask, setNewSubtask] = useState({
     title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1
@@ -224,6 +228,60 @@ const TaskDetailPage = ({
   const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
   if (stageNums.length === 0) stageNums.push(1);
 
+  const reviewPendingSubtasks = subtasks.filter(s => s.status === 'review_pending');
+
+  const handleSubtaskApprove = async (subtaskId: string) => {
+    try {
+      const subtaskToApprove = subtasks.find(s => s.id === subtaskId);
+      const { error } = await supabase.from('staff_subtasks')
+        .update({ status: 'completed' as any, updated_at: new Date().toISOString() })
+        .eq('id', subtaskId);
+      if (error) throw error;
+      setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, status: 'completed' } : s));
+
+      // Award points if applicable
+      if (subtaskToApprove?.points > 0 && subtaskToApprove?.assigned_to) {
+        await supabase.rpc('increment_points' as any, {
+          user_id_param: subtaskToApprove.assigned_to,
+          points_param: subtaskToApprove.points
+        });
+      }
+
+      toast({ title: "Subtask Approved! ✅", description: `Points awarded: ${subtaskToApprove?.points || 0}` });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to approve subtask.", variant: "destructive" });
+    }
+  };
+
+  const handleSubtaskReject = async (subtaskId: string, note: string) => {
+    try {
+      const subtaskToReject = subtasks.find(s => s.id === subtaskId);
+      const existingComments = Array.isArray(subtaskToReject?.comments) ? subtaskToReject.comments : [];
+      const newComment = {
+        type: 'rejection',
+        message: note,
+        user_name: userProfile?.full_name || 'Team Head',
+        timestamp: new Date().toISOString()
+      };
+
+      const { error } = await supabase.from('staff_subtasks')
+        .update({
+          status: 'in_progress' as any,
+          comments: [...existingComments, newComment] as any,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subtaskId);
+      if (error) throw error;
+      setSubtasks(prev => prev.map(s => s.id === subtaskId
+        ? { ...s, status: 'in_progress', comments: [...existingComments, newComment] }
+        : s
+      ));
+      toast({ title: "Subtask Returned", description: "Sent back for rework with feedback." });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to reject subtask.", variant: "destructive" });
+    }
+  };
+
   const completedSubtasks = subtasks.filter(s => s.status === 'completed').length;
 
   const stageLabels: Record<number, string> = { 1: 'DISCOVERY', 2: 'DESIGN', 3: 'DEVELOPMENT', 4: 'TESTING', 5: 'REVIEW' };
@@ -266,14 +324,22 @@ const TaskDetailPage = ({
 
           {/* Subtasks Stage Board */}
           <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-lg p-4 sm:p-6 space-y-4 min-w-0">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Layers className="h-4 w-4 text-primary" />
                 Project Stages & Subtasks
               </h3>
-              <span className="text-xs text-muted-foreground shrink-0">
-                {completedSubtasks}/{subtasks.length} completed
-              </span>
+              <div className="flex items-center gap-3">
+                {reviewPendingSubtasks.length > 0 && (
+                  <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/40 text-[10px] font-bold animate-pulse cursor-default">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {reviewPendingSubtasks.length} Review Request{reviewPendingSubtasks.length > 1 ? 's' : ''}
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {completedSubtasks}/{subtasks.length} completed
+                </span>
+              </div>
             </div>
 
             {/* Stage Tabs - Scrollable */}
@@ -481,15 +547,32 @@ const TaskDetailPage = ({
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
                                         className={cn(
-                                          "rounded-lg border border-white/10 bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group",
+                                          "rounded-lg border bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group",
+                                          st.status === 'review_pending'
+                                            ? "border-orange-500/40 ring-1 ring-orange-500/20 cursor-pointer"
+                                            : "border-white/10",
                                           snapshot.isDragging && "rotate-2 scale-105 shadow-2xl"
                                         )}
+                                        onClick={() => {
+                                          if (st.status === 'review_pending') {
+                                            setReviewDialogSubtask(st);
+                                            setReviewDialogOpen(true);
+                                          }
+                                        }}
                                       >
+                                        {/* Review Request Banner */}
+                                        {st.status === 'review_pending' && (
+                                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-orange-500/15 border border-orange-500/30 -mt-1 mb-1">
+                                            <AlertCircle className="h-3 w-3 text-orange-400 animate-pulse" />
+                                            <span className="text-[9px] font-bold text-orange-300 uppercase tracking-wider">Review Requested</span>
+                                          </div>
+                                        )}
+
                                         <div className="flex items-start justify-between gap-2">
                                           <span className="text-xs font-medium leading-tight break-words min-w-0">{st.title}</span>
                                           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                             <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400"
-                                              onClick={() => handleDeleteSubtask(st.id)}>
+                                              onClick={(e) => { e.stopPropagation(); handleDeleteSubtask(st.id); }}>
                                               <Trash2 className="h-3 w-3" />
                                             </Button>
                                           </div>
@@ -514,25 +597,30 @@ const TaskDetailPage = ({
                                               <span className="text-[10px] text-muted-foreground truncate">{st.staff_profiles.full_name}</span>
                                             </div>
                                           )}
-                                          <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                          <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${
+                                            st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                            : st.status === 'review_pending' ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
                                             : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
                                               : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                                             }`}>
-                                            {st.status === 'completed' ? 'DONE' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
+                                            {st.status === 'completed' ? 'DONE' : st.status === 'review_pending' ? 'IN REVIEW' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
                                           </Badge>
                                         </div>
 
                                         {/* Status toggle */}
-                                        <Select value={st.status} onValueChange={(v) => handleSubtaskStatusUpdate(st.id, v)}>
-                                          <SelectTrigger className="h-6 text-[9px] bg-transparent border-white/5">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="pending" className="text-xs">Pending</SelectItem>
-                                            <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
-                                            <SelectItem value="completed" className="text-xs">Completed</SelectItem>
-                                          </SelectContent>
-                                        </Select>
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                          <Select value={st.status} onValueChange={(v) => handleSubtaskStatusUpdate(st.id, v)}>
+                                            <SelectTrigger className="h-6 text-[9px] bg-transparent border-white/5">
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="pending" className="text-xs">Pending</SelectItem>
+                                              <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
+                                              <SelectItem value="review_pending" className="text-xs">Review Pending</SelectItem>
+                                              <SelectItem value="completed" className="text-xs">Completed</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
                                       </div>
                                     )}
                                   </Draggable>
@@ -772,6 +860,19 @@ const TaskDetailPage = ({
           </div>
         </div>
       </div>
+
+      {/* Subtask Review Dialog */}
+      <SubtaskReviewDialog
+        subtask={reviewDialogSubtask}
+        parentTask={task}
+        open={reviewDialogOpen}
+        onOpenChange={(open) => {
+          setReviewDialogOpen(open);
+          if (!open) setReviewDialogSubtask(null);
+        }}
+        onApprove={handleSubtaskApprove}
+        onReject={handleSubtaskReject}
+      />
     </div>
   );
 };
