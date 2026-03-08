@@ -716,17 +716,15 @@ export const TaskDetailDialog = ({
         )}
 
         <div className="flex items-center justify-center gap-2 flex-wrap">
-          {!isTimerRunning && !isOnBreak ? (
-            <Button onClick={handleStart} className="bg-green-500 hover:bg-green-600 text-white">
-              <Play className="w-4 h-4 mr-2" />
-              {task.status === 'pending' ? 'Start Task' : 'Resume'}
-            </Button>
-          ) : isTimerRunning && !isOnBreak ? (
+          {!isTimerRunning && !isOnBreak && (
+            <p className="text-xs text-white/40 italic">Timer starts automatically when you begin a subtask</p>
+          )}
+          {isTimerRunning && !isOnBreak && (
             <Button onClick={handleStartBreak} variant="outline" className="border-orange-400/50 text-orange-300 hover:bg-orange-500/20" disabled={breaksTaken >= 2}>
               <Coffee className="w-4 h-4 mr-2" />
               Take Break ({2 - breaksTaken} left)
             </Button>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
