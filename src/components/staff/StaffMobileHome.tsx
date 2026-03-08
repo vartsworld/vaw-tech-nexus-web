@@ -297,7 +297,7 @@ const StaffMobileHome = ({
         {/* Task Summary Card */}
         <motion.div
           {...fadeUp(0.25)}
-          className="mt-4 rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-5 relative overflow-hidden shadow-lg shadow-primary/15"
+          className="mt-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-5 relative overflow-hidden shadow-lg shadow-emerald-500/20"
         >
           <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/8 blur-2xl" />
           <div className="absolute right-3 bottom-2 w-20 h-20 rounded-full bg-white/5" />
