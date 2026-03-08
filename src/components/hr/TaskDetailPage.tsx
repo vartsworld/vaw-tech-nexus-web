@@ -663,6 +663,7 @@ const TaskDetailPage = ({
                                               <SelectItem value="pending" className="text-xs">Pending</SelectItem>
                                               <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
                                               <SelectItem value="review_pending" className="text-xs">Review Pending</SelectItem>
+                                              <SelectItem value="pending_approval" className="text-xs">Pending Approval</SelectItem>
                                               <SelectItem value="completed" className="text-xs">Completed</SelectItem>
                                             </SelectContent>
                                           </Select>
