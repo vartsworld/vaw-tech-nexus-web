@@ -2164,10 +2164,14 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                     return (
                       <div
                         key={subtask.id}
-                        className="bg-black/30 border border-purple-500/40 rounded-lg p-3 flex items-center justify-between gap-3"
+                        className="bg-black/30 border border-purple-500/40 rounded-lg p-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-purple-500/15 hover:border-purple-400/50 transition-all duration-200 group"
+                        onClick={() => {
+                          setReviewDialogSubtask(subtask);
+                          setReviewDialogOpen(true);
+                        }}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <Avatar className="h-8 w-8 border border-white/10 bg-white/5 flex-shrink-0">
+                          <Avatar className="h-8 w-8 border border-white/10 bg-white/5 flex-shrink-0 group-hover:border-purple-400/50 transition-colors">
                             <AvatarImage
                               src={assigneeProfile?.avatar_url || undefined}
                               alt={assigneeProfile?.full_name || subtask.title}
@@ -2182,7 +2186,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 space-y-0.5">
-                            <div className="text-sm font-semibold text-white truncate">
+                            <div className="text-sm font-semibold text-white truncate group-hover:text-purple-200 transition-colors">
                               {subtask.title}
                             </div>
                             {parentTask && (
@@ -2193,7 +2197,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                             <div className="text-[11px] text-white/50 flex flex-wrap gap-x-2 gap-y-0.5">
                               {assigneeProfile && (
                                 <span>
-                                  👤 {assigneeProfile.full_name} (@{assigneeProfile.username})
+                                  👤 {assigneeProfile.full_name}
                                 </span>
                               )}
                               {subtask.points > 0 && <span>⭐ {subtask.points} pts</span>}
@@ -2208,28 +2212,17 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                                       return "Invalid date";
                                     }
                                   })()}
-                                  {subtask.due_time && ` ${subtask.due_time}`}
                                 </span>
                               )}
                             </div>
                           </div>
                         </div>
-                        {parentTask && (
-                          <Button
-                            size="sm"
-                            className="flex-shrink-0 bg-green-500 hover:bg-green-600 text-white h-8 text-xs"
-                            onClick={async () => {
-                              try {
-                                setSelectedTask(parentTask);
-                                await fetchSubtasks(parentTask.id);
-                                setCurrentView('detail');
-                              } catch (e) { console.error('Error opening task view:', e); }
-                            }}
-                          >
-                            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant="outline" className="text-[9px] bg-purple-500/15 border-purple-500/30 text-purple-300">
+                            <Eye className="h-3 w-3 mr-1" />
                             Review
-                          </Button>
-                        )}
+                          </Badge>
+                        </div>
                       </div>
                     );
                   })}
