@@ -364,7 +364,7 @@ const HRDashboard = () => {
                           : "text-muted-foreground hover:bg-muted hover:text-foreground"}
                       `}
                     >
-                      <item.icon className={`w-5 h-5 ${activeTab === item.id ? "text-indigo-400" : "group-hover:text-indigo-400 transition-colors"}`} />
+                      <item.icon className={`w-5 h-5 ${activeTab === item.id ? "text-primary" : "group-hover:text-primary transition-colors"}`} />
                       {isSidebarOpen && (
                         <span className="text-sm font-medium tracking-wide">
                           {item.label}
