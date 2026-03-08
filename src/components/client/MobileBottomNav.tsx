@@ -89,7 +89,7 @@ const MobileBottomNav = () => {
                                         animate={active ? { opacity: 1 } : { opacity: 0.45 }}
                                         className={cn(
                                             "text-[9px] font-semibold tracking-[0.08em] uppercase transition-colors duration-300",
-                                            active ? "text-tech-gold" : "text-gray-600 group-hover:text-gray-500"
+                                            active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
                                         )}
                                     >
                                         {item.label}
