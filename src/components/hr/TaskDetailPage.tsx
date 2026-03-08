@@ -986,20 +986,136 @@ const TaskDetailPage = ({
               </div>
             )}
 
-            {/* Timeline */}
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Timeline</Label>
-              <div className="space-y-1.5 text-xs">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-3 w-3 shrink-0" />
-                  <span>Due: {task.due_date ? (() => { try { return format(new Date(task.due_date), 'MMM dd, yyyy'); } catch { return 'Invalid date'; } })() : 'No due date'}</span>
+            {/* Timeline - Countdown Clock */}
+            {(() => {
+              const now = new Date();
+              const dueDate = task.due_date ? new Date(task.due_date + (task.due_time ? `T${task.due_time}` : 'T23:59:59')) : null;
+              const createdDate = new Date(task.created_at);
+              const totalMs = dueDate ? dueDate.getTime() - createdDate.getTime() : 0;
+              const remainingMs = dueDate ? dueDate.getTime() - now.getTime() : 0;
+              const progress = totalMs > 0 ? Math.max(0, Math.min(1, 1 - remainingMs / totalMs)) : 0;
+              const isPast = remainingMs <= 0;
+
+              // Color based on urgency
+              let color = 'emerald'; // > 7 days
+              let glowColor = '142 71% 45%';
+              if (isPast) { color = 'red'; glowColor = '0 84% 60%'; }
+              else if (remainingMs < 24 * 60 * 60 * 1000) { color = 'red'; glowColor = '0 84% 60%'; }
+              else if (remainingMs < 3 * 24 * 60 * 60 * 1000) { color = 'orange'; glowColor = '25 95% 53%'; }
+              else if (remainingMs < 7 * 24 * 60 * 60 * 1000) { color = 'amber'; glowColor = '38 92% 50%'; }
+
+              // Time remaining text
+              let timeText = 'No deadline';
+              if (dueDate) {
+                if (isPast) {
+                  const overMs = Math.abs(remainingMs);
+                  const overDays = Math.floor(overMs / (24*60*60*1000));
+                  const overHrs = Math.floor((overMs % (24*60*60*1000)) / (60*60*1000));
+                  timeText = `Overdue by ${overDays}d ${overHrs}h`;
+                } else {
+                  const days = Math.floor(remainingMs / (24*60*60*1000));
+                  const hrs = Math.floor((remainingMs % (24*60*60*1000)) / (60*60*1000));
+                  const mins = Math.floor((remainingMs % (60*60*1000)) / (60*1000));
+                  timeText = days > 0 ? `${days}d ${hrs}h remaining` : hrs > 0 ? `${hrs}h ${mins}m remaining` : `${mins}m remaining`;
+                }
+              }
+
+              // SVG clock arc
+              const radius = 54;
+              const circumference = 2 * Math.PI * radius;
+              const strokeDashoffset = circumference * (1 - progress);
+              const handAngle = progress * 360;
+
+              const colorMap: Record<string, { ring: string; text: string; bg: string; hand: string }> = {
+                emerald: { ring: 'stroke-emerald-400', text: 'text-emerald-400', bg: 'bg-emerald-500/10', hand: 'stroke-emerald-300' },
+                amber: { ring: 'stroke-amber-400', text: 'text-amber-400', bg: 'bg-amber-500/10', hand: 'stroke-amber-300' },
+                orange: { ring: 'stroke-orange-400', text: 'text-orange-400', bg: 'bg-orange-500/10', hand: 'stroke-orange-300' },
+                red: { ring: 'stroke-red-400', text: 'text-red-400', bg: 'bg-red-500/10', hand: 'stroke-red-300' },
+              };
+              const c = colorMap[color];
+
+              return (
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Timeline</Label>
+                  <div className={`rounded-2xl border border-white/10 ${c.bg} backdrop-blur-xl p-4 flex flex-col items-center gap-3`}>
+                    {/* Clock SVG */}
+                    <div className="relative w-[140px] h-[140px]">
+                      <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+                        {/* Background track */}
+                        <circle cx="60" cy="60" r={radius} fill="none" stroke="currentColor" className="text-white/5" strokeWidth="5" />
+                        {/* Tick marks */}
+                        {Array.from({ length: 12 }).map((_, i) => {
+                          const a = (i / 12) * 2 * Math.PI;
+                          const r1 = 48, r2 = 52;
+                          return (
+                            <line key={i}
+                              x1={60 + r1 * Math.cos(a)} y1={60 + r1 * Math.sin(a)}
+                              x2={60 + r2 * Math.cos(a)} y2={60 + r2 * Math.sin(a)}
+                              stroke="currentColor" className="text-white/15" strokeWidth="1"
+                            />
+                          );
+                        })}
+                        {/* Progress arc */}
+                        <circle cx="60" cy="60" r={radius} fill="none"
+                          className={c.ring}
+                          strokeWidth="5" strokeLinecap="round"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={strokeDashoffset}
+                          style={{ transition: 'stroke-dashoffset 1s ease', filter: `drop-shadow(0 0 6px hsl(${glowColor} / 0.5))` }}
+                        />
+                        {/* Clock hand */}
+                        {dueDate && (
+                          <line x1="60" y1="60"
+                            x2={60 + 38 * Math.cos((handAngle - 90) * Math.PI / 180)}
+                            y2={60 + 38 * Math.sin((handAngle - 90) * Math.PI / 180)}
+                            className={c.hand} strokeWidth="2" strokeLinecap="round"
+                            style={{ transition: 'all 1s ease' }}
+                          />
+                        )}
+                        {/* Center dot */}
+                        <circle cx="60" cy="60" r="3" className={`fill-current ${c.text}`} />
+                      </svg>
+                      {/* Center text */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center rotate-0">
+                        <span className={`text-lg font-bold tabular-nums ${c.text}`}>
+                          {dueDate ? (isPast ? '0' : Math.max(0, Math.floor(remainingMs / (24*60*60*1000))).toString()) : '—'}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground uppercase tracking-wider">
+                          {dueDate ? (isPast ? 'overdue' : 'days left') : 'no date'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Time remaining label */}
+                    <span className={`text-xs font-semibold ${c.text} ${isPast ? 'animate-pulse' : ''}`}>
+                      {timeText}
+                    </span>
+
+                    {/* Due date & created */}
+                    <div className="w-full space-y-1 text-[11px] text-muted-foreground">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> Due</span>
+                        <span className="font-medium text-foreground/80">
+                          {task.due_date ? (() => { try { return format(new Date(task.due_date), 'MMM dd, yyyy'); } catch { return 'Invalid'; } })() : 'Not set'}
+                        </span>
+                      </div>
+                      {task.due_time && (
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> Time</span>
+                          <span className="font-medium text-foreground/80">{task.due_time}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> Created</span>
+                        <span className="font-medium text-foreground/80">
+                          {(() => { try { return format(new Date(task.created_at), 'MMM dd, yyyy'); } catch { return ''; } })()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-3 w-3 shrink-0" />
-                  <span>Created: {(() => { try { return format(new Date(task.created_at), 'MMM dd, yyyy'); } catch { return ''; } })()}</span>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Attachments */}
             {task.attachments && Array.isArray(task.attachments) && task.attachments.length > 0 && (
