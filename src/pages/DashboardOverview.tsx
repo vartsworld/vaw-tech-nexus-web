@@ -498,7 +498,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                                             {task.status.replace('_', ' ')}
                                                         </span>
                                                         <span className="text-[10px] text-gray-600 font-bold">|</span>
-                                                        <span className="text-[10px] text-tech-gold/70 font-black italic">Stage {task.current_stage || 1}</span>
+                                                        <span className="text-[10px] text-tech-gold/70 font-black italic">{task.stage_names?.[String(task.current_stage || 1)] || `Stage ${task.current_stage || 1}`}</span>
                                                         {task.departments?.name && (
                                                             <>
                                                                 <span className="text-[10px] text-gray-600 font-bold">|</span>
