@@ -384,6 +384,7 @@ const TasksManager = ({
                         </div>
                       </TableCell>
                       <TableCell>{getPriorityBadge(task.priority)}</TableCell>
+                      <TableCell>{getStageBadge(task)}</TableCell>
                       <TableCell>{getStatusBadge(task.status)}</TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-0.5">
