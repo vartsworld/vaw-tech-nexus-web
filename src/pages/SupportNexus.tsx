@@ -22,7 +22,10 @@ import {
     Loader2,
     HeadphonesIcon,
     PhoneCall,
-    Zap
+    Zap,
+    Paperclip,
+    X as XIcon,
+    FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +49,26 @@ const SupportNexus = ({ profile }: { profile: any }) => {
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [closingId, setClosingId] = useState<string | null>(null);
+    const [attachment, setAttachment] = useState<File | null>(null);
+
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+    const handleAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!ALLOWED_TYPES.includes(file.type)) {
+            toast.error("Only JPG, PNG and PDF files are allowed");
+            e.target.value = '';
+            return;
+        }
+        if (file.size > MAX_SIZE) {
+            toast.error("File must be under 10MB");
+            e.target.value = '';
+            return;
+        }
+        setAttachment(file);
+    };
 
     const handleCloseTicket = async (ticketId: string) => {
         setClosingId(ticketId);
@@ -98,6 +121,21 @@ const SupportNexus = ({ profile }: { profile: any }) => {
 
         setIsSubmitting(true);
         try {
+            let attachmentUrl: string | null = null;
+
+            if (attachment) {
+                const ext = attachment.name.split('.').pop();
+                const path = `${profile.id}/${Date.now()}.${ext}`;
+                const { error: uploadErr } = await supabase.storage
+                    .from('support-attachments')
+                    .upload(path, attachment);
+                if (uploadErr) throw uploadErr;
+                const { data: urlData } = supabase.storage
+                    .from('support-attachments')
+                    .getPublicUrl(path);
+                attachmentUrl = urlData.publicUrl;
+            }
+
             const { error } = await supabase
                 .from("client_feedback")
                 .insert({
@@ -107,18 +145,17 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                     message: newSignal.message,
                     status: 'pending',
                     priority: newSignal.priority,
-                    metadata: { priority: newSignal.priority }
+                    metadata: {
+                        priority: newSignal.priority,
+                        ...(attachmentUrl && { attachment_url: attachmentUrl, attachment_name: attachment?.name })
+                    }
                 });
 
             if (error) throw error;
 
             toast.success("Help request successfully transmitted.");
-            setNewSignal({
-                type: "feedback",
-                priority: "medium",
-                subject: "",
-                message: ""
-            });
+            setNewSignal({ type: "feedback", priority: "medium", subject: "", message: "" });
+            setAttachment(null);
             fetchFeedback();
         } catch (error: any) {
             toast.error(`Transmission failure: ${error.message}`);
@@ -213,6 +250,27 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                                 className="bg-white/5 border-white/10 text-white min-h-[150px] rounded-xl"
                                 placeholder="Provide detailed information about your request..."
                             />
+                        </div>
+
+                        {/* Attachment */}
+                        <div className="space-y-2">
+                            <Label className="text-gray-400">Attachment <span className="text-gray-600">(JPG, PNG, PDF — max 10MB)</span></Label>
+                            {attachment ? (
+                                <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl">
+                                    <FileText className="w-5 h-5 text-tech-gold shrink-0" />
+                                    <span className="text-sm text-white truncate flex-1">{attachment.name}</span>
+                                    <span className="text-[10px] text-gray-500 font-bold">{(attachment.size / 1024 / 1024).toFixed(1)}MB</span>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-red-400" onClick={() => setAttachment(null)}>
+                                        <XIcon className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <label className="flex items-center gap-3 p-3 bg-white/5 border border-dashed border-white/10 rounded-xl cursor-pointer hover:border-tech-gold/30 transition-colors">
+                                    <Paperclip className="w-5 h-5 text-gray-500" />
+                                    <span className="text-sm text-gray-500">Click to attach a file</span>
+                                    <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.pdf" onChange={handleAttachment} />
+                                </label>
+                            )}
                         </div>
 
                         <Button
