@@ -45,6 +45,25 @@ const SupportNexus = ({ profile }: { profile: any }) => {
     const [feedback, setFeedback] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [closingId, setClosingId] = useState<string | null>(null);
+
+    const handleCloseTicket = async (ticketId: string) => {
+        setClosingId(ticketId);
+        try {
+            const { error } = await supabase
+                .from('client_feedback')
+                .update({ status: 'resolved' })
+                .eq('id', ticketId)
+                .eq('client_id', profile.id);
+            if (error) throw error;
+            setFeedback(prev => prev.map(f => f.id === ticketId ? { ...f, status: 'resolved' } : f));
+            toast.success("Ticket closed successfully");
+        } catch (err: any) {
+            toast.error(err.message || "Failed to close ticket");
+        } finally {
+            setClosingId(null);
+        }
+    };
 
     // Form state
     const [newSignal, setNewSignal] = useState({
