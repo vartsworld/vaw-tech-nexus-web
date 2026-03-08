@@ -1040,7 +1040,7 @@ const TaskDetailPage = ({
                   <div className={`rounded-2xl border border-white/10 ${c.bg} backdrop-blur-xl p-4 flex flex-col items-center gap-3`}>
                     {/* Clock SVG */}
                     <div className="relative w-[140px] h-[140px]">
-                      <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+                      <svg viewBox="0 0 120 120" className="w-full h-full animate-countdown-spin">
                         {/* Background track */}
                         <circle cx="60" cy="60" r={radius} fill="none" stroke="currentColor" className="text-white/5" strokeWidth="5" />
                         {/* Tick marks */}
@@ -1055,25 +1055,35 @@ const TaskDetailPage = ({
                             />
                           );
                         })}
-                        {/* Progress arc */}
+                        {/* Progress arc with pulse animation */}
                         <circle cx="60" cy="60" r={radius} fill="none"
-                          className={c.ring}
+                          className={`${c.ring} animate-pulse-ring`}
                           strokeWidth="5" strokeLinecap="round"
                           strokeDasharray={circumference}
                           strokeDashoffset={strokeDashoffset}
-                          style={{ transition: 'stroke-dashoffset 1s ease', filter: `drop-shadow(0 0 6px hsl(${glowColor} / 0.5))` }}
+                          style={{ transition: 'stroke-dashoffset 1s ease', filter: `drop-shadow(0 0 8px hsl(${glowColor} / 0.7))` }}
                         />
-                        {/* Clock hand */}
+                        {/* Additional glow ring */}
+                        <circle cx="60" cy="60" r={radius} fill="none"
+                          className={`${c.ring}`}
+                          strokeWidth="2" strokeLinecap="round" opacity="0.3"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={strokeDashoffset}
+                          style={{ transition: 'stroke-dashoffset 1s ease', filter: `drop-shadow(0 0 12px hsl(${glowColor} / 0.5))` }}
+                        />
+                        {/* Clock hand with rotation */}
                         {dueDate && (
-                          <line x1="60" y1="60"
-                            x2={60 + 38 * Math.cos((handAngle - 90) * Math.PI / 180)}
-                            y2={60 + 38 * Math.sin((handAngle - 90) * Math.PI / 180)}
-                            className={c.hand} strokeWidth="2" strokeLinecap="round"
-                            style={{ transition: 'all 1s ease' }}
-                          />
+                          <g style={{ transform: `rotate(${handAngle}deg)`, transformOrigin: '60px 60px', transition: 'all 1s ease' }}>
+                            <line x1="60" y1="60" x2="60" y2="25"
+                              className={c.hand} strokeWidth="3" strokeLinecap="round"
+                              style={{ filter: `drop-shadow(0 0 4px hsl(${glowColor} / 0.6))` }}
+                            />
+                          </g>
                         )}
-                        {/* Center dot */}
-                        <circle cx="60" cy="60" r="3" className={`fill-current ${c.text}`} />
+                        {/* Center dot with glow */}
+                        <circle cx="60" cy="60" r="3.5" className={`fill-current ${c.text}`} 
+                          style={{ filter: `drop-shadow(0 0 6px hsl(${glowColor} / 0.8))` }}
+                        />
                       </svg>
                       {/* Center text */}
                       <div className="absolute inset-0 flex flex-col items-center justify-center rotate-0">
