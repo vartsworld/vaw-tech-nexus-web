@@ -391,7 +391,7 @@ export const SubtaskReviewDialog = ({
         </ScrollArea>
 
         {/* Action Footer */}
-        {!viewOnly && subtask.status === 'review_pending' && !showRejectSection && (
+        {!viewOnly && isReviewable && !showRejectSection && (
           <div className="px-6 py-4 border-t border-white/10 bg-black/30 flex items-center gap-3">
             <Button
               onClick={() => setShowRejectSection(true)}
