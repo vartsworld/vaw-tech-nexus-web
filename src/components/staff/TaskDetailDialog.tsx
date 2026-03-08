@@ -1001,7 +1001,7 @@ export const TaskDetailDialog = ({
           </Button>
         </div>
 
-        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mt-2">
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
           <p className="text-white/60 text-xs mb-3">Submit your completed work for team head review.</p>
           <Button onClick={handleSubmitForReview} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold" disabled={isSubmitting}>
             {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
