@@ -42,6 +42,8 @@ const TaskDetailPage = ({
   const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState("none");
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [reviewDialogSubtask, setReviewDialogSubtask] = useState<any>(null);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const stageScrollRef = useRef<HTMLDivElement>(null);
   const [newSubtask, setNewSubtask] = useState({
     title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1
