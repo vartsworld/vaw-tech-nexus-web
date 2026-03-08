@@ -249,7 +249,8 @@ const ClientDashboard = () => {
     const isHomePage = location.pathname === '/client/dashboard';
     return (
         <div className="min-h-screen bg-background text-foreground flex overflow-hidden">
-            {/* Sidebar */}
+            {/* Sidebar - hidden on Home page */}
+            {!isHomePage && (
             <AnimatePresence mode="wait">
                 {isSidebarOpen && (
                     <motion.aside
@@ -336,6 +337,7 @@ const ClientDashboard = () => {
                     </motion.aside>
                 )}
             </AnimatePresence>
+            )}
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col relative overflow-hidden">
