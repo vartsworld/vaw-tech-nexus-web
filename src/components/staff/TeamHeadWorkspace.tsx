@@ -314,7 +314,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           staff_tasks!inner (
             id,
             title,
-            department_id
+            department_id,
+            assigned_by
           ),
           staff_profiles:assigned_to (
             full_name,
@@ -326,12 +327,16 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         )
         .eq("status", "completed" as any)
         .eq("approved_by", userId as any)
-        .eq("staff_tasks.department_id", userProfile.department_id as any)
         .order("approved_at", { ascending: false } as any)
         .limit(15);
 
       if (approvedError) throw approvedError;
-      setApprovedSubtasks((approved || []) as any);
+      const filteredApproved = (approved || []).filter((st: any) => {
+        const task = st.staff_tasks;
+        if (!task) return false;
+        return task.department_id === userProfile?.department_id || task.assigned_by === userId;
+      });
+      setApprovedSubtasks(filteredApproved as any);
 
       // Returned for rework by this head (status back to in_progress and has rejection comment by this user)
       const { data: returnedRaw, error: returnedError } = await supabase
