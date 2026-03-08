@@ -49,6 +49,26 @@ const SupportNexus = ({ profile }: { profile: any }) => {
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [closingId, setClosingId] = useState<string | null>(null);
+    const [attachment, setAttachment] = useState<File | null>(null);
+
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+    const handleAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!ALLOWED_TYPES.includes(file.type)) {
+            toast.error("Only JPG, PNG and PDF files are allowed");
+            e.target.value = '';
+            return;
+        }
+        if (file.size > MAX_SIZE) {
+            toast.error("File must be under 10MB");
+            e.target.value = '';
+            return;
+        }
+        setAttachment(file);
+    };
 
     const handleCloseTicket = async (ticketId: string) => {
         setClosingId(ticketId);
