@@ -22,7 +22,10 @@ import {
     Loader2,
     HeadphonesIcon,
     PhoneCall,
-    Zap
+    Zap,
+    Paperclip,
+    X as XIcon,
+    FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
