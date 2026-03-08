@@ -167,7 +167,7 @@ const TeamHeadDashboard = () => {
 
   // Set up presence tracking for online users
   useEffect(() => {
-    if (!profile?.user_id || !profile?.full_name) return;
+    if (!profile?.user_id || !profile?.full_name || isShowingMobileHome) return;
 
     const channel = supabase.channel('team-presence');
 
