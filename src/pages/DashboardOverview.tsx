@@ -404,7 +404,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                             <span className="w-2 h-2 rounded-full bg-primary" />
                             Active Projects
                         </h2>
-                        <Button variant="ghost" className="text-tech-gold hover:text-white font-bold text-sm h-auto p-0" onClick={() => window.location.href = '/client/dashboard/projects'}>
+                        <Button variant="ghost" className="text-primary hover:text-foreground font-bold text-sm h-auto p-0" onClick={() => window.location.href = '/client/dashboard/projects'}>
                             View All <ChevronRight className="w-4 h-4 ml-1" />
                         </Button>
                     </div>
