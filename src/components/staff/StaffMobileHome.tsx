@@ -70,12 +70,12 @@ const StaffMobileHome = ({
     const fetchTasks = async () => {
       const { data } = await supabase
         .from("staff_tasks")
-        .select("id, title, status, progress, created_at, due_date")
+        .select("id, title, status, created_at, due_date")
         .or(`assigned_to.eq.${profile.user_id},created_by.eq.${profile.user_id}`)
-        .in("status", ["pending", "in_progress", "todo"])
+        .in("status", ["pending", "in_progress"])
         .order("created_at", { ascending: false })
         .limit(20);
-      setTasks((data as TaskItem[]) || []);
+      setTasks((data as unknown as TaskItem[]) || []);
       setLoading(false);
     };
     fetchTasks();
