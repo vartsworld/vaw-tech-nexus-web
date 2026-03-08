@@ -145,7 +145,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
         project_id: !newTask.project_id || newTask.project_id === "no-project" ? null : newTask.project_id,
         client_project_id: !newTask.project_id || newTask.project_id === "no-project" ? null : newTask.project_id,
         client_id: !newTask.client_id || newTask.client_id === "no-client" ? null : newTask.client_id,
-        priority: newTask.priority,
+        priority: newTask.priority === 'auto' ? getEffectivePriority() : newTask.priority,
         status: newTask.status,
         due_date: newTask.due_date || null,
         due_time: newTask.due_time || null,
