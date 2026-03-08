@@ -3163,6 +3163,25 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           />
         </DialogContent>
       </Dialog>
+
+      {/* Subtask Review Dialog */}
+      <SubtaskReviewDialog
+        subtask={reviewDialogSubtask}
+        parentTask={reviewDialogSubtask ? tasks.find(t => t.id === reviewDialogSubtask.task_id) || (reviewDialogSubtask as any).staff_tasks : null}
+        open={reviewDialogOpen}
+        onOpenChange={(open) => {
+          setReviewDialogOpen(open);
+          if (!open) setReviewDialogSubtask(null);
+        }}
+        onApprove={async (subtaskId) => {
+          await handleSubtaskApprove(subtaskId);
+          fetchReviewQueues();
+        }}
+        onReject={async (subtaskId, note) => {
+          await handleSubtaskReject(subtaskId, note);
+          fetchReviewQueues();
+        }}
+      />
     </div >
   );
 };
