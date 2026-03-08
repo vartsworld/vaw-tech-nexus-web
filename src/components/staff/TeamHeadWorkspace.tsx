@@ -1118,6 +1118,19 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
           // Update local tasks state
           setTasks(prev => prev.map(t => t.id === taskId ? { ...t, current_stage: newCurrentStage } : t));
+
+          // If ALL subtasks are completed, update task status to in_progress → completed sync
+          const allDone = updatedSubtasks.every((st: any) => st.status === 'completed');
+          if (allDone) {
+            // Find the parent task to get client_project_id
+            const parentTask = tasks.find(t => t.id === taskId);
+            if (parentTask?.client_project_id) {
+              // Sync project status - the progress trigger will handle the percentage
+              await supabase.from('client_projects')
+                .update({ updated_at: new Date().toISOString() })
+                .eq('id', parentTask.client_project_id);
+            }
+          }
         }
       } catch (stageErr) {
         console.error('Error advancing stage:', stageErr);
