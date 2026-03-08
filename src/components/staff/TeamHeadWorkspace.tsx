@@ -160,6 +160,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [newMessageTask, setNewMessageTask] = useState("");
   const [newMessageSubtask, setNewMessageSubtask] = useState<{ [key: string]: string }>({});
   const [rejectionNotes, setRejectionNotes] = useState<{ [key: string]: string }>({});
+  const [reviewDialogSubtask, setReviewDialogSubtask] = useState<any>(null);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
