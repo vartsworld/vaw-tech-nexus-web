@@ -234,6 +234,35 @@ const FinancialOversight = () => {
         return Object.values(clientMap).filter(c => c.total > 0).sort((a, b) => b.paid - a.paid);
     };
 
+    // Calculate next invoice date from recurring invoice data
+    const calculateNextDate = (r: any): string | null => {
+        // Check explicit next date fields first
+        const explicit = r.next_date || r.next_due_date || r.next_invoice_date || r.due_date;
+        if (explicit) return explicit;
+
+        // Derive from created_at/start_date + frequency
+        const startDate = new Date(r.created_at || r.start_date || r.date || Date.now());
+        const freq = (r.frequency || r.interval || r.recurrence || 'monthly').toLowerCase();
+        const now = new Date();
+        let next = new Date(startDate);
+
+        // Advance until we find the next future date
+        const maxIterations = 120; // safety limit
+        let i = 0;
+        while (next <= now && i < maxIterations) {
+            if (freq === 'yearly' || freq === 'annual') {
+                next.setFullYear(next.getFullYear() + 1);
+            } else if (freq === 'quarterly') {
+                next.setMonth(next.getMonth() + 3);
+            } else {
+                next.setMonth(next.getMonth() + 1);
+            }
+            i++;
+        }
+
+        return next > now ? next.toISOString() : null;
+    };
+
     // Upcoming recurring
     const getUpcomingRecurring = () => {
         return matchedRecurring
@@ -243,9 +272,9 @@ const FinancialOversight = () => {
                 return {
                     ...r,
                     clientName: client?.company_name || code,
-                    nextDate: r.next_date || r.next_due_date || r.next_invoice_date || r.due_date || null,
+                    nextDate: calculateNextDate(r),
                     amount: Number(r.amount || r.total || 0),
-                    frequency: r.frequency || r.interval || r.recurrence || 'monthly'
+                    frequency: (r.frequency || r.interval || r.recurrence || 'monthly').toLowerCase()
                 };
             })
             .sort((a: any, b: any) => {
