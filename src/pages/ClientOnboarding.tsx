@@ -166,7 +166,41 @@ const ClientOnboarding = () => {
         console.error("Profile creation error (may already exist):", profileErr);
       }
 
-      // 3. Create task for team head with package title
+      // 3. Determine project type from package
+      const projectType = pkg?.name?.toLowerCase().includes("marketing")
+        ? "marketing"
+        : pkg?.name?.toLowerCase().includes("design")
+        ? "design"
+        : pkg?.name?.toLowerCase().includes("ai")
+        ? "ai"
+        : "website";
+
+      // 4. Create client project linked to the client
+      const { data: projectData, error: projectErr } = await supabase
+        .from("client_projects")
+        .insert({
+          client_id: clientData.id,
+          title: pkg ? `${form.company_name} — ${pkg.name}` : `${form.company_name} Project`,
+          description: [
+            form.website_url ? `Existing Website: ${form.website_url}` : "",
+            form.desired_domain ? `Desired Domain: ${form.desired_domain}` : "",
+            form.notes || "",
+          ].filter(Boolean).join("\n") || null,
+          project_type: projectType,
+          status: "planning",
+          progress: 0,
+          total_amount: pkg?.discount_price || 0,
+          amount_paid: 0,
+          package_type: pkg?.name || null,
+        })
+        .select()
+        .single();
+
+      if (projectErr) {
+        console.error("Project creation error:", projectErr);
+      }
+
+      // 5. Create task for team head linked to project + client
       const taskTitle = pkg
         ? `New Client: ${form.company_name} — ${pkg.name}`
         : `New Client Onboarding: ${form.company_name}`;
@@ -190,6 +224,7 @@ const ClientOnboarding = () => {
         status: "pending",
         points: 10,
         client_id: clientData.id,
+        client_project_id: projectData?.id || null,
       });
 
       // 4. Mark link as completed
