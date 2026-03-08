@@ -51,6 +51,7 @@ const VirtualOfficeLayout = ({
   const [sidebarTab, setSidebarTab] = useState<'status' | 'chat'>('status');
   const [mobileSidebarTab, setMobileSidebarTab] = useState<'status' | 'chat'>('status');
   const [chessArenaMode, setChessArenaMode] = useState(false);
+  const [roomsCollapsed, setRoomsCollapsed] = useState(false);
   const navigate = useNavigate();
   const mainContentRef = useRef<HTMLDivElement>(null);
 
