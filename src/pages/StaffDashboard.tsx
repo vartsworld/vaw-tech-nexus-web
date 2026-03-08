@@ -48,7 +48,9 @@ type RoomType = 'workspace' | 'breakroom' | 'meeting';
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
+  const [showMobileHome, setShowMobileHome] = useState(true);
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
