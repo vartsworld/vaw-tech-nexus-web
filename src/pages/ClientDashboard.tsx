@@ -242,8 +242,10 @@ const ClientDashboard = () => {
             </div>
         );
     }
+    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
     return (
-        <div className="min-h-screen bg-[#050505] text-white flex overflow-hidden">
+        <div className="min-h-screen bg-background text-foreground flex overflow-hidden">
             {/* Sidebar */}
             <AnimatePresence mode="wait">
                 {isSidebarOpen && (
@@ -252,11 +254,11 @@ const ClientDashboard = () => {
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: -300, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="fixed inset-y-0 left-0 z-50 w-72 bg-black/80 backdrop-blur-2xl border-r border-tech-gold/10 flex flex-col lg:relative"
+                        className="fixed inset-y-0 left-0 z-50 w-72 neu-elevated backdrop-blur-2xl flex flex-col lg:relative"
                     >
-                        <div className="p-6 border-b border-tech-gold/10 flex items-center justify-between">
+                        <div className="p-6 border-b border-border flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="p-2 bg-tech-gold rounded-xl shadow-lg shadow-tech-gold/20">
+                                <div className="p-2 bg-primary rounded-xl shadow-neu-sm">
                                     <img
                                         src="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png"
                                         alt="Logo"
@@ -264,15 +266,14 @@ const ClientDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <h2 className="font-black tracking-tighter text-lg leading-none">CLIENT <span className="text-tech-gold">PORTAL</span></h2>
+                                    <h2 className="font-black tracking-tighter text-lg leading-none text-foreground">CLIENT <span className="text-primary">PORTAL</span></h2>
                                     <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] mt-1 font-bold">Client Access</p>
                                 </div>
                             </div>
-                            {/* Mobile Close Button */}
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="lg:hidden text-gray-400 hover:text-white"
+                                className="lg:hidden text-muted-foreground hover:text-foreground"
                                 onClick={() => setIsSidebarOpen(false)}
                             >
                                 <X className="w-5 h-5" />
@@ -290,16 +291,16 @@ const ClientDashboard = () => {
                                         className={cn(
                                             "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative",
                                             isActive
-                                                ? "bg-tech-gold/10 text-tech-gold border border-tech-gold/20"
-                                                : "text-gray-400 hover:text-white hover:bg-white/5 border border-transparent"
+                                                ? "neu-card-pressed text-primary"
+                                                : "text-muted-foreground hover:text-foreground hover:shadow-neu-sm"
                                         )}
                                     >
-                                        <item.icon className={cn("w-5 h-5 transition-transform duration-300 group-hover:scale-110", isActive && "text-tech-gold")} />
+                                        <item.icon className={cn("w-5 h-5 transition-transform duration-300 group-hover:scale-110", isActive && "text-primary")} />
                                         <span className="font-semibold">{item.label}</span>
                                         {isActive && (
                                             <motion.div
                                                 layoutId="sidebar-active"
-                                                className="absolute right-2 w-1.5 h-1.5 rounded-full bg-tech-gold shadow-[0_0_10px_#FFD700]"
+                                                className="absolute right-2 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_hsl(43_100%_50%)]"
                                             />
                                         )}
                                     </Link>
@@ -307,23 +308,23 @@ const ClientDashboard = () => {
                             })}
                         </nav>
 
-                        <div className="p-4 mt-auto border-t border-tech-gold/10">
-                            <div className="bg-tech-gold/5 border border-tech-gold/10 rounded-2xl p-4 mb-4">
+                        <div className="p-4 mt-auto border-t border-border">
+                            <div className="neu-card p-4 mb-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-tech-gold/20 flex items-center justify-center border border-tech-gold/30">
-                                        <User className="w-5 h-5 text-tech-gold" />
+                                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 shadow-neu-sm">
+                                        <User className="w-5 h-5 text-primary" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold truncate">{profile?.contact_person}</p>
-                                        <p className="text-[10px] text-gray-500 truncate">{profile?.company_name}</p>
+                                        <p className="text-sm font-bold truncate text-foreground">{profile?.contact_person}</p>
+                                        <p className="text-[10px] text-muted-foreground truncate">{profile?.company_name}</p>
                                     </div>
-                                    <Badge variant="outline" className="border-tech-gold/30 text-[10px] h-5 bg-tech-gold/10 text-tech-gold px-1">VIP</Badge>
+                                    <Badge variant="outline" className="border-primary/30 text-[10px] h-5 bg-primary/10 text-primary px-1">VIP</Badge>
                                 </div>
                             </div>
                             <Button
                                 variant="ghost"
                                 onClick={handleLogout}
-                                className="w-full justify-start gap-3 text-gray-400 hover:text-tech-red hover:bg-tech-red/5 rounded-xl transition-all h-12"
+                                className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/5 rounded-xl transition-all h-12"
                             >
                                 <LogOut className="w-5 h-5" />
                                 <span className="font-bold">Logout</span>
@@ -336,40 +337,55 @@ const ClientDashboard = () => {
             {/* Main Content */}
             <div className="flex-1 flex flex-col relative overflow-hidden">
                 {/* Header */}
-                <header className="h-20 border-b border-tech-gold/10 flex items-center justify-between px-6 bg-black/40 backdrop-blur-xl sticky top-0 z-40">
+                <header className="h-20 border-b border-border flex items-center justify-between px-6 neu-elevated backdrop-blur-xl sticky top-0 z-40">
                     <div className="flex items-center gap-4">
                         <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="text-tech-gold hover:bg-tech-gold/10"
+                            className="text-primary hover:bg-primary/10"
                         >
                             {isSidebarOpen ? <X className="w-6 h-6 lg:hidden" /> : <Menu className="w-6 h-6" />}
                         </Button>
                         <div className="hidden sm:block">
-                            <h1 className="text-xl font-bold tracking-tight">
+                            <h1 className="text-xl font-bold tracking-tight text-foreground">
                                 {menuItems.find(i => i.path === location.pathname)?.label || "Dashboard"}
                             </h1>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className="hidden md:flex items-center gap-4 mr-4 px-4 py-1.5 bg-tech-gold/5 border border-tech-gold/10 rounded-full">
-                            <Clock className="w-4 h-4 text-tech-gold" />
-                            <span className="text-xs font-bold text-tech-gold/80 uppercase tracking-widest">System Online</span>
+                    <div className="flex items-center gap-3">
+                        <div className="hidden md:flex items-center gap-4 mr-2 px-4 py-1.5 neu-card-pressed rounded-full">
+                            <Clock className="w-4 h-4 text-primary" />
+                            <span className="text-xs font-bold text-primary/80 uppercase tracking-widest">System Online</span>
                         </div>
+
+                        {/* Theme Toggle */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                            className="w-10 h-10 rounded-xl shadow-neu-sm hover:shadow-neu transition-all bg-card"
+                        >
+                            {isDark ? (
+                                <Sun className="w-4 h-4 text-primary" />
+                            ) : (
+                                <Moon className="w-4 h-4 text-primary" />
+                            )}
+                        </Button>
+
                         <ClientNotificationCenter clientId={profile?.id} />
-                        <div className="h-8 w-px bg-tech-gold/10 mx-2" />
+                        <div className="h-8 w-px bg-border mx-1" />
                         <div className="flex items-center gap-3 pl-2">
                             <div className="text-right hidden sm:block">
-                                <p className="text-xs font-bold text-white">{profile?.company_name}</p>
-                                <p className="text-[10px] text-tech-gold">Enterprise Tier</p>
+                                <p className="text-xs font-bold text-foreground">{profile?.company_name}</p>
+                                <p className="text-[10px] text-primary">Enterprise Tier</p>
                             </div>
-                            <div className="w-10 h-10 rounded-xl overflow-hidden border border-tech-gold/30 bg-tech-gold/10 flex items-center justify-center group cursor-pointer transition-all hover:border-tech-gold hover:shadow-[0_0_15px_rgba(255,215,0,0.3)]">
+                            <div className="w-10 h-10 rounded-xl overflow-hidden border border-primary/30 shadow-neu-sm flex items-center justify-center group cursor-pointer transition-all hover:shadow-neu">
                                 {profile?.avatar_url ? (
                                     <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
-                                    <User className="w-5 h-5 text-tech-gold" />
+                                    <User className="w-5 h-5 text-primary" />
                                 )}
                             </div>
                         </div>
@@ -379,8 +395,8 @@ const ClientDashboard = () => {
                 {/* Content Area */}
                 <main className="flex-1 overflow-y-auto p-4 sm:p-8 relative custom-scrollbar">
                     {/* Subtle background glow */}
-                    <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-tech-gold/5 blur-[100px] pointer-events-none" />
-                    <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-tech-red/5 blur-[100px] pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-primary/5 blur-[100px] pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-destructive/5 blur-[100px] pointer-events-none" />
 
                     <AnimatePresence mode="wait">
                         <motion.div
