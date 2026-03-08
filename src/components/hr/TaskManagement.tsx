@@ -1813,59 +1813,52 @@ const TaskManagement = () => {
                       <h1 className="text-3xl font-bold tracking-tight">Main Task Board</h1>
                     </div>
                     <div className="flex items-center gap-3">
-                      {/* View Toggle */}
-                      <div className="flex items-center gap-1 bg-card border border-muted-foreground/10 rounded-lg p-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { setViewMode('table'); setIsFullScreen(false); }}
-                          className="h-8 px-3 text-xs"
-                        >
-                          <List className="h-3.5 w-3.5 mr-1.5" />
-                          Table
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { setViewMode('grid'); setIsFullScreen(false); }}
-                          className="h-8 px-3 text-xs"
-                        >
-                          <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
-                          Grid
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="h-8 px-3 text-xs"
-                        >
-                          <Trello className="h-3.5 w-3.5 mr-1.5" />
-                          Kanban
-                        </Button>
-                      </div>
-                      {/* Show Subtasks Toggle */}
-                      <div className="flex items-center gap-2 bg-card border border-muted-foreground/10 rounded-lg px-3 py-1.5">
-                        <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs font-medium">Subtasks</span>
-                        <Switch
-                          checked={showSubtasks}
-                          onCheckedChange={(checked) => {
-                            setShowSubtasks(checked);
-                            if (checked) {
-                              const taskIds = filteredTasks.map(t => t.id);
-                              fetchAllSubtasksForTasks(taskIds);
-                              // Expand all cards
-                              setExpandedCards(new Set(taskIds));
-                            } else {
-                              setExpandedCards(new Set());
-                            }
-                          }}
-                          className="scale-75"
-                        />
+                      {/* Three Motion Buttons */}
+                      <div className="relative flex items-center bg-muted/50 border border-border rounded-xl p-1 gap-1">
+                        {([
+                          { key: 'tasks' as const, label: 'Tasks', icon: <ClipboardList className="h-4 w-4" /> },
+                          { key: 'subtasks' as const, label: 'Subtasks', icon: <Layers className="h-4 w-4" /> },
+                          { key: 'stages' as const, label: 'Stages', icon: <Target className="h-4 w-4" /> },
+                        ]).map((tab) => (
+                          <button
+                            key={tab.key}
+                            onClick={() => {
+                              setKanbanDisplayMode(tab.key);
+                              if (tab.key === 'subtasks' || tab.key === 'stages') {
+                                setShowSubtasks(true);
+                                const taskIds = filteredTasks.map(t => t.id);
+                                fetchAllSubtasksForTasks(taskIds);
+                                setExpandedCards(new Set(taskIds));
+                              } else {
+                                setShowSubtasks(false);
+                                setExpandedCards(new Set());
+                              }
+                            }}
+                            className={cn(
+                              "relative z-10 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                              kanbanDisplayMode === tab.key
+                                ? "text-primary-foreground"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {kanbanDisplayMode === tab.key && (
+                              <motion.div
+                                layoutId="kanbanTabIndicator"
+                                className="absolute inset-0 bg-primary rounded-lg shadow-lg"
+                                transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                              />
+                            )}
+                            <span className="relative z-10 flex items-center gap-2">
+                              {tab.icon}
+                              {tab.label}
+                            </span>
+                          </button>
+                        ))}
                       </div>
                       <Button
                         variant="outline"
                         size="lg"
-                        onClick={() => setIsFullScreen(false)}
+                        onClick={() => { setIsFullScreen(false); setKanbanDisplayMode('tasks'); setShowSubtasks(false); setExpandedCards(new Set()); }}
                         className="flex items-center gap-2 border-primary/20 hover:bg-primary/5"
                       >
                         <Minimize2 className="h-5 w-5" />
