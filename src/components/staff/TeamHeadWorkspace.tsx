@@ -347,7 +347,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           staff_tasks!inner (
             id,
             title,
-            department_id
+            department_id,
+            assigned_by
           ),
           staff_profiles:assigned_to (
             full_name,
@@ -357,12 +358,15 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           )
         `
         )
-        .eq("status", "in_progress" as any)
-        .eq("staff_tasks.department_id", userProfile.department_id as any);
+        .eq("status", "in_progress" as any);
 
       if (returnedError) throw returnedError;
 
       const returnedFiltered = (returnedRaw || []).filter((st: any) => {
+        const task = st.staff_tasks;
+        if (!task) return false;
+        const inScope = task.department_id === userProfile?.department_id || task.assigned_by === userId;
+        if (!inScope) return false;
         if (!Array.isArray(st.comments)) return false;
         const lastRejection = [...st.comments].reverse().find(c => c.type === "rejection");
         return lastRejection && lastRejection.user_id === userId;
