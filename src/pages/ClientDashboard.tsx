@@ -339,7 +339,7 @@ const ClientDashboard = () => {
             )}
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col relative overflow-hidden">
+            <div className="flex-1 flex flex-col relative overflow-hidden min-h-0">
                 {/* Header - hidden on Home page */}
                 {!isHomePage && (
                 <header className="h-20 border-b border-border flex items-center justify-between px-6 neu-elevated backdrop-blur-xl sticky top-0 z-40">
