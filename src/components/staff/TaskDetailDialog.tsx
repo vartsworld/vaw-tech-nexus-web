@@ -887,7 +887,7 @@ export const TaskDetailDialog = ({
                         <Eye className="w-3 h-3 text-white/20 ml-auto" />
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       {st.status === 'pending' && isAssignedToMe && !isLocked && (
                         <Button size="sm" onClick={() => handleSubtaskStart(st.id)} className="h-7 text-[10px] bg-blue-600 hover:bg-blue-700 px-3">Start</Button>
                       )}
