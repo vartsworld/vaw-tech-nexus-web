@@ -569,6 +569,20 @@ export const TaskDetailDialog = ({
         return 'bg-gray-500 text-white';
     }
   };
+  // Fetch project info if linked
+  useEffect(() => {
+    const fetchProject = async () => {
+      if (!task || !(task as any).client_project_id) { setProjectInfo(null); return; }
+      const { data } = await supabase
+        .from('client_projects')
+        .select('title, status, project_type, package_type, progress')
+        .eq('id', (task as any).client_project_id)
+        .single();
+      if (data) setProjectInfo(data);
+    };
+    fetchProject();
+  }, [task]);
+
   if (!task) return null;
   const hasDueDate = !!task.due_date;
   const isOverdue = hasDueDate && remainingSeconds === 0 && isTimerRunning;
