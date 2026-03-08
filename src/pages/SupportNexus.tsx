@@ -45,6 +45,25 @@ const SupportNexus = ({ profile }: { profile: any }) => {
     const [feedback, setFeedback] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [closingId, setClosingId] = useState<string | null>(null);
+
+    const handleCloseTicket = async (ticketId: string) => {
+        setClosingId(ticketId);
+        try {
+            const { error } = await supabase
+                .from('client_feedback')
+                .update({ status: 'resolved' })
+                .eq('id', ticketId)
+                .eq('client_id', profile.id);
+            if (error) throw error;
+            setFeedback(prev => prev.map(f => f.id === ticketId ? { ...f, status: 'resolved' } : f));
+            toast.success("Ticket closed successfully");
+        } catch (err: any) {
+            toast.error(err.message || "Failed to close ticket");
+        } finally {
+            setClosingId(null);
+        }
+    };
 
     // Form state
     const [newSignal, setNewSignal] = useState({
@@ -250,7 +269,7 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                             <div className="h-40 bg-white/5 rounded-2xl animate-pulse" />
                         ) : feedback.length > 0 ? (
                             feedback.map((signal) => (
-                                <div key={signal.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-tech-gold/30 transition-all group cursor-pointer">
+                                <div key={signal.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-tech-gold/30 transition-all group">
                                     <div className="flex justify-between items-start mb-2">
                                         <Badge variant="outline" className={cn(
                                             "border-0 text-[10px] uppercase font-black px-1.5 py-0.5",
@@ -267,9 +286,25 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                                     <h4 className="font-bold text-white text-sm mb-1 group-hover:text-tech-gold transition-colors truncate">
                                         {signal.subject}
                                     </h4>
-                                    <p className="text-xs text-gray-500 truncate">
+                                    <p className="text-xs text-gray-500 truncate mb-3">
                                         {signal.message}
                                     </p>
+                                    {signal.status !== 'resolved' && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="border-green-500/30 text-green-400 hover:bg-green-500/10 text-[10px] uppercase font-black h-7 px-3 rounded-lg"
+                                            disabled={closingId === signal.id}
+                                            onClick={() => handleCloseTicket(signal.id)}
+                                        >
+                                            {closingId === signal.id ? (
+                                                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                                            ) : (
+                                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                            )}
+                                            Close Ticket
+                                        </Button>
+                                    )}
                                 </div>
                             ))
                         ) : (
