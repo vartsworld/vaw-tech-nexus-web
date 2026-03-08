@@ -1634,7 +1634,7 @@ const TaskManagement = () => {
                           </Select>
                         </TableCell>
                         <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
-                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-0.5">
                             <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-primary/70 hover:text-primary hover:bg-primary/10" onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}>
                               <Eye className="h-4 w-4" />
                             </Button>
