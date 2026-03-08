@@ -17,7 +17,8 @@ import {
   List,
   LayoutDashboard,
   ArrowRight,
-  HandMetal
+  HandMetal,
+  Layers
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -237,6 +238,18 @@ const TasksManager = ({
       </Badge>
     );
   };
+  const getStageBadge = (task: any) => {
+    const stage = task.current_stage || 1;
+    const names: Record<string, string> = (task.stage_names && typeof task.stage_names === 'object') ? task.stage_names : {};
+    const label = names[String(stage)] || `Stage ${stage}`;
+    return (
+      <Badge variant="outline" className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-[10px]">
+        <Layers className="h-3 w-3 mr-1" />
+        {label}
+      </Badge>
+    );
+  };
+
   const filteredTasks = tasks.filter(task => filter === 'all' || task.status === filter);
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const totalTasks = tasks.length;
@@ -349,8 +362,9 @@ const TasksManager = ({
                 <TableHeader className="bg-white/5">
                   <TableRow className="border-white/10 hover:bg-transparent">
                     <TableHead className="text-white/80 h-10 py-0">Task details</TableHead>
-                    <TableHead className="text-white/80 h-10 py-0">Priority</TableHead>
-                    <TableHead className="text-white/80 h-10 py-0">Status</TableHead>
+                     <TableHead className="text-white/80 h-10 py-0">Priority</TableHead>
+                     <TableHead className="text-white/80 h-10 py-0">Stage</TableHead>
+                     <TableHead className="text-white/80 h-10 py-0">Status</TableHead>
                     <TableHead className="text-white/80 h-10 py-0">Timeline</TableHead>
                     <TableHead className="text-white/80 h-10 py-0 text-right">Actions</TableHead>
                   </TableRow>
@@ -371,6 +385,7 @@ const TasksManager = ({
                         </div>
                       </TableCell>
                       <TableCell>{getPriorityBadge(task.priority)}</TableCell>
+                      <TableCell>{getStageBadge(task)}</TableCell>
                       <TableCell>{getStatusBadge(task.status)}</TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-0.5">
@@ -438,7 +453,10 @@ const TasksManager = ({
                         <Calendar className="h-3.5 w-3.5 text-blue-400" />
                         <span>{task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No due date'}</span>
                       </div>
-                      {getStatusBadge(task.status)}
+                      <div className="flex items-center gap-1.5">
+                        {getStageBadge(task)}
+                        {getStatusBadge(task.status)}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">

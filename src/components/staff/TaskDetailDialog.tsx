@@ -216,6 +216,29 @@ export const TaskDetailDialog = ({
 
       if (error) throw error;
 
+      // --- Auto-advance current_stage when all subtasks in a stage are completed/pending_approval ---
+      try {
+        const subtaskStage = subtask.stage || 1;
+        const updatedSubtasks = subtasks.map(s => s.id === subtaskId ? { ...s, status: 'pending_approval' } : s);
+        const stageSubtasks = updatedSubtasks.filter((st: any) => (st.stage || 1) === subtaskStage);
+        const allStageDone = stageSubtasks.length > 0 && stageSubtasks.every((st: any) => st.status === 'completed' || st.status === 'pending_approval');
+
+        if (allStageDone) {
+          const allStages = [...new Set(updatedSubtasks.map((st: any) => (st.stage || 1) as number))].sort((a, b) => a - b);
+          const nextIncompleteStage = allStages.find(s => {
+            const subs = updatedSubtasks.filter((st: any) => (st.stage || 1) === s);
+            return subs.some((st: any) => st.status !== 'completed' && st.status !== 'pending_approval');
+          });
+          const newCurrentStage = nextIncompleteStage ?? ((allStages[allStages.length - 1] || 1) + 1);
+
+          await supabase.from('staff_tasks')
+            .update({ current_stage: newCurrentStage, updated_at: new Date().toISOString() } as any)
+            .eq('id', task!.id);
+        }
+      } catch (stageErr) {
+        console.error("Error auto-advancing stage:", stageErr);
+      }
+
       toast({ title: "Subtask Submitted", description: "Submitted for review." });
       setSubtaskNotes("");
       setSubtaskFileURLs([]);
