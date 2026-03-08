@@ -284,13 +284,13 @@ const StaffMobileHome = ({
 
         {/* Quick Stats Row */}
         <motion.div {...fadeUp(0.2)} className="flex items-center gap-2 mt-4">
-          <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-full px-3 py-1.5">
-            <Coins className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-bold text-primary">{coinsBalance.toLocaleString()}</span>
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1.5">
+            <Coins className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-xs font-bold text-emerald-400">{coinsBalance.toLocaleString()}</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full px-3 py-1.5">
-            <Flame className="w-3.5 h-3.5 text-orange-400" />
-            <span className="text-xs font-bold text-orange-400">{streak}d streak</span>
+          <div className="flex items-center gap-1.5 bg-emerald-600/10 border border-emerald-600/20 rounded-full px-3 py-1.5">
+            <Flame className="w-3.5 h-3.5 text-emerald-300" />
+            <span className="text-xs font-bold text-emerald-300">{streak}d streak</span>
           </div>
         </motion.div>
 
