@@ -38,7 +38,8 @@ import {
   FolderSearch,
   DollarSign,
   Zap,
-  Tag
+  Tag,
+  HeadphonesIcon
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -67,6 +68,7 @@ import ProjectMonitor from "@/pages/ProjectMonitor";
 import PricingManagement from "@/components/hr/PricingManagement";
 import ApiIntegration from "@/components/hr/ApiIntegration";
 import FinancialOversight from "@/components/hr/FinancialOversight";
+import SupportTicketManagement from "@/components/hr/SupportTicketManagement";
 
 const HRDashboard = () => {
   const navigate = useNavigate();
@@ -243,6 +245,7 @@ const HRDashboard = () => {
       label: "RELATIONSHIPS",
       items: [
         { id: "clients", label: "Clients", icon: Briefcase },
+        { id: "support", label: "Support Tickets", icon: HeadphonesIcon },
         { id: "manage-projects", label: "Manage Projects", icon: FolderSearch },
         { id: "project-monitor", label: "Project Monitor", icon: Activity },
         { id: "financials", label: "Financial Oversight", icon: DollarSign },
@@ -288,6 +291,7 @@ const HRDashboard = () => {
       case "pricing": return <PricingManagement />;
       case "financials": return <FinancialOversight />;
       case "api-integration": return <ApiIntegration />;
+      case "support": return <SupportTicketManagement />;
       default: return <StatsGrid stats={stats} />;
     }
   };
