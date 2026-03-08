@@ -178,6 +178,25 @@ const StaffMobileHome = ({
   const inProgressTasks = useMemo(() => tasks.filter((t) => t.status === "in_progress"), [tasks]);
   const totalTasks = tasks.length + completedToday;
 
+  const dialogTask = useMemo(() => {
+    if (!selectedTask) return null;
+    return {
+      id: selectedTask.id,
+      title: selectedTask.title,
+      description: selectedTask.description,
+      status: selectedTask.status as any,
+      priority: (selectedTask.priority || "medium") as any,
+      due_date: selectedTask.due_date,
+      due_time: selectedTask.due_time,
+      points: selectedTask.points || 0,
+      assigned_by: selectedTask.assigned_by,
+      created_at: selectedTask.created_at,
+      trial_period: selectedTask.trial_period,
+      comments: selectedTask.comments,
+      attachments: selectedTask.attachments,
+    };
+  }, [selectedTask]);
+
   const handleTaskClick = (task: TaskItem) => {
     setSelectedTask(task);
   };
