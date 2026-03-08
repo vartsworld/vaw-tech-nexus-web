@@ -414,7 +414,7 @@ const StaffMobileHome = ({
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold text-foreground">In progress</h2>
-              <span className="text-[10px] bg-primary/15 text-primary rounded-full px-2 py-0.5 font-bold">
+              <span className="text-[10px] bg-emerald-500/15 text-emerald-400 rounded-full px-2 py-0.5 font-bold">
                 {inProgressTasks.length}
               </span>
             </div>
