@@ -413,9 +413,9 @@ const HRDashboard = () => {
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#0c0c0c] relative z-10">
+      <main className="flex-1 flex flex-col min-w-0 bg-background relative z-10">
         {/* Top bar */}
-        <header className="h-20 border-b border-white/5 px-8 flex items-center justify-between bg-black/20 backdrop-blur-md sticky top-0 z-40">
+        <header className="h-20 border-b border-border px-8 flex items-center justify-between bg-card/50 backdrop-blur-md sticky top-0 z-40">
           <div className="flex items-center gap-4">
             <h2 className="text-xl font-bold tracking-tight capitalize">
               {activeTab.replace('-', ' ')}
