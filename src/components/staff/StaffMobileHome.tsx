@@ -144,8 +144,8 @@ const StaffMobileHome = ({
   // Fetch unread notifications
   const fetchNotifications = useCallback(async () => {
     if (!profile?.user_id) return;
-    const { count } = await supabase
-      .from("staff_notifications")
+    const { count } = await (supabase
+      .from("staff_notifications") as any)
       .select("id", { count: "exact", head: true })
       .eq("user_id", profile.user_id)
       .eq("is_read", false);
