@@ -55,6 +55,8 @@ const VirtualOfficeLayout = ({
   const [chessArenaMode, setChessArenaMode] = useState(false);
   const [roomsCollapsed, setRoomsCollapsed] = useState(false);
   const [actionsCollapsed, setActionsCollapsed] = useState(false);
+  const [popoutChat, setPopoutChat] = useState(false);
+  const [popoutDM, setPopoutDM] = useState(false);
   const navigate = useNavigate();
   const mainContentRef = useRef<HTMLDivElement>(null);
 
