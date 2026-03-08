@@ -38,6 +38,8 @@ import FeedbackHub from "@/components/client/FeedbackHub";
 import ErrorLogger from "@/components/client/ErrorLogger";
 import PWAInstallPrompt from "@/components/client/PWAInstallPrompt";
 import MobileBottomNav from "@/components/client/MobileBottomNav";
+import BrowserNotificationPrompt from "@/components/client/BrowserNotificationPrompt";
+import ClientNotificationBanner from "@/components/client/ClientNotificationBanner";
 
 const ClientDashboard = () => {
     // Sidebar closed by default on mobile (< 1024px), open on desktop
