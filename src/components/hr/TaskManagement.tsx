@@ -1995,31 +1995,73 @@ const TaskManagement = () => {
                                           {/* Expanded Subtasks */}
                                           {showSubtasks && expandedCards.has(task.id) && allSubtasks[task.id]?.length > 0 && (
                                             <div className="pt-2 border-t border-muted/50 space-y-1.5 max-h-60 overflow-y-auto">
-                                              {allSubtasks[task.id].map((st: any) => {
-                                                const stStatus = st.status || 'pending';
-                                                const stColor = stStatus === 'completed' ? 'text-green-600 dark:text-green-400' :
-                                                  stStatus === 'in_progress' ? 'text-blue-600 dark:text-blue-400' :
-                                                  stStatus === 'pending_approval' ? 'text-orange-600 dark:text-orange-400' :
-                                                  'text-muted-foreground';
-                                                return (
-                                                  <div key={st.id} className="flex items-center gap-2 px-1.5 py-1 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-                                                    <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", 
-                                                      stStatus === 'completed' ? 'bg-green-500' : 
-                                                      stStatus === 'in_progress' ? 'bg-blue-500' : 
-                                                      stStatus === 'pending_approval' ? 'bg-orange-500' : 'bg-muted-foreground/40'
-                                                    )} />
-                                                    <span className={cn("text-[10px] truncate flex-1", stColor)}>{st.title}</span>
-                                                    {st.staff_profiles?.full_name && (
-                                                      <Avatar className="h-4 w-4 shrink-0">
-                                                        <AvatarImage src={st.staff_profiles?.avatar_url} />
-                                                        <AvatarFallback className="text-[6px]">
-                                                          {st.staff_profiles.full_name.substring(0, 2).toUpperCase()}
-                                                        </AvatarFallback>
-                                                      </Avatar>
-                                                    )}
-                                                  </div>
-                                                );
-                                              })}
+                                              {kanbanDisplayMode === 'stages' ? (
+                                                // Group subtasks by stage
+                                                (() => {
+                                                  const subs = allSubtasks[task.id];
+                                                  const stages = [...new Set(subs.map((s: any) => s.stage || 1))].sort((a, b) => a - b);
+                                                  const stageNames = task.stage_names || {};
+                                                  return stages.map((stage) => {
+                                                    const stageSubs = subs.filter((s: any) => (s.stage || 1) === stage);
+                                                    const completed = stageSubs.filter((s: any) => s.status === 'completed').length;
+                                                    const stageName = stageNames[String(stage)] || `Stage ${stage}`;
+                                                    return (
+                                                      <div key={stage} className="space-y-1">
+                                                        <div className="flex items-center justify-between px-1">
+                                                          <span className="text-[10px] font-semibold text-foreground/80">{stageName}</span>
+                                                          <span className="text-[9px] text-muted-foreground">{completed}/{stageSubs.length}</span>
+                                                        </div>
+                                                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                                          <div
+                                                            className="h-full rounded-full bg-primary transition-all"
+                                                            style={{ width: stageSubs.length > 0 ? `${(completed / stageSubs.length) * 100}%` : '0%' }}
+                                                          />
+                                                        </div>
+                                                        {stageSubs.map((st: any) => {
+                                                          const stStatus = st.status || 'pending';
+                                                          return (
+                                                            <div key={st.id} className="flex items-center gap-2 px-1.5 py-1 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors ml-1">
+                                                              <div className={cn("h-1.5 w-1.5 rounded-full shrink-0",
+                                                                stStatus === 'completed' ? 'bg-green-500' :
+                                                                stStatus === 'in_progress' ? 'bg-blue-500' :
+                                                                stStatus === 'pending_approval' ? 'bg-orange-500' : 'bg-muted-foreground/40'
+                                                              )} />
+                                                              <span className="text-[10px] truncate flex-1">{st.title}</span>
+                                                            </div>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    );
+                                                  });
+                                                })()
+                                              ) : (
+                                                // Flat subtask list
+                                                allSubtasks[task.id].map((st: any) => {
+                                                  const stStatus = st.status || 'pending';
+                                                  const stColor = stStatus === 'completed' ? 'text-green-600 dark:text-green-400' :
+                                                    stStatus === 'in_progress' ? 'text-blue-600 dark:text-blue-400' :
+                                                    stStatus === 'pending_approval' ? 'text-orange-600 dark:text-orange-400' :
+                                                    'text-muted-foreground';
+                                                  return (
+                                                    <div key={st.id} className="flex items-center gap-2 px-1.5 py-1 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
+                                                      <div className={cn("h-1.5 w-1.5 rounded-full shrink-0",
+                                                        stStatus === 'completed' ? 'bg-green-500' :
+                                                        stStatus === 'in_progress' ? 'bg-blue-500' :
+                                                        stStatus === 'pending_approval' ? 'bg-orange-500' : 'bg-muted-foreground/40'
+                                                      )} />
+                                                      <span className={cn("text-[10px] truncate flex-1", stColor)}>{st.title}</span>
+                                                      {st.staff_profiles?.full_name && (
+                                                        <Avatar className="h-4 w-4 shrink-0">
+                                                          <AvatarImage src={st.staff_profiles?.avatar_url} />
+                                                          <AvatarFallback className="text-[6px]">
+                                                            {st.staff_profiles.full_name.substring(0, 2).toUpperCase()}
+                                                          </AvatarFallback>
+                                                        </Avatar>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })
+                                              )}
                                             </div>
                                           )}
                                         </CardContent>
