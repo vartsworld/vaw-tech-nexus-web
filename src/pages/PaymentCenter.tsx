@@ -164,6 +164,50 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
     const totalPending = pendingInvoices.reduce((sum: number, inv: any) =>
         sum + (Number(inv.balance) || Number(inv.total) || 0), 0);
 
+    const downloadReceipt = (record: any, type: 'payment' | 'invoice') => {
+        const companyName = profile?.company_name || 'Client';
+        const date = record.payment_date || record.date || record.issue_date || new Date().toISOString();
+        const amount = Number(record.amount || record.total || 0);
+        const ref = record.receipt_number || record.reference_number || record.invoice_number || record.payment_number || `${type.toUpperCase()}-${Date.now()}`;
+        const method = record.payment_method || record.payment_mode || 'N/A';
+        const status = record.payment_status || record.status || 'completed';
+        const dueDate = record.due_date || '';
+
+        const lines = [
+            '═══════════════════════════════════════════',
+            '           VAW TECHNOLOGIES PVT LTD',
+            '═══════════════════════════════════════════',
+            '',
+            type === 'payment' ? '          PAYMENT RECEIPT' : '              INVOICE',
+            '',
+            `  ${type === 'payment' ? 'Receipt' : 'Invoice'} #:  ${ref}`,
+            `  Date:       ${new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`,
+            ...(dueDate ? [`  Due Date:   ${new Date(dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`] : []),
+            '',
+            '───────────────────────────────────────────',
+            `  Bill To:    ${companyName}`,
+            ...(type === 'payment' ? [`  Method:     ${method.toUpperCase()}`] : []),
+            `  Status:     ${status.toUpperCase()}`,
+            '───────────────────────────────────────────',
+            '',
+            `  Amount:     ₹${amount.toLocaleString('en-IN')}`,
+            '',
+            '═══════════════════════════════════════════',
+            '  Thank you for your business!',
+            '  support@vawtech.com | vawtech.com',
+            '═══════════════════════════════════════════',
+        ];
+
+        const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${ref}_${new Date(date).toISOString().split('T')[0]}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success(`${type === 'payment' ? 'Receipt' : 'Invoice'} downloaded`);
+    };
+
     // Payment confirmation handlers
     const generateUPILink = (reminder: any) => {
         const upiId = "vaw@paytm";
@@ -425,13 +469,24 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                         >
                                                             <IndianRupee className="w-4 h-4 mr-2" /> Pay Now via UPI
                                                         </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            className="border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
-                                                            onClick={() => { setSelectedReminder({ ...inv, amount }); setPaymentDialogOpen(true); }}
-                                                        >
-                                                            Submit Confirmation
-                                                        </Button>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                className="flex-1 border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
+                                                                onClick={() => { setSelectedReminder({ ...inv, amount }); setPaymentDialogOpen(true); }}
+                                                            >
+                                                                Submit Confirmation
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                className="border-tech-gold/20 hover:bg-tech-gold/10 text-white"
+                                                                onClick={() => downloadReceipt(inv, 'invoice')}
+                                                                title="Download Invoice"
+                                                            >
+                                                                <Download className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </CardContent>
@@ -517,7 +572,16 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10"
+                                                        onClick={() => downloadReceipt(pay, 'payment')}
+                                                        title="Download Receipt"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </Button>
                                                     <p className="text-emerald-400 font-bold text-lg">
                                                         {formatCurrency(Number(pay.amount) || 0)}
                                                     </p>
@@ -546,7 +610,16 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-gray-400 hover:text-tech-gold hover:bg-tech-gold/10"
+                                                        onClick={() => downloadReceipt(inv, 'invoice')}
+                                                        title="Download Invoice"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </Button>
                                                     <p className="text-tech-gold font-bold">
                                                         {formatCurrency(Number(inv.total) || 0)}
                                                     </p>
