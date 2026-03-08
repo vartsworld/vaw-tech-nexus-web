@@ -229,7 +229,7 @@ const TaskDetailPage = ({
   const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
   if (stageNums.length === 0) stageNums.push(1);
 
-  const reviewPendingSubtasks = subtasks.filter(s => s.status === 'review_pending');
+  const reviewPendingSubtasks = subtasks.filter(s => s.status === 'review_pending' || s.status === 'pending_approval');
 
   const handleSubtaskApprove = async (subtaskId: string) => {
     try {
