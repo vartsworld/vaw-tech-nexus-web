@@ -360,8 +360,8 @@ const HRDashboard = () => {
                       className={`
                         w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative
                         ${activeTab === item.id
-                          ? "bg-indigo-500/10 text-indigo-400"
-                          : "text-gray-400 hover:bg-white/5 hover:text-white"}
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"}
                       `}
                     >
                       <item.icon className={`w-5 h-5 ${activeTab === item.id ? "text-indigo-400" : "group-hover:text-indigo-400 transition-colors"}`} />
