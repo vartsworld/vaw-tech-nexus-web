@@ -151,9 +151,29 @@ export const TaskDetailDialog = ({
     try {
       const { error } = await supabase
         .from('staff_subtasks')
-        .update({ status: 'in_progress' } as any)
+        .update({ status: 'in_progress', updated_at: new Date().toISOString() } as any)
         .eq('id', subtaskId);
       if (error) throw error;
+
+      // --- Sync: subtask in_progress → parent task in_progress → project in_progress ---
+      if (task && task.status === 'pending') {
+        const { error: taskErr } = await supabase
+          .from('staff_tasks')
+          .update({ status: 'in_progress', updated_at: new Date().toISOString() } as any)
+          .eq('id', task.id);
+        if (!taskErr) {
+          onStatusUpdate(task.id, 'in_progress');
+        }
+
+        // Also update linked client project to in_progress if it's still pending
+        if ((task as any).client_project_id) {
+          await supabase
+            .from('client_projects')
+            .update({ status: 'in_progress', updated_at: new Date().toISOString() })
+            .eq('id', (task as any).client_project_id)
+            .eq('status', 'pending');
+        }
+      }
 
       toast({ title: "Subtask Started", description: "You are now working on this subtask." });
       fetchSubtasks();
