@@ -449,7 +449,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
         {/* Right Column - Sidebar */}
         <div className="space-y-6">
           {/* Task Config Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5 sticky top-4">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-5 sticky top-4">
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Task Details</h3>
 
             {/* Priority */}
