@@ -79,7 +79,7 @@ const MobileBottomNav = () => {
                                             <motion.div
                                                 initial={{ scale: 0, opacity: 0 }}
                                                 animate={{ scale: 1, opacity: 1 }}
-                                                className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-tech-gold shadow-[0_0_4px_rgba(212,175,55,0.6)]"
+                                                className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-primary shadow-[0_0_4px_hsl(43_100%_50%/0.6)]"
                                             />
                                         )}
                                     </motion.div>
