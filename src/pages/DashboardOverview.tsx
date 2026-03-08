@@ -87,7 +87,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
             const raw = await res.json();
             const all = Array.isArray(raw) ? raw : (raw?.data || []);
 
-            const matchId = profile.billing_sync_id.toLowerCase();
+            const matchId = billingId.toLowerCase();
             const clientRecs = all.filter((r: any) => {
                 const code = String(r.client_code || r.client_id || r.client_sync_id || r.customer_id || '').toLowerCase();
                 return code === matchId && r.status?.toLowerCase() !== 'paused' && r.status?.toLowerCase() !== 'stopped';
