@@ -210,11 +210,11 @@ const ClientDashboard = () => {
 
     if (loading) {
         return (
-            <div className="h-screen w-full bg-black flex items-center justify-center">
+            <div className="h-screen w-full bg-background flex items-center justify-center">
                 <div className="relative">
-                    <div className="w-16 h-16 border-4 border-tech-gold/20 border-t-tech-gold rounded-full animate-spin" />
+                    <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-8 h-8 bg-tech-gold rounded-full animate-pulse" />
+                        <div className="w-8 h-8 bg-primary rounded-full animate-pulse" />
                     </div>
                 </div>
             </div>
