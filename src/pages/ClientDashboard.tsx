@@ -427,6 +427,9 @@ const ClientDashboard = () => {
                     </AnimatePresence>
                 </main>
 
+                {/* Browser Notification Permission Prompt */}
+                <BrowserNotificationPrompt />
+
                 {/* PWA Install Prompt */}
                 <PWAInstallPrompt />
 
