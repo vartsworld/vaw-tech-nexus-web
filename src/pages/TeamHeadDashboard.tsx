@@ -106,11 +106,12 @@ const TeamHeadDashboard = () => {
 
   // Activity tracking and status
   const { status, reactivationCode, updateStatus, reactivate } = useUserStatus(profile?.user_id || '');
+  const handleStatusChange = useCallback((newStatus: string) => {
+    // Status change handled automatically
+  }, []);
   useActivityTracker({
     userId: profile?.user_id || '',
-    onStatusChange: (newStatus) => {
-      // Status change handled automatically
-    }
+    onStatusChange: handleStatusChange
   });
 
   const [showReactivationDialog, setShowReactivationDialog] = useState(false);
