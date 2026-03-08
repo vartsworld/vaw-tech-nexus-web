@@ -283,7 +283,7 @@ const ClientDashboard = () => {
                             </Button>
                         </div>
 
-                        <nav className="flex-1 p-4 space-y-2 mt-4">
+                        <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto min-h-0 custom-scrollbar">
                             {menuItems.map((item) => {
                                 const isActive = location.pathname === item.path;
                                 return (
