@@ -152,9 +152,13 @@ export default {
 				'shimmer': 'shimmer 2s infinite linear',
 				'spin-slow': 'spin-slow 8s linear infinite',
 				'morph': 'morph 8s ease-in-out infinite',
-				'bounce-subtle': 'bounce-subtle 2s ease-in-out infinite',
-				'slide-in': 'slide-in 0.6s ease-out',
-				'reveal-right': 'reveal-right 1s ease-out'
+			'bounce-subtle': 'bounce-subtle 2s ease-in-out infinite',
+			'slide-in': 'slide-in 0.6s ease-out',
+			'reveal-right': 'reveal-right 1s ease-out',
+			'countdown-spin': 'countdown-spin 3s linear infinite',
+			'countdown-pulse': 'countdown-pulse 2s ease-in-out infinite',
+			'hand-rotate': 'hand-rotate 4s linear infinite',
+			'pulse-ring': 'pulse-ring 2.5s ease-in-out infinite'
 			},
 			boxShadow: {
 				'neon': '0 0 5px theme("colors.tech.gold"), 0 0 20px theme("colors.tech.gold")',
