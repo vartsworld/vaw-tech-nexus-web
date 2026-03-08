@@ -321,6 +321,20 @@ const StaffDashboard = () => {
     meeting: <MeetingRoom />
   };
 
+  // Show mobile home on small screens
+  if (isMobile && showMobileHome) {
+    return (
+      <StaffMobileHome
+        profile={profile}
+        currentRoom={currentRoom}
+        onRoomChange={setCurrentRoom}
+        onOpenChat={() => {}}
+        onOpenCoins={() => navigate("/mycoins")}
+        onEnterWorkspace={() => setShowMobileHome(false)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen h-screen flex flex-col relative overflow-hidden">
       {/* Background Images */}
