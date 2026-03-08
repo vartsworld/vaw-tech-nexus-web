@@ -478,8 +478,8 @@ const StaffMobileHome = ({
                       </div>
                       {task.points > 0 && (
                         <div className="flex items-center gap-1">
-                          <Coins className="w-3 h-3 text-primary" />
-                          <span className="text-[9px] font-bold text-primary">{task.points} pts</span>
+                          <Coins className="w-3 h-3 text-emerald-400" />
+                          <span className="text-[9px] font-bold text-emerald-400">{task.points} pts</span>
                         </div>
                       )}
                     </div>
