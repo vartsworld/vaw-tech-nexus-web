@@ -271,7 +271,7 @@ const TasksManager = ({
   }
 
   return (
-    <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white overflow-hidden flex flex-col h-full">
+    <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white overflow-hidden flex flex-col min-h-[500px]">
       <CardHeader className="pb-4 space-y-4 flex-shrink-0">
         <div className="flex flex-row items-center justify-between">
           <CardTitle className="text-xl font-bold text-white flex items-center gap-2">

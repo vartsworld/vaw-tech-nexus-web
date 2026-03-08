@@ -292,7 +292,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
                           : ''
                         } transition-all duration-200`}
                     >
-                      <Card className="bg-black/20 backdrop-blur-lg border-white/10 h-[500px] relative group">
+                      <Card className={`bg-black/20 backdrop-blur-lg border-white/10 relative group ${item.component === 'TasksManager' ? 'min-h-[500px]' : 'h-[500px]'}`}>
                         {/* Controls */}
                         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                           <Button
