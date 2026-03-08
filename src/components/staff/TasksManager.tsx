@@ -254,6 +254,23 @@ const TasksManager = ({
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const totalTasks = tasks.length;
   const completionRate = totalTasks > 0 ? completedTasks / totalTasks * 100 : 0;
+  // If a task is selected, show inline detail view
+  if (selectedTask) {
+    return (
+      <TaskDetailDialog
+        task={selectedTask}
+        open={true}
+        onOpenChange={() => {}}
+        onStatusUpdate={(taskId, status) => {
+          updateTaskStatus(taskId, status);
+        }}
+        userId={userId}
+        mode="inline"
+        onBack={() => setSelectedTask(null)}
+      />
+    );
+  }
+
   return (
     <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white overflow-hidden flex flex-col h-full">
       <CardHeader className="pb-4 space-y-4 flex-shrink-0">
@@ -371,7 +388,7 @@ const TasksManager = ({
                 </TableHeader>
                 <TableBody>
                   {filteredTasks.map((task) => (
-                    <TableRow key={task.id} className="border-white/10 hover:bg-white/5 transition-colors group">
+                    <TableRow key={task.id} className="border-white/10 hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => setSelectedTask(task)}>
                       <TableCell>
                         <div className="space-y-1">
                           <p className="font-medium text-white text-sm group-hover:text-blue-400 transition-colors">
@@ -406,9 +423,9 @@ const TasksManager = ({
                           size="sm"
                           variant="ghost"
                           className="h-8 w-8 p-0 text-white/50 hover:text-white"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setSelectedTask(task);
-                            setIsDialogOpen(true);
                           }}
                         >
                           <Eye className="w-4 h-4" />
@@ -424,7 +441,8 @@ const TasksManager = ({
               {filteredTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4 flex flex-col hover:bg-white/[0.08] hover:border-white/20 hover:translate-y-[-2px] transition-all duration-300 relative group"
+                  className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4 flex flex-col hover:bg-white/[0.08] hover:border-white/20 hover:translate-y-[-2px] transition-all duration-300 relative group cursor-pointer"
+                  onClick={() => setSelectedTask(task)}
                 >
                   <div className="flex justify-between items-start">
                     <div className="space-y-1 pr-8">
@@ -462,9 +480,9 @@ const TasksManager = ({
                     <div className="flex items-center gap-2 pt-1">
                       <Button
                         className="flex-1 bg-blue-500 hover:bg-blue-600 text-white h-9 font-bold text-xs rounded-lg shadow-lg shadow-blue-500/20 transition-all border-none"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedTask(task);
-                          setIsDialogOpen(true);
                         }}
                       >
                         <Eye className="h-3.5 w-3.5 mr-2" />
@@ -474,7 +492,10 @@ const TasksManager = ({
                       {task.status === 'completed' && (
                         <Button
                           className="flex-1 bg-purple-500 hover:bg-purple-600 text-white h-9 font-bold text-xs rounded-lg shadow-lg shadow-purple-500/20 transition-all border-none"
-                          onClick={() => updateTaskStatus(task.id, 'handover')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateTaskStatus(task.id, 'handover');
+                          }}
                           disabled={isLoading}
                         >
                           <ArrowRight className="h-3.5 w-3.5 mr-2" />
@@ -489,8 +510,6 @@ const TasksManager = ({
           )}
         </ScrollArea>
       </CardContent>
-
-      <TaskDetailDialog task={selectedTask} open={isDialogOpen} onOpenChange={setIsDialogOpen} onStatusUpdate={updateTaskStatus} userId={userId} />
     </Card>
   );
 };
