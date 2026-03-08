@@ -40,6 +40,7 @@ interface SubtaskReviewDialogProps {
   onOpenChange: (open: boolean) => void;
   onApprove: (subtaskId: string) => void;
   onReject: (subtaskId: string, note: string) => void;
+  viewOnly?: boolean;
 }
 
 const priorityConfig: Record<string, { color: string; label: string }> = {
@@ -64,6 +65,7 @@ export const SubtaskReviewDialog = ({
   onOpenChange,
   onApprove,
   onReject,
+  viewOnly = false,
 }: SubtaskReviewDialogProps) => {
   const [rejectionNote, setRejectionNote] = useState("");
   const [showRejectSection, setShowRejectSection] = useState(false);
@@ -154,7 +156,7 @@ export const SubtaskReviewDialog = ({
             <div className="space-y-2 min-w-0 flex-1">
               <div className="flex items-center gap-2 text-xs text-white/50 uppercase tracking-widest font-bold">
                 <Layers className="h-3.5 w-3.5" />
-                Subtask Review
+                {subtask.status === 'review_pending' && !viewOnly ? 'Subtask Review' : 'Subtask Details'}
               </div>
               <h2 className="text-xl font-bold tracking-tight leading-tight break-words">
                 {subtask.title}
@@ -196,9 +198,14 @@ export const SubtaskReviewDialog = ({
                 {subtask.due_time && ` at ${subtask.due_time}`}
               </Badge>
             )}
-            <Badge variant="outline" className="bg-orange-500/15 border-orange-500/30 text-orange-300 text-[10px]">
+            <Badge variant="outline" className={`text-[10px] font-bold px-2.5 py-1 ${
+              subtask.status === 'completed' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+              : subtask.status === 'review_pending' ? 'bg-orange-500/15 text-orange-300 border-orange-500/30'
+              : subtask.status === 'in_progress' ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+              : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+            }`}>
               <Clock className="h-3 w-3 mr-1" />
-              PENDING APPROVAL
+              {subtask.status === 'completed' ? 'COMPLETED' : subtask.status === 'review_pending' ? 'PENDING APPROVAL' : subtask.status === 'in_progress' ? 'IN PROGRESS' : 'PENDING'}
             </Badge>
           </div>
         </div>
@@ -352,7 +359,7 @@ export const SubtaskReviewDialog = ({
             </div>
 
             {/* Rejection section */}
-            {showRejectSection && (
+            {showRejectSection && !viewOnly && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-bold text-red-300 flex items-center gap-2">
@@ -383,7 +390,7 @@ export const SubtaskReviewDialog = ({
         </ScrollArea>
 
         {/* Action Footer */}
-        {!showRejectSection && (
+        {!viewOnly && subtask.status === 'review_pending' && !showRejectSection && (
           <div className="px-6 py-4 border-t border-white/10 bg-black/30 flex items-center gap-3">
             <Button
               onClick={() => setShowRejectSection(true)}
