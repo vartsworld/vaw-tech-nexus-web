@@ -605,11 +605,11 @@ const TaskDetailPage = ({
                                           )}
                                           <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${
                                             st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                                            : st.status === 'review_pending' ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
+                                            : (st.status === 'review_pending' || st.status === 'pending_approval') ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
                                             : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
                                               : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                                             }`}>
-                                            {st.status === 'completed' ? 'DONE' : st.status === 'review_pending' ? 'IN REVIEW' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
+                                            {st.status === 'completed' ? 'DONE' : (st.status === 'review_pending' || st.status === 'pending_approval') ? 'IN REVIEW' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
                                           </Badge>
                                         </div>
 
