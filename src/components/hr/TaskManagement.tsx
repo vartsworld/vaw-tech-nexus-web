@@ -1517,7 +1517,7 @@ const TaskManagement = () => {
                   <TableHeader>
                     <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
                       <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Task</TableHead>
-                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Department</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5 min-w-[140px]">Department</TableHead>
                       <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Assigned To</TableHead>
                       <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Stage</TableHead>
                       <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Priority</TableHead>
@@ -1559,7 +1559,7 @@ const TaskManagement = () => {
                         </TableCell>
                         <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
                           {task.departments?.name ? (
-                            <Badge className="text-[10px] h-6 py-0 px-2.5 rounded-full font-semibold bg-primary/15 text-primary border-primary/25 hover:bg-primary/20 shadow-none">
+                            <Badge className="text-[10px] h-6 py-0 px-2.5 rounded-full font-semibold bg-primary/15 text-primary border-primary/25 hover:bg-primary/20 shadow-none whitespace-nowrap">
                               {task.departments.name}
                             </Badge>
                           ) : (
