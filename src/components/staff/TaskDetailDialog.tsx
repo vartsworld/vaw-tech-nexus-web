@@ -1221,11 +1221,11 @@ export const TaskDetailDialog = ({
               <span className="line-clamp-2">{task.title}</span>
             </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 min-h-0 px-6 pb-6">
-            <div className="pr-4 pt-3">
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
+            <div className="pr-2 pt-3">
               {content}
             </div>
-          </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
       {subtaskDetailDialog}
