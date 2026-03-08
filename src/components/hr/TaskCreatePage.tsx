@@ -535,13 +535,34 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
 
             {/* Stage */}
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Evolution Stage</Label>
-              <Input
-                type="number" min="1"
-                value={newTask.current_stage}
-                onChange={(e) => setNewTask({ ...newTask, current_stage: parseInt(e.target.value) || 1 })}
-                className="bg-transparent border-white/10 h-11"
-              />
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">Evolution Stage</Label>
+                <button
+                  type="button"
+                  onClick={() => setNewTask({ ...newTask, auto_stage: !newTask.auto_stage })}
+                  className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border transition-all ${
+                    newTask.auto_stage
+                      ? 'bg-violet-500/15 text-violet-400 border-violet-500/30'
+                      : 'bg-white/5 text-muted-foreground border-white/10'
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${newTask.auto_stage ? 'bg-violet-400 animate-pulse' : 'bg-muted-foreground'}`} />
+                  {newTask.auto_stage ? 'Auto' : 'Manual'}
+                </button>
+              </div>
+              {newTask.auto_stage ? (
+                <div className="flex items-center gap-2 h-11 px-3 rounded-xl border border-violet-500/20 bg-violet-500/5 text-xs text-violet-300">
+                  <span className="text-violet-400">⏱</span>
+                  Stage updates automatically based on subtask completion
+                </div>
+              ) : (
+                <Input
+                  type="number" min="1"
+                  value={newTask.current_stage}
+                  onChange={(e) => setNewTask({ ...newTask, current_stage: parseInt(e.target.value) || 1 })}
+                  className="bg-transparent border-white/10 h-11"
+                />
+              )}
             </div>
 
             {/* Due Date & Time - Creative Circular Picker */}
