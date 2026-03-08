@@ -1503,7 +1503,7 @@ const TaskManagement = () => {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {getStageBadge(task.current_stage || 1)}
+                            {getStageBadge(task.current_stage || 1, task.stage_names)}
                           </TableCell>
                           <TableCell>
                             {getPriorityBadge(task.priority)}
