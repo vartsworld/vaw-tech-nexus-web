@@ -359,7 +359,7 @@ export const SubtaskReviewDialog = ({
             </div>
 
             {/* Rejection section */}
-            {showRejectSection && (
+            {showRejectSection && !viewOnly && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-bold text-red-300 flex items-center gap-2">
