@@ -1971,9 +1971,24 @@ const TaskManagement = () => {
                                               <span className="text-[9px] text-muted-foreground">
                                                 {task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No date'}
                                               </span>
+                                              {showSubtasks && allSubtasks[task.id]?.length > 0 && (
+                                                <Button
+                                                  size="icon"
+                                                  variant="ghost"
+                                                  className="h-5 w-5 ml-1"
+                                                  onClick={(e) => { e.stopPropagation(); toggleCardExpanded(task.id); }}
+                                                >
+                                                  <ChevronDown className={cn("h-3 w-3 transition-transform", expandedCards.has(task.id) && "rotate-180")} />
+                                                </Button>
+                                              )}
+                                              {showSubtasks && allSubtasks[task.id]?.length > 0 && (
+                                                <span className="text-[9px] text-muted-foreground">
+                                                  {allSubtasks[task.id].filter((s: any) => s.status === 'completed').length}/{allSubtasks[task.id].length}
+                                                </span>
+                                              )}
                                             </div>
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}>
+                                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setSelectedTask(task); setCurrentView('detail'); setIsFullScreen(false); }}>
                                                 <Eye className="h-3.5 w-3.5" />
                                               </Button>
                                               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openEditDialog(task)}>
@@ -1981,6 +1996,37 @@ const TaskManagement = () => {
                                               </Button>
                                             </div>
                                           </div>
+
+                                          {/* Expanded Subtasks */}
+                                          {showSubtasks && expandedCards.has(task.id) && allSubtasks[task.id]?.length > 0 && (
+                                            <div className="pt-2 border-t border-muted/50 space-y-1.5 max-h-60 overflow-y-auto">
+                                              {allSubtasks[task.id].map((st: any) => {
+                                                const stStatus = st.status || 'pending';
+                                                const stColor = stStatus === 'completed' ? 'text-green-600 dark:text-green-400' :
+                                                  stStatus === 'in_progress' ? 'text-blue-600 dark:text-blue-400' :
+                                                  stStatus === 'pending_approval' ? 'text-orange-600 dark:text-orange-400' :
+                                                  'text-muted-foreground';
+                                                return (
+                                                  <div key={st.id} className="flex items-center gap-2 px-1.5 py-1 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
+                                                    <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", 
+                                                      stStatus === 'completed' ? 'bg-green-500' : 
+                                                      stStatus === 'in_progress' ? 'bg-blue-500' : 
+                                                      stStatus === 'pending_approval' ? 'bg-orange-500' : 'bg-muted-foreground/40'
+                                                    )} />
+                                                    <span className={cn("text-[10px] truncate flex-1", stColor)}>{st.title}</span>
+                                                    {st.staff_profiles?.full_name && (
+                                                      <Avatar className="h-4 w-4 shrink-0">
+                                                        <AvatarImage src={st.staff_profiles?.avatar_url} />
+                                                        <AvatarFallback className="text-[6px]">
+                                                          {st.staff_profiles.full_name.substring(0, 2).toUpperCase()}
+                                                        </AvatarFallback>
+                                                      </Avatar>
+                                                    )}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
                                         </CardContent>
                                       </Card>
                                     </div>
