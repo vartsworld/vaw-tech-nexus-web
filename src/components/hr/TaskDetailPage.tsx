@@ -819,7 +819,7 @@ const TaskDetailPage = ({
                               </div>
                             </div>
                           )}
-                        </Droppable>
+                        </StrictModeDroppable>
                       );
                     })}
                   </div>
