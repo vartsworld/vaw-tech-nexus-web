@@ -348,7 +348,7 @@ const HRDashboard = () => {
             {menuGroups.map((group, gIdx) => (
               <div key={gIdx} className="space-y-2">
                 {isSidebarOpen && (
-                  <h3 className="px-4 text-[10px] font-bold tracking-widest text-gray-500 uppercase">
+                  <h3 className="px-4 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
                     {group.label}
                   </h3>
                 )}
