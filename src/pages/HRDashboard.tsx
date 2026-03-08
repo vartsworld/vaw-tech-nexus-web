@@ -291,6 +291,7 @@ const HRDashboard = () => {
       case "pricing": return <PricingManagement />;
       case "financials": return <FinancialOversight />;
       case "api-integration": return <ApiIntegration />;
+      case "support": return <SupportTicketManagement />;
       default: return <StatsGrid stats={stats} />;
     }
   };
