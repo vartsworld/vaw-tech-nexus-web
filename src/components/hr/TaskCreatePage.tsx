@@ -51,6 +51,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
     recurrence_interval: 1,
     recurrence_end_date: "",
     current_stage: 1,
+    auto_stage: true,
   });
 
   const [newClient, setNewClient] = useState({
