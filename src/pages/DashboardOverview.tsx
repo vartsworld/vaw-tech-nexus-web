@@ -587,12 +587,12 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
 
                     <div className="grid gap-3">
                         <Button
-                            className="w-full neu-card hover:shadow-neu border border-border text-foreground font-bold h-12 justify-between px-5 rounded-xl group transition-all"
+                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 justify-between px-5 rounded-xl group transition-all"
                             onClick={() => window.location.href = '/client/dashboard/financials'}
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-1.5 bg-primary/10 rounded-lg shadow-neu-sm group-hover:scale-110 transition-transform">
-                                    <FileText className="w-4 h-4 text-primary" />
+                                <div className="p-1.5 bg-primary-foreground/10 rounded-lg group-hover:scale-110 transition-transform">
+                                    <FileText className="w-4 h-4 text-primary-foreground" />
                                 </div>
                                 <span className="text-sm">View Invoices</span>
                             </div>
@@ -600,12 +600,12 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                         </Button>
 
                         <Button
-                            className="w-full neu-card hover:shadow-neu border border-border text-foreground font-bold h-12 justify-between px-5 rounded-xl group transition-all"
+                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 justify-between px-5 rounded-xl group transition-all"
                             onClick={() => window.location.href = '/client/dashboard/support'}
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-1.5 bg-blue-500/10 rounded-lg shadow-neu-sm group-hover:scale-110 transition-transform">
-                                    <Activity className="w-4 h-4 text-blue-500" />
+                                <div className="p-1.5 bg-primary-foreground/10 rounded-lg group-hover:scale-110 transition-transform">
+                                    <Activity className="w-4 h-4 text-primary-foreground" />
                                 </div>
                                 <span className="text-sm">Request Update</span>
                             </div>
@@ -613,12 +613,12 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                         </Button>
 
                         <Button
-                            className="w-full neu-card hover:shadow-neu border border-border text-foreground font-bold h-12 justify-between px-5 rounded-xl group transition-all"
+                            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 justify-between px-5 rounded-xl group transition-all"
                             onClick={() => window.location.href = '/client/dashboard/support'}
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-1.5 bg-destructive/10 rounded-lg shadow-neu-sm group-hover:scale-110 transition-transform">
-                                    <AlertCircle className="w-4 h-4 text-destructive" />
+                                <div className="p-1.5 bg-primary-foreground/10 rounded-lg group-hover:scale-110 transition-transform">
+                                    <AlertCircle className="w-4 h-4 text-primary-foreground" />
                                 </div>
                                 <span className="text-sm">Get Support</span>
                             </div>
@@ -626,12 +626,12 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                         </Button>
 
                         <Button
-                            className="w-full neu-card hover:shadow-neu border border-red-500/20 text-foreground font-bold h-12 justify-between px-5 rounded-xl group transition-all"
+                            className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold h-12 justify-between px-5 rounded-xl group transition-all"
                             onClick={() => window.location.href = '/client/dashboard/support?tab=error-log'}
                         >
                             <div className="flex items-center gap-3">
-                                <div className="p-1.5 bg-red-500/10 rounded-lg shadow-neu-sm group-hover:scale-110 transition-transform">
-                                    <AlertCircle className="w-4 h-4 text-red-500" />
+                                <div className="p-1.5 bg-destructive-foreground/10 rounded-lg group-hover:scale-110 transition-transform">
+                                    <AlertCircle className="w-4 h-4 text-destructive-foreground" />
                                 </div>
                                 <span className="text-sm">Report an Issue</span>
                             </div>
