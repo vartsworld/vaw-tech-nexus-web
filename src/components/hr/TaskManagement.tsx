@@ -110,6 +110,7 @@ const TaskManagement = () => {
   const [showSubtasks, setShowSubtasks] = useState(false);
   const [allSubtasks, setAllSubtasks] = useState<Record<string, any[]>>({});
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [kanbanDisplayMode, setKanbanDisplayMode] = useState<'tasks' | 'subtasks' | 'stages'>('tasks');
   const [loadingAllSubtasks, setLoadingAllSubtasks] = useState(false);
 
   const [newSubtask, setNewSubtask] = useState({
