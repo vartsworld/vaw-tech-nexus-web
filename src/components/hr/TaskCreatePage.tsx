@@ -355,7 +355,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
           </div>
 
           {/* Recurring Task Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Repeat className="h-4 w-4 text-muted-foreground" />
