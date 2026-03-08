@@ -247,7 +247,7 @@ const ClientDashboard = () => {
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     const isHomePage = location.pathname === '/client/dashboard';
     return (
-        <div className="min-h-screen bg-background text-foreground flex overflow-hidden">
+        <div className="h-screen bg-background text-foreground flex overflow-hidden">
             {/* Sidebar - hidden on Home page */}
             {!isHomePage && (
             <AnimatePresence mode="wait">
@@ -257,7 +257,7 @@ const ClientDashboard = () => {
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: -300, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="fixed inset-y-0 left-0 z-50 w-72 neu-elevated backdrop-blur-2xl flex flex-col lg:relative"
+                        className="fixed inset-y-0 left-0 z-50 w-72 h-screen neu-elevated backdrop-blur-2xl flex flex-col lg:relative"
                     >
                         <div className="p-6 border-b border-border flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -283,7 +283,7 @@ const ClientDashboard = () => {
                             </Button>
                         </div>
 
-                        <nav className="flex-1 p-4 space-y-2 mt-4">
+                        <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto min-h-0 custom-scrollbar">
                             {menuItems.map((item) => {
                                 const isActive = location.pathname === item.path;
                                 return (
@@ -339,7 +339,7 @@ const ClientDashboard = () => {
             )}
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col relative overflow-hidden">
+            <div className="flex-1 flex flex-col relative overflow-hidden min-h-0">
                 {/* Header - hidden on Home page */}
                 {!isHomePage && (
                 <header className="h-20 border-b border-border flex items-center justify-between px-6 neu-elevated backdrop-blur-xl sticky top-0 z-40">
@@ -399,7 +399,7 @@ const ClientDashboard = () => {
                 )}
 
                 {/* Content Area */}
-                <main className="flex-1 overflow-y-auto p-4 sm:p-8 relative custom-scrollbar">
+                <main className="flex-1 overflow-y-auto p-4 sm:p-8 relative custom-scrollbar min-h-0">
                     {/* Subtle background glow */}
                     <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-primary/5 blur-[100px] pointer-events-none" />
                     <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-destructive/5 blur-[100px] pointer-events-none" />
