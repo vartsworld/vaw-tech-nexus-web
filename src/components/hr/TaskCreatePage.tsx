@@ -211,7 +211,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
         {/* Left Column - Main Form */}
         <div className="lg:col-span-2 space-y-6">
           {/* Title & Description Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-5">
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Task Title</Label>
               <Input
@@ -234,7 +234,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
           </div>
 
           {/* Assignment Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-5">
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
               <User className="h-4 w-4 text-primary" />
               Assignment
@@ -355,7 +355,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
           </div>
 
           {/* Recurring Task Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Repeat className="h-4 w-4 text-muted-foreground" />
@@ -400,7 +400,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
           </div>
 
           {/* Attachments Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
               Attachments
@@ -449,7 +449,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
         {/* Right Column - Sidebar */}
         <div className="space-y-6">
           {/* Task Config Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5 sticky top-4">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-5 sticky top-4">
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Task Details</h3>
 
             {/* Priority */}
