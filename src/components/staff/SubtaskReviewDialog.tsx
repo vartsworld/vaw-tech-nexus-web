@@ -156,7 +156,7 @@ export const SubtaskReviewDialog = ({
             <div className="space-y-2 min-w-0 flex-1">
               <div className="flex items-center gap-2 text-xs text-white/50 uppercase tracking-widest font-bold">
                 <Layers className="h-3.5 w-3.5" />
-                Subtask Review
+                {subtask.status === 'review_pending' && !viewOnly ? 'Subtask Review' : 'Subtask Details'}
               </div>
               <h2 className="text-xl font-bold tracking-tight leading-tight break-words">
                 {subtask.title}
