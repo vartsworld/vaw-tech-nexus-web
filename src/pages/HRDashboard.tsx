@@ -531,14 +531,14 @@ const PremiumStatCard = ({ title, value, subtitle, icon: Icon, gradient, trend }
 );
 
 const Activities = ({ activities }: any) => (
-  <Card className="bg-[#111] border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
-    <CardHeader className="border-b border-white/5 p-6">
+  <Card className="bg-card border-border rounded-[2rem] overflow-hidden shadow-2xl">
+    <CardHeader className="border-b border-border p-6">
       <div className="flex items-center justify-between">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-indigo-500" />
+        <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+          <Sparkles className="w-5 h-5 text-primary" />
           Live Pulse
         </CardTitle>
-        <Button variant="ghost" size="sm" className="text-xs text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10">View Log</Button>
+        <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-primary/80 hover:bg-primary/10">View Log</Button>
       </div>
     </CardHeader>
     <CardContent className="p-0">
@@ -550,21 +550,21 @@ const Activities = ({ activities }: any) => (
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.1 }}
               key={idx}
-              className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-all group"
+              className="flex items-center gap-4 p-4 rounded-2xl bg-muted/50 border border-border hover:bg-muted transition-all group"
             >
-              <div className={`p-2.5 rounded-xl bg-[#1a1a1a] border border-white/10 group-hover:scale-110 transition-transform ${activity.color}`}>
+              <div className={`p-2.5 rounded-xl bg-card border border-border group-hover:scale-110 transition-transform ${activity.color}`}>
                 <activity.icon className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium tracking-wide truncate">{activity.title}</p>
-                <div className="flex items-center gap-2 text-[10px] text-gray-500 font-medium">
+                <p className="text-sm font-medium tracking-wide truncate text-foreground">{activity.title}</p>
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium">
                   <Clock className="w-3 h-3" />
                   {new Date(activity.time).toLocaleTimeString()}
                 </div>
               </div>
             </motion.div>
           )) : (
-            <div className="flex flex-col items-center justify-center h-48 text-gray-500">
+            <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
               <Clock className="w-8 h-8 mb-2 opacity-20" />
               <p className="text-sm font-medium">No recent activities</p>
             </div>
