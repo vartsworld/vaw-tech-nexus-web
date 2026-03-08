@@ -547,7 +547,7 @@ const StaffMobileHome = ({
                     animate={active ? { opacity: 1 } : { opacity: 0.4 }}
                     className={cn(
                       "text-[8px] font-semibold tracking-[0.06em] uppercase transition-colors duration-300",
-                      active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                      active ? "text-emerald-400" : "text-muted-foreground group-hover:text-foreground"
                     )}
                   >
                     {item.label}
