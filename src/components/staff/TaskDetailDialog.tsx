@@ -601,6 +601,36 @@ export const TaskDetailDialog = ({
             <p className="text-white/70 leading-relaxed">{task.description}</p>
           </div>}
 
+          {/* Attachments Section - shown right after description */}
+          {task.attachments && Array.isArray(task.attachments) && task.attachments.length > 0 && <>
+            <Separator className="bg-white/10" />
+            <div>
+              <h3 className="text-lg font-semibold mb-3 text-white/90 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-400" />
+                Attached Files ({task.attachments.length})
+              </h3>
+              <div className="space-y-2">
+                {task.attachments.map((attachment, index) => <div key={index} className="flex items-center justify-between bg-black/30 rounded-lg p-3 border border-white/10 hover:bg-black/40 transition-colors">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <FileText className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white text-sm font-medium truncate">
+                        {attachment.name}
+                      </p>
+                      {attachment.size && <p className="text-white/50 text-xs">
+                        {(attachment.size / 1024).toFixed(2)} KB
+                      </p>}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" className="border-blue-400/50 text-blue-300 hover:bg-blue-500/20 flex-shrink-0" onClick={() => handleDownloadAttachment(attachment)}>
+                    <Download className="w-4 h-4 mr-1" />
+                    Download
+                  </Button>
+                </div>)}
+              </div>
+            </div>
+          </>}
+
           <Separator className="bg-white/10" />
 
           {/* Timer/Countdown Section */}
