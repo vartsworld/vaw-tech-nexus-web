@@ -552,7 +552,7 @@ const TaskDetailPage = ({
                                         {...provided.dragHandleProps}
                                         className={cn(
                                           "rounded-lg border bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group cursor-pointer",
-                                          st.status === 'review_pending'
+                                          (st.status === 'review_pending' || st.status === 'pending_approval')
                                             ? "border-orange-500/40 ring-1 ring-orange-500/20"
                                             : "border-white/10",
                                           snapshot.isDragging && "rotate-2 scale-105 shadow-2xl"
