@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -110,6 +111,7 @@ const TaskManagement = () => {
   const [showSubtasks, setShowSubtasks] = useState(false);
   const [allSubtasks, setAllSubtasks] = useState<Record<string, any[]>>({});
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [kanbanDisplayMode, setKanbanDisplayMode] = useState<'tasks' | 'subtasks' | 'stages'>('tasks');
   const [loadingAllSubtasks, setLoadingAllSubtasks] = useState(false);
 
   const [newSubtask, setNewSubtask] = useState({
@@ -1811,59 +1813,52 @@ const TaskManagement = () => {
                       <h1 className="text-3xl font-bold tracking-tight">Main Task Board</h1>
                     </div>
                     <div className="flex items-center gap-3">
-                      {/* View Toggle */}
-                      <div className="flex items-center gap-1 bg-card border border-muted-foreground/10 rounded-lg p-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { setViewMode('table'); setIsFullScreen(false); }}
-                          className="h-8 px-3 text-xs"
-                        >
-                          <List className="h-3.5 w-3.5 mr-1.5" />
-                          Table
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => { setViewMode('grid'); setIsFullScreen(false); }}
-                          className="h-8 px-3 text-xs"
-                        >
-                          <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
-                          Grid
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="h-8 px-3 text-xs"
-                        >
-                          <Trello className="h-3.5 w-3.5 mr-1.5" />
-                          Kanban
-                        </Button>
-                      </div>
-                      {/* Show Subtasks Toggle */}
-                      <div className="flex items-center gap-2 bg-card border border-muted-foreground/10 rounded-lg px-3 py-1.5">
-                        <Layers className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs font-medium">Subtasks</span>
-                        <Switch
-                          checked={showSubtasks}
-                          onCheckedChange={(checked) => {
-                            setShowSubtasks(checked);
-                            if (checked) {
-                              const taskIds = filteredTasks.map(t => t.id);
-                              fetchAllSubtasksForTasks(taskIds);
-                              // Expand all cards
-                              setExpandedCards(new Set(taskIds));
-                            } else {
-                              setExpandedCards(new Set());
-                            }
-                          }}
-                          className="scale-75"
-                        />
+                      {/* Three Motion Buttons */}
+                      <div className="relative flex items-center bg-muted/50 border border-border rounded-xl p-1 gap-1">
+                        {([
+                          { key: 'tasks' as const, label: 'Tasks', icon: <ClipboardList className="h-4 w-4" /> },
+                          { key: 'subtasks' as const, label: 'Subtasks', icon: <Layers className="h-4 w-4" /> },
+                          { key: 'stages' as const, label: 'Stages', icon: <Target className="h-4 w-4" /> },
+                        ]).map((tab) => (
+                          <button
+                            key={tab.key}
+                            onClick={() => {
+                              setKanbanDisplayMode(tab.key);
+                              if (tab.key === 'subtasks' || tab.key === 'stages') {
+                                setShowSubtasks(true);
+                                const taskIds = filteredTasks.map(t => t.id);
+                                fetchAllSubtasksForTasks(taskIds);
+                                setExpandedCards(new Set(taskIds));
+                              } else {
+                                setShowSubtasks(false);
+                                setExpandedCards(new Set());
+                              }
+                            }}
+                            className={cn(
+                              "relative z-10 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                              kanbanDisplayMode === tab.key
+                                ? "text-primary-foreground"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {kanbanDisplayMode === tab.key && (
+                              <motion.div
+                                layoutId="kanbanTabIndicator"
+                                className="absolute inset-0 bg-primary rounded-lg shadow-lg"
+                                transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                              />
+                            )}
+                            <span className="relative z-10 flex items-center gap-2">
+                              {tab.icon}
+                              {tab.label}
+                            </span>
+                          </button>
+                        ))}
                       </div>
                       <Button
                         variant="outline"
                         size="lg"
-                        onClick={() => setIsFullScreen(false)}
+                        onClick={() => { setIsFullScreen(false); setKanbanDisplayMode('tasks'); setShowSubtasks(false); setExpandedCards(new Set()); }}
                         className="flex items-center gap-2 border-primary/20 hover:bg-primary/5"
                       >
                         <Minimize2 className="h-5 w-5" />
@@ -2000,31 +1995,73 @@ const TaskManagement = () => {
                                           {/* Expanded Subtasks */}
                                           {showSubtasks && expandedCards.has(task.id) && allSubtasks[task.id]?.length > 0 && (
                                             <div className="pt-2 border-t border-muted/50 space-y-1.5 max-h-60 overflow-y-auto">
-                                              {allSubtasks[task.id].map((st: any) => {
-                                                const stStatus = st.status || 'pending';
-                                                const stColor = stStatus === 'completed' ? 'text-green-600 dark:text-green-400' :
-                                                  stStatus === 'in_progress' ? 'text-blue-600 dark:text-blue-400' :
-                                                  stStatus === 'pending_approval' ? 'text-orange-600 dark:text-orange-400' :
-                                                  'text-muted-foreground';
-                                                return (
-                                                  <div key={st.id} className="flex items-center gap-2 px-1.5 py-1 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
-                                                    <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", 
-                                                      stStatus === 'completed' ? 'bg-green-500' : 
-                                                      stStatus === 'in_progress' ? 'bg-blue-500' : 
-                                                      stStatus === 'pending_approval' ? 'bg-orange-500' : 'bg-muted-foreground/40'
-                                                    )} />
-                                                    <span className={cn("text-[10px] truncate flex-1", stColor)}>{st.title}</span>
-                                                    {st.staff_profiles?.full_name && (
-                                                      <Avatar className="h-4 w-4 shrink-0">
-                                                        <AvatarImage src={st.staff_profiles?.avatar_url} />
-                                                        <AvatarFallback className="text-[6px]">
-                                                          {st.staff_profiles.full_name.substring(0, 2).toUpperCase()}
-                                                        </AvatarFallback>
-                                                      </Avatar>
-                                                    )}
-                                                  </div>
-                                                );
-                                              })}
+                                              {kanbanDisplayMode === 'stages' ? (
+                                                // Group subtasks by stage
+                                                (() => {
+                                                  const subs = allSubtasks[task.id];
+                                                  const stages = [...new Set(subs.map((s: any) => s.stage || 1))].sort((a, b) => a - b);
+                                                  const stageNames = task.stage_names || {};
+                                                  return stages.map((stage) => {
+                                                    const stageSubs = subs.filter((s: any) => (s.stage || 1) === stage);
+                                                    const completed = stageSubs.filter((s: any) => s.status === 'completed').length;
+                                                    const stageName = stageNames[String(stage)] || `Stage ${stage}`;
+                                                    return (
+                                                      <div key={stage} className="space-y-1">
+                                                        <div className="flex items-center justify-between px-1">
+                                                          <span className="text-[10px] font-semibold text-foreground/80">{stageName}</span>
+                                                          <span className="text-[9px] text-muted-foreground">{completed}/{stageSubs.length}</span>
+                                                        </div>
+                                                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                                          <div
+                                                            className="h-full rounded-full bg-primary transition-all"
+                                                            style={{ width: stageSubs.length > 0 ? `${(completed / stageSubs.length) * 100}%` : '0%' }}
+                                                          />
+                                                        </div>
+                                                        {stageSubs.map((st: any) => {
+                                                          const stStatus = st.status || 'pending';
+                                                          return (
+                                                            <div key={st.id} className="flex items-center gap-2 px-1.5 py-1 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors ml-1">
+                                                              <div className={cn("h-1.5 w-1.5 rounded-full shrink-0",
+                                                                stStatus === 'completed' ? 'bg-green-500' :
+                                                                stStatus === 'in_progress' ? 'bg-blue-500' :
+                                                                stStatus === 'pending_approval' ? 'bg-orange-500' : 'bg-muted-foreground/40'
+                                                              )} />
+                                                              <span className="text-[10px] truncate flex-1">{st.title}</span>
+                                                            </div>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    );
+                                                  });
+                                                })()
+                                              ) : (
+                                                // Flat subtask list
+                                                allSubtasks[task.id].map((st: any) => {
+                                                  const stStatus = st.status || 'pending';
+                                                  const stColor = stStatus === 'completed' ? 'text-green-600 dark:text-green-400' :
+                                                    stStatus === 'in_progress' ? 'text-blue-600 dark:text-blue-400' :
+                                                    stStatus === 'pending_approval' ? 'text-orange-600 dark:text-orange-400' :
+                                                    'text-muted-foreground';
+                                                  return (
+                                                    <div key={st.id} className="flex items-center gap-2 px-1.5 py-1 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
+                                                      <div className={cn("h-1.5 w-1.5 rounded-full shrink-0",
+                                                        stStatus === 'completed' ? 'bg-green-500' :
+                                                        stStatus === 'in_progress' ? 'bg-blue-500' :
+                                                        stStatus === 'pending_approval' ? 'bg-orange-500' : 'bg-muted-foreground/40'
+                                                      )} />
+                                                      <span className={cn("text-[10px] truncate flex-1", stColor)}>{st.title}</span>
+                                                      {st.staff_profiles?.full_name && (
+                                                        <Avatar className="h-4 w-4 shrink-0">
+                                                          <AvatarImage src={st.staff_profiles?.avatar_url} />
+                                                          <AvatarFallback className="text-[6px]">
+                                                            {st.staff_profiles.full_name.substring(0, 2).toUpperCase()}
+                                                          </AvatarFallback>
+                                                        </Avatar>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })
+                                              )}
                                             </div>
                                           )}
                                         </CardContent>
