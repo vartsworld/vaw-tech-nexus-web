@@ -618,8 +618,7 @@ export const TaskDetailDialog = ({
           Back to Tasks
         </Button>
       )}
-      <div>
-      <div className="flex items-center gap-2 flex-wrap mt-3">
+      <div className="flex items-center gap-2 flex-wrap mt-1">
         <Badge variant="outline" className="border-blue-400/50 text-blue-300">
           {(task.status || 'pending').replace('_', ' ').toUpperCase()}
         </Badge>
