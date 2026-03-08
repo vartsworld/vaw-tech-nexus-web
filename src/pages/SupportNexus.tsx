@@ -222,13 +222,20 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                         <CardHeader>
                             <CardTitle className="text-sm text-blue-400 flex items-center gap-2">
                                 <Zap className="w-4 h-4" />
-                                Support SLA
+                                24×7 Support
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-3">
                             <div className="flex items-end gap-2">
                                 <span className="text-3xl font-black text-white">&lt; 2hr</span>
-                                <span className="text-xs text-gray-400 mb-1.5">Response time</span>
+                                <span className="text-xs text-gray-400 mb-1.5">Active response</span>
+                            </div>
+                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest space-y-1">
+                                <p className="flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    Active Hours: 10:30 AM – 4:30 PM IST
+                                </p>
+                                <p className="text-gray-500">Support available round the clock, priority responses during active hours.</p>
                             </div>
                         </CardContent>
                     </Card>
