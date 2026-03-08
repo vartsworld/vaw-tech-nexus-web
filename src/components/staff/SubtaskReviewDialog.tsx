@@ -135,6 +135,7 @@ export const SubtaskReviewDialog = ({
 
   if (!subtask) return null;
 
+  const isReviewable = subtask.status === 'review_pending' || subtask.status === 'pending_approval';
   const assignee = subtask.staff_profiles;
   const priority = priorityConfig[subtask.priority] || priorityConfig.medium;
   const attachments = Array.isArray(subtask.attachments) ? subtask.attachments : [];
