@@ -456,7 +456,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
 
             {/* Summary Cards */}
             {billingConnected && !billingLoading && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     {(() => {
                         const activeRecs = recurringInvoices.filter((r: any) => r.status?.toLowerCase() !== 'paused' && r.status?.toLowerCase() !== 'stopped');
                         const nextRec = activeRecs.sort((a: any, b: any) => new Date(a.next_issue_date || a.next_invoice_date || '9999').getTime() - new Date(b.next_issue_date || b.next_invoice_date || '9999').getTime())[0];
@@ -513,6 +513,17 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                             <div>
                                 <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Recurring</p>
                                 <p className="text-lg font-black text-violet-400">{recurringInvoices.length}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-black/40 border-tech-gold/10">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="p-2.5 bg-emerald-500/10 rounded-xl">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Total Paid</p>
+                                <p className="text-lg font-black text-emerald-400">{formatCurrency(totalPaid)}</p>
                             </div>
                         </CardContent>
                     </Card>
