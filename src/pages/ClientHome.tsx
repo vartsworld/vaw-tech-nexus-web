@@ -361,32 +361,33 @@ const ClientHome = ({ profile }: { profile: any }) => {
                 <div key={i} className="h-20 rounded-2xl bg-card/50 animate-pulse" />
               ))}
             </div>
-          ) : renewalProjects.length > 0 ? (
+          ) : renewalItems.length > 0 ? (
               <div className="space-y-3">
-                {renewalProjects.map((project: any, idx: number) => {
-                  const renewalDate = project.renewal_date || project.next_payment_date;
-                  const date = new Date(renewalDate);
+                {renewalItems.map((item: any, idx: number) => {
+                  const date = new Date(item._nextDate);
                   const now = new Date();
                   const daysUntil = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
                   const isUrgent = daysUntil <= 7;
                   const isSoon = daysUntil <= 30;
+                  const freq = (item.frequency || item.recurrence_frequency || "monthly").toLowerCase();
+                  const amount = Number(item.total || item.amount || 0);
 
                   return (
                     <motion.div
-                      key={project.id + "-renewal"}
+                      key={item.id || idx}
                       variants={fadeUp}
                       custom={idx + 1}
                       className="group cursor-pointer"
-                      onClick={() => (window.location.href = `/client/dashboard/projects/${project.id}`)}
+                      onClick={() => (window.location.href = "/client/dashboard/financials")}
                     >
                       <div className="p-5 rounded-2xl bg-card/40 border border-border/40 hover:border-border/80 hover:bg-card/60 transition-all duration-500">
                         <div className="flex items-start justify-between">
                           <div className="space-y-1 flex-1">
                             <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-300">
-                              {project.title}
+                              {item.name || item.invoice_name || item.title || "Recurring Invoice"}
                             </h3>
-                            <p className="text-xs text-muted-foreground/50 font-light">
-                              {project.renewal_date ? "Renewal" : "Next Payment"}
+                            <p className="text-xs text-muted-foreground/50 font-light capitalize">
+                              {freq} · {amount > 0 ? `₹${amount.toLocaleString("en-IN")}` : ""}
                             </p>
                           </div>
                           <div className="text-right space-y-1">
