@@ -26,14 +26,11 @@ const MobileBottomNav = () => {
 
     return (
         <>
-            <div className="h-24 lg:hidden" />
+            <div className="h-28 lg:hidden" />
 
-            <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
-                {/* Gradient fade edge */}
-                <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-background to-transparent pointer-events-none" />
-
-                <div className="bg-card/90 backdrop-blur-2xl border-t border-border shadow-neu">
-                    <div className="flex items-end justify-around px-3 pt-2 pb-1 safe-area-inset-bottom">
+            <nav className="fixed bottom-3 left-3 right-3 z-40 lg:hidden">
+                <div className="bg-card/60 backdrop-blur-2xl border border-border/40 shadow-neu rounded-[1.75rem] overflow-hidden">
+                    <div className="flex items-end justify-around px-2 pt-3 pb-2 safe-area-inset-bottom">
                         {navItems.map((item) => {
                             const active = isActive(item.path, item.exact);
                             const Icon = item.icon;
@@ -44,7 +41,6 @@ const MobileBottomNav = () => {
                                     onClick={() => navigate(item.path)}
                                     className="relative flex flex-col items-center gap-0.5 py-1.5 px-2 min-w-[56px] group"
                                 >
-                                    {/* Glow behind active icon */}
                                     {active && (
                                         <motion.div
                                             layoutId="navGlow"
@@ -53,7 +49,6 @@ const MobileBottomNav = () => {
                                         />
                                     )}
 
-                                    {/* Icon container */}
                                     <motion.div
                                         animate={active ? { y: -4 } : { y: 0 }}
                                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
@@ -74,7 +69,6 @@ const MobileBottomNav = () => {
                                             strokeWidth={active ? 2.2 : 1.8}
                                         />
 
-                                        {/* Active pip */}
                                         {active && (
                                             <motion.div
                                                 initial={{ scale: 0, opacity: 0 }}
@@ -84,7 +78,6 @@ const MobileBottomNav = () => {
                                         )}
                                     </motion.div>
 
-                                    {/* Label */}
                                     <motion.span
                                         animate={active ? { opacity: 1 } : { opacity: 0.45 }}
                                         className={cn(
