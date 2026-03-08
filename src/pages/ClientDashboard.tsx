@@ -38,6 +38,8 @@ import FeedbackHub from "@/components/client/FeedbackHub";
 import ErrorLogger from "@/components/client/ErrorLogger";
 import PWAInstallPrompt from "@/components/client/PWAInstallPrompt";
 import MobileBottomNav from "@/components/client/MobileBottomNav";
+import BrowserNotificationPrompt from "@/components/client/BrowserNotificationPrompt";
+import ClientNotificationBanner from "@/components/client/ClientNotificationBanner";
 
 const ClientDashboard = () => {
     // Sidebar closed by default on mobile (< 1024px), open on desktop
@@ -402,6 +404,9 @@ const ClientDashboard = () => {
                     <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-primary/5 blur-[100px] pointer-events-none" />
                     <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-destructive/5 blur-[100px] pointer-events-none" />
 
+                    {/* Prominent notification banners */}
+                    <ClientNotificationBanner clientId={profile?.id} billingSyncId={profile?.billing_sync_id} />
+
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={location.pathname}
@@ -421,6 +426,9 @@ const ClientDashboard = () => {
                         </motion.div>
                     </AnimatePresence>
                 </main>
+
+                {/* Browser Notification Permission Prompt */}
+                <BrowserNotificationPrompt />
 
                 {/* PWA Install Prompt */}
                 <PWAInstallPrompt />
