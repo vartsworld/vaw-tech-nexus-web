@@ -142,10 +142,16 @@ export const TaskDetailDialog = ({
         .from('staff_subtasks')
         .select('*')
         .eq('task_id', task.id)
-        .order('created_at', { ascending: true }); // Order by creation for sequential
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setSubtasks(data || []);
+      const fetched = data || [];
+      setSubtasks(fetched);
+
+      // Auto-stop timer when ALL subtasks are completed
+      if (fetched.length > 0 && fetched.every(s => s.status === 'completed')) {
+        setIsTimerRunning(false);
+      }
     } catch (error) {
       console.error("Error fetching subtasks:", error);
     } finally {
@@ -162,13 +168,24 @@ export const TaskDetailDialog = ({
       if (error) throw error;
 
       // --- Sync: subtask in_progress → parent task in_progress → project in_progress ---
-      if (task && task.status === 'pending') {
+      // Also auto-start the timer
+      if (task && (task.status === 'pending' || !isTimerRunning)) {
+        const updates: any = {
+          status: 'in_progress',
+          updated_at: new Date().toISOString(),
+        };
+        // Only set timer_started_at if not already running
+        if (!(task as any).timer_started_at) {
+          updates.timer_started_at = new Date().toISOString();
+          updates.breaks_taken = 0;
+        }
         const { error: taskErr } = await supabase
           .from('staff_tasks')
-          .update({ status: 'in_progress', updated_at: new Date().toISOString() } as any)
+          .update(updates)
           .eq('id', task.id);
         if (!taskErr) {
           onStatusUpdate(task.id, 'in_progress');
+          setIsTimerRunning(true);
         }
 
         // Also update linked client project to in_progress if it's still pending
@@ -181,7 +198,7 @@ export const TaskDetailDialog = ({
         }
       }
 
-      toast({ title: "Subtask Started", description: "You are now working on this subtask." });
+      toast({ title: "Subtask Started", description: "Timer started automatically." });
       fetchSubtasks();
     } catch (error) {
       console.error("Error starting subtask:", error);
@@ -699,17 +716,15 @@ export const TaskDetailDialog = ({
         )}
 
         <div className="flex items-center justify-center gap-2 flex-wrap">
-          {!isTimerRunning && !isOnBreak ? (
-            <Button onClick={handleStart} className="bg-green-500 hover:bg-green-600 text-white">
-              <Play className="w-4 h-4 mr-2" />
-              {task.status === 'pending' ? 'Start Task' : 'Resume'}
-            </Button>
-          ) : isTimerRunning && !isOnBreak ? (
+          {!isTimerRunning && !isOnBreak && (
+            <p className="text-xs text-white/40 italic">Timer starts automatically when you begin a subtask</p>
+          )}
+          {isTimerRunning && !isOnBreak && (
             <Button onClick={handleStartBreak} variant="outline" className="border-orange-400/50 text-orange-300 hover:bg-orange-500/20" disabled={breaksTaken >= 2}>
               <Coffee className="w-4 h-4 mr-2" />
               Take Break ({2 - breaksTaken} left)
             </Button>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
