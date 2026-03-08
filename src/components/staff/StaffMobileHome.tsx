@@ -364,7 +364,7 @@ const StaffMobileHome = ({
         <motion.div {...fadeUp(0.35)}>
           <div className="flex items-center justify-between mb-3 mt-2">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-foreground">To do</h2>
+              <h2 className="text-sm font-semibold text-foreground">Todays Task to do</h2>
               <span className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5 font-bold">
                 {todoTasks.length}
               </span>
