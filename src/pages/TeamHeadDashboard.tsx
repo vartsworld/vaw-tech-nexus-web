@@ -198,7 +198,7 @@ const TeamHeadDashboard = () => {
     return () => {
       channel.unsubscribe();
     };
-  }, [profile?.user_id, profile?.full_name, profile?.username]);
+  }, [profile?.user_id, profile?.full_name, profile?.username, isShowingMobileHome]);
 
   const checkDailyRequirements = async () => {
     if (!profile?.user_id) return;
