@@ -361,8 +361,8 @@ const ClientHome = ({ profile }: { profile: any }) => {
                   <p className="text-sm text-muted-foreground/40 font-light">No upcoming renewals</p>
                 </div>
               </motion.div>
-            );
-          })()}
+            )}
+
         </motion.section>
       )}
 
