@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Clock, Calendar, User, Target, Play, Coffee, CheckCircle, AlertCircle, FileText, Download, Award, MessageSquare, Upload, Send, X, Loader2 } from "lucide-react";
+import { Clock, Calendar, User, Target, Play, Coffee, CheckCircle, AlertCircle, FileText, Download, Award, MessageSquare, Upload, Send, X, Loader2, Eye } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -74,6 +74,7 @@ export const TaskDetailDialog = ({
   const [subtaskFileURLs, setSubtaskFileURLs] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<{ full_name: string, avatar_url: string } | null>(null);
   const [projectInfo, setProjectInfo] = useState<any>(null);
+  const [viewingSubtask, setViewingSubtask] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const subtaskFileInputRef = useRef<HTMLInputElement>(null);
@@ -871,7 +872,7 @@ export const TaskDetailDialog = ({
                   key={st.id}
                   className={`rounded-xl border transition-all duration-300 ${isLocked ? 'opacity-50 grayscale' : ''} ${st.status === 'completed' ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 bg-black/30'}`}
                 >
-                  <div className="p-3 flex items-center gap-3">
+                  <div className="p-3 flex items-center gap-3 cursor-pointer hover:bg-white/[0.03] transition-colors rounded-t-xl" onClick={() => setViewingSubtask(st)}>
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] flex-shrink-0 ${st.status === 'completed' ? 'bg-green-500 text-white' : st.status === 'in_progress' ? 'bg-blue-500 text-white animate-pulse' : 'bg-white/10 text-white/40'}`}>
                       {st.status === 'completed' ? <CheckCircle className="w-4 h-4" /> : idx + 1}
                     </div>
@@ -883,9 +884,10 @@ export const TaskDetailDialog = ({
                         <span className={`text-[9px] font-medium ${isAssignedToMe ? 'text-purple-400' : 'text-white/30'}`}>
                           {isAssignedToMe ? 'You' : 'Others'}
                         </span>
+                        <Eye className="w-3 h-3 text-white/20 ml-auto" />
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       {st.status === 'pending' && isAssignedToMe && !isLocked && (
                         <Button size="sm" onClick={() => handleSubtaskStart(st.id)} className="h-7 text-[10px] bg-blue-600 hover:bg-blue-700 px-3">Start</Button>
                       )}
@@ -1106,27 +1108,133 @@ export const TaskDetailDialog = ({
 
   const content = mode === 'inline' ? inlineContent : dialogContent;
 
+  const subtaskDetailDialog = (
+    <Dialog open={!!viewingSubtask} onOpenChange={(open) => !open && setViewingSubtask(null)}>
+      <DialogContent className="max-w-lg max-h-[85vh] bg-gradient-to-br from-slate-900 to-slate-800 border-white/20 text-white">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-bold flex items-center gap-2">
+            <Target className="w-5 h-5 text-blue-400" />
+            {viewingSubtask?.title}
+          </DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="max-h-[calc(85vh-100px)] pr-4">
+          {viewingSubtask && (
+            <div className="space-y-5">
+              {/* Status & Meta */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className={`text-[10px] ${
+                  viewingSubtask.status === 'completed' ? 'border-green-500/50 text-green-400' :
+                  viewingSubtask.status === 'in_progress' ? 'border-blue-500/50 text-blue-400' :
+                  viewingSubtask.status === 'pending_approval' ? 'border-orange-500/50 text-orange-400' :
+                  'border-white/20 text-white/60'
+                }`}>
+                  {(viewingSubtask.status || 'pending').replace('_', ' ').toUpperCase()}
+                </Badge>
+                <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">
+                  Stage {viewingSubtask.stage || 1}
+                </Badge>
+                <Badge variant="outline" className="text-[10px] border-white/10 text-white/50">
+                  {viewingSubtask.points || 0} pts
+                </Badge>
+              </div>
+
+              {/* Description */}
+              {viewingSubtask.description && (
+                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+                  <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">Description</h4>
+                  <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{viewingSubtask.description}</p>
+                </div>
+              )}
+
+              {/* Attachments */}
+              {viewingSubtask.attachments && Array.isArray(viewingSubtask.attachments) && viewingSubtask.attachments.length > 0 && (
+                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+                  <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
+                    Attachments ({viewingSubtask.attachments.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {viewingSubtask.attachments.map((att: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between bg-black/20 rounded-lg p-2.5 border border-white/5 group">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs text-white font-medium truncate">{att.name || 'File'}</p>
+                            {att.size && <p className="text-[10px] text-white/40">{(att.size / 1024).toFixed(1)} KB</p>}
+                          </div>
+                        </div>
+                        {att.url && (
+                          <Button size="sm" variant="ghost" className="text-blue-400 hover:bg-blue-500/20 h-7 w-7 p-0" onClick={() => handleDownloadAttachment(att)}>
+                            <Download className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Comments / Activity */}
+              {viewingSubtask.comments && Array.isArray(viewingSubtask.comments) && viewingSubtask.comments.length > 0 && (
+                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+                  <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
+                    Comments ({viewingSubtask.comments.length})
+                  </h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {viewingSubtask.comments.map((c: any, i: number) => (
+                      <div key={i} className="bg-black/20 rounded-lg p-3 border border-white/5">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-semibold text-white/70">{c.user_name || 'Staff'}</span>
+                          {c.type && <Badge variant="outline" className="text-[8px] border-white/10 text-white/30 h-4">{c.type}</Badge>}
+                        </div>
+                        <p className="text-sm text-white/80">{c.message || c.text}</p>
+                        <p className="text-[10px] text-white/30 mt-1">
+                          {(() => { try { return format(new Date(c.timestamp || c.created_at), 'MMM dd, HH:mm'); } catch { return ''; } })()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Due date if any */}
+              {viewingSubtask.due_date && (
+                <div className="flex items-center gap-2 text-xs text-white/50">
+                  <Calendar className="w-3.5 h-3.5 text-orange-400" />
+                  Due: {(() => { try { return format(new Date(viewingSubtask.due_date), 'MMM dd, yyyy'); } catch { return viewingSubtask.due_date; } })()}
+                </div>
+              )}
+            </div>
+          )}
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+
   if (mode === 'inline') {
     return (
       <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.12] rounded-2xl text-white p-6 lg:p-8">
         {content}
+        {subtaskDetailDialog}
       </div>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] bg-gradient-to-br from-slate-900 to-slate-800 border-white/20 text-white">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-            <Target className="w-6 h-6 text-blue-400" />
-            {task.title}
-          </DialogTitle>
-        </DialogHeader>
-        <ScrollArea className="max-h-[calc(90vh-100px)] pr-4">
-          {content}
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] bg-gradient-to-br from-slate-900 to-slate-800 border-white/20 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+              <Target className="w-6 h-6 text-blue-400" />
+              {task.title}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[calc(90vh-100px)] pr-4">
+            {content}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+      {subtaskDetailDialog}
+    </>
   );
 };
