@@ -655,7 +655,7 @@ const TaskDetailPage = ({
                       const isQuickAddOpen = quickAddStage === stageNum;
 
                       return (
-                        <Droppable key={stageNum} droppableId={`stage-${stageNum}`}>
+                        <StrictModeDroppable key={stageNum} droppableId={`stage-${stageNum}`}>
                           {(provided, snapshot) => (
                             <div
                               {...provided.droppableProps}
