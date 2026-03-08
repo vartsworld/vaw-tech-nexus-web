@@ -701,7 +701,7 @@ export const TaskDetailDialog = ({
   ) : null;
 
   const metadataCard = (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm overflow-hidden">
+    <div className="rounded-xl border border-white/[0.12] bg-white/[0.06] backdrop-blur-xl overflow-hidden">
       <div className="px-5 py-3 border-b border-white/5 bg-white/[0.02]">
         <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wider">Task Info</h3>
       </div>
