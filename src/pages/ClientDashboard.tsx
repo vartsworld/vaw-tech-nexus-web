@@ -204,7 +204,6 @@ const ClientDashboard = () => {
 
     const menuItems = [
         { icon: Home, label: "Home", path: "/client/dashboard" },
-        { icon: LayoutDashboard, label: "Overview", path: "/client/dashboard/overview" },
         { icon: Briefcase, label: "Projects", path: "/client/dashboard/projects" },
         { icon: CreditCard, label: "Financials", path: "/client/dashboard/financials" },
         { icon: MessageSquare, label: "Support", path: "/client/dashboard/support" },
