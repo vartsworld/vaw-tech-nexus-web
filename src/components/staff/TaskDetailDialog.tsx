@@ -872,7 +872,7 @@ export const TaskDetailDialog = ({
                   key={st.id}
                   className={`rounded-xl border transition-all duration-300 ${isLocked ? 'opacity-50 grayscale' : ''} ${st.status === 'completed' ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 bg-black/30'}`}
                 >
-                  <div className="p-3 flex items-center gap-3">
+                  <div className="p-3 flex items-center gap-3 cursor-pointer hover:bg-white/[0.03] transition-colors rounded-t-xl" onClick={() => setViewingSubtask(st)}>
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] flex-shrink-0 ${st.status === 'completed' ? 'bg-green-500 text-white' : st.status === 'in_progress' ? 'bg-blue-500 text-white animate-pulse' : 'bg-white/10 text-white/40'}`}>
                       {st.status === 'completed' ? <CheckCircle className="w-4 h-4" /> : idx + 1}
                     </div>
@@ -884,6 +884,7 @@ export const TaskDetailDialog = ({
                         <span className={`text-[9px] font-medium ${isAssignedToMe ? 'text-purple-400' : 'text-white/30'}`}>
                           {isAssignedToMe ? 'You' : 'Others'}
                         </span>
+                        <Eye className="w-3 h-3 text-white/20 ml-auto" />
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
