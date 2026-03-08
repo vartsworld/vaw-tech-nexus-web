@@ -399,7 +399,7 @@ const ClientDashboard = () => {
                 )}
 
                 {/* Content Area */}
-                <main className="flex-1 overflow-y-auto p-4 sm:p-8 relative custom-scrollbar">
+                <main className="flex-1 overflow-y-auto p-4 sm:p-8 relative custom-scrollbar min-h-0">
                     {/* Subtle background glow */}
                     <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-primary/5 blur-[100px] pointer-events-none" />
                     <div className="absolute bottom-0 left-0 w-[40%] h-[40%] bg-destructive/5 blur-[100px] pointer-events-none" />
