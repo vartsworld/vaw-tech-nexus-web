@@ -479,8 +479,24 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
             {/* Priority */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Priority</Label>
+              {/* Auto option - full width */}
+              <button
+                onClick={() => setNewTask({ ...newTask, priority: 'auto' })}
+                className={`w-full px-3 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                  newTask.priority === 'auto'
+                    ? 'bg-violet-500/10 text-violet-400 border-violet-500/30 scale-[1.02]'
+                    : 'border-white/10 text-muted-foreground hover:border-white/20'
+                }`}
+              >
+                ⏱ Auto
+                {newTask.priority === 'auto' && newTask.due_date && (
+                  <span className="text-[10px] normal-case font-medium opacity-70">
+                    → {getEffectivePriority()}
+                  </span>
+                )}
+              </button>
               <div className="grid grid-cols-2 gap-2">
-                {priorityOptions.map(p => (
+                {priorityOptions.filter(p => p.value !== 'auto').map(p => (
                   <button
                     key={p.value}
                     onClick={() => setNewTask({ ...newTask, priority: p.value })}
