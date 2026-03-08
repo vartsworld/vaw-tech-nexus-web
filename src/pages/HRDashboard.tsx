@@ -293,7 +293,7 @@ const HRDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#050505] text-white overflow-hidden selection:bg-indigo-500/30">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden selection:bg-primary/30">
       {/* Background Glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
