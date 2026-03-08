@@ -1214,15 +1214,17 @@ export const TaskDetailDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[90vh] bg-gradient-to-br from-slate-900 to-slate-800 border-white/20 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-              <Target className="w-6 h-6 text-blue-400" />
-              {task.title}
+        <DialogContent className="max-w-2xl max-h-[90vh] bg-gradient-to-br from-slate-900 to-slate-800 border-white/20 text-white flex flex-col overflow-hidden p-0">
+          <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-3 border-b border-white/10">
+            <DialogTitle className="text-lg font-bold flex items-center gap-2 leading-snug">
+              <Target className="w-5 h-5 text-blue-400 flex-shrink-0" />
+              <span className="line-clamp-2">{task.title}</span>
             </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[calc(90vh-100px)] pr-4">
-            {content}
+          <ScrollArea className="flex-1 min-h-0 px-6 pb-6">
+            <div className="pr-4 pt-3">
+              {content}
+            </div>
           </ScrollArea>
         </DialogContent>
       </Dialog>
