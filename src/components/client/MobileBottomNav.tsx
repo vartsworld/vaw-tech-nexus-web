@@ -60,8 +60,8 @@ const MobileBottomNav = () => {
                                         className={cn(
                                             "relative w-10 h-10 flex items-center justify-center rounded-2xl transition-all duration-300",
                                             active
-                                                ? "bg-tech-gold/15 shadow-[0_0_20px_rgba(212,175,55,0.15)]"
-                                                : "group-hover:bg-white/5"
+                                                ? "bg-primary/15 shadow-neu-sm"
+                                                : "group-hover:bg-muted"
                                         )}
                                     >
                                         <Icon
