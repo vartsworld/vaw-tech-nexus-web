@@ -13,6 +13,7 @@ import {
   ArrowLeft, User, Plus, ChevronDown, Check, Paperclip, X, Loader2, Repeat,
   Flag, Calendar, Target, Layers, FileText, Sparkles
 } from "lucide-react";
+import CircularDateTimePicker from "./CircularDateTimePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -503,25 +504,13 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
               />
             </div>
 
-            {/* Due Date & Time */}
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Calendar className="h-3 w-3" /> Due Date
-                </Label>
-                <Input type="date" value={newTask.due_date}
-                  onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-                  className="bg-transparent border-white/10 h-11"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Due Time</Label>
-                <Input type="time" value={newTask.due_time}
-                  onChange={(e) => setNewTask({ ...newTask, due_time: e.target.value })}
-                  className="bg-transparent border-white/10 h-11"
-                />
-              </div>
-            </div>
+            {/* Due Date & Time - Creative Circular Picker */}
+            <CircularDateTimePicker
+              date={newTask.due_date}
+              time={newTask.due_time}
+              onDateChange={(d) => setNewTask({ ...newTask, due_date: d })}
+              onTimeChange={(t) => setNewTask({ ...newTask, due_time: t })}
+            />
 
             {/* Actions */}
             <div className="space-y-3 pt-4 border-t border-white/10">
