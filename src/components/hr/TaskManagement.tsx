@@ -1238,12 +1238,14 @@ const TaskManagement = () => {
     );
   };
 
-  const getStageBadge = (stage: number | null | undefined) => {
+  const getStageBadge = (stage: number | null | undefined, taskStageNames?: any) => {
     if (!stage) return null;
+    const names: Record<string, string> = (taskStageNames && typeof taskStageNames === 'object') ? taskStageNames : {};
+    const label = names[String(stage)] || `Stage ${stage}`;
     return (
       <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/30">
         <Layers className="h-3 w-3 mr-1" />
-        Stage {stage}
+        {label}
       </Badge>
     );
   };

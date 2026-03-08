@@ -49,6 +49,12 @@ const TaskDetailPage = ({
   const [newSubtask, setNewSubtask] = useState({
     title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1
   });
+  const [newStageName, setNewStageName] = useState("");
+  const [editingStageNum, setEditingStageNum] = useState<number | null>(null);
+  const [editingStageName, setEditingStageName] = useState("");
+  const [customStageNames, setCustomStageNames] = useState<Record<number, string>>(
+    (task?.stage_names && typeof task.stage_names === 'object') ? task.stage_names : {}
+  );
 
   const checkScrollability = useCallback(() => {
     const el = stageScrollRef.current;
