@@ -373,7 +373,7 @@ const HRDashboard = () => {
                       {activeTab === item.id && (
                         <motion.div
                           layoutId="activeTabIndicator"
-                          className="absolute inset-y-2 left-0 w-1 bg-indigo-500 rounded-full"
+                          className="absolute inset-y-2 left-0 w-1 bg-primary rounded-full"
                           initial={false}
                           transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         />
