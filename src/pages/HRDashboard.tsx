@@ -244,6 +244,7 @@ const HRDashboard = () => {
       label: "RELATIONSHIPS",
       items: [
         { id: "clients", label: "Clients", icon: Briefcase },
+        { id: "support", label: "Support Tickets", icon: HeadphonesIcon },
         { id: "manage-projects", label: "Manage Projects", icon: FolderSearch },
         { id: "project-monitor", label: "Project Monitor", icon: Activity },
         { id: "financials", label: "Financial Oversight", icon: DollarSign },
