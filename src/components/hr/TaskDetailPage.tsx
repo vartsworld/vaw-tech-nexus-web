@@ -228,6 +228,60 @@ const TaskDetailPage = ({
   const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
   if (stageNums.length === 0) stageNums.push(1);
 
+  const reviewPendingSubtasks = subtasks.filter(s => s.status === 'review_pending');
+
+  const handleSubtaskApprove = async (subtaskId: string) => {
+    try {
+      const subtaskToApprove = subtasks.find(s => s.id === subtaskId);
+      const { error } = await supabase.from('staff_subtasks')
+        .update({ status: 'completed' as any, updated_at: new Date().toISOString() })
+        .eq('id', subtaskId);
+      if (error) throw error;
+      setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, status: 'completed' } : s));
+
+      // Award points if applicable
+      if (subtaskToApprove?.points > 0 && subtaskToApprove?.assigned_to) {
+        await supabase.rpc('increment_points' as any, {
+          user_id_param: subtaskToApprove.assigned_to,
+          points_param: subtaskToApprove.points
+        });
+      }
+
+      toast({ title: "Subtask Approved! ✅", description: `Points awarded: ${subtaskToApprove?.points || 0}` });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to approve subtask.", variant: "destructive" });
+    }
+  };
+
+  const handleSubtaskReject = async (subtaskId: string, note: string) => {
+    try {
+      const subtaskToReject = subtasks.find(s => s.id === subtaskId);
+      const existingComments = Array.isArray(subtaskToReject?.comments) ? subtaskToReject.comments : [];
+      const newComment = {
+        type: 'rejection',
+        message: note,
+        user_name: userProfile?.full_name || 'Team Head',
+        timestamp: new Date().toISOString()
+      };
+
+      const { error } = await supabase.from('staff_subtasks')
+        .update({
+          status: 'in_progress' as any,
+          comments: [...existingComments, newComment] as any,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subtaskId);
+      if (error) throw error;
+      setSubtasks(prev => prev.map(s => s.id === subtaskId
+        ? { ...s, status: 'in_progress', comments: [...existingComments, newComment] }
+        : s
+      ));
+      toast({ title: "Subtask Returned", description: "Sent back for rework with feedback." });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to reject subtask.", variant: "destructive" });
+    }
+  };
+
   const completedSubtasks = subtasks.filter(s => s.status === 'completed').length;
 
   const stageLabels: Record<number, string> = { 1: 'DISCOVERY', 2: 'DESIGN', 3: 'DEVELOPMENT', 4: 'TESTING', 5: 'REVIEW' };
