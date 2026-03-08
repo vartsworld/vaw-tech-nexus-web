@@ -120,36 +120,48 @@ const VirtualOfficeLayout = ({
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 overflow-hidden flex-shrink-0 z-20">
         <div className="p-6 pb-4 space-y-4 flex-shrink-0 overflow-y-auto">
-          {/* Room Navigation */}
+          {/* Room Navigation - Collapsible */}
           <div>
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-              <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded"></div>
-              Office Rooms
-            </h3>
-            <div className="space-y-2">
-              {rooms.map((room) => {
-                const Icon = room.icon;
-                const isActive = currentRoom === room.id;
+            <button
+              onClick={() => setRoomsCollapsed(!roomsCollapsed)}
+              className="w-full flex items-center justify-between text-white font-semibold mb-2 hover:opacity-80 transition-opacity"
+            >
+              <span className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded"></div>
+                Office Rooms
+              </span>
+              {roomsCollapsed ? (
+                <ChevronRight className="w-4 h-4 text-white/50" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-white/50" />
+              )}
+            </button>
+            {!roomsCollapsed && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                {rooms.map((room) => {
+                  const Icon = room.icon;
+                  const isActive = currentRoom === room.id;
 
-                return (
-                  <Button
-                    key={room.id}
-                    variant="ghost"
-                    className={`w-full justify-start p-4 h-auto transition-all duration-300 ${isActive
-                      ? `bg-gradient-to-r ${room.color} text-white shadow-lg shadow-blue-500/25`
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                      }`}
-                    onClick={() => onRoomChange(room.id)}
-                  >
-                    <Icon className="w-5 h-5 mr-3" />
-                    <span className="font-medium">{room.name}</span>
-                    {isActive && (
-                      <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                    )}
-                  </Button>
-                );
-              })}
-            </div>
+                  return (
+                    <Button
+                      key={room.id}
+                      variant="ghost"
+                      className={`w-full justify-start p-4 h-auto transition-all duration-300 ${isActive
+                        ? `bg-gradient-to-r ${room.color} text-white shadow-lg shadow-blue-500/25`
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                        }`}
+                      onClick={() => onRoomChange(room.id)}
+                    >
+                      <Icon className="w-5 h-5 mr-3" />
+                      <span className="font-medium">{room.name}</span>
+                      {isActive && (
+                        <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                      )}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Quick Actions / Chess Arena Toggle */}
