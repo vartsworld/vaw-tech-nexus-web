@@ -201,12 +201,12 @@ export const SubtaskReviewDialog = ({
             )}
             <Badge variant="outline" className={`text-[10px] font-bold px-2.5 py-1 ${
               subtask.status === 'completed' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-              : subtask.status === 'review_pending' ? 'bg-orange-500/15 text-orange-300 border-orange-500/30'
+              : isReviewable ? 'bg-orange-500/15 text-orange-300 border-orange-500/30'
               : subtask.status === 'in_progress' ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
               : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
             }`}>
               <Clock className="h-3 w-3 mr-1" />
-              {subtask.status === 'completed' ? 'COMPLETED' : subtask.status === 'review_pending' ? 'PENDING APPROVAL' : subtask.status === 'in_progress' ? 'IN PROGRESS' : 'PENDING'}
+              {subtask.status === 'completed' ? 'COMPLETED' : isReviewable ? 'PENDING APPROVAL' : subtask.status === 'in_progress' ? 'IN PROGRESS' : 'PENDING'}
             </Badge>
           </div>
         </div>
