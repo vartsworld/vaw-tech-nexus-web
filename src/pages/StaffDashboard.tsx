@@ -23,6 +23,8 @@ import {
   Coins
 } from "lucide-react";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
+import StaffMobileHome from "@/components/staff/StaffMobileHome";
+import { useIsMobile } from "@/hooks/use-mobile";
 import WorkspaceRoom from "@/components/staff/WorkspaceRoom";
 import BreakRoom from "@/components/staff/BreakRoom";
 import BreakRoomWidget from "@/components/staff/BreakRoomWidget";
@@ -46,7 +48,9 @@ type RoomType = 'workspace' | 'breakroom' | 'meeting';
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
+  const [showMobileHome, setShowMobileHome] = useState(true);
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -316,6 +320,20 @@ const StaffDashboard = () => {
     ),
     meeting: <MeetingRoom />
   };
+
+  // Show mobile home on small screens
+  if (isMobile && showMobileHome) {
+    return (
+      <StaffMobileHome
+        profile={profile}
+        currentRoom={currentRoom}
+        onRoomChange={setCurrentRoom}
+        onOpenChat={() => {}}
+        onOpenCoins={() => navigate("/mycoins")}
+        onEnterWorkspace={() => setShowMobileHome(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen h-screen flex flex-col relative overflow-hidden">
