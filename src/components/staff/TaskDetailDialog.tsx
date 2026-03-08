@@ -162,13 +162,24 @@ export const TaskDetailDialog = ({
       if (error) throw error;
 
       // --- Sync: subtask in_progress → parent task in_progress → project in_progress ---
-      if (task && task.status === 'pending') {
+      // Also auto-start the timer
+      if (task && (task.status === 'pending' || !isTimerRunning)) {
+        const updates: any = {
+          status: 'in_progress',
+          updated_at: new Date().toISOString(),
+        };
+        // Only set timer_started_at if not already running
+        if (!(task as any).timer_started_at) {
+          updates.timer_started_at = new Date().toISOString();
+          updates.breaks_taken = 0;
+        }
         const { error: taskErr } = await supabase
           .from('staff_tasks')
-          .update({ status: 'in_progress', updated_at: new Date().toISOString() } as any)
+          .update(updates)
           .eq('id', task.id);
         if (!taskErr) {
           onStatusUpdate(task.id, 'in_progress');
+          setIsTimerRunning(true);
         }
 
         // Also update linked client project to in_progress if it's still pending
@@ -181,7 +192,7 @@ export const TaskDetailDialog = ({
         }
       }
 
-      toast({ title: "Subtask Started", description: "You are now working on this subtask." });
+      toast({ title: "Subtask Started", description: "Timer started automatically." });
       fetchSubtasks();
     } catch (error) {
       console.error("Error starting subtask:", error);
