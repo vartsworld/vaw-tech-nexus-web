@@ -1284,7 +1284,7 @@ const TaskManagement = () => {
     const names: Record<string, string> = (taskStageNames && typeof taskStageNames === 'object') ? taskStageNames : {};
     const label = names[String(stage)] || `Stage ${stage}`;
     return (
-      <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/30">
+      <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-500/30">
         <Layers className="h-3 w-3 mr-1" />
         {label}
       </Badge>
@@ -1293,10 +1293,10 @@ const TaskManagement = () => {
 
   const getPriorityBadge = (priority) => {
     const priorityConfig = {
-      low: 'bg-gray-100 text-gray-800',
-      medium: 'bg-blue-100 text-blue-800',
-      high: 'bg-orange-100 text-orange-800',
-      urgent: 'bg-red-100 text-red-800'
+      low: 'bg-gray-100 text-gray-700 dark:bg-gray-800/50 dark:text-gray-300',
+      medium: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+      urgent: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
     };
 
     return (
