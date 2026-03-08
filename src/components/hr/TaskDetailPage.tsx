@@ -204,6 +204,7 @@ const TaskDetailPage = ({
     in_progress: { color: 'bg-blue-500/15 text-blue-400 border-blue-500/30', label: 'IN PROGRESS' },
     completed: { color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', label: 'COMPLETED' },
     review_pending: { color: 'bg-orange-500/15 text-orange-400 border-orange-500/30', label: 'IN REVIEW' },
+    pending_approval: { color: 'bg-orange-500/15 text-orange-400 border-orange-500/30', label: 'PENDING APPROVAL' },
     handover: { color: 'bg-purple-500/15 text-purple-400 border-purple-500/30', label: 'HANDOVER' },
     cancelled: { color: 'bg-red-500/15 text-red-400 border-red-500/30', label: 'CANCELLED' },
   };
@@ -229,7 +230,7 @@ const TaskDetailPage = ({
   const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
   if (stageNums.length === 0) stageNums.push(1);
 
-  const reviewPendingSubtasks = subtasks.filter(s => s.status === 'review_pending');
+  const reviewPendingSubtasks = subtasks.filter(s => s.status === 'review_pending' || s.status === 'pending_approval');
 
   const handleSubtaskApprove = async (subtaskId: string) => {
     try {
@@ -552,7 +553,7 @@ const TaskDetailPage = ({
                                         {...provided.dragHandleProps}
                                         className={cn(
                                           "rounded-lg border bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group cursor-pointer",
-                                          st.status === 'review_pending'
+                                          (st.status === 'review_pending' || st.status === 'pending_approval')
                                             ? "border-orange-500/40 ring-1 ring-orange-500/20"
                                             : "border-white/10",
                                           snapshot.isDragging && "rotate-2 scale-105 shadow-2xl"
@@ -563,7 +564,7 @@ const TaskDetailPage = ({
                                         }}
                                       >
                                         {/* Review Request Banner */}
-                                        {st.status === 'review_pending' && (
+                                        {(st.status === 'review_pending' || st.status === 'pending_approval') && (
                                           <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-orange-500/15 border border-orange-500/30 -mt-1 mb-1">
                                             <AlertCircle className="h-3 w-3 text-orange-400 animate-pulse" />
                                             <span className="text-[9px] font-bold text-orange-300 uppercase tracking-wider">Review Requested</span>
@@ -605,11 +606,11 @@ const TaskDetailPage = ({
                                           )}
                                           <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${
                                             st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                                            : st.status === 'review_pending' ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
+                                            : (st.status === 'review_pending' || st.status === 'pending_approval') ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
                                             : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
                                               : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                                             }`}>
-                                            {st.status === 'completed' ? 'DONE' : st.status === 'review_pending' ? 'IN REVIEW' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
+                                            {st.status === 'completed' ? 'DONE' : (st.status === 'review_pending' || st.status === 'pending_approval') ? 'IN REVIEW' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
                                           </Badge>
                                         </div>
 
@@ -878,7 +879,7 @@ const TaskDetailPage = ({
         }}
         onApprove={handleSubtaskApprove}
         onReject={handleSubtaskReject}
-        viewOnly={reviewDialogSubtask?.status !== 'review_pending'}
+        viewOnly={reviewDialogSubtask?.status !== 'review_pending' && reviewDialogSubtask?.status !== 'pending_approval'}
       />
     </div>
   );
