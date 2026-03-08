@@ -135,8 +135,8 @@ const StaffMobileHome = ({
     const { count } = await supabase
       .from("staff_tasks")
       .select("id", { count: "exact", head: true })
-      .or(`assigned_to.eq.${profile.user_id},created_by.eq.${profile.user_id}`)
-      .eq("status", "completed")
+      .eq("assigned_to", profile.user_id)
+      .eq("status", "completed" as any)
       .gte("completed_at", today + "T00:00:00");
     setCompletedToday(count || 0);
   }, [profile?.user_id]);
