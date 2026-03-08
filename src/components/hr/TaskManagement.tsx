@@ -107,6 +107,10 @@ const TaskManagement = () => {
   const [bulkSubtasks, setBulkSubtasks] = useState<any[]>([]);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isSubtaskFullScreen, setIsSubtaskFullScreen] = useState(false);
+  const [showSubtasks, setShowSubtasks] = useState(false);
+  const [allSubtasks, setAllSubtasks] = useState<Record<string, any[]>>({});
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [loadingAllSubtasks, setLoadingAllSubtasks] = useState(false);
 
   const [newSubtask, setNewSubtask] = useState({
     title: "",
@@ -846,6 +850,40 @@ const TaskManagement = () => {
     } finally {
       setUploadingFiles(false);
     }
+  };
+
+  const fetchAllSubtasksForTasks = async (taskIds: string[]) => {
+    if (taskIds.length === 0) return;
+    try {
+      setLoadingAllSubtasks(true);
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .select(`*, staff_profiles:assigned_to (full_name, username, avatar_url)`)
+        .in('task_id', taskIds)
+        .order('stage', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      const grouped: Record<string, any[]> = {};
+      (data || []).forEach((st: any) => {
+        if (!grouped[st.task_id]) grouped[st.task_id] = [];
+        grouped[st.task_id].push(st);
+      });
+      setAllSubtasks(grouped);
+    } catch (error) {
+      console.error('Error fetching all subtasks:', error);
+    } finally {
+      setLoadingAllSubtasks(false);
+    }
+  };
+
+  const toggleCardExpanded = (taskId: string) => {
+    setExpandedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
   };
 
 
@@ -1772,15 +1810,66 @@ const TaskManagement = () => {
                       <Trello className="h-8 w-8 text-primary" />
                       <h1 className="text-3xl font-bold tracking-tight">Main Task Board</h1>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => setIsFullScreen(false)}
-                      className="flex items-center gap-2 border-primary/20 hover:bg-primary/5"
-                    >
-                      <Minimize2 className="h-5 w-5" />
-                      Exit Full Screen
-                    </Button>
+                    <div className="flex items-center gap-3">
+                      {/* View Toggle */}
+                      <div className="flex items-center gap-1 bg-card border border-muted-foreground/10 rounded-lg p-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setViewMode('table'); setIsFullScreen(false); }}
+                          className="h-8 px-3 text-xs"
+                        >
+                          <List className="h-3.5 w-3.5 mr-1.5" />
+                          Table
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setViewMode('grid'); setIsFullScreen(false); }}
+                          className="h-8 px-3 text-xs"
+                        >
+                          <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
+                          Grid
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-8 px-3 text-xs"
+                        >
+                          <Trello className="h-3.5 w-3.5 mr-1.5" />
+                          Kanban
+                        </Button>
+                      </div>
+                      {/* Show Subtasks Toggle */}
+                      <div className="flex items-center gap-2 bg-card border border-muted-foreground/10 rounded-lg px-3 py-1.5">
+                        <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-medium">Subtasks</span>
+                        <Switch
+                          checked={showSubtasks}
+                          onCheckedChange={(checked) => {
+                            setShowSubtasks(checked);
+                            if (checked) {
+                              const taskIds = filteredTasks.map(t => t.id);
+                              fetchAllSubtasksForTasks(taskIds);
+                              // Expand all cards
+                              setExpandedCards(new Set(taskIds));
+                            } else {
+                              setExpandedCards(new Set());
+                            }
+                          }}
+                          className="scale-75"
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => setIsFullScreen(false)}
+                        className="flex items-center gap-2 border-primary/20 hover:bg-primary/5"
+                      >
+                        <Minimize2 className="h-5 w-5" />
+                        Exit
+                      </Button>
+                    </div>
                   </div>
                 )}
                 <div className={cn(
@@ -1882,9 +1971,24 @@ const TaskManagement = () => {
                                               <span className="text-[9px] text-muted-foreground">
                                                 {task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No date'}
                                               </span>
+                                              {showSubtasks && allSubtasks[task.id]?.length > 0 && (
+                                                <Button
+                                                  size="icon"
+                                                  variant="ghost"
+                                                  className="h-5 w-5 ml-1"
+                                                  onClick={(e) => { e.stopPropagation(); toggleCardExpanded(task.id); }}
+                                                >
+                                                  <ChevronDown className={cn("h-3 w-3 transition-transform", expandedCards.has(task.id) && "rotate-180")} />
+                                                </Button>
+                                              )}
+                                              {showSubtasks && allSubtasks[task.id]?.length > 0 && (
+                                                <span className="text-[9px] text-muted-foreground">
+                                                  {allSubtasks[task.id].filter((s: any) => s.status === 'completed').length}/{allSubtasks[task.id].length}
+                                                </span>
+                                              )}
                                             </div>
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}>
+                                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setSelectedTask(task); setCurrentView('detail'); setIsFullScreen(false); }}>
                                                 <Eye className="h-3.5 w-3.5" />
                                               </Button>
                                               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openEditDialog(task)}>
@@ -1892,6 +1996,37 @@ const TaskManagement = () => {
                                               </Button>
                                             </div>
                                           </div>
+
+                                          {/* Expanded Subtasks */}
+                                          {showSubtasks && expandedCards.has(task.id) && allSubtasks[task.id]?.length > 0 && (
+                                            <div className="pt-2 border-t border-muted/50 space-y-1.5 max-h-60 overflow-y-auto">
+                                              {allSubtasks[task.id].map((st: any) => {
+                                                const stStatus = st.status || 'pending';
+                                                const stColor = stStatus === 'completed' ? 'text-green-600 dark:text-green-400' :
+                                                  stStatus === 'in_progress' ? 'text-blue-600 dark:text-blue-400' :
+                                                  stStatus === 'pending_approval' ? 'text-orange-600 dark:text-orange-400' :
+                                                  'text-muted-foreground';
+                                                return (
+                                                  <div key={st.id} className="flex items-center gap-2 px-1.5 py-1 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
+                                                    <div className={cn("h-1.5 w-1.5 rounded-full shrink-0", 
+                                                      stStatus === 'completed' ? 'bg-green-500' : 
+                                                      stStatus === 'in_progress' ? 'bg-blue-500' : 
+                                                      stStatus === 'pending_approval' ? 'bg-orange-500' : 'bg-muted-foreground/40'
+                                                    )} />
+                                                    <span className={cn("text-[10px] truncate flex-1", stColor)}>{st.title}</span>
+                                                    {st.staff_profiles?.full_name && (
+                                                      <Avatar className="h-4 w-4 shrink-0">
+                                                        <AvatarImage src={st.staff_profiles?.avatar_url} />
+                                                        <AvatarFallback className="text-[6px]">
+                                                          {st.staff_profiles.full_name.substring(0, 2).toUpperCase()}
+                                                        </AvatarFallback>
+                                                      </Avatar>
+                                                    )}
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
                                         </CardContent>
                                       </Card>
                                     </div>
