@@ -102,7 +102,7 @@ const StaffMobileHome = ({
     const { data } = await supabase
       .from("staff_tasks")
       .select("id, title, description, status, priority, points, assigned_by, created_at, due_date, due_time, trial_period, comments, attachments, client_project_id, timer_started_at, current_stage")
-      .or(`assigned_to.eq.${profile.user_id},created_by.eq.${profile.user_id}`)
+      .or(`assigned_to.eq.${profile.user_id},assigned_to.like.%${profile.user_id}%`)
       .in("status", ["pending", "in_progress"])
       .order("created_at", { ascending: false })
       .limit(20);
@@ -135,7 +135,7 @@ const StaffMobileHome = ({
     const { count } = await supabase
       .from("staff_tasks")
       .select("id", { count: "exact", head: true })
-      .eq("assigned_to", profile.user_id)
+      .or(`assigned_to.eq.${profile.user_id},assigned_to.like.%${profile.user_id}%`)
       .eq("status", "completed" as any)
       .gte("completed_at", today + "T00:00:00");
     setCompletedToday(count || 0);
@@ -244,9 +244,9 @@ const StaffMobileHome = ({
         {/* Profile Row */}
         <motion.div {...fadeUp(0.05)} className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Avatar className="w-11 h-11 border-2 border-primary/20">
+             <Avatar className="w-11 h-11 border-2 border-emerald-500/20">
               <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
-              <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
+              <AvatarFallback className="bg-emerald-500/10 text-emerald-400 text-sm font-bold">
                 {profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
               </AvatarFallback>
             </Avatar>
@@ -284,43 +284,43 @@ const StaffMobileHome = ({
 
         {/* Quick Stats Row */}
         <motion.div {...fadeUp(0.2)} className="flex items-center gap-2 mt-4">
-          <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-full px-3 py-1.5">
-            <Coins className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-bold text-primary">{coinsBalance.toLocaleString()}</span>
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1.5">
+            <Coins className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-xs font-bold text-emerald-400">{coinsBalance.toLocaleString()}</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full px-3 py-1.5">
-            <Flame className="w-3.5 h-3.5 text-orange-400" />
-            <span className="text-xs font-bold text-orange-400">{streak}d streak</span>
+          <div className="flex items-center gap-1.5 bg-emerald-600/10 border border-emerald-600/20 rounded-full px-3 py-1.5">
+            <Flame className="w-3.5 h-3.5 text-emerald-300" />
+            <span className="text-xs font-bold text-emerald-300">{streak}d streak</span>
           </div>
         </motion.div>
 
         {/* Task Summary Card */}
         <motion.div
           {...fadeUp(0.25)}
-          className="mt-4 rounded-2xl bg-gradient-to-br from-primary to-primary/80 p-5 relative overflow-hidden shadow-lg shadow-primary/15"
+          className="mt-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-5 relative overflow-hidden shadow-lg shadow-emerald-500/20"
         >
           <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/8 blur-2xl" />
           <div className="absolute right-3 bottom-2 w-20 h-20 rounded-full bg-white/5" />
 
           <div className="flex items-center justify-between relative z-10">
             <div>
-              <p className="text-primary-foreground/60 text-[10px] font-semibold uppercase tracking-widest mb-1.5">
+              <p className="text-white/60 text-[10px] font-semibold uppercase tracking-widest mb-1.5">
                 Today's Tasks
               </p>
               <div className="flex items-end gap-1.5">
-                <span className="text-4xl font-black text-primary-foreground leading-none">
+                <span className="text-4xl font-black text-white leading-none">
                   {completedToday}
                 </span>
-                <span className="text-primary-foreground/50 text-lg font-semibold mb-0.5">
+                <span className="text-white/50 text-lg font-semibold mb-0.5">
                   /{totalTasks}
                 </span>
               </div>
-              <p className="text-primary-foreground/40 text-[10px] mt-1.5 font-medium">
+              <p className="text-white/40 text-[10px] mt-1.5 font-medium">
                 {inProgressTasks.length} active · {todoTasks.length} pending
               </p>
             </div>
-            <div className="w-16 h-16 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-              <ClipboardIcon className="w-7 h-7 text-primary-foreground/80" />
+            <div className="w-16 h-16 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+              <ClipboardIcon className="w-7 h-7 text-white/80" />
             </div>
           </div>
 
@@ -351,7 +351,7 @@ const StaffMobileHome = ({
               </span>
             </div>
             {todoTasks.length > 4 && (
-              <button onClick={onEnterWorkspace} className="text-[10px] text-primary font-semibold flex items-center gap-0.5">
+              <button onClick={onEnterWorkspace} className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
                 See all <ChevronRight className="w-3 h-3" />
               </button>
             )}
@@ -399,8 +399,8 @@ const StaffMobileHome = ({
                   </div>
                   {task.points > 0 && (
                     <div className="flex items-center gap-1">
-                      <Coins className="w-3 h-3 text-primary" />
-                      <span className="text-[9px] font-bold text-primary">{task.points} pts</span>
+                      <Coins className="w-3 h-3 text-emerald-400" />
+                      <span className="text-[9px] font-bold text-emerald-400">{task.points} pts</span>
                     </div>
                   )}
                 </motion.button>
@@ -414,12 +414,12 @@ const StaffMobileHome = ({
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold text-foreground">In progress</h2>
-              <span className="text-[10px] bg-primary/15 text-primary rounded-full px-2 py-0.5 font-bold">
+              <span className="text-[10px] bg-emerald-500/15 text-emerald-400 rounded-full px-2 py-0.5 font-bold">
                 {inProgressTasks.length}
               </span>
             </div>
             {inProgressTasks.length > 5 && (
-              <button onClick={onEnterWorkspace} className="text-[10px] text-primary font-semibold flex items-center gap-0.5">
+              <button onClick={onEnterWorkspace} className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
                 See all <ChevronRight className="w-3 h-3" />
               </button>
             )}
@@ -460,7 +460,7 @@ const StaffMobileHome = ({
                       <p className="text-sm font-semibold text-foreground leading-snug flex-1 line-clamp-1">
                         {task.title}
                       </p>
-                      <span className="text-xs font-bold text-primary flex-shrink-0">
+                      <span className="text-xs font-bold text-emerald-400 flex-shrink-0">
                         {progress}%
                       </span>
                     </div>
@@ -478,8 +478,8 @@ const StaffMobileHome = ({
                       </div>
                       {task.points > 0 && (
                         <div className="flex items-center gap-1">
-                          <Coins className="w-3 h-3 text-primary" />
-                          <span className="text-[9px] font-bold text-primary">{task.points} pts</span>
+                          <Coins className="w-3 h-3 text-emerald-400" />
+                          <span className="text-[9px] font-bold text-emerald-400">{task.points} pts</span>
                         </div>
                       )}
                     </div>
@@ -511,7 +511,7 @@ const StaffMobileHome = ({
                   {active && (
                     <motion.div
                       layoutId="staffNavGlow"
-                      className="absolute -top-1 w-8 h-8 rounded-full bg-primary/12 blur-xl"
+                      className="absolute -top-1 w-8 h-8 rounded-full bg-emerald-500/12 blur-xl"
                       transition={{ type: "spring", stiffness: 400, damping: 28 }}
                     />
                   )}
@@ -521,14 +521,14 @@ const StaffMobileHome = ({
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     className={cn(
                       "relative w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300",
-                      active ? "bg-primary/12" : "group-hover:bg-muted/50"
+                      active ? "bg-emerald-500/12" : "group-hover:bg-muted/50"
                     )}
                   >
                     <Icon
                       className={cn(
                         "w-[17px] h-[17px] transition-all duration-300",
                         active
-                          ? "text-primary"
+                          ? "text-emerald-400"
                           : "text-muted-foreground group-hover:text-foreground"
                       )}
                       strokeWidth={active ? 2.2 : 1.8}
@@ -538,7 +538,7 @@ const StaffMobileHome = ({
                       <motion.div
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-primary"
+                        className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-emerald-400"
                       />
                     )}
                   </motion.div>
@@ -547,7 +547,7 @@ const StaffMobileHome = ({
                     animate={active ? { opacity: 1 } : { opacity: 0.4 }}
                     className={cn(
                       "text-[8px] font-semibold tracking-[0.06em] uppercase transition-colors duration-300",
-                      active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                      active ? "text-emerald-400" : "text-muted-foreground group-hover:text-foreground"
                     )}
                   >
                     {item.label}
