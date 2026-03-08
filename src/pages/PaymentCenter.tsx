@@ -561,10 +561,27 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                         <div className="space-y-3">
                             {recurringInvoices.map((rec, idx) => {
                                 const isActive = rec.status?.toLowerCase() !== 'paused' && rec.status?.toLowerCase() !== 'stopped';
+                                const nextDate = rec.next_issue_date || rec.next_invoice_date || rec.next_generation_date;
+                                const createdDate = rec.created_at;
+                                const freq = rec.frequency || rec.recurrence_frequency || 'monthly';
+                                
+                                // Calculate timeline progress
+                                let timelineProgress = 0;
+                                if (nextDate && createdDate && isActive) {
+                                    const now = new Date().getTime();
+                                    const start = new Date(createdDate).getTime();
+                                    const end = new Date(nextDate).getTime();
+                                    if (end > start) {
+                                        timelineProgress = Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
+                                    }
+                                }
+                                
+                                const daysUntilNext = nextDate ? Math.ceil((new Date(nextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+
                                 return (
                                     <motion.div key={rec.id || idx} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
                                         <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all">
-                                            <CardContent className="p-4">
+                                            <CardContent className="p-5 space-y-4">
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-4">
                                                         <div className={cn("p-3 rounded-xl", isActive ? "bg-violet-500/10" : "bg-gray-500/10")}>
@@ -574,9 +591,8 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                             <h4 className="text-white font-bold">
                                                                 {rec.name || rec.invoice_number || `Recurring #${idx + 1}`}
                                                             </h4>
-                                                            <p className="text-xs text-gray-400 mt-1">
-                                                                {rec.frequency || rec.recurrence_frequency || 'Monthly'}
-                                                                {rec.next_invoice_date && ` • Next: ${new Date(rec.next_invoice_date).toLocaleDateString('en-IN')}`}
+                                                            <p className="text-xs text-gray-400 mt-1 capitalize">
+                                                                {freq} billing cycle
                                                             </p>
                                                         </div>
                                                     </div>
@@ -589,6 +605,34 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                         </Badge>
                                                     </div>
                                                 </div>
+
+                                                {/* Timeline */}
+                                                {isActive && nextDate && (
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between text-[11px]">
+                                                            <span className="text-gray-500">
+                                                                {createdDate ? `Started ${new Date(createdDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'Billing cycle'}
+                                                            </span>
+                                                            <span className="text-violet-400 font-semibold flex items-center gap-1">
+                                                                <Calendar className="w-3 h-3" />
+                                                                Next: {new Date(nextDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                            </span>
+                                                        </div>
+                                                        <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+                                                            <motion.div
+                                                                className="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-500 to-violet-400 rounded-full"
+                                                                initial={{ width: 0 }}
+                                                                animate={{ width: `${timelineProgress}%` }}
+                                                                transition={{ duration: 1, delay: idx * 0.1 }}
+                                                            />
+                                                        </div>
+                                                        {daysUntilNext !== null && (
+                                                            <p className={cn("text-[11px] font-semibold text-right", daysUntilNext <= 30 ? "text-amber-400" : "text-gray-500")}>
+                                                                {daysUntilNext > 0 ? `${daysUntilNext} days until next billing` : daysUntilNext === 0 ? 'Due today' : `Overdue by ${Math.abs(daysUntilNext)} days`}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </CardContent>
                                         </Card>
                                     </motion.div>
