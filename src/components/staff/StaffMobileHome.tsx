@@ -521,7 +521,7 @@ const StaffMobileHome = ({
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     className={cn(
                       "relative w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300",
-                      active ? "bg-primary/12" : "group-hover:bg-muted/50"
+                      active ? "bg-emerald-500/12" : "group-hover:bg-muted/50"
                     )}
                   >
                     <Icon
