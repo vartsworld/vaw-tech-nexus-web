@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Sparkles,
   Globe,
+  CalendarClock,
   Smartphone,
   Palette,
   TrendingUp,
@@ -83,6 +84,7 @@ const stagger = {
 
 const ClientHome = ({ profile }: { profile: any }) => {
   const [projects, setProjects] = useState<any[]>([]);
+  const [renewalProjects, setRenewalProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGreeting, setShowGreeting] = useState(false);
   const [showContent, setShowContent] = useState(false);
@@ -109,17 +111,29 @@ const ClientHome = ({ profile }: { profile: any }) => {
         .maybeSingle();
 
       const crmId = crmClient?.id;
+      const clientFilter = `client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`;
 
-      const { data } = await supabase
-        .from("client_projects")
-        .select("*")
-        .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
-        .neq("status", "completed")
-        .neq("status", "cancel")
-        .order("updated_at", { ascending: false })
-        .limit(4);
+      const [activeRes, renewalRes] = await Promise.all([
+        supabase
+          .from("client_projects")
+          .select("*")
+          .or(clientFilter)
+          .neq("status", "completed")
+          .neq("status", "cancel")
+          .order("updated_at", { ascending: false })
+          .limit(4),
+        supabase
+          .from("client_projects")
+          .select("id,title,project_type,renewal_date,next_payment_date,status")
+          .or(clientFilter)
+          .neq("status", "cancel")
+          .or("renewal_date.not.is.null,next_payment_date.not.is.null")
+          .order("renewal_date", { ascending: true })
+          .limit(5),
+      ]);
 
-      setProjects(data || []);
+      setProjects(activeRes.data || []);
+      setRenewalProjects(renewalRes.data || []);
     } catch (err) {
       console.error("Error fetching projects:", err);
     } finally {
@@ -262,6 +276,93 @@ const ClientHome = ({ profile }: { profile: any }) => {
               </div>
             </motion.div>
           )}
+        </motion.section>
+      )}
+
+      {/* Upcoming Renewals */}
+      {showContent && (
+        <motion.section
+          initial="hidden"
+          animate="visible"
+          variants={stagger}
+          className="space-y-6"
+        >
+          <motion.div variants={fadeUp} custom={0} className="flex items-center justify-between">
+            <h2 className="text-xs tracking-[0.2em] uppercase text-muted-foreground/60 font-medium">
+              Upcoming Renewals
+            </h2>
+          </motion.div>
+
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-20 rounded-2xl bg-card/50 animate-pulse" />
+              ))}
+            </div>
+          ) : renewalProjects.length > 0 ? (
+              <div className="space-y-3">
+                {renewalProjects.map((project: any, idx: number) => {
+                  const renewalDate = project.renewal_date || project.next_payment_date;
+                  const date = new Date(renewalDate);
+                  const now = new Date();
+                  const daysUntil = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                  const isUrgent = daysUntil <= 7;
+                  const isSoon = daysUntil <= 30;
+
+                  return (
+                    <motion.div
+                      key={project.id + "-renewal"}
+                      variants={fadeUp}
+                      custom={idx + 1}
+                      className="group cursor-pointer"
+                      onClick={() => (window.location.href = `/client/dashboard/projects/${project.id}`)}
+                    >
+                      <div className="p-5 rounded-2xl bg-card/40 border border-border/40 hover:border-border/80 hover:bg-card/60 transition-all duration-500">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1 flex-1">
+                            <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-300">
+                              {project.title}
+                            </h3>
+                            <p className="text-xs text-muted-foreground/50 font-light">
+                              {project.renewal_date ? "Renewal" : "Next Payment"}
+                            </p>
+                          </div>
+                          <div className="text-right space-y-1">
+                            <p className={cn(
+                              "text-sm font-medium",
+                              isUrgent ? "text-destructive" : isSoon ? "text-amber-400" : "text-foreground"
+                            )}>
+                              {date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            </p>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] font-normal border",
+                                isUrgent
+                                  ? "bg-destructive/10 text-destructive border-destructive/20"
+                                  : isSoon
+                                  ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                  : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                              )}
+                            >
+                              {daysUntil < 0 ? "Overdue" : daysUntil === 0 ? "Today" : `${daysUntil}d left`}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ) : (
+              <motion.div variants={fadeUp} custom={1}>
+                <div className="text-center py-10 rounded-2xl border border-dashed border-border/30">
+                  <CalendarClock className="w-5 h-5 text-muted-foreground/30 mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground/40 font-light">No upcoming renewals</p>
+                </div>
+              </motion.div>
+            )}
+
         </motion.section>
       )}
 
