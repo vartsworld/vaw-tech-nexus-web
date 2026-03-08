@@ -118,12 +118,51 @@ const TaskDetailPage = ({
 
   const handleSubtaskStatusUpdate = async (subtaskId: string, newStatus: string) => {
     try {
+      const updateData: any = { status: newStatus, updated_at: new Date().toISOString() };
+      if (newStatus === 'completed') updateData.completed_at = new Date().toISOString();
+
       const { data, error } = await supabase.from('staff_subtasks')
-        .update({ status: newStatus as any, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', subtaskId)
         .select('*, staff_profiles:assigned_to (full_name, username, avatar_url)').single();
       if (error) throw error;
-      setSubtasks(subtasks.map(st => st.id === subtaskId ? data : st));
+
+      const updatedSubtasks = subtasks.map(st => st.id === subtaskId ? data : st);
+      setSubtasks(updatedSubtasks);
+
+      // --- Sync: subtask in_progress → parent task in_progress → project in_progress ---
+      if (newStatus === 'in_progress' && task.status === 'pending') {
+        await supabase.from('staff_tasks')
+          .update({ status: 'in_progress', updated_at: new Date().toISOString() } as any)
+          .eq('id', task.id);
+        onStatusUpdate(task.id, 'in_progress');
+
+        // Also update linked client project to in_progress
+        if (task.client_project_id) {
+          await supabase.from('client_projects')
+            .update({ status: 'in_progress', updated_at: new Date().toISOString() })
+            .eq('id', task.client_project_id)
+            .eq('status', 'pending');
+        }
+      }
+
+      // --- Auto-advance current_stage when all subtasks in a stage are completed ---
+      const subtaskStage = (data as any).stage || 1;
+      const stageSubtasks = updatedSubtasks.filter((st: any) => (st.stage || 1) === subtaskStage);
+      const allStageComplete = stageSubtasks.length > 0 && stageSubtasks.every((st: any) => st.status === 'completed');
+
+      if (allStageComplete) {
+        const allStages = [...new Set(updatedSubtasks.map((st: any) => (st.stage || 1) as number))].sort((a, b) => a - b);
+        const nextIncompleteStage = allStages.find(s => {
+          const subs = updatedSubtasks.filter((st: any) => (st.stage || 1) === s);
+          return subs.some((st: any) => st.status !== 'completed');
+        });
+        const newCurrentStage = nextIncompleteStage ?? ((allStages[allStages.length - 1] || 1) + 1);
+
+        await supabase.from('staff_tasks')
+          .update({ current_stage: newCurrentStage, updated_at: new Date().toISOString() } as any)
+          .eq('id', task.id);
+      }
     } catch (error) {
       toast({ title: "Error", description: "Failed to update subtask.", variant: "destructive" });
     }
