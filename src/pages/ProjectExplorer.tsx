@@ -353,6 +353,7 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
                     onBack={() => {
                         setIsDetailView(false);
                         setSelectedProject(null);
+                        navigate("/client/dashboard/projects");
                         fetchProjects();
                     }}
                     onUpload={(files) => handleFileUpload(selectedProject.id, files)}
