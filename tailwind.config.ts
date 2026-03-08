@@ -164,7 +164,11 @@ export default {
 				'neon': '0 0 5px theme("colors.tech.gold"), 0 0 20px theme("colors.tech.gold")',
 				'inner-glow': 'inset 0 0 20px rgba(255,215,0,0.3)',
 				'tech': '0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 215, 0, 0.2)',
-				'cyber': '0 0 0 2px rgba(255, 215, 0, 0.1), 0 15px 35px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1)'
+				'cyber': '0 0 0 2px rgba(255, 215, 0, 0.1), 0 15px 35px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1)',
+				'neu': 'var(--neu-shadow-light)',
+				'neu-sm': 'var(--neu-shadow-light-sm)',
+				'neu-inset': 'var(--neu-shadow-inset)',
+				'neu-pressed': 'var(--neu-shadow-light-pressed)',
 			},
 			backgroundImage: {
 				'tech-gradient': 'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(42,42,42,0.8) 100%)',
