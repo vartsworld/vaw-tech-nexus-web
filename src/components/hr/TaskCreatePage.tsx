@@ -145,7 +145,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
         project_id: !newTask.project_id || newTask.project_id === "no-project" ? null : newTask.project_id,
         client_project_id: !newTask.project_id || newTask.project_id === "no-project" ? null : newTask.project_id,
         client_id: !newTask.client_id || newTask.client_id === "no-client" ? null : newTask.client_id,
-        priority: newTask.priority,
+        priority: newTask.priority === 'auto' ? getEffectivePriority() : newTask.priority,
         status: newTask.status,
         due_date: newTask.due_date || null,
         due_time: newTask.due_time || null,
@@ -188,11 +188,34 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
   };
 
   const priorityOptions = [
+    { value: 'auto', label: 'Auto', color: 'bg-violet-500/10 text-violet-400 border-violet-500/30', icon: '⏱' },
     { value: 'low', label: 'Low', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
     { value: 'medium', label: 'Medium', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
     { value: 'high', label: 'High', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30' },
     { value: 'urgent', label: 'Urgent', color: 'bg-red-500/10 text-red-400 border-red-500/30' },
   ];
+
+  // Auto-priority: update priority based on how close the deadline is
+  useEffect(() => {
+    if (newTask.priority !== 'auto' || !newTask.due_date) return;
+    const now = new Date();
+    const due = new Date(newTask.due_date + (newTask.due_time ? `T${newTask.due_time}` : 'T23:59:59'));
+    const hoursLeft = (due.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    let computed = 'low';
+    if (hoursLeft <= 0) computed = 'urgent';
+    else if (hoursLeft <= 24) computed = 'urgent';
+    else if (hoursLeft <= 72) computed = 'high';
+    else if (hoursLeft <= 168) computed = 'medium'; // 7 days
+    // else stays low
+
+    setNewTask(prev => ({ ...prev, _autoPriority: computed }));
+  }, [newTask.due_date, newTask.due_time, newTask.priority]);
+
+  const getEffectivePriority = () => {
+    if (newTask.priority === 'auto') return (newTask as any)._autoPriority || 'medium';
+    return newTask.priority;
+  };
 
   return (
     <div className="space-y-0 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -456,8 +479,24 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
             {/* Priority */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Priority</Label>
+              {/* Auto option - full width */}
+              <button
+                onClick={() => setNewTask({ ...newTask, priority: 'auto' })}
+                className={`w-full px-3 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                  newTask.priority === 'auto'
+                    ? 'bg-violet-500/10 text-violet-400 border-violet-500/30 scale-[1.02]'
+                    : 'border-white/10 text-muted-foreground hover:border-white/20'
+                }`}
+              >
+                ⏱ Auto
+                {newTask.priority === 'auto' && newTask.due_date && (
+                  <span className="text-[10px] normal-case font-medium opacity-70">
+                    → {getEffectivePriority()}
+                  </span>
+                )}
+              </button>
               <div className="grid grid-cols-2 gap-2">
-                {priorityOptions.map(p => (
+                {priorityOptions.filter(p => p.value !== 'auto').map(p => (
                   <button
                     key={p.value}
                     onClick={() => setNewTask({ ...newTask, priority: p.value })}
