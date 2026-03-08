@@ -436,11 +436,11 @@ const HRDashboard = () => {
               />
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/hr/notifications')} className="relative text-gray-400 hover:text-white hover:bg-white/5">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/hr/notifications')} className="relative text-muted-foreground hover:text-foreground hover:bg-muted">
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-indigo-500 rounded-full border-2 border-[#0c0c0c]" />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-background" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="text-gray-400 hover:text-white hover:bg-white/5">
+              <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="text-muted-foreground hover:text-foreground hover:bg-muted">
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </Button>
             </div>
