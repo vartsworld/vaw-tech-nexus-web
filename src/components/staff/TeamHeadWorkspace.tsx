@@ -1648,6 +1648,14 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       setTasks(tasks.map(task => task.id === taskId ? updatedTask : task));
 
+      // --- Sync: task status → client project status ---
+      if (finalStatus === 'in_progress' && data.client_project_id) {
+        await supabase.from('client_projects')
+          .update({ status: 'in_progress', updated_at: new Date().toISOString() })
+          .eq('id', data.client_project_id)
+          .eq('status', 'pending');
+      }
+
       toast({
         title: "Success",
         description: finalStatus === 'pending_approval'
