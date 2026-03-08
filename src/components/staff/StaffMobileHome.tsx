@@ -304,18 +304,18 @@ const StaffMobileHome = ({
 
           <div className="flex items-center justify-between relative z-10">
             <div>
-              <p className="text-primary-foreground/60 text-[10px] font-semibold uppercase tracking-widest mb-1.5">
+              <p className="text-white/60 text-[10px] font-semibold uppercase tracking-widest mb-1.5">
                 Today's Tasks
               </p>
               <div className="flex items-end gap-1.5">
-                <span className="text-4xl font-black text-primary-foreground leading-none">
+                <span className="text-4xl font-black text-white leading-none">
                   {completedToday}
                 </span>
-                <span className="text-primary-foreground/50 text-lg font-semibold mb-0.5">
+                <span className="text-white/50 text-lg font-semibold mb-0.5">
                   /{totalTasks}
                 </span>
               </div>
-              <p className="text-primary-foreground/40 text-[10px] mt-1.5 font-medium">
+              <p className="text-white/40 text-[10px] mt-1.5 font-medium">
                 {inProgressTasks.length} active · {todoTasks.length} pending
               </p>
             </div>
