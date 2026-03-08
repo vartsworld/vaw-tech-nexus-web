@@ -461,14 +461,14 @@ const FinancialOversight = () => {
                         </div>
                     </CardHeader>
                     <CardContent className="p-8 pt-0 space-y-4 max-h-[400px] overflow-y-auto">
-                        {upcomingRecurring.filter((r: any) => r.nextDate).length === 0 ? (
+                        {upcomingRecurring.filter((r: any) => r.nextDate && r.status !== 'paused').length === 0 ? (
                             <div className="text-center py-10">
                                 <CalendarClock className="w-8 h-8 text-gray-600 mx-auto mb-3" />
                                 <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">No upcoming payments scheduled</p>
                             </div>
                         ) : (
                             upcomingRecurring
-                                .filter((r: any) => r.nextDate)
+                                .filter((r: any) => r.nextDate && r.status !== 'paused')
                                 .map((r: any, i: number) => {
                                     const nextDate = new Date(r.nextDate);
                                     const daysUntil = Math.ceil((nextDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
