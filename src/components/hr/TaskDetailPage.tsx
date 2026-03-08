@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft, CheckCircle, Clock, Target, Flag, Eye, Edit, Trash2,
   Plus, Calendar, User, Layers, FileText, Download, MessageSquare,
@@ -508,6 +509,9 @@ const TaskDetailPage = ({
                                   <Input autoFocus placeholder="Subtask title *" value={newSubtask.title}
                                     onChange={e => setNewSubtask({ ...newSubtask, title: e.target.value })}
                                     className="h-8 text-xs bg-transparent border-white/10" />
+                                  <Textarea placeholder="Description (optional)" value={newSubtask.description}
+                                    onChange={e => setNewSubtask({ ...newSubtask, description: e.target.value })}
+                                    className="text-xs bg-transparent border-white/10 min-h-[50px] resize-none" />
                                   <Select value={newSubtask.assigned_to} onValueChange={v => setNewSubtask({ ...newSubtask, assigned_to: v })}>
                                     <SelectTrigger className="h-8 text-xs bg-transparent border-white/10"><SelectValue placeholder="Assign to..." /></SelectTrigger>
                                     <SelectContent>
@@ -577,6 +581,10 @@ const TaskDetailPage = ({
                                             </Button>
                                           </div>
                                         </div>
+
+                                        {st.description && (
+                                          <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2 break-words">{st.description}</p>
+                                        )}
 
                                         {st.points > 0 && (
                                           <div className="flex items-center gap-1">
