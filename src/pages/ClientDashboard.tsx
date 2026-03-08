@@ -223,19 +223,19 @@ const ClientDashboard = () => {
 
     if (!profile) {
         return (
-            <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
-                <div className="w-20 h-20 bg-tech-red/10 border border-tech-red/20 rounded-2xl flex items-center justify-center mb-6">
-                    <User className="w-10 h-10 text-tech-red" />
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+                <div className="w-20 h-20 bg-destructive/10 border border-destructive/20 rounded-2xl flex items-center justify-center mb-6">
+                    <User className="w-10 h-10 text-destructive" />
                 </div>
-                <h1 className="text-2xl font-black text-white mb-2">ACCESS DENIED</h1>
-                <p className="text-gray-400 text-center max-w-md mb-8">
+                <h1 className="text-2xl font-black text-foreground mb-2">ACCESS DENIED</h1>
+                <p className="text-muted-foreground text-center max-w-md mb-8">
                     We could not initialize your profile secure nexus. This usually happens if your account is pending authorization.
                 </p>
                 <div className="flex gap-4">
-                    <Button variant="outline" className="border-tech-gold/20 text-tech-gold" onClick={() => navigate("/client/login")}>
+                    <Button variant="outline" className="border-primary/20 text-primary" onClick={() => navigate("/client/login")}>
                         Return to Entry
                     </Button>
-                    <Button className="bg-tech-gold text-black font-bold" onClick={() => window.location.reload()}>
+                    <Button className="bg-primary text-primary-foreground font-bold" onClick={() => window.location.reload()}>
                         Retry Sync
                     </Button>
                 </div>
