@@ -67,6 +67,7 @@ import ProjectMonitor from "@/pages/ProjectMonitor";
 import PricingManagement from "@/components/hr/PricingManagement";
 import ApiIntegration from "@/components/hr/ApiIntegration";
 import FinancialOversight from "@/components/hr/FinancialOversight";
+import SupportTicketManagement from "@/components/hr/SupportTicketManagement";
 
 const HRDashboard = () => {
   const navigate = useNavigate();
