@@ -41,13 +41,17 @@ interface TaskDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   onStatusUpdate: (taskId: string, status: Task['status']) => void;
   userId: string;
+  mode?: 'dialog' | 'inline';
+  onBack?: () => void;
 }
 export const TaskDetailDialog = ({
   task,
   open,
   onOpenChange,
   onStatusUpdate,
-  userId
+  userId,
+  mode = 'dialog',
+  onBack
 }: TaskDetailDialogProps) => {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
