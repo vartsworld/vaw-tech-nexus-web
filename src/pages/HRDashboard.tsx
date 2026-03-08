@@ -576,48 +576,48 @@ const Activities = ({ activities }: any) => (
 );
 
 const PerformanceInsights = ({ stats }: any) => (
-  <Card className="bg-[#111] border-white/5 rounded-[2rem] shadow-2xl">
+  <Card className="bg-card border-border rounded-[2rem] shadow-2xl">
     <CardHeader className="p-6">
-      <CardTitle className="text-lg flex items-center gap-2">
-        <TrendingUp className="w-5 h-5 text-indigo-500" />
+      <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+        <TrendingUp className="w-5 h-5 text-primary" />
         Intelligence
       </CardTitle>
     </CardHeader>
     <CardContent className="p-6 pt-0 space-y-6">
       <div className="space-y-4">
         <div className="flex justify-between items-center px-1">
-          <span className="text-sm text-gray-400 font-medium">Monthly Efficiency</span>
-          <span className="text-sm font-bold text-white">87%</span>
+          <span className="text-sm text-muted-foreground font-medium">Monthly Efficiency</span>
+          <span className="text-sm font-bold text-foreground">87%</span>
         </div>
-        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: "87%" }}
-            className="h-full bg-gradient-to-r from-indigo-600 to-violet-600"
+            className="h-full bg-gradient-to-r from-primary to-accent"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Response Time</p>
-          <p className="text-xl font-bold text-white">2.4h</p>
-          <div className="text-[10px] text-green-500 mt-1 flex items-center gap-1 font-bold">
+        <div className="p-4 rounded-2xl bg-muted/50 border border-border">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Response Time</p>
+          <p className="text-xl font-bold text-foreground">2.4h</p>
+          <div className="text-[10px] text-green-600 dark:text-green-400 mt-1 flex items-center gap-1 font-bold">
             <TrendingUp className="h-3 w-3" />
             15% FASTER
           </div>
         </div>
-        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Satisfaction</p>
-          <p className="text-xl font-bold text-white">4.8/5</p>
-          <div className="text-[10px] text-indigo-500 mt-1 flex items-center gap-1 font-bold">
+        <div className="p-4 rounded-2xl bg-muted/50 border border-border">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Satisfaction</p>
+          <p className="text-xl font-bold text-foreground">4.8/5</p>
+          <div className="text-[10px] text-primary mt-1 flex items-center gap-1 font-bold">
             <Sparkles className="h-3 w-3" />
             TOP TIER
           </div>
         </div>
       </div>
 
-      <div className="p-4 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-sm text-indigo-200 leading-relaxed italic">
+      <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 text-sm text-foreground/80 leading-relaxed italic">
         "Team velocity is high. Focus on completing templates to automate repetitive workflows in the next sprint."
       </div>
     </CardContent>
