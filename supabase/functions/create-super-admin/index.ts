@@ -32,7 +32,7 @@ serve(async (req) => {
 
     if (action === 'create_super_admin') {
       // Super admin credentials (moved to environment variables for security)
-      const superAdminEmail = Deno.env.get('SUPER_ADMIN_EMAIL') ?? 'superwow@vaw.tech'
+      const superAdminEmail = Deno.env.get('SUPER_ADMIN_EMAIL') ?? 'admin.vaw.super@vaw.tech'
       const superAdminPassword = Deno.env.get('SUPER_ADMIN_PASSWORD')
 
       if (!superAdminPassword) {
