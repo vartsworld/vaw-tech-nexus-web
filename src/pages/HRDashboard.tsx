@@ -509,7 +509,7 @@ const StatsGrid = ({ stats }: any) => (
 const PremiumStatCard = ({ title, value, subtitle, icon: Icon, gradient, trend }: any) => (
   <motion.div
     whileHover={{ y: -5 }}
-    className="group relative overflow-hidden p-6 rounded-[2rem] bg-[#111] border border-white/5"
+    className="group relative overflow-hidden p-6 rounded-[2rem] bg-card border border-border"
   >
     <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-10 blur-[50px] transition-opacity duration-500`} />
     <div className="flex justify-between items-start mb-4">
@@ -517,15 +517,15 @@ const PremiumStatCard = ({ title, value, subtitle, icon: Icon, gradient, trend }
         <Icon className="w-6 h-6 text-white" />
       </div>
       {trend && (
-        <span className="text-[10px] font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">
+        <span className="text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">
           {trend}
         </span>
       )}
     </div>
     <div className="space-y-1">
-      <h3 className="text-gray-400 text-xs font-bold tracking-wider uppercase">{title}</h3>
-      <div className="text-3xl font-bold tracking-tight text-white">{value}</div>
-      <p className="text-xs text-gray-500">{subtitle}</p>
+      <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">{title}</h3>
+      <div className="text-3xl font-bold tracking-tight text-foreground">{value}</div>
+      <p className="text-xs text-muted-foreground">{subtitle}</p>
     </div>
   </motion.div>
 );
