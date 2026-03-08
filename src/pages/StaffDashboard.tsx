@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,11 +67,12 @@ const StaffDashboard = () => {
 
   // Activity tracking and status
   const { status, reactivationCode, updateStatus, reactivate } = useUserStatus(profile?.user_id || '');
+  const handleStatusChange = useCallback((newStatus: string) => {
+    // Status change handled automatically
+  }, []);
   useActivityTracker({
     userId: profile?.user_id || '',
-    onStatusChange: (newStatus) => {
-      // Status change handled automatically
-    }
+    onStatusChange: handleStatusChange
   });
 
   const [showReactivationDialog, setShowReactivationDialog] = useState(false);
