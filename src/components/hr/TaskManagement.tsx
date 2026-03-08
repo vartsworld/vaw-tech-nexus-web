@@ -107,6 +107,10 @@ const TaskManagement = () => {
   const [bulkSubtasks, setBulkSubtasks] = useState<any[]>([]);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isSubtaskFullScreen, setIsSubtaskFullScreen] = useState(false);
+  const [showSubtasks, setShowSubtasks] = useState(false);
+  const [allSubtasks, setAllSubtasks] = useState<Record<string, any[]>>({});
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [loadingAllSubtasks, setLoadingAllSubtasks] = useState(false);
 
   const [newSubtask, setNewSubtask] = useState({
     title: "",
