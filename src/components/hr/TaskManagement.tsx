@@ -852,6 +852,40 @@ const TaskManagement = () => {
     }
   };
 
+  const fetchAllSubtasksForTasks = async (taskIds: string[]) => {
+    if (taskIds.length === 0) return;
+    try {
+      setLoadingAllSubtasks(true);
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .select(`*, staff_profiles:assigned_to (full_name, username, avatar_url)`)
+        .in('task_id', taskIds)
+        .order('stage', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      const grouped: Record<string, any[]> = {};
+      (data || []).forEach((st: any) => {
+        if (!grouped[st.task_id]) grouped[st.task_id] = [];
+        grouped[st.task_id].push(st);
+      });
+      setAllSubtasks(grouped);
+    } catch (error) {
+      console.error('Error fetching all subtasks:', error);
+    } finally {
+      setLoadingAllSubtasks(false);
+    }
+  };
+
+  const toggleCardExpanded = (taskId: string) => {
+    setExpandedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  };
+
 
 
   const handleDeleteTask = async () => {
