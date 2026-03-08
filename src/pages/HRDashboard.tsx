@@ -417,12 +417,12 @@ const HRDashboard = () => {
         {/* Top bar */}
         <header className="h-20 border-b border-border px-8 flex items-center justify-between bg-card/50 backdrop-blur-md sticky top-0 z-40">
           <div className="flex items-center gap-4">
-            <h2 className="text-xl font-bold tracking-tight capitalize">
+            <h2 className="text-xl font-bold tracking-tight capitalize text-foreground">
               {activeTab.replace('-', ' ')}
             </h2>
-            <Separator orientation="vertical" className="h-6 bg-white/10" />
-            <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
-              <Sparkles className="w-4 h-4 text-indigo-500" />
+            <Separator orientation="vertical" className="h-6 bg-border" />
+            <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
+              <Sparkles className="w-4 h-4 text-primary" />
               <span>Team efficiency is up 12% this week</span>
             </div>
           </div>
