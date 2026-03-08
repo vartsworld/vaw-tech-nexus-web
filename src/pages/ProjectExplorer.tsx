@@ -249,6 +249,7 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
                                     onClick={() => {
                                         setSelectedProject(project);
                                         setIsDetailView(true);
+                                        navigate(`/client/dashboard/projects/${project.id}`);
                                     }}
                                     className="cursor-pointer"
                                 >
