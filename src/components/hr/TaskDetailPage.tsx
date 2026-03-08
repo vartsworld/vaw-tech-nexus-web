@@ -1040,7 +1040,7 @@ const TaskDetailPage = ({
                   <div className={`rounded-2xl border border-white/10 ${c.bg} backdrop-blur-xl p-4 flex flex-col items-center gap-3`}>
                     {/* Clock SVG */}
                     <div className="relative w-[140px] h-[140px]">
-                      <svg viewBox="0 0 120 120" className="w-full h-full animate-countdown-spin">
+                      <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
                         {/* Background track */}
                         <circle cx="60" cy="60" r={radius} fill="none" stroke="currentColor" className="text-white/5" strokeWidth="5" />
                         {/* Tick marks */}
