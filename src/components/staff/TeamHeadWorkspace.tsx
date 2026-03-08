@@ -2018,6 +2018,27 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Review Requests - Quick Action */}
+          {pendingSubtasks.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30 relative animate-pulse"
+              onClick={() => {
+                if (pendingSubtasks.length > 0) {
+                  const first = pendingSubtasks[0];
+                  setReviewDialogSubtask(first);
+                  setReviewDialogOpen(true);
+                }
+              }}
+            >
+              <ListChecks className="w-4 h-4 mr-1.5" />
+              <span className="hidden sm:inline">Review</span>
+              <Badge className="ml-1.5 h-5 min-w-[20px] px-1 bg-purple-500 text-white text-[10px] font-bold border-0 animate-none">
+                {pendingSubtasks.length}
+              </Badge>
+            </Button>
+          )}
           {/* Recently Approved - Quick Action Dialog */}
           {approvedSubtasks.length > 0 && (
             <Dialog>
