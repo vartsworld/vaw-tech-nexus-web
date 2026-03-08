@@ -556,6 +556,19 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                             </div>
                             <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all" />
                         </Button>
+
+                        <Button
+                            className="w-full bg-white/5 border border-red-500/20 hover:bg-red-500/10 hover:border-red-500/40 text-white font-bold h-12 justify-between px-5 rounded-xl group transition-all"
+                            onClick={() => window.location.href = '/client/dashboard/support?tab=error-log'}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-1.5 bg-red-500/10 rounded-lg group-hover:scale-110 transition-transform">
+                                    <AlertCircle className="w-4 h-4 text-red-500" />
+                                </div>
+                                <span className="text-sm">Report an Issue</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all" />
+                        </Button>
                     </div>
 
                     {/* Notifications Panel */}
