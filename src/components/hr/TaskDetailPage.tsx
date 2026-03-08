@@ -547,15 +547,32 @@ const TaskDetailPage = ({
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
                                         className={cn(
-                                          "rounded-lg border border-white/10 bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group",
+                                          "rounded-lg border bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group",
+                                          st.status === 'review_pending'
+                                            ? "border-orange-500/40 ring-1 ring-orange-500/20 cursor-pointer"
+                                            : "border-white/10",
                                           snapshot.isDragging && "rotate-2 scale-105 shadow-2xl"
                                         )}
+                                        onClick={() => {
+                                          if (st.status === 'review_pending') {
+                                            setReviewDialogSubtask(st);
+                                            setReviewDialogOpen(true);
+                                          }
+                                        }}
                                       >
+                                        {/* Review Request Banner */}
+                                        {st.status === 'review_pending' && (
+                                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-orange-500/15 border border-orange-500/30 -mt-1 mb-1">
+                                            <AlertCircle className="h-3 w-3 text-orange-400 animate-pulse" />
+                                            <span className="text-[9px] font-bold text-orange-300 uppercase tracking-wider">Review Requested</span>
+                                          </div>
+                                        )}
+
                                         <div className="flex items-start justify-between gap-2">
                                           <span className="text-xs font-medium leading-tight break-words min-w-0">{st.title}</span>
                                           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                             <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400"
-                                              onClick={() => handleDeleteSubtask(st.id)}>
+                                              onClick={(e) => { e.stopPropagation(); handleDeleteSubtask(st.id); }}>
                                               <Trash2 className="h-3 w-3" />
                                             </Button>
                                           </div>
@@ -580,24 +597,30 @@ const TaskDetailPage = ({
                                               <span className="text-[10px] text-muted-foreground truncate">{st.staff_profiles.full_name}</span>
                                             </div>
                                           )}
-                                          <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                          <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${
+                                            st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                            : st.status === 'review_pending' ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
                                             : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
                                               : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                                             }`}>
-                                            {st.status === 'completed' ? 'DONE' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
+                                            {st.status === 'completed' ? 'DONE' : st.status === 'review_pending' ? 'IN REVIEW' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
                                           </Badge>
                                         </div>
 
                                         {/* Status toggle */}
-                                        <Select value={st.status} onValueChange={(v) => handleSubtaskStatusUpdate(st.id, v)}>
-                                          <SelectTrigger className="h-6 text-[9px] bg-transparent border-white/5">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="pending" className="text-xs">Pending</SelectItem>
-                                            <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
-                                            <SelectItem value="completed" className="text-xs">Completed</SelectItem>
-                                          </SelectContent>
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                          <Select value={st.status} onValueChange={(v) => handleSubtaskStatusUpdate(st.id, v)}>
+                                            <SelectTrigger className="h-6 text-[9px] bg-transparent border-white/5">
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="pending" className="text-xs">Pending</SelectItem>
+                                              <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
+                                              <SelectItem value="review_pending" className="text-xs">Review Pending</SelectItem>
+                                              <SelectItem value="completed" className="text-xs">Completed</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
                                         </Select>
                                       </div>
                                     )}
