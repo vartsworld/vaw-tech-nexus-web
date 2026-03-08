@@ -73,6 +73,7 @@ export const TaskDetailDialog = ({
   const [subtaskNotes, setSubtaskNotes] = useState("");
   const [subtaskFileURLs, setSubtaskFileURLs] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<{ full_name: string, avatar_url: string } | null>(null);
+  const [projectInfo, setProjectInfo] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const subtaskFileInputRef = useRef<HTMLInputElement>(null);
@@ -568,6 +569,20 @@ export const TaskDetailDialog = ({
         return 'bg-gray-500 text-white';
     }
   };
+  // Fetch project info if linked
+  useEffect(() => {
+    const fetchProject = async () => {
+      if (!task || !(task as any).client_project_id) { setProjectInfo(null); return; }
+      const { data } = await supabase
+        .from('client_projects')
+        .select('title, status, project_type, package_type, progress')
+        .eq('id', (task as any).client_project_id)
+        .single();
+      if (data) setProjectInfo(data);
+    };
+    fetchProject();
+  }, [task]);
+
   if (!task) return null;
   const hasDueDate = !!task.due_date;
   const isOverdue = hasDueDate && remainingSeconds === 0 && isTimerRunning;
@@ -700,12 +715,73 @@ export const TaskDetailDialog = ({
     </div>
   ) : null;
 
+
+  const projectInfoCard = (task as any)?.client_project_id ? (
+    <div className="rounded-xl border border-white/[0.12] bg-white/[0.06] backdrop-blur-xl overflow-hidden">
+      <div className="px-5 py-3 border-b border-white/5 bg-white/[0.02]">
+        <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wider flex items-center gap-2">
+          <Target className="w-4 h-4 text-emerald-400" /> Project Info
+        </h3>
+      </div>
+      <div className="p-4 space-y-3">
+        {projectInfo ? (
+          <>
+            <div>
+              <p className="text-[10px] text-white/40 uppercase tracking-wider">Project Name</p>
+              <p className="text-sm font-medium text-white">{projectInfo.title}</p>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <p className="text-[10px] text-white/40 uppercase tracking-wider">Type</p>
+                <p className="text-xs text-white/70">{projectInfo.project_type || '—'}</p>
+              </div>
+              <div className="flex-1">
+                <p className="text-[10px] text-white/40 uppercase tracking-wider">Package</p>
+                <p className="text-xs text-white/70">{projectInfo.package_type || '—'}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Progress</p>
+              <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all" style={{ width: `${projectInfo.progress || 0}%` }} />
+              </div>
+              <p className="text-[10px] text-white/50 mt-1">{projectInfo.progress || 0}% complete</p>
+            </div>
+          </>
+        ) : (
+          <p className="text-xs text-white/40 italic">Loading project info...</p>
+        )}
+      </div>
+    </div>
+  ) : null;
+
   const metadataCard = (
     <div className="rounded-xl border border-white/[0.12] bg-white/[0.06] backdrop-blur-xl overflow-hidden">
       <div className="px-5 py-3 border-b border-white/5 bg-white/[0.02]">
         <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wider">Task Info</h3>
       </div>
       <div className="p-4 space-y-4">
+        {/* Description */}
+        {task.description && (
+          <div>
+            <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Description</p>
+            <p className="text-sm text-white/70 leading-relaxed">{task.description}</p>
+          </div>
+        )}
+
+        {/* Time Remaining */}
+        {task.status !== 'completed' && task.status !== 'handover' && (
+          <div className="bg-black/20 rounded-lg p-3 border border-white/5">
+            <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">
+              {hasDueDate ? 'Time Remaining' : 'Time Elapsed'}
+            </p>
+            <p className={`text-xl font-mono font-bold ${isOverdue ? 'text-red-400' : remainingSeconds < 86400 && hasDueDate ? 'text-orange-400' : 'text-emerald-400'}`}>
+              {hasDueDate ? formatTime(remainingSeconds) : formatTime(elapsedSeconds)}
+            </p>
+            {isOverdue && <p className="text-[10px] text-red-400 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Overdue</p>}
+          </div>
+        )}
+
         {task.assignedBy && (
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
@@ -977,6 +1053,7 @@ export const TaskDetailDialog = ({
 
         {/* Right Column - Sidebar */}
         <div className="space-y-4">
+          {projectInfoCard}
           {metadataCard}
 
           {/* Quick Stats Card */}
