@@ -19,7 +19,8 @@ import {
   Swords,
   ArrowLeft,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  ExternalLink
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import TeamChat from "./TeamChat";
