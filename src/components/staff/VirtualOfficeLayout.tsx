@@ -272,6 +272,7 @@ const VirtualOfficeLayout = ({
                     </Dialog>
                   )}
                 </div>
+                )}
               </div>
             )}
           </div>
