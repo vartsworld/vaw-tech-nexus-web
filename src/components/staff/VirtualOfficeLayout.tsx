@@ -284,7 +284,7 @@ const VirtualOfficeLayout = ({
 
         {/* Team Status / Chat Toggle Section */}
         <div className="flex-1 flex flex-col min-h-0 border-t border-white/10">
-          <div className="flex flex-shrink-0">
+          <div className="flex flex-shrink-0 items-center">
             <button
               onClick={() => setSidebarTab('status')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${sidebarTab === 'status'
@@ -305,6 +305,22 @@ const VirtualOfficeLayout = ({
               <Hash className="w-4 h-4" />
               Team Chat
             </button>
+            {/* Pop-out button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 mx-1 text-white/40 hover:text-white hover:bg-white/10 flex-shrink-0"
+              title={sidebarTab === 'chat' ? 'Pop out Team Chat' : 'Pop out DM Chat'}
+              onClick={() => {
+                if (sidebarTab === 'chat') {
+                  setPopoutChat(true);
+                } else {
+                  setPopoutDM(true);
+                }
+              }}
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Button>
           </div>
           <div className="flex-1 overflow-hidden">
             {sidebarTab === 'status' ? (
@@ -332,6 +348,30 @@ const VirtualOfficeLayout = ({
         onOpenChat={() => setShowMobileChat(true)}
         onOpenCoins={() => navigate('/mycoins')}
       />
+
+      {/* Pop-out Team Chat */}
+      {popoutChat && userId && (
+        <ChatPopout
+          title="Team Chat"
+          icon={<Hash className="w-4 h-4 text-blue-400" />}
+          onClose={() => setPopoutChat(false)}
+        >
+          <TeamChat userId={userId} userProfile={userProfile} />
+        </ChatPopout>
+      )}
+
+      {/* Pop-out DM / Team Status */}
+      {popoutDM && (
+        <ChatPopout
+          title="Direct Messages"
+          icon={<MessageCircle className="w-4 h-4 text-green-400" />}
+          onClose={() => setPopoutDM(false)}
+        >
+          <div className="h-full overflow-y-auto p-4">
+            <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
+          </div>
+        </ChatPopout>
+      )}
     </div>
   );
 };
