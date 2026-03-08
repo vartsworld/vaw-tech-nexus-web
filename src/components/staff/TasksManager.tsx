@@ -451,7 +451,10 @@ const TasksManager = ({
                         <Calendar className="h-3.5 w-3.5 text-blue-400" />
                         <span>{task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No due date'}</span>
                       </div>
-                      {getStatusBadge(task.status)}
+                      <div className="flex items-center gap-1.5">
+                        {getStageBadge(task)}
+                        {getStatusBadge(task.status)}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">
