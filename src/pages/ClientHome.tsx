@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Sparkles,
   Globe,
+  CalendarClock,
   Smartphone,
   Palette,
   TrendingUp,
