@@ -1033,7 +1033,29 @@ export const TaskDetailDialog = ({
             </p>}
           </div>}
         </div>
-      </ScrollArea>
-    </DialogContent>
-  </Dialog>;
+  );
+
+  if (mode === 'inline') {
+    return (
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 rounded-2xl text-white p-6 lg:p-8 h-full overflow-y-auto">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] bg-gradient-to-br from-slate-900 to-slate-800 border-white/20 text-white">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+            <Target className="w-6 h-6 text-blue-400" />
+            {task.title}
+          </DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="max-h-[calc(90vh-100px)] pr-4">
+          {content}
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
 };
