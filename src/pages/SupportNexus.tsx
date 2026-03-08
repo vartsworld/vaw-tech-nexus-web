@@ -171,6 +171,14 @@ const SupportNexus = ({ profile }: { profile: any }) => {
         { id: "support", label: "Direct Support", icon: HeadphonesIcon, color: "text-tech-purple" },
     ];
 
+    const getRoutingLabel = (signal: any) => {
+        if (signal.routing_status === 'routed') {
+            if (signal.type === 'bug_report') return { label: 'Routed → Dev Team', color: 'bg-blue-500/20 text-blue-400' };
+            return { label: 'Routed → HR Team', color: 'bg-purple-500/20 text-purple-400' };
+        }
+        return null;
+    };
+
     return (
         <div className="space-y-8 pb-12">
             {/* Header Section */}
