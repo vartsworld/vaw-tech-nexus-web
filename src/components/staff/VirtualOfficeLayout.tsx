@@ -162,8 +162,8 @@ const VirtualOfficeLayout = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2 text-white/60 hover:text-white hover:bg-white/10"
-                    onClick={() => setChessArenaMode(false)}
+                    className="relative z-10 h-8 px-3 text-white/60 hover:text-white hover:bg-white/10"
+                    onClick={(e) => { e.stopPropagation(); setChessArenaMode(false); }}
                   >
                     <ArrowLeft className="w-3.5 h-3.5 mr-1" />
                     Back
