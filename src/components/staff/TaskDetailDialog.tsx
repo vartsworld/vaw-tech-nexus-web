@@ -702,10 +702,9 @@ export const TaskDetailDialog = ({
   ) : null;
 
   // Fetch project info if linked
-  const [projectInfo, setProjectInfo] = useState<any>(null);
   useEffect(() => {
     const fetchProject = async () => {
-      if (!task || !(task as any).client_project_id) return;
+      if (!task || !(task as any).client_project_id) { setProjectInfo(null); return; }
       const { data } = await supabase
         .from('client_projects')
         .select('title, status, project_type, package_type, progress')
