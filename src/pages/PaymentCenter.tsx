@@ -456,7 +456,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
 
             {/* Summary Cards */}
             {billingConnected && !billingLoading && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     {(() => {
                         const activeRecs = recurringInvoices.filter((r: any) => r.status?.toLowerCase() !== 'paused' && r.status?.toLowerCase() !== 'stopped');
                         const nextRec = activeRecs.sort((a: any, b: any) => new Date(a.next_issue_date || a.next_invoice_date || '9999').getTime() - new Date(b.next_issue_date || b.next_invoice_date || '9999').getTime())[0];
