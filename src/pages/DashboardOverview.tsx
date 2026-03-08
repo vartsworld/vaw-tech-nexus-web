@@ -400,8 +400,8 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                 {/* Recent Projects */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-tech-gold" />
+                        <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
+                            <span className="w-2 h-2 rounded-full bg-primary" />
                             Active Projects
                         </h2>
                         <Button variant="ghost" className="text-tech-gold hover:text-white font-bold text-sm h-auto p-0" onClick={() => window.location.href = '/client/dashboard/projects'}>
