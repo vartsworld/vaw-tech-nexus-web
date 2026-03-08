@@ -621,6 +621,7 @@ const TaskDetailPage = ({
                                             </SelectContent>
                                           </Select>
                                         </div>
+                                      </div>
                                     )}
                                   </Draggable>
                                 ))}
