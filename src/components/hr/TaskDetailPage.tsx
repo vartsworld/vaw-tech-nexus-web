@@ -878,6 +878,7 @@ const TaskDetailPage = ({
         }}
         onApprove={handleSubtaskApprove}
         onReject={handleSubtaskReject}
+        viewOnly={reviewDialogSubtask?.status !== 'review_pending'}
       />
     </div>
   );
