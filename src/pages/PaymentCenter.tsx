@@ -165,48 +165,178 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
     const totalPending = pendingInvoices.reduce((sum: number, inv: any) =>
         sum + (Number(inv.balance) || Number(inv.total) || 0), 0);
 
-    const downloadReceipt = (record: any, type: 'payment' | 'invoice') => {
-        const companyName = profile?.company_name || 'Client';
+    const downloadReceipt = async (record: any, type: 'payment' | 'invoice') => {
+        const clientName = profile?.company_name || profile?.contact_person || 'Client';
+        const clientEmail = profile?.email || '';
+        const clientPhone = profile?.phone || '';
         const date = record.payment_date || record.date || record.issue_date || new Date().toISOString();
         const amount = Number(record.amount || record.total || 0);
         const ref = record.receipt_number || record.reference_number || record.invoice_number || record.payment_number || `${type.toUpperCase()}-${Date.now()}`;
         const method = record.payment_method || record.payment_mode || 'N/A';
         const status = record.payment_status || record.status || 'completed';
         const dueDate = record.due_date || '';
+        const invoiceNum = record.invoice_number || ref;
+        const notes = record.notes || record.terms || '';
 
-        const lines = [
-            '═══════════════════════════════════════════',
-            '           VAW TECHNOLOGIES PVT LTD',
-            '═══════════════════════════════════════════',
-            '',
-            type === 'payment' ? '          PAYMENT RECEIPT' : '              INVOICE',
-            '',
-            `  ${type === 'payment' ? 'Receipt' : 'Invoice'} #:  ${ref}`,
-            `  Date:       ${new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`,
-            ...(dueDate ? [`  Due Date:   ${new Date(dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`] : []),
-            '',
-            '───────────────────────────────────────────',
-            `  Bill To:    ${companyName}`,
-            ...(type === 'payment' ? [`  Method:     ${method.toUpperCase()}`] : []),
-            `  Status:     ${status.toUpperCase()}`,
-            '───────────────────────────────────────────',
-            '',
-            `  Amount:     ₹${amount.toLocaleString('en-IN')}`,
-            '',
-            '═══════════════════════════════════════════',
-            '  Thank you for your business!',
-            '  support@vawtech.com | vawtech.com',
-            '═══════════════════════════════════════════',
-        ];
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const gold = [212, 175, 55] as const;
+        const dark = [20, 20, 20] as const;
+        const gray = [120, 120, 120] as const;
+        const white = [255, 255, 255] as const;
 
-        const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${ref}_${new Date(date).toISOString().split('T')[0]}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast.success(`${type === 'payment' ? 'Receipt' : 'Invoice'} downloaded`);
+        // Background
+        doc.setFillColor(...dark);
+        doc.rect(0, 0, pageWidth, doc.internal.pageSize.getHeight(), 'F');
+
+        // Gold accent bar at top
+        doc.setFillColor(...gold);
+        doc.rect(0, 0, pageWidth, 4, 'F');
+
+        // Load logo
+        try {
+            const logoImg = new Image();
+            logoImg.crossOrigin = 'anonymous';
+            await new Promise<void>((resolve) => {
+                logoImg.onload = () => resolve();
+                logoImg.onerror = () => resolve();
+                logoImg.src = '/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png';
+            });
+            if (logoImg.complete && logoImg.naturalWidth > 0) {
+                doc.addImage(logoImg, 'PNG', 15, 12, 22, 22);
+            }
+        } catch {}
+
+        // Company Header
+        doc.setTextColor(...white);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('VAW TECHNOLOGIES', 42, 22);
+        doc.setFontSize(8);
+        doc.setTextColor(...gray);
+        doc.setFont('helvetica', 'normal');
+        doc.text('PRIVATE LIMITED', 42, 28);
+        doc.text('Digital Solutions & Software Development', 42, 33);
+
+        // Document type badge
+        const badgeText = type === 'payment' ? 'PAYMENT RECEIPT' : 'INVOICE';
+        const badgeWidth = doc.getTextWidth(badgeText) + 16;
+        doc.setFillColor(...gold);
+        doc.roundedRect(pageWidth - 15 - badgeWidth, 14, badgeWidth, 10, 2, 2, 'F');
+        doc.setTextColor(...dark);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text(badgeText, pageWidth - 15 - badgeWidth + 8, 21);
+
+        // Divider
+        let y = 44;
+        doc.setDrawColor(...gold);
+        doc.setLineWidth(0.5);
+        doc.line(15, y, pageWidth - 15, y);
+        y += 10;
+
+        // Two-column info section
+        // Left: Bill To
+        doc.setTextColor(...gray);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text('BILL TO', 15, y);
+        y += 6;
+        doc.setTextColor(...white);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(clientName, 15, y);
+        y += 5;
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...gray);
+        if (clientEmail) { doc.text(clientEmail, 15, y); y += 4; }
+        if (clientPhone) { doc.text(clientPhone, 15, y); y += 4; }
+
+        // Right column: Document details
+        const rightX = pageWidth - 15;
+        let ry = 54;
+        const addDetail = (label: string, value: string) => {
+            doc.setTextColor(...gray);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.text(label, rightX - 60, ry);
+            doc.setTextColor(...white);
+            doc.setFont('helvetica', 'bold');
+            doc.text(value, rightX, ry, { align: 'right' });
+            ry += 6;
+        };
+        addDetail(`${type === 'payment' ? 'Receipt' : 'Invoice'} #`, ref);
+        addDetail('Date', new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }));
+        if (dueDate) addDetail('Due Date', new Date(dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }));
+        if (type === 'payment') addDetail('Method', method.toUpperCase());
+        addDetail('Status', status.toUpperCase());
+
+        y = Math.max(y, ry) + 10;
+
+        // Amount section with gold background
+        doc.setFillColor(40, 40, 40);
+        doc.roundedRect(15, y, pageWidth - 30, 30, 3, 3, 'F');
+        doc.setDrawColor(...gold);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(15, y, pageWidth - 30, 30, 3, 3, 'S');
+
+        doc.setTextColor(...gray);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('AMOUNT', 25, y + 12);
+
+        doc.setTextColor(...gold);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        const amountStr = `₹${amount.toLocaleString('en-IN')}`;
+        doc.text(amountStr, pageWidth - 25, y + 20, { align: 'right' });
+
+        y += 42;
+
+        // Invoice number reference for payments
+        if (type === 'payment' && invoiceNum) {
+            doc.setTextColor(...gray);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Invoice Reference: ${invoiceNum}`, 15, y);
+            y += 10;
+        }
+
+        // Notes
+        if (notes) {
+            doc.setTextColor(...gray);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.text('NOTES / TERMS', 15, y);
+            y += 6;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7);
+            const noteLines = doc.splitTextToSize(notes.replace(/\n/g, ' | '), pageWidth - 30);
+            doc.text(noteLines, 15, y);
+            y += noteLines.length * 4 + 8;
+        }
+
+        // Footer divider
+        const footerY = doc.internal.pageSize.getHeight() - 30;
+        doc.setDrawColor(60, 60, 60);
+        doc.setLineWidth(0.3);
+        doc.line(15, footerY, pageWidth - 15, footerY);
+
+        // Footer
+        doc.setTextColor(...gray);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Thank you for your business!', pageWidth / 2, footerY + 8, { align: 'center' });
+        doc.text('VAW Technologies Pvt Ltd | support@vawtech.com | vawtech.com', pageWidth / 2, footerY + 13, { align: 'center' });
+        doc.text('Any legal concerns or disputes will be addressed at Kollam court', pageWidth / 2, footerY + 18, { align: 'center' });
+
+        // Gold accent bar at bottom
+        doc.setFillColor(...gold);
+        doc.rect(0, doc.internal.pageSize.getHeight() - 4, pageWidth, 4, 'F');
+
+        doc.save(`${ref}_${new Date(date).toISOString().split('T')[0]}.pdf`);
+        toast.success(`${type === 'payment' ? 'Receipt' : 'Invoice'} PDF downloaded`);
     };
 
     // Payment confirmation handlers
