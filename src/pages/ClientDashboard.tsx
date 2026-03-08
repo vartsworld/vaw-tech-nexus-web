@@ -257,7 +257,7 @@ const ClientDashboard = () => {
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: -300, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="fixed inset-y-0 left-0 z-50 w-72 neu-elevated backdrop-blur-2xl flex flex-col lg:relative"
+                        className="fixed inset-y-0 left-0 z-50 w-72 h-screen neu-elevated backdrop-blur-2xl flex flex-col lg:relative"
                     >
                         <div className="p-6 border-b border-border flex items-center justify-between">
                             <div className="flex items-center gap-3">
