@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -40,13 +41,17 @@ interface TaskDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   onStatusUpdate: (taskId: string, status: Task['status']) => void;
   userId: string;
+  mode?: 'dialog' | 'inline';
+  onBack?: () => void;
 }
 export const TaskDetailDialog = ({
   task,
   open,
   onOpenChange,
   onStatusUpdate,
-  userId
+  userId,
+  mode = 'dialog',
+  onBack
 }: TaskDetailDialogProps) => {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -566,18 +571,30 @@ export const TaskDetailDialog = ({
   if (!task) return null;
   const hasDueDate = !!task.due_date;
   const isOverdue = hasDueDate && remainingSeconds === 0 && isTimerRunning;
-  return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="max-w-2xl max-h-[90vh] bg-gradient-to-br from-slate-900 to-slate-800 border-white/20 text-white">
-      <DialogHeader>
-        <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+
+  const content = (
+    <div className="space-y-6">
+      {/* Back button for inline mode */}
+      {mode === 'inline' && (
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="text-white/70 hover:text-white hover:bg-white/10 -ml-2 mb-2"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Tasks
+        </Button>
+      )}
+
+      {/* Header */}
+      <div>
+        <h2 className={`font-bold flex items-center gap-2 ${mode === 'inline' ? 'text-3xl' : 'text-2xl'}`}>
           <Target className="w-6 h-6 text-blue-400" />
           {task.title}
-        </DialogTitle>
-      </DialogHeader>
+        </h2>
+      </div>
 
-      <ScrollArea className="max-h-[calc(90vh-100px)] pr-4">
-        <div className="space-y-6">
-          {/* Status and Priority Badges */}
+      {/* Status and Priority Badges */}
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="outline" className="border-blue-400/50 text-blue-300">
               {(task.status || 'pending').replace('_', ' ').toUpperCase()}
@@ -1016,7 +1033,29 @@ export const TaskDetailDialog = ({
             </p>}
           </div>}
         </div>
-      </ScrollArea>
-    </DialogContent>
-  </Dialog>;
+  );
+
+  if (mode === 'inline') {
+    return (
+      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 rounded-2xl text-white p-6 lg:p-8 h-full overflow-y-auto">
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] bg-gradient-to-br from-slate-900 to-slate-800 border-white/20 text-white">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+            <Target className="w-6 h-6 text-blue-400" />
+            {task.title}
+          </DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="max-h-[calc(90vh-100px)] pr-4">
+          {content}
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
 };
