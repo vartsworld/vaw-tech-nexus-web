@@ -273,7 +273,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
       </Card>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="workspace">
+        <StrictModeDroppable droppableId="workspace">
           {(provided) => (
             <div
               {...provided.droppableProps}
