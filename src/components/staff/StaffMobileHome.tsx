@@ -183,7 +183,7 @@ const StaffMobileHome = ({
   };
 
   const handleStatusUpdate = async (taskId: string, newStatus: string) => {
-    await supabase.from("staff_tasks").update({ status: newStatus, updated_at: new Date().toISOString() }).eq("id", taskId);
+    await supabase.from("staff_tasks").update({ status: newStatus as any, updated_at: new Date().toISOString() }).eq("id", taskId);
     fetchTasks();
     fetchCompletedToday();
   };
