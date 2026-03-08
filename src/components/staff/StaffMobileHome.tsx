@@ -528,7 +528,7 @@ const StaffMobileHome = ({
                       className={cn(
                         "w-[17px] h-[17px] transition-all duration-300",
                         active
-                          ? "text-primary"
+                          ? "text-emerald-400"
                           : "text-muted-foreground group-hover:text-foreground"
                       )}
                       strokeWidth={active ? 2.2 : 1.8}
