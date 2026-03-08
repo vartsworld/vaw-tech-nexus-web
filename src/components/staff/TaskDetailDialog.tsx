@@ -1018,7 +1018,7 @@ export const TaskDetailDialog = ({
 
   if (mode === 'inline') {
     return (
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/10 rounded-2xl text-white p-6 lg:p-8 h-full overflow-y-auto">
+      <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.12] rounded-2xl text-white p-6 lg:p-8">
         {content}
       </div>
     );
