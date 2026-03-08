@@ -618,15 +618,7 @@ export const TaskDetailDialog = ({
           Back to Tasks
         </Button>
       )}
-      <div>
-        <h2 className={`font-bold flex items-center gap-3 ${mode === 'inline' ? 'text-2xl lg:text-3xl' : 'text-2xl'}`}>
-          <div className="h-10 w-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
-            <Target className="w-5 h-5 text-blue-400" />
-          </div>
-          {task.title}
-        </h2>
-      </div>
-      <div className="flex items-center gap-2 flex-wrap mt-3">
+      <div className="flex items-center gap-2 flex-wrap mt-1">
         <Badge variant="outline" className="border-blue-400/50 text-blue-300">
           {(task.status || 'pending').replace('_', ' ').toUpperCase()}
         </Badge>
