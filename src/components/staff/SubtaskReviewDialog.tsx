@@ -65,6 +65,7 @@ export const SubtaskReviewDialog = ({
   onOpenChange,
   onApprove,
   onReject,
+  viewOnly = false,
 }: SubtaskReviewDialogProps) => {
   const [rejectionNote, setRejectionNote] = useState("");
   const [showRejectSection, setShowRejectSection] = useState(false);
