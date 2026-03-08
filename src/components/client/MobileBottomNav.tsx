@@ -24,11 +24,13 @@ const BottomNav = () => {
     const isActive = (path: string, exact?: boolean) =>
         exact ? location.pathname === path : location.pathname.startsWith(path);
 
+    const isHomePage = location.pathname === "/client/dashboard";
+
     return (
         <>
-            <div className="h-24" />
+            <div className={cn("h-24", !isHomePage && "lg:hidden")} />
 
-            <nav className="fixed bottom-3 left-3 right-3 z-40">
+            <nav className={cn("fixed bottom-3 left-3 right-3 z-40", !isHomePage && "lg:hidden")}>
                 <div className="bg-card/70 backdrop-blur-2xl border border-border/30 rounded-[1.75rem] overflow-hidden">
                     <div className="flex items-center justify-around px-1 py-2 safe-area-inset-bottom">
                         {navItems.map((item) => {
