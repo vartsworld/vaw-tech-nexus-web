@@ -29,7 +29,6 @@ import { cn } from "@/lib/utils";
 
 // Sub-components
 import ClientHome from "./ClientHome";
-import DashboardOverview from "./DashboardOverview";
 import ProjectExplorer from "./ProjectExplorer";
 import FinancialHub from "./FinancialHub";
 import SupportNexus from "./SupportNexus";
