@@ -352,9 +352,17 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                                     <h4 className="font-bold text-white text-sm mb-1 group-hover:text-tech-gold transition-colors truncate">
                                         {signal.subject}
                                     </h4>
-                                    <p className="text-xs text-gray-500 truncate mb-3">
+                                    <p className="text-xs text-gray-500 truncate mb-2">
                                         {signal.message}
                                     </p>
+                                    {(() => {
+                                        const routing = getRoutingLabel(signal);
+                                        return routing ? (
+                                            <Badge variant="outline" className={cn("border-0 text-[9px] uppercase font-black px-1.5 py-0.5 mb-2", routing.color)}>
+                                                {routing.label}
+                                            </Badge>
+                                        ) : null;
+                                    })()}
                                     {signal.status !== 'resolved' && (
                                         <Button
                                             size="sm"
