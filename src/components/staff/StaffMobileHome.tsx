@@ -319,8 +319,8 @@ const StaffMobileHome = ({
                 {inProgressTasks.length} active · {todoTasks.length} pending
               </p>
             </div>
-            <div className="w-16 h-16 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-              <ClipboardIcon className="w-7 h-7 text-primary-foreground/80" />
+            <div className="w-16 h-16 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
+              <ClipboardIcon className="w-7 h-7 text-white/80" />
             </div>
           </div>
 
