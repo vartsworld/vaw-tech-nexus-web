@@ -40,6 +40,7 @@ interface SubtaskReviewDialogProps {
   onOpenChange: (open: boolean) => void;
   onApprove: (subtaskId: string) => void;
   onReject: (subtaskId: string, note: string) => void;
+  viewOnly?: boolean;
 }
 
 const priorityConfig: Record<string, { color: string; label: string }> = {
