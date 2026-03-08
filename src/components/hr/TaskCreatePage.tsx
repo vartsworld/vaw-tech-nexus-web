@@ -13,6 +13,7 @@ import {
   ArrowLeft, User, Plus, ChevronDown, Check, Paperclip, X, Loader2, Repeat,
   Flag, Calendar, Target, Layers, FileText, Sparkles
 } from "lucide-react";
+import CircularDateTimePicker from "./CircularDateTimePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
