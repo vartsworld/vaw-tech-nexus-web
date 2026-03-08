@@ -321,29 +321,6 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                 </motion.div>
             )}
 
-            {/* Quick Error Report Button */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-            >
-                <Button
-                    variant="outline"
-                    className="w-full border-red-500/30 bg-red-500/5 hover:bg-red-500/10 text-white font-bold h-14 rounded-xl justify-between px-6 group"
-                    onClick={() => window.location.href = '/client/dashboard/support?tab=error-log'}
-                >
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-red-500/20 rounded-lg">
-                            <AlertCircle className="w-5 h-5 text-red-500" />
-                        </div>
-                        <div className="text-left">
-                            <p className="text-sm font-bold">Report an Issue</p>
-                            <p className="text-xs text-gray-400">Something not working? Let us know</p>
-                        </div>
-                    </div>
-                    <ChevronRight className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all" />
-                </Button>
-            </motion.div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Recent Projects */}
@@ -576,6 +553,19 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                     <AlertCircle className="w-4 h-4 text-tech-red" />
                                 </div>
                                 <span className="text-sm">Get Support</span>
+                            </div>
+                            <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all" />
+                        </Button>
+
+                        <Button
+                            className="w-full bg-white/5 border border-red-500/20 hover:bg-red-500/10 hover:border-red-500/40 text-white font-bold h-12 justify-between px-5 rounded-xl group transition-all"
+                            onClick={() => window.location.href = '/client/dashboard/support?tab=error-log'}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-1.5 bg-red-500/10 rounded-lg group-hover:scale-110 transition-transform">
+                                    <AlertCircle className="w-4 h-4 text-red-500" />
+                                </div>
+                                <span className="text-sm">Report an Issue</span>
                             </div>
                             <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all" />
                         </Button>
