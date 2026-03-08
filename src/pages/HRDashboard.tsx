@@ -389,22 +389,22 @@ const HRDashboard = () => {
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t border-white/5">
-          <div className={`flex items-center gap-3 p-3 rounded-2xl bg-white/5 ${!isSidebarOpen && 'justify-center'}`}>
-            <Avatar className="h-9 w-9 border border-indigo-500/30">
+        <div className="p-4 border-t border-border">
+          <div className={`flex items-center gap-3 p-3 rounded-2xl bg-muted/50 ${!isSidebarOpen && 'justify-center'}`}>
+            <Avatar className="h-9 w-9 border border-primary/30">
               <AvatarImage src={hrProfile?.avatar_url} />
-              <AvatarFallback className="bg-indigo-600 text-white text-xs">
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                 {hrProfile?.full_name?.split(' ').map((n: string) => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
             {isSidebarOpen && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{hrProfile?.full_name || 'HR Admin'}</p>
-                <p className="text-[10px] text-gray-500 font-bold tracking-wider uppercase">{hrProfile?.role || 'HR'}</p>
+                <p className="text-sm font-semibold truncate text-foreground">{hrProfile?.full_name || 'HR Admin'}</p>
+                <p className="text-[10px] text-muted-foreground font-bold tracking-wider uppercase">{hrProfile?.role || 'HR'}</p>
               </div>
             )}
             {isSidebarOpen && (
-              <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 text-gray-400 hover:text-rose-500">
+              <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 text-muted-foreground hover:text-destructive">
                 <LogOut className="w-4 h-4" />
               </Button>
             )}
