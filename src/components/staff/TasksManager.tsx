@@ -362,8 +362,9 @@ const TasksManager = ({
                 <TableHeader className="bg-white/5">
                   <TableRow className="border-white/10 hover:bg-transparent">
                     <TableHead className="text-white/80 h-10 py-0">Task details</TableHead>
-                    <TableHead className="text-white/80 h-10 py-0">Priority</TableHead>
-                    <TableHead className="text-white/80 h-10 py-0">Status</TableHead>
+                     <TableHead className="text-white/80 h-10 py-0">Priority</TableHead>
+                     <TableHead className="text-white/80 h-10 py-0">Stage</TableHead>
+                     <TableHead className="text-white/80 h-10 py-0">Status</TableHead>
                     <TableHead className="text-white/80 h-10 py-0">Timeline</TableHead>
                     <TableHead className="text-white/80 h-10 py-0 text-right">Actions</TableHead>
                   </TableRow>
