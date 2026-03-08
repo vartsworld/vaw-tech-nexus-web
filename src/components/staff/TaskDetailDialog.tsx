@@ -1108,10 +1108,113 @@ export const TaskDetailDialog = ({
 
   const content = mode === 'inline' ? inlineContent : dialogContent;
 
+  const subtaskDetailDialog = (
+    <Dialog open={!!viewingSubtask} onOpenChange={(open) => !open && setViewingSubtask(null)}>
+      <DialogContent className="max-w-lg max-h-[85vh] bg-gradient-to-br from-slate-900 to-slate-800 border-white/20 text-white">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-bold flex items-center gap-2">
+            <Target className="w-5 h-5 text-blue-400" />
+            {viewingSubtask?.title}
+          </DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="max-h-[calc(85vh-100px)] pr-4">
+          {viewingSubtask && (
+            <div className="space-y-5">
+              {/* Status & Meta */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className={`text-[10px] ${
+                  viewingSubtask.status === 'completed' ? 'border-green-500/50 text-green-400' :
+                  viewingSubtask.status === 'in_progress' ? 'border-blue-500/50 text-blue-400' :
+                  viewingSubtask.status === 'pending_approval' ? 'border-orange-500/50 text-orange-400' :
+                  'border-white/20 text-white/60'
+                }`}>
+                  {(viewingSubtask.status || 'pending').replace('_', ' ').toUpperCase()}
+                </Badge>
+                <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">
+                  Stage {viewingSubtask.stage || 1}
+                </Badge>
+                <Badge variant="outline" className="text-[10px] border-white/10 text-white/50">
+                  {viewingSubtask.points || 0} pts
+                </Badge>
+              </div>
+
+              {/* Description */}
+              {viewingSubtask.description && (
+                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+                  <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-2">Description</h4>
+                  <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">{viewingSubtask.description}</p>
+                </div>
+              )}
+
+              {/* Attachments */}
+              {viewingSubtask.attachments && Array.isArray(viewingSubtask.attachments) && viewingSubtask.attachments.length > 0 && (
+                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+                  <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
+                    Attachments ({viewingSubtask.attachments.length})
+                  </h4>
+                  <div className="space-y-2">
+                    {viewingSubtask.attachments.map((att: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between bg-black/20 rounded-lg p-2.5 border border-white/5 group">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <FileText className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs text-white font-medium truncate">{att.name || 'File'}</p>
+                            {att.size && <p className="text-[10px] text-white/40">{(att.size / 1024).toFixed(1)} KB</p>}
+                          </div>
+                        </div>
+                        {att.url && (
+                          <Button size="sm" variant="ghost" className="text-blue-400 hover:bg-blue-500/20 h-7 w-7 p-0" onClick={() => handleDownloadAttachment(att)}>
+                            <Download className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Comments / Activity */}
+              {viewingSubtask.comments && Array.isArray(viewingSubtask.comments) && viewingSubtask.comments.length > 0 && (
+                <div className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
+                  <h4 className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3">
+                    Comments ({viewingSubtask.comments.length})
+                  </h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {viewingSubtask.comments.map((c: any, i: number) => (
+                      <div key={i} className="bg-black/20 rounded-lg p-3 border border-white/5">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-semibold text-white/70">{c.user_name || 'Staff'}</span>
+                          {c.type && <Badge variant="outline" className="text-[8px] border-white/10 text-white/30 h-4">{c.type}</Badge>}
+                        </div>
+                        <p className="text-sm text-white/80">{c.message || c.text}</p>
+                        <p className="text-[10px] text-white/30 mt-1">
+                          {(() => { try { return format(new Date(c.timestamp || c.created_at), 'MMM dd, HH:mm'); } catch { return ''; } })()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Due date if any */}
+              {viewingSubtask.due_date && (
+                <div className="flex items-center gap-2 text-xs text-white/50">
+                  <Calendar className="w-3.5 h-3.5 text-orange-400" />
+                  Due: {(() => { try { return format(new Date(viewingSubtask.due_date), 'MMM dd, yyyy'); } catch { return viewingSubtask.due_date; } })()}
+                </div>
+              )}
+            </div>
+          )}
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+
   if (mode === 'inline') {
     return (
       <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.12] rounded-2xl text-white p-6 lg:p-8">
         {content}
+        {subtaskDetailDialog}
       </div>
     );
   }
