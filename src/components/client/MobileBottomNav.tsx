@@ -30,9 +30,9 @@ const MobileBottomNav = () => {
 
             <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden">
                 {/* Gradient fade edge */}
-                <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+                <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-t from-background to-transparent pointer-events-none" />
 
-                <div className="bg-black/80 backdrop-blur-2xl border-t border-white/[0.06]">
+                <div className="bg-card/90 backdrop-blur-2xl border-t border-border shadow-neu">
                     <div className="flex items-end justify-around px-3 pt-2 pb-1 safe-area-inset-bottom">
                         {navItems.map((item) => {
                             const active = isActive(item.path, item.exact);
