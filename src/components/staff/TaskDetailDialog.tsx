@@ -701,19 +701,6 @@ export const TaskDetailDialog = ({
     </div>
   ) : null;
 
-  // Fetch project info if linked
-  useEffect(() => {
-    const fetchProject = async () => {
-      if (!task || !(task as any).client_project_id) { setProjectInfo(null); return; }
-      const { data } = await supabase
-        .from('client_projects')
-        .select('title, status, project_type, package_type, progress')
-        .eq('id', (task as any).client_project_id)
-        .single();
-      if (data) setProjectInfo(data);
-    };
-    fetchProject();
-  }, [task]);
 
   const projectInfoCard = (task as any)?.client_project_id ? (
     <div className="rounded-xl border border-white/[0.12] bg-white/[0.06] backdrop-blur-xl overflow-hidden">
