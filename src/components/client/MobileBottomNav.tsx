@@ -48,7 +48,7 @@ const MobileBottomNav = () => {
                                     {active && (
                                         <motion.div
                                             layoutId="navGlow"
-                                            className="absolute -top-1 w-10 h-10 rounded-full bg-tech-gold/15 blur-xl"
+                                            className="absolute -top-1 w-10 h-10 rounded-full bg-primary/15 blur-xl"
                                             transition={{ type: "spring", stiffness: 400, damping: 28 }}
                                         />
                                     )}
