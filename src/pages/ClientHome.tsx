@@ -141,7 +141,12 @@ const ClientHome = ({ profile }: { profile: any }) => {
       ]);
 
       setProjects(activeRes.data || []);
-      setRenewalProjects(renewalRes.data || []);
+      // Merge and deduplicate renewal results
+      const allRenewals = [...(renewalByDate.data || []), ...(renewalByPayment.data || [])];
+      const uniqueRenewals = allRenewals.filter((item, index, self) => 
+        index === self.findIndex(t => t.id === item.id)
+      );
+      setRenewalProjects(uniqueRenewals);
     } catch (err) {
       console.error("Error fetching projects:", err);
     } finally {
