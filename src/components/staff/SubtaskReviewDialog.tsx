@@ -377,7 +377,7 @@ export const SubtaskReviewDialog = ({
                     <RotateCcw className="h-4 w-4" />
                     Return for Rework
                   </h4>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs text-white/50" onClick={() => setShowRejectSection(false)}>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-white/50" onClick={() => { setShowRejectSection(false); setRejectFiles([]); }}>
                     Cancel
                   </Button>
                 </div>
@@ -387,6 +387,33 @@ export const SubtaskReviewDialog = ({
                   onChange={(e) => setRejectionNote(e.target.value)}
                   className="bg-black/30 border-red-500/30 text-white placeholder:text-white/30 min-h-[80px]"
                 />
+                {/* Attachment section */}
+                <div className="space-y-2">
+                  <input ref={rejectFileRef} type="file" multiple className="hidden" onChange={(e) => {
+                    if (e.target.files) setRejectFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                  }} />
+                  <Button variant="outline" size="sm" className="h-7 text-xs border-red-500/30 text-red-300 hover:bg-red-500/10"
+                    onClick={() => rejectFileRef.current?.click()}>
+                    <Upload className="h-3 w-3 mr-1.5" /> Attach Files
+                  </Button>
+                  {rejectFiles.length > 0 && (
+                    <div className="space-y-1">
+                      {rejectFiles.map((file, i) => (
+                        <div key={i} className="flex items-center justify-between text-xs bg-black/20 rounded px-2 py-1 border border-white/5">
+                          <div className="flex items-center gap-1.5 truncate">
+                            <Paperclip className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{file.name}</span>
+                            <span className="text-white/30 shrink-0">({(file.size / 1024).toFixed(0)}KB)</span>
+                          </div>
+                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-400"
+                            onClick={() => setRejectFiles(prev => prev.filter((_, idx) => idx !== i))}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <Button
                   onClick={handleReject}
                   disabled={isSubmitting || !rejectionNote.trim()}
@@ -402,24 +429,67 @@ export const SubtaskReviewDialog = ({
 
         {/* Action Footer */}
         {!viewOnly && isReviewable && !showRejectSection && (
-          <div className="px-6 py-4 border-t border-white/10 bg-black/30 flex items-center gap-3">
-            <Button
-              onClick={() => setShowRejectSection(true)}
-              variant="outline"
-              className="flex-1 border-red-500/40 text-red-300 hover:bg-red-500/15 hover:text-red-200"
-              disabled={isSubmitting}
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Reject & Rework
-            </Button>
-            <Button
-              onClick={handleApprove}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-              Approve & Award
-            </Button>
+          <div className="px-6 py-4 border-t border-white/10 bg-black/30 space-y-3">
+            {/* Approve attachment section */}
+            {showApproveAttach && (
+              <div className="space-y-2 animate-in fade-in duration-200">
+                <input ref={approveFileRef} type="file" multiple className="hidden" onChange={(e) => {
+                  if (e.target.files) setApproveFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                }} />
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="h-7 text-xs border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
+                    onClick={() => approveFileRef.current?.click()}>
+                    <Upload className="h-3 w-3 mr-1.5" /> Add Files
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-white/50"
+                    onClick={() => { setShowApproveAttach(false); setApproveFiles([]); }}>
+                    Cancel
+                  </Button>
+                </div>
+                {approveFiles.length > 0 && (
+                  <div className="space-y-1">
+                    {approveFiles.map((file, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs bg-black/20 rounded px-2 py-1 border border-white/5">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <Paperclip className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{file.name}</span>
+                          <span className="text-white/30 shrink-0">({(file.size / 1024).toFixed(0)}KB)</span>
+                        </div>
+                        <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-400"
+                          onClick={() => setApproveFiles(prev => prev.filter((_, idx) => idx !== i))}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => setShowRejectSection(true)}
+                variant="outline"
+                className="flex-1 border-red-500/40 text-red-300 hover:bg-red-500/15 hover:text-red-200"
+                disabled={isSubmitting}
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Reject & Rework
+              </Button>
+              {!showApproveAttach && (
+                <Button variant="ghost" size="sm" className="h-9 px-2 text-white/40 hover:text-white/70"
+                  onClick={() => setShowApproveAttach(true)}>
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                onClick={handleApprove}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                Approve & Award {approveFiles.length > 0 ? `(${approveFiles.length} files)` : ''}
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>
