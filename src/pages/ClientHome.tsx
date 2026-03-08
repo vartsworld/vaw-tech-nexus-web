@@ -113,7 +113,7 @@ const ClientHome = ({ profile }: { profile: any }) => {
       const crmId = crmClient?.id;
       const clientFilter = `client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`;
 
-      const [activeRes, renewalRes] = await Promise.all([
+      const [activeRes, renewalByDate, renewalByPayment] = await Promise.all([
         supabase
           .from("client_projects")
           .select("*")
