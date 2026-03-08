@@ -194,8 +194,19 @@ const VirtualOfficeLayout = ({
             ) : (
               /* ── Normal Quick Actions ── */
               <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                <h3 className="text-white font-semibold mb-4">Quick Actions</h3>
-                <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setActionsCollapsed(!actionsCollapsed)}
+                  className="w-full flex items-center justify-between text-white font-semibold mb-2 hover:opacity-80 transition-opacity"
+                >
+                  <span>Quick Actions</span>
+                  {actionsCollapsed ? (
+                    <ChevronRight className="w-4 h-4 text-white/50" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-white/50" />
+                  )}
+                </button>
+                {!actionsCollapsed && (
+                <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
                   {/* Chess Arena Button */}
                   <Button
                     variant="outline"
