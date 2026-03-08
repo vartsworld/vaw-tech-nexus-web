@@ -1559,7 +1559,7 @@ const TaskManagement = () => {
                         </TableCell>
                         <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
                           {task.departments?.name ? (
-                            <Badge className="text-[10px] h-6 py-0 px-2.5 rounded-full font-semibold bg-primary/15 text-primary border-primary/25 hover:bg-primary/20 shadow-none">
+                            <Badge className="text-[10px] h-6 py-0 px-2.5 rounded-full font-semibold bg-primary/15 text-primary border-primary/25 hover:bg-primary/20 shadow-none whitespace-nowrap">
                               {task.departments.name}
                             </Badge>
                           ) : (
