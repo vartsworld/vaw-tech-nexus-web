@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, Routes, Route, Link, useLocation } from "react-router-dom";
 import {
     Home,
-    LayoutDashboard,
     Briefcase,
     CreditCard,
     MessageSquare,
@@ -29,7 +28,6 @@ import { cn } from "@/lib/utils";
 
 // Sub-components
 import ClientHome from "./ClientHome";
-import DashboardOverview from "./DashboardOverview";
 import ProjectExplorer from "./ProjectExplorer";
 import FinancialHub from "./FinancialHub";
 import SupportNexus from "./SupportNexus";
@@ -204,7 +202,6 @@ const ClientDashboard = () => {
 
     const menuItems = [
         { icon: Home, label: "Home", path: "/client/dashboard" },
-        { icon: LayoutDashboard, label: "Overview", path: "/client/dashboard/overview" },
         { icon: Briefcase, label: "Projects", path: "/client/dashboard/projects" },
         { icon: CreditCard, label: "Financials", path: "/client/dashboard/financials" },
         { icon: MessageSquare, label: "Support", path: "/client/dashboard/support" },
@@ -416,7 +413,6 @@ const ClientDashboard = () => {
                         >
                             <Routes>
                                 <Route index element={<ClientHome profile={profile} />} />
-                                <Route path="overview" element={<DashboardOverview profile={profile} />} />
                                 <Route path="projects/*" element={<ProjectExplorer profile={profile} />} />
                                 <Route path="financials" element={<PaymentCenter profile={profile} />} />
                                 <Route path="support" element={<SupportNexus profile={profile} />} />
