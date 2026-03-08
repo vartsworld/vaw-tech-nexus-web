@@ -429,10 +429,10 @@ const HRDashboard = () => {
 
           <div className="flex items-center gap-6">
             <div className="relative hidden lg:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Universal search..."
-                className="w-64 bg-white/5 border-white/10 pl-10 h-9 rounded-full focus:ring-indigo-500 focus:border-indigo-500 transition-all text-xs"
+                className="w-64 bg-muted/50 border-border pl-10 h-9 rounded-full focus:ring-primary focus:border-primary transition-all text-xs"
               />
             </div>
             <div className="flex items-center gap-2">
