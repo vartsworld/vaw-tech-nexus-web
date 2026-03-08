@@ -1517,7 +1517,7 @@ const TaskManagement = () => {
                   <TableHeader>
                     <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
                       <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Task</TableHead>
-                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Department</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5 min-w-[140px]">Department</TableHead>
                       <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Assigned To</TableHead>
                       <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Stage</TableHead>
                       <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Priority</TableHead>
