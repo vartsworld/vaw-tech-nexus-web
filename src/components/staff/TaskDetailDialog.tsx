@@ -142,10 +142,16 @@ export const TaskDetailDialog = ({
         .from('staff_subtasks')
         .select('*')
         .eq('task_id', task.id)
-        .order('created_at', { ascending: true }); // Order by creation for sequential
+        .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setSubtasks(data || []);
+      const fetched = data || [];
+      setSubtasks(fetched);
+
+      // Auto-stop timer when ALL subtasks are completed
+      if (fetched.length > 0 && fetched.every(s => s.status === 'completed')) {
+        setIsTimerRunning(false);
+      }
     } catch (error) {
       console.error("Error fetching subtasks:", error);
     } finally {
