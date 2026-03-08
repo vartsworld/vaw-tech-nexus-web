@@ -389,7 +389,7 @@ const ClientDashboard = () => {
                         >
                             <Routes>
                                 <Route index element={<DashboardOverview profile={profile} />} />
-                                <Route path="projects" element={<ProjectExplorer profile={profile} />} />
+                                <Route path="projects/*" element={<ProjectExplorer profile={profile} />} />
                                 <Route path="financials" element={<PaymentCenter profile={profile} />} />
                                 <Route path="support" element={<SupportNexus profile={profile} />} />
                                 <Route path="settings" element={<ClientSettings profile={profile} onProfileUpdate={checkUser} />} />
