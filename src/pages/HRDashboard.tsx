@@ -337,7 +337,7 @@ const HRDashboard = () => {
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="hover:bg-white/5 text-gray-400"
+            className="hover:bg-muted text-muted-foreground"
           >
             {isSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </Button>
