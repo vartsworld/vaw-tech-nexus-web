@@ -192,6 +192,70 @@ const FinancialHub = ({ profile }: { profile: any }) => {
                 </div>
             </div>
 
+            {/* Payment Due Notifications */}
+            <AnimatePresence>
+                {visibleAlerts.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="space-y-3"
+                    >
+                        <div className="flex items-center gap-2 mb-1">
+                            <Bell className="w-4 h-4 text-tech-gold animate-pulse" />
+                            <span className="text-xs font-black text-tech-gold uppercase tracking-[0.2em]">Payment Reminders</span>
+                            <Badge variant="outline" className="border-tech-gold/30 text-tech-gold text-[10px] ml-auto">
+                                {visibleAlerts.length} pending
+                            </Badge>
+                        </div>
+                        {visibleAlerts.map((alert) => {
+                            const style = getAlertStyle(alert.daysUntilDue);
+                            return (
+                                <motion.div
+                                    key={alert.id}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20, height: 0 }}
+                                    className={`flex items-center gap-4 p-4 rounded-2xl border ${style.bg} ${style.border} backdrop-blur-xl`}
+                                >
+                                    <div className={`p-2 rounded-xl ${style.bg}`}>
+                                        <AlertCircle className={`w-5 h-5 ${style.icon} ${alert.daysUntilDue <= 3 ? 'animate-pulse' : ''}`} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`text-sm font-bold ${style.text}`}>
+                                            {getDueMessage(alert)}
+                                        </p>
+                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
+                                            {alert.label} • Due: {new Date(alert.dueDate).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        {alert.shareUrl && (
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className={`${style.text} hover:bg-white/5 rounded-xl h-8 w-8`}
+                                                onClick={() => window.open(alert.shareUrl, '_blank', 'noopener,noreferrer')}
+                                            >
+                                                <ExternalLink className="w-4 h-4" />
+                                            </Button>
+                                        )}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-gray-500 hover:bg-white/5 rounded-xl h-8 w-8"
+                                            onClick={() => dismissAlert(alert.id)}
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                </motion.div>
+                            );
+                        })}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Financial Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 relative overflow-hidden group">
