@@ -642,7 +642,7 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                                                                 </div>
                                                                                 <div className="flex flex-col">
                                                                                     <span className="text-xs font-black text-tech-gold uppercase">
-                                                                                        {task.current_stage ? `STAGE ${task.current_stage}` : 'STAGE NONE'}
+                                                                                        {task.current_stage ? (task.stage_names?.[String(task.current_stage)] || `STAGE ${task.current_stage}`) : 'STAGE NONE'}
                                                                                     </span>
                                                                                     <span className="text-[9px] font-bold text-white/40 leading-none mt-0.5 uppercase tracking-tight">
                                                                                         {task.staff_subtasks?.filter((s: any) => s.stage === task.current_stage).length || 0} subtasks
