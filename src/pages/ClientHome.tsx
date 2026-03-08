@@ -84,6 +84,7 @@ const stagger = {
 
 const ClientHome = ({ profile }: { profile: any }) => {
   const [projects, setProjects] = useState<any[]>([]);
+  const [renewalProjects, setRenewalProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGreeting, setShowGreeting] = useState(false);
   const [showContent, setShowContent] = useState(false);
@@ -110,17 +111,29 @@ const ClientHome = ({ profile }: { profile: any }) => {
         .maybeSingle();
 
       const crmId = crmClient?.id;
+      const clientFilter = `client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`;
 
-      const { data } = await supabase
-        .from("client_projects")
-        .select("*")
-        .or(`client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`)
-        .neq("status", "completed")
-        .neq("status", "cancel")
-        .order("updated_at", { ascending: false })
-        .limit(4);
+      const [activeRes, renewalRes] = await Promise.all([
+        supabase
+          .from("client_projects")
+          .select("*")
+          .or(clientFilter)
+          .neq("status", "completed")
+          .neq("status", "cancel")
+          .order("updated_at", { ascending: false })
+          .limit(4),
+        supabase
+          .from("client_projects")
+          .select("id,title,project_type,renewal_date,next_payment_date,status")
+          .or(clientFilter)
+          .neq("status", "cancel")
+          .or("renewal_date.not.is.null,next_payment_date.not.is.null")
+          .order("renewal_date", { ascending: true })
+          .limit(5),
+      ]);
 
-      setProjects(data || []);
+      setProjects(activeRes.data || []);
+      setRenewalProjects(renewalRes.data || []);
     } catch (err) {
       console.error("Error fetching projects:", err);
     } finally {
