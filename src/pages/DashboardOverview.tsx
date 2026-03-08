@@ -231,15 +231,19 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
         },
         {
             label: "Next Billing",
-            value: paymentReminders.length > 0
-                ? `₹${Number(paymentReminders[0]?.amount || 0).toLocaleString()}`
-                : "—",
+            value: nextBilling
+                ? `₹${nextBilling.amount.toLocaleString()}`
+                : (paymentReminders.length > 0
+                    ? `₹${Number(paymentReminders[0]?.amount || 0).toLocaleString()}`
+                    : "—"),
             icon: CreditCard,
             color: "text-tech-gold",
             bg: "bg-tech-gold/10",
-            description: paymentReminders.length > 0
-                ? `Due ${new Date(paymentReminders[0]?.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
-                : "No upcoming payments"
+            description: nextBilling
+                ? `Due ${new Date(nextBilling.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+                : (paymentReminders.length > 0
+                    ? `Due ${new Date(paymentReminders[0]?.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+                    : "No upcoming payments")
         },
         {
             label: "Pending Actions",
