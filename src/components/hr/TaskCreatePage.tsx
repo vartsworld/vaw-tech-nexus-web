@@ -40,7 +40,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
     client_id: "",
     department_id: "",
     status: "pending",
-    priority: "medium",
+    priority: "auto",
     due_date: "",
     due_time: "",
     trial_period: false,
