@@ -563,7 +563,7 @@ const TaskDetailPage = ({
                                         }}
                                       >
                                         {/* Review Request Banner */}
-                                        {st.status === 'review_pending' && (
+                                        {(st.status === 'review_pending' || st.status === 'pending_approval') && (
                                           <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-orange-500/15 border border-orange-500/30 -mt-1 mb-1">
                                             <AlertCircle className="h-3 w-3 text-orange-400 animate-pulse" />
                                             <span className="text-[9px] font-bold text-orange-300 uppercase tracking-wider">Review Requested</span>
