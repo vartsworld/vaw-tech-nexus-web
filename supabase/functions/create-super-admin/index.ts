@@ -39,41 +39,68 @@ serve(async (req) => {
         throw new Error('SUPER_ADMIN_PASSWORD environment variable is not set')
       }
 
-      // Check if user already exists
-      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-      const existingUser = existingUsers?.users?.find(u => u.email === superAdminEmail)
-
+      // Try to create user first, handle "already exists" error
       let userId: string
 
-      if (existingUser) {
-        console.log('Super admin user already exists:', existingUser.id)
-        userId = existingUser.id
-
-        // Update password just in case
-        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-          userId,
-          { password: superAdminPassword }
-        )
-
-        if (updateError) {
-          console.error('Error updating super admin password:', updateError)
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: superAdminEmail,
+        password: superAdminPassword,
+        email_confirm: true,
+        user_metadata: {
+          full_name: 'Super Administrator',
+          role: 'super_admin'
         }
-      } else {
-        // Create new super admin user
-        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          email: superAdminEmail,
-          password: superAdminPassword,
-          email_confirm: true,
-          user_metadata: {
-            full_name: 'Super Administrator',
-            role: 'super_admin'
-          }
-        })
+      })
 
-        if (createError) {
+      if (createError) {
+        if (createError.message?.includes('already been registered')) {
+          console.log('Super admin user already exists, attempting password sign-in or update...')
+          
+          // Try signing in with the password first
+          const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+            email: superAdminEmail,
+            password: superAdminPassword,
+          })
+
+          if (!signInError && signInData?.user) {
+            userId = signInData.user.id
+            console.log('Password already matches, user ID:', userId)
+          } else {
+            // Password doesn't match - try to update via admin API using getUserByEmail
+            // This is a workaround for the listUsers bug
+            try {
+              // Use the admin generateLink as a way to find the user
+              const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+                type: 'magiclink',
+                email: superAdminEmail,
+              })
+              
+              if (linkError || !linkData?.user) {
+                throw new Error('Cannot find user by email')
+              }
+              
+              userId = linkData.user.id
+              console.log('Found user via generateLink:', userId)
+              
+              // Now update the password
+              const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+                userId,
+                { password: superAdminPassword }
+              )
+              if (updateError) {
+                console.error('Error updating password:', updateError)
+              } else {
+                console.log('Password updated successfully for user:', userId)
+              }
+            } catch (findError) {
+              console.error('Could not find or update user:', findError)
+              throw new Error('User exists but cannot update password. Check Supabase dashboard.')
+            }
+          }
+        } else {
           throw new Error(`Failed to create super admin: ${createError.message}`)
         }
-
+      } else {
         userId = newUser.user.id
         console.log('Created super admin user:', userId)
       }

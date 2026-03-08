@@ -46,26 +46,47 @@ const SuperAdminDashboard = () => {
     }, []);
 
     const checkSuperAdmin = async () => {
+        // First check Supabase Auth session
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            navigate("/admin/login");
-            return;
+        
+        if (user) {
+            // Check super_admins table
+            const { data: admin, error } = await supabase
+                .from("super_admins")
+                .select("*")
+                .eq("user_id", user.id)
+                .single();
+
+            if (!error && admin) {
+                setAdminProfile(user);
+                setLoading(false);
+                return;
+            }
         }
 
-        const { data: admin, error } = await supabase
-            .from("super_admins")
-            .select("*")
-            .eq("user_id", user.id)
-            .single();
-
-        if (error || !admin) {
-            toast.error("UNAUTHORIZED: ACCESS DENIED. TERMINATING PROTOCOL.");
-            navigate("/admin/login");
-            return;
+        // Fallback: check localStorage admin session (from edge function auth)
+        const sessionStr = localStorage.getItem("admin_session");
+        if (sessionStr) {
+            try {
+                const session = JSON.parse(sessionStr);
+                const expiresAt = new Date(session.expires_at);
+                if (expiresAt > new Date() && session.admin_email) {
+                    // Valid edge function session
+                    setAdminProfile({
+                        id: session.admin_id,
+                        email: session.admin_email,
+                        user_metadata: { full_name: session.admin_full_name }
+                    });
+                    setLoading(false);
+                    return;
+                }
+            } catch (e) {
+                console.error("Failed to parse admin session:", e);
+            }
         }
 
-        setAdminProfile(user);
-        setLoading(false);
+        toast.error("UNAUTHORIZED: ACCESS DENIED. TERMINATING PROTOCOL.");
+        navigate("/super-admin/login");
     };
 
     const handleLogout = async () => {
