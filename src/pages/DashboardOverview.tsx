@@ -319,7 +319,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                                     <h3 className="text-3xl font-black text-foreground">{stat.value}</h3>
                                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">{stat.label}</p>
                                 </div>
-                                <p className="text-[10px] text-gray-600 mt-4 leading-none font-bold italic">{stat.description}</p>
+                                <p className="text-[10px] text-muted-foreground/60 mt-4 leading-none font-bold italic">{stat.description}</p>
                             </CardContent>
                         </Card>
                     </motion.div>
