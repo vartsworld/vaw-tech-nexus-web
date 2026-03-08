@@ -1772,7 +1772,7 @@ const TaskManagement = () => {
                                                   )}
                                                 </div>
                                                 <div className="flex flex-col items-end gap-1">
-                                                  {getStageBadge(task.current_stage || 1)}
+                                                  {getStageBadge(task.current_stage || 1, task.stage_names)}
                                                 </div>
                                               </div>
 
