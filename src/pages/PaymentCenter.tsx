@@ -561,7 +561,16 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10"
+                                                        onClick={() => downloadReceipt(pay, 'payment')}
+                                                        title="Download Receipt"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </Button>
                                                     <p className="text-emerald-400 font-bold text-lg">
                                                         {formatCurrency(Number(pay.amount) || 0)}
                                                     </p>
