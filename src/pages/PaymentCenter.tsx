@@ -166,6 +166,16 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         sum + (Number(inv.balance) || Number(inv.total) || 0), 0);
 
     const downloadReceipt = async (record: any, type: 'payment' | 'invoice') => {
+        // Check for shareable URL from API data
+        const shareUrl = record.invoice_url || record.file_url || record.url || record.receipt_url || record.pdf_url || record.share_url || null;
+        
+        if (shareUrl) {
+            window.open(shareUrl, '_blank', 'noopener,noreferrer');
+            toast.success(`${type === 'payment' ? 'Receipt' : 'Invoice'} opened`);
+            return;
+        }
+
+        // Fallback: generate PDF locally
         const clientName = profile?.company_name || profile?.contact_person || 'Client';
         const clientEmail = profile?.email || '';
         const clientPhone = profile?.phone || '';
@@ -189,15 +199,11 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         const white: [number, number, number] = [255, 255, 255];
         const margin = 20;
 
-        // Full dark background
         doc.setFillColor(...dark);
         doc.rect(0, 0, pw, ph, 'F');
-
-        // Top gold accent bar
         doc.setFillColor(...gold);
         doc.rect(0, 0, pw, 5, 'F');
 
-        // Load and place logo
         try {
             const logoImg = new Image();
             logoImg.crossOrigin = 'anonymous';
@@ -211,7 +217,6 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
             }
         } catch {}
 
-        // Company name
         doc.setTextColor(...white);
         doc.setFontSize(20);
         doc.setFont('helvetica', 'bold');
@@ -222,7 +227,6 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         doc.text('PRIVATE LIMITED', margin + 30, 31);
         doc.text('Digital Solutions & Software Development', margin + 30, 36);
 
-        // Document badge (right side)
         const badgeLabel = type === 'payment' ? 'PAYMENT RECEIPT' : 'INVOICE';
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
@@ -233,14 +237,12 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         doc.setTextColor(...dark);
         doc.text(badgeLabel, bx + 10, 24);
 
-        // Gold divider line
         let y = 48;
         doc.setDrawColor(...gold);
         doc.setLineWidth(0.8);
         doc.line(margin, y, pw - margin, y);
         y += 14;
 
-        // === Left Column: Bill To ===
         doc.setTextColor(...gray);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
@@ -257,7 +259,6 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         if (clientEmail) { doc.text(clientEmail, margin, y); y += 5; }
         if (clientPhone) { doc.text(clientPhone, margin, y); y += 5; }
 
-        // === Right Column: Document Details ===
         const colRight = pw - margin;
         const colLabel = pw - margin - 55;
         let ry = 62;
@@ -280,27 +281,22 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
 
         y = Math.max(y, ry) + 14;
 
-        // === Amount Box ===
         const boxH = 34;
         doc.setFillColor(...midDark);
         doc.roundedRect(margin, y, pw - margin * 2, boxH, 4, 4, 'F');
         doc.setDrawColor(...gold);
         doc.setLineWidth(0.4);
         doc.roundedRect(margin, y, pw - margin * 2, boxH, 4, 4, 'S');
-
         doc.setTextColor(...gray);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.text('AMOUNT', margin + 10, y + 14);
-
         doc.setTextColor(...gold);
         doc.setFontSize(28);
         doc.setFont('helvetica', 'bold');
         doc.text(formatINR(amount), pw - margin - 10, y + 23, { align: 'right' });
-
         y += boxH + 14;
 
-        // Invoice reference for payments
         if (type === 'payment' && invoiceNum) {
             doc.setTextColor(...gray);
             doc.setFontSize(9);
@@ -309,7 +305,6 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
             y += 12;
         }
 
-        // Notes / Terms
         if (notes) {
             doc.setTextColor(...gray);
             doc.setFontSize(9);
@@ -323,20 +318,16 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
             y += wrapped.length * 5 + 8;
         }
 
-        // === Footer ===
         const fy = ph - 32;
         doc.setDrawColor(60, 60, 60);
         doc.setLineWidth(0.3);
         doc.line(margin, fy, pw - margin, fy);
-
         doc.setTextColor(...gray);
         doc.setFontSize(8);
         doc.setFont('helvetica', 'normal');
         doc.text('Thank you for your business!', pw / 2, fy + 8, { align: 'center' });
         doc.text('VAW Technologies Pvt Ltd  |  support@vawtech.com  |  vawtech.com', pw / 2, fy + 14, { align: 'center' });
         doc.text('Any legal concerns or disputes will be addressed at Kollam court', pw / 2, fy + 20, { align: 'center' });
-
-        // Bottom gold accent bar
         doc.setFillColor(...gold);
         doc.rect(0, ph - 5, pw, 5, 'F');
 
