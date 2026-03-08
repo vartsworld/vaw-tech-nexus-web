@@ -84,7 +84,7 @@ const stagger = {
 
 const ClientHome = ({ profile }: { profile: any }) => {
   const [projects, setProjects] = useState<any[]>([]);
-  const [renewalProjects, setRenewalProjects] = useState<any[]>([]);
+  const [renewalItems, setRenewalItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGreeting, setShowGreeting] = useState(false);
   const [showContent, setShowContent] = useState(false);
@@ -98,7 +98,10 @@ const ClientHome = ({ profile }: { profile: any }) => {
   }, []);
 
   useEffect(() => {
-    fetchProjects();
+    if (profile?.id) {
+      fetchProjects();
+      fetchRenewals();
+    }
   }, [profile]);
 
   const fetchProjects = async () => {
@@ -113,44 +116,90 @@ const ClientHome = ({ profile }: { profile: any }) => {
       const crmId = crmClient?.id;
       const clientFilter = `client_id.eq.${profile.id},client_id.eq.${crmId || profile.id}`;
 
-      const [activeRes, renewalByDate, renewalByPayment] = await Promise.all([
-        supabase
-          .from("client_projects")
-          .select("*")
-          .or(clientFilter)
-          .neq("status", "completed")
-          .neq("status", "cancel")
-          .order("updated_at", { ascending: false })
-          .limit(4),
-        supabase
-          .from("client_projects")
-          .select("id,title,project_type,renewal_date,next_payment_date,status")
-          .or(clientFilter)
-          .neq("status", "cancel")
-          .not("renewal_date", "is", null)
-          .order("renewal_date", { ascending: true })
-          .limit(5),
-        supabase
-          .from("client_projects")
-          .select("id,title,project_type,renewal_date,next_payment_date,status")
-          .or(clientFilter)
-          .neq("status", "cancel")
-          .not("next_payment_date", "is", null)
-          .order("next_payment_date", { ascending: true })
-          .limit(5),
-      ]);
+      const { data } = await supabase
+        .from("client_projects")
+        .select("*")
+        .or(clientFilter)
+        .neq("status", "completed")
+        .neq("status", "cancel")
+        .order("updated_at", { ascending: false })
+        .limit(4);
 
-      setProjects(activeRes.data || []);
-      // Merge and deduplicate renewal results
-      const allRenewals = [...(renewalByDate.data || []), ...(renewalByPayment.data || [])];
-      const uniqueRenewals = allRenewals.filter((item, index, self) => 
-        index === self.findIndex(t => t.id === item.id)
-      );
-      setRenewalProjects(uniqueRenewals);
+      setProjects(data || []);
     } catch (err) {
       console.error("Error fetching projects:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRenewals = async () => {
+    const billingId = profile?.billing_sync_id;
+    if (!billingId) return;
+
+    try {
+      // Load API credentials
+      const { data: settings } = await supabase
+        .from("app_settings")
+        .select("key, value")
+        .in("key", ["billing_api_url", "billing_api_key", "billing_api_secret"]);
+
+      const creds: any = {};
+      (settings || []).forEach((s: any) => {
+        const val = typeof s.value === "string" ? s.value.replace(/^"|"$/g, "") : String(s.value);
+        if (s.key === "billing_api_url") creds.url = val;
+        if (s.key === "billing_api_key") creds.key = val;
+        if (s.key === "billing_api_secret") creds.secret = val;
+      });
+
+      const url = creds.url || localStorage.getItem("vaw_external_api_url") || "";
+      const key = creds.key || localStorage.getItem("vaw_external_api_key") || "";
+      const secret = creds.secret || localStorage.getItem("vaw_external_api_secret") || "";
+
+      if (!key || !secret || !url) return;
+
+      const res = await fetch(`${url}/recurring-invoices?limit=500`, {
+        headers: { "x-api-key": key, "x-api-secret": secret },
+      });
+
+      if (!res.ok) return;
+      const raw = await res.json();
+      const allRecurring = Array.isArray(raw) ? raw : raw?.data || [];
+
+      // Filter by client's billing_sync_id
+      const matchId = billingId.toLowerCase();
+      const clientRecurring = allRecurring.filter((r: any) => {
+        const code = String(r.client_code || r.client_id || r.client_sync_id || r.customer_id || "").toLowerCase();
+        return code === matchId;
+      });
+
+      // Calculate next renewal date for each recurring invoice
+      const withDates = clientRecurring
+        .filter((r: any) => r.status?.toLowerCase() !== "paused" && r.status?.toLowerCase() !== "stopped")
+        .map((r: any) => {
+          const nextDate = r.next_billing_date || r.next_invoice_date || r.next_date;
+          let calculatedNext = nextDate;
+
+          if (!calculatedNext) {
+            const freq = (r.frequency || r.recurrence_frequency || "monthly").toLowerCase();
+            const created = new Date(r.created_at || r.date || r.start_date || Date.now());
+            const now = new Date();
+            let d = new Date(created);
+            while (d <= now) {
+              if (freq === "yearly" || freq === "annual") d.setFullYear(d.getFullYear() + 1);
+              else if (freq === "quarterly") d.setMonth(d.getMonth() + 3);
+              else d.setMonth(d.getMonth() + 1);
+            }
+            calculatedNext = d.toISOString();
+          }
+
+          return { ...r, _nextDate: calculatedNext };
+        })
+        .sort((a: any, b: any) => new Date(a._nextDate).getTime() - new Date(b._nextDate).getTime());
+
+      setRenewalItems(withDates);
+    } catch (err) {
+      console.error("Error fetching recurring invoices:", err);
     }
   };
 
