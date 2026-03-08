@@ -74,6 +74,8 @@ const EMOJI_OPTIONS = [
 
 const TeamHeadDashboard = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [showMobileHome, setShowMobileHome] = useState(true);
   const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
