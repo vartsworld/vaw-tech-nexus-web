@@ -511,7 +511,7 @@ const StaffMobileHome = ({
                   {active && (
                     <motion.div
                       layoutId="staffNavGlow"
-                      className="absolute -top-1 w-8 h-8 rounded-full bg-primary/12 blur-xl"
+                      className="absolute -top-1 w-8 h-8 rounded-full bg-emerald-500/12 blur-xl"
                       transition={{ type: "spring", stiffness: 400, damping: 28 }}
                     />
                   )}
