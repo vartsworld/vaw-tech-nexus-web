@@ -246,7 +246,7 @@ const ClientDashboard = () => {
         );
     }
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
+    const isHomePage = location.pathname === '/client/dashboard';
     return (
         <div className="min-h-screen bg-background text-foreground flex overflow-hidden">
             {/* Sidebar */}
