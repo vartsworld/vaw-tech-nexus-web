@@ -394,6 +394,16 @@ const TeamHeadDashboard = () => {
     );
   }
 
+  // Show mobile home on small screens
+  if (isMobile && showMobileHome && profile?.user_id) {
+    return (
+      <TeamHeadMobileHome
+        profile={profile}
+        onEnterDesktop={() => setShowMobileHome(false)}
+      />
+    );
+  }
+
   const toggleWidget = (widgetId: string) => {
     setWidgets(prev => prev.map(w =>
       w.id === widgetId ? { ...w, isVisible: !w.isVisible } : w
