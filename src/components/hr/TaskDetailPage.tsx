@@ -379,7 +379,21 @@ const TaskDetailPage = ({
 
   const completedSubtasks = subtasks.filter(s => s.status === 'completed').length;
 
-  const stageLabels: Record<number, string> = { 1: 'DISCOVERY', 2: 'DESIGN', 3: 'DEVELOPMENT', 4: 'TESTING', 5: 'REVIEW' };
+  const defaultStageLabels: Record<number, string> = { 1: 'DISCOVERY', 2: 'DESIGN', 3: 'DEVELOPMENT', 4: 'TESTING', 5: 'REVIEW' };
+  const stageLabels: Record<number, string> = {};
+  // Merge: custom names override defaults
+  for (const num of [...Object.keys(defaultStageLabels).map(Number), ...Object.keys(customStageNames).map(Number)]) {
+    stageLabels[num] = customStageNames[num] || defaultStageLabels[num] || `STAGE ${num}`;
+  }
+
+  const saveStageNames = async (updated: Record<number, string>) => {
+    setCustomStageNames(updated);
+    try {
+      await supabase.from('staff_tasks').update({ stage_names: updated as any, updated_at: new Date().toISOString() } as any).eq('id', task.id);
+    } catch (e) {
+      console.error('Error saving stage names:', e);
+    }
+  };
 
   const profiles = task.assigned_to_profiles?.length > 0
     ? task.assigned_to_profiles
