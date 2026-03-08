@@ -409,7 +409,8 @@ const ClientDashboard = () => {
                             className="relative z-10"
                         >
                             <Routes>
-                                <Route index element={<DashboardOverview profile={profile} />} />
+                                <Route index element={<ClientHome profile={profile} />} />
+                                <Route path="overview" element={<DashboardOverview profile={profile} />} />
                                 <Route path="projects/*" element={<ProjectExplorer profile={profile} />} />
                                 <Route path="financials" element={<PaymentCenter profile={profile} />} />
                                 <Route path="support" element={<SupportNexus profile={profile} />} />
