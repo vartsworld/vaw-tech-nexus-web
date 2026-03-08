@@ -121,6 +121,21 @@ const SupportNexus = ({ profile }: { profile: any }) => {
 
         setIsSubmitting(true);
         try {
+            let attachmentUrl: string | null = null;
+
+            if (attachment) {
+                const ext = attachment.name.split('.').pop();
+                const path = `${profile.id}/${Date.now()}.${ext}`;
+                const { error: uploadErr } = await supabase.storage
+                    .from('support-attachments')
+                    .upload(path, attachment);
+                if (uploadErr) throw uploadErr;
+                const { data: urlData } = supabase.storage
+                    .from('support-attachments')
+                    .getPublicUrl(path);
+                attachmentUrl = urlData.publicUrl;
+            }
+
             const { error } = await supabase
                 .from("client_feedback")
                 .insert({
@@ -130,18 +145,17 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                     message: newSignal.message,
                     status: 'pending',
                     priority: newSignal.priority,
-                    metadata: { priority: newSignal.priority }
+                    metadata: {
+                        priority: newSignal.priority,
+                        ...(attachmentUrl && { attachment_url: attachmentUrl, attachment_name: attachment?.name })
+                    }
                 });
 
             if (error) throw error;
 
             toast.success("Help request successfully transmitted.");
-            setNewSignal({
-                type: "feedback",
-                priority: "medium",
-                subject: "",
-                message: ""
-            });
+            setNewSignal({ type: "feedback", priority: "medium", subject: "", message: "" });
+            setAttachment(null);
             fetchFeedback();
         } catch (error: any) {
             toast.error(`Transmission failure: ${error.message}`);
