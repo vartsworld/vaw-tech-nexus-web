@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, Routes, Route, Link, useLocation } from "react-router-dom";
 import {
     Home,
-    LayoutDashboard,
     Briefcase,
     CreditCard,
     MessageSquare,
