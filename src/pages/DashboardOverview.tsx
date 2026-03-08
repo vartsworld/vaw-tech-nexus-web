@@ -39,10 +39,64 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
     const [paymentReminders, setPaymentReminders] = useState<any[]>([]);
     const [notifications, setNotifications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [nextBilling, setNextBilling] = useState<{ amount: number; date: string } | null>(null);
 
     useEffect(() => {
         fetchStats();
+        fetchNextBilling();
     }, [profile]);
+
+    const fetchNextBilling = async () => {
+        if (!profile?.billing_sync_id) return;
+        try {
+            const { data: settings } = await supabase
+                .from('app_settings')
+                .select('key, value')
+                .in('key', ['billing_api_url', 'billing_api_key', 'billing_api_secret']);
+
+            const creds: any = {};
+            if (settings) {
+                settings.forEach((s: any) => {
+                    const val = typeof s.value === 'string' ? s.value.replace(/^"|"$/g, '') : String(s.value);
+                    if (s.key === 'billing_api_url') creds.url = val;
+                    if (s.key === 'billing_api_key') creds.key = val;
+                    if (s.key === 'billing_api_secret') creds.secret = val;
+                });
+            }
+            const url = creds.url || 'https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/external-api';
+            const key = creds.key || '';
+            const secret = creds.secret || '';
+            if (!key || !secret) return;
+
+            const res = await fetch(`${url}/recurring-invoices?limit=500`, {
+                headers: { 'x-api-key': key, 'x-api-secret': secret }
+            });
+            if (!res.ok) return;
+            const raw = await res.json();
+            const all = Array.isArray(raw) ? raw : (raw?.data || []);
+
+            const matchId = profile.billing_sync_id.toLowerCase();
+            const clientRecs = all.filter((r: any) => {
+                const code = String(r.client_code || r.client_id || r.client_sync_id || r.customer_id || '').toLowerCase();
+                return code === matchId && r.status?.toLowerCase() !== 'paused' && r.status?.toLowerCase() !== 'stopped';
+            });
+
+            const sorted = clientRecs.sort((a: any, b: any) =>
+                new Date(a.next_issue_date || a.next_invoice_date || '9999').getTime() -
+                new Date(b.next_issue_date || b.next_invoice_date || '9999').getTime()
+            );
+
+            if (sorted.length > 0) {
+                const next = sorted[0];
+                setNextBilling({
+                    amount: Number(next.total) || 0,
+                    date: next.next_issue_date || next.next_invoice_date
+                });
+            }
+        } catch (err) {
+            console.error('Failed to fetch next billing:', err);
+        }
+    };
 
     const fetchStats = async () => {
         if (!profile?.id) return;
@@ -177,15 +231,19 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
         },
         {
             label: "Next Billing",
-            value: paymentReminders.length > 0
-                ? `₹${Number(paymentReminders[0]?.amount || 0).toLocaleString()}`
-                : "—",
+            value: nextBilling
+                ? `₹${nextBilling.amount.toLocaleString()}`
+                : (paymentReminders.length > 0
+                    ? `₹${Number(paymentReminders[0]?.amount || 0).toLocaleString()}`
+                    : "—"),
             icon: CreditCard,
             color: "text-tech-gold",
             bg: "bg-tech-gold/10",
-            description: paymentReminders.length > 0
-                ? `Due ${new Date(paymentReminders[0]?.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
-                : "No upcoming payments"
+            description: nextBilling
+                ? `Due ${new Date(nextBilling.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+                : (paymentReminders.length > 0
+                    ? `Due ${new Date(paymentReminders[0]?.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+                    : "No upcoming payments")
         },
         {
             label: "Pending Actions",
