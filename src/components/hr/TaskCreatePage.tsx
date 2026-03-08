@@ -449,12 +449,22 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
               {newTask.attachments.length > 0 && (
                 <div className="space-y-2">
                   {newTask.attachments.map((att, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 text-sm">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="truncate">{att.title}</span>
-                      </div>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                    <div key={idx} className="flex items-center gap-2 p-3 bg-white/5 rounded-xl border border-white/10 text-sm">
+                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <Input
+                        value={att.title}
+                        onChange={(e) => {
+                          const copy = [...newTask.attachments];
+                          copy[idx] = { ...copy[idx], title: e.target.value };
+                          setNewTask({ ...newTask, attachments: copy });
+                        }}
+                        className="h-7 text-xs bg-transparent border-white/10 flex-1"
+                        placeholder="File name"
+                      />
+                      <span className="text-[10px] text-muted-foreground truncate max-w-[120px] flex-shrink-0">
+                        {att.file.name}
+                      </span>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive flex-shrink-0"
                         onClick={() => {
                           const copy = [...newTask.attachments];
                           copy.splice(idx, 1);
