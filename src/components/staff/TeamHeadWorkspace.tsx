@@ -1031,19 +1031,55 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     handleSendSubtaskMessage(subtaskId, true, file);
   };
 
-  const handleSubtaskApprove = async (subtaskId: string) => {
+  const uploadReviewAttachments = async (subtaskId: string, files: File[], actionType: string) => {
+    const uploaded: any[] = [];
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `subtasks/${subtaskId}/review-${actionType}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('task-attachments').upload(filePath, file);
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage.from('task-attachments').getPublicUrl(filePath);
+        uploaded.push({ name: file.name, url: filePath, publicUrl, size: file.size, type: file.type });
+      }
+    }
+    return uploaded;
+  };
+
+  const handleSubtaskApprove = async (subtaskId: string, attachmentFiles?: File[]) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Upload attachments if any
+      let reviewAttachments: any[] = [];
+      if (attachmentFiles && attachmentFiles.length > 0) {
+        reviewAttachments = await uploadReviewAttachments(subtaskId, attachmentFiles, 'approve');
+      }
+
+      const updateData: any = {
+        status: 'completed',
+        approved_at: new Date().toISOString(),
+        approved_by: user.id,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data: existingSubtask } = await supabase.from('staff_subtasks').select('comments').eq('id', subtaskId).single();
+      if (reviewAttachments.length > 0) {
+        const existingComments = (existingSubtask?.comments as any[]) || [];
+        const approveComment = {
+          user_id: user.id,
+          user_name: userProfile?.full_name || 'Team Head',
+          message: '✅ Approved with attachments',
+          timestamp: new Date().toISOString(),
+          type: 'approval',
+          attachments: reviewAttachments
+        };
+        updateData.comments = [...existingComments, approveComment];
+      }
+
       const { data, error } = await supabase
         .from('staff_subtasks')
-        .update({
-          status: 'completed',
-          approved_at: new Date().toISOString(),
-          approved_by: user.id,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', subtaskId)
         .select(`*, staff_profiles:assigned_to(full_name, username)`)
         .single();
@@ -1143,10 +1179,16 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     }
   };
 
-  const handleSubtaskReject = async (subtaskId: string, rejectionNote: string) => {
+  const handleSubtaskReject = async (subtaskId: string, rejectionNote: string, attachmentFiles?: File[]) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Upload attachments if any
+      let reviewAttachments: any[] = [];
+      if (attachmentFiles && attachmentFiles.length > 0) {
+        reviewAttachments = await uploadReviewAttachments(subtaskId, attachmentFiles, 'reject');
+      }
 
       // Fetch current profile for rejection comment
       const { data: profile } = await supabase
@@ -1163,13 +1205,16 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         .single();
 
       const existingComments = (subtaskData?.comments as any[]) || [];
-      const rejectionComment = {
+      const rejectionComment: any = {
         user_id: user.id,
         user_name: profile?.full_name || 'Team Head',
         message: `❌ REJECTED: ${rejectionNote || 'Please redo this subtask.'}`,
         timestamp: new Date().toISOString(),
         type: 'rejection'
       };
+      if (reviewAttachments.length > 0) {
+        rejectionComment.attachments = reviewAttachments;
+      }
       const updatedComments = [...existingComments, rejectionComment];
 
       const { data, error } = await supabase
@@ -3210,12 +3255,12 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           setReviewDialogOpen(open);
           if (!open) setReviewDialogSubtask(null);
         }}
-        onApprove={async (subtaskId) => {
-          await handleSubtaskApprove(subtaskId);
+        onApprove={async (subtaskId, attachments) => {
+          await handleSubtaskApprove(subtaskId, attachments);
           fetchReviewQueues();
         }}
-        onReject={async (subtaskId, note) => {
-          await handleSubtaskReject(subtaskId, note);
+        onReject={async (subtaskId, note, attachments) => {
+          await handleSubtaskReject(subtaskId, note, attachments);
           fetchReviewQueues();
         }}
       />
