@@ -164,6 +164,50 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
     const totalPending = pendingInvoices.reduce((sum: number, inv: any) =>
         sum + (Number(inv.balance) || Number(inv.total) || 0), 0);
 
+    const downloadReceipt = (record: any, type: 'payment' | 'invoice') => {
+        const companyName = profile?.company_name || 'Client';
+        const date = record.payment_date || record.date || record.issue_date || new Date().toISOString();
+        const amount = Number(record.amount || record.total || 0);
+        const ref = record.receipt_number || record.reference_number || record.invoice_number || record.payment_number || `${type.toUpperCase()}-${Date.now()}`;
+        const method = record.payment_method || record.payment_mode || 'N/A';
+        const status = record.payment_status || record.status || 'completed';
+        const dueDate = record.due_date || '';
+
+        const lines = [
+            '═══════════════════════════════════════════',
+            '           VAW TECHNOLOGIES PVT LTD',
+            '═══════════════════════════════════════════',
+            '',
+            type === 'payment' ? '          PAYMENT RECEIPT' : '              INVOICE',
+            '',
+            `  ${type === 'payment' ? 'Receipt' : 'Invoice'} #:  ${ref}`,
+            `  Date:       ${new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`,
+            ...(dueDate ? [`  Due Date:   ${new Date(dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}`] : []),
+            '',
+            '───────────────────────────────────────────',
+            `  Bill To:    ${companyName}`,
+            ...(type === 'payment' ? [`  Method:     ${method.toUpperCase()}`] : []),
+            `  Status:     ${status.toUpperCase()}`,
+            '───────────────────────────────────────────',
+            '',
+            `  Amount:     ₹${amount.toLocaleString('en-IN')}`,
+            '',
+            '═══════════════════════════════════════════',
+            '  Thank you for your business!',
+            '  support@vawtech.com | vawtech.com',
+            '═══════════════════════════════════════════',
+        ];
+
+        const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${ref}_${new Date(date).toISOString().split('T')[0]}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success(`${type === 'payment' ? 'Receipt' : 'Invoice'} downloaded`);
+    };
+
     // Payment confirmation handlers
     const generateUPILink = (reminder: any) => {
         const upiId = "vaw@paytm";
