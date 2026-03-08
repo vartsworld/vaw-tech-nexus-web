@@ -23,6 +23,8 @@ import {
   Coins
 } from "lucide-react";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
+import StaffMobileHome from "@/components/staff/StaffMobileHome";
+import { useIsMobile } from "@/hooks/use-mobile";
 import WorkspaceRoom from "@/components/staff/WorkspaceRoom";
 import BreakRoom from "@/components/staff/BreakRoom";
 import BreakRoomWidget from "@/components/staff/BreakRoomWidget";
