@@ -2074,7 +2074,7 @@ const TaskManagement = () => {
                               {provided.placeholder}
                             </div>
                           )}
-                        </Droppable>
+                        </StrictModeDroppable>
                       </div>
                     );
                   })}
