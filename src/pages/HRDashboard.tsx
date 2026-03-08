@@ -293,18 +293,18 @@ const HRDashboard = () => {
   };
 
   return (
-    <div className="flex h-screen bg-[#050505] text-white overflow-hidden selection:bg-indigo-500/30">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden selection:bg-primary/30">
       {/* Background Glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full" />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/5 blur-[120px] rounded-full" />
       </div>
 
       {/* Sidebar */}
       <motion.aside
         initial={false}
         animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="relative z-50 h-full bg-[#0a0a0a]/80 backdrop-blur-xl border-r border-white/5 flex flex-col transition-all duration-300 ease-in-out"
+        className="relative z-50 h-full bg-card/80 backdrop-blur-xl border-r border-border flex flex-col transition-all duration-300 ease-in-out"
       >
         <div className="p-6 flex items-center justify-between">
           <AnimatePresence mode="wait">
@@ -316,10 +316,10 @@ const HRDashboard = () => {
                 exit={{ opacity: 0, x: -20 }}
                 className="flex items-center gap-2"
               >
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                  <ShieldCheck className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+                  <ShieldCheck className="w-5 h-5 text-primary-foreground" />
                 </div>
-                <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">VAW HR</span>
+                <span className="font-bold text-lg tracking-tight text-foreground">VAW HR</span>
               </motion.div>
             ) : (
               <motion.div
@@ -329,7 +329,7 @@ const HRDashboard = () => {
                 exit={{ opacity: 0 }}
                 className="mx-auto"
               >
-                <ShieldCheck className="w-6 h-6 text-indigo-500" />
+                <ShieldCheck className="w-6 h-6 text-primary" />
               </motion.div>
             )}
           </AnimatePresence>
@@ -337,7 +337,7 @@ const HRDashboard = () => {
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="hover:bg-white/5 text-gray-400"
+            className="hover:bg-muted text-muted-foreground"
           >
             {isSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </Button>
@@ -348,7 +348,7 @@ const HRDashboard = () => {
             {menuGroups.map((group, gIdx) => (
               <div key={gIdx} className="space-y-2">
                 {isSidebarOpen && (
-                  <h3 className="px-4 text-[10px] font-bold tracking-widest text-gray-500 uppercase">
+                  <h3 className="px-4 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
                     {group.label}
                   </h3>
                 )}
@@ -360,11 +360,11 @@ const HRDashboard = () => {
                       className={`
                         w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative
                         ${activeTab === item.id
-                          ? "bg-indigo-500/10 text-indigo-400"
-                          : "text-gray-400 hover:bg-white/5 hover:text-white"}
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"}
                       `}
                     >
-                      <item.icon className={`w-5 h-5 ${activeTab === item.id ? "text-indigo-400" : "group-hover:text-indigo-400 transition-colors"}`} />
+                      <item.icon className={`w-5 h-5 ${activeTab === item.id ? "text-primary" : "group-hover:text-primary transition-colors"}`} />
                       {isSidebarOpen && (
                         <span className="text-sm font-medium tracking-wide">
                           {item.label}
@@ -373,7 +373,7 @@ const HRDashboard = () => {
                       {activeTab === item.id && (
                         <motion.div
                           layoutId="activeTabIndicator"
-                          className="absolute inset-y-2 left-0 w-1 bg-indigo-500 rounded-full"
+                          className="absolute inset-y-2 left-0 w-1 bg-primary rounded-full"
                           initial={false}
                           transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         />
@@ -389,22 +389,22 @@ const HRDashboard = () => {
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t border-white/5">
-          <div className={`flex items-center gap-3 p-3 rounded-2xl bg-white/5 ${!isSidebarOpen && 'justify-center'}`}>
-            <Avatar className="h-9 w-9 border border-indigo-500/30">
+        <div className="p-4 border-t border-border">
+          <div className={`flex items-center gap-3 p-3 rounded-2xl bg-muted/50 ${!isSidebarOpen && 'justify-center'}`}>
+            <Avatar className="h-9 w-9 border border-primary/30">
               <AvatarImage src={hrProfile?.avatar_url} />
-              <AvatarFallback className="bg-indigo-600 text-white text-xs">
+              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                 {hrProfile?.full_name?.split(' ').map((n: string) => n[0]).join('')}
               </AvatarFallback>
             </Avatar>
             {isSidebarOpen && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{hrProfile?.full_name || 'HR Admin'}</p>
-                <p className="text-[10px] text-gray-500 font-bold tracking-wider uppercase">{hrProfile?.role || 'HR'}</p>
+                <p className="text-sm font-semibold truncate text-foreground">{hrProfile?.full_name || 'HR Admin'}</p>
+                <p className="text-[10px] text-muted-foreground font-bold tracking-wider uppercase">{hrProfile?.role || 'HR'}</p>
               </div>
             )}
             {isSidebarOpen && (
-              <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 text-gray-400 hover:text-rose-500">
+              <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 text-muted-foreground hover:text-destructive">
                 <LogOut className="w-4 h-4" />
               </Button>
             )}
@@ -413,34 +413,34 @@ const HRDashboard = () => {
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#0c0c0c] relative z-10">
+      <main className="flex-1 flex flex-col min-w-0 bg-background relative z-10">
         {/* Top bar */}
-        <header className="h-20 border-b border-white/5 px-8 flex items-center justify-between bg-black/20 backdrop-blur-md sticky top-0 z-40">
+        <header className="h-20 border-b border-border px-8 flex items-center justify-between bg-card/50 backdrop-blur-md sticky top-0 z-40">
           <div className="flex items-center gap-4">
-            <h2 className="text-xl font-bold tracking-tight capitalize">
+            <h2 className="text-xl font-bold tracking-tight capitalize text-foreground">
               {activeTab.replace('-', ' ')}
             </h2>
-            <Separator orientation="vertical" className="h-6 bg-white/10" />
-            <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
-              <Sparkles className="w-4 h-4 text-indigo-500" />
+            <Separator orientation="vertical" className="h-6 bg-border" />
+            <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
+              <Sparkles className="w-4 h-4 text-primary" />
               <span>Team efficiency is up 12% this week</span>
             </div>
           </div>
 
           <div className="flex items-center gap-6">
             <div className="relative hidden lg:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Universal search..."
-                className="w-64 bg-white/5 border-white/10 pl-10 h-9 rounded-full focus:ring-indigo-500 focus:border-indigo-500 transition-all text-xs"
+                className="w-64 bg-muted/50 border-border pl-10 h-9 rounded-full focus:ring-primary focus:border-primary transition-all text-xs"
               />
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/hr/notifications')} className="relative text-gray-400 hover:text-white hover:bg-white/5">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/hr/notifications')} className="relative text-muted-foreground hover:text-foreground hover:bg-muted">
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-indigo-500 rounded-full border-2 border-[#0c0c0c]" />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-background" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="text-gray-400 hover:text-white hover:bg-white/5">
+              <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="text-muted-foreground hover:text-foreground hover:bg-muted">
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </Button>
             </div>
@@ -509,7 +509,7 @@ const StatsGrid = ({ stats }: any) => (
 const PremiumStatCard = ({ title, value, subtitle, icon: Icon, gradient, trend }: any) => (
   <motion.div
     whileHover={{ y: -5 }}
-    className="group relative overflow-hidden p-6 rounded-[2rem] bg-[#111] border border-white/5"
+    className="group relative overflow-hidden p-6 rounded-[2rem] bg-card border border-border"
   >
     <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-10 blur-[50px] transition-opacity duration-500`} />
     <div className="flex justify-between items-start mb-4">
@@ -517,28 +517,28 @@ const PremiumStatCard = ({ title, value, subtitle, icon: Icon, gradient, trend }
         <Icon className="w-6 h-6 text-white" />
       </div>
       {trend && (
-        <span className="text-[10px] font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">
+        <span className="text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">
           {trend}
         </span>
       )}
     </div>
     <div className="space-y-1">
-      <h3 className="text-gray-400 text-xs font-bold tracking-wider uppercase">{title}</h3>
-      <div className="text-3xl font-bold tracking-tight text-white">{value}</div>
-      <p className="text-xs text-gray-500">{subtitle}</p>
+      <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">{title}</h3>
+      <div className="text-3xl font-bold tracking-tight text-foreground">{value}</div>
+      <p className="text-xs text-muted-foreground">{subtitle}</p>
     </div>
   </motion.div>
 );
 
 const Activities = ({ activities }: any) => (
-  <Card className="bg-[#111] border-white/5 rounded-[2rem] overflow-hidden shadow-2xl">
-    <CardHeader className="border-b border-white/5 p-6">
+  <Card className="bg-card border-border rounded-[2rem] overflow-hidden shadow-2xl">
+    <CardHeader className="border-b border-border p-6">
       <div className="flex items-center justify-between">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-indigo-500" />
+        <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+          <Sparkles className="w-5 h-5 text-primary" />
           Live Pulse
         </CardTitle>
-        <Button variant="ghost" size="sm" className="text-xs text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10">View Log</Button>
+        <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-primary/80 hover:bg-primary/10">View Log</Button>
       </div>
     </CardHeader>
     <CardContent className="p-0">
@@ -550,21 +550,21 @@ const Activities = ({ activities }: any) => (
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.1 }}
               key={idx}
-              className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/[0.08] transition-all group"
+              className="flex items-center gap-4 p-4 rounded-2xl bg-muted/50 border border-border hover:bg-muted transition-all group"
             >
-              <div className={`p-2.5 rounded-xl bg-[#1a1a1a] border border-white/10 group-hover:scale-110 transition-transform ${activity.color}`}>
+              <div className={`p-2.5 rounded-xl bg-card border border-border group-hover:scale-110 transition-transform ${activity.color}`}>
                 <activity.icon className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium tracking-wide truncate">{activity.title}</p>
-                <div className="flex items-center gap-2 text-[10px] text-gray-500 font-medium">
+                <p className="text-sm font-medium tracking-wide truncate text-foreground">{activity.title}</p>
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium">
                   <Clock className="w-3 h-3" />
                   {new Date(activity.time).toLocaleTimeString()}
                 </div>
               </div>
             </motion.div>
           )) : (
-            <div className="flex flex-col items-center justify-center h-48 text-gray-500">
+            <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
               <Clock className="w-8 h-8 mb-2 opacity-20" />
               <p className="text-sm font-medium">No recent activities</p>
             </div>
@@ -576,48 +576,48 @@ const Activities = ({ activities }: any) => (
 );
 
 const PerformanceInsights = ({ stats }: any) => (
-  <Card className="bg-[#111] border-white/5 rounded-[2rem] shadow-2xl">
+  <Card className="bg-card border-border rounded-[2rem] shadow-2xl">
     <CardHeader className="p-6">
-      <CardTitle className="text-lg flex items-center gap-2">
-        <TrendingUp className="w-5 h-5 text-indigo-500" />
+      <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+        <TrendingUp className="w-5 h-5 text-primary" />
         Intelligence
       </CardTitle>
     </CardHeader>
     <CardContent className="p-6 pt-0 space-y-6">
       <div className="space-y-4">
         <div className="flex justify-between items-center px-1">
-          <span className="text-sm text-gray-400 font-medium">Monthly Efficiency</span>
-          <span className="text-sm font-bold text-white">87%</span>
+          <span className="text-sm text-muted-foreground font-medium">Monthly Efficiency</span>
+          <span className="text-sm font-bold text-foreground">87%</span>
         </div>
-        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: "87%" }}
-            className="h-full bg-gradient-to-r from-indigo-600 to-violet-600"
+            className="h-full bg-gradient-to-r from-primary to-accent"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Response Time</p>
-          <p className="text-xl font-bold text-white">2.4h</p>
-          <div className="text-[10px] text-green-500 mt-1 flex items-center gap-1 font-bold">
+        <div className="p-4 rounded-2xl bg-muted/50 border border-border">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Response Time</p>
+          <p className="text-xl font-bold text-foreground">2.4h</p>
+          <div className="text-[10px] text-green-600 dark:text-green-400 mt-1 flex items-center gap-1 font-bold">
             <TrendingUp className="h-3 w-3" />
             15% FASTER
           </div>
         </div>
-        <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Satisfaction</p>
-          <p className="text-xl font-bold text-white">4.8/5</p>
-          <div className="text-[10px] text-indigo-500 mt-1 flex items-center gap-1 font-bold">
+        <div className="p-4 rounded-2xl bg-muted/50 border border-border">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Satisfaction</p>
+          <p className="text-xl font-bold text-foreground">4.8/5</p>
+          <div className="text-[10px] text-primary mt-1 flex items-center gap-1 font-bold">
             <Sparkles className="h-3 w-3" />
             TOP TIER
           </div>
         </div>
       </div>
 
-      <div className="p-4 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-sm text-indigo-200 leading-relaxed italic">
+      <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 text-sm text-foreground/80 leading-relaxed italic">
         "Team velocity is high. Focus on completing templates to automate repetitive workflows in the next sprint."
       </div>
     </CardContent>
