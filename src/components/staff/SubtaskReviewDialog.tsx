@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,8 @@ import {
   Paperclip,
   Star,
   Layers,
+  Upload,
+  X,
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,8 +40,8 @@ interface SubtaskReviewDialogProps {
   parentTask: any | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onApprove: (subtaskId: string) => void;
-  onReject: (subtaskId: string, note: string) => void;
+  onApprove: (subtaskId: string, attachments?: File[]) => void;
+  onReject: (subtaskId: string, note: string, attachments?: File[]) => void;
   viewOnly?: boolean;
 }
 
@@ -70,19 +72,27 @@ export const SubtaskReviewDialog = ({
   const [rejectionNote, setRejectionNote] = useState("");
   const [showRejectSection, setShowRejectSection] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rejectFiles, setRejectFiles] = useState<File[]>([]);
+  const [approveFiles, setApproveFiles] = useState<File[]>([]);
+  const [showApproveAttach, setShowApproveAttach] = useState(false);
+  const rejectFileRef = useRef<HTMLInputElement>(null);
+  const approveFileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const resetState = () => {
     setRejectionNote("");
     setShowRejectSection(false);
     setIsSubmitting(false);
+    setRejectFiles([]);
+    setApproveFiles([]);
+    setShowApproveAttach(false);
   };
 
   const handleApprove = async () => {
     if (!subtask) return;
     setIsSubmitting(true);
     try {
-      await onApprove(subtask.id);
+      await onApprove(subtask.id, approveFiles.length > 0 ? approveFiles : undefined);
       onOpenChange(false);
       resetState();
     } catch (e) {
@@ -99,7 +109,7 @@ export const SubtaskReviewDialog = ({
     }
     setIsSubmitting(true);
     try {
-      await onReject(subtask.id, rejectionNote);
+      await onReject(subtask.id, rejectionNote, rejectFiles.length > 0 ? rejectFiles : undefined);
       onOpenChange(false);
       resetState();
     } catch (e) {
