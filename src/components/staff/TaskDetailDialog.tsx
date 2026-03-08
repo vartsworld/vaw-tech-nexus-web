@@ -601,6 +601,54 @@ export const TaskDetailDialog = ({
             <p className="text-white/70 leading-relaxed">{task.description}</p>
           </div>}
 
+          <Separator className="bg-white/10" />
+
+          {/* Timer/Countdown Section */}
+          {task.status !== 'completed' && task.status !== 'handover' && <div className="bg-black/30 rounded-lg p-6 text-center space-y-4">
+            <div className="flex items-center justify-center gap-2">
+              <Clock className="w-5 h-5 text-blue-400" />
+              <h3 className="text-lg font-semibold">
+                {hasDueDate ? 'Time Remaining' : 'Time Elapsed'}
+              </h3>
+            </div>
+
+            <div className={`text-5xl font-mono font-bold ${isOverdue ? 'text-red-400' : 'text-blue-400'}`}>
+              {hasDueDate ? formatTime(remainingSeconds) : formatTime(elapsedSeconds)}
+            </div>
+
+            {isOverdue && <div className="flex items-center justify-center gap-2 text-red-400">
+              <AlertCircle className="w-5 h-5" />
+              <span className="text-sm font-medium">Task is overdue!</span>
+            </div>}
+
+            {isOnBreak && <div className="mb-4 bg-orange-500/20 border border-orange-500/30 rounded-lg p-4">
+              <div className="flex items-center justify-center gap-2 text-orange-300 mb-2">
+                <Coffee className="w-5 h-5" />
+                <span className="font-semibold">On Break</span>
+              </div>
+              <div className="text-3xl font-mono font-bold text-orange-400 text-center">
+                {formatTime(breakTimeRemaining)}
+              </div>
+              <p className="text-white/70 text-sm text-center mt-2">
+                Task will resume automatically
+              </p>
+            </div>}
+
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              {!isTimerRunning && !isOnBreak ? <Button onClick={handleStart} className="bg-green-500 hover:bg-green-600 text-white">
+                <Play className="w-4 h-4 mr-2" />
+                {task.status === 'pending' ? 'Start Task' : 'Resume'}
+              </Button> : isTimerRunning && !isOnBreak ? <Button onClick={handleStartBreak} variant="outline" className="border-orange-400/50 text-orange-300 hover:bg-orange-500/20" disabled={breaksTaken >= 2}>
+                <Coffee className="w-4 h-4 mr-2" />
+                Take Break ({2 - breaksTaken} left)
+              </Button> : null}
+
+              {task.status === 'in_progress' && !isOnBreak}
+            </div>
+          </div>}
+
+          <Separator className="bg-white/10" />
+
           {/* Subtasks Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-white/90 flex items-center justify-between">
