@@ -16,7 +16,6 @@ const BottomNav = () => {
 
     const navItems = [
         { icon: Home, label: "Home", path: "/client/dashboard", exact: true },
-        { icon: LayoutDashboard, label: "Overview", path: "/client/dashboard/overview" },
         { icon: Briefcase, label: "Projects", path: "/client/dashboard/projects" },
         { icon: CreditCard, label: "Payments", path: "/client/dashboard/financials" },
         { icon: MessageSquare, label: "Support", path: "/client/dashboard/support" },
