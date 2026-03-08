@@ -268,6 +268,11 @@ const TaskDetailPage = ({
   subtasks.forEach(st => { const s = st.stage || 1; if (!stageMap[s]) stageMap[s] = []; stageMap[s].push(st); });
   const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
   if (stageNums.length === 0) stageNums.push(1);
+  // Include the newly added stage so its column renders immediately
+  if (quickAddStage !== null && !stageNums.includes(quickAddStage)) {
+    stageNums.push(quickAddStage);
+    stageNums.sort((a, b) => a - b);
+  }
 
   const reviewPendingSubtasks = subtasks.filter(s => s.status === 'review_pending' || s.status === 'pending_approval');
 
