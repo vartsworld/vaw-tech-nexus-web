@@ -340,7 +340,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
               {provided.placeholder}
             </div>
           )}
-        </Droppable>
+        </StrictModeDroppable>
       </DragDropContext>
     </div>
   );
