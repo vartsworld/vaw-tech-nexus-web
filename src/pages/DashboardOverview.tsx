@@ -47,7 +47,19 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
     }, [profile]);
 
     const fetchNextBilling = async () => {
-        if (!profile?.billing_sync_id) return;
+        if (!profile?.id) return;
+
+        // Resolve billing_sync_id: from profile or CRM clients table
+        let billingId = profile.billing_sync_id;
+        if (!billingId && profile.email) {
+            const { data: crmClient } = await supabase
+                .from('clients')
+                .select('billing_sync_id')
+                .eq('email', profile.email)
+                .maybeSingle();
+            billingId = crmClient?.billing_sync_id;
+        }
+        if (!billingId) return;
         try {
             const { data: settings } = await supabase
                 .from('app_settings')
@@ -75,7 +87,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
             const raw = await res.json();
             const all = Array.isArray(raw) ? raw : (raw?.data || []);
 
-            const matchId = profile.billing_sync_id.toLowerCase();
+            const matchId = billingId.toLowerCase();
             const clientRecs = all.filter((r: any) => {
                 const code = String(r.client_code || r.client_id || r.client_sync_id || r.customer_id || '').toLowerCase();
                 return code === matchId && r.status?.toLowerCase() !== 'paused' && r.status?.toLowerCase() !== 'stopped';
