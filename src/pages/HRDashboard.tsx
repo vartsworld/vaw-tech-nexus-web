@@ -304,7 +304,7 @@ const HRDashboard = () => {
       <motion.aside
         initial={false}
         animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="relative z-50 h-full bg-[#0a0a0a]/80 backdrop-blur-xl border-r border-white/5 flex flex-col transition-all duration-300 ease-in-out"
+        className="relative z-50 h-full bg-card/80 backdrop-blur-xl border-r border-border flex flex-col transition-all duration-300 ease-in-out"
       >
         <div className="p-6 flex items-center justify-between">
           <AnimatePresence mode="wait">
