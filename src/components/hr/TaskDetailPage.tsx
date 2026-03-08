@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { DragDropContext, Draggable } from "react-beautiful-dnd";
+import StrictModeDroppable from "@/components/ui/StrictModeDroppable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -654,7 +655,7 @@ const TaskDetailPage = ({
                       const isQuickAddOpen = quickAddStage === stageNum;
 
                       return (
-                        <Droppable key={stageNum} droppableId={`stage-${stageNum}`}>
+                        <StrictModeDroppable key={stageNum} droppableId={`stage-${stageNum}`}>
                           {(provided, snapshot) => (
                             <div
                               {...provided.droppableProps}
@@ -818,7 +819,7 @@ const TaskDetailPage = ({
                               </div>
                             </div>
                           )}
-                        </Droppable>
+                        </StrictModeDroppable>
                       );
                     })}
                   </div>

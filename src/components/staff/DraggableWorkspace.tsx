@@ -1,6 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { DragDropContext, Draggable, DropResult } from 'react-beautiful-dnd';
+import StrictModeDroppable from '@/components/ui/StrictModeDroppable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -272,7 +273,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
       </Card>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="workspace">
+        <StrictModeDroppable droppableId="workspace">
           {(provided) => (
             <div
               {...provided.droppableProps}
@@ -339,7 +340,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
               {provided.placeholder}
             </div>
           )}
-        </Droppable>
+        </StrictModeDroppable>
       </DragDropContext>
     </div>
   );
