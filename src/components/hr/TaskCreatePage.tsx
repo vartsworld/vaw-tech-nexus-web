@@ -211,7 +211,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
         {/* Left Column - Main Form */}
         <div className="lg:col-span-2 space-y-6">
           {/* Title & Description Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-5">
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Task Title</Label>
               <Input
