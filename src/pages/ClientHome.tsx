@@ -299,13 +299,7 @@ const ClientHome = ({ profile }: { profile: any }) => {
                 <div key={i} className="h-20 rounded-2xl bg-card/50 animate-pulse" />
               ))}
             </div>
-          ) : (() => {
-            const renewalProjects = projects.length > 0
-              ? projects.filter((p: any) => p.renewal_date || p.next_payment_date)
-              : [];
-
-            // Also fetch all projects with renewals
-            return renewalProjects.length > 0 ? (
+          ) : renewalProjects.length > 0 ? (
               <div className="space-y-3">
                 {renewalProjects.map((project: any, idx: number) => {
                   const renewalDate = project.renewal_date || project.next_payment_date;
