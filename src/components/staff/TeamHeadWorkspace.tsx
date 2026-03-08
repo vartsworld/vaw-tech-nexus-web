@@ -1179,10 +1179,16 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     }
   };
 
-  const handleSubtaskReject = async (subtaskId: string, rejectionNote: string) => {
+  const handleSubtaskReject = async (subtaskId: string, rejectionNote: string, attachmentFiles?: File[]) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Upload attachments if any
+      let reviewAttachments: any[] = [];
+      if (attachmentFiles && attachmentFiles.length > 0) {
+        reviewAttachments = await uploadReviewAttachments(subtaskId, attachmentFiles, 'reject');
+      }
 
       // Fetch current profile for rejection comment
       const { data: profile } = await supabase
@@ -1199,13 +1205,16 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         .single();
 
       const existingComments = (subtaskData?.comments as any[]) || [];
-      const rejectionComment = {
+      const rejectionComment: any = {
         user_id: user.id,
         user_name: profile?.full_name || 'Team Head',
         message: `❌ REJECTED: ${rejectionNote || 'Please redo this subtask.'}`,
         timestamp: new Date().toISOString(),
         type: 'rejection'
       };
+      if (reviewAttachments.length > 0) {
+        rejectionComment.attachments = reviewAttachments;
+      }
       const updatedComments = [...existingComments, rejectionComment];
 
       const { data, error } = await supabase
