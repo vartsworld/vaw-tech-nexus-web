@@ -860,6 +860,19 @@ const TaskDetailPage = ({
           </div>
         </div>
       </div>
+
+      {/* Subtask Review Dialog */}
+      <SubtaskReviewDialog
+        subtask={reviewDialogSubtask}
+        parentTask={task}
+        open={reviewDialogOpen}
+        onOpenChange={(open) => {
+          setReviewDialogOpen(open);
+          if (!open) setReviewDialogSubtask(null);
+        }}
+        onApprove={handleSubtaskApprove}
+        onReject={handleSubtaskReject}
+      />
     </div>
   );
 };
