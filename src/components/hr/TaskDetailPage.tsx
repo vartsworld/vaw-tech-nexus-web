@@ -49,6 +49,12 @@ const TaskDetailPage = ({
   const [newSubtask, setNewSubtask] = useState({
     title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1
   });
+  const [newStageName, setNewStageName] = useState("");
+  const [editingStageNum, setEditingStageNum] = useState<number | null>(null);
+  const [editingStageName, setEditingStageName] = useState("");
+  const [customStageNames, setCustomStageNames] = useState<Record<number, string>>(
+    (task?.stage_names && typeof task.stage_names === 'object') ? task.stage_names : {}
+  );
 
   const checkScrollability = useCallback(() => {
     const el = stageScrollRef.current;
@@ -373,7 +379,21 @@ const TaskDetailPage = ({
 
   const completedSubtasks = subtasks.filter(s => s.status === 'completed').length;
 
-  const stageLabels: Record<number, string> = { 1: 'DISCOVERY', 2: 'DESIGN', 3: 'DEVELOPMENT', 4: 'TESTING', 5: 'REVIEW' };
+  const defaultStageLabels: Record<number, string> = { 1: 'DISCOVERY', 2: 'DESIGN', 3: 'DEVELOPMENT', 4: 'TESTING', 5: 'REVIEW' };
+  const stageLabels: Record<number, string> = {};
+  // Merge: custom names override defaults
+  for (const num of [...Object.keys(defaultStageLabels).map(Number), ...Object.keys(customStageNames).map(Number)]) {
+    stageLabels[num] = customStageNames[num] || defaultStageLabels[num] || `STAGE ${num}`;
+  }
+
+  const saveStageNames = async (updated: Record<number, string>) => {
+    setCustomStageNames(updated);
+    try {
+      await supabase.from('staff_tasks').update({ stage_names: updated as any, updated_at: new Date().toISOString() } as any).eq('id', task.id);
+    } catch (e) {
+      console.error('Error saving stage names:', e);
+    }
+  };
 
   const profiles = task.assigned_to_profiles?.length > 0
     ? task.assigned_to_profiles
@@ -439,23 +459,91 @@ const TaskDetailPage = ({
                   const count = (stageMap[stageNum] || []).length;
                   return (
                     <div key={stageNum} className={`flex items-center gap-1.5 px-3 py-2.5 border-b-2 shrink-0 ${color.border}`}>
-                      <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap ${color.text}`}>
-                        {stageLabels[stageNum] || `STAGE ${stageNum}`}
-                      </span>
+                      {editingStageNum === stageNum ? (
+                        <Input
+                          autoFocus
+                          value={editingStageName}
+                          onChange={e => setEditingStageName(e.target.value)}
+                          onBlur={() => {
+                            if (editingStageName.trim()) {
+                              const updated = { ...customStageNames, [stageNum]: editingStageName.trim().toUpperCase() };
+                              saveStageNames(updated);
+                            }
+                            setEditingStageNum(null);
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              if (editingStageName.trim()) {
+                                const updated = { ...customStageNames, [stageNum]: editingStageName.trim().toUpperCase() };
+                                saveStageNames(updated);
+                              }
+                              setEditingStageNum(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingStageNum(null);
+                            }
+                          }}
+                          className="h-6 w-24 text-[10px] sm:text-xs font-bold uppercase bg-transparent border-white/20 px-1 py-0"
+                        />
+                      ) : (
+                        <span
+                          className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap cursor-pointer hover:underline ${color.text}`}
+                          onDoubleClick={() => {
+                            setEditingStageNum(stageNum);
+                            setEditingStageName(stageLabels[stageNum] || `STAGE ${stageNum}`);
+                          }}
+                          title="Double-click to rename"
+                        >
+                          {stageLabels[stageNum] || `STAGE ${stageNum}`}
+                        </span>
+                      )}
                       <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full ${color.badge}`}>{count}</span>
                     </div>
                   );
                 })}
-                <button
-                  onClick={() => {
-                    const nextStage = stageNums.length > 0 ? Math.max(...stageNums) + 1 : 1;
-                    setQuickAddStage(nextStage);
-                    setNewSubtask(prev => ({ ...prev, stage: nextStage }));
-                  }}
-                  className="px-3 py-2.5 text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 shrink-0 whitespace-nowrap"
-                >
-                  <Plus className="h-3 w-3" /> Add Stage
-                </button>
+                {/* Add Stage with name input */}
+                {newStageName !== null && quickAddStage === null ? (
+                  <div className="flex items-center gap-1 px-2 py-1.5 shrink-0">
+                    <button
+                      onClick={() => {
+                        const nextStage = stageNums.length > 0 ? Math.max(...stageNums) + 1 : 1;
+                        setNewStageName("");
+                        setQuickAddStage(nextStage);
+                        setNewSubtask(prev => ({ ...prev, stage: nextStage }));
+                      }}
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 whitespace-nowrap"
+                    >
+                      <Plus className="h-3 w-3" /> Add Stage
+                    </button>
+                  </div>
+                ) : null}
+                {quickAddStage !== null && (
+                  <div className="flex items-center gap-1 px-2 py-1.5 shrink-0">
+                    <Input
+                      autoFocus
+                      placeholder="Stage name..."
+                      value={newStageName}
+                      onChange={e => setNewStageName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && newStageName.trim()) {
+                          const updated = { ...customStageNames, [quickAddStage!]: newStageName.trim().toUpperCase() };
+                          saveStageNames(updated);
+                        }
+                      }}
+                      className="h-6 w-24 text-[10px] font-bold uppercase bg-transparent border-white/20 px-1 py-0"
+                    />
+                    <button
+                      onClick={() => {
+                        if (newStageName.trim()) {
+                          const updated = { ...customStageNames, [quickAddStage!]: newStageName.trim().toUpperCase() };
+                          saveStageNames(updated);
+                        }
+                      }}
+                      className="text-[10px] text-primary hover:underline whitespace-nowrap"
+                    >
+                      Save
+                    </button>
+                  </div>
+                )}
               </div>
             </ScrollArea>
 

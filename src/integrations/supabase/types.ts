@@ -3673,6 +3673,7 @@ export type Database = {
           recurrence_end_date: string | null
           recurrence_interval: number | null
           recurrence_type: string | null
+          stage_names: Json | null
           status: Database["public"]["Enums"]["task_status"] | null
           timer_started_at: string | null
           title: string
@@ -3706,6 +3707,7 @@ export type Database = {
           recurrence_end_date?: string | null
           recurrence_interval?: number | null
           recurrence_type?: string | null
+          stage_names?: Json | null
           status?: Database["public"]["Enums"]["task_status"] | null
           timer_started_at?: string | null
           title: string
@@ -3739,6 +3741,7 @@ export type Database = {
           recurrence_end_date?: string | null
           recurrence_interval?: number | null
           recurrence_type?: string | null
+          stage_names?: Json | null
           status?: Database["public"]["Enums"]["task_status"] | null
           timer_started_at?: string | null
           title?: string
