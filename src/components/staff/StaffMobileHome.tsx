@@ -244,7 +244,7 @@ const StaffMobileHome = ({
         {/* Profile Row */}
         <motion.div {...fadeUp(0.05)} className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Avatar className="w-11 h-11 border-2 border-primary/20">
+             <Avatar className="w-11 h-11 border-2 border-emerald-500/20">
               <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
               <AvatarFallback className="bg-primary/10 text-primary text-sm font-bold">
                 {profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
