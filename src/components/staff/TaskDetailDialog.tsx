@@ -625,7 +625,7 @@ export const TaskDetailDialog = ({
   );
 
   const attachmentsCard = task.attachments && Array.isArray(task.attachments) && task.attachments.length > 0 ? (
-    <div className="rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-sm overflow-hidden">
+    <div className="rounded-xl border border-white/[0.12] bg-white/[0.06] backdrop-blur-xl overflow-hidden">
       <div className="px-5 py-3 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
         <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wider flex items-center gap-2">
           <FileText className="w-4 h-4 text-blue-400" /> Attached Files
