@@ -1810,15 +1810,66 @@ const TaskManagement = () => {
                       <Trello className="h-8 w-8 text-primary" />
                       <h1 className="text-3xl font-bold tracking-tight">Main Task Board</h1>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      onClick={() => setIsFullScreen(false)}
-                      className="flex items-center gap-2 border-primary/20 hover:bg-primary/5"
-                    >
-                      <Minimize2 className="h-5 w-5" />
-                      Exit Full Screen
-                    </Button>
+                    <div className="flex items-center gap-3">
+                      {/* View Toggle */}
+                      <div className="flex items-center gap-1 bg-card border border-muted-foreground/10 rounded-lg p-1">
+                        <Button
+                          variant={viewMode === 'table' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => { setViewMode('table'); setIsFullScreen(false); }}
+                          className="h-8 px-3 text-xs"
+                        >
+                          <List className="h-3.5 w-3.5 mr-1.5" />
+                          Table
+                        </Button>
+                        <Button
+                          variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => { setViewMode('grid'); setIsFullScreen(false); }}
+                          className="h-8 px-3 text-xs"
+                        >
+                          <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
+                          Grid
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-8 px-3 text-xs"
+                        >
+                          <Trello className="h-3.5 w-3.5 mr-1.5" />
+                          Kanban
+                        </Button>
+                      </div>
+                      {/* Show Subtasks Toggle */}
+                      <div className="flex items-center gap-2 bg-card border border-muted-foreground/10 rounded-lg px-3 py-1.5">
+                        <Layers className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs font-medium">Subtasks</span>
+                        <Switch
+                          checked={showSubtasks}
+                          onCheckedChange={(checked) => {
+                            setShowSubtasks(checked);
+                            if (checked) {
+                              const taskIds = filteredTasks.map(t => t.id);
+                              fetchAllSubtasksForTasks(taskIds);
+                              // Expand all cards
+                              setExpandedCards(new Set(taskIds));
+                            } else {
+                              setExpandedCards(new Set());
+                            }
+                          }}
+                          className="scale-75"
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => setIsFullScreen(false)}
+                        className="flex items-center gap-2 border-primary/20 hover:bg-primary/5"
+                      >
+                        <Minimize2 className="h-5 w-5" />
+                        Exit
+                      </Button>
+                    </div>
                   </div>
                 )}
                 <div className={cn(
