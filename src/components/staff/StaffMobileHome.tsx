@@ -460,7 +460,7 @@ const StaffMobileHome = ({
                       <p className="text-sm font-semibold text-foreground leading-snug flex-1 line-clamp-1">
                         {task.title}
                       </p>
-                      <span className="text-xs font-bold text-primary flex-shrink-0">
+                      <span className="text-xs font-bold text-emerald-400 flex-shrink-0">
                         {progress}%
                       </span>
                     </div>
