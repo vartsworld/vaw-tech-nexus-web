@@ -73,6 +73,7 @@ export const TaskDetailDialog = ({
   const [subtaskNotes, setSubtaskNotes] = useState("");
   const [subtaskFileURLs, setSubtaskFileURLs] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<{ full_name: string, avatar_url: string } | null>(null);
+  const [projectInfo, setProjectInfo] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const subtaskFileInputRef = useRef<HTMLInputElement>(null);
