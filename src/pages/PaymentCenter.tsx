@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
     CreditCard,
     Clock,
@@ -13,12 +13,15 @@ import {
     AlertCircle,
     Upload,
     Download,
-    ExternalLink,
     X,
     Loader2,
     IndianRupee,
     Calendar,
-    FileText
+    FileText,
+    RefreshCw,
+    Receipt,
+    TrendingUp,
+    Repeat
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -31,7 +34,52 @@ interface PaymentCenterProps {
     profile: any;
 }
 
+interface ApiCredentials {
+    url: string;
+    key: string;
+    secret: string;
+}
+
+const FALLBACK_URL = "https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/external-api";
+
+const loadApiCredentials = async (): Promise<ApiCredentials | null> => {
+    try {
+        const { data } = await supabase
+            .from('app_settings')
+            .select('key, value')
+            .in('key', ['billing_api_url', 'billing_api_key', 'billing_api_secret']);
+
+        const creds: any = {};
+        if (data && data.length > 0) {
+            data.forEach((s: any) => {
+                const val = typeof s.value === 'string' ? s.value.replace(/^"|"$/g, '') : String(s.value);
+                if (s.key === 'billing_api_url') creds.url = val;
+                if (s.key === 'billing_api_key') creds.key = val;
+                if (s.key === 'billing_api_secret') creds.secret = val;
+            });
+        }
+
+        const url = creds.url || localStorage.getItem('vaw_external_api_url') || '';
+        const key = creds.key || localStorage.getItem('vaw_external_api_key') || '';
+        const secret = creds.secret || localStorage.getItem('vaw_external_api_secret') || '';
+
+        if (!key || !secret) return null;
+        return { url: url || FALLBACK_URL, key, secret };
+    } catch {
+        const key = localStorage.getItem('vaw_external_api_key') || '';
+        const secret = localStorage.getItem('vaw_external_api_secret') || '';
+        if (!key || !secret) return null;
+        return { url: localStorage.getItem('vaw_external_api_url') || FALLBACK_URL, key, secret };
+    }
+};
+
+const getClientCode = (record: any): string =>
+    String(record.client_code || record.client_id || record.client_sync_id || record.customer_id || '');
+
 const PaymentCenter = ({ profile }: PaymentCenterProps) => {
+    const billingId = profile?.billing_sync_id;
+
+    // Local payment reminders (fallback)
     const { data: paymentReminders = [] } = useRealtimeQuery({
         queryKey: ['payment-reminders', profile?.id],
         table: 'payment_reminders',
@@ -39,14 +87,14 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         enabled: !!profile?.id
     });
 
-    const { data: paymentHistory = [] } = useRealtimeQuery({
-        queryKey: ['payment-history', profile?.id],
-        table: 'client_documents',
-        filter: `client_id=eq.${profile?.id}`, // Note: in real app might need or for crmId
-        enabled: !!profile?.id
-    });
+    // Billing API data
+    const [invoices, setInvoices] = useState<any[]>([]);
+    const [payments, setPayments] = useState<any[]>([]);
+    const [recurringInvoices, setRecurringInvoices] = useState<any[]>([]);
+    const [billingLoading, setBillingLoading] = useState(true);
+    const [billingConnected, setBillingConnected] = useState(false);
 
-    const loading = !profile;
+    // Payment confirmation state
     const [selectedReminder, setSelectedReminder] = useState<any>(null);
     const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
     const [screenshot, setScreenshot] = useState<File | null>(null);
@@ -54,170 +102,146 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
     const [transactionId, setTransactionId] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
-    const generateUPILink = (reminder: any) => {
-        // UPI payment link format
-        // upi://pay?pa=merchant@upi&pn=MerchantName&am=amount&cu=INR&tn=description
-        const upiId = "vaw@paytm"; // Replace with your actual UPI ID
-        const merchantName = "VAW Technologies";
-        const amount = reminder.amount;
-        const transactionNote = `Payment for ${reminder.title}`;
+    useEffect(() => {
+        if (profile?.id) fetchBillingData();
+    }, [profile?.id, billingId]);
 
-        return `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+    const fetchBillingData = async () => {
+        setBillingLoading(true);
+        const creds = await loadApiCredentials();
+        if (!creds || !billingId) {
+            setBillingConnected(false);
+            setBillingLoading(false);
+            return;
+        }
+
+        setBillingConnected(true);
+        const headers = { 'x-api-key': creds.key, 'x-api-secret': creds.secret };
+
+        try {
+            const parse = async (res: Response) => {
+                if (!res.ok) return [];
+                const raw = await res.json();
+                return Array.isArray(raw) ? raw : (raw?.data || []);
+            };
+
+            const [invRes, payRes, recRes] = await Promise.all([
+                fetch(`${creds.url}/invoices?limit=500`, { headers }),
+                fetch(`${creds.url}/payments?limit=500`, { headers }),
+                fetch(`${creds.url}/recurring-invoices?limit=500`, { headers }),
+            ]);
+
+            const [allInvoices, allPayments, allRecurring] = await Promise.all([
+                parse(invRes), parse(payRes), parse(recRes)
+            ]);
+
+            // Filter by client's billing_sync_id
+            const matchId = billingId.toLowerCase();
+            const filterByClient = (records: any[]) =>
+                records.filter(r => getClientCode(r).toLowerCase() === matchId);
+
+            setInvoices(filterByClient(allInvoices));
+            setPayments(filterByClient(allPayments));
+            setRecurringInvoices(filterByClient(allRecurring));
+        } catch (err) {
+            console.error("Billing API fetch error:", err);
+        } finally {
+            setBillingLoading(false);
+        }
+    };
+
+    const formatCurrency = (amount: number) =>
+        new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount || 0);
+
+    const pendingInvoices = invoices.filter(inv =>
+        ['draft', 'sent', 'overdue', 'partially_paid', 'unpaid'].includes(inv.status?.toLowerCase())
+    );
+    const paidInvoices = invoices.filter(inv =>
+        ['paid', 'collected'].includes(inv.status?.toLowerCase())
+    );
+
+    const totalPaid = payments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+    const totalPending = pendingInvoices.reduce((sum: number, inv: any) =>
+        sum + (Number(inv.balance) || Number(inv.total) || 0), 0);
+
+    // Payment confirmation handlers
+    const generateUPILink = (reminder: any) => {
+        const upiId = "vaw@paytm";
+        const amount = reminder.amount || reminder.total || reminder.balance;
+        const transactionNote = `Payment for ${reminder.title || reminder.invoice_number || 'Invoice'}`;
+        return `upi://pay?pa=${upiId}&pn=${encodeURIComponent("VAW Technologies")}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
     };
 
     const handlePayNow = (reminder: any) => {
         setSelectedReminder(reminder);
-        const upiLink = generateUPILink(reminder);
-
-        // Open UPI app
-        window.location.href = upiLink;
-
-        // Open payment confirmation dialog after a brief delay
-        setTimeout(() => {
-            setPaymentDialogOpen(true);
-        }, 1000);
+        window.location.href = generateUPILink(reminder);
+        setTimeout(() => setPaymentDialogOpen(true), 1000);
     };
 
     const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                toast.error("Screenshot must be less than 5MB");
-                return;
-            }
+            if (file.size > 5 * 1024 * 1024) { toast.error("Screenshot must be less than 5MB"); return; }
             setScreenshot(file);
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setScreenshotPreview(reader.result as string);
-            };
+            reader.onloadend = () => setScreenshotPreview(reader.result as string);
             reader.readAsDataURL(file);
         }
     };
 
     const handleSubmitPayment = async () => {
-        if (!screenshot || !transactionId.trim()) {
-            toast.error("Please upload screenshot and enter transaction ID");
-            return;
-        }
-
+        if (!screenshot || !transactionId.trim()) { toast.error("Please upload screenshot and enter transaction ID"); return; }
         if (!selectedReminder) return;
-
         setSubmitting(true);
-
         try {
-            // Upload screenshot
             const fileExt = screenshot.name.split('.').pop();
             const fileName = `${profile.id}/payments/${Date.now()}.${fileExt}`;
-
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('payment-confirmations')
-                .upload(fileName, screenshot);
-
+            const { error: uploadError } = await supabase.storage.from('payment-confirmations').upload(fileName, screenshot);
             if (uploadError) throw uploadError;
+            const { data: urlData } = supabase.storage.from('payment-confirmations').getPublicUrl(fileName);
 
-            const { data: urlData } = supabase.storage
-                .from('payment-confirmations')
-                .getPublicUrl(fileName);
+            const amount = selectedReminder.amount || selectedReminder.total || selectedReminder.balance;
+            const title = selectedReminder.title || selectedReminder.invoice_number || 'Invoice Payment';
 
-            // Create payment confirmation record
-            const { error: insertError } = await supabase
-                .from('client_documents')
-                .insert({
-                    client_id: profile.id,
-                    title: `Payment Confirmation - ${selectedReminder.title}`,
-                    file_url: urlData.publicUrl,
-                    doc_type: 'payment_confirmation',
-                    amount: selectedReminder.amount,
-                    status: 'pending_verification',
-                    metadata: { transaction_id: transactionId }
-                });
+            await supabase.from('client_documents').insert({
+                client_id: profile.id, title: `Payment Confirmation - ${title}`,
+                file_url: urlData.publicUrl, doc_type: 'payment_confirmation',
+                amount, status: 'pending_verification'
+            });
 
-            if (insertError) throw insertError;
-
-            // Update the payment reminder status
-            const { error: updateError } = await supabase
-                .from('payment_reminders')
-                .update({ status: 'confirmation_submitted' })
-                .eq('id', selectedReminder.id);
-
-            if (updateError) {
-                console.error("Warning: Failed to update reminder status:", updateError);
-                // We don't throw here as the main document was already inserted
+            if (selectedReminder.id && !selectedReminder.invoice_number) {
+                await supabase.from('payment_reminders').update({ status: 'confirmation_submitted' }).eq('id', selectedReminder.id);
             }
 
-            // Create notification for admin
-            await supabase
-                .from('client_notifications')
-                .insert({
-                    client_id: null, // For admin
-                    title: 'Payment Confirmation Received',
-                    message: `${profile.company_name} submitted payment confirmation for ${selectedReminder.title}. Transaction ID: ${transactionId}`,
-                    type: 'payment_confirmation',
-                    category: 'payment',
-                    priority: 'high',
-                    is_read: false
-                });
+            await supabase.from('client_notifications').insert({
+                client_id: null, title: 'Payment Confirmation Received',
+                message: `${profile.company_name} submitted payment confirmation for ${title}. Transaction ID: ${transactionId}`,
+                type: 'payment_confirmation', category: 'payment', priority: 'high', is_read: false
+            });
 
-            // Sync to billing software if client is linked
-            if (profile.billing_sync_id) {
-                await syncFinancialEntryToBilling({
-                    amount: selectedReminder.amount,
-                    title: selectedReminder.title,
-                    doc_type: 'payment_confirmation',
-                    status: 'pending_verification',
-                    metadata: { transaction_id: transactionId },
-                    created_at: new Date().toISOString()
-                }, profile.billing_sync_id);
-            }
-
-            toast.success("Payment confirmation submitted! We'll verify it shortly.");
-
-            // Reset form
-            setScreenshot(null);
-            setScreenshotPreview("");
-            setTransactionId("");
-            setPaymentDialogOpen(false);
-            setSelectedReminder(null);
-
+            toast.success("Payment confirmation submitted!");
+            setScreenshot(null); setScreenshotPreview(""); setTransactionId("");
+            setPaymentDialogOpen(false); setSelectedReminder(null);
         } catch (error: any) {
-            console.error("Error submitting payment:", error);
             toast.error(error.message || "Failed to submit payment confirmation");
-        } finally {
-            setSubmitting(false);
-        }
+        } finally { setSubmitting(false); }
     };
 
-    const getStatusBadge = (status: string, dueDate?: string) => {
-        if (status === 'paid') {
-            return <Badge className="bg-green-500/20 text-green-400 border-0">Paid</Badge>;
-        }
-
-        if (status === 'confirmation_submitted') {
-            return <Badge className="bg-blue-500/20 text-blue-400 border-0">Verifying...</Badge>;
-        }
-
-        if (dueDate) {
-            const due = new Date(dueDate);
-            const today = new Date();
-            const daysUntil = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-            if (daysUntil < 0) {
-                return <Badge className="bg-red-500/20 text-red-400 border-0">Overdue</Badge>;
-            } else if (daysUntil === 0) {
-                return <Badge className="bg-orange-500/20 text-orange-400 border-0">Due Today</Badge>;
-            } else if (daysUntil <= 3) {
-                return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Due Soon</Badge>;
-            }
-        }
-
-        return <Badge className="bg-blue-500/20 text-blue-400 border-0">Pending</Badge>;
+    const getInvoiceStatusBadge = (status: string) => {
+        const map: Record<string, { bg: string; text: string; label: string }> = {
+            paid: { bg: "bg-emerald-500/20", text: "text-emerald-400", label: "Paid" },
+            collected: { bg: "bg-emerald-500/20", text: "text-emerald-400", label: "Collected" },
+            sent: { bg: "bg-blue-500/20", text: "text-blue-400", label: "Sent" },
+            draft: { bg: "bg-gray-500/20", text: "text-gray-400", label: "Draft" },
+            overdue: { bg: "bg-red-500/20", text: "text-red-400", label: "Overdue" },
+            partially_paid: { bg: "bg-amber-500/20", text: "text-amber-400", label: "Partial" },
+            unpaid: { bg: "bg-orange-500/20", text: "text-orange-400", label: "Unpaid" },
+        };
+        const s = map[status?.toLowerCase()] || { bg: "bg-gray-500/20", text: "text-gray-400", label: status || "Unknown" };
+        return <Badge className={`${s.bg} ${s.text} border-0`}>{s.label}</Badge>;
     };
 
-    const getDaysUntilDue = (dueDate: string) => {
-        const due = new Date(dueDate);
-        const today = new Date();
-        return Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    };
+    const loading = !profile;
 
     if (loading) {
         return (
@@ -230,69 +254,195 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
     return (
         <div className="space-y-6 pb-12">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-black tracking-tight text-white mb-2">
-                    PAYMENT <span className="text-tech-gold">CENTER</span>
-                </h1>
-                <p className="text-gray-400 font-medium">Manage your payments and invoices</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-black tracking-tight text-white mb-2">
+                        PAYMENT <span className="text-tech-gold">CENTER</span>
+                    </h1>
+                    <p className="text-gray-400 font-medium">Manage your payments and invoices</p>
+                </div>
+                {billingConnected && (
+                    <Button
+                        variant="outline"
+                        className="border-tech-gold/20 text-tech-gold hover:bg-tech-gold/10 gap-2"
+                        onClick={fetchBillingData}
+                        disabled={billingLoading}
+                    >
+                        <RefreshCw className={cn("w-4 h-4", billingLoading && "animate-spin")} />
+                        Sync
+                    </Button>
+                )}
             </div>
+
+            {/* Summary Cards */}
+            {billingConnected && !billingLoading && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Card className="bg-black/40 border-tech-gold/10">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="p-2.5 bg-emerald-500/10 rounded-xl">
+                                <TrendingUp className="w-5 h-5 text-emerald-400" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Total Paid</p>
+                                <p className="text-lg font-black text-emerald-400">{formatCurrency(totalPaid)}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-black/40 border-tech-gold/10">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="p-2.5 bg-orange-500/10 rounded-xl">
+                                <Clock className="w-5 h-5 text-orange-400" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Pending</p>
+                                <p className="text-lg font-black text-orange-400">{formatCurrency(totalPending)}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-black/40 border-tech-gold/10">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="p-2.5 bg-blue-500/10 rounded-xl">
+                                <Receipt className="w-5 h-5 text-blue-400" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Invoices</p>
+                                <p className="text-lg font-black text-blue-400">{invoices.length}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-black/40 border-tech-gold/10">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="p-2.5 bg-violet-500/10 rounded-xl">
+                                <Repeat className="w-5 h-5 text-violet-400" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Recurring</p>
+                                <p className="text-lg font-black text-violet-400">{recurringInvoices.length}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             <Tabs defaultValue="pending" className="space-y-6">
                 <TabsList className="bg-black/40 border border-tech-gold/20">
                     <TabsTrigger value="pending" className="data-[state=active]:bg-tech-gold data-[state=active]:text-black">
-                        Pending Payments
+                        Pending Invoices
                     </TabsTrigger>
                     <TabsTrigger value="history" className="data-[state=active]:bg-tech-gold data-[state=active]:text-black">
                         Payment History
                     </TabsTrigger>
+                    <TabsTrigger value="recurring" className="data-[state=active]:bg-tech-gold data-[state=active]:text-black">
+                        Recurring
+                    </TabsTrigger>
                 </TabsList>
 
-                {/* Pending Payments Tab */}
+                {/* Pending Invoices Tab */}
                 <TabsContent value="pending" className="space-y-4">
-                    {paymentReminders.filter(r => r.status !== 'paid').length === 0 ? (
+                    {billingLoading ? (
+                        <div className="flex justify-center py-12">
+                            <Loader2 className="w-6 h-6 animate-spin text-tech-gold" />
+                        </div>
+                    ) : pendingInvoices.length === 0 && paymentReminders.filter((r: any) => r.status !== 'paid').length === 0 ? (
                         <Card className="bg-black/20 border-tech-gold/10 border-dashed border-2">
                             <CardContent className="p-12 text-center">
-                                <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-500 opacity-20" />
+                                <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-emerald-500/30" />
                                 <h3 className="text-xl font-bold text-white mb-2">All Caught Up!</h3>
                                 <p className="text-gray-400">You have no pending payments</p>
                             </CardContent>
                         </Card>
                     ) : (
                         <div className="grid gap-4">
-                            {paymentReminders
-                                .filter(r => r.status !== 'paid')
-                                .map((reminder, idx) => {
-                                    const daysUntil = getDaysUntilDue(reminder.due_date);
-                                    const isOverdue = daysUntil < 0;
+                            {/* Billing API invoices */}
+                            {pendingInvoices.map((inv, idx) => {
+                                const amount = Number(inv.balance) || Number(inv.total) || 0;
+                                const dueDate = inv.due_date || inv.date;
+                                const daysUntil = dueDate ? Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                                const isOverdue = daysUntil !== null && daysUntil < 0;
 
+                                return (
+                                    <motion.div key={inv.id || idx} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.08 }}>
+                                        <Card className={cn(
+                                            "bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all overflow-hidden",
+                                            isOverdue && "border-red-500/50 bg-red-500/5"
+                                        )}>
+                                            <CardContent className="p-6">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div>
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <h3 className="text-xl font-bold text-white">
+                                                                        {inv.invoice_number || inv.reference || `Invoice`}
+                                                                    </h3>
+                                                                    {getInvoiceStatusBadge(inv.status)}
+                                                                </div>
+                                                                {inv.notes && <p className="text-sm text-gray-400 line-clamp-1">{inv.notes}</p>}
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                                            <div className="flex items-center gap-2">
+                                                                <IndianRupee className="w-4 h-4 text-tech-gold" />
+                                                                <span className="text-2xl font-black text-tech-gold">
+                                                                    {Number(amount).toLocaleString('en-IN')}
+                                                                </span>
+                                                            </div>
+                                                            {dueDate && (
+                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                    <Calendar className="w-4 h-4" />
+                                                                    <span>Due: {new Date(dueDate).toLocaleDateString('en-IN')}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {isOverdue && (
+                                                            <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                                                <p className="text-xs text-red-400 flex items-center gap-2">
+                                                                    <AlertCircle className="w-4 h-4" />
+                                                                    This invoice is {Math.abs(daysUntil!)} days overdue
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col gap-2">
+                                                        <Button
+                                                            onClick={() => handlePayNow({ ...inv, amount })}
+                                                            className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl shadow-lg shadow-tech-gold/20"
+                                                        >
+                                                            <IndianRupee className="w-4 h-4 mr-2" /> Pay Now via UPI
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            className="border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
+                                                            onClick={() => { setSelectedReminder({ ...inv, amount }); setPaymentDialogOpen(true); }}
+                                                        >
+                                                            Submit Confirmation
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                );
+                            })}
+
+                            {/* Local payment reminders (non-billing) */}
+                            {paymentReminders
+                                .filter((r: any) => r.status !== 'paid')
+                                .map((reminder: any, idx: number) => {
+                                    const daysUntil = Math.ceil((new Date(reminder.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                                    const isOverdue = daysUntil < 0;
                                     return (
-                                        <motion.div
-                                            key={reminder.id}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: idx * 0.1 }}
-                                        >
-                                            <Card className={cn(
-                                                "bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all overflow-hidden",
-                                                isOverdue && "border-red-500/50 bg-red-500/5"
-                                            )}>
+                                        <motion.div key={reminder.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (pendingInvoices.length + idx) * 0.08 }}>
+                                            <Card className={cn("bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all", isOverdue && "border-red-500/50 bg-red-500/5")}>
                                                 <CardContent className="p-6">
                                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                                         <div className="flex-1">
                                                             <div className="flex items-start justify-between mb-3">
-                                                                <div>
-                                                                    <h3 className="text-xl font-bold text-white mb-1">
-                                                                        {reminder.title}
-                                                                    </h3>
-                                                                    {reminder.notes && (
-                                                                        <p className="text-sm text-gray-400">{reminder.notes}</p>
-                                                                    )}
-                                                                </div>
-                                                                {getStatusBadge(reminder.status, reminder.due_date)}
+                                                                <h3 className="text-xl font-bold text-white">{reminder.title}</h3>
+                                                                <Badge className="bg-tech-gold/20 text-tech-gold border-0 text-[10px]">LOCAL</Badge>
                                                             </div>
-
                                                             <div className="grid grid-cols-2 gap-4 text-sm">
-                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                <div className="flex items-center gap-2">
                                                                     <IndianRupee className="w-4 h-4 text-tech-gold" />
                                                                     <span className="text-2xl font-black text-tech-gold">
                                                                         {Number(reminder.amount).toLocaleString('en-IN')}
@@ -300,39 +450,13 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                                 </div>
                                                                 <div className="flex items-center gap-2 text-gray-400">
                                                                     <Calendar className="w-4 h-4" />
-                                                                    <span>
-                                                                        Due: {new Date(reminder.due_date).toLocaleDateString('en-IN')}
-                                                                    </span>
+                                                                    <span>Due: {new Date(reminder.due_date).toLocaleDateString('en-IN')}</span>
                                                                 </div>
                                                             </div>
-
-                                                            {isOverdue && (
-                                                                <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                                                    <p className="text-xs text-red-400 flex items-center gap-2">
-                                                                        <AlertCircle className="w-4 h-4" />
-                                                                        This payment is {Math.abs(daysUntil)} days overdue
-                                                                    </p>
-                                                                </div>
-                                                            )}
                                                         </div>
-
                                                         <div className="flex flex-col gap-2">
-                                                            <Button
-                                                                onClick={() => handlePayNow(reminder)}
-                                                                className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl transition-all shadow-lg shadow-tech-gold/20"
-                                                            >
-                                                                <IndianRupee className="w-4 h-4 mr-2" />
-                                                                Pay Now via UPI
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                className="border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
-                                                                onClick={() => {
-                                                                    setSelectedReminder(reminder);
-                                                                    setPaymentDialogOpen(true);
-                                                                }}
-                                                            >
-                                                                Submit Confirmation
+                                                            <Button onClick={() => handlePayNow(reminder)} className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl">
+                                                                <IndianRupee className="w-4 h-4 mr-2" /> Pay Now
                                                             </Button>
                                                         </div>
                                                     </div>
@@ -347,7 +471,9 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
 
                 {/* Payment History Tab */}
                 <TabsContent value="history" className="space-y-4">
-                    {paymentHistory.length === 0 ? (
+                    {billingLoading ? (
+                        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-tech-gold" /></div>
+                    ) : payments.length === 0 && paidInvoices.length === 0 ? (
                         <Card className="bg-black/20 border-tech-gold/10 border-dashed border-2">
                             <CardContent className="p-12 text-center">
                                 <FileText className="w-16 h-16 mx-auto mb-4 text-gray-500 opacity-20" />
@@ -356,13 +482,41 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                         </Card>
                     ) : (
                         <div className="space-y-3">
-                            {paymentHistory.map((doc, idx) => (
-                                <motion.div
-                                    key={doc.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: idx * 0.05 }}
-                                >
+                            {/* Payments from billing API */}
+                            {payments.map((pay, idx) => (
+                                <motion.div key={pay.id || idx} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
+                                    <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all">
+                                        <CardContent className="p-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-3 bg-emerald-500/10 rounded-xl">
+                                                        <CreditCard className="w-5 h-5 text-emerald-400" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-white font-bold">
+                                                            {pay.reference || pay.payment_number || `Payment #${idx + 1}`}
+                                                        </h4>
+                                                        <p className="text-xs text-gray-400 mt-1">
+                                                            {pay.date ? new Date(pay.date).toLocaleDateString('en-IN') : ''}
+                                                            {pay.payment_mode && <span className="ml-2 text-gray-500">• {pay.payment_mode}</span>}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <p className="text-emerald-400 font-bold text-lg">
+                                                        {formatCurrency(Number(pay.amount) || 0)}
+                                                    </p>
+                                                    <Badge className="bg-emerald-500/20 text-emerald-400 border-0">Paid</Badge>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            ))}
+
+                            {/* Paid invoices */}
+                            {paidInvoices.map((inv, idx) => (
+                                <motion.div key={inv.id || `inv-${idx}`} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: (payments.length + idx) * 0.05 }}>
                                     <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all">
                                         <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
@@ -371,32 +525,75 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                         <FileText className="w-5 h-5 text-tech-gold" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-white font-bold">{doc.title}</h4>
+                                                        <h4 className="text-white font-bold">{inv.invoice_number || 'Invoice'}</h4>
                                                         <p className="text-xs text-gray-400 mt-1">
-                                                            {new Date(doc.created_at).toLocaleDateString('en-IN')}
+                                                            {inv.date ? new Date(inv.date).toLocaleDateString('en-IN') : ''}
                                                         </p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3">
-                                                    {doc.amount && (
-                                                        <p className="text-tech-gold font-bold">
-                                                            ₹{Number(doc.amount).toLocaleString('en-IN')}
-                                                        </p>
-                                                    )}
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="text-tech-gold hover:bg-tech-gold/10"
-                                                        onClick={() => window.open(doc.file_url, '_blank')}
-                                                    >
-                                                        <Download className="w-4 h-4" />
-                                                    </Button>
+                                                    <p className="text-tech-gold font-bold">
+                                                        {formatCurrency(Number(inv.total) || 0)}
+                                                    </p>
+                                                    {getInvoiceStatusBadge(inv.status)}
                                                 </div>
                                             </div>
                                         </CardContent>
                                     </Card>
                                 </motion.div>
                             ))}
+                        </div>
+                    )}
+                </TabsContent>
+
+                {/* Recurring Invoices Tab */}
+                <TabsContent value="recurring" className="space-y-4">
+                    {billingLoading ? (
+                        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-tech-gold" /></div>
+                    ) : recurringInvoices.length === 0 ? (
+                        <Card className="bg-black/20 border-tech-gold/10 border-dashed border-2">
+                            <CardContent className="p-12 text-center">
+                                <Repeat className="w-16 h-16 mx-auto mb-4 text-gray-500 opacity-20" />
+                                <p className="text-gray-400">No recurring invoices found</p>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <div className="space-y-3">
+                            {recurringInvoices.map((rec, idx) => {
+                                const isActive = rec.status?.toLowerCase() !== 'paused' && rec.status?.toLowerCase() !== 'stopped';
+                                return (
+                                    <motion.div key={rec.id || idx} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
+                                        <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all">
+                                            <CardContent className="p-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={cn("p-3 rounded-xl", isActive ? "bg-violet-500/10" : "bg-gray-500/10")}>
+                                                            <Repeat className={cn("w-5 h-5", isActive ? "text-violet-400" : "text-gray-400")} />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-white font-bold">
+                                                                {rec.name || rec.invoice_number || `Recurring #${idx + 1}`}
+                                                            </h4>
+                                                            <p className="text-xs text-gray-400 mt-1">
+                                                                {rec.frequency || rec.recurrence_frequency || 'Monthly'}
+                                                                {rec.next_invoice_date && ` • Next: ${new Date(rec.next_invoice_date).toLocaleDateString('en-IN')}`}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <p className="text-violet-400 font-bold">
+                                                            {formatCurrency(Number(rec.total) || 0)}
+                                                        </p>
+                                                        <Badge className={cn("border-0", isActive ? "bg-violet-500/20 text-violet-400" : "bg-gray-500/20 text-gray-400")}>
+                                                            {isActive ? "Active" : rec.status}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                );
+                            })}
                         </div>
                     )}
                 </TabsContent>
@@ -408,45 +605,28 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold">Submit Payment Confirmation</DialogTitle>
                     </DialogHeader>
-
                     {selectedReminder && (
                         <div className="space-y-4">
                             <div className="p-4 bg-tech-gold/10 border border-tech-gold/20 rounded-xl">
                                 <p className="text-sm text-gray-400 mb-1">Payment for:</p>
-                                <p className="text-white font-bold">{selectedReminder.title}</p>
+                                <p className="text-white font-bold">{selectedReminder.title || selectedReminder.invoice_number || 'Invoice'}</p>
                                 <p className="text-2xl font-black text-tech-gold mt-2">
-                                    ₹{Number(selectedReminder.amount).toLocaleString('en-IN')}
+                                    ₹{Number(selectedReminder.amount || selectedReminder.total || selectedReminder.balance || 0).toLocaleString('en-IN')}
                                 </p>
                             </div>
-
                             <div>
                                 <Label className="text-gray-300">Transaction ID *</Label>
-                                <Input
-                                    value={transactionId}
-                                    onChange={(e) => setTransactionId(e.target.value)}
+                                <Input value={transactionId} onChange={(e) => setTransactionId(e.target.value)}
                                     placeholder="Enter UPI transaction ID"
-                                    className="bg-white/5 border-tech-gold/20 text-white placeholder:text-gray-500 mt-2"
-                                />
+                                    className="bg-white/5 border-tech-gold/20 text-white placeholder:text-gray-500 mt-2" />
                             </div>
-
                             <div>
                                 <Label className="text-gray-300">Payment Screenshot *</Label>
                                 {screenshotPreview ? (
                                     <div className="relative mt-2">
-                                        <img
-                                            src={screenshotPreview}
-                                            alt="Payment screenshot"
-                                            className="w-full h-48 object-cover rounded-xl border border-tech-gold/20"
-                                        />
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="absolute top-2 right-2 bg-black/80 hover:bg-red-500/20"
-                                            onClick={() => {
-                                                setScreenshot(null);
-                                                setScreenshotPreview("");
-                                            }}
-                                        >
+                                        <img src={screenshotPreview} alt="Payment screenshot" className="w-full h-48 object-cover rounded-xl border border-tech-gold/20" />
+                                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 bg-black/80 hover:bg-red-500/20"
+                                            onClick={() => { setScreenshot(null); setScreenshotPreview(""); }}>
                                             <X className="w-4 h-4" />
                                         </Button>
                                     </div>
@@ -454,38 +634,14 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                     <label className="mt-2 flex flex-col items-center justify-center h-32 border-2 border-dashed border-tech-gold/20 rounded-xl cursor-pointer hover:border-tech-gold/40 transition-colors">
                                         <Upload className="w-8 h-8 text-tech-gold mb-2" />
                                         <span className="text-sm text-gray-400">Upload payment screenshot</span>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handleScreenshotChange}
-                                        />
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleScreenshotChange} />
                                     </label>
                                 )}
                             </div>
-
                             <div className="flex gap-2 pt-2">
-                                <Button
-                                    variant="outline"
-                                    className="flex-1 border-tech-gold/20"
-                                    onClick={() => setPaymentDialogOpen(false)}
-                                    disabled={submitting}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    onClick={handleSubmitPayment}
-                                    disabled={submitting || !screenshot || !transactionId.trim()}
-                                    className="flex-1 bg-tech-gold hover:bg-white text-black font-bold"
-                                >
-                                    {submitting ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            Submitting...
-                                        </>
-                                    ) : (
-                                        "Submit Confirmation"
-                                    )}
+                                <Button variant="outline" className="flex-1 border-tech-gold/20" onClick={() => setPaymentDialogOpen(false)} disabled={submitting}>Cancel</Button>
+                                <Button onClick={handleSubmitPayment} disabled={submitting || !screenshot || !transactionId.trim()} className="flex-1 bg-tech-gold hover:bg-white text-black font-bold">
+                                    {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting...</> : "Submit Confirmation"}
                                 </Button>
                             </div>
                         </div>
