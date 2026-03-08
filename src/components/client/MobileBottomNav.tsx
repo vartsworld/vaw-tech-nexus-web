@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
+    Home,
     LayoutDashboard,
     Briefcase,
     CreditCard,
@@ -14,11 +15,11 @@ const MobileBottomNav = () => {
     const navigate = useNavigate();
 
     const navItems = [
-        { icon: LayoutDashboard, label: "Overview", path: "/client/dashboard", exact: true },
+        { icon: Home, label: "Home", path: "/client/dashboard", exact: true },
+        { icon: LayoutDashboard, label: "Overview", path: "/client/dashboard/overview" },
         { icon: Briefcase, label: "Projects", path: "/client/dashboard/projects" },
         { icon: CreditCard, label: "Payments", path: "/client/dashboard/financials" },
-        { icon: MessageSquare, label: "Support", path: "/client/dashboard/support" },
-        { icon: Settings, label: "Settings", path: "/client/dashboard/settings" }
+        { icon: MessageSquare, label: "Support", path: "/client/dashboard/support" }
     ];
 
     const isActive = (path: string, exact?: boolean) =>
