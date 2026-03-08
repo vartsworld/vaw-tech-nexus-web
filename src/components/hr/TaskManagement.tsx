@@ -1814,7 +1814,7 @@ const TaskManagement = () => {
                       {/* View Toggle */}
                       <div className="flex items-center gap-1 bg-card border border-muted-foreground/10 rounded-lg p-1">
                         <Button
-                          variant={viewMode === 'table' ? 'default' : 'ghost'}
+                          variant="ghost"
                           size="sm"
                           onClick={() => { setViewMode('table'); setIsFullScreen(false); }}
                           className="h-8 px-3 text-xs"
@@ -1823,7 +1823,7 @@ const TaskManagement = () => {
                           Table
                         </Button>
                         <Button
-                          variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                          variant="ghost"
                           size="sm"
                           onClick={() => { setViewMode('grid'); setIsFullScreen(false); }}
                           className="h-8 px-3 text-xs"
