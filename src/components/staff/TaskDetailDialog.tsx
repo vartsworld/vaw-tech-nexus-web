@@ -1052,6 +1052,7 @@ export const TaskDetailDialog = ({
 
         {/* Right Column - Sidebar */}
         <div className="space-y-4">
+          {projectInfoCard}
           {metadataCard}
 
           {/* Quick Stats Card */}
