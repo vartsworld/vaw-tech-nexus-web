@@ -582,6 +582,10 @@ const TaskDetailPage = ({
                                           </div>
                                         </div>
 
+                                        {st.description && (
+                                          <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2 break-words">{st.description}</p>
+                                        )}
+
                                         {st.points > 0 && (
                                           <div className="flex items-center gap-1">
                                             <Target className="h-3 w-3 text-primary" />
