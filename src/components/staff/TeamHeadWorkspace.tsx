@@ -3255,12 +3255,12 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           setReviewDialogOpen(open);
           if (!open) setReviewDialogSubtask(null);
         }}
-        onApprove={async (subtaskId) => {
-          await handleSubtaskApprove(subtaskId);
+        onApprove={async (subtaskId, attachments) => {
+          await handleSubtaskApprove(subtaskId, attachments);
           fetchReviewQueues();
         }}
-        onReject={async (subtaskId, note) => {
-          await handleSubtaskReject(subtaskId, note);
+        onReject={async (subtaskId, note, attachments) => {
+          await handleSubtaskReject(subtaskId, note, attachments);
           fetchReviewQueues();
         }}
       />

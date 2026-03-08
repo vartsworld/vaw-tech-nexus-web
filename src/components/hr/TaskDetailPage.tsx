@@ -271,14 +271,48 @@ const TaskDetailPage = ({
 
   const reviewPendingSubtasks = subtasks.filter(s => s.status === 'review_pending' || s.status === 'pending_approval');
 
-  const handleSubtaskApprove = async (subtaskId: string) => {
+  const uploadReviewAttachments = async (subtaskId: string, files: File[], actionType: string) => {
+    const uploaded: any[] = [];
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `subtasks/${subtaskId}/review-${actionType}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('task-attachments').upload(filePath, file);
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage.from('task-attachments').getPublicUrl(filePath);
+        uploaded.push({ name: file.name, url: filePath, publicUrl, size: file.size, type: file.type });
+      }
+    }
+    return uploaded;
+  };
+
+  const handleSubtaskApprove = async (subtaskId: string, attachmentFiles?: File[]) => {
     try {
       const subtaskToApprove = subtasks.find(s => s.id === subtaskId);
+
+      let reviewAttachments: any[] = [];
+      if (attachmentFiles && attachmentFiles.length > 0) {
+        reviewAttachments = await uploadReviewAttachments(subtaskId, attachmentFiles, 'approve');
+      }
+
+      const updateData: any = { status: 'completed' as any, updated_at: new Date().toISOString() };
+
+      if (reviewAttachments.length > 0) {
+        const existingComments = Array.isArray(subtaskToApprove?.comments) ? subtaskToApprove.comments : [];
+        const approveComment = {
+          type: 'approval',
+          message: '✅ Approved with attachments',
+          user_name: userProfile?.full_name || 'Team Head',
+          timestamp: new Date().toISOString(),
+          attachments: reviewAttachments
+        };
+        updateData.comments = [...existingComments, approveComment];
+      }
+
       const { error } = await supabase.from('staff_subtasks')
-        .update({ status: 'completed' as any, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', subtaskId);
       if (error) throw error;
-      setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, status: 'completed' } : s));
+      setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, status: 'completed', ...(updateData.comments ? { comments: updateData.comments } : {}) } : s));
 
       // Award points if applicable
       if (subtaskToApprove?.points > 0 && subtaskToApprove?.assigned_to) {
@@ -294,16 +328,25 @@ const TaskDetailPage = ({
     }
   };
 
-  const handleSubtaskReject = async (subtaskId: string, note: string) => {
+  const handleSubtaskReject = async (subtaskId: string, note: string, attachmentFiles?: File[]) => {
     try {
       const subtaskToReject = subtasks.find(s => s.id === subtaskId);
       const existingComments = Array.isArray(subtaskToReject?.comments) ? subtaskToReject.comments : [];
-      const newComment = {
+
+      let reviewAttachments: any[] = [];
+      if (attachmentFiles && attachmentFiles.length > 0) {
+        reviewAttachments = await uploadReviewAttachments(subtaskId, attachmentFiles, 'reject');
+      }
+
+      const newComment: any = {
         type: 'rejection',
         message: note,
         user_name: userProfile?.full_name || 'Team Head',
         timestamp: new Date().toISOString()
       };
+      if (reviewAttachments.length > 0) {
+        newComment.attachments = reviewAttachments;
+      }
 
       const { error } = await supabase.from('staff_subtasks')
         .update({
