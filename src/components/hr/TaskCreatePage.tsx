@@ -188,11 +188,34 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
   };
 
   const priorityOptions = [
+    { value: 'auto', label: 'Auto', color: 'bg-violet-500/10 text-violet-400 border-violet-500/30', icon: '⏱' },
     { value: 'low', label: 'Low', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
     { value: 'medium', label: 'Medium', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
     { value: 'high', label: 'High', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30' },
     { value: 'urgent', label: 'Urgent', color: 'bg-red-500/10 text-red-400 border-red-500/30' },
   ];
+
+  // Auto-priority: update priority based on how close the deadline is
+  useEffect(() => {
+    if (newTask.priority !== 'auto' || !newTask.due_date) return;
+    const now = new Date();
+    const due = new Date(newTask.due_date + (newTask.due_time ? `T${newTask.due_time}` : 'T23:59:59'));
+    const hoursLeft = (due.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    let computed = 'low';
+    if (hoursLeft <= 0) computed = 'urgent';
+    else if (hoursLeft <= 24) computed = 'urgent';
+    else if (hoursLeft <= 72) computed = 'high';
+    else if (hoursLeft <= 168) computed = 'medium'; // 7 days
+    // else stays low
+
+    setNewTask(prev => ({ ...prev, _autoPriority: computed }));
+  }, [newTask.due_date, newTask.due_time, newTask.priority]);
+
+  const getEffectivePriority = () => {
+    if (newTask.priority === 'auto') return (newTask as any)._autoPriority || 'medium';
+    return newTask.priority;
+  };
 
   return (
     <div className="space-y-0 animate-in fade-in slide-in-from-right-4 duration-300">
