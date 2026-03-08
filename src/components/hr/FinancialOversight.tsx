@@ -143,12 +143,16 @@ const FinancialOversight = () => {
     const matchedRecurring = (externalStats?.recurring || []).filter(isMatched);
     const allExpenses = externalStats?.expenses || [];
 
-    // Calculations
+    // Calculations — avoid double-counting between invoices and payments
     const totalRevenue = matchedInvoices.reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
-    const totalCollected = matchedPayments.reduce((acc: number, p: any) => acc + Number(p.amount || 0), 0)
-        + matchedInvoices
-            .filter((inv: any) => inv.status === 'paid' || inv.status === 'collected')
-            .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
+    
+    // Use payments as source of truth for collected; fall back to paid invoices only if no payments exist
+    const paymentTotal = matchedPayments.reduce((acc: number, p: any) => acc + Number(p.amount || 0), 0);
+    const paidInvoiceTotal = matchedInvoices
+        .filter((inv: any) => inv.status === 'paid' || inv.status === 'collected')
+        .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
+    const totalCollected = paymentTotal > 0 ? paymentTotal : paidInvoiceTotal;
+    
     const totalExpenses = allExpenses.reduce((acc: number, e: any) => acc + Number(e.amount || 0), 0);
     const pendingCollection = Math.max(0, totalRevenue - totalCollected);
     const profitMargin = totalRevenue > 0 ? ((totalRevenue - totalExpenses) / totalRevenue * 100).toFixed(1) : '0';
@@ -188,7 +192,7 @@ const FinancialOversight = () => {
 
     // Client billing ranking
     const getClientRankings = () => {
-        const clientMap: Record<string, { id: string; name: string; paid: number; total: number }> = {};
+        const clientMap: Record<string, { id: string; name: string; paid: number; total: number; hasPayments: boolean }> = {};
 
         matchedInvoices.forEach((inv: any) => {
             const code = getClientCode(inv);
@@ -196,25 +200,33 @@ const FinancialOversight = () => {
             if (!internalClient) return;
 
             if (!clientMap[internalClient.id]) {
-                clientMap[internalClient.id] = { id: internalClient.id, name: internalClient.company_name, paid: 0, total: 0 };
+                clientMap[internalClient.id] = { id: internalClient.id, name: internalClient.company_name, paid: 0, total: 0, hasPayments: false };
             }
             const amount = Number(inv.amount || inv.total || 0);
             if (amount === 0) return;
 
-            if (inv.status === 'paid' || inv.status === 'collected') {
-                clientMap[internalClient.id].paid += amount;
-            }
             clientMap[internalClient.id].total += amount;
+            // Only count paid invoices if no explicit payment records exist for this client
+            if (inv.status === 'paid' || inv.status === 'collected') {
+                if (!clientMap[internalClient.id].hasPayments) {
+                    clientMap[internalClient.id].paid += amount;
+                }
+            }
         });
 
-        // Also add payments data
+        // Use payment records as source of truth when available (replaces paid invoice totals)
         matchedPayments.forEach((p: any) => {
             const code = getClientCode(p);
             const internalClient = syncIdToClient.get(code);
             if (!internalClient) return;
 
             if (!clientMap[internalClient.id]) {
-                clientMap[internalClient.id] = { id: internalClient.id, name: internalClient.company_name, paid: 0, total: 0 };
+                clientMap[internalClient.id] = { id: internalClient.id, name: internalClient.company_name, paid: 0, total: 0, hasPayments: false };
+            }
+            if (!clientMap[internalClient.id].hasPayments) {
+                // First payment record: reset paid from invoices and use payments instead
+                clientMap[internalClient.id].paid = 0;
+                clientMap[internalClient.id].hasPayments = true;
             }
             clientMap[internalClient.id].paid += Number(p.amount || 0);
         });
