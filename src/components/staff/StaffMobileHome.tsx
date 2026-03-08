@@ -102,7 +102,7 @@ const StaffMobileHome = ({
     const { data } = await supabase
       .from("staff_tasks")
       .select("id, title, description, status, priority, points, assigned_by, created_at, due_date, due_time, trial_period, comments, attachments, client_project_id, timer_started_at, current_stage")
-      .or(`assigned_to.eq.${profile.user_id},created_by.eq.${profile.user_id}`)
+      .or(`assigned_to.eq.${profile.user_id},assigned_to.like.%${profile.user_id}%`)
       .in("status", ["pending", "in_progress"])
       .order("created_at", { ascending: false })
       .limit(20);
