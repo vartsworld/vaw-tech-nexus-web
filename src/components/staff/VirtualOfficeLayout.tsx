@@ -16,7 +16,9 @@ import {
   Coins,
   Hash,
   Swords,
-  ArrowLeft
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import TeamChat from "./TeamChat";
