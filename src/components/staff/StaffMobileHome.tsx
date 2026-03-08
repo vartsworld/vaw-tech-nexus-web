@@ -351,7 +351,7 @@ const StaffMobileHome = ({
               </span>
             </div>
             {todoTasks.length > 4 && (
-              <button onClick={onEnterWorkspace} className="text-[10px] text-primary font-semibold flex items-center gap-0.5">
+              <button onClick={onEnterWorkspace} className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
                 See all <ChevronRight className="w-3 h-3" />
               </button>
             )}
