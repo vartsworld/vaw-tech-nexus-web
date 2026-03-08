@@ -538,7 +538,7 @@ const StaffMobileHome = ({
                       <motion.div
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-primary"
+                        className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-emerald-400"
                       />
                     )}
                   </motion.div>
