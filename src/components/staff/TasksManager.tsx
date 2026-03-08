@@ -238,6 +238,18 @@ const TasksManager = ({
       </Badge>
     );
   };
+  const getStageBadge = (task: any) => {
+    const stage = task.current_stage || 1;
+    const names: Record<string, string> = (task.stage_names && typeof task.stage_names === 'object') ? task.stage_names : {};
+    const label = names[String(stage)] || `Stage ${stage}`;
+    return (
+      <Badge variant="outline" className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-[10px]">
+        <Layers className="h-3 w-3 mr-1" />
+        {label}
+      </Badge>
+    );
+  };
+
   const filteredTasks = tasks.filter(task => filter === 'all' || task.status === filter);
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const totalTasks = tasks.length;
