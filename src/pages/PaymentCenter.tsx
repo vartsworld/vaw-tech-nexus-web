@@ -469,13 +469,24 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                         >
                                                             <IndianRupee className="w-4 h-4 mr-2" /> Pay Now via UPI
                                                         </Button>
-                                                        <Button
-                                                            variant="outline"
-                                                            className="border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
-                                                            onClick={() => { setSelectedReminder({ ...inv, amount }); setPaymentDialogOpen(true); }}
-                                                        >
-                                                            Submit Confirmation
-                                                        </Button>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                className="flex-1 border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
+                                                                onClick={() => { setSelectedReminder({ ...inv, amount }); setPaymentDialogOpen(true); }}
+                                                            >
+                                                                Submit Confirmation
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                className="border-tech-gold/20 hover:bg-tech-gold/10 text-white"
+                                                                onClick={() => downloadReceipt(inv, 'invoice')}
+                                                                title="Download Invoice"
+                                                            >
+                                                                <Download className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </CardContent>
