@@ -1893,7 +1893,7 @@ const TaskManagement = () => {
                           </div>
                         </div>
 
-                        <Droppable droppableId={status}>
+                        <StrictModeDroppable droppableId={status}>
                           {(provided, snapshot) => (
                             <div
                               {...provided.droppableProps}
