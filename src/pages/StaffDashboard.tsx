@@ -405,26 +405,28 @@ const StaffDashboard = () => {
             </div>
 
             {/* Bottom Row: Stats & Notifications */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap justify-between">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 bg-green-500/20 border border-green-500/30 rounded-lg px-2.5 py-1.5">
+                  <UserStatusBadge
+                    status={status}
+                    isBreakActive={isBreakActive}
+                    breakTimeRemaining={breakTimeRemaining}
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-amber-500/10">
+                  <Coins className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-amber-200 text-xs font-bold tracking-tight">{(profile?.total_points || 0).toLocaleString()} Coins</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-blue-500/10">
+                  <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="text-cyan-200 text-xs font-bold tracking-tight">Streak: {profile?.attendance_streak || 0}d</span>
+                </div>
+              </div>
+
               <NotificationsBar userId={profile.user_id} />
-
-              <div className="flex items-center gap-1.5 bg-green-500/20 border border-green-500/30 rounded-lg px-2.5 py-1.5">
-                <UserStatusBadge
-                  status={status}
-                  isBreakActive={isBreakActive}
-                  breakTimeRemaining={breakTimeRemaining}
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-amber-500/10">
-                <Coins className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-amber-200 text-xs font-bold tracking-tight">{(profile?.total_points || 0).toLocaleString()} Coins</span>
-              </div>
-
-              <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-blue-500/10">
-                <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="text-cyan-200 text-xs font-bold tracking-tight">Streak: {profile?.attendance_streak || 0}d</span>
-              </div>
             </div>
           </div>
         </div>
