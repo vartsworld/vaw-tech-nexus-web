@@ -39,12 +39,9 @@ const availableWidgets = [
 
 const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) => {
   const isMobile = useIsMobile();
+  // Default: Only Tasks Manager visible, other widgets hidden
   const defaultItems: WorkspaceItem[] = [
-    { id: 'tasks', component: 'TasksManager', title: 'Tasks Manager', span: 'full', removable: false, isVisible: true },
-    { id: 'chat', component: 'TeamChat', title: 'Team Chat', span: 'half', removable: true, isVisible: true },
-    { id: 'chess', component: 'MiniChess', title: 'Mini Chess', span: 'half', removable: true, isVisible: true },
-    { id: 'timebox', component: 'TimeboxWidget', title: 'Focus Timer', span: 'half', removable: true, isVisible: true },
-    { id: 'activity', component: 'ActivityLogPanel', title: 'Activity Logger', span: 'half', removable: true, isVisible: true },
+    { id: 'tasks', component: 'TasksManager', title: 'My Dashboard', span: 'full', removable: false, isVisible: true },
   ];
 
   const [items, setItems] = useState<WorkspaceItem[]>(defaultItems);
