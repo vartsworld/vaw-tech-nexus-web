@@ -5,9 +5,10 @@ import StrictModeDroppable from '@/components/ui/StrictModeDroppable';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GripVertical, X, Plus, Eye, EyeOff } from 'lucide-react';
+import { GripVertical, X, Plus, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import TasksManager from './TasksManager';
 import TeamChat from './TeamChat';
 import MiniChess from './MiniChess';
@@ -37,6 +38,7 @@ const availableWidgets = [
 ];
 
 const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) => {
+  const isMobile = useIsMobile();
   const defaultItems: WorkspaceItem[] = [
     { id: 'tasks', component: 'TasksManager', title: 'Tasks Manager', span: 'full', removable: false, isVisible: true },
     { id: 'chat', component: 'TeamChat', title: 'Team Chat', span: 'half', removable: true, isVisible: true },
@@ -48,6 +50,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
   const [items, setItems] = useState<WorkspaceItem[]>(defaultItems);
   const [selectedWidget, setSelectedWidget] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [showControls, setShowControls] = useState(!isMobile);
   const { toast } = useToast();
 
   // Load saved layout on mount
@@ -58,30 +61,12 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
           .from('workspace_layouts')
           .select('layout_data')
           .eq('user_id', userId)
-          .maybeSingle();
+          .single();
 
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error loading workspace layout:', error);
-          return;
-        }
-
-        if (data?.layout_data) {
-          // Type-safe parsing of the JSON data
-          try {
-            const layoutData = data.layout_data as any[];
-            if (Array.isArray(layoutData)) {
-              const validatedItems: WorkspaceItem[] = layoutData.map(item => ({
-                id: item.id,
-                component: item.component,
-                title: item.title,
-                span: item.span || 'half',
-                removable: item.removable !== false,
-                isVisible: item.isVisible !== false,
-              }));
-              setItems(validatedItems);
-            }
-          } catch (parseError) {
-            console.error('Error parsing layout data:', parseError);
+        if (data?.layout_data && !error) {
+          const savedLayout = data.layout_data as unknown as WorkspaceItem[];
+          if (Array.isArray(savedLayout) && savedLayout.length > 0) {
+            setItems(savedLayout);
           }
         }
       } catch (error) {
@@ -91,41 +76,35 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
       }
     };
 
-    if (userId) {
-      loadWorkspaceLayout();
-    }
+    loadWorkspaceLayout();
   }, [userId]);
 
-  // Auto-save layout changes (debounced)
+  // Save layout when items change
   useEffect(() => {
     if (isLoading) return;
 
     const saveLayout = async () => {
       try {
-        const { error } = await supabase
+        await supabase
           .from('workspace_layouts')
-          .upsert({
+          .upsert([{
             user_id: userId,
-            layout_data: items as any, // Type cast for JSON storage
+            layout_data: JSON.parse(JSON.stringify(items)),
+            updated_at: new Date().toISOString(),
+          }], {
+            onConflict: 'user_id',
           });
-
-        if (error) {
-          console.error('Error saving workspace layout:', error);
-        }
       } catch (error) {
         console.error('Error saving workspace layout:', error);
       }
     };
 
-    const timeoutId = setTimeout(saveLayout, 1000); // Debounce for 1 second
-
+    const timeoutId = setTimeout(saveLayout, 1000);
     return () => clearTimeout(timeoutId);
   }, [items, userId, isLoading]);
 
   const onDragEnd = useCallback((result: DropResult) => {
-    if (!result.destination) {
-      return;
-    }
+    if (!result.destination) return;
 
     const newItems = Array.from(items);
     const [reorderedItem] = newItems.splice(result.source.index, 1);
@@ -217,59 +196,74 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
 
   if (isLoading) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-[400px]">
+      <div className="p-4 sm:p-6 flex items-center justify-center min-h-[300px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white/80">Loading your workspace...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading your workspace...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Widget Controls */}
-      <Card className="bg-black/10 backdrop-blur-lg border-white/10 p-4">
-        <div className="flex items-center gap-4">
-          <Select value={selectedWidget} onValueChange={setSelectedWidget}>
-            <SelectTrigger className="w-48 bg-black/20 border-white/20 text-white">
-              <SelectValue placeholder="Add a widget..." />
-            </SelectTrigger>
-            <SelectContent className="bg-black/90 border-white/20">
-              {getAvailableWidgets().map((widget) => (
-                <SelectItem
-                  key={widget.component}
-                  value={widget.component}
-                  className="text-white hover:bg-white/10"
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      {/* Widget Controls - Collapsible on mobile */}
+      <Card className="bg-black/10 backdrop-blur-lg border-white/10">
+        <button
+          className="w-full flex items-center justify-between p-3 sm:p-4 sm:cursor-default"
+          onClick={() => isMobile && setShowControls(!showControls)}
+        >
+          <span className="text-sm font-medium text-foreground/80">Widget Controls</span>
+          {isMobile && (
+            showControls
+              ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              : <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          )}
+        </button>
+
+        {(showControls || !isMobile) && (
+          <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-0">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+              <Select value={selectedWidget} onValueChange={setSelectedWidget}>
+                <SelectTrigger className="w-full sm:w-48 bg-black/20 border-white/20 text-foreground">
+                  <SelectValue placeholder="Add a widget..." />
+                </SelectTrigger>
+                <SelectContent className="bg-background/95 backdrop-blur-lg border-border">
+                  {getAvailableWidgets().map((widget) => (
+                    <SelectItem
+                      key={widget.component}
+                      value={widget.component}
+                    >
+                      {widget.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={addWidget}
+                  disabled={!selectedWidget}
+                  className="flex-1 sm:flex-none bg-primary/20 hover:bg-primary/30 text-foreground border-primary/30"
+                  size="sm"
                 >
-                  {widget.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={addWidget}
-            disabled={!selectedWidget}
-            className="bg-primary/20 hover:bg-primary/30 text-white border-primary/30"
-            size="sm"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Widget
-          </Button>
-          <div className="ml-auto">
-            <WidgetManager
-              widgets={items.map(item => ({
-                id: item.id,
-                name: item.title,
-                description: `${item.component} widget`,
-                isVisible: item.isVisible ?? true,
-              }))}
-              onToggleWidget={toggleWidgetVisibility}
-              onShowAll={showAllWidgets}
-              onHideAll={hideAllWidgets}
-            />
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Widget
+                </Button>
+                <WidgetManager
+                  widgets={items.map(item => ({
+                    id: item.id,
+                    name: item.title,
+                    description: `${item.component} widget`,
+                    isVisible: item.isVisible ?? true,
+                  }))}
+                  onToggleWidget={toggleWidgetVisibility}
+                  onShowAll={showAllWidgets}
+                  onHideAll={hideAllWidgets}
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </Card>
 
       <DragDropContext onDragEnd={onDragEnd}>
@@ -278,7 +272,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
             <div
               {...provided.droppableProps}
               ref={provided.innerRef}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+              className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6"
             >
               {items.map((item, index) => (
                 <Draggable key={item.id} draggableId={item.id} index={index}>
@@ -288,13 +282,19 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
                       {...provided.draggableProps}
                       className={`${item.span === 'full' ? 'lg:col-span-2' : 'lg:col-span-1'
                         } ${snapshot.isDragging
-                          ? 'opacity-80 transform rotate-2 z-50'
+                          ? 'opacity-80 transform rotate-1 z-50'
                           : ''
                         } transition-all duration-200`}
                     >
-                      <Card className={`bg-black/20 backdrop-blur-lg border-white/10 relative group ${item.component === 'TasksManager' ? 'min-h-[500px]' : 'h-[500px]'}`}>
-                        {/* Controls */}
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                      <Card className={`bg-black/20 backdrop-blur-lg border-white/10 relative group ${
+                        item.component === 'TasksManager'
+                          ? 'min-h-[350px] sm:min-h-[500px]'
+                          : 'h-[350px] sm:h-[500px]'
+                      }`}>
+                        {/* Controls - always visible on mobile, hover on desktop */}
+                        <div className={`absolute top-2 right-2 flex gap-1 z-10 transition-opacity duration-200 ${
+                          isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                        }`}>
                           <Button
                             onClick={() => toggleWidgetVisibility(item.id)}
                             className="p-1 h-6 w-6 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 hover:text-blue-300 border-blue-500/30"
@@ -312,20 +312,27 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
                               <X className="w-3 h-3" />
                             </Button>
                           )}
-                          <div
-                            {...provided.dragHandleProps}
-                            className="p-1 h-6 w-6 cursor-grab active:cursor-grabbing bg-white/10 hover:bg-white/20 rounded flex items-center justify-center"
-                          >
-                            <GripVertical className="w-3 h-3 text-white/60 hover:text-white/80" />
-                          </div>
+                          {!isMobile && (
+                            <div
+                              {...provided.dragHandleProps}
+                              className="p-1 h-6 w-6 cursor-grab active:cursor-grabbing bg-white/10 hover:bg-white/20 rounded flex items-center justify-center"
+                            >
+                              <GripVertical className="w-3 h-3 text-white/60 hover:text-white/80" />
+                            </div>
+                          )}
                         </div>
+
+                        {/* Drag handle for mobile - hidden since drag doesn't work well on touch */}
+                        {isMobile && (
+                          <div {...provided.dragHandleProps} className="sr-only" />
+                        )}
 
                         <CardContent className={`p-0 h-full transition-all duration-300 ${!item.isVisible ? 'max-h-12 overflow-hidden' : ''}`}>
                           {!item.isVisible ? (
-                            <div className="p-4 cursor-pointer hover:bg-white/5" onClick={() => toggleWidgetVisibility(item.id)}>
+                            <div className="p-3 sm:p-4 cursor-pointer hover:bg-white/5" onClick={() => toggleWidgetVisibility(item.id)}>
                               <div className="flex items-center justify-between">
-                                <h3 className="text-white font-medium">{item.title}</h3>
-                                <EyeOff className="w-4 h-4 text-white/40" />
+                                <h3 className="text-foreground font-medium text-sm">{item.title}</h3>
+                                <EyeOff className="w-4 h-4 text-muted-foreground" />
                               </div>
                             </div>
                           ) : (
