@@ -89,7 +89,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
           .from('workspace_layouts')
           .upsert([{
             user_id: userId,
-            layout_data: items as unknown as Record<string, unknown>,
+            layout_data: JSON.parse(JSON.stringify(items)),
             updated_at: new Date().toISOString(),
           }], {
             onConflict: 'user_id',
