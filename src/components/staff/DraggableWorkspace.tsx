@@ -87,11 +87,11 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
       try {
         await supabase
           .from('workspace_layouts')
-          .upsert({
+          .upsert([{
             user_id: userId,
             layout_data: items as unknown as Record<string, unknown>,
             updated_at: new Date().toISOString(),
-          }, {
+          }], {
             onConflict: 'user_id',
           });
       } catch (error) {
