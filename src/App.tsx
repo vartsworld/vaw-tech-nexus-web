@@ -76,11 +76,13 @@ const ManifestSwitcher = () => {
 
 const AppContent = () => {
   const { hasCompletedIntro } = useUser();
+  const skipIntroPaths = ['/privacy-policy', '/data-deletion', '/terms-of-service'];
+  const shouldSkipIntro = skipIntroPaths.includes(window.location.pathname);
 
   return (
 
     <>
-      {!hasCompletedIntro && <IntroScreen />}
+      {!hasCompletedIntro && !shouldSkipIntro && <IntroScreen />}
       <BrowserRouter>
         <ManifestSwitcher />
         <Routes>
