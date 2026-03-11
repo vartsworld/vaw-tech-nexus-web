@@ -42,6 +42,9 @@ import ClientDashboard from "./pages/ClientDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import DigitalMarketingInternship from "./pages/DigitalMarketingInternship";
 import ClientOnboarding from "./pages/ClientOnboarding";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import DataDeletion from "./pages/DataDeletion";
 
 const queryClient = new QueryClient({
   defaultOptions: {
