@@ -9,9 +9,9 @@ interface ActivityTrackerOptions {
 export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOptions) => {
   const lastActivityRef = useRef<Date>(new Date());
   const lastDbUpdateRef = useRef<number>(0);
-  const statusCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const activityUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingUpdateRef = useRef<NodeJS.Timeout | null>(null);
+  const statusCheckIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activityUpdateIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingUpdateRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounced DB write — at most once every 30 seconds
   const updateActivity = useCallback(async () => {
