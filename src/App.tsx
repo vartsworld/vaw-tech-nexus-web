@@ -118,6 +118,9 @@ const AppContent = () => {
           <Route path="/install" element={<Install />} />
           <Route path="/digital-marketing-internship" element={<DigitalMarketingInternship />} />
           <Route path="/onboard/:token" element={<ClientOnboarding />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/data-deletion" element={<DataDeletion />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
