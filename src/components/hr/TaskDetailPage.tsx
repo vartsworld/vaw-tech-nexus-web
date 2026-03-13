@@ -904,6 +904,64 @@ const TaskDetailPage = ({
                                             </SelectContent>
                                           </Select>
                                         </div>
+
+                                        {/* Team Head Submit Button */}
+                                        {(st.status === 'in_progress' || st.status === 'pending') && (
+                                          <div onClick={(e) => e.stopPropagation()}>
+                                            <Button
+                                              size="sm"
+                                              className="w-full h-6 text-[9px] bg-purple-600/80 hover:bg-purple-600 mt-1"
+                                              onClick={() => {
+                                                setExpandedSubmitSubtask(expandedSubmitSubtask === st.id ? null : st.id);
+                                                setSubmitNotes("");
+                                                setSubmitFiles([]);
+                                              }}
+                                            >
+                                              {expandedSubmitSubtask === st.id ? 'Cancel' : 'Write & Submit'}
+                                            </Button>
+                                          </div>
+                                        )}
+
+                                        {/* Expanded Submission Form */}
+                                        {expandedSubmitSubtask === st.id && (
+                                          <div className="space-y-2 mt-2 pt-2 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
+                                            <Textarea
+                                              placeholder="Add notes..."
+                                              value={submitNotes}
+                                              onChange={(e) => setSubmitNotes(e.target.value)}
+                                              className="bg-black/50 border-white/10 text-[10px] min-h-[50px] placeholder:text-white/30"
+                                            />
+                                            <div className="flex flex-wrap gap-1">
+                                              {submitFiles.map((file, fidx) => (
+                                                <div key={fidx} className="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">
+                                                  <FileText className="w-2.5 h-2.5 text-blue-400" />
+                                                  <span className="text-[8px] text-white/60 max-w-[60px] truncate">{file.name}</span>
+                                                  <button className="text-red-400 hover:text-red-300" onClick={() => setSubmitFiles(submitFiles.filter((_, i) => i !== fidx))}>
+                                                    <Trash2 className="h-2.5 w-2.5" />
+                                                  </button>
+                                                </div>
+                                              ))}
+                                              <Button variant="outline" size="sm" className="h-5 text-[8px] border-dashed border-white/20 px-1.5"
+                                                onClick={() => submitFileInputRef.current?.click()} disabled={isUploadingSubtaskFile}>
+                                                {isUploadingSubtaskFile ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Plus className="h-2.5 w-2.5 mr-0.5" />}
+                                                Upload
+                                              </Button>
+                                              <input type="file" multiple hidden ref={submitFileInputRef} onChange={handleSubmitFileUpload} />
+                                            </div>
+                                            <div className="flex gap-1">
+                                              <Button size="sm" className="flex-1 h-6 text-[9px] bg-emerald-600 hover:bg-emerald-700"
+                                                onClick={() => handleTeamHeadSubtaskSubmit(st.id, 'completed')} disabled={isSubmittingSubtask}>
+                                                {isSubmittingSubtask ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                                                Complete
+                                              </Button>
+                                              <Button size="sm" className="flex-1 h-6 text-[9px] bg-orange-600 hover:bg-orange-700"
+                                                onClick={() => handleTeamHeadSubtaskSubmit(st.id, 'pending_approval')} disabled={isSubmittingSubtask}>
+                                                {isSubmittingSubtask ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3 mr-1" />}
+                                                For Review
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        )}
                                       </div>
                                     )}
                                   </Draggable>
