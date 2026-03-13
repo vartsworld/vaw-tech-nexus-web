@@ -852,7 +852,7 @@ export const TaskDetailDialog = ({
         ) : (
           <div className="space-y-3">
             {subtasks.map((st, idx) => {
-              const isAssignedToMe = st.assigned_to === userId;
+              const isAssignedToMe = st.assigned_to === userId || isTeamHead;
               const stage = (st as any).stage || 1;
               const hasBlockingStage = subtasks.some(other => {
                 const otherStage = (other as any).stage || 1;
