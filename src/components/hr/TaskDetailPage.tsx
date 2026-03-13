@@ -201,7 +201,97 @@ const TaskDetailPage = ({
     }
   };
 
-  const onSubtaskDragEnd = (result: any) => {
+  // Team Head subtask file upload
+  const handleSubmitFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || !task) return;
+    setIsUploadingSubtaskFile(true);
+    try {
+      const uploadPromises = Array.from(files).map(async file => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${task.id}/subtask_${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('task-attachments').upload(fileName, file);
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from('task-attachments').getPublicUrl(fileName);
+        return { url: fileName, name: file.name, size: file.size, type: file.type, publicUrl, uploadedBy: userProfile?.user_id };
+      });
+      const newFiles = await Promise.all(uploadPromises);
+      setSubmitFiles(prev => [...prev, ...newFiles]);
+    } catch (error) {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally {
+      setIsUploadingSubtaskFile(false);
+      if (event.target) event.target.value = '';
+    }
+  };
+
+  // Team Head subtask submission with notes + files
+  const handleTeamHeadSubtaskSubmit = async (subtaskId: string, targetStatus: string = 'pending_approval') => {
+    if (isSubmittingSubtask) return;
+    setIsSubmittingSubtask(true);
+    try {
+      const subtask = subtasks.find(s => s.id === subtaskId);
+      const existingComments = Array.isArray(subtask?.comments) ? subtask.comments : [];
+      const existingAttachments = Array.isArray(subtask?.attachments) ? subtask.attachments : [];
+
+      const newComment = submitNotes.trim() ? {
+        user_id: userProfile?.user_id,
+        user_name: userProfile?.full_name || 'Team Head',
+        user_avatar: userProfile?.avatar_url,
+        message: submitNotes.trim(),
+        timestamp: new Date().toISOString(),
+        type: 'submission_note'
+      } : null;
+
+      const updatedComments = newComment ? [...existingComments, newComment] : existingComments;
+      const updatedAttachments = [...existingAttachments, ...submitFiles];
+
+      const updateData: any = {
+        status: targetStatus,
+        comments: updatedComments,
+        attachments: updatedAttachments,
+        updated_at: new Date().toISOString()
+      };
+      if (targetStatus === 'completed' || targetStatus === 'pending_approval') {
+        updateData.completed_at = new Date().toISOString();
+      }
+
+      const { data, error } = await supabase.from('staff_subtasks')
+        .update(updateData)
+        .eq('id', subtaskId)
+        .select('*, staff_profiles:assigned_to (full_name, username, avatar_url)').single();
+      if (error) throw error;
+
+      setSubtasks(prev => prev.map(st => st.id === subtaskId ? data : st));
+
+      // Auto-advance stage logic
+      const subtaskStage = (data as any).stage || 1;
+      const updatedSubtasksList = subtasks.map(s => s.id === subtaskId ? data : s);
+      const stageSubtasks = updatedSubtasksList.filter((st: any) => (st.stage || 1) === subtaskStage);
+      const allStageDone = stageSubtasks.length > 0 && stageSubtasks.every((st: any) => st.status === 'completed' || st.status === 'pending_approval');
+      if (allStageDone) {
+        const allStages = [...new Set(updatedSubtasksList.map((st: any) => (st.stage || 1) as number))].sort((a, b) => a - b);
+        const nextIncompleteStage = allStages.find(s => {
+          const subs = updatedSubtasksList.filter((st: any) => (st.stage || 1) === s);
+          return subs.some((st: any) => st.status !== 'completed' && st.status !== 'pending_approval');
+        });
+        const newCurrentStage = nextIncompleteStage ?? ((allStages[allStages.length - 1] || 1) + 1);
+        await supabase.from('staff_tasks')
+          .update({ current_stage: newCurrentStage, updated_at: new Date().toISOString() } as any)
+          .eq('id', task.id);
+      }
+
+      toast({ title: "Subtask Updated", description: `Status set to ${targetStatus.replace('_', ' ')}.` });
+      setSubmitNotes("");
+      setSubmitFiles([]);
+      setExpandedSubmitSubtask(null);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to submit subtask.", variant: "destructive" });
+    } finally {
+      setIsSubmittingSubtask(false);
+    }
+  };
+
     if (!result.destination) return;
     const { draggableId, destination } = result;
     if (destination.droppableId.startsWith('stage-')) {
