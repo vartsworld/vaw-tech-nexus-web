@@ -43,6 +43,7 @@ interface TaskDetailDialogProps {
   userId: string;
   mode?: 'dialog' | 'inline';
   onBack?: () => void;
+  isTeamHead?: boolean;
 }
 export const TaskDetailDialog = ({
   task,
@@ -51,7 +52,8 @@ export const TaskDetailDialog = ({
   onStatusUpdate,
   userId,
   mode = 'dialog',
-  onBack
+  onBack,
+  isTeamHead = false
 }: TaskDetailDialogProps) => {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -850,7 +852,7 @@ export const TaskDetailDialog = ({
         ) : (
           <div className="space-y-3">
             {subtasks.map((st, idx) => {
-              const isAssignedToMe = st.assigned_to === userId;
+              const isAssignedToMe = st.assigned_to === userId || isTeamHead;
               const stage = (st as any).stage || 1;
               const hasBlockingStage = subtasks.some(other => {
                 const otherStage = (other as any).stage || 1;

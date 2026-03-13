@@ -266,6 +266,7 @@ const TasksManager = ({
         userId={userId}
         mode="inline"
         onBack={() => setSelectedTask(null)}
+        isTeamHead={!!userProfile?.is_department_head}
       />
     );
   }

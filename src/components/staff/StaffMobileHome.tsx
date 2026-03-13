@@ -589,6 +589,7 @@ const StaffMobileHome = ({
             setSelectedTask(null);
           }}
           userId={profile?.user_id || ""}
+          isTeamHead={!!profile?.is_department_head}
         />
       )}
 
