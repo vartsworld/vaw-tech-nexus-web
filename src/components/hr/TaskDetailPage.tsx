@@ -57,6 +57,14 @@ const TaskDetailPage = ({
     (task?.stage_names && typeof task.stage_names === 'object') ? task.stage_names : {}
   );
 
+  // Subtask submission state (for Team Head inline submit)
+  const [expandedSubmitSubtask, setExpandedSubmitSubtask] = useState<string | null>(null);
+  const [submitNotes, setSubmitNotes] = useState("");
+  const [submitFiles, setSubmitFiles] = useState<any[]>([]);
+  const [isSubmittingSubtask, setIsSubmittingSubtask] = useState(false);
+  const [isUploadingSubtaskFile, setIsUploadingSubtaskFile] = useState(false);
+  const submitFileInputRef = useRef<HTMLInputElement>(null);
+
   const checkScrollability = useCallback(() => {
     const el = stageScrollRef.current;
     if (!el) return;
