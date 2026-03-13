@@ -292,6 +292,7 @@ const TaskDetailPage = ({
     }
   };
 
+  const onSubtaskDragEnd = (result: any) => {
     if (!result.destination) return;
     const { draggableId, destination } = result;
     if (destination.droppableId.startsWith('stage-')) {
