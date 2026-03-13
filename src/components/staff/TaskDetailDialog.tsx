@@ -43,6 +43,7 @@ interface TaskDetailDialogProps {
   userId: string;
   mode?: 'dialog' | 'inline';
   onBack?: () => void;
+  isTeamHead?: boolean;
 }
 export const TaskDetailDialog = ({
   task,
@@ -51,7 +52,8 @@ export const TaskDetailDialog = ({
   onStatusUpdate,
   userId,
   mode = 'dialog',
-  onBack
+  onBack,
+  isTeamHead = false
 }: TaskDetailDialogProps) => {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
