@@ -613,7 +613,11 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                         <div className="grid gap-4">
                             {/* Billing API invoices */}
                             {pendingInvoices.map((inv, idx) => {
-                                const amount = Number(inv.balance) || Number(inv.total) || 0;
+                                const total = Number(inv.total) || 0;
+                                const balance = Number(inv.balance) || total;
+                                const amount = balance;
+                                const isPartial = inv.status?.toLowerCase() === 'partial' || inv.status?.toLowerCase() === 'partially_paid';
+                                const paidSoFar = isPartial ? total - balance : 0;
                                 const dueDate = inv.due_date || inv.date;
                                 const daysUntil = dueDate ? Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
                                 const isOverdue = daysUntil !== null && daysUntil < 0;
@@ -639,11 +643,19 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                             </div>
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-4 text-sm">
-                                                            <div className="flex items-center gap-2">
-                                                                <IndianRupee className="w-4 h-4 text-tech-gold" />
-                                                                <span className="text-2xl font-black text-tech-gold">
-                                                                    {Number(amount).toLocaleString('en-IN')}
-                                                                </span>
+                                                            <div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <IndianRupee className="w-4 h-4 text-tech-gold" />
+                                                                    <span className="text-2xl font-black text-tech-gold">
+                                                                        {Number(amount).toLocaleString('en-IN')}
+                                                                    </span>
+                                                                    {isPartial && <span className="text-xs text-gray-500">balance</span>}
+                                                                </div>
+                                                                {isPartial && (
+                                                                    <p className="text-xs text-gray-500 mt-1">
+                                                                        Paid: {formatCurrency(paidSoFar)} of {formatCurrency(total)}
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                             {dueDate && (
                                                                 <div className="flex items-center gap-2 text-gray-400">
@@ -652,6 +664,19 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                                 </div>
                                                             )}
                                                         </div>
+                                                        {isPartial && (
+                                                            <div className="mt-3">
+                                                                <div className="w-full bg-gray-800 rounded-full h-2">
+                                                                    <div
+                                                                        className="bg-amber-500 h-2 rounded-full transition-all"
+                                                                        style={{ width: `${Math.min((paidSoFar / (total || 1)) * 100, 100)}%` }}
+                                                                    />
+                                                                </div>
+                                                                <p className="text-[10px] text-amber-400/70 mt-1">
+                                                                    {Math.round((paidSoFar / (total || 1)) * 100)}% paid
+                                                                </p>
+                                                            </div>
+                                                        )}
                                                         {isOverdue && (
                                                             <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                                                                 <p className="text-xs text-red-400 flex items-center gap-2">
