@@ -778,6 +778,7 @@ const ClientManagement = () => {
                         size="sm"
                         onClick={() => {
                           setEditingClient(client);
+                          setOriginalClientEmail(client.email || "");
                           setIsEditDialogOpen(true);
                         }}
                       >
