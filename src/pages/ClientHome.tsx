@@ -88,6 +88,7 @@ const stagger = {
 const ClientHome = ({ profile }: { profile: any }) => {
   const [projects, setProjects] = useState<any[]>([]);
   const [renewalItems, setRenewalItems] = useState<any[]>([]);
+  const [pendingInvoices, setPendingInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGreeting, setShowGreeting] = useState(false);
   const [showContent, setShowContent] = useState(false);
@@ -104,6 +105,7 @@ const ClientHome = ({ profile }: { profile: any }) => {
     if (profile?.id) {
       fetchProjects();
       fetchRenewals();
+      fetchPendingInvoices();
     }
   }, [profile]);
 
