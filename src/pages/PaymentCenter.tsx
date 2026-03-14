@@ -732,6 +732,151 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                         </motion.div>
                                     );
                                 })}
+
+                            {/* Local document invoices */}
+                            {pendingLocalDocs.map((doc: any, idx: number) => (
+                                <motion.div key={`doc-${doc.id}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (pendingInvoices.length + idx) * 0.08 }}>
+                                    <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all">
+                                        <CardContent className="p-6">
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                                <div className="flex-1">
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <h3 className="text-xl font-bold text-white">{doc.title}</h3>
+                                                                <Badge className="bg-blue-500/20 text-blue-400 border-0 text-[10px]">INVOICE</Badge>
+                                                                <Badge className="bg-orange-500/20 text-orange-400 border-0 text-[10px] uppercase">{doc.status}</Badge>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <IndianRupee className="w-4 h-4 text-tech-gold" />
+                                                            <span className="text-2xl font-black text-tech-gold">
+                                                                {Number(doc.amount || 0).toLocaleString('en-IN')}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-gray-400">
+                                                            <Calendar className="w-4 h-4" />
+                                                            <span>Issued: {new Date(doc.created_at).toLocaleDateString('en-IN')}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <Button
+                                                        onClick={() => handlePayNow({ ...doc, amount: doc.amount })}
+                                                        className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl shadow-lg shadow-tech-gold/20"
+                                                    >
+                                                        <IndianRupee className="w-4 h-4 mr-2" /> Pay Now
+                                                    </Button>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            className="flex-1 border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
+                                                            onClick={() => { setSelectedReminder({ ...doc, amount: doc.amount }); setPaymentDialogOpen(true); }}
+                                                        >
+                                                            Submit Confirmation
+                                                        </Button>
+                                                        {doc.file_url && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                className="border-tech-gold/20 hover:bg-tech-gold/10 text-white"
+                                                                onClick={() => window.open(doc.file_url, '_blank')}
+                                                                title="View Invoice"
+                                                            >
+                                                                <Download className="w-4 h-4" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            ))}
+
+                            {/* Outstanding project balances */}
+                            {pendingProjectBalances.map((proj: any, idx: number) => {
+                                const balance = (Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0);
+                                const nextDate = proj.next_payment_date;
+                                const daysUntil = nextDate ? Math.ceil((new Date(nextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                                const isOverdue = daysUntil !== null && daysUntil < 0;
+                                return (
+                                    <motion.div key={`proj-${proj.id}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (pendingInvoices.length + pendingLocalDocs.length + idx) * 0.08 }}>
+                                        <Card className={cn("bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all", isOverdue && "border-red-500/50 bg-red-500/5")}>
+                                            <CardContent className="p-6">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div>
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <h3 className="text-xl font-bold text-white">{proj.title}</h3>
+                                                                    <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]">PROJECT</Badge>
+                                                                    <Badge className="bg-tech-gold/20 text-tech-gold border-0 text-[10px] uppercase">{proj.status}</Badge>
+                                                                </div>
+                                                                <p className="text-sm text-gray-400">
+                                                                    Paid: {formatCurrency(Number(proj.amount_paid) || 0)} of {formatCurrency(Number(proj.total_amount) || 0)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                                            <div className="flex items-center gap-2">
+                                                                <IndianRupee className="w-4 h-4 text-tech-gold" />
+                                                                <span className="text-2xl font-black text-tech-gold">
+                                                                    {balance.toLocaleString('en-IN')}
+                                                                </span>
+                                                                <span className="text-xs text-gray-500">balance</span>
+                                                            </div>
+                                                            {nextDate && (
+                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                    <Calendar className="w-4 h-4" />
+                                                                    <span>Due: {new Date(nextDate).toLocaleDateString('en-IN')}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {isOverdue && (
+                                                            <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                                                <p className="text-xs text-red-400 flex items-center gap-2">
+                                                                    <AlertCircle className="w-4 h-4" />
+                                                                    Payment is {Math.abs(daysUntil!)} days overdue
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                        {/* Progress bar */}
+                                                        <div className="mt-3">
+                                                            <div className="w-full bg-gray-800 rounded-full h-2">
+                                                                <div
+                                                                    className="bg-tech-gold h-2 rounded-full transition-all"
+                                                                    style={{ width: `${Math.min(((Number(proj.amount_paid) || 0) / (Number(proj.total_amount) || 1)) * 100, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-500 mt-1">
+                                                                {Math.round(((Number(proj.amount_paid) || 0) / (Number(proj.total_amount) || 1)) * 100)}% paid
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col gap-2">
+                                                        <Button
+                                                            onClick={() => handlePayNow({ ...proj, amount: balance, title: proj.title })}
+                                                            className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl shadow-lg shadow-tech-gold/20"
+                                                        >
+                                                            <IndianRupee className="w-4 h-4 mr-2" /> Pay Now
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            className="border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
+                                                            onClick={() => { setSelectedReminder({ ...proj, amount: balance, title: proj.title }); setPaymentDialogOpen(true); }}
+                                                        >
+                                                            Submit Confirmation
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                );
+                            })}
                         </div>
                     )}
                 </TabsContent>
