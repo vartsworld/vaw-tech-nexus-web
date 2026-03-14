@@ -226,8 +226,68 @@ serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
+    } else if (action === 'update_email') {
+      // Update auth user's email when client email is changed
+      if (!clientProfile.user_id) {
+        return new Response(JSON.stringify({ error: 'Client does not have login credentials. No auth email to update.' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { new_email } = await req.json().catch(() => ({}));
+      const targetEmail = email; // The new email is passed as the 'email' field
+
+      console.log(`[${new Date().toISOString()}] Updating auth email for user ${clientProfile.user_id} to ${targetEmail}`);
+      
+      const { error: updateEmailError } = await supabase.auth.admin.updateUserById(
+        clientProfile.user_id,
+        { 
+          email: targetEmail,
+          email_confirm: true,
+          user_metadata: {
+            ...clientProfile,
+            role: 'client',
+            client_profile_id: client_profile_id,
+            company_name: clientProfile.company_name
+          }
+        }
+      );
+
+      if (updateEmailError) {
+        console.error('Error updating auth email:', updateEmailError);
+        return new Response(JSON.stringify({ error: `Failed to update email: ${updateEmailError.message}` }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Also update client_profiles if exists
+      await supabase
+        .from('client_profiles')
+        .update({ email: targetEmail, updated_at: new Date().toISOString() })
+        .eq('user_id', clientProfile.user_id);
+
+      // Log the action
+      await supabase.from('client_credential_management').insert({
+        client_id: client_profile_id,
+        managed_by: caller.id,
+        action: 'update_email'
+      });
+
+      console.log(`Client auth email updated to: ${targetEmail} by ${caller.email}`);
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Client login email updated successfully',
+        email: targetEmail,
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
     } else {
-      return new Response(JSON.stringify({ error: 'Invalid action. Use "create" or "reset".' }), {
+      return new Response(JSON.stringify({ error: 'Invalid action. Use "create", "reset", or "update_email".' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
