@@ -88,6 +88,17 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         enabled: !!profile?.id
     });
 
+    // Local invoices from client_documents
+    const { data: localDocuments = [] } = useRealtimeQuery({
+        queryKey: ['client-documents-invoices', profile?.id],
+        table: 'client_documents',
+        filter: `client_id=eq.${profile?.id}`,
+        enabled: !!profile?.id
+    });
+
+    // Local project balances
+    const [localProjects, setLocalProjects] = useState<any[]>([]);
+
     // Billing API data
     const [invoices, setInvoices] = useState<any[]>([]);
     const [payments, setPayments] = useState<any[]>([]);
@@ -109,6 +120,28 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
 
     const fetchBillingData = async () => {
         setBillingLoading(true);
+
+        // Fetch local projects with outstanding balances
+        try {
+            // client_projects references clients table, find via profile's linked client
+            const { data: crmClients } = await supabase
+                .from('clients')
+                .select('id')
+                .eq('email', profile?.email);
+            
+            if (crmClients && crmClients.length > 0) {
+                const crmIds = crmClients.map(c => c.id);
+                const { data: projects } = await supabase
+                    .from('client_projects')
+                    .select('*')
+                    .in('client_id', crmIds);
+                setLocalProjects(projects || []);
+            }
+        } catch (e) {
+            console.error("Error fetching local projects:", e);
+        }
+
+        // Fetch billing API data if connected
         const creds = await loadApiCredentials();
         if (!creds || !billingId) {
             setBillingConnected(false);
@@ -136,7 +169,6 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                 parse(invRes), parse(payRes), parse(recRes)
             ]);
 
-            // Filter by client's billing_sync_id
             const matchId = billingId.toLowerCase();
             const filterByClient = (records: any[]) =>
                 records.filter(r => getClientCode(r).toLowerCase() === matchId);
@@ -161,9 +193,29 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         ['paid', 'collected'].includes(inv.status?.toLowerCase())
     );
 
+    // Local pending invoices from client_documents
+    const pendingLocalDocs = (localDocuments as any[]).filter((doc: any) =>
+        doc.doc_type === 'invoice' && !['paid', 'signed'].includes(doc.status?.toLowerCase())
+    );
+
+    // Projects with outstanding balances
+    const pendingProjectBalances = localProjects.filter((proj: any) => {
+        const balance = (Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0);
+        return balance > 0;
+    });
+
     const totalPaid = payments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+    const localPaidDocs = (localDocuments as any[]).filter((doc: any) =>
+        doc.doc_type === 'invoice' && doc.status?.toLowerCase() === 'paid'
+    );
+    const totalLocalPaid = localPaidDocs.reduce((sum: number, doc: any) => sum + (Number(doc.amount) || 0), 0);
+
     const totalPending = pendingInvoices.reduce((sum: number, inv: any) =>
-        sum + (Number(inv.balance) || Number(inv.total) || 0), 0);
+        sum + (Number(inv.balance) || Number(inv.total) || 0), 0)
+        + pendingLocalDocs.reduce((sum: number, doc: any) => sum + (Number(doc.amount) || 0), 0)
+        + pendingProjectBalances.reduce((sum: number, proj: any) => sum + ((Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0)), 0);
+
+    const hasAnyPendingData = pendingInvoices.length > 0 || pendingLocalDocs.length > 0 || pendingProjectBalances.length > 0 || paymentReminders.filter((r: any) => r.status !== 'paid').length > 0;
 
     const downloadReceipt = async (record: any, type: 'payment' | 'invoice') => {
         // Check for shareable URL from API data
@@ -446,13 +498,20 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
             </div>
 
             {/* Summary Cards */}
-            {billingConnected && !billingLoading && (
+            {!billingLoading && (totalPending > 0 || totalPaid > 0 || totalLocalPaid > 0 || invoices.length > 0 || pendingLocalDocs.length > 0 || pendingProjectBalances.length > 0) && (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     {(() => {
                         const activeRecs = recurringInvoices.filter((r: any) => r.status?.toLowerCase() !== 'paused' && r.status?.toLowerCase() !== 'stopped');
                         const nextRec = activeRecs.sort((a: any, b: any) => new Date(a.next_issue_date || a.next_invoice_date || '9999').getTime() - new Date(b.next_issue_date || b.next_invoice_date || '9999').getTime())[0];
                         const nextDate = nextRec?.next_issue_date || nextRec?.next_invoice_date;
                         const daysUntil = nextDate ? Math.ceil((new Date(nextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                        // Also check next_payment_date from projects
+                        const nextProjectPayment = pendingProjectBalances
+                            .filter((p: any) => p.next_payment_date)
+                            .sort((a: any, b: any) => new Date(a.next_payment_date).getTime() - new Date(b.next_payment_date).getTime())[0];
+                        const showNextDate = nextDate || nextProjectPayment?.next_payment_date;
+                        const showNextAmount = nextDate ? Number(nextRec?.total) || 0 : nextProjectPayment ? (Number(nextProjectPayment.total_amount) - Number(nextProjectPayment.amount_paid || 0)) : 0;
+                        const showDaysUntil = showNextDate ? Math.ceil((new Date(showNextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
                         return (
                             <Card className="bg-black/40 border-tech-gold/10">
                                 <CardContent className="p-4 flex items-center gap-3">
@@ -461,10 +520,10 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                     </div>
                                     <div>
                                         <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Next Billing</p>
-                                        {nextDate ? (
+                                        {showNextDate ? (
                                             <>
-                                                <p className="text-lg font-black text-violet-400">{formatCurrency(Number(nextRec.total) || 0)}</p>
-                                                <p className="text-[10px] text-gray-500">{new Date(nextDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • {daysUntil! > 0 ? `${daysUntil}d` : 'Due'}</p>
+                                                <p className="text-lg font-black text-violet-400">{formatCurrency(showNextAmount)}</p>
+                                                <p className="text-[10px] text-gray-500">{new Date(showNextDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • {showDaysUntil! > 0 ? `${showDaysUntil}d` : 'Due'}</p>
                                             </>
                                         ) : (
                                             <p className="text-sm text-gray-500">No upcoming</p>
@@ -492,7 +551,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                             </div>
                             <div>
                                 <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Invoices</p>
-                                <p className="text-lg font-black text-blue-400">{invoices.length}</p>
+                                <p className="text-lg font-black text-blue-400">{invoices.length + pendingLocalDocs.length + localPaidDocs.length}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -514,7 +573,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                             </div>
                             <div>
                                 <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Total Paid</p>
-                                <p className="text-lg font-black text-emerald-400">{formatCurrency(totalPaid)}</p>
+                                <p className="text-lg font-black text-emerald-400">{formatCurrency(totalPaid + totalLocalPaid)}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -540,7 +599,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                         <div className="flex justify-center py-12">
                             <Loader2 className="w-6 h-6 animate-spin text-tech-gold" />
                         </div>
-                    ) : pendingInvoices.length === 0 && paymentReminders.filter((r: any) => r.status !== 'paid').length === 0 ? (
+                    ) : !hasAnyPendingData ? (
                         <Card className="bg-black/20 border-tech-gold/10 border-dashed border-2">
                             <CardContent className="p-12 text-center">
                                 <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-emerald-500/30" />
@@ -673,6 +732,151 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                         </motion.div>
                                     );
                                 })}
+
+                            {/* Local document invoices */}
+                            {pendingLocalDocs.map((doc: any, idx: number) => (
+                                <motion.div key={`doc-${doc.id}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (pendingInvoices.length + idx) * 0.08 }}>
+                                    <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all">
+                                        <CardContent className="p-6">
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                                <div className="flex-1">
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <h3 className="text-xl font-bold text-white">{doc.title}</h3>
+                                                                <Badge className="bg-blue-500/20 text-blue-400 border-0 text-[10px]">INVOICE</Badge>
+                                                                <Badge className="bg-orange-500/20 text-orange-400 border-0 text-[10px] uppercase">{doc.status}</Badge>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <IndianRupee className="w-4 h-4 text-tech-gold" />
+                                                            <span className="text-2xl font-black text-tech-gold">
+                                                                {Number(doc.amount || 0).toLocaleString('en-IN')}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-gray-400">
+                                                            <Calendar className="w-4 h-4" />
+                                                            <span>Issued: {new Date(doc.created_at).toLocaleDateString('en-IN')}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <Button
+                                                        onClick={() => handlePayNow({ ...doc, amount: doc.amount })}
+                                                        className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl shadow-lg shadow-tech-gold/20"
+                                                    >
+                                                        <IndianRupee className="w-4 h-4 mr-2" /> Pay Now
+                                                    </Button>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            className="flex-1 border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
+                                                            onClick={() => { setSelectedReminder({ ...doc, amount: doc.amount }); setPaymentDialogOpen(true); }}
+                                                        >
+                                                            Submit Confirmation
+                                                        </Button>
+                                                        {doc.file_url && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                className="border-tech-gold/20 hover:bg-tech-gold/10 text-white"
+                                                                onClick={() => window.open(doc.file_url, '_blank')}
+                                                                title="View Invoice"
+                                                            >
+                                                                <Download className="w-4 h-4" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            ))}
+
+                            {/* Outstanding project balances */}
+                            {pendingProjectBalances.map((proj: any, idx: number) => {
+                                const balance = (Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0);
+                                const nextDate = proj.next_payment_date;
+                                const daysUntil = nextDate ? Math.ceil((new Date(nextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                                const isOverdue = daysUntil !== null && daysUntil < 0;
+                                return (
+                                    <motion.div key={`proj-${proj.id}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (pendingInvoices.length + pendingLocalDocs.length + idx) * 0.08 }}>
+                                        <Card className={cn("bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all", isOverdue && "border-red-500/50 bg-red-500/5")}>
+                                            <CardContent className="p-6">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div>
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <h3 className="text-xl font-bold text-white">{proj.title}</h3>
+                                                                    <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]">PROJECT</Badge>
+                                                                    <Badge className="bg-tech-gold/20 text-tech-gold border-0 text-[10px] uppercase">{proj.status}</Badge>
+                                                                </div>
+                                                                <p className="text-sm text-gray-400">
+                                                                    Paid: {formatCurrency(Number(proj.amount_paid) || 0)} of {formatCurrency(Number(proj.total_amount) || 0)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                                            <div className="flex items-center gap-2">
+                                                                <IndianRupee className="w-4 h-4 text-tech-gold" />
+                                                                <span className="text-2xl font-black text-tech-gold">
+                                                                    {balance.toLocaleString('en-IN')}
+                                                                </span>
+                                                                <span className="text-xs text-gray-500">balance</span>
+                                                            </div>
+                                                            {nextDate && (
+                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                    <Calendar className="w-4 h-4" />
+                                                                    <span>Due: {new Date(nextDate).toLocaleDateString('en-IN')}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {isOverdue && (
+                                                            <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                                                <p className="text-xs text-red-400 flex items-center gap-2">
+                                                                    <AlertCircle className="w-4 h-4" />
+                                                                    Payment is {Math.abs(daysUntil!)} days overdue
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                        {/* Progress bar */}
+                                                        <div className="mt-3">
+                                                            <div className="w-full bg-gray-800 rounded-full h-2">
+                                                                <div
+                                                                    className="bg-tech-gold h-2 rounded-full transition-all"
+                                                                    style={{ width: `${Math.min(((Number(proj.amount_paid) || 0) / (Number(proj.total_amount) || 1)) * 100, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-500 mt-1">
+                                                                {Math.round(((Number(proj.amount_paid) || 0) / (Number(proj.total_amount) || 1)) * 100)}% paid
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col gap-2">
+                                                        <Button
+                                                            onClick={() => handlePayNow({ ...proj, amount: balance, title: proj.title })}
+                                                            className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl shadow-lg shadow-tech-gold/20"
+                                                        >
+                                                            <IndianRupee className="w-4 h-4 mr-2" /> Pay Now
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            className="border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
+                                                            onClick={() => { setSelectedReminder({ ...proj, amount: balance, title: proj.title }); setPaymentDialogOpen(true); }}
+                                                        >
+                                                            Submit Confirmation
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                );
+                            })}
                         </div>
                     )}
                 </TabsContent>
