@@ -208,7 +208,54 @@ const ClientHome = ({ profile }: { profile: any }) => {
     }
   };
 
-  const statusLabel: Record<string, { text: string; cls: string }> = {
+  const fetchPendingInvoices = async () => {
+    const billingId = profile?.billing_sync_id;
+    if (!billingId) return;
+
+    try {
+      const { data: settings } = await supabase
+        .from("app_settings")
+        .select("key, value")
+        .in("key", ["billing_api_url", "billing_api_key", "billing_api_secret"]);
+
+      const creds: any = {};
+      (settings || []).forEach((s: any) => {
+        const val = typeof s.value === "string" ? s.value.replace(/^"|"$/g, "") : String(s.value);
+        if (s.key === "billing_api_url") creds.url = val;
+        if (s.key === "billing_api_key") creds.key = val;
+        if (s.key === "billing_api_secret") creds.secret = val;
+      });
+
+      const url = creds.url || localStorage.getItem("vaw_external_api_url") || "";
+      const key = creds.key || localStorage.getItem("vaw_external_api_key") || "";
+      const secret = creds.secret || localStorage.getItem("vaw_external_api_secret") || "";
+
+      if (!key || !secret || !url) return;
+
+      const res = await fetch(`${url}/invoices?limit=500`, {
+        headers: { "x-api-key": key, "x-api-secret": secret },
+      });
+
+      if (!res.ok) return;
+      const raw = await res.json();
+      const allInvoices = Array.isArray(raw) ? raw : raw?.data || [];
+
+      const matchId = billingId.toLowerCase();
+      const clientInvoices = allInvoices.filter((inv: any) => {
+        const code = String(inv.client_code || inv.client_id || inv.client_sync_id || inv.customer_id || "").toLowerCase();
+        return code === matchId;
+      });
+
+      const pending = clientInvoices.filter((inv: any) =>
+        ["draft", "sent", "overdue", "partially_paid", "partial", "unpaid", "pending"].includes(inv.status?.toLowerCase())
+      );
+
+      setPendingInvoices(pending);
+    } catch (err) {
+      console.error("Error fetching pending invoices:", err);
+    }
+  };
+
     planning: { text: "Planning", cls: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
     in_progress: { text: "In Progress", cls: "bg-primary/10 text-primary border-primary/20" },
     review: { text: "Review", cls: "bg-violet-500/10 text-violet-400 border-violet-500/20" },
