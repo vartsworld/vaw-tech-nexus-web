@@ -187,7 +187,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount || 0);
 
     const pendingInvoices = invoices.filter(inv =>
-        ['draft', 'sent', 'overdue', 'partially_paid', 'unpaid'].includes(inv.status?.toLowerCase())
+        ['draft', 'sent', 'overdue', 'partially_paid', 'partial', 'unpaid', 'pending'].includes(inv.status?.toLowerCase())
     );
     const paidInvoices = invoices.filter(inv =>
         ['paid', 'collected'].includes(inv.status?.toLowerCase())
