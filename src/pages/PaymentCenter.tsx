@@ -187,7 +187,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount || 0);
 
     const pendingInvoices = invoices.filter(inv =>
-        ['draft', 'sent', 'overdue', 'partially_paid', 'unpaid'].includes(inv.status?.toLowerCase())
+        ['draft', 'sent', 'overdue', 'partially_paid', 'partial', 'unpaid', 'pending'].includes(inv.status?.toLowerCase())
     );
     const paidInvoices = invoices.filter(inv =>
         ['paid', 'collected'].includes(inv.status?.toLowerCase())
@@ -457,8 +457,10 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
             sent: { bg: "bg-blue-500/20", text: "text-blue-400", label: "Sent" },
             draft: { bg: "bg-gray-500/20", text: "text-gray-400", label: "Draft" },
             overdue: { bg: "bg-red-500/20", text: "text-red-400", label: "Overdue" },
-            partially_paid: { bg: "bg-amber-500/20", text: "text-amber-400", label: "Partial" },
+            partially_paid: { bg: "bg-amber-500/20", text: "text-amber-400", label: "Partially Paid" },
+            partial: { bg: "bg-amber-500/20", text: "text-amber-400", label: "Partially Paid" },
             unpaid: { bg: "bg-orange-500/20", text: "text-orange-400", label: "Unpaid" },
+            pending: { bg: "bg-yellow-500/20", text: "text-yellow-400", label: "Pending" },
         };
         const s = map[status?.toLowerCase()] || { bg: "bg-gray-500/20", text: "text-gray-400", label: status || "Unknown" };
         return <Badge className={`${s.bg} ${s.text} border-0`}>{s.label}</Badge>;
@@ -611,7 +613,11 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                         <div className="grid gap-4">
                             {/* Billing API invoices */}
                             {pendingInvoices.map((inv, idx) => {
-                                const amount = Number(inv.balance) || Number(inv.total) || 0;
+                                const total = Number(inv.total) || 0;
+                                const balance = Number(inv.balance) || total;
+                                const amount = balance;
+                                const isPartial = inv.status?.toLowerCase() === 'partial' || inv.status?.toLowerCase() === 'partially_paid';
+                                const paidSoFar = isPartial ? total - balance : 0;
                                 const dueDate = inv.due_date || inv.date;
                                 const daysUntil = dueDate ? Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
                                 const isOverdue = daysUntil !== null && daysUntil < 0;
@@ -637,11 +643,19 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                             </div>
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-4 text-sm">
-                                                            <div className="flex items-center gap-2">
-                                                                <IndianRupee className="w-4 h-4 text-tech-gold" />
-                                                                <span className="text-2xl font-black text-tech-gold">
-                                                                    {Number(amount).toLocaleString('en-IN')}
-                                                                </span>
+                                                            <div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <IndianRupee className="w-4 h-4 text-tech-gold" />
+                                                                    <span className="text-2xl font-black text-tech-gold">
+                                                                        {Number(amount).toLocaleString('en-IN')}
+                                                                    </span>
+                                                                    {isPartial && <span className="text-xs text-gray-500">balance</span>}
+                                                                </div>
+                                                                {isPartial && (
+                                                                    <p className="text-xs text-gray-500 mt-1">
+                                                                        Paid: {formatCurrency(paidSoFar)} of {formatCurrency(total)}
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                             {dueDate && (
                                                                 <div className="flex items-center gap-2 text-gray-400">
@@ -650,6 +664,19 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                                 </div>
                                                             )}
                                                         </div>
+                                                        {isPartial && (
+                                                            <div className="mt-3">
+                                                                <div className="w-full bg-gray-800 rounded-full h-2">
+                                                                    <div
+                                                                        className="bg-amber-500 h-2 rounded-full transition-all"
+                                                                        style={{ width: `${Math.min((paidSoFar / (total || 1)) * 100, 100)}%` }}
+                                                                    />
+                                                                </div>
+                                                                <p className="text-[10px] text-amber-400/70 mt-1">
+                                                                    {Math.round((paidSoFar / (total || 1)) * 100)}% paid
+                                                                </p>
+                                                            </div>
+                                                        )}
                                                         {isOverdue && (
                                                             <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                                                                 <p className="text-xs text-red-400 flex items-center gap-2">
