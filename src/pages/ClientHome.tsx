@@ -256,6 +256,7 @@ const ClientHome = ({ profile }: { profile: any }) => {
     }
   };
 
+  const statusLabel: Record<string, { text: string; cls: string }> = {
     planning: { text: "Planning", cls: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
     in_progress: { text: "In Progress", cls: "bg-primary/10 text-primary border-primary/20" },
     review: { text: "Review", cls: "bg-violet-500/10 text-violet-400 border-violet-500/20" },
