@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { differenceInDays } from "date-fns";
 import {
   ArrowRight,
   Sparkles,
@@ -12,6 +13,8 @@ import {
   TrendingUp,
   Megaphone,
   Bot,
+  CreditCard,
+  IndianRupee,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -85,6 +88,7 @@ const stagger = {
 const ClientHome = ({ profile }: { profile: any }) => {
   const [projects, setProjects] = useState<any[]>([]);
   const [renewalItems, setRenewalItems] = useState<any[]>([]);
+  const [pendingInvoices, setPendingInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGreeting, setShowGreeting] = useState(false);
   const [showContent, setShowContent] = useState(false);
@@ -101,6 +105,7 @@ const ClientHome = ({ profile }: { profile: any }) => {
     if (profile?.id) {
       fetchProjects();
       fetchRenewals();
+      fetchPendingInvoices();
     }
   }, [profile]);
 
@@ -200,6 +205,54 @@ const ClientHome = ({ profile }: { profile: any }) => {
       setRenewalItems(withDates);
     } catch (err) {
       console.error("Error fetching recurring invoices:", err);
+    }
+  };
+
+  const fetchPendingInvoices = async () => {
+    const billingId = profile?.billing_sync_id;
+    if (!billingId) return;
+
+    try {
+      const { data: settings } = await supabase
+        .from("app_settings")
+        .select("key, value")
+        .in("key", ["billing_api_url", "billing_api_key", "billing_api_secret"]);
+
+      const creds: any = {};
+      (settings || []).forEach((s: any) => {
+        const val = typeof s.value === "string" ? s.value.replace(/^"|"$/g, "") : String(s.value);
+        if (s.key === "billing_api_url") creds.url = val;
+        if (s.key === "billing_api_key") creds.key = val;
+        if (s.key === "billing_api_secret") creds.secret = val;
+      });
+
+      const url = creds.url || localStorage.getItem("vaw_external_api_url") || "";
+      const key = creds.key || localStorage.getItem("vaw_external_api_key") || "";
+      const secret = creds.secret || localStorage.getItem("vaw_external_api_secret") || "";
+
+      if (!key || !secret || !url) return;
+
+      const res = await fetch(`${url}/invoices?limit=500`, {
+        headers: { "x-api-key": key, "x-api-secret": secret },
+      });
+
+      if (!res.ok) return;
+      const raw = await res.json();
+      const allInvoices = Array.isArray(raw) ? raw : raw?.data || [];
+
+      const matchId = billingId.toLowerCase();
+      const clientInvoices = allInvoices.filter((inv: any) => {
+        const code = String(inv.client_code || inv.client_id || inv.client_sync_id || inv.customer_id || "").toLowerCase();
+        return code === matchId;
+      });
+
+      const pending = clientInvoices.filter((inv: any) =>
+        ["draft", "sent", "overdue", "partially_paid", "partial", "unpaid", "pending"].includes(inv.status?.toLowerCase())
+      );
+
+      setPendingInvoices(pending);
+    } catch (err) {
+      console.error("Error fetching pending invoices:", err);
     }
   };
 
@@ -338,6 +391,114 @@ const ClientHome = ({ profile }: { profile: any }) => {
               </div>
             </motion.div>
           )}
+        </motion.section>
+      )}
+
+      {/* Pending Payments */}
+      {showContent && pendingInvoices.length > 0 && (
+        <motion.section
+          initial="hidden"
+          animate="visible"
+          variants={stagger}
+          className="space-y-6"
+        >
+          <motion.div variants={fadeUp} custom={0} className="flex items-center justify-between">
+            <h2 className="text-xs tracking-[0.2em] uppercase text-muted-foreground/60 font-medium">
+              Pending Payments
+            </h2>
+            <Button
+              variant="ghost"
+              className="text-xs text-muted-foreground/50 hover:text-primary h-auto p-0 font-normal"
+              onClick={() => (window.location.href = "/client/dashboard/financials")}
+            >
+              View all
+            </Button>
+          </motion.div>
+
+          <div className="space-y-3">
+            {pendingInvoices.slice(0, 3).map((inv: any, idx: number) => {
+              const total = Number(inv.total) || 0;
+              const balance = Number(inv.balance) || total;
+              const isPartial = inv.status?.toLowerCase() === "partial" || inv.status?.toLowerCase() === "partially_paid";
+              const paidSoFar = isPartial ? total - balance : 0;
+              const dueDate = inv.due_date || inv.date;
+              const daysUntil = dueDate ? differenceInDays(new Date(dueDate), new Date()) : null;
+              const isOverdue = daysUntil !== null && daysUntil < 0;
+
+              return (
+                <motion.div
+                  key={inv.id || idx}
+                  variants={fadeUp}
+                  custom={idx + 1}
+                  className="group cursor-pointer"
+                  onClick={() => (window.location.href = "/client/dashboard/financials")}
+                >
+                  <div className={cn(
+                    "p-5 rounded-2xl bg-card/40 border border-border/40 hover:border-border/80 hover:bg-card/60 transition-all duration-500",
+                    isOverdue && "border-destructive/30 bg-destructive/5"
+                  )}>
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-3.5 h-3.5 text-muted-foreground/50" />
+                          <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-300">
+                            {inv.invoice_number || "Invoice"}
+                          </h3>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[10px] font-normal border",
+                              isOverdue
+                                ? "bg-destructive/10 text-destructive border-destructive/20"
+                                : isPartial
+                                ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                            )}
+                          >
+                            {isOverdue ? "Overdue" : isPartial ? "Partially Paid" : "Pending"}
+                          </Badge>
+                        </div>
+                        {isPartial && (
+                          <p className="text-[10px] text-muted-foreground/40 font-light">
+                            Paid ₹{paidSoFar.toLocaleString("en-IN")} of ₹{total.toLocaleString("en-IN")}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right space-y-1">
+                        <p className="text-sm font-semibold text-primary">
+                          ₹{balance.toLocaleString("en-IN")}
+                        </p>
+                        {dueDate && (
+                          <p className={cn(
+                            "text-[10px] font-light",
+                            isOverdue ? "text-destructive" : "text-muted-foreground/40"
+                          )}>
+                            {isOverdue
+                              ? `${Math.abs(daysUntil!)}d overdue`
+                              : daysUntil === 0
+                              ? "Due today"
+                              : `Due ${new Date(dueDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {isPartial && (
+                      <div className="mt-3">
+                        <div className="h-1 w-full bg-muted/50 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min((paidSoFar / (total || 1)) * 100, 100)}%` }}
+                            transition={{ duration: 1.2, delay: 0.3 + idx * 0.1, ease: "easeOut" }}
+                            className="h-full bg-amber-500/60 rounded-full"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
         </motion.section>
       )}
 
