@@ -88,6 +88,17 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         enabled: !!profile?.id
     });
 
+    // Local invoices from client_documents
+    const { data: localDocuments = [] } = useRealtimeQuery({
+        queryKey: ['client-documents-invoices', profile?.id],
+        table: 'client_documents',
+        filter: `client_id=eq.${profile?.id}`,
+        enabled: !!profile?.id
+    });
+
+    // Local project balances
+    const [localProjects, setLocalProjects] = useState<any[]>([]);
+
     // Billing API data
     const [invoices, setInvoices] = useState<any[]>([]);
     const [payments, setPayments] = useState<any[]>([]);
