@@ -394,6 +394,114 @@ const ClientHome = ({ profile }: { profile: any }) => {
         </motion.section>
       )}
 
+      {/* Pending Payments */}
+      {showContent && pendingInvoices.length > 0 && (
+        <motion.section
+          initial="hidden"
+          animate="visible"
+          variants={stagger}
+          className="space-y-6"
+        >
+          <motion.div variants={fadeUp} custom={0} className="flex items-center justify-between">
+            <h2 className="text-xs tracking-[0.2em] uppercase text-muted-foreground/60 font-medium">
+              Pending Payments
+            </h2>
+            <Button
+              variant="ghost"
+              className="text-xs text-muted-foreground/50 hover:text-primary h-auto p-0 font-normal"
+              onClick={() => (window.location.href = "/client/dashboard/financials")}
+            >
+              View all
+            </Button>
+          </motion.div>
+
+          <div className="space-y-3">
+            {pendingInvoices.slice(0, 3).map((inv: any, idx: number) => {
+              const total = Number(inv.total) || 0;
+              const balance = Number(inv.balance) || total;
+              const isPartial = inv.status?.toLowerCase() === "partial" || inv.status?.toLowerCase() === "partially_paid";
+              const paidSoFar = isPartial ? total - balance : 0;
+              const dueDate = inv.due_date || inv.date;
+              const daysUntil = dueDate ? differenceInDays(new Date(dueDate), new Date()) : null;
+              const isOverdue = daysUntil !== null && daysUntil < 0;
+
+              return (
+                <motion.div
+                  key={inv.id || idx}
+                  variants={fadeUp}
+                  custom={idx + 1}
+                  className="group cursor-pointer"
+                  onClick={() => (window.location.href = "/client/dashboard/financials")}
+                >
+                  <div className={cn(
+                    "p-5 rounded-2xl bg-card/40 border border-border/40 hover:border-border/80 hover:bg-card/60 transition-all duration-500",
+                    isOverdue && "border-destructive/30 bg-destructive/5"
+                  )}>
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-3.5 h-3.5 text-muted-foreground/50" />
+                          <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-300">
+                            {inv.invoice_number || "Invoice"}
+                          </h3>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[10px] font-normal border",
+                              isOverdue
+                                ? "bg-destructive/10 text-destructive border-destructive/20"
+                                : isPartial
+                                ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                            )}
+                          >
+                            {isOverdue ? "Overdue" : isPartial ? "Partially Paid" : "Pending"}
+                          </Badge>
+                        </div>
+                        {isPartial && (
+                          <p className="text-[10px] text-muted-foreground/40 font-light">
+                            Paid ₹{paidSoFar.toLocaleString("en-IN")} of ₹{total.toLocaleString("en-IN")}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right space-y-1">
+                        <p className="text-sm font-semibold text-primary">
+                          ₹{balance.toLocaleString("en-IN")}
+                        </p>
+                        {dueDate && (
+                          <p className={cn(
+                            "text-[10px] font-light",
+                            isOverdue ? "text-destructive" : "text-muted-foreground/40"
+                          )}>
+                            {isOverdue
+                              ? `${Math.abs(daysUntil!)}d overdue`
+                              : daysUntil === 0
+                              ? "Due today"
+                              : `Due ${new Date(dueDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    {isPartial && (
+                      <div className="mt-3">
+                        <div className="h-1 w-full bg-muted/50 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min((paidSoFar / (total || 1)) * 100, 100)}%` }}
+                            transition={{ duration: 1.2, delay: 0.3 + idx * 0.1, ease: "easeOut" }}
+                            className="h-full bg-amber-500/60 rounded-full"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.section>
+      )}
+
       {/* Upcoming Renewals */}
       {showContent && (
         <motion.section
