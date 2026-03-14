@@ -457,8 +457,10 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
             sent: { bg: "bg-blue-500/20", text: "text-blue-400", label: "Sent" },
             draft: { bg: "bg-gray-500/20", text: "text-gray-400", label: "Draft" },
             overdue: { bg: "bg-red-500/20", text: "text-red-400", label: "Overdue" },
-            partially_paid: { bg: "bg-amber-500/20", text: "text-amber-400", label: "Partial" },
+            partially_paid: { bg: "bg-amber-500/20", text: "text-amber-400", label: "Partially Paid" },
+            partial: { bg: "bg-amber-500/20", text: "text-amber-400", label: "Partially Paid" },
             unpaid: { bg: "bg-orange-500/20", text: "text-orange-400", label: "Unpaid" },
+            pending: { bg: "bg-yellow-500/20", text: "text-yellow-400", label: "Pending" },
         };
         const s = map[status?.toLowerCase()] || { bg: "bg-gray-500/20", text: "text-gray-400", label: status || "Unknown" };
         return <Badge className={`${s.bg} ${s.text} border-0`}>{s.label}</Badge>;
