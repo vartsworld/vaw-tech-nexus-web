@@ -193,9 +193,29 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         ['paid', 'collected'].includes(inv.status?.toLowerCase())
     );
 
+    // Local pending invoices from client_documents
+    const pendingLocalDocs = (localDocuments as any[]).filter((doc: any) =>
+        doc.doc_type === 'invoice' && !['paid', 'signed'].includes(doc.status?.toLowerCase())
+    );
+
+    // Projects with outstanding balances
+    const pendingProjectBalances = localProjects.filter((proj: any) => {
+        const balance = (Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0);
+        return balance > 0;
+    });
+
     const totalPaid = payments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+    const localPaidDocs = (localDocuments as any[]).filter((doc: any) =>
+        doc.doc_type === 'invoice' && doc.status?.toLowerCase() === 'paid'
+    );
+    const totalLocalPaid = localPaidDocs.reduce((sum: number, doc: any) => sum + (Number(doc.amount) || 0), 0);
+
     const totalPending = pendingInvoices.reduce((sum: number, inv: any) =>
-        sum + (Number(inv.balance) || Number(inv.total) || 0), 0);
+        sum + (Number(inv.balance) || Number(inv.total) || 0), 0)
+        + pendingLocalDocs.reduce((sum: number, doc: any) => sum + (Number(doc.amount) || 0), 0)
+        + pendingProjectBalances.reduce((sum: number, proj: any) => sum + ((Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0)), 0);
+
+    const hasAnyPendingData = pendingInvoices.length > 0 || pendingLocalDocs.length > 0 || pendingProjectBalances.length > 0 || paymentReminders.filter((r: any) => r.status !== 'paid').length > 0;
 
     const downloadReceipt = async (record: any, type: 'payment' | 'invoice') => {
         // Check for shareable URL from API data
