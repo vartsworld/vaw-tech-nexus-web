@@ -498,13 +498,20 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
             </div>
 
             {/* Summary Cards */}
-            {billingConnected && !billingLoading && (
+            {!billingLoading && (totalPending > 0 || totalPaid > 0 || totalLocalPaid > 0 || invoices.length > 0 || pendingLocalDocs.length > 0 || pendingProjectBalances.length > 0) && (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     {(() => {
                         const activeRecs = recurringInvoices.filter((r: any) => r.status?.toLowerCase() !== 'paused' && r.status?.toLowerCase() !== 'stopped');
                         const nextRec = activeRecs.sort((a: any, b: any) => new Date(a.next_issue_date || a.next_invoice_date || '9999').getTime() - new Date(b.next_issue_date || b.next_invoice_date || '9999').getTime())[0];
                         const nextDate = nextRec?.next_issue_date || nextRec?.next_invoice_date;
                         const daysUntil = nextDate ? Math.ceil((new Date(nextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                        // Also check next_payment_date from projects
+                        const nextProjectPayment = pendingProjectBalances
+                            .filter((p: any) => p.next_payment_date)
+                            .sort((a: any, b: any) => new Date(a.next_payment_date).getTime() - new Date(b.next_payment_date).getTime())[0];
+                        const showNextDate = nextDate || nextProjectPayment?.next_payment_date;
+                        const showNextAmount = nextDate ? Number(nextRec?.total) || 0 : nextProjectPayment ? (Number(nextProjectPayment.total_amount) - Number(nextProjectPayment.amount_paid || 0)) : 0;
+                        const showDaysUntil = showNextDate ? Math.ceil((new Date(showNextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
                         return (
                             <Card className="bg-black/40 border-tech-gold/10">
                                 <CardContent className="p-4 flex items-center gap-3">
@@ -513,10 +520,10 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                     </div>
                                     <div>
                                         <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Next Billing</p>
-                                        {nextDate ? (
+                                        {showNextDate ? (
                                             <>
-                                                <p className="text-lg font-black text-violet-400">{formatCurrency(Number(nextRec.total) || 0)}</p>
-                                                <p className="text-[10px] text-gray-500">{new Date(nextDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • {daysUntil! > 0 ? `${daysUntil}d` : 'Due'}</p>
+                                                <p className="text-lg font-black text-violet-400">{formatCurrency(showNextAmount)}</p>
+                                                <p className="text-[10px] text-gray-500">{new Date(showNextDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • {showDaysUntil! > 0 ? `${showDaysUntil}d` : 'Due'}</p>
                                             </>
                                         ) : (
                                             <p className="text-sm text-gray-500">No upcoming</p>
@@ -544,7 +551,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                             </div>
                             <div>
                                 <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Invoices</p>
-                                <p className="text-lg font-black text-blue-400">{invoices.length}</p>
+                                <p className="text-lg font-black text-blue-400">{invoices.length + pendingLocalDocs.length + localPaidDocs.length}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -566,7 +573,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                             </div>
                             <div>
                                 <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Total Paid</p>
-                                <p className="text-lg font-black text-emerald-400">{formatCurrency(totalPaid)}</p>
+                                <p className="text-lg font-black text-emerald-400">{formatCurrency(totalPaid + totalLocalPaid)}</p>
                             </div>
                         </CardContent>
                     </Card>
