@@ -120,6 +120,28 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
 
     const fetchBillingData = async () => {
         setBillingLoading(true);
+
+        // Fetch local projects with outstanding balances
+        try {
+            // client_projects references clients table, find via profile's linked client
+            const { data: crmClients } = await supabase
+                .from('clients')
+                .select('id')
+                .eq('email', profile?.email);
+            
+            if (crmClients && crmClients.length > 0) {
+                const crmIds = crmClients.map(c => c.id);
+                const { data: projects } = await supabase
+                    .from('client_projects')
+                    .select('*')
+                    .in('client_id', crmIds);
+                setLocalProjects(projects || []);
+            }
+        } catch (e) {
+            console.error("Error fetching local projects:", e);
+        }
+
+        // Fetch billing API data if connected
         const creds = await loadApiCredentials();
         if (!creds || !billingId) {
             setBillingConnected(false);
@@ -147,7 +169,6 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                 parse(invRes), parse(payRes), parse(recRes)
             ]);
 
-            // Filter by client's billing_sync_id
             const matchId = billingId.toLowerCase();
             const filterByClient = (records: any[]) =>
                 records.filter(r => getClientCode(r).toLowerCase() === matchId);
