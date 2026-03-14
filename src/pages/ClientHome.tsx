@@ -182,7 +182,7 @@ const ClientHome = ({ profile }: { profile: any }) => {
       const withDates = clientRecurring
         .filter((r: any) => r.status?.toLowerCase() !== "paused" && r.status?.toLowerCase() !== "stopped")
         .map((r: any) => {
-          const nextDate = r.next_billing_date || r.next_invoice_date || r.next_date;
+          const nextDate = r.next_issue_date || r.next_billing_date || r.next_invoice_date || r.next_date || r.next_generation_date;
           let calculatedNext = nextDate;
 
           if (!calculatedNext) {
