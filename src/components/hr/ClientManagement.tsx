@@ -52,6 +52,7 @@ const ClientManagement = () => {
   const [isGeneratingBilling, setIsGeneratingBilling] = useState(false);
 
   const [editingClient, setEditingClient] = useState(null);
+  const [originalClientEmail, setOriginalClientEmail] = useState("");
   const [newClient, setNewClient] = useState({
     company_name: "",
     contact_person: "",
