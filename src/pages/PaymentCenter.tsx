@@ -599,7 +599,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                         <div className="flex justify-center py-12">
                             <Loader2 className="w-6 h-6 animate-spin text-tech-gold" />
                         </div>
-                    ) : pendingInvoices.length === 0 && paymentReminders.filter((r: any) => r.status !== 'paid').length === 0 ? (
+                    ) : !hasAnyPendingData ? (
                         <Card className="bg-black/20 border-tech-gold/10 border-dashed border-2">
                             <CardContent className="p-12 text-center">
                                 <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-emerald-500/30" />
