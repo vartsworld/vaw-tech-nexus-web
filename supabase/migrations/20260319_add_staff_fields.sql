@@ -8,20 +8,20 @@ ADD COLUMN IF NOT EXISTS staff_id_number TEXT;
 -- Create a unique constraint for staff_id_number
 CREATE UNIQUE INDEX IF NOT EXISTS idx_staff_profiles_staff_id_number ON staff_profiles(staff_id_number);
 
--- Function to auto-generate staff_id_number if it's null
+-- Function to auto-generate staff_id_number if it's null (6-digit numeric)
 CREATE OR REPLACE FUNCTION generate_staff_id_number()
 RETURNS TRIGGER AS $$
 DECLARE
     v_next_val INTEGER;
 BEGIN
     IF NEW.staff_id_number IS NULL THEN
-        -- Simple sequence-like generation (VAW-001, VAW-002, etc.)
-        SELECT COALESCE(MAX(SUBSTRING(staff_id_number FROM 5)::INTEGER), 0) + 1
+        -- Get the next sequential number starting from 100000
+        SELECT COALESCE(MAX(staff_id_number::INTEGER), 99999) + 1
         INTO v_next_val
         FROM staff_profiles
-        WHERE staff_id_number LIKE 'VAW-%';
+        WHERE staff_id_number ~ '^[0-9]+$';
         
-        NEW.staff_id_number := 'VAW-' || LPAD(v_next_val::TEXT, 3, '0');
+        NEW.staff_id_number := v_next_val::TEXT;
     END IF;
     RETURN NEW;
 END;

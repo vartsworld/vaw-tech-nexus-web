@@ -35,14 +35,17 @@ const StaffIDCard = () => {
   const fetchProfile = async () => {
     try {
       setLoading(true);
+      
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || "");
+      
       const { data, error } = await supabase
         .from('staff_profiles')
         .select(`
           *,
           departments:department_id(name)
         `)
-        .eq('id', id)
-        .single();
+        .filter(isUUID ? 'id' : 'staff_id_number', 'eq', id)
+        .maybeSingle();
 
       if (error) throw error;
       setProfile(data);

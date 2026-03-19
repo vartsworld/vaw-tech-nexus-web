@@ -691,7 +691,7 @@ const StaffManagement = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 min-w-[120px]">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -733,7 +733,7 @@ const StaffManagement = () => {
                         title="View ID Card"
                         className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                         onClick={() => {
-                          window.open(`/hr/staff/${member.id}/id-card`, '_blank');
+                          window.open(`/${member.staff_id_number || member.id}`, '_blank');
                         }}
                       >
                         <Contact2 className="h-4 w-4" />

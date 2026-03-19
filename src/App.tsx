@@ -103,7 +103,6 @@ const AppContent = () => {
           <Route path="/super-admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/hr/*" element={<HRDashboard />} />
-          <Route path="/hr/staff/:id/id-card" element={<StaffIDCard />} />
           <Route path="/staff/login" element={<StaffLogin />} />
           <Route path="/staff/dashboard" element={<StaffDashboard />} />
           <Route path="/team-head/dashboard" element={<TeamHeadDashboard />} />
@@ -125,6 +124,7 @@ const AppContent = () => {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/data-deletion" element={<DataDeletion />} />
+          <Route path="/:id" element={<StaffIDCard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
