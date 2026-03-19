@@ -17,7 +17,8 @@ import {
   List,
   LayoutDashboard,
   ArrowRight,
-  HandMetal
+  HandMetal,
+  Layers
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -65,7 +66,6 @@ const TasksManager = ({
   const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'handover'>('all');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const { toast } = useToast();
 
@@ -237,12 +237,42 @@ const TasksManager = ({
       </Badge>
     );
   };
+  const getStageBadge = (task: any) => {
+    const stage = task.current_stage || 1;
+    const names: Record<string, string> = (task.stage_names && typeof task.stage_names === 'object') ? task.stage_names : {};
+    const label = names[String(stage)] || `Stage ${stage}`;
+    return (
+      <Badge variant="outline" className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-[10px]">
+        <Layers className="h-3 w-3 mr-1" />
+        {label}
+      </Badge>
+    );
+  };
+
   const filteredTasks = tasks.filter(task => filter === 'all' || task.status === filter);
   const completedTasks = tasks.filter(t => t.status === 'completed').length;
   const totalTasks = tasks.length;
   const completionRate = totalTasks > 0 ? completedTasks / totalTasks * 100 : 0;
+  // If a task is selected, show inline detail view
+  if (selectedTask) {
+    return (
+      <TaskDetailDialog
+        task={selectedTask}
+        open={true}
+        onOpenChange={() => {}}
+        onStatusUpdate={(taskId, status) => {
+          updateTaskStatus(taskId, status);
+        }}
+        userId={userId}
+        mode="inline"
+        onBack={() => setSelectedTask(null)}
+        isTeamHead={!!userProfile?.is_department_head}
+      />
+    );
+  }
+
   return (
-    <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white overflow-hidden flex flex-col h-full">
+    <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white overflow-hidden flex flex-col min-h-[500px]">
       <CardHeader className="pb-4 space-y-4 flex-shrink-0">
         <div className="flex flex-row items-center justify-between">
           <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
@@ -349,15 +379,16 @@ const TasksManager = ({
                 <TableHeader className="bg-white/5">
                   <TableRow className="border-white/10 hover:bg-transparent">
                     <TableHead className="text-white/80 h-10 py-0">Task details</TableHead>
-                    <TableHead className="text-white/80 h-10 py-0">Priority</TableHead>
-                    <TableHead className="text-white/80 h-10 py-0">Status</TableHead>
+                     <TableHead className="text-white/80 h-10 py-0">Priority</TableHead>
+                     <TableHead className="text-white/80 h-10 py-0">Stage</TableHead>
+                     <TableHead className="text-white/80 h-10 py-0">Status</TableHead>
                     <TableHead className="text-white/80 h-10 py-0">Timeline</TableHead>
                     <TableHead className="text-white/80 h-10 py-0 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTasks.map((task) => (
-                    <TableRow key={task.id} className="border-white/10 hover:bg-white/5 transition-colors group">
+                    <TableRow key={task.id} className="border-white/10 hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => setSelectedTask(task)}>
                       <TableCell>
                         <div className="space-y-1">
                           <p className="font-medium text-white text-sm group-hover:text-blue-400 transition-colors">
@@ -371,6 +402,7 @@ const TasksManager = ({
                         </div>
                       </TableCell>
                       <TableCell>{getPriorityBadge(task.priority)}</TableCell>
+                      <TableCell>{getStageBadge(task)}</TableCell>
                       <TableCell>{getStatusBadge(task.status)}</TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-0.5">
@@ -391,9 +423,9 @@ const TasksManager = ({
                           size="sm"
                           variant="ghost"
                           className="h-8 w-8 p-0 text-white/50 hover:text-white"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setSelectedTask(task);
-                            setIsDialogOpen(true);
                           }}
                         >
                           <Eye className="w-4 h-4" />
@@ -409,7 +441,8 @@ const TasksManager = ({
               {filteredTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4 flex flex-col hover:bg-white/[0.08] hover:border-white/20 hover:translate-y-[-2px] transition-all duration-300 relative group"
+                  className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4 flex flex-col hover:bg-white/[0.08] hover:border-white/20 hover:translate-y-[-2px] transition-all duration-300 relative group cursor-pointer"
+                  onClick={() => setSelectedTask(task)}
                 >
                   <div className="flex justify-between items-start">
                     <div className="space-y-1 pr-8">
@@ -438,15 +471,18 @@ const TasksManager = ({
                         <Calendar className="h-3.5 w-3.5 text-blue-400" />
                         <span>{task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No due date'}</span>
                       </div>
-                      {getStatusBadge(task.status)}
+                      <div className="flex items-center gap-1.5">
+                        {getStageBadge(task)}
+                        {getStatusBadge(task.status)}
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">
                       <Button
                         className="flex-1 bg-blue-500 hover:bg-blue-600 text-white h-9 font-bold text-xs rounded-lg shadow-lg shadow-blue-500/20 transition-all border-none"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedTask(task);
-                          setIsDialogOpen(true);
                         }}
                       >
                         <Eye className="h-3.5 w-3.5 mr-2" />
@@ -456,7 +492,10 @@ const TasksManager = ({
                       {task.status === 'completed' && (
                         <Button
                           className="flex-1 bg-purple-500 hover:bg-purple-600 text-white h-9 font-bold text-xs rounded-lg shadow-lg shadow-purple-500/20 transition-all border-none"
-                          onClick={() => updateTaskStatus(task.id, 'handover')}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            updateTaskStatus(task.id, 'handover');
+                          }}
                           disabled={isLoading}
                         >
                           <ArrowRight className="h-3.5 w-3.5 mr-2" />
@@ -471,8 +510,6 @@ const TasksManager = ({
           )}
         </ScrollArea>
       </CardContent>
-
-      <TaskDetailDialog task={selectedTask} open={isDialogOpen} onOpenChange={setIsDialogOpen} onStatusUpdate={updateTaskStatus} userId={userId} />
     </Card>
   );
 };

@@ -143,12 +143,16 @@ const FinancialOversight = () => {
     const matchedRecurring = (externalStats?.recurring || []).filter(isMatched);
     const allExpenses = externalStats?.expenses || [];
 
-    // Calculations
+    // Calculations — avoid double-counting between invoices and payments
     const totalRevenue = matchedInvoices.reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
-    const totalCollected = matchedPayments.reduce((acc: number, p: any) => acc + Number(p.amount || 0), 0)
-        + matchedInvoices
-            .filter((inv: any) => inv.status === 'paid' || inv.status === 'collected')
-            .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
+    
+    // Use payments as source of truth for collected; fall back to paid invoices only if no payments exist
+    const paymentTotal = matchedPayments.reduce((acc: number, p: any) => acc + Number(p.amount || 0), 0);
+    const paidInvoiceTotal = matchedInvoices
+        .filter((inv: any) => inv.status === 'paid' || inv.status === 'collected')
+        .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
+    const totalCollected = paymentTotal > 0 ? paymentTotal : paidInvoiceTotal;
+    
     const totalExpenses = allExpenses.reduce((acc: number, e: any) => acc + Number(e.amount || 0), 0);
     const pendingCollection = Math.max(0, totalRevenue - totalCollected);
     const profitMargin = totalRevenue > 0 ? ((totalRevenue - totalExpenses) / totalRevenue * 100).toFixed(1) : '0';
@@ -188,7 +192,7 @@ const FinancialOversight = () => {
 
     // Client billing ranking
     const getClientRankings = () => {
-        const clientMap: Record<string, { id: string; name: string; paid: number; total: number }> = {};
+        const clientMap: Record<string, { id: string; name: string; paid: number; total: number; hasPayments: boolean }> = {};
 
         matchedInvoices.forEach((inv: any) => {
             const code = getClientCode(inv);
@@ -196,30 +200,67 @@ const FinancialOversight = () => {
             if (!internalClient) return;
 
             if (!clientMap[internalClient.id]) {
-                clientMap[internalClient.id] = { id: internalClient.id, name: internalClient.company_name, paid: 0, total: 0 };
+                clientMap[internalClient.id] = { id: internalClient.id, name: internalClient.company_name, paid: 0, total: 0, hasPayments: false };
             }
             const amount = Number(inv.amount || inv.total || 0);
             if (amount === 0) return;
 
-            if (inv.status === 'paid' || inv.status === 'collected') {
-                clientMap[internalClient.id].paid += amount;
-            }
             clientMap[internalClient.id].total += amount;
+            // Only count paid invoices if no explicit payment records exist for this client
+            if (inv.status === 'paid' || inv.status === 'collected') {
+                if (!clientMap[internalClient.id].hasPayments) {
+                    clientMap[internalClient.id].paid += amount;
+                }
+            }
         });
 
-        // Also add payments data
+        // Use payment records as source of truth when available (replaces paid invoice totals)
         matchedPayments.forEach((p: any) => {
             const code = getClientCode(p);
             const internalClient = syncIdToClient.get(code);
             if (!internalClient) return;
 
             if (!clientMap[internalClient.id]) {
-                clientMap[internalClient.id] = { id: internalClient.id, name: internalClient.company_name, paid: 0, total: 0 };
+                clientMap[internalClient.id] = { id: internalClient.id, name: internalClient.company_name, paid: 0, total: 0, hasPayments: false };
+            }
+            if (!clientMap[internalClient.id].hasPayments) {
+                // First payment record: reset paid from invoices and use payments instead
+                clientMap[internalClient.id].paid = 0;
+                clientMap[internalClient.id].hasPayments = true;
             }
             clientMap[internalClient.id].paid += Number(p.amount || 0);
         });
 
         return Object.values(clientMap).filter(c => c.total > 0).sort((a, b) => b.paid - a.paid);
+    };
+
+    // Calculate next invoice date from recurring invoice data
+    const calculateNextDate = (r: any): string | null => {
+        // Check explicit next date fields first
+        const explicit = r.next_date || r.next_due_date || r.next_invoice_date || r.due_date;
+        if (explicit) return explicit;
+
+        // Derive from created_at/start_date + frequency
+        const startDate = new Date(r.created_at || r.start_date || r.date || Date.now());
+        const freq = (r.frequency || r.interval || r.recurrence || 'monthly').toLowerCase();
+        const now = new Date();
+        let next = new Date(startDate);
+
+        // Advance until we find the next future date
+        const maxIterations = 120; // safety limit
+        let i = 0;
+        while (next <= now && i < maxIterations) {
+            if (freq === 'yearly' || freq === 'annual') {
+                next.setFullYear(next.getFullYear() + 1);
+            } else if (freq === 'quarterly') {
+                next.setMonth(next.getMonth() + 3);
+            } else {
+                next.setMonth(next.getMonth() + 1);
+            }
+            i++;
+        }
+
+        return next > now ? next.toISOString() : null;
     };
 
     // Upcoming recurring
@@ -231,9 +272,9 @@ const FinancialOversight = () => {
                 return {
                     ...r,
                     clientName: client?.company_name || code,
-                    nextDate: r.next_date || r.next_due_date || r.next_invoice_date || r.due_date || null,
+                    nextDate: calculateNextDate(r),
                     amount: Number(r.amount || r.total || 0),
-                    frequency: r.frequency || r.interval || r.recurrence || 'monthly'
+                    frequency: (r.frequency || r.interval || r.recurrence || 'monthly').toLowerCase()
                 };
             })
             .sort((a: any, b: any) => {
@@ -420,14 +461,14 @@ const FinancialOversight = () => {
                         </div>
                     </CardHeader>
                     <CardContent className="p-8 pt-0 space-y-4 max-h-[400px] overflow-y-auto">
-                        {upcomingRecurring.filter((r: any) => r.nextDate).length === 0 ? (
+                        {upcomingRecurring.filter((r: any) => r.nextDate && r.status !== 'paused').length === 0 ? (
                             <div className="text-center py-10">
                                 <CalendarClock className="w-8 h-8 text-gray-600 mx-auto mb-3" />
                                 <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">No upcoming payments scheduled</p>
                             </div>
                         ) : (
                             upcomingRecurring
-                                .filter((r: any) => r.nextDate)
+                                .filter((r: any) => r.nextDate && r.status !== 'paused')
                                 .map((r: any, i: number) => {
                                     const nextDate = new Date(r.nextDate);
                                     const daysUntil = Math.ceil((nextDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));

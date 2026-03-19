@@ -52,6 +52,7 @@ const ClientManagement = () => {
   const [isGeneratingBilling, setIsGeneratingBilling] = useState(false);
 
   const [editingClient, setEditingClient] = useState(null);
+  const [originalClientEmail, setOriginalClientEmail] = useState("");
   const [newClient, setNewClient] = useState({
     company_name: "",
     contact_person: "",
@@ -323,16 +324,55 @@ const ClientManagement = () => {
         throw error;
       }
 
+      // If email changed and client has a user_id, update auth email too
+      const emailChanged = originalClientEmail && editingClient.email && 
+        originalClientEmail.toLowerCase() !== editingClient.email.toLowerCase();
+      
+      if (emailChanged && editingClient.user_id) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const response = await supabase.functions.invoke('client-password', {
+            body: {
+              client_profile_id: editingClient.id,
+              email: editingClient.email,
+              action: 'update_email'
+            }
+          });
+
+          if (response.error) {
+            console.error('Auth email update error:', response.error);
+            toast({
+              title: "Warning",
+              description: "Client details updated but login email could not be synced. The client may need to use the old email to log in.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Success",
+              description: "Client updated and login email synced successfully.",
+            });
+          }
+        } catch (authEmailError) {
+          console.error('Auth email sync error:', authEmailError);
+          toast({
+            title: "Warning", 
+            description: "Client updated but login email sync failed.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Success",
+          description: "Client updated successfully.",
+        });
+      }
+
       // Refresh client list from database
       await fetchClients();
 
       setIsEditDialogOpen(false);
       setEditingClient(null);
-
-      toast({
-        title: "Success",
-        description: "Client updated successfully.",
-      });
+      setOriginalClientEmail("");
     } catch (error) {
       console.error('Error updating client:', error);
       toast({
@@ -777,6 +817,7 @@ const ClientManagement = () => {
                         size="sm"
                         onClick={() => {
                           setEditingClient(client);
+                          setOriginalClientEmail(client.email || "");
                           setIsEditDialogOpen(true);
                         }}
                       >

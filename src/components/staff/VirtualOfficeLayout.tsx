@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useNavigate } from "react-router-dom";
+import ChatPopout from "./ChatPopout";
 import {
   Monitor,
   Coffee,
@@ -16,7 +17,10 @@ import {
   Coins,
   Hash,
   Swords,
-  ArrowLeft
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  ExternalLink
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import TeamChat from "./TeamChat";
@@ -49,6 +53,10 @@ const VirtualOfficeLayout = ({
   const [sidebarTab, setSidebarTab] = useState<'status' | 'chat'>('status');
   const [mobileSidebarTab, setMobileSidebarTab] = useState<'status' | 'chat'>('status');
   const [chessArenaMode, setChessArenaMode] = useState(false);
+  const [roomsCollapsed, setRoomsCollapsed] = useState(false);
+  const [actionsCollapsed, setActionsCollapsed] = useState(false);
+  const [popoutChat, setPopoutChat] = useState(false);
+  const [popoutDM, setPopoutDM] = useState(false);
   const navigate = useNavigate();
   const mainContentRef = useRef<HTMLDivElement>(null);
 
@@ -117,36 +125,48 @@ const VirtualOfficeLayout = ({
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 overflow-hidden flex-shrink-0 z-20">
         <div className="p-6 pb-4 space-y-4 flex-shrink-0 overflow-y-auto">
-          {/* Room Navigation */}
+          {/* Room Navigation - Collapsible */}
           <div>
-            <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-              <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded"></div>
-              Office Rooms
-            </h3>
-            <div className="space-y-2">
-              {rooms.map((room) => {
-                const Icon = room.icon;
-                const isActive = currentRoom === room.id;
+            <button
+              onClick={() => setRoomsCollapsed(!roomsCollapsed)}
+              className="w-full flex items-center justify-between text-white font-semibold mb-2 hover:opacity-80 transition-opacity"
+            >
+              <span className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded"></div>
+                Office Rooms
+              </span>
+              {roomsCollapsed ? (
+                <ChevronRight className="w-4 h-4 text-white/50" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-white/50" />
+              )}
+            </button>
+            {!roomsCollapsed && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                {rooms.map((room) => {
+                  const Icon = room.icon;
+                  const isActive = currentRoom === room.id;
 
-                return (
-                  <Button
-                    key={room.id}
-                    variant="ghost"
-                    className={`w-full justify-start p-4 h-auto transition-all duration-300 ${isActive
-                      ? `bg-gradient-to-r ${room.color} text-white shadow-lg shadow-blue-500/25`
-                      : 'text-gray-300 hover:text-white hover:bg-white/10'
-                      }`}
-                    onClick={() => onRoomChange(room.id)}
-                  >
-                    <Icon className="w-5 h-5 mr-3" />
-                    <span className="font-medium">{room.name}</span>
-                    {isActive && (
-                      <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                    )}
-                  </Button>
-                );
-              })}
-            </div>
+                  return (
+                    <Button
+                      key={room.id}
+                      variant="ghost"
+                      className={`w-full justify-start p-4 h-auto transition-all duration-300 ${isActive
+                        ? `bg-gradient-to-r ${room.color} text-white shadow-lg shadow-blue-500/25`
+                        : 'text-gray-300 hover:text-white hover:bg-white/10'
+                        }`}
+                      onClick={() => onRoomChange(room.id)}
+                    >
+                      <Icon className="w-5 h-5 mr-3" />
+                      <span className="font-medium">{room.name}</span>
+                      {isActive && (
+                        <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                      )}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Quick Actions / Chess Arena Toggle */}
@@ -162,8 +182,8 @@ const VirtualOfficeLayout = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2 text-white/60 hover:text-white hover:bg-white/10"
-                    onClick={() => setChessArenaMode(false)}
+                    className="relative z-10 h-8 px-3 text-white/60 hover:text-white hover:bg-white/10"
+                    onClick={(e) => { e.stopPropagation(); setChessArenaMode(false); }}
                   >
                     <ArrowLeft className="w-3.5 h-3.5 mr-1" />
                     Back
@@ -178,8 +198,19 @@ const VirtualOfficeLayout = ({
             ) : (
               /* ── Normal Quick Actions ── */
               <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                <h3 className="text-white font-semibold mb-4">Quick Actions</h3>
-                <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setActionsCollapsed(!actionsCollapsed)}
+                  className="w-full flex items-center justify-between text-white font-semibold mb-2 hover:opacity-80 transition-opacity"
+                >
+                  <span>Quick Actions</span>
+                  {actionsCollapsed ? (
+                    <ChevronRight className="w-4 h-4 text-white/50" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-white/50" />
+                  )}
+                </button>
+                {!actionsCollapsed && (
+                <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
                   {/* Chess Arena Button */}
                   <Button
                     variant="outline"
@@ -245,6 +276,7 @@ const VirtualOfficeLayout = ({
                     </Dialog>
                   )}
                 </div>
+                )}
               </div>
             )}
           </div>
@@ -252,7 +284,7 @@ const VirtualOfficeLayout = ({
 
         {/* Team Status / Chat Toggle Section */}
         <div className="flex-1 flex flex-col min-h-0 border-t border-white/10">
-          <div className="flex flex-shrink-0">
+          <div className="flex flex-shrink-0 items-center">
             <button
               onClick={() => setSidebarTab('status')}
               className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${sidebarTab === 'status'
@@ -273,6 +305,22 @@ const VirtualOfficeLayout = ({
               <Hash className="w-4 h-4" />
               Team Chat
             </button>
+            {/* Pop-out button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 mx-1 text-white/40 hover:text-white hover:bg-white/10 flex-shrink-0"
+              title={sidebarTab === 'chat' ? 'Pop out Team Chat' : 'Pop out DM Chat'}
+              onClick={() => {
+                if (sidebarTab === 'chat') {
+                  setPopoutChat(true);
+                } else {
+                  setPopoutDM(true);
+                }
+              }}
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Button>
           </div>
           <div className="flex-1 overflow-hidden">
             {sidebarTab === 'status' ? (
@@ -300,6 +348,30 @@ const VirtualOfficeLayout = ({
         onOpenChat={() => setShowMobileChat(true)}
         onOpenCoins={() => navigate('/mycoins')}
       />
+
+      {/* Pop-out Team Chat */}
+      {popoutChat && userId && (
+        <ChatPopout
+          title="Team Chat"
+          icon={<Hash className="w-4 h-4 text-blue-400" />}
+          onClose={() => setPopoutChat(false)}
+        >
+          <TeamChat userId={userId} userProfile={userProfile} />
+        </ChatPopout>
+      )}
+
+      {/* Pop-out DM / Team Status */}
+      {popoutDM && (
+        <ChatPopout
+          title="Direct Messages"
+          icon={<MessageCircle className="w-4 h-4 text-green-400" />}
+          onClose={() => setPopoutDM(false)}
+        >
+          <div className="h-full overflow-y-auto p-4">
+            <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
+          </div>
+        </ChatPopout>
+      )}
     </div>
   );
 };

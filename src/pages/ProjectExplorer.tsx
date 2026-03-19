@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
     Card,
     CardContent,
@@ -57,6 +58,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const ProjectExplorer = ({ profile }: { profile: any }) => {
+    const { "*": projectIdParam } = useParams();
+    const navigate = useNavigate();
     const [projects, setProjects] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -70,6 +73,17 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
     useEffect(() => {
         fetchProjects();
     }, [profile]);
+
+    // Auto-select project from URL param
+    useEffect(() => {
+        if (projectIdParam && projects.length > 0) {
+            const match = projects.find(p => p.id === projectIdParam);
+            if (match) {
+                setSelectedProject(match);
+                setIsDetailView(true);
+            }
+        }
+    }, [projectIdParam, projects]);
 
     const fetchProjects = async () => {
         if (!profile?.id) return;
@@ -235,6 +249,7 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
                                     onClick={() => {
                                         setSelectedProject(project);
                                         setIsDetailView(true);
+                                        navigate(`/client/dashboard/projects/${project.id}`);
                                     }}
                                     className="cursor-pointer"
                                 >
@@ -338,6 +353,7 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
                     onBack={() => {
                         setIsDetailView(false);
                         setSelectedProject(null);
+                        navigate("/client/dashboard/projects");
                         fetchProjects();
                     }}
                     onUpload={(files) => handleFileUpload(selectedProject.id, files)}
@@ -642,7 +658,7 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                                                                                 </div>
                                                                                 <div className="flex flex-col">
                                                                                     <span className="text-xs font-black text-tech-gold uppercase">
-                                                                                        {task.current_stage ? `STAGE ${task.current_stage}` : 'STAGE NONE'}
+                                                                                        {task.current_stage ? (task.stage_names?.[String(task.current_stage)] || `STAGE ${task.current_stage}`) : 'STAGE NONE'}
                                                                                     </span>
                                                                                     <span className="text-[9px] font-bold text-white/40 leading-none mt-0.5 uppercase tracking-tight">
                                                                                         {task.staff_subtasks?.filter((s: any) => s.stage === task.current_stage).length || 0} subtasks

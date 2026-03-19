@@ -13,6 +13,7 @@ import {
   ArrowLeft, User, Plus, ChevronDown, Check, Paperclip, X, Loader2, Repeat,
   Flag, Calendar, Target, Layers, FileText, Sparkles
 } from "lucide-react";
+import CircularDateTimePicker from "./CircularDateTimePicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -39,7 +40,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
     client_id: "",
     department_id: "",
     status: "pending",
-    priority: "medium",
+    priority: "auto",
     due_date: "",
     due_time: "",
     trial_period: false,
@@ -50,6 +51,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
     recurrence_interval: 1,
     recurrence_end_date: "",
     current_stage: 1,
+    auto_stage: true,
   });
 
   const [newClient, setNewClient] = useState({
@@ -144,7 +146,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
         project_id: !newTask.project_id || newTask.project_id === "no-project" ? null : newTask.project_id,
         client_project_id: !newTask.project_id || newTask.project_id === "no-project" ? null : newTask.project_id,
         client_id: !newTask.client_id || newTask.client_id === "no-client" ? null : newTask.client_id,
-        priority: newTask.priority,
+        priority: newTask.priority === 'auto' ? getEffectivePriority() : newTask.priority,
         status: newTask.status,
         due_date: newTask.due_date || null,
         due_time: newTask.due_time || null,
@@ -187,11 +189,34 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
   };
 
   const priorityOptions = [
+    { value: 'auto', label: 'Auto', color: 'bg-violet-500/10 text-violet-400 border-violet-500/30', icon: '⏱' },
     { value: 'low', label: 'Low', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
     { value: 'medium', label: 'Medium', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
     { value: 'high', label: 'High', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30' },
     { value: 'urgent', label: 'Urgent', color: 'bg-red-500/10 text-red-400 border-red-500/30' },
   ];
+
+  // Auto-priority: update priority based on how close the deadline is
+  useEffect(() => {
+    if (newTask.priority !== 'auto' || !newTask.due_date) return;
+    const now = new Date();
+    const due = new Date(newTask.due_date + (newTask.due_time ? `T${newTask.due_time}` : 'T23:59:59'));
+    const hoursLeft = (due.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    let computed = 'low';
+    if (hoursLeft <= 0) computed = 'urgent';
+    else if (hoursLeft <= 24) computed = 'urgent';
+    else if (hoursLeft <= 72) computed = 'high';
+    else if (hoursLeft <= 168) computed = 'medium'; // 7 days
+    // else stays low
+
+    setNewTask(prev => ({ ...prev, _autoPriority: computed }));
+  }, [newTask.due_date, newTask.due_time, newTask.priority]);
+
+  const getEffectivePriority = () => {
+    if (newTask.priority === 'auto') return (newTask as any)._autoPriority || 'medium';
+    return newTask.priority;
+  };
 
   return (
     <div className="space-y-0 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -211,7 +236,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
         {/* Left Column - Main Form */}
         <div className="lg:col-span-2 space-y-6">
           {/* Title & Description Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-5">
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Task Title</Label>
               <Input
@@ -234,7 +259,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
           </div>
 
           {/* Assignment Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-5">
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
               <User className="h-4 w-4 text-primary" />
               Assignment
@@ -355,7 +380,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
           </div>
 
           {/* Recurring Task Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Repeat className="h-4 w-4 text-muted-foreground" />
@@ -400,7 +425,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
           </div>
 
           {/* Attachments Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-4">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
               Attachments
@@ -424,12 +449,22 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
               {newTask.attachments.length > 0 && (
                 <div className="space-y-2">
                   {newTask.attachments.map((att, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 text-sm">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="truncate">{att.title}</span>
-                      </div>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                    <div key={idx} className="flex items-center gap-2 p-3 bg-white/5 rounded-xl border border-white/10 text-sm">
+                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <Input
+                        value={att.title}
+                        onChange={(e) => {
+                          const copy = [...newTask.attachments];
+                          copy[idx] = { ...copy[idx], title: e.target.value };
+                          setNewTask({ ...newTask, attachments: copy });
+                        }}
+                        className="h-7 text-xs bg-transparent border-white/10 flex-1"
+                        placeholder="File name"
+                      />
+                      <span className="text-[10px] text-muted-foreground truncate max-w-[120px] flex-shrink-0">
+                        {att.file.name}
+                      </span>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive flex-shrink-0"
                         onClick={() => {
                           const copy = [...newTask.attachments];
                           copy.splice(idx, 1);
@@ -449,14 +484,30 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
         {/* Right Column - Sidebar */}
         <div className="space-y-6">
           {/* Task Config Card */}
-          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5 sticky top-4">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-5 sticky top-4">
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Task Details</h3>
 
             {/* Priority */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Priority</Label>
+              {/* Auto option - full width */}
+              <button
+                onClick={() => setNewTask({ ...newTask, priority: 'auto' })}
+                className={`w-full px-3 py-2 rounded-xl border text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+                  newTask.priority === 'auto'
+                    ? 'bg-violet-500/10 text-violet-400 border-violet-500/30 scale-[1.02]'
+                    : 'border-white/10 text-muted-foreground hover:border-white/20'
+                }`}
+              >
+                ⏱ Auto
+                {newTask.priority === 'auto' && newTask.due_date && (
+                  <span className="text-[10px] normal-case font-medium opacity-70">
+                    → {getEffectivePriority()}
+                  </span>
+                )}
+              </button>
               <div className="grid grid-cols-2 gap-2">
-                {priorityOptions.map(p => (
+                {priorityOptions.filter(p => p.value !== 'auto').map(p => (
                   <button
                     key={p.value}
                     onClick={() => setNewTask({ ...newTask, priority: p.value })}
@@ -494,34 +545,43 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
 
             {/* Stage */}
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Evolution Stage</Label>
-              <Input
-                type="number" min="1"
-                value={newTask.current_stage}
-                onChange={(e) => setNewTask({ ...newTask, current_stage: parseInt(e.target.value) || 1 })}
-                className="bg-transparent border-white/10 h-11"
-              />
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground">Evolution Stage</Label>
+                <button
+                  type="button"
+                  onClick={() => setNewTask({ ...newTask, auto_stage: !newTask.auto_stage })}
+                  className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border transition-all ${
+                    newTask.auto_stage
+                      ? 'bg-violet-500/15 text-violet-400 border-violet-500/30'
+                      : 'bg-white/5 text-muted-foreground border-white/10'
+                  }`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${newTask.auto_stage ? 'bg-violet-400 animate-pulse' : 'bg-muted-foreground'}`} />
+                  {newTask.auto_stage ? 'Auto' : 'Manual'}
+                </button>
+              </div>
+              {newTask.auto_stage ? (
+                <div className="flex items-center gap-2 h-11 px-3 rounded-xl border border-violet-500/20 bg-violet-500/5 text-xs text-violet-300">
+                  <span className="text-violet-400">⏱</span>
+                  Stage updates automatically based on subtask completion
+                </div>
+              ) : (
+                <Input
+                  type="number" min="1"
+                  value={newTask.current_stage}
+                  onChange={(e) => setNewTask({ ...newTask, current_stage: parseInt(e.target.value) || 1 })}
+                  className="bg-transparent border-white/10 h-11"
+                />
+              )}
             </div>
 
-            {/* Due Date & Time */}
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Calendar className="h-3 w-3" /> Due Date
-                </Label>
-                <Input type="date" value={newTask.due_date}
-                  onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-                  className="bg-transparent border-white/10 h-11"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Due Time</Label>
-                <Input type="time" value={newTask.due_time}
-                  onChange={(e) => setNewTask({ ...newTask, due_time: e.target.value })}
-                  className="bg-transparent border-white/10 h-11"
-                />
-              </div>
-            </div>
+            {/* Due Date & Time - Creative Circular Picker */}
+            <CircularDateTimePicker
+              date={newTask.due_date}
+              time={newTask.due_time}
+              onDateChange={(d) => setNewTask({ ...newTask, due_date: d })}
+              onTimeChange={(t) => setNewTask({ ...newTask, due_time: t })}
+            />
 
             {/* Actions */}
             <div className="space-y-3 pt-4 border-t border-white/10">

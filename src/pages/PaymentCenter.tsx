@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useState, useEffect, useCallback } from "react";
+import jsPDF from "jspdf";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
     CreditCard,
     Clock,
@@ -13,12 +14,15 @@ import {
     AlertCircle,
     Upload,
     Download,
-    ExternalLink,
     X,
     Loader2,
     IndianRupee,
     Calendar,
-    FileText
+    FileText,
+    RefreshCw,
+    Receipt,
+    TrendingUp,
+    Repeat
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -31,7 +35,52 @@ interface PaymentCenterProps {
     profile: any;
 }
 
+interface ApiCredentials {
+    url: string;
+    key: string;
+    secret: string;
+}
+
+const FALLBACK_URL = "https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/external-api";
+
+const loadApiCredentials = async (): Promise<ApiCredentials | null> => {
+    try {
+        const { data } = await supabase
+            .from('app_settings')
+            .select('key, value')
+            .in('key', ['billing_api_url', 'billing_api_key', 'billing_api_secret']);
+
+        const creds: any = {};
+        if (data && data.length > 0) {
+            data.forEach((s: any) => {
+                const val = typeof s.value === 'string' ? s.value.replace(/^"|"$/g, '') : String(s.value);
+                if (s.key === 'billing_api_url') creds.url = val;
+                if (s.key === 'billing_api_key') creds.key = val;
+                if (s.key === 'billing_api_secret') creds.secret = val;
+            });
+        }
+
+        const url = creds.url || localStorage.getItem('vaw_external_api_url') || '';
+        const key = creds.key || localStorage.getItem('vaw_external_api_key') || '';
+        const secret = creds.secret || localStorage.getItem('vaw_external_api_secret') || '';
+
+        if (!key || !secret) return null;
+        return { url: url || FALLBACK_URL, key, secret };
+    } catch {
+        const key = localStorage.getItem('vaw_external_api_key') || '';
+        const secret = localStorage.getItem('vaw_external_api_secret') || '';
+        if (!key || !secret) return null;
+        return { url: localStorage.getItem('vaw_external_api_url') || FALLBACK_URL, key, secret };
+    }
+};
+
+const getClientCode = (record: any): string =>
+    String(record.client_code || record.client_id || record.client_sync_id || record.customer_id || '');
+
 const PaymentCenter = ({ profile }: PaymentCenterProps) => {
+    const billingId = profile?.billing_sync_id;
+
+    // Local payment reminders (fallback)
     const { data: paymentReminders = [] } = useRealtimeQuery({
         queryKey: ['payment-reminders', profile?.id],
         table: 'payment_reminders',
@@ -39,14 +88,25 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         enabled: !!profile?.id
     });
 
-    const { data: paymentHistory = [] } = useRealtimeQuery({
-        queryKey: ['payment-history', profile?.id],
+    // Local invoices from client_documents
+    const { data: localDocuments = [] } = useRealtimeQuery({
+        queryKey: ['client-documents-invoices', profile?.id],
         table: 'client_documents',
-        filter: `client_id=eq.${profile?.id}`, // Note: in real app might need or for crmId
+        filter: `client_id=eq.${profile?.id}`,
         enabled: !!profile?.id
     });
 
-    const loading = !profile;
+    // Local project balances
+    const [localProjects, setLocalProjects] = useState<any[]>([]);
+
+    // Billing API data
+    const [invoices, setInvoices] = useState<any[]>([]);
+    const [payments, setPayments] = useState<any[]>([]);
+    const [recurringInvoices, setRecurringInvoices] = useState<any[]>([]);
+    const [billingLoading, setBillingLoading] = useState(true);
+    const [billingConnected, setBillingConnected] = useState(false);
+
+    // Payment confirmation state
     const [selectedReminder, setSelectedReminder] = useState<any>(null);
     const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
     const [screenshot, setScreenshot] = useState<File | null>(null);
@@ -54,170 +114,359 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
     const [transactionId, setTransactionId] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
-    const generateUPILink = (reminder: any) => {
-        // UPI payment link format
-        // upi://pay?pa=merchant@upi&pn=MerchantName&am=amount&cu=INR&tn=description
-        const upiId = "vaw@paytm"; // Replace with your actual UPI ID
-        const merchantName = "VAW Technologies";
-        const amount = reminder.amount;
-        const transactionNote = `Payment for ${reminder.title}`;
+    useEffect(() => {
+        if (profile?.id) fetchBillingData();
+    }, [profile?.id, billingId]);
 
-        return `upi://pay?pa=${upiId}&pn=${encodeURIComponent(merchantName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
+    const fetchBillingData = async () => {
+        setBillingLoading(true);
+
+        // Fetch local projects with outstanding balances
+        try {
+            // client_projects references clients table, find via profile's linked client
+            const { data: crmClients } = await supabase
+                .from('clients')
+                .select('id')
+                .eq('email', profile?.email);
+            
+            if (crmClients && crmClients.length > 0) {
+                const crmIds = crmClients.map(c => c.id);
+                const { data: projects } = await supabase
+                    .from('client_projects')
+                    .select('*')
+                    .in('client_id', crmIds);
+                setLocalProjects(projects || []);
+            }
+        } catch (e) {
+            console.error("Error fetching local projects:", e);
+        }
+
+        // Fetch billing API data if connected
+        const creds = await loadApiCredentials();
+        if (!creds || !billingId) {
+            setBillingConnected(false);
+            setBillingLoading(false);
+            return;
+        }
+
+        setBillingConnected(true);
+        const headers = { 'x-api-key': creds.key, 'x-api-secret': creds.secret };
+
+        try {
+            const parse = async (res: Response) => {
+                if (!res.ok) return [];
+                const raw = await res.json();
+                return Array.isArray(raw) ? raw : (raw?.data || []);
+            };
+
+            const [invRes, payRes, recRes] = await Promise.all([
+                fetch(`${creds.url}/invoices?limit=500`, { headers }),
+                fetch(`${creds.url}/payments?limit=500`, { headers }),
+                fetch(`${creds.url}/recurring-invoices?limit=500`, { headers }),
+            ]);
+
+            const [allInvoices, allPayments, allRecurring] = await Promise.all([
+                parse(invRes), parse(payRes), parse(recRes)
+            ]);
+
+            const matchId = billingId.toLowerCase();
+            const filterByClient = (records: any[]) =>
+                records.filter(r => getClientCode(r).toLowerCase() === matchId);
+
+            setInvoices(filterByClient(allInvoices));
+            setPayments(filterByClient(allPayments));
+            setRecurringInvoices(filterByClient(allRecurring));
+        } catch (err) {
+            console.error("Billing API fetch error:", err);
+        } finally {
+            setBillingLoading(false);
+        }
+    };
+
+    const formatCurrency = (amount: number) =>
+        new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount || 0);
+
+    const pendingInvoices = invoices.filter(inv =>
+        ['draft', 'sent', 'overdue', 'partially_paid', 'partial', 'unpaid', 'pending'].includes(inv.status?.toLowerCase())
+    );
+    const paidInvoices = invoices.filter(inv =>
+        ['paid', 'collected'].includes(inv.status?.toLowerCase())
+    );
+
+    // Local pending invoices from client_documents
+    const pendingLocalDocs = (localDocuments as any[]).filter((doc: any) =>
+        doc.doc_type === 'invoice' && !['paid', 'signed'].includes(doc.status?.toLowerCase())
+    );
+
+    // Projects with outstanding balances
+    const pendingProjectBalances = localProjects.filter((proj: any) => {
+        const balance = (Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0);
+        return balance > 0;
+    });
+
+    const totalPaid = payments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+    const localPaidDocs = (localDocuments as any[]).filter((doc: any) =>
+        doc.doc_type === 'invoice' && doc.status?.toLowerCase() === 'paid'
+    );
+    const totalLocalPaid = localPaidDocs.reduce((sum: number, doc: any) => sum + (Number(doc.amount) || 0), 0);
+
+    const totalPending = pendingInvoices.reduce((sum: number, inv: any) =>
+        sum + (Number(inv.balance) || Number(inv.total) || 0), 0)
+        + pendingLocalDocs.reduce((sum: number, doc: any) => sum + (Number(doc.amount) || 0), 0)
+        + pendingProjectBalances.reduce((sum: number, proj: any) => sum + ((Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0)), 0);
+
+    const hasAnyPendingData = pendingInvoices.length > 0 || pendingLocalDocs.length > 0 || pendingProjectBalances.length > 0 || paymentReminders.filter((r: any) => r.status !== 'paid').length > 0;
+
+    const downloadReceipt = async (record: any, type: 'payment' | 'invoice') => {
+        // Check for shareable URL from API data
+        const shareUrl = record.invoice_url || record.file_url || record.url || record.receipt_url || record.pdf_url || record.share_url || null;
+        
+        if (shareUrl) {
+            window.open(shareUrl, '_blank', 'noopener,noreferrer');
+            toast.success(`${type === 'payment' ? 'Receipt' : 'Invoice'} opened`);
+            return;
+        }
+
+        // Fallback: generate PDF locally
+        const clientName = profile?.company_name || profile?.contact_person || 'Client';
+        const clientEmail = profile?.email || '';
+        const clientPhone = profile?.phone || '';
+        const date = record.payment_date || record.date || record.issue_date || new Date().toISOString();
+        const amount = Number(record.amount || record.total || 0);
+        const ref = record.receipt_number || record.reference_number || record.invoice_number || record.payment_number || `${type.toUpperCase()}-${Date.now()}`;
+        const method = record.payment_method || record.payment_mode || 'N/A';
+        const status = record.payment_status || record.status || 'completed';
+        const dueDate = record.due_date || '';
+        const invoiceNum = record.invoice_number || ref;
+        const notes = record.notes || record.terms || '';
+        const formatINR = (val: number) => `Rs. ${val.toLocaleString('en-IN')}`;
+
+        const doc = new jsPDF();
+        const pw = doc.internal.pageSize.getWidth();
+        const ph = doc.internal.pageSize.getHeight();
+        const gold: [number, number, number] = [212, 175, 55];
+        const dark: [number, number, number] = [20, 20, 20];
+        const midDark: [number, number, number] = [40, 40, 40];
+        const gray: [number, number, number] = [140, 140, 140];
+        const white: [number, number, number] = [255, 255, 255];
+        const margin = 20;
+
+        doc.setFillColor(...dark);
+        doc.rect(0, 0, pw, ph, 'F');
+        doc.setFillColor(...gold);
+        doc.rect(0, 0, pw, 5, 'F');
+
+        try {
+            const logoImg = new Image();
+            logoImg.crossOrigin = 'anonymous';
+            await new Promise<void>((resolve) => {
+                logoImg.onload = () => resolve();
+                logoImg.onerror = () => resolve();
+                logoImg.src = '/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png';
+            });
+            if (logoImg.complete && logoImg.naturalWidth > 0) {
+                doc.addImage(logoImg, 'PNG', margin, 14, 24, 24);
+            }
+        } catch {}
+
+        doc.setTextColor(...white);
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text('VAW TECHNOLOGIES', margin + 30, 25);
+        doc.setFontSize(8);
+        doc.setTextColor(...gray);
+        doc.setFont('helvetica', 'normal');
+        doc.text('PRIVATE LIMITED', margin + 30, 31);
+        doc.text('Digital Solutions & Software Development', margin + 30, 36);
+
+        const badgeLabel = type === 'payment' ? 'PAYMENT RECEIPT' : 'INVOICE';
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        const bw = doc.getTextWidth(badgeLabel) + 20;
+        const bx = pw - margin - bw;
+        doc.setFillColor(...gold);
+        doc.roundedRect(bx, 16, bw, 12, 3, 3, 'F');
+        doc.setTextColor(...dark);
+        doc.text(badgeLabel, bx + 10, 24);
+
+        let y = 48;
+        doc.setDrawColor(...gold);
+        doc.setLineWidth(0.8);
+        doc.line(margin, y, pw - margin, y);
+        y += 14;
+
+        doc.setTextColor(...gray);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text('BILL TO', margin, y);
+        y += 7;
+        doc.setTextColor(...white);
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text(clientName, margin, y);
+        y += 6;
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...gray);
+        if (clientEmail) { doc.text(clientEmail, margin, y); y += 5; }
+        if (clientPhone) { doc.text(clientPhone, margin, y); y += 5; }
+
+        const colRight = pw - margin;
+        const colLabel = pw - margin - 55;
+        let ry = 62;
+        const lineH = 7;
+        const putDetail = (label: string, value: string) => {
+            doc.setTextColor(...gray);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text(label, colLabel, ry);
+            doc.setTextColor(...white);
+            doc.setFont('helvetica', 'bold');
+            doc.text(value, colRight, ry, { align: 'right' });
+            ry += lineH;
+        };
+        putDetail(type === 'payment' ? 'Receipt #' : 'Invoice #', ref);
+        putDetail('Date', new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }));
+        if (dueDate) putDetail('Due Date', new Date(dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }));
+        if (type === 'payment') putDetail('Method', method.toUpperCase());
+        putDetail('Status', status.toUpperCase());
+
+        y = Math.max(y, ry) + 14;
+
+        const boxH = 34;
+        doc.setFillColor(...midDark);
+        doc.roundedRect(margin, y, pw - margin * 2, boxH, 4, 4, 'F');
+        doc.setDrawColor(...gold);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(margin, y, pw - margin * 2, boxH, 4, 4, 'S');
+        doc.setTextColor(...gray);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('AMOUNT', margin + 10, y + 14);
+        doc.setTextColor(...gold);
+        doc.setFontSize(28);
+        doc.setFont('helvetica', 'bold');
+        doc.text(formatINR(amount), pw - margin - 10, y + 23, { align: 'right' });
+        y += boxH + 14;
+
+        if (type === 'payment' && invoiceNum) {
+            doc.setTextColor(...gray);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Invoice Reference: ' + invoiceNum, margin, y);
+            y += 12;
+        }
+
+        if (notes) {
+            doc.setTextColor(...gray);
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.text('NOTES / TERMS', margin, y);
+            y += 7;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            const wrapped = doc.splitTextToSize(notes.replace(/\n/g, ' | '), pw - margin * 2);
+            doc.text(wrapped, margin, y);
+            y += wrapped.length * 5 + 8;
+        }
+
+        const fy = ph - 32;
+        doc.setDrawColor(60, 60, 60);
+        doc.setLineWidth(0.3);
+        doc.line(margin, fy, pw - margin, fy);
+        doc.setTextColor(...gray);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Thank you for your business!', pw / 2, fy + 8, { align: 'center' });
+        doc.text('VAW Technologies Pvt Ltd  |  support@vawtech.com  |  vawtech.com', pw / 2, fy + 14, { align: 'center' });
+        doc.text('Any legal concerns or disputes will be addressed at Kollam court', pw / 2, fy + 20, { align: 'center' });
+        doc.setFillColor(...gold);
+        doc.rect(0, ph - 5, pw, 5, 'F');
+
+        doc.save(`${ref}_${new Date(date).toISOString().split('T')[0]}.pdf`);
+        toast.success(`${type === 'payment' ? 'Receipt' : 'Invoice'} PDF downloaded`);
+    };
+
+    // Payment confirmation handlers
+    const generateUPILink = (reminder: any) => {
+        const upiId = "vaw@paytm";
+        const amount = reminder.amount || reminder.total || reminder.balance;
+        const transactionNote = `Payment for ${reminder.title || reminder.invoice_number || 'Invoice'}`;
+        return `upi://pay?pa=${upiId}&pn=${encodeURIComponent("VAW Technologies")}&am=${amount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`;
     };
 
     const handlePayNow = (reminder: any) => {
         setSelectedReminder(reminder);
-        const upiLink = generateUPILink(reminder);
-
-        // Open UPI app
-        window.location.href = upiLink;
-
-        // Open payment confirmation dialog after a brief delay
-        setTimeout(() => {
-            setPaymentDialogOpen(true);
-        }, 1000);
+        window.location.href = generateUPILink(reminder);
+        setTimeout(() => setPaymentDialogOpen(true), 1000);
     };
 
     const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                toast.error("Screenshot must be less than 5MB");
-                return;
-            }
+            if (file.size > 5 * 1024 * 1024) { toast.error("Screenshot must be less than 5MB"); return; }
             setScreenshot(file);
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setScreenshotPreview(reader.result as string);
-            };
+            reader.onloadend = () => setScreenshotPreview(reader.result as string);
             reader.readAsDataURL(file);
         }
     };
 
     const handleSubmitPayment = async () => {
-        if (!screenshot || !transactionId.trim()) {
-            toast.error("Please upload screenshot and enter transaction ID");
-            return;
-        }
-
+        if (!screenshot || !transactionId.trim()) { toast.error("Please upload screenshot and enter transaction ID"); return; }
         if (!selectedReminder) return;
-
         setSubmitting(true);
-
         try {
-            // Upload screenshot
             const fileExt = screenshot.name.split('.').pop();
             const fileName = `${profile.id}/payments/${Date.now()}.${fileExt}`;
-
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('payment-confirmations')
-                .upload(fileName, screenshot);
-
+            const { error: uploadError } = await supabase.storage.from('payment-confirmations').upload(fileName, screenshot);
             if (uploadError) throw uploadError;
+            const { data: urlData } = supabase.storage.from('payment-confirmations').getPublicUrl(fileName);
 
-            const { data: urlData } = supabase.storage
-                .from('payment-confirmations')
-                .getPublicUrl(fileName);
+            const amount = selectedReminder.amount || selectedReminder.total || selectedReminder.balance;
+            const title = selectedReminder.title || selectedReminder.invoice_number || 'Invoice Payment';
 
-            // Create payment confirmation record
-            const { error: insertError } = await supabase
-                .from('client_documents')
-                .insert({
-                    client_id: profile.id,
-                    title: `Payment Confirmation - ${selectedReminder.title}`,
-                    file_url: urlData.publicUrl,
-                    doc_type: 'payment_confirmation',
-                    amount: selectedReminder.amount,
-                    status: 'pending_verification',
-                    metadata: { transaction_id: transactionId }
-                });
+            await supabase.from('client_documents').insert({
+                client_id: profile.id, title: `Payment Confirmation - ${title}`,
+                file_url: urlData.publicUrl, doc_type: 'payment_confirmation',
+                amount, status: 'pending_verification'
+            });
 
-            if (insertError) throw insertError;
-
-            // Update the payment reminder status
-            const { error: updateError } = await supabase
-                .from('payment_reminders')
-                .update({ status: 'confirmation_submitted' })
-                .eq('id', selectedReminder.id);
-
-            if (updateError) {
-                console.error("Warning: Failed to update reminder status:", updateError);
-                // We don't throw here as the main document was already inserted
+            if (selectedReminder.id && !selectedReminder.invoice_number) {
+                await supabase.from('payment_reminders').update({ status: 'confirmation_submitted' }).eq('id', selectedReminder.id);
             }
 
-            // Create notification for admin
-            await supabase
-                .from('client_notifications')
-                .insert({
-                    client_id: null, // For admin
-                    title: 'Payment Confirmation Received',
-                    message: `${profile.company_name} submitted payment confirmation for ${selectedReminder.title}. Transaction ID: ${transactionId}`,
-                    type: 'payment_confirmation',
-                    category: 'payment',
-                    priority: 'high',
-                    is_read: false
-                });
+            await supabase.from('client_notifications').insert({
+                client_id: null, title: 'Payment Confirmation Received',
+                message: `${profile.company_name} submitted payment confirmation for ${title}. Transaction ID: ${transactionId}`,
+                type: 'payment_confirmation', category: 'payment', priority: 'high', is_read: false
+            });
 
-            // Sync to billing software if client is linked
-            if (profile.billing_sync_id) {
-                await syncFinancialEntryToBilling({
-                    amount: selectedReminder.amount,
-                    title: selectedReminder.title,
-                    doc_type: 'payment_confirmation',
-                    status: 'pending_verification',
-                    metadata: { transaction_id: transactionId },
-                    created_at: new Date().toISOString()
-                }, profile.billing_sync_id);
-            }
-
-            toast.success("Payment confirmation submitted! We'll verify it shortly.");
-
-            // Reset form
-            setScreenshot(null);
-            setScreenshotPreview("");
-            setTransactionId("");
-            setPaymentDialogOpen(false);
-            setSelectedReminder(null);
-
+            toast.success("Payment confirmation submitted!");
+            setScreenshot(null); setScreenshotPreview(""); setTransactionId("");
+            setPaymentDialogOpen(false); setSelectedReminder(null);
         } catch (error: any) {
-            console.error("Error submitting payment:", error);
             toast.error(error.message || "Failed to submit payment confirmation");
-        } finally {
-            setSubmitting(false);
-        }
+        } finally { setSubmitting(false); }
     };
 
-    const getStatusBadge = (status: string, dueDate?: string) => {
-        if (status === 'paid') {
-            return <Badge className="bg-green-500/20 text-green-400 border-0">Paid</Badge>;
-        }
-
-        if (status === 'confirmation_submitted') {
-            return <Badge className="bg-blue-500/20 text-blue-400 border-0">Verifying...</Badge>;
-        }
-
-        if (dueDate) {
-            const due = new Date(dueDate);
-            const today = new Date();
-            const daysUntil = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-            if (daysUntil < 0) {
-                return <Badge className="bg-red-500/20 text-red-400 border-0">Overdue</Badge>;
-            } else if (daysUntil === 0) {
-                return <Badge className="bg-orange-500/20 text-orange-400 border-0">Due Today</Badge>;
-            } else if (daysUntil <= 3) {
-                return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Due Soon</Badge>;
-            }
-        }
-
-        return <Badge className="bg-blue-500/20 text-blue-400 border-0">Pending</Badge>;
+    const getInvoiceStatusBadge = (status: string) => {
+        const map: Record<string, { bg: string; text: string; label: string }> = {
+            paid: { bg: "bg-emerald-500/20", text: "text-emerald-400", label: "Paid" },
+            collected: { bg: "bg-emerald-500/20", text: "text-emerald-400", label: "Collected" },
+            sent: { bg: "bg-blue-500/20", text: "text-blue-400", label: "Sent" },
+            draft: { bg: "bg-gray-500/20", text: "text-gray-400", label: "Draft" },
+            overdue: { bg: "bg-red-500/20", text: "text-red-400", label: "Overdue" },
+            partially_paid: { bg: "bg-amber-500/20", text: "text-amber-400", label: "Partially Paid" },
+            partial: { bg: "bg-amber-500/20", text: "text-amber-400", label: "Partially Paid" },
+            unpaid: { bg: "bg-orange-500/20", text: "text-orange-400", label: "Unpaid" },
+            pending: { bg: "bg-yellow-500/20", text: "text-yellow-400", label: "Pending" },
+        };
+        const s = map[status?.toLowerCase()] || { bg: "bg-gray-500/20", text: "text-gray-400", label: status || "Unknown" };
+        return <Badge className={`${s.bg} ${s.text} border-0`}>{s.label}</Badge>;
     };
 
-    const getDaysUntilDue = (dueDate: string) => {
-        const due = new Date(dueDate);
-        const today = new Date();
-        return Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    };
+    const loading = !profile;
 
     if (loading) {
         return (
@@ -230,69 +479,264 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
     return (
         <div className="space-y-6 pb-12">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-black tracking-tight text-white mb-2">
-                    PAYMENT <span className="text-tech-gold">CENTER</span>
-                </h1>
-                <p className="text-gray-400 font-medium">Manage your payments and invoices</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-black tracking-tight text-white mb-2">
+                        PAYMENT <span className="text-tech-gold">CENTER</span>
+                    </h1>
+                    <p className="text-gray-400 font-medium">Manage your payments and invoices</p>
+                </div>
+                {billingConnected && (
+                    <Button
+                        variant="outline"
+                        className="border-tech-gold/20 text-tech-gold hover:bg-tech-gold/10 gap-2"
+                        onClick={fetchBillingData}
+                        disabled={billingLoading}
+                    >
+                        <RefreshCw className={cn("w-4 h-4", billingLoading && "animate-spin")} />
+                        Sync
+                    </Button>
+                )}
             </div>
+
+            {/* Summary Cards */}
+            {!billingLoading && (totalPending > 0 || totalPaid > 0 || totalLocalPaid > 0 || invoices.length > 0 || pendingLocalDocs.length > 0 || pendingProjectBalances.length > 0) && (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    {(() => {
+                        const activeRecs = recurringInvoices.filter((r: any) => r.status?.toLowerCase() !== 'paused' && r.status?.toLowerCase() !== 'stopped');
+                        const nextRec = activeRecs.sort((a: any, b: any) => new Date(a.next_issue_date || a.next_invoice_date || '9999').getTime() - new Date(b.next_issue_date || b.next_invoice_date || '9999').getTime())[0];
+                        const nextDate = nextRec?.next_issue_date || nextRec?.next_invoice_date;
+                        const daysUntil = nextDate ? Math.ceil((new Date(nextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                        // Also check next_payment_date from projects
+                        const nextProjectPayment = pendingProjectBalances
+                            .filter((p: any) => p.next_payment_date)
+                            .sort((a: any, b: any) => new Date(a.next_payment_date).getTime() - new Date(b.next_payment_date).getTime())[0];
+                        const showNextDate = nextDate || nextProjectPayment?.next_payment_date;
+                        const showNextAmount = nextDate ? Number(nextRec?.total) || 0 : nextProjectPayment ? (Number(nextProjectPayment.total_amount) - Number(nextProjectPayment.amount_paid || 0)) : 0;
+                        const showDaysUntil = showNextDate ? Math.ceil((new Date(showNextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                        return (
+                            <Card className="bg-black/40 border-tech-gold/10">
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="p-2.5 bg-violet-500/10 rounded-xl">
+                                        <Calendar className="w-5 h-5 text-violet-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Next Billing</p>
+                                        {showNextDate ? (
+                                            <>
+                                                <p className="text-lg font-black text-violet-400">{formatCurrency(showNextAmount)}</p>
+                                                <p className="text-[10px] text-gray-500">{new Date(showNextDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} • {showDaysUntil! > 0 ? `${showDaysUntil}d` : 'Due'}</p>
+                                            </>
+                                        ) : (
+                                            <p className="text-sm text-gray-500">No upcoming</p>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        );
+                    })()}
+                    <Card className="bg-black/40 border-tech-gold/10">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="p-2.5 bg-orange-500/10 rounded-xl">
+                                <Clock className="w-5 h-5 text-orange-400" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Pending</p>
+                                <p className="text-lg font-black text-orange-400">{formatCurrency(totalPending)}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-black/40 border-tech-gold/10">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="p-2.5 bg-blue-500/10 rounded-xl">
+                                <Receipt className="w-5 h-5 text-blue-400" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Invoices</p>
+                                <p className="text-lg font-black text-blue-400">{invoices.length + pendingLocalDocs.length + localPaidDocs.length}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-black/40 border-tech-gold/10">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="p-2.5 bg-violet-500/10 rounded-xl">
+                                <Repeat className="w-5 h-5 text-violet-400" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Recurring</p>
+                                <p className="text-lg font-black text-violet-400">{recurringInvoices.length}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-black/40 border-tech-gold/10">
+                        <CardContent className="p-4 flex items-center gap-3">
+                            <div className="p-2.5 bg-emerald-500/10 rounded-xl">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Total Paid</p>
+                                <p className="text-lg font-black text-emerald-400">{formatCurrency(totalPaid + totalLocalPaid)}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             <Tabs defaultValue="pending" className="space-y-6">
                 <TabsList className="bg-black/40 border border-tech-gold/20">
                     <TabsTrigger value="pending" className="data-[state=active]:bg-tech-gold data-[state=active]:text-black">
-                        Pending Payments
+                        Pending Invoices
                     </TabsTrigger>
                     <TabsTrigger value="history" className="data-[state=active]:bg-tech-gold data-[state=active]:text-black">
                         Payment History
                     </TabsTrigger>
+                    <TabsTrigger value="recurring" className="data-[state=active]:bg-tech-gold data-[state=active]:text-black">
+                        Recurring
+                    </TabsTrigger>
                 </TabsList>
 
-                {/* Pending Payments Tab */}
+                {/* Pending Invoices Tab */}
                 <TabsContent value="pending" className="space-y-4">
-                    {paymentReminders.filter(r => r.status !== 'paid').length === 0 ? (
+                    {billingLoading ? (
+                        <div className="flex justify-center py-12">
+                            <Loader2 className="w-6 h-6 animate-spin text-tech-gold" />
+                        </div>
+                    ) : !hasAnyPendingData ? (
                         <Card className="bg-black/20 border-tech-gold/10 border-dashed border-2">
                             <CardContent className="p-12 text-center">
-                                <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-500 opacity-20" />
+                                <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-emerald-500/30" />
                                 <h3 className="text-xl font-bold text-white mb-2">All Caught Up!</h3>
                                 <p className="text-gray-400">You have no pending payments</p>
                             </CardContent>
                         </Card>
                     ) : (
                         <div className="grid gap-4">
-                            {paymentReminders
-                                .filter(r => r.status !== 'paid')
-                                .map((reminder, idx) => {
-                                    const daysUntil = getDaysUntilDue(reminder.due_date);
-                                    const isOverdue = daysUntil < 0;
+                            {/* Billing API invoices */}
+                            {pendingInvoices.map((inv, idx) => {
+                                const total = Number(inv.total) || 0;
+                                const balance = Number(inv.balance) || total;
+                                const amount = balance;
+                                const isPartial = inv.status?.toLowerCase() === 'partial' || inv.status?.toLowerCase() === 'partially_paid';
+                                const paidSoFar = isPartial ? total - balance : 0;
+                                const dueDate = inv.due_date || inv.date;
+                                const daysUntil = dueDate ? Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                                const isOverdue = daysUntil !== null && daysUntil < 0;
 
+                                return (
+                                    <motion.div key={inv.id || idx} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.08 }}>
+                                        <Card className={cn(
+                                            "bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all overflow-hidden",
+                                            isOverdue && "border-red-500/50 bg-red-500/5"
+                                        )}>
+                                            <CardContent className="p-6">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div>
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <h3 className="text-xl font-bold text-white">
+                                                                        {inv.invoice_number || inv.reference || `Invoice`}
+                                                                    </h3>
+                                                                    {getInvoiceStatusBadge(inv.status)}
+                                                                </div>
+                                                                {inv.notes && <p className="text-sm text-gray-400 line-clamp-1">{inv.notes}</p>}
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                                            <div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <IndianRupee className="w-4 h-4 text-tech-gold" />
+                                                                    <span className="text-2xl font-black text-tech-gold">
+                                                                        {Number(amount).toLocaleString('en-IN')}
+                                                                    </span>
+                                                                    {isPartial && <span className="text-xs text-gray-500">balance</span>}
+                                                                </div>
+                                                                {isPartial && (
+                                                                    <p className="text-xs text-gray-500 mt-1">
+                                                                        Paid: {formatCurrency(paidSoFar)} of {formatCurrency(total)}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                            {dueDate && (
+                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                    <Calendar className="w-4 h-4" />
+                                                                    <span>Due: {new Date(dueDate).toLocaleDateString('en-IN')}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {isPartial && (
+                                                            <div className="mt-3">
+                                                                <div className="w-full bg-gray-800 rounded-full h-2">
+                                                                    <div
+                                                                        className="bg-amber-500 h-2 rounded-full transition-all"
+                                                                        style={{ width: `${Math.min((paidSoFar / (total || 1)) * 100, 100)}%` }}
+                                                                    />
+                                                                </div>
+                                                                <p className="text-[10px] text-amber-400/70 mt-1">
+                                                                    {Math.round((paidSoFar / (total || 1)) * 100)}% paid
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                        {isOverdue && (
+                                                            <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                                                <p className="text-xs text-red-400 flex items-center gap-2">
+                                                                    <AlertCircle className="w-4 h-4" />
+                                                                    This invoice is {Math.abs(daysUntil!)} days overdue
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col gap-2">
+                                                        <Button
+                                                            onClick={() => handlePayNow({ ...inv, amount })}
+                                                            className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl shadow-lg shadow-tech-gold/20"
+                                                        >
+                                                            <IndianRupee className="w-4 h-4 mr-2" /> Pay Now via UPI
+                                                        </Button>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                className="flex-1 border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
+                                                                onClick={() => { setSelectedReminder({ ...inv, amount }); setPaymentDialogOpen(true); }}
+                                                            >
+                                                                Submit Confirmation
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                className="border-tech-gold/20 hover:bg-tech-gold/10 text-white"
+                                                                onClick={() => downloadReceipt(inv, 'invoice')}
+                                                                title="Download Invoice"
+                                                            >
+                                                                <Download className="w-4 h-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                );
+                            })}
+
+                            {/* Local payment reminders (non-billing) */}
+                            {paymentReminders
+                                .filter((r: any) => r.status !== 'paid')
+                                .map((reminder: any, idx: number) => {
+                                    const daysUntil = Math.ceil((new Date(reminder.due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                                    const isOverdue = daysUntil < 0;
                                     return (
-                                        <motion.div
-                                            key={reminder.id}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: idx * 0.1 }}
-                                        >
-                                            <Card className={cn(
-                                                "bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all overflow-hidden",
-                                                isOverdue && "border-red-500/50 bg-red-500/5"
-                                            )}>
+                                        <motion.div key={reminder.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (pendingInvoices.length + idx) * 0.08 }}>
+                                            <Card className={cn("bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all", isOverdue && "border-red-500/50 bg-red-500/5")}>
                                                 <CardContent className="p-6">
                                                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                                         <div className="flex-1">
                                                             <div className="flex items-start justify-between mb-3">
-                                                                <div>
-                                                                    <h3 className="text-xl font-bold text-white mb-1">
-                                                                        {reminder.title}
-                                                                    </h3>
-                                                                    {reminder.notes && (
-                                                                        <p className="text-sm text-gray-400">{reminder.notes}</p>
-                                                                    )}
-                                                                </div>
-                                                                {getStatusBadge(reminder.status, reminder.due_date)}
+                                                                <h3 className="text-xl font-bold text-white">{reminder.title}</h3>
+                                                                <Badge className="bg-tech-gold/20 text-tech-gold border-0 text-[10px]">LOCAL</Badge>
                                                             </div>
-
                                                             <div className="grid grid-cols-2 gap-4 text-sm">
-                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                <div className="flex items-center gap-2">
                                                                     <IndianRupee className="w-4 h-4 text-tech-gold" />
                                                                     <span className="text-2xl font-black text-tech-gold">
                                                                         {Number(reminder.amount).toLocaleString('en-IN')}
@@ -300,39 +744,13 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                                 </div>
                                                                 <div className="flex items-center gap-2 text-gray-400">
                                                                     <Calendar className="w-4 h-4" />
-                                                                    <span>
-                                                                        Due: {new Date(reminder.due_date).toLocaleDateString('en-IN')}
-                                                                    </span>
+                                                                    <span>Due: {new Date(reminder.due_date).toLocaleDateString('en-IN')}</span>
                                                                 </div>
                                                             </div>
-
-                                                            {isOverdue && (
-                                                                <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                                                    <p className="text-xs text-red-400 flex items-center gap-2">
-                                                                        <AlertCircle className="w-4 h-4" />
-                                                                        This payment is {Math.abs(daysUntil)} days overdue
-                                                                    </p>
-                                                                </div>
-                                                            )}
                                                         </div>
-
                                                         <div className="flex flex-col gap-2">
-                                                            <Button
-                                                                onClick={() => handlePayNow(reminder)}
-                                                                className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl transition-all shadow-lg shadow-tech-gold/20"
-                                                            >
-                                                                <IndianRupee className="w-4 h-4 mr-2" />
-                                                                Pay Now via UPI
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                className="border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
-                                                                onClick={() => {
-                                                                    setSelectedReminder(reminder);
-                                                                    setPaymentDialogOpen(true);
-                                                                }}
-                                                            >
-                                                                Submit Confirmation
+                                                            <Button onClick={() => handlePayNow(reminder)} className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl">
+                                                                <IndianRupee className="w-4 h-4 mr-2" /> Pay Now
                                                             </Button>
                                                         </div>
                                                     </div>
@@ -341,13 +759,160 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                         </motion.div>
                                     );
                                 })}
+
+                            {/* Local document invoices */}
+                            {pendingLocalDocs.map((doc: any, idx: number) => (
+                                <motion.div key={`doc-${doc.id}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (pendingInvoices.length + idx) * 0.08 }}>
+                                    <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all">
+                                        <CardContent className="p-6">
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                                <div className="flex-1">
+                                                    <div className="flex items-start justify-between mb-3">
+                                                        <div>
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <h3 className="text-xl font-bold text-white">{doc.title}</h3>
+                                                                <Badge className="bg-blue-500/20 text-blue-400 border-0 text-[10px]">INVOICE</Badge>
+                                                                <Badge className="bg-orange-500/20 text-orange-400 border-0 text-[10px] uppercase">{doc.status}</Badge>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <IndianRupee className="w-4 h-4 text-tech-gold" />
+                                                            <span className="text-2xl font-black text-tech-gold">
+                                                                {Number(doc.amount || 0).toLocaleString('en-IN')}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-gray-400">
+                                                            <Calendar className="w-4 h-4" />
+                                                            <span>Issued: {new Date(doc.created_at).toLocaleDateString('en-IN')}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    <Button
+                                                        onClick={() => handlePayNow({ ...doc, amount: doc.amount })}
+                                                        className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl shadow-lg shadow-tech-gold/20"
+                                                    >
+                                                        <IndianRupee className="w-4 h-4 mr-2" /> Pay Now
+                                                    </Button>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            className="flex-1 border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
+                                                            onClick={() => { setSelectedReminder({ ...doc, amount: doc.amount }); setPaymentDialogOpen(true); }}
+                                                        >
+                                                            Submit Confirmation
+                                                        </Button>
+                                                        {doc.file_url && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                className="border-tech-gold/20 hover:bg-tech-gold/10 text-white"
+                                                                onClick={() => window.open(doc.file_url, '_blank')}
+                                                                title="View Invoice"
+                                                            >
+                                                                <Download className="w-4 h-4" />
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            ))}
+
+                            {/* Outstanding project balances */}
+                            {pendingProjectBalances.map((proj: any, idx: number) => {
+                                const balance = (Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0);
+                                const nextDate = proj.next_payment_date;
+                                const daysUntil = nextDate ? Math.ceil((new Date(nextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                                const isOverdue = daysUntil !== null && daysUntil < 0;
+                                return (
+                                    <motion.div key={`proj-${proj.id}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (pendingInvoices.length + pendingLocalDocs.length + idx) * 0.08 }}>
+                                        <Card className={cn("bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all", isOverdue && "border-red-500/50 bg-red-500/5")}>
+                                            <CardContent className="p-6">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-start justify-between mb-3">
+                                                            <div>
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <h3 className="text-xl font-bold text-white">{proj.title}</h3>
+                                                                    <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]">PROJECT</Badge>
+                                                                    <Badge className="bg-tech-gold/20 text-tech-gold border-0 text-[10px] uppercase">{proj.status}</Badge>
+                                                                </div>
+                                                                <p className="text-sm text-gray-400">
+                                                                    Paid: {formatCurrency(Number(proj.amount_paid) || 0)} of {formatCurrency(Number(proj.total_amount) || 0)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4 text-sm">
+                                                            <div className="flex items-center gap-2">
+                                                                <IndianRupee className="w-4 h-4 text-tech-gold" />
+                                                                <span className="text-2xl font-black text-tech-gold">
+                                                                    {balance.toLocaleString('en-IN')}
+                                                                </span>
+                                                                <span className="text-xs text-gray-500">balance</span>
+                                                            </div>
+                                                            {nextDate && (
+                                                                <div className="flex items-center gap-2 text-gray-400">
+                                                                    <Calendar className="w-4 h-4" />
+                                                                    <span>Due: {new Date(nextDate).toLocaleDateString('en-IN')}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {isOverdue && (
+                                                            <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                                                <p className="text-xs text-red-400 flex items-center gap-2">
+                                                                    <AlertCircle className="w-4 h-4" />
+                                                                    Payment is {Math.abs(daysUntil!)} days overdue
+                                                                </p>
+                                                            </div>
+                                                        )}
+                                                        {/* Progress bar */}
+                                                        <div className="mt-3">
+                                                            <div className="w-full bg-gray-800 rounded-full h-2">
+                                                                <div
+                                                                    className="bg-tech-gold h-2 rounded-full transition-all"
+                                                                    style={{ width: `${Math.min(((Number(proj.amount_paid) || 0) / (Number(proj.total_amount) || 1)) * 100, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-500 mt-1">
+                                                                {Math.round(((Number(proj.amount_paid) || 0) / (Number(proj.total_amount) || 1)) * 100)}% paid
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex flex-col gap-2">
+                                                        <Button
+                                                            onClick={() => handlePayNow({ ...proj, amount: balance, title: proj.title })}
+                                                            className="bg-tech-gold hover:bg-white text-black font-bold h-12 px-6 rounded-xl shadow-lg shadow-tech-gold/20"
+                                                        >
+                                                            <IndianRupee className="w-4 h-4 mr-2" /> Pay Now
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            className="border-tech-gold/20 hover:bg-tech-gold/10 text-white font-bold"
+                                                            onClick={() => { setSelectedReminder({ ...proj, amount: balance, title: proj.title }); setPaymentDialogOpen(true); }}
+                                                        >
+                                                            Submit Confirmation
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                );
+                            })}
                         </div>
                     )}
                 </TabsContent>
 
                 {/* Payment History Tab */}
                 <TabsContent value="history" className="space-y-4">
-                    {paymentHistory.length === 0 ? (
+                    {billingLoading ? (
+                        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-tech-gold" /></div>
+                    ) : payments.length === 0 && paidInvoices.length === 0 ? (
                         <Card className="bg-black/20 border-tech-gold/10 border-dashed border-2">
                             <CardContent className="p-12 text-center">
                                 <FileText className="w-16 h-16 mx-auto mb-4 text-gray-500 opacity-20" />
@@ -356,13 +921,50 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                         </Card>
                     ) : (
                         <div className="space-y-3">
-                            {paymentHistory.map((doc, idx) => (
-                                <motion.div
-                                    key={doc.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: idx * 0.05 }}
-                                >
+                            {/* Payments from billing API */}
+                            {payments.map((pay, idx) => (
+                                <motion.div key={pay.id || idx} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
+                                    <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all">
+                                        <CardContent className="p-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="p-3 bg-emerald-500/10 rounded-xl">
+                                                        <CreditCard className="w-5 h-5 text-emerald-400" />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-white font-bold">
+                                                            {pay.reference || pay.payment_number || `Payment #${idx + 1}`}
+                                                        </h4>
+                                                        <p className="text-xs text-gray-400 mt-1">
+                                                            {pay.date ? new Date(pay.date).toLocaleDateString('en-IN') : ''}
+                                                            {pay.payment_mode && <span className="ml-2 text-gray-500">• {pay.payment_mode}</span>}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/10"
+                                                        onClick={() => downloadReceipt(pay, 'payment')}
+                                                        title="Download Receipt"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </Button>
+                                                    <p className="text-emerald-400 font-bold text-lg">
+                                                        {formatCurrency(Number(pay.amount) || 0)}
+                                                    </p>
+                                                    <Badge className="bg-emerald-500/20 text-emerald-400 border-0">Paid</Badge>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            ))}
+
+                            {/* Paid invoices */}
+                            {paidInvoices.map((inv, idx) => (
+                                <motion.div key={inv.id || `inv-${idx}`} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: (payments.length + idx) * 0.05 }}>
                                     <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all">
                                         <CardContent className="p-4">
                                             <div className="flex items-center justify-between">
@@ -371,32 +973,128 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                         <FileText className="w-5 h-5 text-tech-gold" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-white font-bold">{doc.title}</h4>
+                                                        <h4 className="text-white font-bold">{inv.invoice_number || 'Invoice'}</h4>
                                                         <p className="text-xs text-gray-400 mt-1">
-                                                            {new Date(doc.created_at).toLocaleDateString('en-IN')}
+                                                            {inv.date ? new Date(inv.date).toLocaleDateString('en-IN') : ''}
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-3">
-                                                    {doc.amount && (
-                                                        <p className="text-tech-gold font-bold">
-                                                            ₹{Number(doc.amount).toLocaleString('en-IN')}
-                                                        </p>
-                                                    )}
+                                                <div className="flex items-center gap-2">
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="text-tech-gold hover:bg-tech-gold/10"
-                                                        onClick={() => window.open(doc.file_url, '_blank')}
+                                                        className="h-8 w-8 text-gray-400 hover:text-tech-gold hover:bg-tech-gold/10"
+                                                        onClick={() => downloadReceipt(inv, 'invoice')}
+                                                        title="Download Invoice"
                                                     >
                                                         <Download className="w-4 h-4" />
                                                     </Button>
+                                                    <p className="text-tech-gold font-bold">
+                                                        {formatCurrency(Number(inv.total) || 0)}
+                                                    </p>
+                                                    {getInvoiceStatusBadge(inv.status)}
                                                 </div>
                                             </div>
                                         </CardContent>
                                     </Card>
                                 </motion.div>
                             ))}
+                        </div>
+                    )}
+                </TabsContent>
+
+                {/* Recurring Invoices Tab */}
+                <TabsContent value="recurring" className="space-y-4">
+                    {billingLoading ? (
+                        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-tech-gold" /></div>
+                    ) : recurringInvoices.length === 0 ? (
+                        <Card className="bg-black/20 border-tech-gold/10 border-dashed border-2">
+                            <CardContent className="p-12 text-center">
+                                <Repeat className="w-16 h-16 mx-auto mb-4 text-gray-500 opacity-20" />
+                                <p className="text-gray-400">No recurring invoices found</p>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <div className="space-y-3">
+                            {recurringInvoices.map((rec, idx) => {
+                                const isActive = rec.status?.toLowerCase() !== 'paused' && rec.status?.toLowerCase() !== 'stopped';
+                                const nextDate = rec.next_issue_date || rec.next_invoice_date || rec.next_generation_date;
+                                const createdDate = rec.created_at;
+                                const freq = rec.frequency || rec.recurrence_frequency || 'monthly';
+                                
+                                // Calculate timeline progress
+                                let timelineProgress = 0;
+                                if (nextDate && createdDate && isActive) {
+                                    const now = new Date().getTime();
+                                    const start = new Date(createdDate).getTime();
+                                    const end = new Date(nextDate).getTime();
+                                    if (end > start) {
+                                        timelineProgress = Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100));
+                                    }
+                                }
+                                
+                                const daysUntilNext = nextDate ? Math.ceil((new Date(nextDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+
+                                return (
+                                    <motion.div key={rec.id || idx} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
+                                        <Card className="bg-black/40 backdrop-blur-xl border-tech-gold/10 hover:border-tech-gold/30 transition-all">
+                                            <CardContent className="p-5 space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={cn("p-3 rounded-xl", isActive ? "bg-violet-500/10" : "bg-gray-500/10")}>
+                                                            <Repeat className={cn("w-5 h-5", isActive ? "text-violet-400" : "text-gray-400")} />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-white font-bold">
+                                                                {rec.name || rec.invoice_number || `Recurring #${idx + 1}`}
+                                                            </h4>
+                                                            <p className="text-xs text-gray-400 mt-1 capitalize">
+                                                                {freq} billing cycle
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <p className="text-violet-400 font-bold">
+                                                            {formatCurrency(Number(rec.total) || 0)}
+                                                        </p>
+                                                        <Badge className={cn("border-0", isActive ? "bg-violet-500/20 text-violet-400" : "bg-gray-500/20 text-gray-400")}>
+                                                            {isActive ? "Active" : rec.status}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
+
+                                                {/* Timeline */}
+                                                {isActive && nextDate && (
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center justify-between text-[11px]">
+                                                            <span className="text-gray-500">
+                                                                {createdDate ? `Started ${new Date(createdDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'Billing cycle'}
+                                                            </span>
+                                                            <span className="text-violet-400 font-semibold flex items-center gap-1">
+                                                                <Calendar className="w-3 h-3" />
+                                                                Next: {new Date(nextDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                            </span>
+                                                        </div>
+                                                        <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+                                                            <motion.div
+                                                                className="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-500 to-violet-400 rounded-full"
+                                                                initial={{ width: 0 }}
+                                                                animate={{ width: `${timelineProgress}%` }}
+                                                                transition={{ duration: 1, delay: idx * 0.1 }}
+                                                            />
+                                                        </div>
+                                                        {daysUntilNext !== null && (
+                                                            <p className={cn("text-[11px] font-semibold text-right", daysUntilNext <= 30 ? "text-amber-400" : "text-gray-500")}>
+                                                                {daysUntilNext > 0 ? `${daysUntilNext} days until next billing` : daysUntilNext === 0 ? 'Due today' : `Overdue by ${Math.abs(daysUntilNext)} days`}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                );
+                            })}
                         </div>
                     )}
                 </TabsContent>
@@ -408,45 +1106,28 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold">Submit Payment Confirmation</DialogTitle>
                     </DialogHeader>
-
                     {selectedReminder && (
                         <div className="space-y-4">
                             <div className="p-4 bg-tech-gold/10 border border-tech-gold/20 rounded-xl">
                                 <p className="text-sm text-gray-400 mb-1">Payment for:</p>
-                                <p className="text-white font-bold">{selectedReminder.title}</p>
+                                <p className="text-white font-bold">{selectedReminder.title || selectedReminder.invoice_number || 'Invoice'}</p>
                                 <p className="text-2xl font-black text-tech-gold mt-2">
-                                    ₹{Number(selectedReminder.amount).toLocaleString('en-IN')}
+                                    ₹{Number(selectedReminder.amount || selectedReminder.total || selectedReminder.balance || 0).toLocaleString('en-IN')}
                                 </p>
                             </div>
-
                             <div>
                                 <Label className="text-gray-300">Transaction ID *</Label>
-                                <Input
-                                    value={transactionId}
-                                    onChange={(e) => setTransactionId(e.target.value)}
+                                <Input value={transactionId} onChange={(e) => setTransactionId(e.target.value)}
                                     placeholder="Enter UPI transaction ID"
-                                    className="bg-white/5 border-tech-gold/20 text-white placeholder:text-gray-500 mt-2"
-                                />
+                                    className="bg-white/5 border-tech-gold/20 text-white placeholder:text-gray-500 mt-2" />
                             </div>
-
                             <div>
                                 <Label className="text-gray-300">Payment Screenshot *</Label>
                                 {screenshotPreview ? (
                                     <div className="relative mt-2">
-                                        <img
-                                            src={screenshotPreview}
-                                            alt="Payment screenshot"
-                                            className="w-full h-48 object-cover rounded-xl border border-tech-gold/20"
-                                        />
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="absolute top-2 right-2 bg-black/80 hover:bg-red-500/20"
-                                            onClick={() => {
-                                                setScreenshot(null);
-                                                setScreenshotPreview("");
-                                            }}
-                                        >
+                                        <img src={screenshotPreview} alt="Payment screenshot" className="w-full h-48 object-cover rounded-xl border border-tech-gold/20" />
+                                        <Button variant="ghost" size="icon" className="absolute top-2 right-2 bg-black/80 hover:bg-red-500/20"
+                                            onClick={() => { setScreenshot(null); setScreenshotPreview(""); }}>
                                             <X className="w-4 h-4" />
                                         </Button>
                                     </div>
@@ -454,38 +1135,14 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                     <label className="mt-2 flex flex-col items-center justify-center h-32 border-2 border-dashed border-tech-gold/20 rounded-xl cursor-pointer hover:border-tech-gold/40 transition-colors">
                                         <Upload className="w-8 h-8 text-tech-gold mb-2" />
                                         <span className="text-sm text-gray-400">Upload payment screenshot</span>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={handleScreenshotChange}
-                                        />
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleScreenshotChange} />
                                     </label>
                                 )}
                             </div>
-
                             <div className="flex gap-2 pt-2">
-                                <Button
-                                    variant="outline"
-                                    className="flex-1 border-tech-gold/20"
-                                    onClick={() => setPaymentDialogOpen(false)}
-                                    disabled={submitting}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    onClick={handleSubmitPayment}
-                                    disabled={submitting || !screenshot || !transactionId.trim()}
-                                    className="flex-1 bg-tech-gold hover:bg-white text-black font-bold"
-                                >
-                                    {submitting ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            Submitting...
-                                        </>
-                                    ) : (
-                                        "Submit Confirmation"
-                                    )}
+                                <Button variant="outline" className="flex-1 border-tech-gold/20" onClick={() => setPaymentDialogOpen(false)} disabled={submitting}>Cancel</Button>
+                                <Button onClick={handleSubmitPayment} disabled={submitting || !screenshot || !transactionId.trim()} className="flex-1 bg-tech-gold hover:bg-white text-black font-bold">
+                                    {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting...</> : "Submit Confirmation"}
                                 </Button>
                             </div>
                         </div>

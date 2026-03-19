@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import TeamHeadMobileHome from "@/components/staff/TeamHeadMobileHome";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +74,8 @@ const EMOJI_OPTIONS = [
 
 const TeamHeadDashboard = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [showMobileHome, setShowMobileHome] = useState(true);
   const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
@@ -102,11 +106,12 @@ const TeamHeadDashboard = () => {
 
   // Activity tracking and status
   const { status, reactivationCode, updateStatus, reactivate } = useUserStatus(profile?.user_id || '');
+  const handleStatusChange = useCallback((newStatus: string) => {
+    // Status change handled automatically
+  }, []);
   useActivityTracker({
     userId: profile?.user_id || '',
-    onStatusChange: (newStatus) => {
-      // Status change handled automatically
-    }
+    onStatusChange: handleStatusChange
   });
 
   const [showReactivationDialog, setShowReactivationDialog] = useState(false);
@@ -128,7 +133,10 @@ const TeamHeadDashboard = () => {
     return success;
   };
 
+  const isShowingMobileHome = isMobile && showMobileHome;
+
   useEffect(() => {
+    if (isShowingMobileHome) return;
     checkDailyRequirements();
     fetchDepartment();
     if (profile) {
@@ -137,7 +145,7 @@ const TeamHeadDashboard = () => {
         about_me: (profile as any).about_me || "",
       });
     }
-  }, [profile?.user_id, profile?.full_name, profile?.department_id]);
+  }, [profile?.user_id, profile?.full_name, profile?.department_id, isShowingMobileHome]);
 
   const fetchDepartment = async () => {
     if (!profile?.department_id) return;
@@ -159,7 +167,7 @@ const TeamHeadDashboard = () => {
 
   // Set up presence tracking for online users
   useEffect(() => {
-    if (!profile?.user_id || !profile?.full_name) return;
+    if (!profile?.user_id || !profile?.full_name || isShowingMobileHome) return;
 
     const channel = supabase.channel('team-presence');
 
@@ -190,7 +198,7 @@ const TeamHeadDashboard = () => {
     return () => {
       channel.unsubscribe();
     };
-  }, [profile?.user_id, profile?.full_name, profile?.username]);
+  }, [profile?.user_id, profile?.full_name, profile?.username, isShowingMobileHome]);
 
   const checkDailyRequirements = async () => {
     if (!profile?.user_id) return;
@@ -387,6 +395,16 @@ const TeamHeadDashboard = () => {
           </div>
         </div>
       </div>
+    );
+  }
+
+  // Show mobile home on small screens
+  if (isMobile && showMobileHome && profile?.user_id) {
+    return (
+      <TeamHeadMobileHome
+        profile={profile}
+        onEnterDesktop={() => setShowMobileHome(false)}
+      />
     );
   }
 

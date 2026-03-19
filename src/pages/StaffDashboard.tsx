@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ import {
   Coins
 } from "lucide-react";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
+import StaffMobileHome from "@/components/staff/StaffMobileHome";
+import { useIsMobile } from "@/hooks/use-mobile";
 import WorkspaceRoom from "@/components/staff/WorkspaceRoom";
 import BreakRoom from "@/components/staff/BreakRoom";
 import BreakRoomWidget from "@/components/staff/BreakRoomWidget";
@@ -46,7 +48,9 @@ type RoomType = 'workspace' | 'breakroom' | 'meeting';
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
+  const [showMobileHome, setShowMobileHome] = useState(true);
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -63,11 +67,12 @@ const StaffDashboard = () => {
 
   // Activity tracking and status
   const { status, reactivationCode, updateStatus, reactivate } = useUserStatus(profile?.user_id || '');
+  const handleStatusChange = useCallback((newStatus: string) => {
+    // Status change handled automatically
+  }, []);
   useActivityTracker({
     userId: profile?.user_id || '',
-    onStatusChange: (newStatus) => {
-      // Status change handled automatically
-    }
+    onStatusChange: handleStatusChange
   });
 
   const [showReactivationDialog, setShowReactivationDialog] = useState(false);
@@ -317,6 +322,20 @@ const StaffDashboard = () => {
     meeting: <MeetingRoom />
   };
 
+  // Show mobile home on small screens
+  if (isMobile && showMobileHome) {
+    return (
+      <StaffMobileHome
+        profile={profile}
+        currentRoom={currentRoom}
+        onRoomChange={setCurrentRoom}
+        onOpenChat={() => {}}
+        onOpenCoins={() => navigate("/mycoins")}
+        onEnterWorkspace={() => setShowMobileHome(false)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen h-screen flex flex-col relative overflow-hidden">
       {/* Background Images */}
@@ -386,26 +405,28 @@ const StaffDashboard = () => {
             </div>
 
             {/* Bottom Row: Stats & Notifications */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap justify-between">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 bg-green-500/20 border border-green-500/30 rounded-lg px-2.5 py-1.5">
+                  <UserStatusBadge
+                    status={status}
+                    isBreakActive={isBreakActive}
+                    breakTimeRemaining={breakTimeRemaining}
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-amber-500/10">
+                  <Coins className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-amber-200 text-xs font-bold tracking-tight">{(profile?.total_points || 0).toLocaleString()} Coins</span>
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-blue-500/10">
+                  <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="text-cyan-200 text-xs font-bold tracking-tight">Streak: {profile?.attendance_streak || 0}d</span>
+                </div>
+              </div>
+
               <NotificationsBar userId={profile.user_id} />
-
-              <div className="flex items-center gap-1.5 bg-green-500/20 border border-green-500/30 rounded-lg px-2.5 py-1.5">
-                <UserStatusBadge
-                  status={status}
-                  isBreakActive={isBreakActive}
-                  breakTimeRemaining={breakTimeRemaining}
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-amber-500/10">
-                <Coins className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-amber-200 text-xs font-bold tracking-tight">{(profile?.total_points || 0).toLocaleString()} Coins</span>
-              </div>
-
-              <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-blue-500/10">
-                <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="text-cyan-200 text-xs font-bold tracking-tight">Streak: {profile?.attendance_streak || 0}d</span>
-              </div>
             </div>
           </div>
         </div>

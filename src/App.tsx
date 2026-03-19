@@ -43,6 +43,9 @@ import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import DigitalMarketingInternship from "./pages/DigitalMarketingInternship";
 import ClientOnboarding from "./pages/ClientOnboarding";
 import StaffIDCard from "./pages/StaffIDCard";
+import TermsOfService from "./pages/TermsOfService";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import DataDeletion from "./pages/DataDeletion";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -74,11 +77,13 @@ const ManifestSwitcher = () => {
 
 const AppContent = () => {
   const { hasCompletedIntro } = useUser();
+  const skipIntroPaths = ['/privacy-policy', '/data-deletion', '/terms-of-service'];
+  const shouldSkipIntro = skipIntroPaths.includes(window.location.pathname);
 
   return (
 
     <>
-      {!hasCompletedIntro && <IntroScreen />}
+      {!hasCompletedIntro && !shouldSkipIntro && <IntroScreen />}
       <BrowserRouter>
         <ManifestSwitcher />
         <Routes>
@@ -117,6 +122,9 @@ const AppContent = () => {
           <Route path="/install" element={<Install />} />
           <Route path="/digital-marketing-internship" element={<DigitalMarketingInternship />} />
           <Route path="/onboard/:token" element={<ClientOnboarding />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/data-deletion" element={<DataDeletion />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

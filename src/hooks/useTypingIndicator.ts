@@ -14,7 +14,7 @@ interface UseTypingIndicatorProps {
 
 export const useTypingIndicator = ({ userId, channelId, recipientId }: UseTypingIndicatorProps) => {
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingUpdateRef = useRef<number>(0);
 
   // Subscribe to typing indicators

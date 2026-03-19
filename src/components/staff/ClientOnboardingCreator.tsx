@@ -289,8 +289,11 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
           <div className="space-y-2">
             {links.map((link) => (
               <div key={link.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 text-sm">
-                <Badge variant={link.status === "completed" ? "default" : "secondary"} className="text-[10px]">
-                  {link.status}
+                <Badge 
+                  variant={link.status === "completed" ? "default" : "secondary"} 
+                  className={`text-[10px] ${link.status === "completed" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-amber-500/20 text-amber-400 border-amber-500/30"}`}
+                >
+                  {link.status === "completed" ? "Completed" : "Pending"}
                 </Badge>
                 <span className="flex-1 truncate">
                   {link.client_name || (link as any).pricing_packages?.name || "Unnamed"}

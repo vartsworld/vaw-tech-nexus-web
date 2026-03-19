@@ -6,13 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { DragDropContext, Draggable } from "react-beautiful-dnd";
+import StrictModeDroppable from "@/components/ui/StrictModeDroppable";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft, CheckCircle, Clock, Target, Flag, Eye, Edit, Trash2,
   Plus, Calendar, User, Layers, FileText, Download, MessageSquare,
-  Loader2, Share2, LayoutTemplate, Minimize2, Maximize2, ChevronLeft, ChevronRight
+  Loader2, Share2, LayoutTemplate, Minimize2, Maximize2, ChevronLeft, ChevronRight,
+  AlertCircle
 } from "lucide-react";
+import { SubtaskReviewDialog } from "@/components/staff/SubtaskReviewDialog";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -40,10 +44,26 @@ const TaskDetailPage = ({
   const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState("none");
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [reviewDialogSubtask, setReviewDialogSubtask] = useState<any>(null);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const stageScrollRef = useRef<HTMLDivElement>(null);
   const [newSubtask, setNewSubtask] = useState({
     title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1
   });
+  const [newStageName, setNewStageName] = useState("");
+  const [editingStageNum, setEditingStageNum] = useState<number | null>(null);
+  const [editingStageName, setEditingStageName] = useState("");
+  const [customStageNames, setCustomStageNames] = useState<Record<number, string>>(
+    (task?.stage_names && typeof task.stage_names === 'object') ? task.stage_names : {}
+  );
+
+  // Subtask submission state (for Team Head inline submit)
+  const [expandedSubmitSubtask, setExpandedSubmitSubtask] = useState<string | null>(null);
+  const [submitNotes, setSubmitNotes] = useState("");
+  const [submitFiles, setSubmitFiles] = useState<any[]>([]);
+  const [isSubmittingSubtask, setIsSubmittingSubtask] = useState(false);
+  const [isUploadingSubtaskFile, setIsUploadingSubtaskFile] = useState(false);
+  const submitFileInputRef = useRef<HTMLInputElement>(null);
 
   const checkScrollability = useCallback(() => {
     const el = stageScrollRef.current;
@@ -113,12 +133,51 @@ const TaskDetailPage = ({
 
   const handleSubtaskStatusUpdate = async (subtaskId: string, newStatus: string) => {
     try {
+      const updateData: any = { status: newStatus, updated_at: new Date().toISOString() };
+      if (newStatus === 'completed') updateData.completed_at = new Date().toISOString();
+
       const { data, error } = await supabase.from('staff_subtasks')
-        .update({ status: newStatus as any, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', subtaskId)
         .select('*, staff_profiles:assigned_to (full_name, username, avatar_url)').single();
       if (error) throw error;
-      setSubtasks(subtasks.map(st => st.id === subtaskId ? data : st));
+
+      const updatedSubtasks = subtasks.map(st => st.id === subtaskId ? data : st);
+      setSubtasks(updatedSubtasks);
+
+      // --- Sync: subtask in_progress → parent task in_progress → project in_progress ---
+      if (newStatus === 'in_progress' && task.status === 'pending') {
+        await supabase.from('staff_tasks')
+          .update({ status: 'in_progress', updated_at: new Date().toISOString() } as any)
+          .eq('id', task.id);
+        onStatusUpdate(task.id, 'in_progress');
+
+        // Also update linked client project to in_progress
+        if (task.client_project_id) {
+          await supabase.from('client_projects')
+            .update({ status: 'in_progress', updated_at: new Date().toISOString() })
+            .eq('id', task.client_project_id)
+            .eq('status', 'pending');
+        }
+      }
+
+      // --- Auto-advance current_stage when all subtasks in a stage are completed ---
+      const subtaskStage = (data as any).stage || 1;
+      const stageSubtasks = updatedSubtasks.filter((st: any) => (st.stage || 1) === subtaskStage);
+      const allStageComplete = stageSubtasks.length > 0 && stageSubtasks.every((st: any) => st.status === 'completed');
+
+      if (allStageComplete) {
+        const allStages = [...new Set(updatedSubtasks.map((st: any) => (st.stage || 1) as number))].sort((a, b) => a - b);
+        const nextIncompleteStage = allStages.find(s => {
+          const subs = updatedSubtasks.filter((st: any) => (st.stage || 1) === s);
+          return subs.some((st: any) => st.status !== 'completed');
+        });
+        const newCurrentStage = nextIncompleteStage ?? ((allStages[allStages.length - 1] || 1) + 1);
+
+        await supabase.from('staff_tasks')
+          .update({ current_stage: newCurrentStage, updated_at: new Date().toISOString() } as any)
+          .eq('id', task.id);
+      }
     } catch (error) {
       toast({ title: "Error", description: "Failed to update subtask.", variant: "destructive" });
     }
@@ -139,6 +198,97 @@ const TaskDetailPage = ({
       setSubtasks(prev => prev.map(st => st.id === subtaskId ? { ...st, stage: newStage } : st));
     } catch (error) {
       console.error('Error updating subtask stage:', error);
+    }
+  };
+
+  // Team Head subtask file upload
+  const handleSubmitFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || !task) return;
+    setIsUploadingSubtaskFile(true);
+    try {
+      const uploadPromises = Array.from(files).map(async file => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${task.id}/subtask_${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('task-attachments').upload(fileName, file);
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from('task-attachments').getPublicUrl(fileName);
+        return { url: fileName, name: file.name, size: file.size, type: file.type, publicUrl, uploadedBy: userProfile?.user_id };
+      });
+      const newFiles = await Promise.all(uploadPromises);
+      setSubmitFiles(prev => [...prev, ...newFiles]);
+    } catch (error) {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally {
+      setIsUploadingSubtaskFile(false);
+      if (event.target) event.target.value = '';
+    }
+  };
+
+  // Team Head subtask submission with notes + files
+  const handleTeamHeadSubtaskSubmit = async (subtaskId: string, targetStatus: string = 'pending_approval') => {
+    if (isSubmittingSubtask) return;
+    setIsSubmittingSubtask(true);
+    try {
+      const subtask = subtasks.find(s => s.id === subtaskId);
+      const existingComments = Array.isArray(subtask?.comments) ? subtask.comments : [];
+      const existingAttachments = Array.isArray(subtask?.attachments) ? subtask.attachments : [];
+
+      const newComment = submitNotes.trim() ? {
+        user_id: userProfile?.user_id,
+        user_name: userProfile?.full_name || 'Team Head',
+        user_avatar: userProfile?.avatar_url,
+        message: submitNotes.trim(),
+        timestamp: new Date().toISOString(),
+        type: 'submission_note'
+      } : null;
+
+      const updatedComments = newComment ? [...existingComments, newComment] : existingComments;
+      const updatedAttachments = [...existingAttachments, ...submitFiles];
+
+      const updateData: any = {
+        status: targetStatus,
+        comments: updatedComments,
+        attachments: updatedAttachments,
+        updated_at: new Date().toISOString()
+      };
+      if (targetStatus === 'completed' || targetStatus === 'pending_approval') {
+        updateData.completed_at = new Date().toISOString();
+      }
+
+      const { data, error } = await supabase.from('staff_subtasks')
+        .update(updateData)
+        .eq('id', subtaskId)
+        .select('*, staff_profiles:assigned_to (full_name, username, avatar_url)').single();
+      if (error) throw error;
+
+      setSubtasks(prev => prev.map(st => st.id === subtaskId ? data : st));
+
+      // Auto-advance stage logic
+      const subtaskStage = (data as any).stage || 1;
+      const updatedSubtasksList = subtasks.map(s => s.id === subtaskId ? data : s);
+      const stageSubtasks = updatedSubtasksList.filter((st: any) => (st.stage || 1) === subtaskStage);
+      const allStageDone = stageSubtasks.length > 0 && stageSubtasks.every((st: any) => st.status === 'completed' || st.status === 'pending_approval');
+      if (allStageDone) {
+        const allStages = [...new Set(updatedSubtasksList.map((st: any) => (st.stage || 1) as number))].sort((a, b) => a - b);
+        const nextIncompleteStage = allStages.find(s => {
+          const subs = updatedSubtasksList.filter((st: any) => (st.stage || 1) === s);
+          return subs.some((st: any) => st.status !== 'completed' && st.status !== 'pending_approval');
+        });
+        const newCurrentStage = nextIncompleteStage ?? ((allStages[allStages.length - 1] || 1) + 1);
+        await supabase.from('staff_tasks')
+          .update({ current_stage: newCurrentStage, updated_at: new Date().toISOString() } as any)
+          .eq('id', task.id);
+      }
+
+      toast({ title: "Subtask Updated", description: `Status set to ${targetStatus.replace('_', ' ')}.` });
+      setSubmitNotes("");
+      setSubmitFiles([]);
+      setExpandedSubmitSubtask(null);
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to submit subtask.", variant: "destructive" });
+    } finally {
+      setIsSubmittingSubtask(false);
     }
   };
 
@@ -199,6 +349,7 @@ const TaskDetailPage = ({
     in_progress: { color: 'bg-blue-500/15 text-blue-400 border-blue-500/30', label: 'IN PROGRESS' },
     completed: { color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', label: 'COMPLETED' },
     review_pending: { color: 'bg-orange-500/15 text-orange-400 border-orange-500/30', label: 'IN REVIEW' },
+    pending_approval: { color: 'bg-orange-500/15 text-orange-400 border-orange-500/30', label: 'PENDING APPROVAL' },
     handover: { color: 'bg-purple-500/15 text-purple-400 border-purple-500/30', label: 'HANDOVER' },
     cancelled: { color: 'bg-red-500/15 text-red-400 border-red-500/30', label: 'CANCELLED' },
   };
@@ -223,10 +374,126 @@ const TaskDetailPage = ({
   subtasks.forEach(st => { const s = st.stage || 1; if (!stageMap[s]) stageMap[s] = []; stageMap[s].push(st); });
   const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
   if (stageNums.length === 0) stageNums.push(1);
+  // Include the newly added stage so its column renders immediately
+  if (quickAddStage !== null && !stageNums.includes(quickAddStage)) {
+    stageNums.push(quickAddStage);
+    stageNums.sort((a, b) => a - b);
+  }
+
+  const reviewPendingSubtasks = subtasks.filter(s => s.status === 'review_pending' || s.status === 'pending_approval');
+
+  const uploadReviewAttachments = async (subtaskId: string, files: File[], actionType: string) => {
+    const uploaded: any[] = [];
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `subtasks/${subtaskId}/review-${actionType}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('task-attachments').upload(filePath, file);
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage.from('task-attachments').getPublicUrl(filePath);
+        uploaded.push({ name: file.name, url: filePath, publicUrl, size: file.size, type: file.type });
+      }
+    }
+    return uploaded;
+  };
+
+  const handleSubtaskApprove = async (subtaskId: string, attachmentFiles?: File[]) => {
+    try {
+      const subtaskToApprove = subtasks.find(s => s.id === subtaskId);
+
+      let reviewAttachments: any[] = [];
+      if (attachmentFiles && attachmentFiles.length > 0) {
+        reviewAttachments = await uploadReviewAttachments(subtaskId, attachmentFiles, 'approve');
+      }
+
+      const updateData: any = { status: 'completed' as any, updated_at: new Date().toISOString() };
+
+      if (reviewAttachments.length > 0) {
+        const existingComments = Array.isArray(subtaskToApprove?.comments) ? subtaskToApprove.comments : [];
+        const approveComment = {
+          type: 'approval',
+          message: '✅ Approved with attachments',
+          user_name: userProfile?.full_name || 'Team Head',
+          timestamp: new Date().toISOString(),
+          attachments: reviewAttachments
+        };
+        updateData.comments = [...existingComments, approveComment];
+      }
+
+      const { error } = await supabase.from('staff_subtasks')
+        .update(updateData)
+        .eq('id', subtaskId);
+      if (error) throw error;
+      setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, status: 'completed', ...(updateData.comments ? { comments: updateData.comments } : {}) } : s));
+
+      // Award points if applicable
+      if (subtaskToApprove?.points > 0 && subtaskToApprove?.assigned_to) {
+        await supabase.rpc('increment_points' as any, {
+          user_id_param: subtaskToApprove.assigned_to,
+          points_param: subtaskToApprove.points
+        });
+      }
+
+      toast({ title: "Subtask Approved! ✅", description: `Points awarded: ${subtaskToApprove?.points || 0}` });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to approve subtask.", variant: "destructive" });
+    }
+  };
+
+  const handleSubtaskReject = async (subtaskId: string, note: string, attachmentFiles?: File[]) => {
+    try {
+      const subtaskToReject = subtasks.find(s => s.id === subtaskId);
+      const existingComments = Array.isArray(subtaskToReject?.comments) ? subtaskToReject.comments : [];
+
+      let reviewAttachments: any[] = [];
+      if (attachmentFiles && attachmentFiles.length > 0) {
+        reviewAttachments = await uploadReviewAttachments(subtaskId, attachmentFiles, 'reject');
+      }
+
+      const newComment: any = {
+        type: 'rejection',
+        message: note,
+        user_name: userProfile?.full_name || 'Team Head',
+        timestamp: new Date().toISOString()
+      };
+      if (reviewAttachments.length > 0) {
+        newComment.attachments = reviewAttachments;
+      }
+
+      const { error } = await supabase.from('staff_subtasks')
+        .update({
+          status: 'in_progress' as any,
+          comments: [...existingComments, newComment] as any,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', subtaskId);
+      if (error) throw error;
+      setSubtasks(prev => prev.map(s => s.id === subtaskId
+        ? { ...s, status: 'in_progress', comments: [...existingComments, newComment] }
+        : s
+      ));
+      toast({ title: "Subtask Returned", description: "Sent back for rework with feedback." });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to reject subtask.", variant: "destructive" });
+    }
+  };
 
   const completedSubtasks = subtasks.filter(s => s.status === 'completed').length;
 
-  const stageLabels: Record<number, string> = { 1: 'DISCOVERY', 2: 'DESIGN', 3: 'DEVELOPMENT', 4: 'TESTING', 5: 'REVIEW' };
+  const defaultStageLabels: Record<number, string> = { 1: 'DISCOVERY', 2: 'DESIGN', 3: 'DEVELOPMENT', 4: 'TESTING', 5: 'REVIEW' };
+  const stageLabels: Record<number, string> = {};
+  // Merge: custom names override defaults
+  for (const num of [...Object.keys(defaultStageLabels).map(Number), ...Object.keys(customStageNames).map(Number)]) {
+    stageLabels[num] = customStageNames[num] || defaultStageLabels[num] || `STAGE ${num}`;
+  }
+
+  const saveStageNames = async (updated: Record<number, string>) => {
+    setCustomStageNames(updated);
+    try {
+      await supabase.from('staff_tasks').update({ stage_names: updated as any, updated_at: new Date().toISOString() } as any).eq('id', task.id);
+    } catch (e) {
+      console.error('Error saving stage names:', e);
+    }
+  };
 
   const profiles = task.assigned_to_profiles?.length > 0
     ? task.assigned_to_profiles
@@ -266,14 +533,22 @@ const TaskDetailPage = ({
 
           {/* Subtasks Stage Board */}
           <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-lg p-4 sm:p-6 space-y-4 min-w-0">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <Layers className="h-4 w-4 text-primary" />
                 Project Stages & Subtasks
               </h3>
-              <span className="text-xs text-muted-foreground shrink-0">
-                {completedSubtasks}/{subtasks.length} completed
-              </span>
+              <div className="flex items-center gap-3">
+                {reviewPendingSubtasks.length > 0 && (
+                  <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/40 text-[10px] font-bold animate-pulse cursor-default">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {reviewPendingSubtasks.length} Review Request{reviewPendingSubtasks.length > 1 ? 's' : ''}
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground shrink-0">
+                  {completedSubtasks}/{subtasks.length} completed
+                </span>
+              </div>
             </div>
 
             {/* Stage Tabs - Scrollable */}
@@ -284,23 +559,91 @@ const TaskDetailPage = ({
                   const count = (stageMap[stageNum] || []).length;
                   return (
                     <div key={stageNum} className={`flex items-center gap-1.5 px-3 py-2.5 border-b-2 shrink-0 ${color.border}`}>
-                      <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap ${color.text}`}>
-                        {stageLabels[stageNum] || `STAGE ${stageNum}`}
-                      </span>
+                      {editingStageNum === stageNum ? (
+                        <Input
+                          autoFocus
+                          value={editingStageName}
+                          onChange={e => setEditingStageName(e.target.value)}
+                          onBlur={() => {
+                            if (editingStageName.trim()) {
+                              const updated = { ...customStageNames, [stageNum]: editingStageName.trim().toUpperCase() };
+                              saveStageNames(updated);
+                            }
+                            setEditingStageNum(null);
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              if (editingStageName.trim()) {
+                                const updated = { ...customStageNames, [stageNum]: editingStageName.trim().toUpperCase() };
+                                saveStageNames(updated);
+                              }
+                              setEditingStageNum(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingStageNum(null);
+                            }
+                          }}
+                          className="h-6 w-24 text-[10px] sm:text-xs font-bold uppercase bg-transparent border-white/20 px-1 py-0"
+                        />
+                      ) : (
+                        <span
+                          className={`text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap cursor-pointer hover:underline ${color.text}`}
+                          onDoubleClick={() => {
+                            setEditingStageNum(stageNum);
+                            setEditingStageName(stageLabels[stageNum] || `STAGE ${stageNum}`);
+                          }}
+                          title="Double-click to rename"
+                        >
+                          {stageLabels[stageNum] || `STAGE ${stageNum}`}
+                        </span>
+                      )}
                       <span className={`text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full ${color.badge}`}>{count}</span>
                     </div>
                   );
                 })}
-                <button
-                  onClick={() => {
-                    const nextStage = stageNums.length > 0 ? Math.max(...stageNums) + 1 : 1;
-                    setQuickAddStage(nextStage);
-                    setNewSubtask(prev => ({ ...prev, stage: nextStage }));
-                  }}
-                  className="px-3 py-2.5 text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 shrink-0 whitespace-nowrap"
-                >
-                  <Plus className="h-3 w-3" /> Add Stage
-                </button>
+                {/* Add Stage with name input */}
+                {newStageName !== null && quickAddStage === null ? (
+                  <div className="flex items-center gap-1 px-2 py-1.5 shrink-0">
+                    <button
+                      onClick={() => {
+                        const nextStage = stageNums.length > 0 ? Math.max(...stageNums) + 1 : 1;
+                        setNewStageName("");
+                        setQuickAddStage(nextStage);
+                        setNewSubtask(prev => ({ ...prev, stage: nextStage }));
+                      }}
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 whitespace-nowrap"
+                    >
+                      <Plus className="h-3 w-3" /> Add Stage
+                    </button>
+                  </div>
+                ) : null}
+                {quickAddStage !== null && (
+                  <div className="flex items-center gap-1 px-2 py-1.5 shrink-0">
+                    <Input
+                      autoFocus
+                      placeholder="Stage name..."
+                      value={newStageName}
+                      onChange={e => setNewStageName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && newStageName.trim()) {
+                          const updated = { ...customStageNames, [quickAddStage!]: newStageName.trim().toUpperCase() };
+                          saveStageNames(updated);
+                        }
+                      }}
+                      className="h-6 w-24 text-[10px] font-bold uppercase bg-transparent border-white/20 px-1 py-0"
+                    />
+                    <button
+                      onClick={() => {
+                        if (newStageName.trim()) {
+                          const updated = { ...customStageNames, [quickAddStage!]: newStageName.trim().toUpperCase() };
+                          saveStageNames(updated);
+                        }
+                      }}
+                      className="text-[10px] text-primary hover:underline whitespace-nowrap"
+                    >
+                      Save
+                    </button>
+                  </div>
+                )}
               </div>
             </ScrollArea>
 
@@ -411,7 +754,7 @@ const TaskDetailPage = ({
                       const isQuickAddOpen = quickAddStage === stageNum;
 
                       return (
-                        <Droppable key={stageNum} droppableId={`stage-${stageNum}`}>
+                        <StrictModeDroppable key={stageNum} droppableId={`stage-${stageNum}`}>
                           {(provided, snapshot) => (
                             <div
                               {...provided.droppableProps}
@@ -442,6 +785,9 @@ const TaskDetailPage = ({
                                   <Input autoFocus placeholder="Subtask title *" value={newSubtask.title}
                                     onChange={e => setNewSubtask({ ...newSubtask, title: e.target.value })}
                                     className="h-8 text-xs bg-transparent border-white/10" />
+                                  <Textarea placeholder="Description (optional)" value={newSubtask.description}
+                                    onChange={e => setNewSubtask({ ...newSubtask, description: e.target.value })}
+                                    className="text-xs bg-transparent border-white/10 min-h-[50px] resize-none" />
                                   <Select value={newSubtask.assigned_to} onValueChange={v => setNewSubtask({ ...newSubtask, assigned_to: v })}>
                                     <SelectTrigger className="h-8 text-xs bg-transparent border-white/10"><SelectValue placeholder="Assign to..." /></SelectTrigger>
                                     <SelectContent>
@@ -481,19 +827,38 @@ const TaskDetailPage = ({
                                         {...provided.draggableProps}
                                         {...provided.dragHandleProps}
                                         className={cn(
-                                          "rounded-lg border border-white/10 bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group",
+                                          "rounded-lg border bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group cursor-pointer",
+                                          (st.status === 'review_pending' || st.status === 'pending_approval')
+                                            ? "border-orange-500/40 ring-1 ring-orange-500/20"
+                                            : "border-white/10",
                                           snapshot.isDragging && "rotate-2 scale-105 shadow-2xl"
                                         )}
+                                        onClick={() => {
+                                          setReviewDialogSubtask(st);
+                                          setReviewDialogOpen(true);
+                                        }}
                                       >
+                                        {/* Review Request Banner */}
+                                        {(st.status === 'review_pending' || st.status === 'pending_approval') && (
+                                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-orange-500/15 border border-orange-500/30 -mt-1 mb-1">
+                                            <AlertCircle className="h-3 w-3 text-orange-400 animate-pulse" />
+                                            <span className="text-[9px] font-bold text-orange-300 uppercase tracking-wider">Review Requested</span>
+                                          </div>
+                                        )}
+
                                         <div className="flex items-start justify-between gap-2">
                                           <span className="text-xs font-medium leading-tight break-words min-w-0">{st.title}</span>
                                           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                             <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400"
-                                              onClick={() => handleDeleteSubtask(st.id)}>
+                                              onClick={(e) => { e.stopPropagation(); handleDeleteSubtask(st.id); }}>
                                               <Trash2 className="h-3 w-3" />
                                             </Button>
                                           </div>
                                         </div>
+
+                                        {st.description && (
+                                          <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2 break-words">{st.description}</p>
+                                        )}
 
                                         {st.points > 0 && (
                                           <div className="flex items-center gap-1">
@@ -514,25 +879,89 @@ const TaskDetailPage = ({
                                               <span className="text-[10px] text-muted-foreground truncate">{st.staff_profiles.full_name}</span>
                                             </div>
                                           )}
-                                          <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                          <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${
+                                            st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                            : (st.status === 'review_pending' || st.status === 'pending_approval') ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
                                             : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
                                               : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                                             }`}>
-                                            {st.status === 'completed' ? 'DONE' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
+                                            {st.status === 'completed' ? 'DONE' : (st.status === 'review_pending' || st.status === 'pending_approval') ? 'IN REVIEW' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
                                           </Badge>
                                         </div>
 
                                         {/* Status toggle */}
-                                        <Select value={st.status} onValueChange={(v) => handleSubtaskStatusUpdate(st.id, v)}>
-                                          <SelectTrigger className="h-6 text-[9px] bg-transparent border-white/5">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="pending" className="text-xs">Pending</SelectItem>
-                                            <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
-                                            <SelectItem value="completed" className="text-xs">Completed</SelectItem>
-                                          </SelectContent>
-                                        </Select>
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                          <Select value={st.status} onValueChange={(v) => handleSubtaskStatusUpdate(st.id, v)}>
+                                            <SelectTrigger className="h-6 text-[9px] bg-transparent border-white/5">
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="pending" className="text-xs">Pending</SelectItem>
+                                              <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
+                                              <SelectItem value="review_pending" className="text-xs">Review Pending</SelectItem>
+                                              <SelectItem value="pending_approval" className="text-xs">Pending Approval</SelectItem>
+                                              <SelectItem value="completed" className="text-xs">Completed</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+
+                                        {/* Team Head Submit Button */}
+                                        {(st.status === 'in_progress' || st.status === 'pending') && (
+                                          <div onClick={(e) => e.stopPropagation()}>
+                                            <Button
+                                              size="sm"
+                                              className="w-full h-6 text-[9px] bg-purple-600/80 hover:bg-purple-600 mt-1"
+                                              onClick={() => {
+                                                setExpandedSubmitSubtask(expandedSubmitSubtask === st.id ? null : st.id);
+                                                setSubmitNotes("");
+                                                setSubmitFiles([]);
+                                              }}
+                                            >
+                                              {expandedSubmitSubtask === st.id ? 'Cancel' : 'Write & Submit'}
+                                            </Button>
+                                          </div>
+                                        )}
+
+                                        {/* Expanded Submission Form */}
+                                        {expandedSubmitSubtask === st.id && (
+                                          <div className="space-y-2 mt-2 pt-2 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
+                                            <Textarea
+                                              placeholder="Add notes..."
+                                              value={submitNotes}
+                                              onChange={(e) => setSubmitNotes(e.target.value)}
+                                              className="bg-black/50 border-white/10 text-[10px] min-h-[50px] placeholder:text-white/30"
+                                            />
+                                            <div className="flex flex-wrap gap-1">
+                                              {submitFiles.map((file, fidx) => (
+                                                <div key={fidx} className="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">
+                                                  <FileText className="w-2.5 h-2.5 text-blue-400" />
+                                                  <span className="text-[8px] text-white/60 max-w-[60px] truncate">{file.name}</span>
+                                                  <button className="text-red-400 hover:text-red-300" onClick={() => setSubmitFiles(submitFiles.filter((_, i) => i !== fidx))}>
+                                                    <Trash2 className="h-2.5 w-2.5" />
+                                                  </button>
+                                                </div>
+                                              ))}
+                                              <Button variant="outline" size="sm" className="h-5 text-[8px] border-dashed border-white/20 px-1.5"
+                                                onClick={() => submitFileInputRef.current?.click()} disabled={isUploadingSubtaskFile}>
+                                                {isUploadingSubtaskFile ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Plus className="h-2.5 w-2.5 mr-0.5" />}
+                                                Upload
+                                              </Button>
+                                              <input type="file" multiple hidden ref={submitFileInputRef} onChange={handleSubmitFileUpload} />
+                                            </div>
+                                            <div className="flex gap-1">
+                                              <Button size="sm" className="flex-1 h-6 text-[9px] bg-emerald-600 hover:bg-emerald-700"
+                                                onClick={() => handleTeamHeadSubtaskSubmit(st.id, 'completed')} disabled={isSubmittingSubtask}>
+                                                {isSubmittingSubtask ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                                                Complete
+                                              </Button>
+                                              <Button size="sm" className="flex-1 h-6 text-[9px] bg-orange-600 hover:bg-orange-700"
+                                                onClick={() => handleTeamHeadSubtaskSubmit(st.id, 'pending_approval')} disabled={isSubmittingSubtask}>
+                                                {isSubmittingSubtask ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3 mr-1" />}
+                                                For Review
+                                              </Button>
+                                            </div>
+                                          </div>
+                                        )}
                                       </div>
                                     )}
                                   </Draggable>
@@ -547,7 +976,7 @@ const TaskDetailPage = ({
                               </div>
                             </div>
                           )}
-                        </Droppable>
+                        </StrictModeDroppable>
                       );
                     })}
                   </div>
@@ -714,20 +1143,146 @@ const TaskDetailPage = ({
               </div>
             )}
 
-            {/* Timeline */}
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Timeline</Label>
-              <div className="space-y-1.5 text-xs">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-3 w-3 shrink-0" />
-                  <span>Due: {task.due_date ? (() => { try { return format(new Date(task.due_date), 'MMM dd, yyyy'); } catch { return 'Invalid date'; } })() : 'No due date'}</span>
+            {/* Timeline - Countdown Clock */}
+            {(() => {
+              const now = new Date();
+              const dueDate = task.due_date ? new Date(task.due_date + (task.due_time ? `T${task.due_time}` : 'T23:59:59')) : null;
+              const createdDate = new Date(task.created_at);
+              const totalMs = dueDate ? dueDate.getTime() - createdDate.getTime() : 0;
+              const remainingMs = dueDate ? dueDate.getTime() - now.getTime() : 0;
+              const progress = totalMs > 0 ? Math.max(0, Math.min(1, 1 - remainingMs / totalMs)) : 0;
+              const isPast = remainingMs <= 0;
+
+              // Color based on urgency
+              let color = 'emerald'; // > 7 days
+              let glowColor = '142 71% 45%';
+              if (isPast) { color = 'red'; glowColor = '0 84% 60%'; }
+              else if (remainingMs < 24 * 60 * 60 * 1000) { color = 'red'; glowColor = '0 84% 60%'; }
+              else if (remainingMs < 3 * 24 * 60 * 60 * 1000) { color = 'orange'; glowColor = '25 95% 53%'; }
+              else if (remainingMs < 7 * 24 * 60 * 60 * 1000) { color = 'amber'; glowColor = '38 92% 50%'; }
+
+              // Time remaining text
+              let timeText = 'No deadline';
+              if (dueDate) {
+                if (isPast) {
+                  const overMs = Math.abs(remainingMs);
+                  const overDays = Math.floor(overMs / (24*60*60*1000));
+                  const overHrs = Math.floor((overMs % (24*60*60*1000)) / (60*60*1000));
+                  timeText = `Overdue by ${overDays}d ${overHrs}h`;
+                } else {
+                  const days = Math.floor(remainingMs / (24*60*60*1000));
+                  const hrs = Math.floor((remainingMs % (24*60*60*1000)) / (60*60*1000));
+                  const mins = Math.floor((remainingMs % (60*60*1000)) / (60*1000));
+                  timeText = days > 0 ? `${days}d ${hrs}h remaining` : hrs > 0 ? `${hrs}h ${mins}m remaining` : `${mins}m remaining`;
+                }
+              }
+
+              // SVG clock arc
+              const radius = 54;
+              const circumference = 2 * Math.PI * radius;
+              const strokeDashoffset = circumference * (1 - progress);
+              const handAngle = progress * 360;
+
+              const colorMap: Record<string, { ring: string; text: string; bg: string; hand: string }> = {
+                emerald: { ring: 'stroke-emerald-400', text: 'text-emerald-400', bg: 'bg-emerald-500/10', hand: 'stroke-emerald-300' },
+                amber: { ring: 'stroke-amber-400', text: 'text-amber-400', bg: 'bg-amber-500/10', hand: 'stroke-amber-300' },
+                orange: { ring: 'stroke-orange-400', text: 'text-orange-400', bg: 'bg-orange-500/10', hand: 'stroke-orange-300' },
+                red: { ring: 'stroke-red-400', text: 'text-red-400', bg: 'bg-red-500/10', hand: 'stroke-red-300' },
+              };
+              const c = colorMap[color];
+
+              return (
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Timeline</Label>
+                  <div className={`rounded-2xl border border-white/10 ${c.bg} backdrop-blur-xl p-4 flex flex-col items-center gap-3`}>
+                    {/* Clock SVG */}
+                    <div className="relative w-[140px] h-[140px]">
+                      <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
+                        {/* Background track */}
+                        <circle cx="60" cy="60" r={radius} fill="none" stroke="currentColor" className="text-white/5" strokeWidth="5" />
+                        {/* Tick marks */}
+                        {Array.from({ length: 12 }).map((_, i) => {
+                          const a = (i / 12) * 2 * Math.PI;
+                          const r1 = 48, r2 = 52;
+                          return (
+                            <line key={i}
+                              x1={60 + r1 * Math.cos(a)} y1={60 + r1 * Math.sin(a)}
+                              x2={60 + r2 * Math.cos(a)} y2={60 + r2 * Math.sin(a)}
+                              stroke="currentColor" className="text-white/15" strokeWidth="1"
+                            />
+                          );
+                        })}
+                        {/* Progress arc with pulse animation */}
+                        <circle cx="60" cy="60" r={radius} fill="none"
+                          className={`${c.ring} animate-pulse-ring`}
+                          strokeWidth="5" strokeLinecap="round"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={strokeDashoffset}
+                          style={{ transition: 'stroke-dashoffset 1s ease', filter: `drop-shadow(0 0 8px hsl(${glowColor} / 0.7))` }}
+                        />
+                        {/* Additional glow ring */}
+                        <circle cx="60" cy="60" r={radius} fill="none"
+                          className={`${c.ring}`}
+                          strokeWidth="2" strokeLinecap="round" opacity="0.3"
+                          strokeDasharray={circumference}
+                          strokeDashoffset={strokeDashoffset}
+                          style={{ transition: 'stroke-dashoffset 1s ease', filter: `drop-shadow(0 0 12px hsl(${glowColor} / 0.5))` }}
+                        />
+                        {/* Clock hand with rotation */}
+                        {dueDate && (
+                          <g style={{ transform: `rotate(${handAngle}deg)`, transformOrigin: '60px 60px', transition: 'all 1s ease' }}>
+                            <line x1="60" y1="60" x2="60" y2="25"
+                              className={c.hand} strokeWidth="3" strokeLinecap="round"
+                              style={{ filter: `drop-shadow(0 0 4px hsl(${glowColor} / 0.6))` }}
+                            />
+                          </g>
+                        )}
+                        {/* Center dot with glow */}
+                        <circle cx="60" cy="60" r="3.5" className={`fill-current ${c.text}`} 
+                          style={{ filter: `drop-shadow(0 0 6px hsl(${glowColor} / 0.8))` }}
+                        />
+                      </svg>
+                      {/* Center text */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center rotate-0">
+                        <span className={`text-lg font-bold tabular-nums ${c.text}`}>
+                          {dueDate ? (isPast ? '0' : Math.max(0, Math.floor(remainingMs / (24*60*60*1000))).toString()) : '—'}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground uppercase tracking-wider">
+                          {dueDate ? (isPast ? 'overdue' : 'days left') : 'no date'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Time remaining label */}
+                    <span className={`text-xs font-semibold ${c.text} ${isPast ? 'animate-pulse' : ''}`}>
+                      {timeText}
+                    </span>
+
+                    {/* Due date & created */}
+                    <div className="w-full space-y-1 text-[11px] text-muted-foreground">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5"><Calendar className="h-3 w-3" /> Due</span>
+                        <span className="font-medium text-foreground/80">
+                          {task.due_date ? (() => { try { return format(new Date(task.due_date), 'MMM dd, yyyy'); } catch { return 'Invalid'; } })() : 'Not set'}
+                        </span>
+                      </div>
+                      {task.due_time && (
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> Time</span>
+                          <span className="font-medium text-foreground/80">{task.due_time}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> Created</span>
+                        <span className="font-medium text-foreground/80">
+                          {(() => { try { return format(new Date(task.created_at), 'MMM dd, yyyy'); } catch { return ''; } })()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Clock className="h-3 w-3 shrink-0" />
-                  <span>Created: {(() => { try { return format(new Date(task.created_at), 'MMM dd, yyyy'); } catch { return ''; } })()}</span>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Attachments */}
             {task.attachments && Array.isArray(task.attachments) && task.attachments.length > 0 && (
@@ -772,6 +1327,20 @@ const TaskDetailPage = ({
           </div>
         </div>
       </div>
+
+      {/* Subtask Review Dialog */}
+      <SubtaskReviewDialog
+        subtask={reviewDialogSubtask}
+        parentTask={task}
+        open={reviewDialogOpen}
+        onOpenChange={(open) => {
+          setReviewDialogOpen(open);
+          if (!open) setReviewDialogSubtask(null);
+        }}
+        onApprove={handleSubtaskApprove}
+        onReject={handleSubtaskReject}
+        viewOnly={reviewDialogSubtask?.status !== 'review_pending' && reviewDialogSubtask?.status !== 'pending_approval'}
+      />
     </div>
   );
 };

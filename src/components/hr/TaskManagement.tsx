@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { DragDropContext, Draggable } from "react-beautiful-dnd";
+import StrictModeDroppable from "@/components/ui/StrictModeDroppable";
 import { cn } from "@/lib/utils";
 
 import {
@@ -107,6 +109,11 @@ const TaskManagement = () => {
   const [bulkSubtasks, setBulkSubtasks] = useState<any[]>([]);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isSubtaskFullScreen, setIsSubtaskFullScreen] = useState(false);
+  const [showSubtasks, setShowSubtasks] = useState(false);
+  const [allSubtasks, setAllSubtasks] = useState<Record<string, any[]>>({});
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [kanbanDisplayMode, setKanbanDisplayMode] = useState<'tasks' | 'subtasks' | 'stages'>('tasks');
+  const [loadingAllSubtasks, setLoadingAllSubtasks] = useState(false);
 
   const [newSubtask, setNewSubtask] = useState({
     title: "",
@@ -848,6 +855,40 @@ const TaskManagement = () => {
     }
   };
 
+  const fetchAllSubtasksForTasks = async (taskIds: string[]) => {
+    if (taskIds.length === 0) return;
+    try {
+      setLoadingAllSubtasks(true);
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .select(`*, staff_profiles:assigned_to (full_name, username, avatar_url)`)
+        .in('task_id', taskIds)
+        .order('stage', { ascending: true })
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      const grouped: Record<string, any[]> = {};
+      (data || []).forEach((st: any) => {
+        if (!grouped[st.task_id]) grouped[st.task_id] = [];
+        grouped[st.task_id].push(st);
+      });
+      setAllSubtasks(grouped);
+    } catch (error) {
+      console.error('Error fetching all subtasks:', error);
+    } finally {
+      setLoadingAllSubtasks(false);
+    }
+  };
+
+  const toggleCardExpanded = (taskId: string) => {
+    setExpandedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  };
+
 
 
   const handleDeleteTask = async () => {
@@ -1238,22 +1279,24 @@ const TaskManagement = () => {
     );
   };
 
-  const getStageBadge = (stage: number | null | undefined) => {
+  const getStageBadge = (stage: number | null | undefined, taskStageNames?: any) => {
     if (!stage) return null;
+    const names: Record<string, string> = (taskStageNames && typeof taskStageNames === 'object') ? taskStageNames : {};
+    const label = names[String(stage)] || `Stage ${stage}`;
     return (
-      <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/30">
+      <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-500/30">
         <Layers className="h-3 w-3 mr-1" />
-        Stage {stage}
+        {label}
       </Badge>
     );
   };
 
   const getPriorityBadge = (priority) => {
     const priorityConfig = {
-      low: 'bg-gray-100 text-gray-800',
-      medium: 'bg-blue-100 text-blue-800',
-      high: 'bg-orange-100 text-orange-800',
-      urgent: 'bg-red-100 text-red-800'
+      low: 'bg-gray-100 text-gray-700 dark:bg-gray-800/50 dark:text-gray-300',
+      medium: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+      urgent: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
     };
 
     return (
@@ -1320,627 +1363,733 @@ const TaskManagement = () => {
     );
   }
 
+  const statusCounts = {
+    all: tasks.length,
+    pending: tasks.filter(t => t.status === 'pending').length,
+    in_progress: tasks.filter(t => t.status === 'in_progress').length,
+    review_pending: tasks.filter(t => t.status === 'review_pending').length,
+    completed: tasks.filter(t => t.status === 'completed').length,
+    handover: tasks.filter(t => t.status === 'handover').length,
+  };
+
   return (
     <TooltipProvider>
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-6 w-6 text-blue-600" />
-            <h2 className="text-2xl font-bold">Task Management</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2.5">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                <ClipboardList className="h-5 w-5 text-primary" />
+              </div>
+              Tasks
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {filteredTasks.length} of {tasks.length} tasks shown
+            </p>
           </div>
-          <Button className="flex items-center gap-2" onClick={() => setCurrentView('create')}>
+          <Button className="flex items-center gap-2 shadow-md" onClick={() => setCurrentView('create')}>
             <Plus className="h-4 w-4" />
             Create Task
           </Button>
         </div>
 
-        {/* Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Filter Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search tasks..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {[
+            { key: 'all', label: 'Total', count: statusCounts.all, color: 'text-foreground', bg: 'bg-muted/50' },
+            { key: 'pending', label: 'Pending', count: statusCounts.pending, color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-500/10' },
+            { key: 'in_progress', label: 'In Progress', count: statusCounts.in_progress, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10' },
+            { key: 'review_pending', label: 'In Review', count: statusCounts.review_pending, color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-500/10' },
+            { key: 'completed', label: 'Completed', count: statusCounts.completed, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-500/10' },
+            { key: 'handover', label: 'Handover', count: statusCounts.handover, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10' },
+          ].map(stat => (
+            <button
+              key={stat.key}
+              onClick={() => setFilterStatus(stat.key)}
+              className={cn(
+                "rounded-xl p-3 text-left transition-all border",
+                filterStatus === stat.key
+                  ? `${stat.bg} border-primary/30 shadow-sm ring-1 ring-primary/10`
+                  : "bg-card border-transparent hover:bg-muted/40"
+              )}
+            >
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+              <p className={cn("text-2xl font-bold mt-0.5", stat.color)}>{stat.count}</p>
+            </button>
+          ))}
+        </div>
+
+        {/* Filters + View Toggle */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search tasks, assignees..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-card border-muted-foreground/10"
+            />
+          </div>
+          <Select value={filterPriority} onValueChange={setFilterPriority}>
+            <SelectTrigger className="w-[140px] bg-card border-muted-foreground/10">
+              <Flag className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-1 bg-card border border-muted-foreground/10 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+              className="h-8 px-3 text-xs"
+            >
+              <List className="h-3.5 w-3.5 mr-1.5" />
+              Table
+            </Button>
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className="h-8 px-3 text-xs"
+            >
+              <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
+              Grid
+            </Button>
+            <Button
+              variant={viewMode === 'kanban' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('kanban')}
+              className="h-8 px-3 text-xs"
+            >
+              <Trello className="h-3.5 w-3.5 mr-1.5" />
+              Kanban
+            </Button>
+            {viewMode === 'kanban' && (
+              <Button
+                variant={isFullScreen ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setIsFullScreen(!isFullScreen)}
+                className="h-8 px-2"
+              >
+                {isFullScreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div>
+          {filteredTasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
+                <ClipboardList className="h-8 w-8 text-muted-foreground/40" />
               </div>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="handover">Handover</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filterPriority} onValueChange={setFilterPriority}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Priorities" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Priorities</SelectItem>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                  <SelectItem value="urgent">Urgent</SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-2 border rounded-lg p-1 bg-muted/50">
+              <h3 className="text-lg font-semibold text-muted-foreground">No tasks found</h3>
+              <p className="text-sm text-muted-foreground/60 mt-1 max-w-xs">
+                {searchTerm || filterStatus !== 'all' || filterPriority !== 'all'
+                  ? "Try adjusting your filters to find what you're looking for."
+                  : "Create your first task to get started."}
+              </p>
+              {(searchTerm || filterStatus !== 'all' || filterPriority !== 'all') && (
                 <Button
-                  variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                  variant="outline"
                   size="sm"
-                  onClick={() => setViewMode('table')}
-                  className="h-8 px-2"
+                  className="mt-4"
+                  onClick={() => { setSearchTerm(''); setFilterStatus('all'); setFilterPriority('all'); }}
                 >
-                  <List className="h-4 w-4 mr-1" />
-                  Table
+                  Clear Filters
                 </Button>
-                <Button
-                  variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className="h-8 px-2"
-                >
-                  <LayoutGrid className="h-4 w-4 mr-1" />
-                  Grid
-                </Button>
-                <Button
-                  variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setViewMode('kanban')}
-                  className="h-8 px-2"
-                >
-                  <Trello className="h-4 w-4 mr-1" />
-                  Kanban
-                </Button>
-                <Button
-                  variant={isFullScreen ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setIsFullScreen(!isFullScreen)}
-                  className="h-8 px-2"
-                  title={isFullScreen ? "Exit Full Screen" : "Full Screen Kanban"}
-                >
-                  {isFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">
-                  Showing {filteredTasks.length} tasks
-                </span>
-              </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Tasks Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Tasks</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Dynamic Content: Table, Grid or Kanban */}
-            <div className="space-y-4">
-              {viewMode === 'table' ? (
-                <div className="hidden md:block overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Task</TableHead>
-                        <TableHead>Department</TableHead>
-                        <TableHead>Assigned To</TableHead>
-                        <TableHead>Stage</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Due Date</TableHead>
-                        <TableHead>Points</TableHead>
-                        <TableHead>Actions</TableHead>
-                        <TableHead></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredTasks.map((task) => (
-                        <TableRow key={task.id} className="hover:bg-muted/50 transition-colors">
-                          <TableCell>
-                            <div className="max-w-[200px]">
-                              <div className="font-semibold truncate">{task.title}</div>
-                              {task.description && (
-                                <div className="text-xs text-muted-foreground truncate">
-                                  {task.description}
-                                </div>
-                              )}
-                              {(task.staff_projects?.title || task.staff_projects?.name) && (
-                                <Badge variant="secondary" className="mt-1 text-[10px] h-4">
-                                  {task.staff_projects?.title || task.staff_projects?.name}
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {task.departments?.name ? (
-                              <Badge variant="outline" className="text-[10px] h-4 py-0 px-1.5 border-primary/20 bg-primary/5 text-primary/80">
-                                {task.departments.name}
-                              </Badge>
-                            ) : (
-                              <span className="text-gray-400 text-xs italic">N/A</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex -space-x-3 hover:space-x-1 transition-all">
-                              {(task.assigned_to_profiles?.length > 0
-                                ? task.assigned_to_profiles
-                                : task.assigned_to_profile ? [task.assigned_to_profile] : []
-                              ).map((profile: any, i: number) => (
-                                <Tooltip key={i}>
-                                  <TooltipTrigger asChild>
-                                    <Avatar className="h-8 w-8 border-2 border-background ring-2 ring-primary/10 hover:z-10 transition-all hover:scale-110 shadow-sm cursor-pointer">
-                                      <AvatarImage src={profile.avatar_url} />
-                                      <AvatarFallback className="text-[10px] bg-muted font-bold text-muted-foreground">
-                                        {profile.full_name?.substring(0, 2).toUpperCase()}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="text-xs font-semibold">{profile.full_name}</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              ))}
-                              {!task.assigned_to_profile && !task.assigned_to_profiles?.length && (
-                                <span className="text-gray-400 text-xs italic">Unassigned</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {getStageBadge(task.current_stage || 1)}
-                          </TableCell>
-                          <TableCell>
-                            {getPriorityBadge(task.priority)}
-                          </TableCell>
-                          <TableCell>
-                            {getStatusBadge(task.status)}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            {task.due_date ? (
-                              <div className="flex items-center gap-1.5 text-xs">
-                                <Calendar className="h-3 w-3 text-muted-foreground" />
-                                {format(new Date(task.due_date), 'MMM dd')}
-                              </div>
-                            ) : (
-                              <span className="text-gray-400 text-xs">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="text-xs font-mono">{task.points}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={task.status}
-                              onValueChange={(value) => handleStatusChange(task.id, value)}
-                            >
-                              <SelectTrigger className="h-8 w-32 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="in_progress">In Progress</SelectItem>
-                                {(userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) ? (
-                                  <SelectItem value="completed">Completed</SelectItem>
-                                ) : null}
-                                <SelectItem value="review_pending">Review</SelectItem>
-                                <SelectItem value="handover">Handover</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-blue-500" onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}>
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-amber-500" onClick={() => openEditDialog(task)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => { setTaskToDelete(task); setIsDeleteDialogOpen(true); }}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : viewMode === 'grid' ? (
-                /* Grid/Card View */
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {filteredTasks.map((task) => (
-                    <Card key={task.id} className="overflow-hidden hover:shadow-md transition-all group border-muted-foreground/10 bg-card/50 backdrop-blur-sm">
-                      <CardHeader className="p-4 flex flex-row items-start justify-between space-y-0 pb-2">
-                        <div className="space-y-1 pr-6 overflow-hidden">
-                          <CardTitle className="text-base font-bold line-clamp-1 group-hover:text-primary transition-colors">
-                            {task.title}
-                          </CardTitle>
-                          {(task.staff_projects?.title || task.staff_projects?.name) && (
-                            <p className="text-[10px] text-primary/70 font-medium">#{task.staff_projects?.title || task.staff_projects?.name}</p>
-                          )}
-                          {task.departments?.name && (
-                            <div className="pt-0.5">
-                              <Badge variant="outline" className="text-[10px] h-4 py-0 px-1.5 border-primary/20 bg-primary/5 text-primary/80">
-                                {task.departments.name}
-                              </Badge>
-                            </div>
-                          )}
-                        </div>
-                        <div className="shrink-0 flex flex-col items-end gap-1">
-                          {getPriorityBadge(task.priority)}
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 space-y-4">
-                        {task.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">
-                            {task.description}
-                          </p>
+          ) : viewMode === 'table' ? (
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block rounded-xl border border-border/60 overflow-hidden bg-card shadow-sm">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Task</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5 min-w-[140px]">Department</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Assigned To</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Stage</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Priority</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Status</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Due Date</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5 text-center">Points</TableHead>
+                      <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Actions</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTasks.map((task, idx) => (
+                      <TableRow
+                        key={task.id}
+                        className={cn(
+                          "transition-all border-b border-border/30 cursor-pointer group",
+                          idx % 2 === 0 ? "bg-transparent" : "bg-muted/15",
+                          "hover:bg-primary/[0.04] hover:shadow-[inset_3px_0_0_0_hsl(var(--primary))]"
                         )}
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex -space-x-2">
+                        onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}
+                      >
+                        <TableCell className="py-3.5">
+                          <div className="max-w-[240px]">
+                            <div className="font-semibold text-sm truncate group-hover:text-primary transition-colors leading-tight">{task.title}</div>
+                            {task.description && (
+                              <div className="text-[11px] text-muted-foreground/60 truncate mt-1 leading-tight">
+                                {task.description}
+                              </div>
+                            )}
+                            {(task.staff_projects?.title || task.staff_projects?.name) && (
+                              <div className="flex items-center gap-1.5 mt-1.5">
+                                <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/40" />
+                                <span className="text-[10px] text-primary/60 font-medium truncate">
+                                  {task.staff_projects?.title || task.staff_projects?.name}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
+                          {task.departments?.name ? (
+                            <Badge className="text-[10px] h-6 py-0 px-2.5 rounded-full font-semibold bg-primary/15 text-primary border-primary/25 hover:bg-primary/20 shadow-none whitespace-nowrap">
+                              {task.departments.name}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground/30 text-xs">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
+                          <div className="flex -space-x-1.5 hover:space-x-0.5 transition-all">
                             {(task.assigned_to_profiles?.length > 0
                               ? task.assigned_to_profiles
                               : task.assigned_to_profile ? [task.assigned_to_profile] : []
                             ).map((profile: any, i: number) => (
-                              <Avatar key={i} className="h-7 w-7 border-2 border-background ring-1 ring-border">
-                                <AvatarImage src={profile.avatar_url} />
-                                <AvatarFallback className="text-[10px]">
-                                  {profile.full_name?.substring(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
+                              <Tooltip key={i}>
+                                <TooltipTrigger asChild>
+                                  <Avatar className="h-8 w-8 border-[2.5px] border-background ring-1 ring-border/50 hover:z-10 transition-all hover:scale-110 shadow-sm cursor-pointer">
+                                    <AvatarImage src={profile.avatar_url || profile.profile_photo_url} />
+                                    <AvatarFallback className="text-[10px] bg-primary/10 font-bold text-primary/80">
+                                      {profile.full_name?.substring(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs font-semibold">
+                                  {profile.full_name}
+                                </TooltipContent>
+                              </Tooltip>
                             ))}
+                            {!task.assigned_to_profile && !task.assigned_to_profiles?.length && (
+                              <span className="text-muted-foreground/30 text-xs italic">Unassigned</span>
+                            )}
                           </div>
-                          <div className="flex flex-col items-end gap-1">
-                            {getStageBadge(task.current_stage || 1)}
-                            <span className="text-[10px] text-muted-foreground">Points: {task.points}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2 border-t border-muted/50">
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-[10px] text-muted-foreground">
-                              {task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No date'}
-                            </span>
-                          </div>
+                        </TableCell>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
+                          {getStageBadge(task.current_stage || 1, task.stage_names)}
+                        </TableCell>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
+                          {getPriorityBadge(task.priority)}
+                        </TableCell>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
                           {getStatusBadge(task.status)}
-                        </div>
-
-                        <div className="flex gap-2 pt-2">
-                          <Button
-                            size="sm"
-                            className="flex-1 h-8 text-[11px] bg-primary/10 text-primary hover:bg-primary/20 border-none shadow-none"
-                            onClick={() => {
-                              setSelectedTask(task);
-                              setCurrentView('detail');
-                            }}
-                          >
-                            <Eye className="h-3 w-3 mr-1" /> View
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0"
-                            onClick={() => openEditDialog(task)}
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 w-8 p-0 text-red-500 hover:bg-red-500/10"
-                            onClick={() => {
-                              setTaskToDelete(task);
-                              setIsDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                /* Kanban View */
-                <DragDropContext onDragEnd={onDragEnd}>
-                  <div className={cn(
-                    "flex gap-4 overflow-x-auto pb-6 custom-scrollbar min-h-[600px] items-start transition-all",
-                    isFullScreen && "fixed inset-0 z-[100] bg-background p-8 flex-col overflow-y-auto"
-                  )}>
-                    {isFullScreen && (
-                      <div className="flex justify-between items-center mb-6 shrink-0 w-full max-w-[1600px] mx-auto">
-                        <div className="flex items-center gap-3">
-                          <Trello className="h-8 w-8 text-primary" />
-                          <h1 className="text-3xl font-bold tracking-tight">Main Task Board</h1>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="lg"
-                          onClick={() => setIsFullScreen(false)}
-                          className="flex items-center gap-2 border-primary/20 hover:bg-primary/5"
-                        >
-                          <Minimize2 className="h-5 w-5" />
-                          Exit Full Screen
-                        </Button>
-                      </div>
-                    )}
-                    <div className={cn(
-                      "flex gap-4 min-h-0",
-                      isFullScreen ? "w-full max-w-[1600px] mx-auto pb-12" : ""
-                    )}>
-                      {['pending', 'in_progress', 'review_pending', 'handover', 'completed'].map((status) => {
-                        const statusTasks = filteredTasks.filter(t => t.status === status);
-                        const statusColor = {
-                          pending: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-600',
-                          in_progress: 'bg-blue-500/10 border-blue-500/20 text-blue-600',
-                          review_pending: 'bg-orange-500/10 border-orange-500/20 text-orange-600',
-                          handover: 'bg-purple-500/10 border-purple-500/20 text-purple-600',
-                          completed: 'bg-green-500/10 border-green-500/20 text-green-600'
-                        }[status];
-
-                        return (
-                          <div key={status} className="flex-shrink-0 w-80 flex flex-col max-h-full">
-                            <div className={`p-3 rounded-t-xl border-x border-t font-bold flex items-center justify-between ${statusColor}`}>
-                              <div className="flex items-center gap-2">
-                                <span className="uppercase text-xs tracking-wider">{status.replace(/_/g, ' ')}</span>
-                                <Badge variant="secondary" className="bg-white/50 dark:bg-black/20 text-[10px] h-4">
-                                  {statusTasks.length}
-                                </Badge>
-                              </div>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap py-3.5" onClick={e => e.stopPropagation()}>
+                          {task.due_date ? (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Calendar className="h-3.5 w-3.5 text-muted-foreground/50" />
+                              <span className="font-medium">{format(new Date(task.due_date), 'MMM dd')}</span>
                             </div>
-
-                            <Droppable droppableId={status}>
-                              {(provided, snapshot) => (
-                                <div
-                                  {...provided.droppableProps}
-                                  ref={provided.innerRef}
-                                  className={`flex-1 p-3 border rounded-b-xl bg-muted/20 space-y-3 min-h-[500px] transition-colors ${snapshot.isDraggingOver ? 'bg-muted/40 shadow-inner' : ''
-                                    }`}
-                                >
-                                  {statusTasks.map((task, index) => (
-                                    <Draggable key={task.id} draggableId={task.id} index={index}>
-                                      {(provided, snapshot) => (
-                                        <div
-                                          ref={provided.innerRef}
-                                          {...provided.draggableProps}
-                                          {...provided.dragHandleProps}
-                                          className="transition-transform"
-                                        >
-                                          <Card className={`group relative bg-card hover:shadow-lg transition-all border-muted-foreground/10 ${snapshot.isDragging ? 'rotate-2 scale-105 z-50 shadow-2xl ring-2 ring-primary/20' : ''
-                                            }`}>
-                                            <CardHeader className="p-3 space-y-1">
-                                              <div className="flex items-start justify-between gap-2">
-                                                <CardTitle className="text-sm font-bold truncate">
-                                                  {task.title}
-                                                </CardTitle>
-                                                {getPriorityBadge(task.priority)}
-                                              </div>
-                                              {(task.staff_projects?.title || task.staff_projects?.name) && (
-                                                <p className="text-[10px] text-primary/60 font-medium truncate">#{task.staff_projects?.title || task.staff_projects?.name}</p>
-                                              )}
-                                              {task.departments?.name && (
-                                                <div className="pt-0.5">
-                                                  <Badge variant="outline" className="text-[10px] h-4 py-0 px-1.5 border-primary/20 bg-primary/5 text-primary/80">
-                                                    {task.departments.name}
-                                                  </Badge>
-                                                </div>
-                                              )}
-                                            </CardHeader>
-                                            <CardContent className="p-3 pt-0 space-y-3">
-                                              {task.description && (
-                                                <p className="text-xs text-muted-foreground line-clamp-2">
-                                                  {task.description}
-                                                </p>
-                                              )}
-
-                                              <div className="flex items-center justify-between">
-                                                <div className="flex -space-x-2">
-                                                  {(task.assigned_to_profiles?.length > 0
-                                                    ? task.assigned_to_profiles
-                                                    : task.assigned_to_profile ? [task.assigned_to_profile] : []
-                                                  ).slice(0, 3).map((profile: any, i: number) => (
-                                                    <Avatar key={i} className="h-6 w-6 border-2 border-background">
-                                                      <AvatarImage src={profile.avatar_url} />
-                                                      <AvatarFallback className="text-[8px] font-bold">
-                                                        {profile.full_name?.substring(0, 2).toUpperCase()}
-                                                      </AvatarFallback>
-                                                    </Avatar>
-                                                  ))}
-                                                  {(task.assigned_to_profiles?.length || 1) > 3 && (
-                                                    <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[8px] font-bold">
-                                                      +{(task.assigned_to_profiles?.length || 1) - 3}
-                                                    </div>
-                                                  )}
-                                                </div>
-                                                <div className="flex flex-col items-end gap-1">
-                                                  {getStageBadge(task.current_stage || 1)}
-                                                </div>
-                                              </div>
-
-                                              <div className="flex items-center justify-between pt-2 border-t border-muted/50">
-                                                <div className="flex items-center gap-1">
-                                                  <Clock className="h-3 w-3 text-muted-foreground" />
-                                                  <span className="text-[9px] text-muted-foreground">
-                                                    {task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No date'}
-                                                  </span>
-                                                </div>
-                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}>
-                                                    <Eye className="h-3.5 w-3.5" />
-                                                  </Button>
-                                                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openEditDialog(task)}>
-                                                    <Edit className="h-3.5 w-3.5" />
-                                                  </Button>
-                                                </div>
-                                              </div>
-                                            </CardContent>
-                                          </Card>
-                                        </div>
-                                      )}
-                                    </Draggable>
-                                  ))}
-                                  {provided.placeholder}
-                                </div>
-                              )}
-                            </Droppable>
+                          ) : (
+                            <span className="text-muted-foreground/30 text-xs">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center py-3.5" onClick={e => e.stopPropagation()}>
+                          <span className="inline-flex items-center justify-center min-w-[32px] px-2 py-0.5 rounded-md bg-muted/50 text-xs font-mono font-semibold tabular-nums text-foreground/80">{task.points}</span>
+                        </TableCell>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
+                          <Select
+                            value={task.status}
+                            onValueChange={(value) => handleStatusChange(task.id, value)}
+                          >
+                            <SelectTrigger className="h-8 w-[130px] text-xs bg-muted/30 border-border/40 hover:border-border/80 transition-colors rounded-lg">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="in_progress">In Progress</SelectItem>
+                              {(userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) ? (
+                                <SelectItem value="completed">Completed</SelectItem>
+                              ) : null}
+                              <SelectItem value="review_pending">Review</SelectItem>
+                              <SelectItem value="handover">Handover</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell onClick={e => e.stopPropagation()} className="py-3.5">
+                          <div className="flex items-center gap-0.5">
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-primary/70 hover:text-primary hover:bg-primary/10" onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-accent-foreground hover:bg-accent" onClick={() => openEditDialog(task)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive/60 hover:text-destructive hover:bg-destructive/10" onClick={() => { setTaskToDelete(task); setIsDeleteDialogOpen(true); }}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </DragDropContext>
-              )}
-            </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-4">
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {filteredTasks.map((task) => (
+                  <Card key={task.id} className="overflow-hidden border-muted-foreground/10 bg-card hover:shadow-md transition-all">
+                    <div className="p-4 space-y-3">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-semibold truncate">{task.title}</h3>
+                          {task.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{task.description}</p>
+                          )}
+                        </div>
+                        {getPriorityBadge(task.priority)}
+                      </div>
+
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex -space-x-2">
+                          {(task.assigned_to_profiles?.length > 0
+                            ? task.assigned_to_profiles
+                            : task.assigned_to_profile ? [task.assigned_to_profile] : []
+                          ).map((profile: any, i: number) => (
+                            <Avatar key={i} className="h-7 w-7 border-2 border-background">
+                              <AvatarImage src={profile.avatar_url} />
+                              <AvatarFallback className="text-[9px] font-bold">{profile.full_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                          ))}
+                        </div>
+                        {getStageBadge(task.current_stage || 1, task.stage_names)}
+                        {getStatusBadge(task.status)}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-muted-foreground/5">
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          {task.due_date && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {format(new Date(task.due_date), 'MMM dd')}
+                            </span>
+                          )}
+                          <Badge variant="outline" className="text-[10px] font-mono">{task.points} pts</Badge>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { setSelectedTask(task); setCurrentView('detail'); }}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditDialog(task)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500" onClick={() => { setTaskToDelete(task); setIsDeleteDialogOpen(true); }}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </>
+          ) : viewMode === 'grid' ? (
+            /* Grid/Card View */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredTasks.map((task) => (
-                <div key={task.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg border shadow-sm space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium text-lg">{task.title}</h3>
-                      {task.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                          {task.description}
-                        </p>
+                <Card key={task.id} className="overflow-hidden hover:shadow-lg transition-all group border-muted-foreground/10 bg-card hover:-translate-y-0.5">
+                  <CardHeader className="p-4 flex flex-row items-start justify-between space-y-0 pb-2">
+                    <div className="space-y-1 pr-6 overflow-hidden">
+                      <CardTitle className="text-sm font-bold line-clamp-1 group-hover:text-primary transition-colors">
+                        {task.title}
+                      </CardTitle>
+                      {(task.staff_projects?.title || task.staff_projects?.name) && (
+                        <p className="text-[10px] text-primary/70 font-medium">#{task.staff_projects?.title || task.staff_projects?.name}</p>
+                      )}
+                      {task.departments?.name && (
+                        <div className="pt-0.5">
+                          <Badge variant="outline" className="text-[10px] h-4 py-0 px-1.5 border-primary/20 bg-primary/5 text-primary/80">
+                            {task.departments.name}
+                          </Badge>
+                        </div>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="shrink-0 flex flex-col items-end gap-1">
                       {getPriorityBadge(task.priority)}
                     </div>
-                  </div>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0 space-y-4">
+                    {task.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 min-h-[32px]">
+                        {task.description}
+                      </p>
+                    )}
 
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-2 col-span-2">
-                      <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div className="flex flex-wrap gap-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex -space-x-2">
                         {(task.assigned_to_profiles?.length > 0
                           ? task.assigned_to_profiles
                           : task.assigned_to_profile ? [task.assigned_to_profile] : []
                         ).map((profile: any, i: number) => (
-                          <span key={i} className="text-sm font-medium">
-                            {profile.full_name}{i < (task.assigned_to_profiles?.length || 1) - 1 ? ',' : ''}
-                          </span>
+                          <Avatar key={i} className="h-7 w-7 border-2 border-background ring-1 ring-border">
+                            <AvatarImage src={profile.avatar_url} />
+                            <AvatarFallback className="text-[10px]">
+                              {profile.full_name?.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
                         ))}
-                        {!task.assigned_to_profile && !task.assigned_to_profiles?.length && (
-                          <span className="text-gray-400 text-sm">Unassigned</span>
-                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        {getStageBadge(task.current_stage || 1, task.stage_names)}
+                        <span className="text-[10px] text-muted-foreground font-mono">{task.points} pts</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 justify-end">
-                      <Badge variant="outline">{task.points} pts</Badge>
-                    </div>
 
-                    {task.due_date && (
-                      <div className="flex items-center gap-2 col-span-2 text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>
-                          {format(new Date(task.due_date), 'MMM dd, yyyy')}
-                          {task.due_time && ` at ${task.due_time}`}
+                    <div className="flex items-center justify-between pt-2 border-t border-muted/50">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground">
+                          {task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No date'}
                         </span>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-3 pt-2 border-t">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">Status:</span>
                       {getStatusBadge(task.status)}
                     </div>
 
-                    <Select
-                      value={task.status}
-                      onValueChange={(value) => handleStatusChange(task.id, value)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        {(userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) ? (
-                          <SelectItem value="completed">Completed (Approve & Award)</SelectItem>
-                        ) : null}
-                        <SelectItem value="review_pending">Submit for Review</SelectItem>
-                        <SelectItem value="handover">Handover</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <div className="flex gap-2 justify-end">
-                      {task.status === 'review_pending' &&
-                        (userProfile?.role === 'hr' || userProfile?.role === 'admin' || userProfile?.is_department_head) && (
-                          <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700 text-white flex-1"
-                            onClick={() => updateTaskStatus(task.id, 'completed')}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Approve
-                          </Button>
-                        )}
+                    <div className="flex gap-2 pt-2">
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="flex-1"
-                        onClick={() => openEditDialog(task)}
-                      >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
+                        className="flex-1 h-8 text-[11px] bg-primary/10 text-primary hover:bg-primary/20 border-none shadow-none"
                         onClick={() => {
                           setSelectedTask(task);
                           setCurrentView('detail');
                         }}
                       >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
+                        <Eye className="h-3 w-3 mr-1" /> View
                       </Button>
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="flex-1 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                        onClick={() => openEditDialog(task)}
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-red-500 hover:bg-red-500/10"
                         onClick={() => {
                           setTaskToDelete(task);
                           setIsDeleteDialogOpen(true);
                         }}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            /* Kanban View */
+            <DragDropContext onDragEnd={onDragEnd}>
+              <div className={cn(
+                "flex gap-4 overflow-x-auto pb-6 custom-scrollbar min-h-[600px] items-start transition-all",
+                isFullScreen && "fixed inset-0 z-[100] bg-background p-8 flex-col overflow-y-auto"
+              )}>
+                {isFullScreen && (
+                  <div className="flex justify-between items-center mb-6 shrink-0 w-full max-w-[1600px] mx-auto">
+                    <div className="flex items-center gap-3">
+                      <Trello className="h-8 w-8 text-primary" />
+                      <h1 className="text-3xl font-bold tracking-tight">Main Task Board</h1>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {/* Three Motion Buttons */}
+                      <div className="relative flex items-center bg-muted/50 border border-border rounded-xl p-1 gap-1">
+                        {([
+                          { key: 'tasks' as const, label: 'Tasks', icon: <ClipboardList className="h-4 w-4" /> },
+                          { key: 'subtasks' as const, label: 'Subtasks', icon: <Layers className="h-4 w-4" /> },
+                          { key: 'stages' as const, label: 'Stages', icon: <Target className="h-4 w-4" /> },
+                        ]).map((tab) => (
+                          <button
+                            key={tab.key}
+                            onClick={() => {
+                              setKanbanDisplayMode(tab.key);
+                              if (tab.key === 'subtasks' || tab.key === 'stages') {
+                                setShowSubtasks(true);
+                                const taskIds = filteredTasks.map(t => t.id);
+                                fetchAllSubtasksForTasks(taskIds);
+                                setExpandedCards(new Set(taskIds));
+                              } else {
+                                setShowSubtasks(false);
+                                setExpandedCards(new Set());
+                              }
+                            }}
+                            className={cn(
+                              "relative z-10 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                              kanbanDisplayMode === tab.key
+                                ? "text-primary-foreground"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {kanbanDisplayMode === tab.key && (
+                              <motion.div
+                                layoutId="kanbanTabIndicator"
+                                className="absolute inset-0 bg-primary rounded-lg shadow-lg"
+                                transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
+                              />
+                            )}
+                            <span className="relative z-10 flex items-center gap-2">
+                              {tab.icon}
+                              {tab.label}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => { setIsFullScreen(false); setKanbanDisplayMode('tasks'); setShowSubtasks(false); setExpandedCards(new Set()); }}
+                        className="flex items-center gap-2 border-primary/20 hover:bg-primary/5"
+                      >
+                        <Minimize2 className="h-5 w-5" />
+                        Exit
                       </Button>
                     </div>
                   </div>
+                )}
+                <div className={cn(
+                  "flex gap-4 min-h-0",
+                  isFullScreen ? "w-full max-w-[1600px] mx-auto pb-12" : ""
+                )}>
+                  {['pending', 'in_progress', 'review_pending', 'handover', 'completed'].map((status) => {
+                    const statusTasks = filteredTasks.filter(t => t.status === status);
+                    const statusColor = {
+                      pending: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-600 dark:text-yellow-400',
+                      in_progress: 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400',
+                      review_pending: 'bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400',
+                      handover: 'bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400',
+                      completed: 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400'
+                    }[status];
+
+                    return (
+                      <div key={status} className="flex-shrink-0 w-80 flex flex-col max-h-full">
+                        <div className={`p-3 rounded-t-xl border-x border-t font-bold flex items-center justify-between ${statusColor}`}>
+                          <div className="flex items-center gap-2">
+                            <span className="uppercase text-xs tracking-wider">{status.replace(/_/g, ' ')}</span>
+                            <Badge variant="secondary" className="bg-white/50 dark:bg-black/20 text-[10px] h-4">
+                              {statusTasks.length}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <StrictModeDroppable droppableId={status}>
+                          {(provided, snapshot) => (
+                            <div
+                              {...provided.droppableProps}
+                              ref={provided.innerRef}
+                              className={`flex-1 p-3 border rounded-b-xl bg-muted/20 space-y-3 min-h-[500px] transition-colors ${snapshot.isDraggingOver ? 'bg-muted/40 shadow-inner' : ''
+                                }`}
+                            >
+                              {statusTasks.map((task, index) => (
+                                <Draggable key={task.id} draggableId={task.id} index={index}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      className="transition-transform"
+                                    >
+                                      <Card className={`group relative bg-card hover:shadow-lg transition-all border-muted-foreground/10 ${snapshot.isDragging ? 'rotate-2 scale-105 z-50 shadow-2xl ring-2 ring-primary/20' : ''
+                                        }`}>
+                                        <CardHeader className="p-3 space-y-1">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <CardTitle className="text-sm font-bold truncate">
+                                              {task.title}
+                                            </CardTitle>
+                                            {getPriorityBadge(task.priority)}
+                                          </div>
+                                          {(task.staff_projects?.title || task.staff_projects?.name) && (
+                                            <p className="text-[10px] text-primary/60 font-medium truncate">#{task.staff_projects?.title || task.staff_projects?.name}</p>
+                                          )}
+                                          {task.departments?.name && (
+                                            <div className="pt-0.5">
+                                              <Badge variant="outline" className="text-[10px] h-4 py-0 px-1.5 border-primary/20 bg-primary/5 text-primary/80">
+                                                {task.departments.name}
+                                              </Badge>
+                                            </div>
+                                          )}
+                                        </CardHeader>
+                                        <CardContent className="p-3 pt-0 space-y-3">
+                                          {task.description && (
+                                            <p className="text-xs text-muted-foreground line-clamp-2">
+                                              {task.description}
+                                            </p>
+                                          )}
+
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex -space-x-2">
+                                              {(task.assigned_to_profiles?.length > 0
+                                                ? task.assigned_to_profiles
+                                                : task.assigned_to_profile ? [task.assigned_to_profile] : []
+                                              ).slice(0, 3).map((profile: any, i: number) => (
+                                                <Avatar key={i} className="h-6 w-6 border-2 border-background">
+                                                  <AvatarImage src={profile.avatar_url} />
+                                                  <AvatarFallback className="text-[8px] font-bold">
+                                                    {profile.full_name?.substring(0, 2).toUpperCase()}
+                                                  </AvatarFallback>
+                                                </Avatar>
+                                              ))}
+                                              {(task.assigned_to_profiles?.length || 1) > 3 && (
+                                                <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[8px] font-bold">
+                                                  +{(task.assigned_to_profiles?.length || 1) - 3}
+                                                </div>
+                                              )}
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1">
+                                              {getStageBadge(task.current_stage || 1, task.stage_names)}
+                                            </div>
+                                          </div>
+
+                                          <div className="flex items-center justify-between pt-2 border-t border-muted/50">
+                                            <div className="flex items-center gap-1">
+                                              <Clock className="h-3 w-3 text-muted-foreground" />
+                                              <span className="text-[9px] text-muted-foreground">
+                                                {task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No date'}
+                                              </span>
+                                              {showSubtasks && allSubtasks[task.id]?.length > 0 && (
+                                                <Button
+                                                  size="icon"
+                                                  variant="ghost"
+                                                  className="h-5 w-5 ml-1"
+                                                  onClick={(e) => { e.stopPropagation(); toggleCardExpanded(task.id); }}
+                                                >
+                                                  <ChevronDown className={cn("h-3 w-3 transition-transform", expandedCards.has(task.id) && "rotate-180")} />
+                                                </Button>
+                                              )}
+                                              {showSubtasks && allSubtasks[task.id]?.length > 0 && (
+                                                <span className="text-[9px] text-muted-foreground">
+                                                  {allSubtasks[task.id].filter((s: any) => s.status === 'completed').length}/{allSubtasks[task.id].length}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setSelectedTask(task); setCurrentView('detail'); setIsFullScreen(false); }}>
+                                                <Eye className="h-3.5 w-3.5" />
+                                              </Button>
+                                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openEditDialog(task)}>
+                                                <Edit className="h-3.5 w-3.5" />
+                                              </Button>
+                                            </div>
+                                          </div>
+
+                                          {/* Expanded Subtasks */}
+                                          {showSubtasks && expandedCards.has(task.id) && allSubtasks[task.id]?.length > 0 && (
+                                            <div className="pt-2 border-t border-muted/50 space-y-1.5 max-h-60 overflow-y-auto">
+                                              {kanbanDisplayMode === 'stages' ? (
+                                                // Group subtasks by stage
+                                                (() => {
+                                                  const subs = allSubtasks[task.id];
+                                                  const stages = [...new Set(subs.map((s: any) => s.stage || 1))].sort((a, b) => a - b);
+                                                  const stageNames = task.stage_names || {};
+                                                  return stages.map((stage) => {
+                                                    const stageSubs = subs.filter((s: any) => (s.stage || 1) === stage);
+                                                    const completed = stageSubs.filter((s: any) => s.status === 'completed').length;
+                                                    const stageName = stageNames[String(stage)] || `Stage ${stage}`;
+                                                    return (
+                                                      <div key={stage} className="space-y-1">
+                                                        <div className="flex items-center justify-between px-1">
+                                                          <span className="text-[10px] font-semibold text-foreground/80">{stageName}</span>
+                                                          <span className="text-[9px] text-muted-foreground">{completed}/{stageSubs.length}</span>
+                                                        </div>
+                                                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                                          <div
+                                                            className="h-full rounded-full bg-primary transition-all"
+                                                            style={{ width: stageSubs.length > 0 ? `${(completed / stageSubs.length) * 100}%` : '0%' }}
+                                                          />
+                                                        </div>
+                                                        {stageSubs.map((st: any) => {
+                                                          const stStatus = st.status || 'pending';
+                                                          return (
+                                                            <div key={st.id} className="flex items-center gap-2 px-1.5 py-1 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors ml-1">
+                                                              <div className={cn("h-1.5 w-1.5 rounded-full shrink-0",
+                                                                stStatus === 'completed' ? 'bg-green-500' :
+                                                                stStatus === 'in_progress' ? 'bg-blue-500' :
+                                                                stStatus === 'pending_approval' ? 'bg-orange-500' : 'bg-muted-foreground/40'
+                                                              )} />
+                                                              <span className="text-[10px] truncate flex-1">{st.title}</span>
+                                                            </div>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    );
+                                                  });
+                                                })()
+                                              ) : (
+                                                // Flat subtask list
+                                                allSubtasks[task.id].map((st: any) => {
+                                                  const stStatus = st.status || 'pending';
+                                                  const stColor = stStatus === 'completed' ? 'text-green-600 dark:text-green-400' :
+                                                    stStatus === 'in_progress' ? 'text-blue-600 dark:text-blue-400' :
+                                                    stStatus === 'pending_approval' ? 'text-orange-600 dark:text-orange-400' :
+                                                    'text-muted-foreground';
+                                                  return (
+                                                    <div key={st.id} className="flex items-center gap-2 px-1.5 py-1 rounded-md bg-muted/30 hover:bg-muted/50 transition-colors">
+                                                      <div className={cn("h-1.5 w-1.5 rounded-full shrink-0",
+                                                        stStatus === 'completed' ? 'bg-green-500' :
+                                                        stStatus === 'in_progress' ? 'bg-blue-500' :
+                                                        stStatus === 'pending_approval' ? 'bg-orange-500' : 'bg-muted-foreground/40'
+                                                      )} />
+                                                      <span className={cn("text-[10px] truncate flex-1", stColor)}>{st.title}</span>
+                                                      {st.staff_profiles?.full_name && (
+                                                        <Avatar className="h-4 w-4 shrink-0">
+                                                          <AvatarImage src={st.staff_profiles?.avatar_url} />
+                                                          <AvatarFallback className="text-[6px]">
+                                                            {st.staff_profiles.full_name.substring(0, 2).toUpperCase()}
+                                                          </AvatarFallback>
+                                                        </Avatar>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })
+                                              )}
+                                            </div>
+                                          )}
+                                        </CardContent>
+                                      </Card>
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </StrictModeDroppable>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
-            {filteredTasks.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No tasks found matching your criteria.
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </DragDropContext>
+          )}
+        </div>
 
         {/* Handover Dialog */}
         <Dialog open={isHandoverDialogOpen} onOpenChange={setIsHandoverDialogOpen} >

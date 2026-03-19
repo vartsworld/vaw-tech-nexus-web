@@ -1,0 +1,1 @@
+ALTER TABLE public.staff_tasks ADD COLUMN IF NOT EXISTS stage_names jsonb DEFAULT '{}';

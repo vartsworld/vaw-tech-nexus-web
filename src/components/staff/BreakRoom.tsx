@@ -165,7 +165,7 @@ const BreakRoom = ({
 
   // Break timer logic
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
 
     if (isBreakActive && breakTimeRemaining > 0) {
       interval = setInterval(() => {

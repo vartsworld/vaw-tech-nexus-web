@@ -63,6 +63,7 @@ import ClientOnboardingCreator from "./ClientOnboardingCreator";
 import SharedProjectForm from "../projects/SharedProjectForm";
 import TaskCreatePage from "../hr/TaskCreatePage";
 import TaskDetailPage from "../hr/TaskDetailPage";
+import { SubtaskReviewDialog } from "./SubtaskReviewDialog";
 
 interface Subtask {
   id: string;
@@ -159,6 +160,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [newMessageTask, setNewMessageTask] = useState("");
   const [newMessageSubtask, setNewMessageSubtask] = useState<{ [key: string]: string }>({});
   const [rejectionNotes, setRejectionNotes] = useState<{ [key: string]: string }>({});
+  const [reviewDialogSubtask, setReviewDialogSubtask] = useState<any>(null);
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
@@ -259,13 +262,14 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   // - approvedSubtasks: completed & approved_by = current user
   // - returnedSubtasks: in_progress with latest rejection comment from current user
   const fetchReviewQueues = async () => {
-    if (!userProfile?.department_id) {
+    if (!userProfile?.department_id && !userId) {
       setPendingSubtasks([]);
       setApprovedSubtasks([]);
       setReturnedSubtasks([]);
       return;
     }
     try {
+      // Fetch pending_approval subtasks - filter for tasks in head's department OR assigned_by this head
       const { data: pending, error: pendingError } = await supabase
         .from("staff_subtasks")
         .select(
@@ -289,11 +293,17 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           )
         `
         )
-        .eq("status", "pending_approval" as any)
-        .eq("staff_tasks.department_id", userProfile.department_id as any);
+        .eq("status", "pending_approval" as any);
 
       if (pendingError) throw pendingError;
-      setPendingSubtasks((pending || []) as any);
+      
+      // Filter: tasks in head's department OR tasks assigned_by this head
+      const filteredPending = (pending || []).filter((st: any) => {
+        const task = st.staff_tasks;
+        if (!task) return false;
+        return task.department_id === userProfile?.department_id || task.assigned_by === userId;
+      });
+      setPendingSubtasks(filteredPending as any);
 
       // Approved by this head
       const { data: approved, error: approvedError } = await supabase
@@ -304,7 +314,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           staff_tasks!inner (
             id,
             title,
-            department_id
+            department_id,
+            assigned_by
           ),
           staff_profiles:assigned_to (
             full_name,
@@ -316,12 +327,16 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         )
         .eq("status", "completed" as any)
         .eq("approved_by", userId as any)
-        .eq("staff_tasks.department_id", userProfile.department_id as any)
         .order("approved_at", { ascending: false } as any)
         .limit(15);
 
       if (approvedError) throw approvedError;
-      setApprovedSubtasks((approved || []) as any);
+      const filteredApproved = (approved || []).filter((st: any) => {
+        const task = st.staff_tasks;
+        if (!task) return false;
+        return task.department_id === userProfile?.department_id || task.assigned_by === userId;
+      });
+      setApprovedSubtasks(filteredApproved as any);
 
       // Returned for rework by this head (status back to in_progress and has rejection comment by this user)
       const { data: returnedRaw, error: returnedError } = await supabase
@@ -332,7 +347,8 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           staff_tasks!inner (
             id,
             title,
-            department_id
+            department_id,
+            assigned_by
           ),
           staff_profiles:assigned_to (
             full_name,
@@ -342,12 +358,15 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           )
         `
         )
-        .eq("status", "in_progress" as any)
-        .eq("staff_tasks.department_id", userProfile.department_id as any);
+        .eq("status", "in_progress" as any);
 
       if (returnedError) throw returnedError;
 
       const returnedFiltered = (returnedRaw || []).filter((st: any) => {
+        const task = st.staff_tasks;
+        if (!task) return false;
+        const inScope = task.department_id === userProfile?.department_id || task.assigned_by === userId;
+        if (!inScope) return false;
         if (!Array.isArray(st.comments)) return false;
         const lastRejection = [...st.comments].reverse().find(c => c.type === "rejection");
         return lastRejection && lastRejection.user_id === userId;
@@ -1012,19 +1031,55 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     handleSendSubtaskMessage(subtaskId, true, file);
   };
 
-  const handleSubtaskApprove = async (subtaskId: string) => {
+  const uploadReviewAttachments = async (subtaskId: string, files: File[], actionType: string) => {
+    const uploaded: any[] = [];
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `subtasks/${subtaskId}/review-${actionType}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('task-attachments').upload(filePath, file);
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage.from('task-attachments').getPublicUrl(filePath);
+        uploaded.push({ name: file.name, url: filePath, publicUrl, size: file.size, type: file.type });
+      }
+    }
+    return uploaded;
+  };
+
+  const handleSubtaskApprove = async (subtaskId: string, attachmentFiles?: File[]) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Upload attachments if any
+      let reviewAttachments: any[] = [];
+      if (attachmentFiles && attachmentFiles.length > 0) {
+        reviewAttachments = await uploadReviewAttachments(subtaskId, attachmentFiles, 'approve');
+      }
+
+      const updateData: any = {
+        status: 'completed',
+        approved_at: new Date().toISOString(),
+        approved_by: user.id,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { data: existingSubtask } = await supabase.from('staff_subtasks').select('comments').eq('id', subtaskId).single();
+      if (reviewAttachments.length > 0) {
+        const existingComments = (existingSubtask?.comments as any[]) || [];
+        const approveComment = {
+          user_id: user.id,
+          user_name: userProfile?.full_name || 'Team Head',
+          message: '✅ Approved with attachments',
+          timestamp: new Date().toISOString(),
+          type: 'approval',
+          attachments: reviewAttachments
+        };
+        updateData.comments = [...existingComments, approveComment];
+      }
+
       const { data, error } = await supabase
         .from('staff_subtasks')
-        .update({
-          status: 'completed',
-          approved_at: new Date().toISOString(),
-          approved_by: user.id,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id', subtaskId)
         .select(`*, staff_profiles:assigned_to(full_name, username)`)
         .single();
@@ -1099,6 +1154,19 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
           // Update local tasks state
           setTasks(prev => prev.map(t => t.id === taskId ? { ...t, current_stage: newCurrentStage } : t));
+
+          // If ALL subtasks are completed, update task status to in_progress → completed sync
+          const allDone = updatedSubtasks.every((st: any) => st.status === 'completed');
+          if (allDone) {
+            // Find the parent task to get client_project_id
+            const parentTask = tasks.find(t => t.id === taskId);
+            if (parentTask?.client_project_id) {
+              // Sync project status - the progress trigger will handle the percentage
+              await supabase.from('client_projects')
+                .update({ updated_at: new Date().toISOString() })
+                .eq('id', parentTask.client_project_id);
+            }
+          }
         }
       } catch (stageErr) {
         console.error('Error advancing stage:', stageErr);
@@ -1111,10 +1179,16 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     }
   };
 
-  const handleSubtaskReject = async (subtaskId: string, rejectionNote: string) => {
+  const handleSubtaskReject = async (subtaskId: string, rejectionNote: string, attachmentFiles?: File[]) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+
+      // Upload attachments if any
+      let reviewAttachments: any[] = [];
+      if (attachmentFiles && attachmentFiles.length > 0) {
+        reviewAttachments = await uploadReviewAttachments(subtaskId, attachmentFiles, 'reject');
+      }
 
       // Fetch current profile for rejection comment
       const { data: profile } = await supabase
@@ -1131,13 +1205,16 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         .single();
 
       const existingComments = (subtaskData?.comments as any[]) || [];
-      const rejectionComment = {
+      const rejectionComment: any = {
         user_id: user.id,
         user_name: profile?.full_name || 'Team Head',
         message: `❌ REJECTED: ${rejectionNote || 'Please redo this subtask.'}`,
         timestamp: new Date().toISOString(),
         type: 'rejection'
       };
+      if (reviewAttachments.length > 0) {
+        rejectionComment.attachments = reviewAttachments;
+      }
       const updatedComments = [...existingComments, rejectionComment];
 
       const { data, error } = await supabase
@@ -1629,6 +1706,14 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       setTasks(tasks.map(task => task.id === taskId ? updatedTask : task));
 
+      // --- Sync: task status → client project status ---
+      if (finalStatus === 'in_progress' && data.client_project_id) {
+        await supabase.from('client_projects')
+          .update({ status: 'in_progress', updated_at: new Date().toISOString() })
+          .eq('id', data.client_project_id)
+          .eq('status', 'pending');
+      }
+
       toast({
         title: "Success",
         description: finalStatus === 'pending_approval'
@@ -2015,6 +2100,27 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Review Requests - Quick Action */}
+          {pendingSubtasks.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-purple-500/20 border-purple-500/30 text-purple-300 hover:bg-purple-500/30 relative animate-pulse"
+              onClick={() => {
+                if (pendingSubtasks.length > 0) {
+                  const first = pendingSubtasks[0];
+                  setReviewDialogSubtask(first);
+                  setReviewDialogOpen(true);
+                }
+              }}
+            >
+              <ListChecks className="w-4 h-4 mr-1.5" />
+              <span className="hidden sm:inline">Review</span>
+              <Badge className="ml-1.5 h-5 min-w-[20px] px-1 bg-purple-500 text-white text-[10px] font-bold border-0 animate-none">
+                {pendingSubtasks.length}
+              </Badge>
+            </Button>
+          )}
           {/* Recently Approved - Quick Action Dialog */}
           {approvedSubtasks.length > 0 && (
             <Dialog>
@@ -2140,10 +2246,14 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                     return (
                       <div
                         key={subtask.id}
-                        className="bg-black/30 border border-purple-500/40 rounded-lg p-3 flex items-center justify-between gap-3"
+                        className="bg-black/30 border border-purple-500/40 rounded-lg p-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-purple-500/15 hover:border-purple-400/50 transition-all duration-200 group"
+                        onClick={() => {
+                          setReviewDialogSubtask(subtask);
+                          setReviewDialogOpen(true);
+                        }}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <Avatar className="h-8 w-8 border border-white/10 bg-white/5 flex-shrink-0">
+                          <Avatar className="h-8 w-8 border border-white/10 bg-white/5 flex-shrink-0 group-hover:border-purple-400/50 transition-colors">
                             <AvatarImage
                               src={assigneeProfile?.avatar_url || undefined}
                               alt={assigneeProfile?.full_name || subtask.title}
@@ -2158,7 +2268,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                             </AvatarFallback>
                           </Avatar>
                           <div className="min-w-0 space-y-0.5">
-                            <div className="text-sm font-semibold text-white truncate">
+                            <div className="text-sm font-semibold text-white truncate group-hover:text-purple-200 transition-colors">
                               {subtask.title}
                             </div>
                             {parentTask && (
@@ -2169,7 +2279,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                             <div className="text-[11px] text-white/50 flex flex-wrap gap-x-2 gap-y-0.5">
                               {assigneeProfile && (
                                 <span>
-                                  👤 {assigneeProfile.full_name} (@{assigneeProfile.username})
+                                  👤 {assigneeProfile.full_name}
                                 </span>
                               )}
                               {subtask.points > 0 && <span>⭐ {subtask.points} pts</span>}
@@ -2184,28 +2294,17 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                                       return "Invalid date";
                                     }
                                   })()}
-                                  {subtask.due_time && ` ${subtask.due_time}`}
                                 </span>
                               )}
                             </div>
                           </div>
                         </div>
-                        {parentTask && (
-                          <Button
-                            size="sm"
-                            className="flex-shrink-0 bg-green-500 hover:bg-green-600 text-white h-8 text-xs"
-                            onClick={async () => {
-                              try {
-                                setSelectedTask(parentTask);
-                                await fetchSubtasks(parentTask.id);
-                                setCurrentView('detail');
-                              } catch (e) { console.error('Error opening task view:', e); }
-                            }}
-                          >
-                            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant="outline" className="text-[9px] bg-purple-500/15 border-purple-500/30 text-purple-300">
+                            <Eye className="h-3 w-3 mr-1" />
                             Review
-                          </Button>
-                        )}
+                          </Badge>
+                        </div>
                       </div>
                     );
                   })}
@@ -3146,6 +3245,25 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           />
         </DialogContent>
       </Dialog>
+
+      {/* Subtask Review Dialog */}
+      <SubtaskReviewDialog
+        subtask={reviewDialogSubtask}
+        parentTask={reviewDialogSubtask ? tasks.find(t => t.id === reviewDialogSubtask.task_id) || (reviewDialogSubtask as any).staff_tasks : null}
+        open={reviewDialogOpen}
+        onOpenChange={(open) => {
+          setReviewDialogOpen(open);
+          if (!open) setReviewDialogSubtask(null);
+        }}
+        onApprove={async (subtaskId, attachments) => {
+          await handleSubtaskApprove(subtaskId, attachments);
+          fetchReviewQueues();
+        }}
+        onReject={async (subtaskId, note, attachments) => {
+          await handleSubtaskReject(subtaskId, note, attachments);
+          fetchReviewQueues();
+        }}
+      />
     </div >
   );
 };

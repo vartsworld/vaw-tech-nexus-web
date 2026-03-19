@@ -22,7 +22,10 @@ import {
     Loader2,
     HeadphonesIcon,
     PhoneCall,
-    Zap
+    Zap,
+    Paperclip,
+    X as XIcon,
+    FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +48,45 @@ const SupportNexus = ({ profile }: { profile: any }) => {
     const [feedback, setFeedback] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [closingId, setClosingId] = useState<string | null>(null);
+    const [attachment, setAttachment] = useState<File | null>(null);
+
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+    const handleAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!ALLOWED_TYPES.includes(file.type)) {
+            toast.error("Only JPG, PNG and PDF files are allowed");
+            e.target.value = '';
+            return;
+        }
+        if (file.size > MAX_SIZE) {
+            toast.error("File must be under 10MB");
+            e.target.value = '';
+            return;
+        }
+        setAttachment(file);
+    };
+
+    const handleCloseTicket = async (ticketId: string) => {
+        setClosingId(ticketId);
+        try {
+            const { error } = await supabase
+                .from('client_feedback')
+                .update({ status: 'resolved' })
+                .eq('id', ticketId)
+                .eq('client_id', profile.id);
+            if (error) throw error;
+            setFeedback(prev => prev.map(f => f.id === ticketId ? { ...f, status: 'resolved' } : f));
+            toast.success("Ticket closed successfully");
+        } catch (err: any) {
+            toast.error(err.message || "Failed to close ticket");
+        } finally {
+            setClosingId(null);
+        }
+    };
 
     // Form state
     const [newSignal, setNewSignal] = useState({
@@ -79,6 +121,21 @@ const SupportNexus = ({ profile }: { profile: any }) => {
 
         setIsSubmitting(true);
         try {
+            let attachmentUrl: string | null = null;
+
+            if (attachment) {
+                const ext = attachment.name.split('.').pop();
+                const path = `${profile.id}/${Date.now()}.${ext}`;
+                const { error: uploadErr } = await supabase.storage
+                    .from('support-attachments')
+                    .upload(path, attachment);
+                if (uploadErr) throw uploadErr;
+                const { data: urlData } = supabase.storage
+                    .from('support-attachments')
+                    .getPublicUrl(path);
+                attachmentUrl = urlData.publicUrl;
+            }
+
             const { error } = await supabase
                 .from("client_feedback")
                 .insert({
@@ -88,18 +145,18 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                     message: newSignal.message,
                     status: 'pending',
                     priority: newSignal.priority,
-                    metadata: { priority: newSignal.priority }
+                    metadata: {
+                        priority: newSignal.priority,
+                        ...(attachmentUrl && { attachment_url: attachmentUrl, attachment_name: attachment?.name })
+                    }
                 });
 
             if (error) throw error;
 
-            toast.success("Help request successfully transmitted.");
-            setNewSignal({
-                type: "feedback",
-                priority: "medium",
-                subject: "",
-                message: ""
-            });
+            const routeTarget = newSignal.type === 'bug_report' ? 'Development Team' : 'HR Team';
+            toast.success(`Ticket submitted and routed to ${routeTarget}`);
+            setNewSignal({ type: "feedback", priority: "medium", subject: "", message: "" });
+            setAttachment(null);
             fetchFeedback();
         } catch (error: any) {
             toast.error(`Transmission failure: ${error.message}`);
@@ -114,6 +171,14 @@ const SupportNexus = ({ profile }: { profile: any }) => {
         { id: "update_request", label: "Asset Mutation", icon: Lightbulb, color: "text-blue-400" },
         { id: "support", label: "Direct Support", icon: HeadphonesIcon, color: "text-tech-purple" },
     ];
+
+    const getRoutingLabel = (signal: any) => {
+        if (signal.routing_status === 'routed') {
+            if (signal.type === 'bug_report') return { label: 'Routed → Dev Team', color: 'bg-blue-500/20 text-blue-400' };
+            return { label: 'Routed → HR Team', color: 'bg-purple-500/20 text-purple-400' };
+        }
+        return null;
+    };
 
     return (
         <div className="space-y-8 pb-12">
@@ -196,6 +261,27 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                             />
                         </div>
 
+                        {/* Attachment */}
+                        <div className="space-y-2">
+                            <Label className="text-gray-400">Attachment <span className="text-gray-600">(JPG, PNG, PDF — max 10MB)</span></Label>
+                            {attachment ? (
+                                <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl">
+                                    <FileText className="w-5 h-5 text-tech-gold shrink-0" />
+                                    <span className="text-sm text-white truncate flex-1">{attachment.name}</span>
+                                    <span className="text-[10px] text-gray-500 font-bold">{(attachment.size / 1024 / 1024).toFixed(1)}MB</span>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-red-400" onClick={() => setAttachment(null)}>
+                                        <XIcon className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <label className="flex items-center gap-3 p-3 bg-white/5 border border-dashed border-white/10 rounded-xl cursor-pointer hover:border-tech-gold/30 transition-colors">
+                                    <Paperclip className="w-5 h-5 text-gray-500" />
+                                    <span className="text-sm text-gray-500">Click to attach a file</span>
+                                    <input type="file" className="hidden" accept=".jpg,.jpeg,.png,.pdf" onChange={handleAttachment} />
+                                </label>
+                            )}
+                        </div>
+
                         <Button
                             onClick={() => handleSignalTransmission()}
                             disabled={isSubmitting}
@@ -222,13 +308,20 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                         <CardHeader>
                             <CardTitle className="text-sm text-blue-400 flex items-center gap-2">
                                 <Zap className="w-4 h-4" />
-                                Support SLA
+                                24×7 Support
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-3">
                             <div className="flex items-end gap-2">
                                 <span className="text-3xl font-black text-white">&lt; 2hr</span>
-                                <span className="text-xs text-gray-400 mb-1.5">Response time</span>
+                                <span className="text-xs text-gray-400 mb-1.5">Active response</span>
+                            </div>
+                            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest space-y-1">
+                                <p className="flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    Active Hours: 10:30 AM – 4:30 PM IST
+                                </p>
+                                <p className="text-gray-500">Support available round the clock, priority responses during active hours.</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -243,7 +336,7 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                             <div className="h-40 bg-white/5 rounded-2xl animate-pulse" />
                         ) : feedback.length > 0 ? (
                             feedback.map((signal) => (
-                                <div key={signal.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-tech-gold/30 transition-all group cursor-pointer">
+                                <div key={signal.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-tech-gold/30 transition-all group">
                                     <div className="flex justify-between items-start mb-2">
                                         <Badge variant="outline" className={cn(
                                             "border-0 text-[10px] uppercase font-black px-1.5 py-0.5",
@@ -260,9 +353,33 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                                     <h4 className="font-bold text-white text-sm mb-1 group-hover:text-tech-gold transition-colors truncate">
                                         {signal.subject}
                                     </h4>
-                                    <p className="text-xs text-gray-500 truncate">
+                                    <p className="text-xs text-gray-500 truncate mb-2">
                                         {signal.message}
                                     </p>
+                                    {(() => {
+                                        const routing = getRoutingLabel(signal);
+                                        return routing ? (
+                                            <Badge variant="outline" className={cn("border-0 text-[9px] uppercase font-black px-1.5 py-0.5 mb-2", routing.color)}>
+                                                {routing.label}
+                                            </Badge>
+                                        ) : null;
+                                    })()}
+                                    {signal.status !== 'resolved' && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="border-green-500/30 text-green-400 hover:bg-green-500/10 text-[10px] uppercase font-black h-7 px-3 rounded-lg"
+                                            disabled={closingId === signal.id}
+                                            onClick={() => handleCloseTicket(signal.id)}
+                                        >
+                                            {closingId === signal.id ? (
+                                                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                                            ) : (
+                                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                            )}
+                                            Close Ticket
+                                        </Button>
+                                    )}
                                 </div>
                             ))
                         ) : (
