@@ -42,7 +42,7 @@ const StaffIDCard = () => {
         .from('staff_profiles')
         .select(`
           *,
-          departments:department_id(name)
+          departments:departments!fk_staff_profiles_department(name)
         `)
         .filter(isUUID ? 'id' : 'staff_id_number', 'eq', id)
         .maybeSingle();
