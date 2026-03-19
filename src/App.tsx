@@ -42,6 +42,7 @@ import ClientDashboard from "./pages/ClientDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import DigitalMarketingInternship from "./pages/DigitalMarketingInternship";
 import ClientOnboarding from "./pages/ClientOnboarding";
+import StaffIDCard from "./pages/StaffIDCard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -97,6 +98,7 @@ const AppContent = () => {
           <Route path="/super-admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/hr/*" element={<HRDashboard />} />
+          <Route path="/hr/staff/:id/id-card" element={<StaffIDCard />} />
           <Route path="/staff/login" element={<StaffLogin />} />
           <Route path="/staff/dashboard" element={<StaffDashboard />} />
           <Route path="/team-head/dashboard" element={<TeamHeadDashboard />} />

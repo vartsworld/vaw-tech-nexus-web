@@ -449,6 +449,45 @@ const EnhancedStaffForm = ({
         </div>
       </div>
 
+      {/* Address & ID Information */}
+      <div className="space-y-4">
+        <h3 className="font-semibold text-lg">Address & ID Information</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <Label htmlFor="physical_address">Physical Address</Label>
+            <Textarea
+              id="physical_address"
+              value={newStaff.physical_address}
+              onChange={(e) => setNewStaff({ ...newStaff, physical_address: e.target.value })}
+              placeholder="Enter full physical address"
+              rows={2}
+            />
+          </div>
+          <div>
+            <Label htmlFor="govt_id_number">Govt ID Number (Aadhaar / Passport)</Label>
+            <Input
+              id="govt_id_number"
+              value={newStaff.govt_id_number}
+              onChange={(e) => setNewStaff({ ...newStaff, govt_id_number: e.target.value })}
+              placeholder="Enter ID number"
+            />
+          </div>
+          <div>
+            <Label htmlFor="blood_group">Blood Group</Label>
+            <Select value={newStaff.blood_group} onValueChange={(value) => setNewStaff({ ...newStaff, blood_group: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select blood group" />
+              </SelectTrigger>
+              <SelectContent>
+                {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(group => (
+                  <SelectItem key={group} value={group}>{group}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
       {/* About Me */}
       <div>
         <Label htmlFor="about_me">Tell About Yourself</Label>

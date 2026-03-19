@@ -23,7 +23,8 @@ import {
   Copy,
   Check,
   KeyRound,
-  Link
+  Link,
+  Contact2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -60,7 +61,10 @@ const StaffManagement = () => {
     marriage_preference: "",
     work_confidence_level: "",
     reference_person_name: "",
-    reference_person_number: ""
+    reference_person_number: "",
+    physical_address: "",
+    govt_id_number: "",
+    blood_group: ""
   });
   const { toast } = useToast();
 
@@ -149,8 +153,6 @@ const StaffManagement = () => {
       });
 
       if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create auth user');
-
       // Create staff profile with the auth user's ID
       const { data, error } = await supabase
         .from('staff_profiles')
@@ -160,12 +162,24 @@ const StaffManagement = () => {
           department_id: newStaff.department_id || null,
           role: newStaff.role as string,
           first_time_passcode: firstTimePasscode,
-          application_status: 'approved'
+          application_status: 'approved',
+          physical_address: newStaff.physical_address || null,
+          govt_id_number: newStaff.govt_id_number || null,
+          blood_group: newStaff.blood_group || null
         } as any)
         .select()
         .single();
 
       if (error) throw error;
+
+      // Ensure the auth user is confirmed and has the correct password set via edge function
+      // This solves the 'first time auth not working' issue
+      await supabase.functions.invoke(
+        'reset-staff-password',
+        {
+          body: { userId: authData.user.id, newPassword: firstTimePasscode }
+        }
+      );
 
       // If role is super_admin, also add to super_admins table
       if (newStaff.role === 'super_admin') {
@@ -201,7 +215,10 @@ const StaffManagement = () => {
         marriage_preference: "",
         work_confidence_level: "",
         reference_person_name: "",
-        reference_person_number: ""
+        reference_person_number: "",
+        physical_address: "",
+        govt_id_number: "",
+        blood_group: ""
       });
 
       toast({
@@ -455,7 +472,10 @@ const StaffManagement = () => {
                     marriage_preference: "",
                     work_confidence_level: "",
                     reference_person_name: "",
-                    reference_person_number: ""
+                    reference_person_number: "",
+                    physical_address: "",
+                    govt_id_number: "",
+                    blood_group: ""
                   });
                 }
               }}
@@ -482,7 +502,10 @@ const StaffManagement = () => {
                   marriage_preference: "",
                   work_confidence_level: "",
                   reference_person_name: "",
-                  reference_person_number: ""
+                  reference_person_number: "",
+                  physical_address: "",
+                  govt_id_number: "",
+                  blood_group: ""
                 });
               }}
               isEdit={true}
@@ -579,7 +602,14 @@ const StaffManagement = () => {
                             <Crown className="h-4 w-4 text-yellow-500" />
                           )}
                         </div>
-                        <div className="text-sm text-gray-500">@{member.username}</div>
+                        <div className="text-sm text-gray-500 flex items-center gap-2">
+                          <span>@{member.username}</span>
+                          {member.staff_id_number && (
+                            <Badge variant="outline" className="text-[10px] py-0 px-1 bg-white/5 font-mono">
+                              {member.staff_id_number}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </TableCell>
@@ -687,12 +717,26 @@ const StaffManagement = () => {
                             marriage_preference: member.marriage_preference || "",
                             work_confidence_level: member.work_confidence_level || "",
                             reference_person_name: member.reference_person_name || "",
-                            reference_person_number: member.reference_person_number || ""
+                            reference_person_number: member.reference_person_number || "",
+                            physical_address: member.physical_address || "",
+                            govt_id_number: member.govt_id_number || "",
+                            blood_group: member.blood_group || ""
                           });
                           setIsEditDialogOpen(true);
                         }}
                       >
                         <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="View ID Card"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => {
+                          window.open(`/hr/staff/${member.id}/id-card`, '_blank');
+                        }}
+                      >
+                        <Contact2 className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
