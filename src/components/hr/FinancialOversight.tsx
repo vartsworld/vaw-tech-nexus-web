@@ -35,6 +35,13 @@ import {
     ResponsiveContainer
 } from "recharts";
 import { format } from "date-fns";
+import { 
+    Select, 
+    SelectContent, 
+    SelectItem, 
+    SelectTrigger, 
+    SelectValue 
+} from "@/components/ui/select";
 
 interface ApiCredentials {
     url: string;
@@ -103,6 +110,26 @@ const FinancialOversight = () => {
     const [externalStats, setExternalStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState<string | null>(null);
+
+    const { data: allProjects = [] } = useRealtimeQuery({
+        queryKey: ['hr-all-projects'],
+        table: 'client_projects',
+        select: 'id, title, client_id'
+    });
+
+    const [isLinking, setIsLinking] = useState<string | null>(null);
+
+    const handleUpdateDocProject = async (docId: string, projectId: string) => {
+        setIsLinking(docId);
+        try {
+            await supabase.from('client_documents').update({ project_id: projectId }).eq('id', docId);
+            refetchVerifications();
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsLinking(null);
+        }
+    };
 
     const handleVerifyStatus = async (doc: any, newStatus: 'verified' | 'rejected') => {
         setIsProcessing(doc.id);
@@ -618,6 +645,23 @@ const FinancialOversight = () => {
                                                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">
                                                     Client: {client?.company_name || 'Individual'}
                                                 </p>
+                                                <div className="mt-3">
+                                                    <Select 
+                                                        value={doc.project_id || "none"} 
+                                                        onValueChange={(val) => handleUpdateDocProject(doc.id, val === "none" ? null : val)}
+                                                        disabled={!!isLinking}
+                                                    >
+                                                        <SelectTrigger className="h-8 bg-white/5 border-white/10 text-[10px] font-bold focus:ring-indigo-500/50">
+                                                            <SelectValue placeholder="Link to Project" />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="bg-[#111] border-white/10 text-white">
+                                                            <SelectItem value="none">No Project Linked</SelectItem>
+                                                            {allProjects.filter((p: any) => p.client_id === doc.client_id).map((p: any) => (
+                                                                <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                                                             ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
                                                 <p className="text-lg font-black text-indigo-400 mt-2">₹{Number(doc.amount || 0).toLocaleString()}</p>
                                             </div>
                                             <a 

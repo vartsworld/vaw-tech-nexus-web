@@ -29,7 +29,8 @@ import {
   ExternalLink,
   Check,
   X,
-  Trash
+  Trash,
+  Link
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -82,6 +83,7 @@ const ClientManagement = () => {
   const [isDocsDialogOpen, setIsDocsDialogOpen] = useState(false);
   const [selectedProjectForDocs, setSelectedProjectForDocs] = useState<any>(null);
   const [projectDocs, setProjectDocs] = useState<any[]>([]);
+  const [unlinkedDocs, setUnlinkedDocs] = useState<any[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
   const [newProject, setNewProject] = useState({
     title: "",
@@ -277,17 +279,27 @@ const ClientManagement = () => {
     }
   };
 
-  const fetchProjectDocs = async (projectId) => {
+  const fetchProjectDocs = async (projectId, clientId) => {
     setIsLoadingDocs(true);
     try {
-      const { data, error } = await supabase
+      const { data: linkedDocs, error: linkedError } = await supabase
         .from('client_documents')
         .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setProjectDocs(data || []);
+      const { data: clientUnlinked, error: unlinkedError } = await supabase
+        .from('client_documents')
+        .select('*')
+        .eq('client_id', clientId)
+        .is('project_id', null)
+        .order('created_at', { ascending: false });
+
+      if (linkedError) throw linkedError;
+      if (unlinkedError) throw unlinkedError;
+
+      setProjectDocs(linkedDocs || []);
+      setUnlinkedDocs(clientUnlinked || []);
     } catch (error) {
       console.error('Error fetching docs:', error);
     } finally {
@@ -297,9 +309,23 @@ const ClientManagement = () => {
 
   useEffect(() => {
     if (isDocsDialogOpen && selectedProjectForDocs) {
-      fetchProjectDocs(selectedProjectForDocs.id);
+      fetchProjectDocs(selectedProjectForDocs.id, selectedProjectForDocs.client_id);
     }
   }, [isDocsDialogOpen, selectedProjectForDocs]);
+
+  const handleLinkDoc = async (docId) => {
+    try {
+      const { error } = await supabase
+        .from('client_documents')
+        .update({ project_id: selectedProjectForDocs.id })
+        .eq('id', docId);
+
+      if (error) throw error;
+      fetchProjectDocs(selectedProjectForDocs.id, selectedProjectForDocs.client_id);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleDeleteDoc = async (docId) => {
     if (!confirm("Delete this document?")) return;
@@ -307,6 +333,7 @@ const ClientManagement = () => {
       const { error } = await supabase.from('client_documents').delete().eq('id', docId);
       if (error) throw error;
       setProjectDocs(projectDocs.filter(d => d.id !== docId));
+      setUnlinkedDocs(unlinkedDocs.filter(d => d.id !== docId));
     } catch (err) {
       console.error(err);
     }
@@ -1157,44 +1184,78 @@ const ClientManagement = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Linked Invoices & Confirmations</h4>
-              {isLoadingDocs ? (
-                <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
-              ) : projectDocs.length === 0 ? (
-                <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed text-gray-400 italic text-sm">
-                  No linked documents found for this project.
-                </div>
-              ) : (
+            <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Linked Invoices & Confirmations</h4>
+                {isLoadingDocs ? (
+                  <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
+                ) : projectDocs.length === 0 ? (
+                  <div className="text-center py-6 bg-gray-50 rounded-2xl border border-dashed text-gray-400 italic text-sm text-[11px]">
+                    No linked documents found for this project.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {projectDocs.map(doc => (
+                      <div key={doc.id} className="flex items-center justify-between p-3 bg-white border rounded-xl hover:border-blue-200 transition-all group">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-50 rounded-lg text-blue-600 group-hover:scale-110 transition-transform">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold truncate max-w-[200px]">{doc.title}</p>
+                            <p className="text-[10px] font-medium text-gray-400">
+                              {doc.doc_type.toUpperCase()} • ₹{Number(doc.amount || 0).toLocaleString()} • {doc.status}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" asChild>
+                            <a href={doc.file_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4" /></a>
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-rose-500 hover:text-rose-600"
+                            onClick={() => handleDeleteDoc(doc.id)}
+                          >
+                            <Trash className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {unlinkedDocs.length > 0 && (
                 <div className="space-y-2">
-                  {projectDocs.map(doc => (
-                    <div key={doc.id} className="flex items-center justify-between p-3 bg-white border rounded-xl hover:border-blue-200 transition-all group">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-50 rounded-lg text-blue-600 group-hover:scale-110 transition-transform">
-                          <FileText className="w-4 h-4" />
+                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Unlinked from Client Records</h4>
+                  <div className="space-y-2">
+                    {unlinkedDocs.map(doc => (
+                      <div key={doc.id} className="flex items-center justify-between p-3 bg-amber-50/50 border border-amber-100 rounded-xl group">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-amber-100 rounded-lg text-amber-600 group-hover:scale-110 transition-transform">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold truncate max-w-[180px]">{doc.title}</p>
+                            <p className="text-[10px] font-medium text-amber-600/70">
+                              {doc.doc_type.toUpperCase()} • ₹{Number(doc.amount || 0).toLocaleString()}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-bold truncate max-w-[200px]">{doc.title}</p>
-                          <p className="text-[10px] font-medium text-gray-400">
-                            {doc.doc_type.toUpperCase()} • ₹{Number(doc.amount || 0).toLocaleString()} • {doc.status}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" asChild>
-                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4" /></a>
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-rose-500 hover:text-rose-600"
-                          onClick={() => handleDeleteDoc(doc.id)}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleLinkDoc(doc.id)}
+                          className="h-8 bg-white border-amber-200 text-amber-700 hover:bg-amber-100 text-[10px] font-bold uppercase py-0"
                         >
-                          <Trash className="w-4 h-4" />
+                          <Link className="w-3 h-3 mr-1" />
+                          Link
                         </Button>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
