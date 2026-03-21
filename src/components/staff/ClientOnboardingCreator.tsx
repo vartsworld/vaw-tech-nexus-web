@@ -47,6 +47,9 @@ interface OnboardingLink {
   created_at: string;
   package_id: string | null;
   pricing_packages?: PricingPackage;
+  additional_info?: string | null;
+  custom_fields?: CustomField[];
+  invoice_id?: string | null;
 }
 
 interface ClientOnboardingCreatorProps {
@@ -58,11 +61,13 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
   const [packages, setPackages] = useState<PricingPackage[]>([]);
   const [links, setLinks] = useState<OnboardingLink[]>([]);
   const [loading, setLoading] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [selectedPackageId, setSelectedPackageId] = useState("");
   const [clientName, setClientName] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
+  const [invoiceId, setInvoiceId] = useState("");
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [newFieldLabel, setNewFieldLabel] = useState("");
   const [newFieldType, setNewFieldType] = useState<"text" | "textarea">("text");
@@ -108,43 +113,72 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
     setCustomFields(customFields.filter((_, i) => i !== idx));
   };
 
-  const handleCreate = async () => {
+  const handleEditClick = (link: OnboardingLink) => {
+    setEditingId(link.id);
+    setSelectedPackageId(link.package_id || "");
+    setClientName(link.client_name || "");
+    setAdditionalInfo(link.additional_info || "");
+    setInvoiceId(link.invoice_id || "");
+    setCustomFields(link.custom_fields || []);
+    setOpen(true);
+  };
+
+  const openCreateDialog = () => {
+    resetForm();
+    setOpen(true);
+  };
+
+  const handleSave = async () => {
     if (!selectedPackageId) {
       toast.error("Please select a package.");
       return;
     }
 
-    setCreating(true);
+    setSaving(true);
     try {
-      const { data, error } = await supabase
-        .from("client_onboarding_links")
-        .insert({
-          created_by: userId,
-          package_id: selectedPackageId,
-          client_name: clientName || null,
-          additional_info: additionalInfo || null,
-          custom_fields: customFields.length > 0 ? customFields : [],
-        } as any)
-        .select()
-        .single();
+      const payload: any = {
+        package_id: selectedPackageId,
+        client_name: clientName || null,
+        additional_info: additionalInfo || null,
+        invoice_id: invoiceId || null,
+        custom_fields: customFields.length > 0 ? customFields : [],
+      };
+
+      let error;
+
+      if (editingId) {
+        const { error: updateError } = await supabase
+          .from("client_onboarding_links")
+          .update(payload)
+          .eq("id", editingId);
+        error = updateError;
+      } else {
+        payload.created_by = userId;
+        const { error: insertError } = await supabase
+          .from("client_onboarding_links")
+          .insert(payload);
+        error = insertError;
+      }
 
       if (error) throw error;
 
-      toast.success("Onboarding link created!");
+      toast.success(editingId ? "Onboarding link updated!" : "Onboarding link created!");
       setOpen(false);
       resetForm();
       fetchLinks();
     } catch (e: any) {
-      toast.error(e.message || "Failed to create link.");
+      toast.error(e.message || "Operation failed.");
     } finally {
-      setCreating(false);
+      setSaving(false);
     }
   };
 
   const resetForm = () => {
+    setEditingId(null);
     setSelectedPackageId("");
     setClientName("");
     setAdditionalInfo("");
+    setInvoiceId("");
     setCustomFields([]);
   };
 
@@ -183,16 +217,14 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
           <LinkIcon className="h-4 w-4" />
           Client Onboarding Links
         </h3>
+        <Button size="sm" variant="outline" className="h-8" onClick={openCreateDialog}>
+          <Plus className="h-3 w-3 mr-1" />
+          Create Link
+        </Button>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="outline" className="h-8">
-              <Plus className="h-3 w-3 mr-1" />
-              Create Link
-            </Button>
-          </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Create Client Onboarding Link</DialogTitle>
+              <DialogTitle>{editingId ? "Edit Onboarding Link" : "Create Client Onboarding Link"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               {/* Client Name (optional) */}
@@ -246,6 +278,13 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
                 </Card>
               )}
 
+              {/* Invoice Link */}
+              <div>
+                <Label>Link Invoice (Sync ID from Billing App)</Label>
+                <Input value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)} placeholder="e.g. INV-2026-001" maxLength={100} />
+                <p className="text-[10px] text-muted-foreground mt-1">If linked, this allows tracking bill status after onboarding.</p>
+              </div>
+
               {/* Additional Info */}
               <div>
                 <Label>Additional Info for Client</Label>
@@ -286,9 +325,9 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button onClick={handleCreate} disabled={creating || !selectedPackageId}>
-                  {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <LinkIcon className="h-4 w-4 mr-2" />}
-                  Generate Link
+                <Button onClick={handleSave} disabled={saving || !selectedPackageId}>
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <LinkIcon className="h-4 w-4 mr-2" />}
+                  {editingId ? "Save Changes" : "Generate Link"}
                 </Button>
               </div>
             </div>
@@ -319,6 +358,11 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
                 </span>
                 
                 <div className="flex gap-1">
+                  {link.status === "active" && (
+                     <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] hover:text-primary transition-colors" onClick={() => handleEditClick(link)}>
+                       Edit
+                     </Button>
+                  )}
                   {link.status === "active" && (
                     <>
                       <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-primary transition-colors" onClick={() => copyLink(link.token)}>
