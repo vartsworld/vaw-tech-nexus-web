@@ -47,6 +47,7 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DataDeletion from "./pages/DataDeletion";
 import LMSBuilder from "./pages/LMSBuilder";
+import ReferralProgram from "./pages/ReferralProgram";
 
 
 const queryClient = new QueryClient({
@@ -127,6 +128,7 @@ const AppContent = () => {
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/data-deletion" element={<DataDeletion />} />
           <Route path="/lms" element={<LMSBuilder />} />
+          <Route path="/referral-program" element={<ReferralProgram />} />
           <Route path="/:id" element={<StaffIDCard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
