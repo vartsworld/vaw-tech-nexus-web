@@ -35,7 +35,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SharedProjectForm from "../projects/SharedProjectForm";
-import { syncClientToBilling, fetchClientFromBilling, searchClientsInBilling, generateSyncId } from "@/utils/syncUtils";
+import { syncClientToBilling, fetchClientFromBilling, searchClientsInBilling, generateSyncId, fetchInvoicesFromBilling } from "@/utils/syncUtils";
 
 const ClientManagement = () => {
   const [clients, setClients] = useState([]);
@@ -298,8 +298,32 @@ const ClientManagement = () => {
       if (linkedError) throw linkedError;
       if (unlinkedError) throw unlinkedError;
 
+      // Also try fetching'unlinked' external invoices from billing API
+      let externalUnlinked: any[] = [];
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('billing_sync_id')
+        .eq('id', clientId)
+        .single();
+      
+      if (clientData?.billing_sync_id) {
+        const extInvoices = await fetchInvoicesFromBilling(clientData.billing_sync_id);
+        // Map external invoices to doc format for display
+        externalUnlinked = extInvoices
+          .filter(inv => !linkedDocs?.some(doc => doc.title.includes(inv.invoice_number)))
+          .map(inv => ({
+            id: `ext-${inv.invoice_number || inv.id}`,
+            title: `Invoice - ${inv.invoice_number || 'External'}`,
+            amount: inv.total || inv.balance || 0,
+            doc_type: 'invoice',
+            status: inv.status,
+            isExternal: true,
+            raw: inv
+          }));
+      }
+
       setProjectDocs(linkedDocs || []);
-      setUnlinkedDocs(clientUnlinked || []);
+      setUnlinkedDocs([...(clientUnlinked || []), ...externalUnlinked]);
     } catch (error) {
       console.error('Error fetching docs:', error);
     } finally {
@@ -313,14 +337,38 @@ const ClientManagement = () => {
     }
   }, [isDocsDialogOpen, selectedProjectForDocs]);
 
-  const handleLinkDoc = async (docId) => {
+  const handleLinkDoc = async (doc) => {
     try {
-      const { error } = await supabase
-        .from('client_documents')
-        .update({ project_id: selectedProjectForDocs.id })
-        .eq('id', docId);
+      if (typeof doc === 'string' || doc.id?.toString().startsWith('ext-')) {
+        const docToLink = typeof doc === 'string' ? unlinkedDocs.find(d => d.id === doc) : doc;
+        if (!docToLink) return;
 
-      if (error) throw error;
+        if (docToLink.isExternal) {
+          // Create a local record so it's permanently linked
+          const { error } = await supabase.from('client_documents').insert({
+            client_id: selectedProjectForDocs.client_id,
+            project_id: selectedProjectForDocs.id,
+            title: docToLink.title,
+            doc_type: 'invoice',
+            amount: docToLink.amount,
+            status: docToLink.status || 'sent',
+            file_url: "#" // Link is handled via API
+          });
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('client_documents')
+            .update({ project_id: selectedProjectForDocs.id })
+            .eq('id', docToLink.id);
+          if (error) throw error;
+        }
+      } else {
+        const { error } = await supabase
+          .from('client_documents')
+          .update({ project_id: selectedProjectForDocs.id })
+          .eq('id', doc.id);
+        if (error) throw error;
+      }
       fetchProjectDocs(selectedProjectForDocs.id, selectedProjectForDocs.client_id);
     } catch (err) {
       console.error(err);
@@ -1227,37 +1275,41 @@ const ClientManagement = () => {
                 )}
               </div>
 
-              {unlinkedDocs.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Unlinked from Client Records</h4>
+                {unlinkedDocs.length > 0 ? (
                   <div className="space-y-2">
-                    {unlinkedDocs.map(doc => (
-                      <div key={doc.id} className="flex items-center justify-between p-3 bg-amber-50/50 border border-amber-100 rounded-xl group">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-amber-100 rounded-lg text-amber-600 group-hover:scale-110 transition-transform">
-                            <FileText className="w-4 h-4" />
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Unlinked from Client Records</h4>
+                    <div className="space-y-2">
+                      {unlinkedDocs.map(doc => (
+                        <div key={doc.id} className="flex items-center justify-between p-3 bg-amber-50/50 border border-amber-100 rounded-xl group">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-amber-100 rounded-lg text-amber-600 group-hover:scale-110 transition-transform">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold truncate max-w-[180px]">{doc.title}</p>
+                              <p className="text-[10px] font-medium text-amber-600/70">
+                                {doc.doc_type.toUpperCase()} • ₹{Number(doc.amount || 0).toLocaleString()} {doc.isExternal && "(External)"}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-bold truncate max-w-[180px]">{doc.title}</p>
-                            <p className="text-[10px] font-medium text-amber-600/70">
-                              {doc.doc_type.toUpperCase()} • ₹{Number(doc.amount || 0).toLocaleString()}
-                            </p>
-                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleLinkDoc(doc)}
+                            className="h-8 bg-white border-amber-200 text-amber-700 hover:bg-amber-100 text-[10px] font-bold uppercase py-0"
+                          >
+                            <Link className="w-3 h-3 mr-1" />
+                            Link
+                          </Button>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleLinkDoc(doc.id)}
-                          className="h-8 bg-white border-amber-200 text-amber-700 hover:bg-amber-100 text-[10px] font-bold uppercase py-0"
-                        >
-                          <Link className="w-3 h-3 mr-1" />
-                          Link
-                        </Button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="p-4 bg-gray-50/50 border border-dashed rounded-xl text-center">
+                    <p className="text-[10px] text-gray-400 italic">No unlinked invoices or confirmations found for this client. Ensure the client is synced with the billing software.</p>
+                  </div>
+                )}
             </div>
             
             <p className="text-[10px] text-gray-400 bg-amber-50 p-3 rounded-xl border border-amber-100 italic">

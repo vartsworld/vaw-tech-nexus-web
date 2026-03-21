@@ -7,6 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { 
+    Select, 
+    SelectContent, 
+    SelectItem, 
+    SelectTrigger, 
+    SelectValue 
+} from "@/components/ui/select";
 import {
     CreditCard,
     Clock,
@@ -112,7 +119,16 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
     const [screenshot, setScreenshot] = useState<File | null>(null);
     const [screenshotPreview, setScreenshotPreview] = useState("");
     const [transactionId, setTransactionId] = useState("");
+    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (selectedReminder) {
+            setSelectedProjectId(selectedReminder.project_id || (selectedReminder.type === 'project_balance' ? selectedReminder.id : null));
+        } else {
+            setSelectedProjectId(null);
+        }
+    }, [selectedReminder]);
 
     useEffect(() => {
         if (profile?.id) fetchBillingData();
@@ -436,7 +452,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                 doc_type: 'payment_confirmation',
                 amount, 
                 status: 'pending_verification',
-                project_id: selectedReminder.project_id || (selectedReminder.type === 'project_balance' ? selectedReminder.id : null)
+                project_id: selectedProjectId
             });
 
             if (selectedReminder.id && !selectedReminder.invoice_number) {
@@ -1121,6 +1137,23 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                 <p className="text-2xl font-black text-tech-gold mt-2">
                                     ₹{Number(selectedReminder.amount || selectedReminder.total || selectedReminder.balance || 0).toLocaleString('en-IN')}
                                 </p>
+                            </div>
+                            <div>
+                                <Label className="text-gray-300">Link to Project (Optional)</Label>
+                                <Select 
+                                    value={selectedProjectId || "none"} 
+                                    onValueChange={(val) => setSelectedProjectId(val === "none" ? null : val)}
+                                >
+                                    <SelectTrigger className="bg-white/5 border-tech-gold/20 text-white mt-2">
+                                        <SelectValue placeholder="Select a project" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-black border-tech-gold/20 text-white">
+                                        <SelectItem value="none">No Project Linked</SelectItem>
+                                        {localProjects.map((proj: any) => (
+                                            <SelectItem key={proj.id} value={proj.id}>{proj.title}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div>
                                 <Label className="text-gray-300">Transaction ID *</Label>

@@ -165,3 +165,42 @@ export const searchClientsInBilling = async (query: string) => {
         return [];
     }
 };
+
+/**
+ * Fetches invoices for a specific client from the billing software.
+ */
+export const fetchInvoicesFromBilling = async (clientCode: string) => {
+    const key = localStorage.getItem('vaw_external_api_key');
+    const secret = localStorage.getItem('vaw_external_api_secret');
+
+    if (!key || !secret) throw new Error("API credentials missing");
+    try {
+        const externalUrl = localStorage.getItem('vaw_external_api_url') || `https://ecexzlqjobqajfhxmiaa.supabase.co/functions/v1/external-api`;
+        // Use client_id param if supported by the API, like in PaymentCenter
+        const response = await fetch(`${externalUrl}/invoices?client_id=${clientCode}&limit=100`, {
+            headers: { 'x-api-key': key, 'x-api-secret': secret }
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch invoices");
+        const raw = await response.json();
+        const allInvoices = Array.isArray(raw) ? raw : (raw?.data || []);
+
+        if (allInvoices.length > 0) return allInvoices;
+
+        // Fallback: fetch all and filter if param didn't work
+        const fallbackRes = await fetch(`${externalUrl}/invoices?limit=500`, {
+            headers: { 'x-api-key': key, 'x-api-secret': secret }
+        });
+        const fallbackRaw = await fallbackRes.json();
+        const fallbackItems = Array.isArray(fallbackRaw) ? fallbackRaw : (fallbackRaw?.data || []);
+
+        const matchId = clientCode.toLowerCase();
+        return fallbackItems.filter((inv: any) => {
+            const code = String(inv.client_code || inv.client_id || inv.client_sync_id || inv.customer_id || '').toLowerCase();
+            return code === matchId;
+        });
+    } catch (error) {
+        console.error("Error fetching invoices from billing:", error);
+        return [];
+    }
+};
