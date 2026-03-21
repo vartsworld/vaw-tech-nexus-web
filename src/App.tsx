@@ -46,6 +46,8 @@ import StaffIDCard from "./pages/StaffIDCard";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DataDeletion from "./pages/DataDeletion";
+import LMSBuilder from "./pages/LMSBuilder";
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -124,6 +126,7 @@ const AppContent = () => {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/data-deletion" element={<DataDeletion />} />
+          <Route path="/lms" element={<LMSBuilder />} />
           <Route path="/:id" element={<StaffIDCard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

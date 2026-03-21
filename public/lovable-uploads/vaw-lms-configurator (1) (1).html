@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build Your School System – VAW Technologies</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0f4ff;
+  --white:#fff;
+  --ink:#1a1f36;
+  --slate:#4a5578;
+  --muted:#8b95b0;
+  --line:#e3e8f4;
+  --line2:#d0d7ec;
+  --primary:#3461ff;
+  --primary-l:#eaefff;
+  --green:#0ea85a;
+  --green-l:#e3f9ee;
+  --gold:#d97c0a;
+  --gold-l:#fff4df;
+  --purple:#7c3aed;
+  --purple-l:#f3eeff;
+  --rose:#e03050;
+  --rose-l:#fff0f2;
+  --teal:#0891b2;
+  --teal-l:#e0f6fc;
+  --orange:#e8650a;
+  --orange-l:#fff1e8;
+  --r:16px;
+  --sh:0 2px 12px rgba(52,97,255,0.07);
+  --sh-md:0 8px 32px rgba(52,97,255,0.11);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+
+/* HEADER */
+.hdr{background:var(--white);border-bottom:1px solid var(--line);padding:0 32px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.logo-w{display:flex;align-items:center;gap:12px;}
+.logo-sep{width:1px;height:24px;background:var(--line2);}
+.logo-sub{font-size:12px;font-weight:600;color:var(--muted);}
+.hdr-badge{background:var(--primary-l);color:var(--primary);font-size:12px;font-weight:700;padding:6px 14px;border-radius:100px;}
+
+/* HERO */
+.hero{background:var(--white);padding:60px 24px 56px;text-align:center;border-bottom:1px solid var(--line);position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(52,97,255,0.05),transparent);pointer-events:none;}
+.hero-chip{display:inline-flex;align-items:center;gap:8px;background:var(--green-l);color:var(--green);font-size:12px;font-weight:700;padding:6px 16px;border-radius:100px;margin-bottom:18px;}
+.hero h1{font-size:clamp(1.9rem,5vw,2.9rem);font-weight:800;line-height:1.12;margin-bottom:14px;}
+.hero h1 em{color:var(--primary);font-style:normal;}
+.hero-sub{font-size:1rem;color:var(--slate);line-height:1.75;max-width:540px;margin:0 auto 32px;}
+.hero-steps{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;}
+.hs{display:flex;align-items:center;gap:8px;background:var(--bg);border:1.5px solid var(--line);border-radius:100px;padding:9px 16px;font-size:0.8rem;font-weight:600;color:var(--slate);}
+.hs-n{width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+/* WRAP + LAYOUT */
+.wrap{max-width:1140px;margin:0 auto;padding:44px 20px 120px;}
+.layout{display:grid;grid-template-columns:1fr 340px;gap:28px;align-items:start;}
+@media(max-width:920px){.layout{grid-template-columns:1fr;}}
+
+/* SECTION BLOCK */
+.blk{margin-bottom:32px;}
+.blk-head{background:var(--white);border:1.5px solid var(--line);border-radius:var(--r) var(--r) 0 0;border-bottom:1px solid var(--line);padding:18px 24px;display:flex;align-items:center;gap:14px;}
+.blk-ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;}
+.blk-ttl h3{font-size:1rem;font-weight:700;margin-bottom:3px;}
+.blk-ttl p{font-size:0.77rem;color:var(--muted);line-height:1.4;}
+.blk-body{background:var(--white);border:1.5px solid var(--line);border-top:none;border-radius:0 0 var(--r) var(--r);padding:22px;}
+
+/* CORE CARD */
+.core-card{background:linear-gradient(135deg,#0f1a3a 0%,#1a2960 100%);border-radius:14px;padding:26px;margin-bottom:20px;}
+.core-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:20px;}
+.core-top h3{font-size:1.1rem;font-weight:800;color:#fff;margin-bottom:6px;}
+.core-top p{font-size:0.8rem;color:rgba(255,255,255,0.5);max-width:360px;line-height:1.6;}
+.core-amt{font-family:'JetBrains Mono',monospace;font-size:1.6rem;font-weight:700;color:#fde68a;display:block;}
+.core-note{font-size:0.71rem;color:rgba(255,255,255,0.4);}
+
+/* PORTAL TABS */
+.ptabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.ptab{padding:8px 16px;border-radius:100px;border:1.5px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6);font-size:0.78rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.ptab:hover{background:rgba(255,255,255,0.1);color:#fff;}
+.ptab.active{background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:#fff;}
+
+.portal-panels{}
+.portal-panel{display:none;}
+.portal-panel.active{display:block;}
+
+.pp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.pp-feat{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 14px;}
+.pp-feat-ico{font-size:1rem;margin-bottom:6px;}
+.pp-feat-name{font-size:0.8rem;font-weight:700;color:rgba(255,255,255,0.9);margin-bottom:4px;}
+.pp-feat-desc{font-size:0.71rem;color:rgba(255,255,255,0.45);line-height:1.5;}
+
+/* CORE FEATURES ROW */
+.core-feats-row{display:flex;flex-wrap:wrap;gap:8px;padding:16px;background:rgba(255,255,255,0.04);border-radius:10px;border:1px solid rgba(255,255,255,0.08);}
+.cf-tag{font-size:0.71rem;font-weight:600;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);padding:4px 12px;border-radius:100px;}
+
+/* WHO IS CORE FOR */
+.core-who{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-top:16px;}
+.cw-item{background:var(--primary-l);border:1.5px solid rgba(52,97,255,0.15);border-radius:10px;padding:12px 14px;}
+.cw-item h5{font-size:0.78rem;font-weight:700;color:var(--primary);margin-bottom:4px;}
+.cw-item p{font-size:0.71rem;color:var(--slate);line-height:1.5;}
+
+/* CAT LABEL */
+.cat-lbl{display:flex;align-items:center;gap:10px;font-size:0.71rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:22px 0 12px;}
+.cat-lbl::after{content:'';flex:1;height:1px;background:var(--line);}
+
+/* MODULE CARD */
+.mods-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100%,1fr));gap:12px;}
+.mod{border:2px solid var(--line);border-radius:14px;background:var(--white);overflow:hidden;transition:border-color .2s,box-shadow .2s;}
+.mod:hover{border-color:var(--line2);box-shadow:var(--sh);}
+.mod.on{border-color:var(--primary);}
+.mod.on.g-ops{border-color:var(--teal);}
+.mod.on.g-fin{border-color:var(--gold);}
+.mod.on.g-com{border-color:var(--purple);}
+.mod.on.g-mgmt{border-color:var(--teal);}
+.mod.on.g-hr{border-color:var(--rose);}
+.mod.on.g-adv{border-color:var(--green);}
+
+/* MODULE TOP ROW — clickable toggle */
+.mod-top{display:flex;align-items:flex-start;gap:14px;padding:18px 20px;cursor:pointer;user-select:none;}
+.mod-ico{font-size:1.5rem;flex-shrink:0;margin-top:1px;}
+.mod-mid{flex:1;}
+.mod-name{font-size:0.92rem;font-weight:700;margin-bottom:4px;line-height:1.3;}
+.mod-tagline{font-size:0.76rem;color:var(--muted);line-height:1.4;margin-bottom:8px;}
+.mod-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.mod-tag{font-size:0.66rem;font-weight:600;background:rgba(0,0,0,0.04);color:var(--slate);padding:3px 9px;border-radius:100px;}
+.mod-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;}
+.mod-price{font-family:'JetBrains Mono',monospace;font-size:0.95rem;font-weight:700;color:var(--ink);white-space:nowrap;}
+.mod-cb{width:26px;height:26px;border-radius:8px;border:2px solid var(--line2);background:var(--white);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:transparent;transition:all .18s;flex-shrink:0;}
+.mod.on .mod-cb{background:var(--primary);border-color:var(--primary);color:#fff;}
+.mod.on.g-ops  .mod-cb{background:var(--teal);border-color:var(--teal);}
+.mod.on.g-fin  .mod-cb{background:var(--gold);border-color:var(--gold);}
+.mod.on.g-com  .mod-cb{background:var(--purple);border-color:var(--purple);}
+.mod.on.g-mgmt .mod-cb{background:var(--teal);border-color:var(--teal);}
+.mod.on.g-hr   .mod-cb{background:var(--rose);border-color:var(--rose);}
+.mod.on.g-adv  .mod-cb{background:var(--green);border-color:var(--green);}
+
+/* ADD BADGE */
+.add-badge{font-size:0.66rem;font-weight:700;padding:3px 10px;border-radius:100px;background:var(--primary-l);color:var(--primary);white-space:nowrap;}
+.mod.on .add-badge{background:var(--green-l);color:var(--green);}
+.mod.on .add-badge::before{content:'✓ ';}
+
+/* DETAILS TOGGLE */
+.det-toggle{
+  display:flex;align-items:center;gap:6px;
+  padding:10px 20px;
+  border-top:1px solid var(--line);
+  background:var(--bg);
+  font-size:0.75rem;font-weight:700;color:var(--primary);
+  cursor:pointer;user-select:none;transition:background .15s;
+}
+.det-toggle:hover{background:#e8eeff;}
+.det-arrow{transition:transform .22s;display:inline-block;}
+.det-toggle.open .det-arrow{transform:rotate(180deg);}
+
+/* DETAIL PANEL */
+.det-panel{display:none;border-top:1px solid var(--line);}
+.det-panel.open{display:block;}
+.det-inner{padding:20px;}
+
+.det-what{font-size:0.82rem;color:var(--slate);line-height:1.75;margin-bottom:18px;}
+
+.det-section{margin-bottom:16px;}
+.det-section h5{font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px;}
+
+.feat-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;}
+.feat-item{display:flex;align-items:flex-start;gap:10px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 13px;}
+.feat-item .fi-ico{font-size:1rem;flex-shrink:0;margin-top:1px;}
+.feat-item .fi-body{}
+.feat-item .fi-name{font-size:0.78rem;font-weight:700;margin-bottom:2px;}
+.feat-item .fi-desc{font-size:0.69rem;color:var(--muted);line-height:1.5;}
+
+.use-cases{display:flex;flex-wrap:wrap;gap:8px;}
+.uc{display:flex;align-items:center;gap:7px;background:var(--green-l);border:1px solid rgba(14,168,90,0.15);border-radius:8px;padding:8px 12px;font-size:0.75rem;font-weight:600;color:var(--ink);}
+.uc-ico{font-size:0.9rem;}
+
+.perfect-for{background:var(--primary-l);border:1.5px solid rgba(52,97,255,0.12);border-radius:10px;padding:13px 16px;}
+.perfect-for h5{font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin-bottom:6px;}
+.perfect-for p{font-size:0.78rem;color:var(--slate);line-height:1.6;}
+
+/* QUOTE SIDEBAR */
+.qcard{background:var(--white);border:1.5px solid var(--line);border-radius:var(--r);overflow:hidden;position:sticky;top:80px;box-shadow:var(--sh-md);}
+.qc-top{background:var(--ink);padding:18px 22px;}
+.qc-top h3{font-size:1rem;font-weight:700;color:#fff;margin-bottom:2px;}
+.qc-top p{font-size:0.74rem;color:rgba(255,255,255,0.4);}
+.qc-body{padding:20px;}
+.qc-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);}
+.qc-row .ql{font-size:0.81rem;color:var(--slate);font-weight:500;}
+.qc-row .qv{font-family:'JetBrains Mono',monospace;font-size:0.84rem;font-weight:700;color:var(--ink);}
+.qc-mh{font-size:0.69rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:13px 0 7px;}
+.qc-mods{display:flex;flex-direction:column;gap:5px;min-height:44px;}
+.qc-empty{font-size:0.78rem;color:var(--muted);font-style:italic;text-align:center;padding:8px 0;}
+.qc-mrow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;animation:sli .18s ease;}
+@keyframes sli{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.qc-mrow .ml{font-size:0.74rem;color:var(--slate);flex:1;line-height:1.3;}
+.qc-mrow .mv{font-family:'JetBrains Mono',monospace;font-size:0.71rem;font-weight:700;color:var(--green);white-space:nowrap;}
+.qdiv{height:1px;background:var(--line);margin:13px 0;}
+.qt-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.qt-lbl{font-size:0.87rem;font-weight:700;}
+.qt-amt{font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:700;color:var(--ink);transition:transform .2s;}
+.qt-note{font-size:0.71rem;color:var(--muted);margin-bottom:16px;}
+.ann-box{background:var(--gold-l);border:1.5px solid #fde5a0;border-radius:10px;padding:12px 14px;margin-bottom:16px;}
+.ann-box p{font-size:0.74rem;color:#7a4b00;line-height:1.65;}
+
+.btn-wa{width:100%;padding:13px;border-radius:12px;border:none;background:#25d366;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.9rem;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:9px;transition:all .2s;}
+.btn-wa:hover{background:#1ab354;transform:translateY(-1px);box-shadow:0 6px 18px rgba(37,211,102,0.28);}
+.btn-call{width:100%;padding:11px;border-radius:12px;border:2px solid var(--line2);background:var(--white);font-family:'Plus Jakarta Sans',sans-serif;font-size:0.86rem;font-weight:700;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;}
+.btn-call:hover{border-color:var(--primary);color:var(--primary);}
+.btn-clr{width:100%;padding:9px;border:none;background:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.77rem;font-weight:600;color:var(--muted);cursor:pointer;margin-top:7px;transition:color .2s;}
+.btn-clr:hover{color:var(--rose);}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(26,31,54,0.55);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px);}
+.overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:20px;width:100%;max-width:520px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.18);animation:pop .25s cubic-bezier(.34,1.56,.64,1);}
+@keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.m-top{background:var(--ink);padding:22px 26px;display:flex;justify-content:space-between;align-items:flex-start;}
+.m-top h3{font-size:1.02rem;font-weight:700;color:#fff;margin-bottom:3px;}
+.m-top p{font-size:0.76rem;color:rgba(255,255,255,0.4);}
+.m-close{width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,255,255,0.1);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.m-body{padding:22px 26px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.frow.full{grid-template-columns:1fr;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:0.71rem;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.8px;}
+.field input,.field select{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:10px 13px;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.87rem;color:var(--ink);outline:none;transition:border-color .2s;}
+.field input:focus,.field select:focus{border-color:var(--primary);}
+.m-sum{background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:13px 15px;margin-bottom:15px;font-size:0.77rem;color:var(--slate);line-height:1.9;}
+.m-sum strong{color:var(--ink);}
+.m-ctas{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mb-wa{padding:13px;border-radius:11px;border:none;background:#25d366;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.84rem;font-weight:700;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;}
+.mb-wa:hover{background:#1ab354;}
+.mb-call{padding:13px;border-radius:11px;border:2px solid var(--line2);background:var(--white);font-family:'Plus Jakarta Sans',sans-serif;font-size:0.84rem;font-weight:700;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s;}
+.mb-call:hover{border-color:var(--primary);color:var(--primary);}
+
+/* TOAST */
+.toast{position:fixed;bottom:26px;right:22px;z-index:9999;background:var(--ink);color:#fff;padding:13px 20px;border-radius:13px;font-size:0.83rem;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,0.2);display:flex;align-items:center;gap:9px;transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* MOBILE STRIP */
+.mob-strip{display:none;position:fixed;bottom:0;left:0;right:0;z-index:90;background:var(--white);border-top:1.5px solid var(--line);padding:13px 20px;box-shadow:0 -4px 18px rgba(0,0,0,0.09);}
+.ms-inner{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.ms-tot{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;}
+.ms-note{font-size:0.71rem;color:var(--muted);}
+.ms-btn{padding:11px 20px;border-radius:10px;border:none;background:#25d366;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:0.84rem;font-weight:700;cursor:pointer;}
+
+.footer{background:var(--white);border-top:1px solid var(--line);text-align:center;padding:22px;font-size:0.77rem;color:var(--muted);}
+.footer strong{color:var(--ink);}
+
+/* ERP SPLIT RADIO MODULE */
+.erp-label{
+  display:flex;align-items:flex-start;gap:12px;
+  border:2px solid var(--line);border-radius:12px;
+  padding:14px;cursor:pointer;
+  transition:all .2s;background:var(--bg);
+}
+.erp-label:hover{border-color:var(--line2);background:#ecf0ff;}
+.erp-label.chosen{border-color:var(--gold);background:var(--gold-l);}
+
+.erp-rb{
+  width:20px;height:20px;border-radius:50%;
+  border:2px solid var(--line2);background:var(--white);
+  flex-shrink:0;margin-top:2px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .18s;
+}
+.erp-rb.filled{
+  background:var(--gold);border-color:var(--gold);
+}
+.erp-rb.filled::after{
+  content:'';width:7px;height:7px;border-radius:50%;background:#fff;
+}
+
+.erp-label-body{flex:1;}
+.erp-opt-name{font-size:0.85rem;font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.erp-opt-desc{font-size:0.74rem;color:var(--slate);line-height:1.55;margin-bottom:9px;}
+.erp-opt-feats{display:flex;flex-direction:column;gap:3px;margin-bottom:10px;}
+.erp-opt-feats span{font-size:0.7rem;font-weight:600;color:var(--green);}
+.erp-price{font-family:'JetBrains Mono',monospace;font-size:1rem;font-weight:700;color:var(--ink);}
+
+.tax-badge{
+  background:linear-gradient(135deg,#16a34a,#15803d);
+  color:#fff;font-size:0.6rem;font-weight:700;
+  padding:2px 8px;border-radius:100px;letter-spacing:.3px;
+}
+
+@media(max-width:600px){
+  #mod-erp [style*="grid-template-columns:1fr 1fr"]{
+    grid-template-columns:1fr !important;
+  }
+  [style*="grid-template-columns:1fr 1fr"]:has(.perfect-for){
+    grid-template-columns:1fr !important;
+  }
+}
+
+@media(max-width:920px){.mob-strip{display:block;}body{padding-bottom:80px;}.m-ctas{grid-template-columns:1fr;}.frow{grid-template-columns:1fr;}}
+@media(max-width:520px){.hero{padding:40px 16px 44px;}.hdr{padding:0 16px;}.feat-list{grid-template-columns:1fr;}.pp-grid{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="logo-w">
+    <svg height="34" viewBox="0 0 190 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="0,3 11,3 17,16 6,16" fill="#e03030"/>
+      <polygon points="11,3 22,3 17,16 6,16" fill="#2255cc"/>
+      <polygon points="6,16 17,16 11,29 0,29" fill="#f0b800"/>
+      <polygon points="17,16 28,3 33,16 22,29" fill="#1a9940"/>
+      <text x="42" y="28" font-family="Plus Jakarta Sans,Arial,sans-serif" font-weight="800" font-size="22" fill="#1a1f36">VAW</text>
+      <text x="42" y="40" font-family="Plus Jakarta Sans,Arial,sans-serif" font-weight="500" font-size="9" fill="#8b95b0" letter-spacing="2.5">TECHNOLOGIES</text>
+    </svg>
+    <div class="logo-sep"></div>
+    <span class="logo-sub">LMS Builder</span>
+  </div>
+  <div class="hdr-badge">🎓 School System Configurator</div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-chip">✨ Build it your way</div>
+  <h1>Design Your Own <em>School System</em><br>in Minutes</h1>
+  <p class="hero-sub">Pick the tools your institution actually needs. Read what each feature does. See your price live — then we'll build it for you.</p>
+  <div class="hero-steps">
+    <div class="hs"><div class="hs-n">1</div>See what's included</div>
+    <div class="hs"><div class="hs-n">2</div>Read & pick add-ons</div>
+    <div class="hs"><div class="hs-n">3</div>Watch your price</div>
+    <div class="hs"><div class="hs-n">4</div>Contact us to build</div>
+  </div>
+</div>
+
+<div class="wrap">
+<div class="layout">
+
+<!-- ═══════════ LEFT COLUMN ═══════════ -->
+<div>
+
+<!-- ── STEP 1: CORE ── -->
+<div class="blk">
+  <div class="blk-head">
+    <div class="blk-ico" style="background:#eef0ff;">🧱</div>
+    <div class="blk-ttl">
+      <h3>Step 1 — What's always included (Core Platform)</h3>
+      <p>This is the foundation of your system. Every institution gets this — no extras needed to get started.</p>
+    </div>
+  </div>
+  <div class="blk-body">
+    <div class="core-card">
+      <div class="core-top">
+        <div>
+          <h3>VAW Core LMS Platform</h3>
+          <p>A fully working digital school — four separate portals for students, teachers, admins, and staff. Everything communicates in one place from day one.</p>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <span class="core-amt">₹52,000</span>
+          <span class="core-note">one-time setup, no recurring fee</span>
+        </div>
+      </div>
+
+      <!-- Portal tabs -->
+      <div class="ptabs">
+        <button class="ptab active" onclick="showPortal('student',this)">🎓 Student</button>
+        <button class="ptab" onclick="showPortal('teacher',this)">👩‍🏫 Teacher</button>
+        <button class="ptab" onclick="showPortal('admin',this)">🏛️ Admin</button>
+        <button class="ptab" onclick="showPortal('staff',this)">🧑‍💼 Staff</button>
+      </div>
+
+      <div class="portal-panels">
+
+        <!-- STUDENT -->
+        <div class="portal-panel active" id="pp-student">
+          <div class="pp-grid">
+            <div class="pp-feat"><div class="pp-feat-ico">📊</div><div class="pp-feat-name">Personal Dashboard</div><div class="pp-feat-desc">Students see their attendance %, upcoming assignments, recent marks, and announcements the moment they log in.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">📚</div><div class="pp-feat-name">Course & Subject Access</div><div class="pp-feat-desc">All enrolled courses and subjects are listed clearly. Students click to access materials, syllabi, and notes uploaded by teachers.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">📋</div><div class="pp-feat-name">Syllabus Viewer</div><div class="pp-feat-desc">The full semester syllabus for each subject is always visible — students know exactly what's coming and can plan ahead.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">🗓️</div><div class="pp-feat-name">Attendance Overview</div><div class="pp-feat-desc">Students can check their own attendance percentage per subject in real time — no more surprises at the end of the term.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">📝</div><div class="pp-feat-name">Assignment Viewer</div><div class="pp-feat-desc">All assignments with due dates are shown clearly. Students know what's pending, what's submitted, and what's graded.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">🔔</div><div class="pp-feat-name">Announcements & Alerts</div><div class="pp-feat-desc">Important notices from teachers or the admin — exam schedules, holiday alerts, events — appear instantly on the dashboard.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">👤</div><div class="pp-feat-name">Profile Management</div><div class="pp-feat-desc">Students can view and update their own profile, contact details, and photo — all in one place.</div></div>
+          </div>
+        </div>
+
+        <!-- TEACHER -->
+        <div class="portal-panel" id="pp-teacher">
+          <div class="pp-grid">
+            <div class="pp-feat"><div class="pp-feat-ico">📤</div><div class="pp-feat-name">Course & Syllabus Upload</div><div class="pp-feat-desc">Teachers upload study materials, PDFs, video links, and the full syllabus directly into the system — students see it immediately.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">📝</div><div class="pp-feat-name">Assignment Creation</div><div class="pp-feat-desc">Create assignments with titles, instructions, and due dates. Manage all assignments from one panel — edit, remove, or extend deadlines.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">✅</div><div class="pp-feat-name">Attendance Marking</div><div class="pp-feat-desc">Mark attendance class by class with a simple present/absent toggle per student. Takes under a minute for a full class.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">📊</div><div class="pp-feat-name">Student Marks Entry</div><div class="pp-feat-desc">Enter internal marks, test scores, and assessment grades for each student. Data feeds directly into reports for admin and parents.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">📢</div><div class="pp-feat-name">Announcements</div><div class="pp-feat-desc">Post announcements to specific subjects or the whole class instantly — no WhatsApp groups needed.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">🔔</div><div class="pp-feat-name">Notifications</div><div class="pp-feat-desc">Teachers get notified when students submit assignments or when admin posts institution-wide notices.</div></div>
+          </div>
+        </div>
+
+        <!-- ADMIN -->
+        <div class="portal-panel" id="pp-admin">
+          <div class="pp-grid">
+            <div class="pp-feat"><div class="pp-feat-ico">👨‍🎓</div><div class="pp-feat-name">Student Management</div><div class="pp-feat-desc">Add new students, edit their details, assign them to courses, or remove them. Bulk actions available for large batches.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">👩‍🏫</div><div class="pp-feat-name">Staff Management</div><div class="pp-feat-desc">Add teaching and non-teaching staff, assign their subjects and departments, and control what they can access.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">🔐</div><div class="pp-feat-name">Role Assignment</div><div class="pp-feat-desc">Set who is a student, teacher, HOD, or admin. Each role sees only what they need — no confusion, no data leaks.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">📚</div><div class="pp-feat-name">Course & Subject Creation</div><div class="pp-feat-desc">Create departments, courses (like B.Com, B.Tech), and subjects under them. Assign teachers to subjects in a few clicks.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">🗓️</div><div class="pp-feat-name">Basic Timetable Setup</div><div class="pp-feat-desc">Set class schedules manually — which subject happens on which day and time. Visible to all students and teachers.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">📊</div><div class="pp-feat-name">Attendance & Marks Reports</div><div class="pp-feat-desc">View institution-wide attendance summaries and marks at any time. Export data for internal reviews or meetings.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">🏠</div><div class="pp-feat-name">Institution Dashboard</div><div class="pp-feat-desc">A bird's-eye view — total students, active teachers, today's attendance, pending approvals, and system health all in one screen.</div></div>
+          </div>
+        </div>
+
+        <!-- STAFF -->
+        <div class="portal-panel" id="pp-staff">
+          <div class="pp-grid">
+            <div class="pp-feat"><div class="pp-feat-ico">📁</div><div class="pp-feat-name">Student Record Management</div><div class="pp-feat-desc">Non-teaching staff can access, update, and maintain student records — addresses, guardians, enrollment dates, etc.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">💳</div><div class="pp-feat-name">Fee Record Entry (Manual)</div><div class="pp-feat-desc">Staff can log fee payments received manually — amount, date, receipt number — for basic bookkeeping without a full finance module.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">📄</div><div class="pp-feat-name">Document Handling</div><div class="pp-feat-desc">Upload and store student documents — ID proofs, certificates, bonafide letters — securely in the system.</div></div>
+            <div class="pp-feat"><div class="pp-feat-ico">🗄️</div><div class="pp-feat-name">Data Management</div><div class="pp-feat-desc">General data entry and management for administrative tasks assigned by the principal or admin.</div></div>
+          </div>
+        </div>
+
+      </div><!-- end portal panels -->
+
+      <!-- Core features -->
+      <div style="margin-top:16px;">
+        <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.35);margin-bottom:10px;">Built-in platform features</div>
+        <div class="core-feats-row">
+          <span class="cf-tag">🔐 Role-Based Access</span>
+          <span class="cf-tag">🔑 Secure Login & Auth</span>
+          <span class="cf-tag">📱 Works on Mobile & Desktop</span>
+          <span class="cf-tag">📢 Announcement System</span>
+          <span class="cf-tag">🔔 Notifications</span>
+          <span class="cf-tag">🗄️ Centralized Database</span>
+          <span class="cf-tag">🌐 Browser-based (no app install)</span>
+        </div>
+      </div>
+    </div><!-- end core-card -->
+
+    <!-- Who is it for -->
+    <div style="margin-top:16px;">
+      <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px;">✅ This Core is perfect for</div>
+      <div class="core-who">
+        <div class="cw-item"><h5>Schools (K-12)</h5><p>Manage students, classes, attendance, and marks across all grades digitally.</p></div>
+        <div class="cw-item"><h5>Colleges & Universities</h5><p>Handle departments, courses, subjects, and large student databases smoothly.</p></div>
+        <div class="cw-item"><h5>Coaching Centers</h5><p>Organize batches, upload materials, and track student attendance and results.</p></div>
+        <div class="cw-item"><h5>Training Institutes</h5><p>Manage programs, trainers, and trainees with a clean digital foundation.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STEP 2: ADD-ONS ── -->
+<div class="blk">
+  <div class="blk-head">
+    <div class="blk-ico" style="background:#e3f9ee;">➕</div>
+    <div class="blk-ttl">
+      <h3>Step 2 — Add features your institution needs</h3>
+      <p>Tap any module to add it. Click "What does this do?" to read a full explanation before deciding.</p>
+    </div>
+  </div>
+  <div class="blk-body">
+
+    <!-- ─ ACADEMIC ─ -->
+    <div class="cat-lbl">📚 Academic</div>
+    <div class="mods-grid">
+
+      <!-- M1 -->
+      <div class="mod g-aca" id="mod-acm" data-name="Advanced Course Management" data-price="7999">
+        <div class="mod-top" onclick="toggleMod('mod-acm')">
+          <div class="mod-ico">📚</div>
+          <div class="mod-mid">
+            <div class="mod-name">Advanced Course Management</div>
+            <div class="mod-tagline">Organize all learning content into structured chapters, units, and topics your students can follow step by step.</div>
+            <div class="mod-tags"><span class="mod-tag">Structured modules</span><span class="mod-tag">Progress tracking</span><span class="mod-tag">Content organization</span></div>
+          </div>
+          <div class="mod-right">
+            <div class="mod-price">₹7,999</div>
+            <div class="mod-cb">✓</div>
+            <div class="add-badge">Add</div>
+          </div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-acm',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-acm">
+          <div class="det-inner">
+            <p class="det-what">The base system lets teachers upload files and syllabi. This module turns your LMS into a proper structured learning system — like an organized textbook with chapters, units, and lessons that students follow in order. Teachers build a complete course roadmap and students progress through it step by step.</p>
+            <div class="det-section">
+              <h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">🗂️</div><div class="fi-body"><div class="fi-name">Chapter & Unit Builder</div><div class="fi-desc">Divide each subject into chapters, then units, then individual lessons — teachers structure content exactly like a textbook.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📈</div><div class="fi-body"><div class="fi-name">Student Progress Tracking</div><div class="fi-desc">See which lessons each student has completed and what percentage of the course they've covered. Spot who's falling behind instantly.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🎬</div><div class="fi-body"><div class="fi-name">Multi-type Content</div><div class="fi-desc">Each lesson can include PDFs, videos, links, presentations, or text notes — mix and match as needed per topic.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔒</div><div class="fi-body"><div class="fi-name">Sequential Unlocking</div><div class="fi-desc">Lock upcoming chapters until students complete the previous ones — ensures they follow the proper learning order.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Completion Reports</div><div class="fi-desc">Teachers and admins get reports showing class-wide content completion — useful for curriculum pacing decisions.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">♻️</div><div class="fi-body"><div class="fi-name">Reusable Templates</div><div class="fi-desc">Build a course structure once and reuse it for the next batch — saves teacher time every semester.</div></div></div>
+              </div>
+            </div>
+            <div class="det-section">
+              <h5>Real-world use cases</h5>
+              <div class="use-cases">
+                <div class="uc"><span class="uc-ico">🏫</span>A college structures its entire B.Com 1st year curriculum chapter-by-chapter for all subjects</div>
+                <div class="uc"><span class="uc-ico">🎯</span>A coaching center tracks which students completed which revision topics before the exam</div>
+                <div class="uc"><span class="uc-ico">📱</span>Students log in and know exactly what to study next — no confusion, no calls to teachers</div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Colleges, universities, and coaching centers that want a professional e-learning experience where content is organized, students progress meaningfully, and teachers always know where each student stands.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M2 -->
+      <div class="mod g-aca" id="mod-ass" data-name="Assignment Submission System" data-price="4999">
+        <div class="mod-top" onclick="toggleMod('mod-ass')">
+          <div class="mod-ico">📝</div>
+          <div class="mod-mid">
+            <div class="mod-name">Assignment Submission System</div>
+            <div class="mod-tagline">Students submit assignments online — no paper, no WhatsApp, no lost files. Teachers review and grade from one place.</div>
+            <div class="mod-tags"><span class="mod-tag">Online submission</span><span class="mod-tag">File uploads</span><span class="mod-tag">Deadline tracking</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹4,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-ass',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-ass">
+          <div class="det-inner">
+            <p class="det-what">The core system shows students their assignments but they can't submit online. This module completes the loop — students upload their work directly in the system, teachers receive and grade it there, and everything is tracked automatically. No more collecting notebooks, chasing submissions, or losing files.</p>
+            <div class="det-section">
+              <h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">📤</div><div class="fi-body"><div class="fi-name">Online File Submission</div><div class="fi-desc">Students upload their assignments as PDFs, Word docs, images, or zip files directly from their phone or laptop.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">⏰</div><div class="fi-body"><div class="fi-name">Deadline Countdown</div><div class="fi-desc">Assignments show a live countdown. Students who haven't submitted before the deadline are automatically flagged.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">✅</div><div class="fi-body"><div class="fi-name">Submission Status</div><div class="fi-desc">Students can see "Submitted," "Not Submitted," or "Late" status for every assignment — no confusion about what's pending.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Teacher Review Panel</div><div class="fi-desc">Teachers see all submissions in one list — open, download, leave a comment, and enter marks all from the same screen.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">💬</div><div class="fi-body"><div class="fi-name">Feedback & Comments</div><div class="fi-desc">Teachers can write feedback on submitted work. Students read their teacher's comments the next time they log in.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📋</div><div class="fi-body"><div class="fi-name">Submission Reports</div><div class="fi-desc">Admin can pull a full report — which students submitted, which didn't, submission rates per subject per teacher.</div></div></div>
+              </div>
+            </div>
+            <div class="det-section">
+              <h5>Real-world use cases</h5>
+              <div class="use-cases">
+                <div class="uc"><span class="uc-ico">📚</span>Teacher assigns a project — all 60 students submit online, teacher grades in one sitting</div>
+                <div class="uc"><span class="uc-ico">🏠</span>Students who missed class submit homework from home — no penalty for geography</div>
+                <div class="uc"><span class="uc-ico">📊</span>HOD reviews which teachers have unchecked submissions piling up</div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Any institution tired of managing paper assignments, WhatsApp submissions, or email chaos. Especially useful for colleges with large classes where tracking 60+ submissions per subject per week is difficult manually.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M3 -->
+      <div class="mod g-aca" id="mod-exam" data-name="Online Examination Module" data-price="9999">
+        <div class="mod-top" onclick="toggleMod('mod-exam')">
+          <div class="mod-ico">📋</div>
+          <div class="mod-mid">
+            <div class="mod-name">Online Examination Module</div>
+            <div class="mod-tagline">Conduct internal exams, quizzes, and tests fully online — auto-graded, results out instantly.</div>
+            <div class="mod-tags"><span class="mod-tag">MCQ-based exams</span><span class="mod-tag">Auto evaluation</span><span class="mod-tag">Instant results</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹9,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-exam',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-exam">
+          <div class="det-inner">
+            <p class="det-what">Run your internal tests, weekly quizzes, and unit exams entirely online. Teachers create question papers inside the system, students take the exam on their device within a set time window, and results are calculated and published automatically — no manual correction needed for objective-type tests.</p>
+            <div class="det-section">
+              <h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">❓</div><div class="fi-body"><div class="fi-name">Question Paper Builder</div><div class="fi-desc">Teachers create MCQ, True/False, and short-answer questions with marks per question. Build a question bank and reuse questions.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">⏱️</div><div class="fi-body"><div class="fi-name">Timed Exam Windows</div><div class="fi-desc">Set the exam start time, end time, and duration. Students can only access the exam within the defined window.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔀</div><div class="fi-body"><div class="fi-name">Question Shuffling</div><div class="fi-desc">Questions and answer options are randomized for each student — reduces copying between students taking the exam simultaneously.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">⚡</div><div class="fi-body"><div class="fi-name">Auto Evaluation & Results</div><div class="fi-desc">MCQ answers are evaluated instantly. Results are published to student dashboards as soon as the exam window closes.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Result Analytics</div><div class="fi-desc">Teachers see average scores, toppers, pass/fail rates, and which questions most students got wrong — useful for revision planning.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📥</div><div class="fi-body"><div class="fi-name">Result Download</div><div class="fi-desc">Export exam results to Excel or PDF for record keeping, parent communication, or board submission.</div></div></div>
+              </div>
+            </div>
+            <div class="det-section">
+              <h5>Real-world use cases</h5>
+              <div class="use-cases">
+                <div class="uc"><span class="uc-ico">📝</span>Weekly unit tests conducted online — results available in 5 minutes, no paper wasted</div>
+                <div class="uc"><span class="uc-ico">🏠</span>Students attend an online re-test from home when they miss a session</div>
+                <div class="uc"><span class="uc-ico">🎯</span>Coaching center runs mock entrance exams with 200 students simultaneously</div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Coaching centers, colleges doing frequent internal testing, and schools that want to reduce the time teachers spend setting papers, printing, and manually correcting MCQ sheets.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M4 -->
+      <div class="mod g-aca" id="mod-res" data-name="Results & Analytics" data-price="1999">
+        <div class="mod-top" onclick="toggleMod('mod-res')">
+          <div class="mod-ico">📊</div>
+          <div class="mod-mid">
+            <div class="mod-name">Results & Analytics</div>
+            <div class="mod-tagline">Deep performance reports, GPA calculation, visual grade charts — go beyond basic marks entry.</div>
+            <div class="mod-tags"><span class="mod-tag">GPA calculation</span><span class="mod-tag">Performance insights</span><span class="mod-tag">Visual reports</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹1,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-res',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-res">
+          <div class="det-inner">
+            <p class="det-what">The core platform stores marks but only shows raw numbers. This module turns those numbers into meaningful insights — calculated GPAs, grade distributions, trend graphs, toppers lists, at-risk student alerts, and downloadable report cards. It's the difference between data and understanding.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">🎓</div><div class="fi-body"><div class="fi-name">GPA / CGPA Calculation</div><div class="fi-desc">Automatically calculates GPA based on your institution's grading formula — supports 10-point, 4-point, or percentage systems.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📈</div><div class="fi-body"><div class="fi-name">Performance Trend Charts</div><div class="fi-desc">Visual line charts showing each student's progress across tests and semesters — see if they're improving or declining.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🚨</div><div class="fi-body"><div class="fi-name">At-Risk Student Alerts</div><div class="fi-desc">System flags students scoring below a set threshold across multiple subjects — admin is notified to intervene early.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🏆</div><div class="fi-body"><div class="fi-name">Toppers & Rank Lists</div><div class="fi-desc">Auto-generated rank lists per class, per exam, or per semester — no manual sorting needed.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📄</div><div class="fi-body"><div class="fi-name">Digital Report Cards</div><div class="fi-desc">Formatted, printable report cards generated automatically for each student — saved time for teachers and admin.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Subject-wise Analytics</div><div class="fi-desc">See which subjects have the highest failure rates — helps HODs identify where more support or better teaching is needed.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Colleges and schools that need official GPA-based grading, frequent internal exams, and want to proactively identify struggling students before they fall too far behind.</p></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- end academic grid -->
+
+    <!-- ─ OPERATIONAL ─ -->
+    <div class="cat-lbl">⚙️ Day-to-Day Operations</div>
+    <div class="mods-grid">
+
+      <!-- M5 -->
+      <div class="mod g-ops" id="mod-tt" data-name="Smart Timetable System" data-price="6999">
+        <div class="mod-top" onclick="toggleMod('mod-tt')">
+          <div class="mod-ico">🗓️</div>
+          <div class="mod-mid">
+            <div class="mod-name">Smart Timetable System</div>
+            <div class="mod-tagline">Build and manage class schedules visually — drag, drop, detect clashes, and publish to all students and teachers instantly.</div>
+            <div class="mod-tags"><span class="mod-tag">Drag-and-drop</span><span class="mod-tag">Conflict detection</span><span class="mod-tag">Auto-publish</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹6,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-tt',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-tt">
+          <div class="det-inner">
+            <p class="det-what">The core system has a basic manual timetable. This module replaces it with a smart scheduling tool where admin can drag subjects into time slots on a visual grid. The system automatically warns you if a teacher is double-booked or a room is already in use — no more schedule conflicts discovered on the first day of class.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">🖱️</div><div class="fi-body"><div class="fi-name">Visual Drag-and-Drop Editor</div><div class="fi-desc">Build the entire week's schedule on a grid — drag a subject into a time slot, done. Much faster than spreadsheets.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">⚠️</div><div class="fi-body"><div class="fi-name">Conflict Detection</div><div class="fi-desc">Instantly warns if a teacher is assigned to two classes at the same time, or if a classroom is double-booked.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📲</div><div class="fi-body"><div class="fi-name">Instant Publishing</div><div class="fi-desc">Once finalized, the timetable is published to all students and teachers — they see it immediately on their dashboards.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔄</div><div class="fi-body"><div class="fi-name">Easy Substitution</div><div class="fi-desc">When a teacher is absent, admin can reassign their class to a substitute for that day — students see the change immediately.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📋</div><div class="fi-body"><div class="fi-name">Department-wise Schedules</div><div class="fi-desc">Manage separate timetables for each department or batch — B.Com 1st year, 2nd year, etc., all managed separately.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Schools and colleges with multiple departments, many teachers, and complex scheduling needs. Eliminates the annual timetable headache and makes mid-semester changes painless.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M6 -->
+      <div class="mod g-ops" id="mod-att" data-name="Advanced Attendance System" data-price="8999">
+        <div class="mod-top" onclick="toggleMod('mod-att')">
+          <div class="mod-ico">✅</div>
+          <div class="mod-mid">
+            <div class="mod-name">Advanced Attendance System</div>
+            <div class="mod-tagline">QR-code based attendance that takes 10 seconds per class — auto-reports, parent alerts, and shortage warnings included.</div>
+            <div class="mod-tags"><span class="mod-tag">QR-based</span><span class="mod-tag">Auto reports</span><span class="mod-tag">Shortage alerts</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹8,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-att',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-att">
+          <div class="det-inner">
+            <p class="det-what">The core system has manual attendance marking per student. This module supercharges it — teachers display a QR code on screen, students scan it from their phones, and the whole class is marked in under 30 seconds. The system then automatically generates reports, sends alerts to parents when attendance drops, and warns students nearing the minimum threshold.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">📱</div><div class="fi-body"><div class="fi-name">QR Code Attendance</div><div class="fi-desc">Teacher opens a QR code on the projector — students scan with their phones and attendance is marked instantly for the whole class.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Auto-Generated Reports</div><div class="fi-desc">Daily, weekly, and monthly attendance reports generated automatically — no manual compilation needed by admin or teachers.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🚨</div><div class="fi-body"><div class="fi-name">Shortage Warnings</div><div class="fi-desc">Students whose attendance drops below 75% (or your set threshold) get an automatic warning notification before it becomes a problem.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">👨‍👩‍👧</div><div class="fi-body"><div class="fi-name">Parent Alerts</div><div class="fi-desc">Parents receive an automatic notification when their child misses a class — no more students skipping without family knowing. (Requires Parent Portal or Notification module.)</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📅</div><div class="fi-body"><div class="fi-name">Leave Management</div><div class="fi-desc">Students can submit leave requests through the system — teachers approve or reject. Approved leaves don't count against attendance.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Colleges and coaching centers where manual roll-call wastes class time, where attendance fraud is a concern, or where management wants real-time attendance visibility without relying on teacher-submitted registers.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ FINANCE ─ -->
+    <div class="cat-lbl">💰 Fees & Finance</div>
+    <div class="mods-grid">
+
+      <!-- M7 -->
+      <div class="mod g-fin" id="mod-fee" data-name="Fee Management System" data-price="9999">
+        <div class="mod-top" onclick="toggleMod('mod-fee')">
+          <div class="mod-ico">💳</div>
+          <div class="mod-mid">
+            <div class="mod-name">Fee Management System</div>
+            <div class="mod-tagline">Set up fee structures, track who has paid and who hasn't, and generate official receipts — all from one screen.</div>
+            <div class="mod-tags"><span class="mod-tag">Fee structures</span><span class="mod-tag">Payment tracking</span><span class="mod-tag">Receipt generation</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹9,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-fee',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-fee">
+          <div class="det-inner">
+            <p class="det-what">The core system only has basic manual fee entry by staff. This module is a complete fee management system — you define your institution's fee structure (tuition fee, hostel fee, exam fee, etc.), assign it to batches or individual students, track who has paid, send reminders to defaulters, and generate properly formatted receipts.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">🏗️</div><div class="fi-body"><div class="fi-name">Fee Structure Setup</div><div class="fi-desc">Define different fee heads — tuition, lab, exam, library, transport, hostel — and assign them to different courses and batches.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Payment Tracking Dashboard</div><div class="fi-desc">Real-time view of who has paid, who is partially paid, and who is overdue — filter by course, batch, or date.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🧾</div><div class="fi-body"><div class="fi-name">Official Receipt Generation</div><div class="fi-desc">Generate a numbered, formatted receipt for every payment — printable or shareable as PDF. Includes institution logo and details.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📅</div><div class="fi-body"><div class="fi-name">Installment Plans</div><div class="fi-desc">Set up term-wise or month-wise payment plans for students who pay in installments — track each installment separately.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔔</div><div class="fi-body"><div class="fi-name">Defaulter Reminders</div><div class="fi-desc">Students with pending fees receive automatic reminders — reduces the need for staff to manually follow up with every student.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📈</div><div class="fi-body"><div class="fi-name">Collection Reports</div><div class="fi-desc">Monthly and annual fee collection summaries — total collected, pending, and head-wise breakdowns — ready for management review.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Schools, colleges, and coaching centers that currently manage fees in Excel or registers — anyone who wants to eliminate manual reconciliation, reduce defaulters, and have clear financial visibility at any moment.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M8 -->
+      <div class="mod g-fin" id="mod-pay" data-name="Online Payment Gateway" data-price="6999">
+        <div class="mod-top" onclick="toggleMod('mod-pay')">
+          <div class="mod-ico">🔗</div>
+          <div class="mod-mid">
+            <div class="mod-name">Online Payment Gateway</div>
+            <div class="mod-tagline">Parents and students pay fees online through UPI, cards, or net banking — money lands in your account instantly.</div>
+            <div class="mod-tags"><span class="mod-tag">UPI & cards</span><span class="mod-tag">Razorpay / Stripe</span><span class="mod-tag">Auto receipts</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹6,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-pay',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-pay">
+          <div class="det-inner">
+            <p class="det-what">Add this on top of the Fee Management System to let students or parents pay fees online — without coming to the institution. They log in, see their dues, click Pay, and complete the payment via UPI, debit/credit card, or net banking. The system updates payment status automatically and generates a receipt instantly.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">📱</div><div class="fi-body"><div class="fi-name">UPI, Cards & Net Banking</div><div class="fi-desc">Supports all major payment methods — UPI (GPay, PhonePe, Paytm), debit/credit cards, and net banking via Razorpay or Stripe integration.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🧾</div><div class="fi-body"><div class="fi-name">Instant Digital Receipt</div><div class="fi-desc">The moment payment is successful, a receipt is generated and accessible in the student's portal. No manual step needed.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔄</div><div class="fi-body"><div class="fi-name">Automatic Status Update</div><div class="fi-desc">Fee records update in real time when a payment is made — admin's fee dashboard reflects it immediately, no manual entry needed.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔒</div><div class="fi-body"><div class="fi-name">Secure Transactions</div><div class="fi-desc">All payments go through PCI-DSS compliant payment gateways — bank-grade security for every transaction.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Online Collection Reports</div><div class="fi-desc">Separate report for online payments — daily collection totals, transaction IDs, and settlement summaries.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Institutions where parents and students live far away, day scholars who can't always visit the office to pay, or any college that wants to modernize fee collection and eliminate cash handling entirely. Best used together with the Fee Management System.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ BILLING & ERP ─ -->
+    <div class="cat-lbl">🧾 Billing & ERP</div>
+    <div class="mods-grid">
+
+      <!-- BILLING & ERP — split radio card -->
+      <div class="mod g-fin split-mod" id="mod-erp" style="cursor:default;">
+
+        <!-- Header row (non-toggle, informational) -->
+        <div style="display:flex;align-items:flex-start;gap:14px;padding:18px 20px 12px;">
+          <div class="mod-ico">🧾</div>
+          <div class="mod-mid">
+            <div class="mod-name">Billing, Receipts & ERP Module</div>
+            <div class="mod-tagline">Generate professional invoices, manage institutional billing, and connect finances across departments — choose the version that fits your needs.</div>
+            <div class="mod-tags"><span class="mod-tag">Invoicing</span><span class="mod-tag">Receipts</span><span class="mod-tag">ERP integration</span><span class="mod-tag">Financial reports</span></div>
+          </div>
+        </div>
+
+        <!-- RADIO OPTIONS -->
+        <div style="padding:0 20px 4px;">
+          <div style="font-size:0.69rem;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin-bottom:10px;">Choose one option ↓</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;">
+
+            <!-- WITHOUT TAX -->
+            <div>
+              <input type="radio" name="erp-opt" id="erp-notax" class="erp-radio" data-name="Billing, Receipts & ERP (Without Tax)" data-price="5000" style="display:none;">
+              <label for="erp-notax" class="erp-label" id="lbl-notax">
+                <div class="erp-rb" id="rb-notax"></div>
+                <div class="erp-label-body">
+                  <div class="erp-opt-name">Without Tax Module</div>
+                  <div class="erp-opt-desc">Standard billing & receipts — no GST/tax calculations. Simple invoicing for fee receipts, internal transactions, and general institutional billing.</div>
+                  <div class="erp-opt-feats">
+                    <span>✓ Invoice generation</span>
+                    <span>✓ Fee receipts</span>
+                    <span>✓ Payment records</span>
+                    <span>✓ Financial reports</span>
+                  </div>
+                  <div class="erp-price">₹5,000</div>
+                </div>
+              </label>
+            </div>
+
+            <!-- WITH TAX -->
+            <div>
+              <input type="radio" name="erp-opt" id="erp-tax" class="erp-radio" data-name="Billing, Receipts & ERP (With GST / Tax Module)" data-price="10000" style="display:none;">
+              <label for="erp-tax" class="erp-label" id="lbl-tax">
+                <div class="erp-rb" id="rb-tax"></div>
+                <div class="erp-label-body">
+                  <div class="erp-opt-name">With GST / Tax Module <span class="tax-badge">GST Ready</span></div>
+                  <div class="erp-opt-desc">Full billing with GST compliance — GSTIN field, tax breakdowns (CGST/SGST/IGST), GST invoices, and tax summary reports ready for filing.</div>
+                  <div class="erp-opt-feats">
+                    <span>✓ Everything in basic</span>
+                    <span>✓ GST invoice format</span>
+                    <span>✓ CGST / SGST / IGST</span>
+                    <span>✓ Tax summary reports</span>
+                  </div>
+                  <div class="erp-price">₹10,000</div>
+                </div>
+              </label>
+            </div>
+
+          </div>
+          <!-- Deselect link -->
+          <div style="text-align:right;padding-bottom:14px;">
+            <span onclick="clearErp()" style="font-size:0.72rem;font-weight:600;color:var(--muted);cursor:pointer;text-decoration:underline;">✕ Remove this module</span>
+          </div>
+        </div>
+
+        <!-- DETAIL EXPAND -->
+        <div class="det-toggle" onclick="toggleDet('det-erp',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-erp">
+          <div class="det-inner">
+            <p class="det-what">This module adds a complete billing and ERP (Enterprise Resource Planning) layer to your institution's financial system. Instead of just tracking fee payments, you can generate proper invoices, manage all institutional expenditure, reconcile income across departments, and produce financial summaries. The Tax Module variant adds full GST compliance on top — meaning your institution can issue GST-valid invoices and generate tax reports for filing.</p>
+
+            <div class="det-section">
+              <h5>What both versions include</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">🧾</div><div class="fi-body"><div class="fi-name">Professional Invoice Generation</div><div class="fi-desc">Create numbered, formatted invoices for any billing purpose — fee collection, vendor payments, event charges, or miscellaneous institutional billing. Includes institution name, logo, date, and amount breakdown.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🖨️</div><div class="fi-body"><div class="fi-name">Receipt Management</div><div class="fi-desc">Every payment generates a numbered receipt — stored digitally, shareable as PDF, printable on demand. Full receipt history is searchable by student, date, or receipt number.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🏢</div><div class="fi-body"><div class="fi-name">ERP Financial Ledger</div><div class="fi-desc">A central ledger tracking all money in and out — fee collections, refunds, expenses, advance payments — across all departments in one place.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Income & Expense Reports</div><div class="fi-desc">Monthly and annual financial summaries — total income by category, department-wise expenses, outstanding dues, and net balance. Useful for principal, trustees, and audits.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📤</div><div class="fi-body"><div class="fi-name">Export to Excel / PDF</div><div class="fi-desc">All financial reports can be exported for accountants, auditors, or management review — no manual data entry into external tools needed.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔗</div><div class="fi-body"><div class="fi-name">Links with Fee Management</div><div class="fi-desc">Works seamlessly with the Fee Management module — fee payments automatically appear in the billing ledger. No double entry.</div></div></div>
+              </div>
+            </div>
+
+            <div class="det-section">
+              <h5>Additional features in the GST / Tax version (₹10,000)</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">🏛️</div><div class="fi-body"><div class="fi-name">GST Invoice Format</div><div class="fi-desc">Invoices include all mandatory GST fields — GSTIN, HSN/SAC codes, tax rate, CGST, SGST, IGST breakdowns — compliant with Indian GST laws.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔢</div><div class="fi-body"><div class="fi-name">Auto Tax Calculation</div><div class="fi-desc">Enter the base amount — the system automatically calculates CGST + SGST (intra-state) or IGST (inter-state) based on the tax rate you set. No manual calculation errors.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📋</div><div class="fi-body"><div class="fi-name">GST Summary Reports</div><div class="fi-desc">Monthly GST collection report showing total taxable amount, tax collected (CGST/SGST/IGST), and net figures — ready to hand over to your CA or GST consultant for filing.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🧑‍💼</div><div class="fi-body"><div class="fi-name">GSTIN Management</div><div class="fi-desc">Store your institution's GSTIN and multiple party GSTINs (for B2B transactions) — auto-filled on every relevant invoice.</div></div></div>
+              </div>
+            </div>
+
+            <div class="det-section">
+              <h5>Real-world use cases</h5>
+              <div class="use-cases">
+                <div class="uc"><span class="uc-ico">🏫</span>A college issues GST-valid invoices to corporate sponsors and training partners — needs the Tax version</div>
+                <div class="uc"><span class="uc-ico">🏫</span>A school just needs proper fee receipts and a monthly income summary — the basic version is enough</div>
+                <div class="uc"><span class="uc-ico">📊</span>Management reviews a clean income vs. expense dashboard before board meetings — no Excel needed</div>
+                <div class="uc"><span class="uc-ico">🧾</span>Accountant exports the monthly GST report and hands it directly to the CA for return filing</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div class="perfect-for"><h5>Without Tax — Perfect for</h5><p>Schools, coaching centers, and institutions that are not GST-registered and just need clean, professional billing and receipt management without tax compliance requirements.</p></div>
+              <div class="perfect-for" style="background:var(--gold-l);border-color:rgba(217,124,10,0.2);"><h5 style="color:var(--gold);">With GST — Perfect for</h5><p>Colleges, universities, training institutes, and any GST-registered institution that issues taxable invoices to students, corporates, or partner organizations.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end billing grid -->
+
+    <!-- ─ COMMUNICATION ─ -->
+    <div class="cat-lbl">📢 Communication</div>
+    <div class="mods-grid">
+
+      <!-- M9 -->
+      <div class="mod g-com" id="mod-msg" data-name="Internal Messaging System" data-price="6999">
+        <div class="mod-top" onclick="toggleMod('mod-msg')">
+          <div class="mod-ico">💬</div>
+          <div class="mod-mid">
+            <div class="mod-name">Internal Messaging System</div>
+            <div class="mod-tagline">A private, secure chat built into your LMS — students, teachers, and admin message each other without using WhatsApp.</div>
+            <div class="mod-tags"><span class="mod-tag">1-to-1 chat</span><span class="mod-tag">Group messaging</span><span class="mod-tag">File sharing</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹6,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-msg',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-msg">
+          <div class="det-inner">
+            <p class="det-what">The core system has announcements but no two-way communication. This module adds a full messaging system inside your LMS — like WhatsApp but only for your institution. Teachers message students, students ask teachers questions, admin communicates with departments, all without anyone needing to share personal phone numbers.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">👤</div><div class="fi-body"><div class="fi-name">Direct Messaging</div><div class="fi-desc">Any user can message any other user in the institution — student to teacher, teacher to HOD, admin to parent — privately and securely.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">👥</div><div class="fi-body"><div class="fi-name">Group Chats</div><div class="fi-desc">Create groups for a class, a department, a project team, or a subject — all members get messages in one thread.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📎</div><div class="fi-body"><div class="fi-name">File & Image Sharing</div><div class="fi-desc">Share notes, PDFs, and images directly in the chat — no need to use email or external services.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔔</div><div class="fi-body"><div class="fi-name">Message Notifications</div><div class="fi-desc">New messages trigger a notification on the recipient's dashboard — they never miss an important message.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔒</div><div class="fi-body"><div class="fi-name">Private & Controlled</div><div class="fi-desc">Messages stay within the institution — no personal phone numbers shared, all communication is logged and manageable by admin.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Institutions that want professional, documented communication channels — no more teachers managing 10 WhatsApp groups, no students having direct access to teachers' personal numbers. Especially useful for keeping student-teacher interaction appropriate and traceable.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M10 -->
+      <!-- EMAIL MODULE -->
+      <div class="mod g-com" id="mod-email" data-name="Email Notifications (Free Setup)" data-price="0">
+        <div class="mod-top" onclick="toggleMod('mod-email')">
+          <div class="mod-ico">📧</div>
+          <div class="mod-mid">
+            <div class="mod-name">Email Notifications</div>
+            <div class="mod-tagline">Automated emails to students, parents, and staff — exam alerts, attendance warnings, announcements, results, and more.</div>
+            <div class="mod-tags">
+              <span class="mod-tag">Free setup</span>
+              <span class="mod-tag">Auto triggers</span>
+              <span class="mod-tag">2,000 emails/mo free</span>
+            </div>
+          </div>
+          <div class="mod-right">
+            <div>
+              <div class="mod-price" style="color:var(--green);">Free Setup</div>
+              <div style="font-size:0.67rem;color:var(--muted);text-align:right;margin-top:2px;">2,000 emails/month<br>included free</div>
+            </div>
+            <div class="mod-cb">✓</div>
+            <div class="add-badge">Add</div>
+          </div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-email',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-email">
+          <div class="det-inner">
+            <!-- PRICING CALLOUT -->
+            <div style="background:var(--green-l);border:1.5px solid rgba(14,168,90,0.2);border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+              <div>
+                <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:4px;">Pricing</div>
+                <div style="font-size:0.82rem;color:var(--ink);font-weight:600;line-height:1.6;">
+                  ✅ <strong>Setup: Free</strong> — we configure everything at no charge<br>
+                  📧 <strong>2,000 emails/month included free</strong><br>
+                  <span style="font-size:0.72rem;color:var(--muted);">Need more than 2,000/month? Additional volume available — we'll advise based on your student count.</span>
+                </div>
+              </div>
+            </div>
+            <p class="det-what">The core system only shows notifications inside the LMS dashboard — meaning people see them only when they log in. This module pushes those same alerts to email inboxes, so students and parents get notified even without opening the app. Everything is automatic — no staff effort after setup.</p>
+            <div class="det-section">
+              <h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">📧</div><div class="fi-body"><div class="fi-name">Automated Email Alerts</div><div class="fi-desc">Emails are sent automatically when attendance is marked, exams are scheduled, results are published, or assignments are due — zero manual effort.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📢</div><div class="fi-body"><div class="fi-name">Bulk Email Announcements</div><div class="fi-desc">Admin sends one announcement — emails go instantly to all students, all parents, a specific class, or a department. Replaces circular letters entirely.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">⚙️</div><div class="fi-body"><div class="fi-name">Trigger-Based Rules</div><div class="fi-desc">Set once, runs forever — e.g. "email parent when attendance drops below 75%" — system sends it automatically every time the rule triggers.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🎨</div><div class="fi-body"><div class="fi-name">Branded Email Templates</div><div class="fi-desc">Emails are sent with your institution's name, logo, and styling — looks professional, not like a generic system email.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Delivery Tracking</div><div class="fi-desc">Admin can see how many emails were sent, delivered, and opened — monthly usage tracked against your 200/month plan.</div></div></div>
+              </div>
+            </div>
+            <div class="det-section">
+              <h5>Real-world use cases</h5>
+              <div class="use-cases">
+                <div class="uc"><span class="uc-ico">📝</span>Student submits assignment — teacher gets an email summary of all pending submissions each morning</div>
+                <div class="uc"><span class="uc-ico">📅</span>Exam timetable published — all students get an email with the full schedule instantly</div>
+                <div class="uc"><span class="uc-ico">👨‍👩‍👧</span>Parent receives an email the moment their child's attendance goes below the minimum threshold</div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Any institution replacing paper circulars, WhatsApp broadcast lists, or manual email chains. Especially valuable when parents and students need to be kept informed without staff having to do it manually every time.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SMS MODULE -->
+      <div class="mod g-com" id="mod-sms" data-name="SMS Notifications (Free Setup)" data-price="0">
+        <div class="mod-top" onclick="toggleMod('mod-sms')">
+          <div class="mod-ico">📱</div>
+          <div class="mod-mid">
+            <div class="mod-name">SMS Notifications</div>
+            <div class="mod-tagline">Instant SMS alerts to parents and students — reaches any phone, no app or internet needed. Free to set up.</div>
+            <div class="mod-tags"><span class="mod-tag">Free setup</span><span class="mod-tag">No internet needed</span><span class="mod-tag">Parent alerts</span></div>
+          </div>
+          <div class="mod-right">
+            <div>
+              <div class="mod-price" style="color:var(--green);">Free Setup</div>
+              <div style="font-size:0.67rem;color:var(--muted);text-align:right;margin-top:2px;">₹0.59 per SMS<br>pay as you send</div>
+            </div>
+            <div class="mod-cb">✓</div>
+            <div class="add-badge">Add</div>
+          </div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-sms',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-sms">
+          <div class="det-inner">
+            <!-- PRICING CALLOUT -->
+            <div style="background:var(--primary-l);border:1.5px solid rgba(52,97,255,0.15);border-radius:12px;padding:14px 18px;margin-bottom:18px;">
+              <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin-bottom:8px;">Pricing — Simple & Transparent</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div style="background:var(--white);border:1px solid var(--line);border-radius:8px;padding:10px 12px;text-align:center;">
+                  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px;">Setup Cost</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--green);">FREE</div>
+                  <div style="font-size:0.67rem;color:var(--muted);">we set it up at no charge</div>
+                </div>
+                <div style="background:var(--white);border:1px solid var(--line);border-radius:8px;padding:10px 12px;text-align:center;">
+                  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px;">Per SMS sent</div>
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--primary);">₹0.59</div>
+                  <div style="font-size:0.67rem;color:var(--muted);">pay only for what you send</div>
+                </div>
+              </div>
+              <div style="font-size:0.73rem;color:var(--slate);margin-top:10px;line-height:1.6;">
+                💡 <strong>Example:</strong> Sending 1 SMS to 500 students costs ₹295. Sending daily alerts to 200 parents for a month = 200 × 30 = 6,000 SMS = <strong>₹3,540/month</strong>. You only pay for what gets sent — no monthly minimum.
+              </div>
+            </div>
+            <p class="det-what">SMS is the most reliable communication channel in India — it works on any phone, any network, with or without internet. Parents in areas with poor data connectivity still receive instant alerts. This module integrates SMS sending directly into your LMS — attendance marked, SMS sent. No separate apps, no manual forwarding.</p>
+            <div class="det-section">
+              <h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">✅</div><div class="fi-body"><div class="fi-name">Attendance SMS to Parents</div><div class="fi-desc">Every time a student is marked absent, their parent receives an SMS immediately — "Your child [Name] was absent for [Subject] today." No staff effort needed.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">💳</div><div class="fi-body"><div class="fi-name">Fee Due Reminders</div><div class="fi-desc">Automatically send SMS reminders to students and parents when fee deadlines approach — reduces defaulters without any manual follow-up.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📢</div><div class="fi-body"><div class="fi-name">Bulk SMS Announcements</div><div class="fi-desc">Admin types a message and sends it to all students, all parents, a specific class, or department — delivered in seconds to every phone.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📋</div><div class="fi-body"><div class="fi-name">Exam & Result Alerts</div><div class="fi-desc">SMS sent automatically when exam timetable is published or when results are available — parents and students know instantly, no one misses it.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Monthly Usage Report</div><div class="fi-desc">Admin can see total SMS sent per month, cost incurred, and delivery status — full transparency over your messaging spend.</div></div></div>
+              </div>
+            </div>
+            <div class="det-section">
+              <h5>Real-world use cases</h5>
+              <div class="use-cases">
+                <div class="uc"><span class="uc-ico">👨‍👩‍👧</span>Parent in a rural area with no smartphone still gets SMS when child is absent — no app needed</div>
+                <div class="uc"><span class="uc-ico">💰</span>Fee reminder SMS sent 3 days before deadline — collection rate improves without any staff calls</div>
+                <div class="uc"><span class="uc-ico">🏫</span>School closed unexpectedly — one SMS sent to all 800 parents in under 30 seconds</div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Institutions with parents who don't use smartphones or WhatsApp regularly. SMS reaches everyone — no app download, no data connection required. The per-message pricing model means small institutions pay very little, and larger ones only pay for actual usage.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ MANAGEMENT ─ -->
+    <div class="cat-lbl">📂 Management</div>
+    <div class="mods-grid">
+
+      <!-- M11 -->
+      <div class="mod g-mgmt" id="mod-doc" data-name="Document Management System" data-price="7999">
+        <div class="mod-top" onclick="toggleMod('mod-doc')">
+          <div class="mod-ico">📂</div>
+          <div class="mod-mid">
+            <div class="mod-name">Document Management System</div>
+            <div class="mod-tagline">Store, organize, and access all institution documents digitally — no more lost files or overflowing cabinets.</div>
+            <div class="mod-tags"><span class="mod-tag">Secure storage</span><span class="mod-tag">Role-based access</span><span class="mod-tag">Quick search</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹7,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-doc',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-doc">
+          <div class="det-inner">
+            <p class="det-what">A structured digital filing system for your entire institution. Instead of documents scattered across Google Drive, physical files, WhatsApp chats, and email — everything is stored in one organized, searchable, access-controlled system. Staff upload documents once and the right people can always find what they need.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">📁</div><div class="fi-body"><div class="fi-name">Organized Folder Structure</div><div class="fi-desc">Organize documents by type — student certificates, staff contracts, academic records, circulars, financial documents — each in its own folder.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔍</div><div class="fi-body"><div class="fi-name">Instant Search</div><div class="fi-desc">Find any document in seconds by searching for the student name, document type, or date — no more digging through physical files.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔐</div><div class="fi-body"><div class="fi-name">Access Control</div><div class="fi-desc">Decide who can view, upload, or delete each category of documents — a student can't see staff salary documents, for example.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📄</div><div class="fi-body"><div class="fi-name">Student Document Store</div><div class="fi-desc">Store each student's admission form, ID proof, certificates, and bonafide letters digitally — accessible by authorized staff instantly.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🗄️</div><div class="fi-body"><div class="fi-name">Institutional Records</div><div class="fi-desc">Store circular letters, meeting minutes, accreditation documents, and internal policies — always available, never misplaced.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Any institution struggling with physical files, scattered Google Drive folders, or documents sent over WhatsApp. Critical for institutions preparing for accreditation or audits where documents must be produced quickly and accurately.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M12 -->
+      <div class="mod g-mgmt" id="mod-par" data-name="Parent Portal" data-price="8999">
+        <div class="mod-top" onclick="toggleMod('mod-par')">
+          <div class="mod-ico">👨‍👩‍👧</div>
+          <div class="mod-mid">
+            <div class="mod-name">Parent Portal</div>
+            <div class="mod-tagline">Give parents their own login to see their child's attendance, marks, fees, and announcements — anytime, anywhere.</div>
+            <div class="mod-tags"><span class="mod-tag">Live attendance</span><span class="mod-tag">Marks visibility</span><span class="mod-tag">Fee status</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹8,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-par',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-par">
+          <div class="det-inner">
+            <p class="det-what">Parents get their own login to the system — a separate portal showing everything about their child without having to call the college or wait for PTMs. They can check attendance daily, see exam marks when published, view fee dues, and read important announcements. It builds transparency and trust between institutions and families.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">✅</div><div class="fi-body"><div class="fi-name">Live Attendance View</div><div class="fi-desc">Parents see their child's attendance percentage per subject, updated every day — no more wondering if their child actually attended class.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Marks & Results</div><div class="fi-desc">When teachers publish marks, parents see them instantly — no waiting for report cards to come home or progress day meetings.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">💳</div><div class="fi-body"><div class="fi-name">Fee Due Visibility</div><div class="fi-desc">Parents can see what fees are pending and the due dates — reduces defaulters because parents take responsibility for timely payment.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📢</div><div class="fi-body"><div class="fi-name">Institution Announcements</div><div class="fi-desc">Parents receive important announcements — holidays, exams, events — directly in their portal so they're always informed.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📩</div><div class="fi-body"><div class="fi-name">Direct Messaging with Teachers</div><div class="fi-desc">Parents can send messages to their child's teachers directly through the system — professional and documented communication.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Schools and colleges where parent engagement is a priority, where frequent PTM meetings are difficult, or where management wants to reduce the number of phone calls and walk-ins from anxious parents asking about attendance and marks.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ HR & STAFF ─ -->
+    <div class="cat-lbl">💼 HR & Staff Management</div>
+    <div class="mods-grid">
+
+      <!-- M13 -->
+      <div class="mod g-hr" id="mod-hr" data-name="HR & Payroll System" data-price="9999">
+        <div class="mod-top" onclick="toggleMod('mod-hr')">
+          <div class="mod-ico">💼</div>
+          <div class="mod-mid">
+            <div class="mod-name">HR & Payroll System</div>
+            <div class="mod-tagline">Manage staff salaries, leaves, documents, and HR records digitally — no more Excel sheets for payroll.</div>
+            <div class="mod-tags"><span class="mod-tag">Salary management</span><span class="mod-tag">Leave tracking</span><span class="mod-tag">Payslips</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹9,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-hr',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-hr">
+          <div class="det-inner">
+            <p class="det-what">A complete digital HR department for your institution. Manage all staff records, calculate salaries based on attendance and pay structure, process leave requests, generate payslips, and maintain employment history — all in one system. Reduces the time the admin/principal spends on HR paperwork every month.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">💰</div><div class="fi-body"><div class="fi-name">Salary Structure Setup</div><div class="fi-desc">Define salary components — basic pay, HRA, DA, allowances, deductions — per employee or grade. The system calculates net salary automatically each month.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📅</div><div class="fi-body"><div class="fi-name">Leave Management</div><div class="fi-desc">Staff apply for leave through the system. Admin or HOD approves/rejects. Approved leaves deduct from the leave balance automatically.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🧾</div><div class="fi-body"><div class="fi-name">Payslip Generation</div><div class="fi-desc">Generate and share digital payslips with every staff member each month — breakdown of all components, deductions, and net pay.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📁</div><div class="fi-body"><div class="fi-name">Staff Records & Documents</div><div class="fi-desc">Store each employee's joining letter, ID proof, experience certificates, and contract documents securely in their profile.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Monthly Payroll Summary</div><div class="fi-desc">A complete payroll report every month — total salary outflow, department-wise breakdowns, and individual payment records.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Any institution with 10+ staff members where monthly payroll is currently done in Excel or managed manually. Especially useful for institutions with complex salary structures — different grades, part-time staff, and variable allowances.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M14 -->
+      <div class="mod g-hr" id="mod-satt" data-name="Staff Attendance System" data-price="6999">
+        <div class="mod-top" onclick="toggleMod('mod-satt')">
+          <div class="mod-ico">🧑‍💼</div>
+          <div class="mod-mid">
+            <div class="mod-name">Staff Attendance System</div>
+            <div class="mod-tagline">Track daily attendance of all teaching and non-teaching staff — reports, late arrivals, and summaries all automated.</div>
+            <div class="mod-tags"><span class="mod-tag">Daily tracking</span><span class="mod-tag">Late marking</span><span class="mod-tag">Monthly reports</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹6,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-satt',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-satt">
+          <div class="det-inner">
+            <p class="det-what">While the core system tracks student attendance, this module separately tracks staff. Teaching and non-teaching staff mark their own attendance, or admin marks it centrally. The system flags late arrivals, absences, and generates monthly summaries automatically — useful for salary calculation when paired with the HR module.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">✅</div><div class="fi-body"><div class="fi-name">Daily Staff Attendance</div><div class="fi-desc">Staff mark their own presence each morning, or designated admin marks it — present, absent, or half-day tracked separately.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">⏰</div><div class="fi-body"><div class="fi-name">Late Arrival Tracking</div><div class="fi-desc">System notes if staff mark attendance after the set reporting time — helps admin monitor punctuality without confrontation.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Monthly Summary Reports</div><div class="fi-desc">End-of-month report for each staff member — total present days, absences, half-days, and leaves taken. Useful for payroll deduction calculations.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔗</div><div class="fi-body"><div class="fi-name">Links with HR & Payroll</div><div class="fi-desc">When used with the HR module, attendance data feeds directly into salary calculation — absent days are deducted automatically.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Institutions where staff attendance is currently tracked in registers or not at all. Especially valuable when paired with the HR & Payroll module to automate salary deductions for absences.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─ ADVANCED ─ -->
+    <div class="cat-lbl">🚀 Advanced Features</div>
+    <div class="mods-grid">
+
+      <!-- M15 -->
+      <div class="mod g-adv" id="mod-ai" data-name="AI-Based Insights" data-price="9999">
+        <div class="mod-top" onclick="toggleMod('mod-ai')">
+          <div class="mod-ico">🤖</div>
+          <div class="mod-mid">
+            <div class="mod-name">AI-Based Insights</div>
+            <div class="mod-tagline">Artificial intelligence analyzes student data to predict who might fail, who needs extra support, and where teachers should focus.</div>
+            <div class="mod-tags"><span class="mod-tag">Failure prediction</span><span class="mod-tag">Smart alerts</span><span class="mod-tag">Pattern analysis</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹9,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-ai',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-ai">
+          <div class="det-inner">
+            <p class="det-what">This module uses AI to analyze patterns in attendance, marks, submission behavior, and engagement — then predicts outcomes. Instead of discovering a student is failing when results come out, the system warns you weeks in advance. Teachers and admin get actionable alerts they can act on before it's too late.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">🔮</div><div class="fi-body"><div class="fi-name">Failure Risk Prediction</div><div class="fi-desc">AI identifies students at high risk of failing based on their combined attendance, marks trend, and submission patterns — flagged weeks before exams.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🎯</div><div class="fi-body"><div class="fi-name">Personalized Improvement Tips</div><div class="fi-desc">System generates specific suggestions for each at-risk student — "missing too many chemistry classes," "not submitting assignments on time."</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Class Performance Heatmap</div><div class="fi-desc">Visual map of the whole class — green for doing well, yellow for borderline, red for at-risk — teachers see the full picture at a glance.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📚</div><div class="fi-body"><div class="fi-name">Subject Difficulty Analysis</div><div class="fi-desc">AI identifies which subjects consistently cause poor performance across batches — useful input for academic committee reviews.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🏆</div><div class="fi-body"><div class="fi-name">Top Performer Recognition</div><div class="fi-desc">AI also highlights high performers showing consistent growth — useful for recognition programs and scholarship recommendations.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Colleges and universities that want to reduce dropout rates, improve pass percentages, and make academic intervention proactive rather than reactive. Also valuable for institutions that report on student outcomes to regulatory bodies.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M16 -->
+      <div class="mod g-adv" id="mod-plc" data-name="Placement Management System" data-price="8999">
+        <div class="mod-top" onclick="toggleMod('mod-plc')">
+          <div class="mod-ico">🎯</div>
+          <div class="mod-mid">
+            <div class="mod-name">Placement Management System</div>
+            <div class="mod-tagline">Manage campus placements, job postings, company visits, and student applications entirely within your LMS.</div>
+            <div class="mod-tags"><span class="mod-tag">Job postings</span><span class="mod-tag">Company management</span><span class="mod-tag">Placement reports</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹8,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-plc',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-plc">
+          <div class="det-inner">
+            <p class="det-what">A complete placement cell management system built into your LMS. The placement officer posts job openings, eligible students apply with one click, drives are scheduled, results are updated, and the entire placement record is maintained digitally. No more Excel sheets, group announcements, or paper applications for campus recruitment.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">🏢</div><div class="fi-body"><div class="fi-name">Company & Job Posting</div><div class="fi-desc">Placement officer adds company details, role, package, eligibility criteria (CGPA, branch, etc.) — eligible students are auto-notified.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📋</div><div class="fi-body"><div class="fi-name">Student Application System</div><div class="fi-desc">Eligible students apply with one click — their academic records, CGPA, and resume are attached automatically from their profile.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📅</div><div class="fi-body"><div class="fi-name">Drive Scheduling</div><div class="fi-desc">Schedule aptitude tests, interviews, and GD rounds within the system — students receive reminders automatically.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">✅</div><div class="fi-body"><div class="fi-name">Offer & Result Tracking</div><div class="fi-desc">Update offer letters received, packages, and placed students — the system marks them as "placed" and removes them from future eligible lists if needed.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📊</div><div class="fi-body"><div class="fi-name">Placement Analytics</div><div class="fi-desc">Overall placement percentage, average package, department-wise placement rates — data ready for NAAC, NBA, or institutional reports.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Degree colleges and engineering institutes with active placement cells. Eliminates the chaos of managing campus drives manually and gives placement officers a professional tool to manage the entire cycle digitally.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M17 -->
+      <div class="mod g-adv" id="mod-app" data-name="Android Mobile App" data-price="49999">
+        <div class="mod-top" onclick="toggleMod('mod-app')">
+          <div class="mod-ico">📱</div>
+          <div class="mod-mid">
+            <div class="mod-name">Android Mobile App</div>
+            <div class="mod-tagline">Your institution's own branded Android app on the Play Store — students, teachers, and parents use it like any other app.</div>
+            <div class="mod-tags"><span class="mod-tag">Branded app</span><span class="mod-tag">Play Store</span><span class="mod-tag">Push notifications</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹49,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-app',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-app">
+          <div class="det-inner">
+            <p class="det-what">The LMS works on any browser — but a dedicated Android app makes it feel like your institution's own product. Your name, your logo, on the Play Store. Students and parents download it once and have everything at their fingertips with push notifications that reach them even when they're not actively using the app.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">🏷️</div><div class="fi-body"><div class="fi-name">Your Branded App</div><div class="fi-desc">The app carries your institution's name, logo, and colors — published on Google Play Store under your institution's identity.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔔</div><div class="fi-body"><div class="fi-name">Push Notifications</div><div class="fi-desc">Send instant push notifications to all users or specific groups — far more effective than SMS or email for getting attention fast.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📱</div><div class="fi-body"><div class="fi-name">Optimized Mobile Experience</div><div class="fi-desc">The app is designed specifically for phones — faster, smoother, and more intuitive than opening a website on mobile browser.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🔒</div><div class="fi-body"><div class="fi-name">Secure Biometric Login</div><div class="fi-desc">Students can log in with fingerprint or face ID on supported devices — faster and more secure than typing passwords.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📴</div><div class="fi-body"><div class="fi-name">Offline Content Access</div><div class="fi-desc">Students can download study materials within the app and access them even without an internet connection.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Institutions that want to present a premium, professional image and maximise engagement. Students who have your app icon on their home screen are far more likely to check updates, submissions, and results regularly than those who need to open a browser.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- M18 -->
+      <div class="mod g-adv" id="mod-brand" data-name="Custom Branding & Design" data-price="7999">
+        <div class="mod-top" onclick="toggleMod('mod-brand')">
+          <div class="mod-ico">🎨</div>
+          <div class="mod-mid">
+            <div class="mod-name">Custom Branding & Design</div>
+            <div class="mod-tagline">Make the entire LMS look like your institution — your logo, your colors, your domain. Students won't know it's VAW underneath.</div>
+            <div class="mod-tags"><span class="mod-tag">Your logo & colors</span><span class="mod-tag">Custom domain</span><span class="mod-tag">White label</span></div>
+          </div>
+          <div class="mod-right"><div class="mod-price">₹7,999</div><div class="mod-cb">✓</div><div class="add-badge">Add</div></div>
+        </div>
+        <div class="det-toggle" onclick="toggleDet('det-brand',this)">📖 What does this do? <span class="det-arrow">▼</span></div>
+        <div class="det-panel" id="det-brand">
+          <div class="det-inner">
+            <p class="det-what">By default, the LMS is styled with VAW's branding. This module replaces everything with your institution's identity — your logo, your institution name, your colors, and your own web address (e.g., lms.yourinstitution.ac.in). When students log in, they see your brand — not ours. It becomes your product.</p>
+            <div class="det-section"><h5>What you can do with this</h5>
+              <div class="feat-list">
+                <div class="feat-item"><div class="fi-ico">🏷️</div><div class="fi-body"><div class="fi-name">Your Logo Everywhere</div><div class="fi-desc">Your institution's logo replaces VAW branding on the login page, dashboard, emails, PDFs, and all system pages.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🎨</div><div class="fi-body"><div class="fi-name">Your Color Theme</div><div class="fi-desc">The entire interface is re-colored to match your institution's brand colors — a consistent visual identity throughout.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">🌐</div><div class="fi-body"><div class="fi-name">Custom Domain</div><div class="fi-desc">The system runs on your own URL — like lms.stjosephs.ac.in — instead of a VAW subdomain. Looks completely native.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📧</div><div class="fi-body"><div class="fi-name">Branded Email Notifications</div><div class="fi-desc">All automated emails come from your institution's email address — not from a VAW domain. "<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="593736742b3c293520192a2d33362a3c29312a77383a773037">[email&#160;protected]</a>" instead of a generic address.</div></div></div>
+                <div class="feat-item"><div class="fi-ico">📄</div><div class="fi-body"><div class="fi-name">Branded Documents</div><div class="fi-desc">Receipts, report cards, payslips, and attendance reports are all generated with your institution's letterhead and logo.</div></div></div>
+              </div>
+            </div>
+            <div class="perfect-for"><h5>Perfect for</h5><p>Any institution that wants a professional, owned digital presence rather than a generic platform. Especially important for established colleges and schools where brand reputation matters — parents and students should feel they're using your system, not a third-party tool.</p></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end advanced grid -->
+
+  </div><!-- end blk-body -->
+</div><!-- end step2 blk -->
+
+</div><!-- end left col -->
+
+<!-- ═══════════ RIGHT: QUOTE CARD ═══════════ -->
+<div>
+  <div class="qcard">
+    <div class="qc-top">
+      <h3>Your System Summary</h3>
+      <p>Updates live as you choose</p>
+    </div>
+    <div class="qc-body">
+      <div class="qc-row"><span class="ql">🧱 Core Platform</span><span class="qv">₹52,000</span></div>
+      <div class="qc-mh">Add-ons selected</div>
+      <div class="qc-mods" id="qc-mods">
+        <div class="qc-empty" id="qc-empty">Tap any module to add it ↑</div>
+      </div>
+      <div class="qdiv"></div>
+      <div class="qt-row"><span class="qt-lbl">Your Total</span><span class="qt-amt" id="tot">₹52,000</span></div>
+      <div class="qt-note" id="tot-note">Core only</div>
+      <div class="ann-box"><p>☁️ <strong>Also available:</strong> Cloud hosting ₹2,000/mo · Support ₹10,000/yr</p></div>
+      <button class="btn-wa" onclick="openModal('wa')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Chat on WhatsApp
+      </button>
+      <button class="btn-call" onclick="openModal('call')">📞 Request a Callback</button>
+      <button class="btn-clr" onclick="clearAll()">✕ Clear my selections</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- end layout -->
+</div><!-- end wrap -->
+
+<!-- MOBILE STRIP -->
+<div class="mob-strip">
+  <div class="ms-inner">
+    <div>
+      <div class="ms-tot" id="mob-tot">₹52,000</div>
+      <div class="ms-note" id="mob-note">Core only</div>
+    </div>
+    <button class="ms-btn" onclick="openModal('wa')">📲 Get Quote</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="oci(event)">
+  <div class="modal">
+    <div class="m-top">
+      <div><h3 id="m-title">Let's Build This For You</h3><p>We'll confirm your selection and get back to you quickly.</p></div>
+      <button class="m-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="m-body">
+      <div class="frow"><div class="field"><label>Your Name</label><input type="text" id="f-name" placeholder="e.g. Dr. Priya Menon"/></div><div class="field"><label>WhatsApp / Phone</label><input type="tel" id="f-phone" placeholder="+91 98765 43210"/></div></div>
+      <div class="frow full"><div class="field"><label>School / College Name</label><input type="text" id="f-inst" placeholder="e.g. St. Joseph's College"/></div></div>
+      <div class="frow"><div class="field"><label>Institution Type</label><select id="f-type"><option value="">Select...</option><option>School (K-12)</option><option>College / University</option><option>Coaching Center</option><option>Training Institute</option><option>Other</option></select></div><div class="field"><label>No. of Students</label><select id="f-stu"><option value="">Approx. count...</option><option>Below 200</option><option>200 – 500</option><option>500 – 1,000</option><option>1,000 – 3,000</option><option>3,000+</option></select></div></div>
+      <div class="m-sum" id="m-sum"></div>
+      <div class="m-ctas">
+        <button class="mb-wa" onclick="submit('wa')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp
+        </button>
+        <button class="mb-call" onclick="submit('call')">📞 Call Me Back</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✅ We'll be in touch very soon!</div>
+
+<footer class="footer">© 2025 <strong>VAW Technologies</strong> · We build your system, you run your institution.</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// Portal tabs
+function showPortal(id, btn) {
+  document.querySelectorAll('.portal-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+  document.getElementById('pp-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// Details toggle
+function toggleDet(id, btn) {
+  const panel = document.getElementById(id);
+  const open = panel.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+
+// Module toggle (top row click)
+function toggleMod(id) {
+  const card = document.getElementById(id);
+  card.classList.toggle('on');
+  // update add badge text
+  const badge = card.querySelector('.add-badge');
+  if (badge) badge.textContent = card.classList.contains('on') ? 'Added' : 'Add';
+  refresh();
+}
+
+// Quote state
+const BASE = 52000;
+let sel = {};
+
+function refresh() {
+  // collect all .on mods
+  sel = {};
+  document.querySelectorAll('.mod.on').forEach(c => {
+    sel[c.dataset.name] = parseInt(c.dataset.price);
+  });
+
+  const keys = Object.keys(sel);
+  const addTotal = keys.reduce((s,k) => s+sel[k], 0);
+  const total = BASE + addTotal;
+  const fmt = n => '₹' + n.toLocaleString('en-IN');
+
+  // sidebar
+  const modsEl = document.getElementById('qc-mods');
+  const emptyEl = document.getElementById('qc-empty');
+  modsEl.querySelectorAll('.qc-mrow').forEach(r=>r.remove());
+  if (keys.length === 0) {
+    emptyEl.style.display = 'block';
+    document.getElementById('tot-note').textContent = 'Core only';
+  } else {
+    emptyEl.style.display = 'none';
+    keys.forEach(k => {
+      const r = document.createElement('div');
+      r.className = 'qc-mrow';
+      r.innerHTML = `<span class="ml">${k}</span><span class="mv">+${fmt(sel[k])}</span>`;
+      modsEl.appendChild(r);
+    });
+    document.getElementById('tot-note').textContent = `Core + ${keys.length} module${keys.length>1?'s':''}`;
+  }
+
+  const totEl = document.getElementById('tot');
+  totEl.textContent = fmt(total);
+  totEl.style.transform = 'scale(1.06)';
+  setTimeout(()=>totEl.style.transform='scale(1)',200);
+
+  // mobile
+  document.getElementById('mob-tot').textContent = fmt(total);
+  document.getElementById('mob-note').textContent = keys.length>0 ? `Core + ${keys.length} add-on${keys.length>1?'s':''}` : 'Core only';
+}
+
+function clearAll() {
+  document.querySelectorAll('.mod.on').forEach(c => {
+    c.classList.remove('on');
+    const b = c.querySelector('.add-badge');
+    if(b) b.textContent = 'Add';
+  });
+  sel = {};
+  refresh();
+}
+
+// Modal
+let mMode = 'wa';
+function buildSum() {
+  const keys = Object.keys(sel);
+  const total = BASE + keys.reduce((s,k)=>s+sel[k],0);
+  const fmt = n=>'₹'+n.toLocaleString('en-IN');
+  let h = `<strong>🧱 Core Platform</strong> — ₹52,000<br>`;
+  if(keys.length>0){h+=`<strong>➕ Add-ons (${keys.length}):</strong><br>`;keys.forEach(k=>h+=`&nbsp;&nbsp;· ${k} — ${fmt(sel[k])}<br>`);}
+  h+=`<strong>💰 Estimated Total: ${fmt(total)}</strong>`;
+  return h;
+}
+function openModal(mode){
+  mMode=mode;
+  document.getElementById('m-title').textContent = mode==='call'?'Request a Callback':'Let\'s Build This For You';
+  document.getElementById('m-sum').innerHTML=buildSum();
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open');}
+function oci(e){if(e.target===document.getElementById('overlay'))closeModal();}
+function submit(mode){
+  const name=document.getElementById('f-name').value.trim();
+  const phone=document.getElementById('f-phone').value.trim();
+  const inst=document.getElementById('f-inst').value.trim();
+  const type=document.getElementById('f-type').value;
+  const stu=document.getElementById('f-stu').value;
+  if(!name||!phone){alert('Please enter your name and phone number.');return;}
+  const keys=Object.keys(sel);
+  const total=BASE+keys.reduce((s,k)=>s+sel[k],0);
+  const fmt=n=>'₹'+n.toLocaleString('en-IN');
+  const mods=keys.length?keys.map(k=>`  · ${k} — ${fmt(sel[k])}`).join('\n'):'  Core system only';
+  if(mode==='wa'){
+    const msg=encodeURIComponent(`🎓 *VAW Technologies – LMS Build Request*\n\n👤 Name: ${name}\n📞 Phone: ${phone}\n🏫 Institution: ${inst||'N/A'}\n🏷 Type: ${type||'N/A'}\n👨‍🎓 Students: ${stu||'N/A'}\n\n📦 *Core Platform:* ₹52,000\n➕ *Add-ons:*\n${mods}\n\n💰 *Estimated Total: ${fmt(total)}*\n\nPlease help me get started. Thank you!`);
+    window.open(`https://wa.me/919999999999?text=${msg}`,'_blank');
+  } else {
+    window.open('tel:+919999999999');
+  }
+  closeModal();
+  const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ERP Radio module logic
+function initErp() {
+  document.querySelectorAll('.erp-radio').forEach(radio => {
+    radio.addEventListener('change', function() {
+      document.querySelectorAll('.erp-label').forEach(l => l.classList.remove('chosen'));
+      document.querySelectorAll('.erp-rb').forEach(r => r.classList.remove('filled'));
+      if (this.checked) {
+        const lbl = document.querySelector('label[for="' + this.id + '"]');
+        lbl.classList.add('chosen');
+        lbl.querySelector('.erp-rb').classList.add('filled');
+        document.getElementById('mod-erp').style.borderColor = 'var(--gold)';
+        document.getElementById('mod-erp').style.background = 'var(--white)';
+      }
+      refreshWithErp();
+    });
+  });
+}
+
+function clearErp() {
+  document.querySelectorAll('.erp-radio').forEach(r => r.checked = false);
+  document.querySelectorAll('.erp-label').forEach(l => l.classList.remove('chosen'));
+  document.querySelectorAll('.erp-rb').forEach(r => r.classList.remove('filled'));
+  document.getElementById('mod-erp').style.borderColor = '';
+  document.getElementById('mod-erp').style.background = '';
+  refreshWithErp();
+}
+
+function getErpSel() {
+  const c = document.querySelector('.erp-radio:checked');
+  return c ? { name: c.dataset.name, price: parseInt(c.dataset.price) } : null;
+}
+
+// Usage-based display overrides for free-setup modules
+const USAGE_LABELS = {
+  'Email Notifications (Free Setup)': { display: 'Email Notifications', note: 'Free setup · ₹2,000/200 emails per month' },
+  'SMS Notifications (Free Setup)':   { display: 'SMS Notifications',   note: 'Free setup · ₹0.59 per SMS' },
+};
+
+function refreshWithErp() {
+  sel = {};
+  document.querySelectorAll('.mod.on').forEach(c => {
+    sel[c.dataset.name] = parseInt(c.dataset.price);
+  });
+  const erp = getErpSel();
+  if (erp) sel[erp.name] = erp.price;
+
+  const keys = Object.keys(sel);
+  const addTotal = keys.reduce((s,k) => s + sel[k], 0);
+  const total = BASE + addTotal;
+  const fmt = n => '₹' + n.toLocaleString('en-IN');
+
+  const modsEl = document.getElementById('qc-mods');
+  const emptyEl = document.getElementById('qc-empty');
+  modsEl.querySelectorAll('.qc-mrow').forEach(r => r.remove());
+
+  if (keys.length === 0) {
+    emptyEl.style.display = 'block';
+    document.getElementById('tot-note').textContent = 'Core only';
+  } else {
+    emptyEl.style.display = 'none';
+    keys.forEach(k => {
+      const r = document.createElement('div');
+      r.className = 'qc-mrow';
+      const override = USAGE_LABELS[k];
+      if (override) {
+        r.innerHTML = `<span class="ml">${override.display}<br><span style="font-size:0.65rem;color:var(--gold);font-weight:600;">${override.note}</span></span><span class="mv" style="color:var(--green)">FREE</span>`;
+      } else {
+        r.innerHTML = `<span class="ml">${k}</span><span class="mv">+${fmt(sel[k])}</span>`;
+      }
+      modsEl.appendChild(r);
+    });
+    document.getElementById('tot-note').textContent = `Core + ${keys.length} module${keys.length>1?'s':''}`;
+  }
+
+  const totEl = document.getElementById('tot');
+  totEl.textContent = fmt(total);
+  totEl.style.transform = 'scale(1.06)';
+  setTimeout(() => totEl.style.transform = 'scale(1)', 200);
+
+  document.getElementById('mob-tot').textContent = fmt(total);
+  document.getElementById('mob-note').textContent = keys.length > 0
+    ? `Core + ${keys.length} add-on${keys.length>1?'s':''}`
+    : 'Core only';
+}
+
+// Patch clearAll to also clear ERP
+const _oca = clearAll;
+window.clearAll = function() {
+  document.querySelectorAll('.mod.on').forEach(c => {
+    c.classList.remove('on');
+    const b = c.querySelector('.add-badge');
+    if(b) b.textContent = 'Add';
+  });
+  clearErp();
+};
+
+// Patch openModal to use full sel including ERP + usage labels
+const _oOpen = openModal;
+window.openModal = function(mode) {
+  refreshWithErp();
+  mMode = mode;
+  document.getElementById('m-title').textContent = mode==='call'?'Request a Callback':"Let's Build This For You";
+  const keys = Object.keys(sel);
+  const total = BASE + keys.reduce((s,k) => s+sel[k], 0);
+  const fmt = n => '₹' + n.toLocaleString('en-IN');
+  let h = `<strong>🧱 Core Platform</strong> — ₹52,000<br>`;
+  if (keys.length > 0) {
+    h += `<strong>➕ Add-ons (${keys.length}):</strong><br>`;
+    keys.forEach(k => {
+      const override = USAGE_LABELS[k];
+      if (override) {
+        h += `&nbsp;&nbsp;· ${override.display} — Free setup (${override.note.split('·')[1].trim()})<br>`;
+      } else {
+        h += `&nbsp;&nbsp;· ${k} — ${fmt(sel[k])}<br>`;
+      }
+    });
+  }
+  h += `<strong>💰 One-time Total: ${fmt(total)}</strong>`;
+  document.getElementById('m-sum').innerHTML = h;
+  document.getElementById('overlay').classList.add('open');
+};
+
+// Hook refresh
+const _oRef = refresh;
+window.refresh = refreshWithErp;
+
+initErp();
+</script>
+</body>
+</html>
