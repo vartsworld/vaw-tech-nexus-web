@@ -307,19 +307,24 @@ const ClientManagement = () => {
         .single();
       
       if (clientData?.billing_sync_id) {
+        console.log('Fetching external invoices for:', clientData.billing_sync_id);
         const extInvoices = await fetchInvoicesFromBilling(clientData.billing_sync_id);
+        console.log('Ext invoices found:', extInvoices?.length);
         // Map external invoices to doc format for display
         externalUnlinked = extInvoices
-          .filter(inv => !linkedDocs?.some(doc => doc.title.includes(inv.invoice_number)))
+          .filter(inv => inv.invoice_number && !linkedDocs?.some(doc => doc.title.includes(inv.invoice_number)))
           .map(inv => ({
             id: `ext-${inv.invoice_number || inv.id}`,
             title: `Invoice - ${inv.invoice_number || 'External'}`,
             amount: inv.total || inv.balance || 0,
             doc_type: 'invoice',
             status: inv.status,
+            file_url: inv.file_url || inv.url || "#",
             isExternal: true,
             raw: inv
           }));
+      } else {
+        console.warn('No billing_sync_id found for client:', clientId);
       }
 
       setProjectDocs(linkedDocs || []);
@@ -339,39 +344,57 @@ const ClientManagement = () => {
 
   const handleLinkDoc = async (doc) => {
     try {
-      if (typeof doc === 'string' || doc.id?.toString().startsWith('ext-')) {
-        const docToLink = typeof doc === 'string' ? unlinkedDocs.find(d => d.id === doc) : doc;
-        if (!docToLink) return;
+      console.log('Attempting to link:', doc);
+      if (!selectedProjectForDocs) {
+        toast({ title: "No project selected", variant: "destructive" });
+        return;
+      }
 
-        if (docToLink.isExternal) {
-          // Create a local record so it's permanently linked
-          const { error } = await supabase.from('client_documents').insert({
-            client_id: selectedProjectForDocs.client_id,
-            project_id: selectedProjectForDocs.id,
-            title: docToLink.title,
-            doc_type: 'invoice',
-            amount: docToLink.amount,
-            status: docToLink.status || 'sent',
-            file_url: "#" // Link is handled via API
-          });
-          if (error) throw error;
-        } else {
-          const { error } = await supabase
-            .from('client_documents')
-            .update({ project_id: selectedProjectForDocs.id })
-            .eq('id', docToLink.id);
-          if (error) throw error;
+      let resError;
+
+      const isExt = (typeof doc === 'object' && doc.isExternal) || 
+                    (typeof doc === 'string' && doc.startsWith('ext-')) ||
+                    (doc.id?.toString().startsWith('ext-'));
+
+      if (isExt) {
+        const docToLink = typeof doc === 'string' ? unlinkedDocs.find(d => d.id === doc) : doc;
+        if (!docToLink) {
+          toast({ title: "Document info lost", variant: "destructive" });
+          return;
         }
+
+        console.log('Linking external doc:', docToLink);
+        const { error } = await supabase.from('client_documents').insert({
+          client_id: selectedProjectForDocs.client_id,
+          project_id: selectedProjectForDocs.id,
+          title: docToLink.title,
+          doc_type: 'invoice',
+          amount: parseFloat(docToLink.amount) || 0,
+          status: 'sent',
+          file_url: docToLink.file_url || "#" 
+        });
+        resError = error;
       } else {
+        const targetId = typeof doc === 'string' ? doc : doc.id;
+        console.log('Linking local doc ID:', targetId);
         const { error } = await supabase
           .from('client_documents')
           .update({ project_id: selectedProjectForDocs.id })
-          .eq('id', doc.id);
-        if (error) throw error;
+          .eq('id', targetId);
+        resError = error;
       }
+
+      if (resError) throw resError;
+
+      toast({ title: "Linked successfully", description: "The invoice is now associated with this project." });
       fetchProjectDocs(selectedProjectForDocs.id, selectedProjectForDocs.client_id);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('Linking error:', err);
+      toast({ 
+        title: "Linking Failed", 
+        description: err.message || "Something went wrong while linking the document.",
+        variant: "destructive" 
+      });
     }
   };
 
