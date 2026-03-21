@@ -363,9 +363,26 @@ const ClientManagement = () => {
           return;
         }
 
-        console.log('Linking external doc:', docToLink);
+        console.log('Resolving correct profile ID for linking...');
+        // 1. Get client email from clients table
+        const { data: clientData } = await supabase
+          .from('clients')
+          .select('email')
+          .eq('id', selectedProjectForDocs.client_id)
+          .single();
+        
+        // 2. Resolve the client_profiles.id for that email
+        const { data: profileData } = await supabase
+          .from('client_profiles')
+          .select('id')
+          .eq('email', clientData?.email)
+          .single();
+
+        const profileId = profileData?.id || selectedProjectForDocs.client_id;
+        console.log('Linking external doc to Profile ID:', profileId);
+
         const { error } = await supabase.from('client_documents').insert({
-          client_id: selectedProjectForDocs.client_id,
+          client_id: profileId,
           project_id: selectedProjectForDocs.id,
           title: docToLink.title,
           doc_type: 'invoice',
