@@ -392,7 +392,7 @@ const ClientManagement = () => {
       console.error('Linking error:', err);
       toast({ 
         title: "Linking Failed", 
-        description: err.message || "Something went wrong while linking the document.",
+        description: `${err.message || "Failed"} (CID: ${selectedProjectForDocs?.client_id || 'N/A'}, PID: ${selectedProjectForDocs?.id || 'N/A'})`,
         variant: "destructive" 
       });
     }
