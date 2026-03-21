@@ -56,6 +56,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import SEO from "@/components/SEO";
 
 const ProjectExplorer = ({ profile }: { profile: any }) => {
     const { "*": projectIdParam } = useParams();
@@ -214,6 +215,10 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
 
     return (
         <div className="space-y-6">
+            <SEO 
+                title={isDetailView ? `${selectedProject?.title} | Project Details` : "Project Explorer | Nexus Matrix"} 
+                description="Explore your active projects, track progress, manage assets, and communicate with the dev team in real-time."
+            />
             {!isDetailView ? (
                 <>
                     {/* Header Controls */}

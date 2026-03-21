@@ -43,6 +43,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import SEO from "@/components/SEO";
 
 const SupportNexus = ({ profile }: { profile: any }) => {
     const [feedback, setFeedback] = useState<any[]>([]);
@@ -182,6 +183,11 @@ const SupportNexus = ({ profile }: { profile: any }) => {
 
     return (
         <div className="space-y-8 pb-12">
+            <SEO 
+                title="Support Center | 24/7 Technical Support" 
+                description="Submit support requests, report issues, and get direct assistance from our technical and HR teams."
+                keywords="technical support, bug report, help desk, client assistance, 24/7 support"
+            />
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
@@ -189,7 +195,11 @@ const SupportNexus = ({ profile }: { profile: any }) => {
                     <p className="text-gray-400 font-medium italic">Direct support channel.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" className="border-tech-gold/30 text-tech-gold hover:bg-tech-gold/10 font-bold h-12 px-6 rounded-xl">
+                    <Button 
+                        variant="outline" 
+                        className="border-tech-gold/30 text-tech-gold hover:bg-tech-gold/10 font-bold h-12 px-6 rounded-xl"
+                        onClick={() => window.open("tel:+918281543610")}
+                    >
                         <PhoneCall className="w-4 h-4 mr-2" /> Phone Support
                     </Button>
                 </div>

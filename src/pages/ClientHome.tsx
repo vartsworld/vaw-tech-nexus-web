@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import SEO from "@/components/SEO";
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -209,10 +210,41 @@ const ClientHome = ({ profile }: { profile: any }) => {
   };
 
   const fetchPendingInvoices = async () => {
-    const billingId = profile?.billing_sync_id;
-    if (!billingId) return;
+    if (!profile?.id) return;
 
     try {
+      // 1. Fetch local invoices
+      const { data: localDocs } = await supabase
+        .from("client_documents")
+        .select("*")
+        .eq("client_id", profile.id)
+        .eq("doc_type", "invoice")
+        .neq("status", "paid");
+
+      // 2. Fetch projects for enrichment
+      const { data: projectsData } = await supabase
+        .from("client_projects")
+        .select("*")
+        .eq("client_id", profile.id);
+
+      // 3. Fetch billing sync ID if not present
+      let billingId = profile?.billing_sync_id;
+      if (!billingId) {
+        const { data: crmClient } = await supabase
+          .from("clients")
+          .select("billing_sync_id")
+          .eq("email", profile.email)
+          .maybeSingle();
+        billingId = crmClient?.billing_sync_id;
+      }
+
+      if (!billingId) {
+        // Fallback to local only if no billing ID
+        setPendingInvoices(localDocs || []);
+        return;
+      }
+
+      // 4. Fetch API invoices
       const { data: settings } = await supabase
         .from("app_settings")
         .select("key, value")
@@ -230,27 +262,56 @@ const ClientHome = ({ profile }: { profile: any }) => {
       const key = creds.key || localStorage.getItem("vaw_external_api_key") || "";
       const secret = creds.secret || localStorage.getItem("vaw_external_api_secret") || "";
 
-      if (!key || !secret || !url) return;
+      if (!key || !secret || !url) {
+        setPendingInvoices(localDocs || []);
+        return;
+      }
 
       const res = await fetch(`${url}/invoices?limit=500`, {
         headers: { "x-api-key": key, "x-api-secret": secret },
       });
 
-      if (!res.ok) return;
+      if (!res.ok) {
+        setPendingInvoices(localDocs || []);
+        return;
+      }
+
       const raw = await res.json();
       const allInvoices = Array.isArray(raw) ? raw : raw?.data || [];
 
       const matchId = billingId.toLowerCase();
-      const clientInvoices = allInvoices.filter((inv: any) => {
+      const apiInvoices = allInvoices.filter((inv: any) => {
         const code = String(inv.client_code || inv.client_id || inv.client_sync_id || inv.customer_id || "").toLowerCase();
         return code === matchId;
       });
 
-      const pending = clientInvoices.filter((inv: any) =>
+      const pendingApi = apiInvoices.filter((inv: any) =>
         ["draft", "sent", "overdue", "partially_paid", "partial", "unpaid", "pending"].includes(inv.status?.toLowerCase())
       );
 
-      setPendingInvoices(pending);
+      // 5. De-duplicate and Enrich
+      const enriched = pendingApi.map(apiInv => {
+        const matchingDoc = localDocs?.find(doc => 
+          (apiInv.invoice_number && doc.title.includes(apiInv.invoice_number)) ||
+          (apiInv.reference && doc.title.includes(apiInv.reference))
+        );
+        const linkedProject = projectsData?.find(p => p.id === matchingDoc?.project_id);
+
+        return {
+          ...apiInv,
+          project: linkedProject,
+          local_file_url: matchingDoc?.file_url
+        };
+      });
+
+      const missingLocals = (localDocs || []).filter(doc => 
+        !enriched.some(env => 
+          (env.invoice_number && doc.title.includes(env.invoice_number)) ||
+          (env.reference && doc.title.includes(env.reference))
+        )
+      );
+
+      setPendingInvoices([...enriched, ...missingLocals]);
     } catch (err) {
       console.error("Error fetching pending invoices:", err);
     }
@@ -267,6 +328,10 @@ const ClientHome = ({ profile }: { profile: any }) => {
 
   return (
     <div className="max-w-3xl mx-auto pb-32 space-y-16">
+      <SEO 
+        title="Dashboard | Welcome Back"
+        description="View your active projects, pending payments, and upcoming renewals at a glance in your secure client portal."
+      />
       {/* Centered Logo */}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
@@ -417,11 +482,28 @@ const ClientHome = ({ profile }: { profile: any }) => {
 
           <div className="space-y-3">
             {pendingInvoices.slice(0, 3).map((inv: any, idx: number) => {
-              const total = Number(inv.total) || 0;
-              const balance = Number(inv.balance) || total;
-              const isPartial = inv.status?.toLowerCase() === "partial" || inv.status?.toLowerCase() === "partially_paid";
-              const paidSoFar = isPartial ? total - balance : 0;
-              const dueDate = inv.due_date || inv.date;
+              const total = Number(inv.total || inv.total_amount || 0);
+              const balance = Number(inv.balance !== undefined ? inv.balance : (inv.status?.toLowerCase() === 'paid' ? 0 : total));
+              
+              // functional progress
+              let progressPercent = 0;
+              let paidSoFar = 0;
+              let totalForProgress = total;
+
+              if (inv.project) {
+                progressPercent = inv.project.progress || 0;
+                totalForProgress = Number(inv.project.total_amount || total);
+                paidSoFar = Number(inv.project.amount_paid || (total - balance));
+              } else {
+                paidSoFar = total - balance;
+                progressPercent = total > 0 ? Math.min((paidSoFar / total) * 100, 100) : 0;
+              }
+
+              const isPartial = inv.status?.toLowerCase() === "partial" || 
+                               inv.status?.toLowerCase() === "partially_paid" || 
+                               (paidSoFar > 0 && paidSoFar < totalForProgress);
+                               
+              const dueDate = inv.due_date || inv.date || inv.created_at;
               const daysUntil = dueDate ? differenceInDays(new Date(dueDate), new Date()) : null;
               const isOverdue = daysUntil !== null && daysUntil < 0;
 
@@ -442,7 +524,7 @@ const ClientHome = ({ profile }: { profile: any }) => {
                         <div className="flex items-center gap-2">
                           <CreditCard className="w-3.5 h-3.5 text-muted-foreground/50" />
                           <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors duration-300">
-                            {inv.invoice_number || "Invoice"}
+                            {inv.invoice_number || inv.title || "Invoice"}
                           </h3>
                           <Badge
                             variant="outline"
@@ -458,11 +540,9 @@ const ClientHome = ({ profile }: { profile: any }) => {
                             {isOverdue ? "Overdue" : isPartial ? "Partially Paid" : "Pending"}
                           </Badge>
                         </div>
-                        {isPartial && (
-                          <p className="text-[10px] text-muted-foreground/40 font-light">
-                            Paid ₹{paidSoFar.toLocaleString("en-IN")} of ₹{total.toLocaleString("en-IN")}
-                          </p>
-                        )}
+                        <p className="text-[10px] text-muted-foreground/40 font-light">
+                          {paidSoFar > 0 ? `Paid ₹${paidSoFar.toLocaleString("en-IN")} of ₹${totalForProgress.toLocaleString("en-IN")}` : `Total ₹${total.toLocaleString("en-IN")}`}
+                        </p>
                       </div>
                       <div className="text-right space-y-1">
                         <p className="text-sm font-semibold text-primary">
@@ -482,14 +562,14 @@ const ClientHome = ({ profile }: { profile: any }) => {
                         )}
                       </div>
                     </div>
-                    {isPartial && (
+                    {progressPercent > 0 && (
                       <div className="mt-3">
                         <div className="h-1 w-full bg-muted/50 rounded-full overflow-hidden">
                           <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${Math.min((paidSoFar / (total || 1)) * 100, 100)}%` }}
+                            animate={{ width: `${Math.min(progressPercent, 100)}%` }}
                             transition={{ duration: 1.2, delay: 0.3 + idx * 0.1, ease: "easeOut" }}
-                            className="h-full bg-amber-500/60 rounded-full"
+                            className={cn("h-full rounded-full", isPartial ? "bg-amber-500/60" : "bg-primary/60")}
                           />
                         </div>
                       </div>

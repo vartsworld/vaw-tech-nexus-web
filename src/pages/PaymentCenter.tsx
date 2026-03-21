@@ -37,6 +37,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useRealtimeQuery } from "@/hooks/useRealtimeQuery";
 import { syncFinancialEntryToBilling } from "@/utils/syncUtils";
+import SEO from "@/components/SEO";
 
 interface PaymentCenterProps {
     profile: any;
@@ -209,17 +210,50 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
         ['paid', 'collected'].includes(inv.status?.toLowerCase())
     );
 
+    // Enrich pending invoices with local data (file URLs, project IDs) and de-duplicate
+    const enrichedPendingInvoices = pendingInvoices.map(inv => {
+        const invNum = inv.invoice_number || inv.reference;
+        const matchingDoc = (localDocuments as any[]).find(doc => 
+            invNum && doc.title && doc.title.includes(invNum)
+        );
+        
+        // Try to find linked project info
+        let linkedProject = null;
+        if (matchingDoc?.project_id) {
+            linkedProject = localProjects.find(p => p.id === matchingDoc.project_id);
+        } else if (invNum) {
+            // Fallback: try to match by title
+            linkedProject = localProjects.find(p => p.title && p.title.includes(invNum));
+        }
+
+        return {
+            ...inv,
+            local_file_url: matchingDoc?.file_url,
+            project: linkedProject,
+            project_id: matchingDoc?.project_id || linkedProject?.id
+        };
+    });
+
     // Local pending invoices from client_documents
-    const pendingLocalDocs = (localDocuments as any[]).filter((doc: any) =>
-        doc.doc_type === 'invoice' && !['paid', 'signed'].includes(doc.status?.toLowerCase())
-    );
+    const pendingLocalDocs = (localDocuments as any[]).filter((doc: any) => {
+        if (doc.doc_type !== 'invoice') return false;
+        if (['paid', 'signed'].includes(doc.status?.toLowerCase())) return false;
+        
+        // Check if already represented in billing API invoices
+        const invNum = enrichedPendingInvoices.find(inv => 
+            (inv.invoice_number && doc.title.includes(inv.invoice_number)) ||
+            (inv.reference && doc.title.includes(inv.reference))
+        );
+        return !invNum;
+    });
 
     // Projects with outstanding balances
     const pendingProjectBalances = localProjects.filter((proj: any) => {
         const balance = (Number(proj.total_amount) || 0).toFixed(2) === (Number(proj.amount_paid) || 0).toFixed(2) ? 0 : (Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0);
         // If there's a local pending doc linked to this project, don't show the project balance card separately
         // to avoid duplicate display for the same package payment.
-        const hasLinkedDoc = pendingLocalDocs.some((doc: any) => doc.project_id === proj.id);
+        const hasLinkedDoc = pendingLocalDocs.some((doc: any) => doc.project_id === proj.id) ||
+            enrichedPendingInvoices.some(inv => inv.project_id === proj.id);
         return balance > 0 && !hasLinkedDoc;
     });
 
@@ -229,12 +263,14 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
     );
     const totalLocalPaid = localPaidDocs.reduce((sum: number, doc: any) => sum + (Number(doc.amount) || 0), 0);
 
-    const totalPending = pendingInvoices.reduce((sum: number, inv: any) =>
+    const totalPending = enrichedPendingInvoices.length > 0 || pendingLocalDocs.length > 0 || pendingProjectBalances.length > 0;
+    // (Recalculate total pending amount for cards)
+    const totalPendingAmount = enrichedPendingInvoices.reduce((sum: number, inv: any) =>
         sum + (Number(inv.balance) || Number(inv.total) || 0), 0)
         + pendingLocalDocs.reduce((sum: number, doc: any) => sum + (Number(doc.amount) || 0), 0)
         + pendingProjectBalances.reduce((sum: number, proj: any) => sum + ((Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0)), 0);
 
-    const hasAnyPendingData = pendingInvoices.length > 0 || pendingLocalDocs.length > 0 || pendingProjectBalances.length > 0 || paymentReminders.filter((r: any) => r.status !== 'paid').length > 0;
+    const hasAnyPendingData = enrichedPendingInvoices.length > 0 || pendingLocalDocs.length > 0 || pendingProjectBalances.length > 0 || paymentReminders.filter((r: any) => r.status !== 'paid').length > 0;
 
     const downloadReceipt = async (record: any, type: 'payment' | 'invoice') => {
         // Check for shareable URL from API data
@@ -501,6 +537,11 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
 
     return (
         <div className="space-y-6 pb-12">
+            <SEO 
+                title="Payment Center | Secure Billing & Invoices" 
+                description="Manage your project payments, view invoices, and track your recurring billing in our secure client portal."
+                keywords="payment center, billing, invoice, project payment, secure portal"
+            />
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -523,7 +564,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
             </div>
 
             {/* Summary Cards */}
-            {!billingLoading && (totalPending > 0 || totalPaid > 0 || totalLocalPaid > 0 || invoices.length > 0 || pendingLocalDocs.length > 0 || pendingProjectBalances.length > 0) && (
+            {!billingLoading && (totalPending || totalPaid > 0 || totalLocalPaid > 0 || invoices.length > 0 || pendingLocalDocs.length > 0 || pendingProjectBalances.length > 0) && (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                     {(() => {
                         const activeRecs = recurringInvoices.filter((r: any) => r.status?.toLowerCase() !== 'paused' && r.status?.toLowerCase() !== 'stopped');
@@ -565,7 +606,7 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                             </div>
                             <div>
                                 <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Pending</p>
-                                <p className="text-lg font-black text-orange-400">{formatCurrency(totalPending)}</p>
+                                <p className="text-lg font-black text-orange-400">{formatCurrency(totalPendingAmount)}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -635,12 +676,23 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                     ) : (
                         <div className="grid gap-4">
                             {/* Billing API invoices */}
-                            {pendingInvoices.map((inv, idx) => {
+                            {enrichedPendingInvoices.map((inv, idx) => {
                                 const total = Number(inv.total) || 0;
                                 const balance = Number(inv.balance) || total;
                                 const amount = balance;
                                 const isPartial = inv.status?.toLowerCase() === 'partial' || inv.status?.toLowerCase() === 'partially_paid';
-                                const paidSoFar = isPartial ? total - balance : 0;
+                                
+                                // Enhanced progress calculation
+                                let paidSoFar = total - balance;
+                                let totalForProgress = total;
+                                let progressPercent = Math.round((paidSoFar / (totalForProgress || 1)) * 100);
+
+                                if (inv.project) {
+                                    paidSoFar = Number(inv.project.amount_paid) || 0;
+                                    totalForProgress = Number(inv.project.total_amount) || total;
+                                    progressPercent = Math.round((paidSoFar / (totalForProgress || 1)) * 100);
+                                }
+
                                 const dueDate = inv.due_date || inv.date;
                                 const daysUntil = dueDate ? Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
                                 const isOverdue = daysUntil !== null && daysUntil < 0;
@@ -674,11 +726,6 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                                     </span>
                                                                     {isPartial && <span className="text-xs text-gray-500">balance</span>}
                                                                 </div>
-                                                                {isPartial && (
-                                                                    <p className="text-xs text-gray-500 mt-1">
-                                                                        Paid: {formatCurrency(paidSoFar)} of {formatCurrency(total)}
-                                                                    </p>
-                                                                )}
                                                             </div>
                                                             {dueDate && (
                                                                 <div className="flex items-center gap-2 text-gray-400">
@@ -687,19 +734,26 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        {isPartial && (
-                                                            <div className="mt-3">
-                                                                <div className="w-full bg-gray-800 rounded-full h-2">
-                                                                    <div
-                                                                        className="bg-amber-500 h-2 rounded-full transition-all"
-                                                                        style={{ width: `${Math.min((paidSoFar / (total || 1)) * 100, 100)}%` }}
-                                                                    />
-                                                                </div>
-                                                                <p className="text-[10px] text-amber-400/70 mt-1">
-                                                                    {Math.round((paidSoFar / (total || 1)) * 100)}% paid
+
+                                                        {/* Progress bar */}
+                                                        <div className="mt-4">
+                                                            <div className="w-full bg-gray-800 rounded-full h-2">
+                                                                <div
+                                                                    className="bg-tech-gold h-2 rounded-full transition-all"
+                                                                    style={{ width: `${Math.min(progressPercent, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                            <div className="flex justify-between items-center mt-1">
+                                                                <p className="text-[10px] text-gray-500">
+                                                                    {inv.project ? 'Project Progress: ' : 'Paid: '} 
+                                                                    {formatCurrency(paidSoFar)} of {formatCurrency(totalForProgress)}
+                                                                </p>
+                                                                <p className="text-[10px] text-tech-gold font-bold">
+                                                                    {progressPercent}% paid
                                                                 </p>
                                                             </div>
-                                                        )}
+                                                        </div>
+
                                                         {isOverdue && (
                                                             <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
                                                                 <p className="text-xs text-red-400 flex items-center gap-2">
@@ -728,7 +782,10 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                                                 variant="outline"
                                                                 size="icon"
                                                                 className="border-tech-gold/20 hover:bg-tech-gold/10 text-white"
-                                                                onClick={() => downloadReceipt(inv, 'invoice')}
+                                                                onClick={() => {
+                                                                    if (inv.local_file_url) window.open(inv.local_file_url, '_blank');
+                                                                    else downloadReceipt(inv, 'invoice');
+                                                                }}
                                                                 title="Download Invoice"
                                                             >
                                                                 <Download className="w-4 h-4" />
