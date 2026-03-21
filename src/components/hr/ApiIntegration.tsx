@@ -168,12 +168,48 @@ const ApiIntegration = () => {
             const response = await fetch(`${externalApiUrl}/${resource}?limit=10`, {
                 headers: {
                     'x-api-key': externalApiKey,
-                    'x-api-secret': externalApiSecret
+                    'x-api-secret': externalApiSecret,
+                    'authtoken': externalApiKey
                 }
             });
             const data = await response.json();
             if (response.ok) {
-                setResourceData(Array.isArray(data) ? data : data.data || []);
+                let items = Array.isArray(data) ? data : data.data || [];
+
+                // If exploring the payments tab, automatically fetch corresponding invoice data to map invoice numbers
+                if (resource === 'payments' && items.length > 0) {
+                    try {
+                        const invRes = await fetch(`${externalApiUrl}/invoices?limit=100`, {
+                            headers: {
+                                'x-api-key': externalApiKey,
+                                'x-api-secret': externalApiSecret,
+                                'authtoken': externalApiKey
+                            }
+                        });
+                        const invData = await invRes.json();
+                        if (invRes.ok) {
+                            const invoicesList = Array.isArray(invData) ? invData : invData.data || [];
+                            const invMap = new Map();
+                            invoicesList.forEach((inv: any) => {
+                                const idToMap = inv.id || inv.invoiceid;
+                                const number = inv.number || inv.invoice_number || '';
+                                const prefix = inv.prefix || '';
+                                if (idToMap) {
+                                    invMap.set(String(idToMap), `${prefix}${number}`);
+                                }
+                            });
+
+                            items = items.map((p: any) => ({
+                                ...p,
+                                mapped_invoice_number: p.invoiceid ? (invMap.get(String(p.invoiceid)) || 'Pending/Unknown') : 'No ID'
+                            }));
+                        }
+                    } catch (fetchErr) {
+                        console.warn("Failed to retrieve extra invoice numbers for payments explorer:", fetchErr);
+                    }
+                }
+
+                setResourceData(items);
             }
         } catch (error) {
             console.error(`Error fetching ${resource}:`, error);
