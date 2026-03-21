@@ -620,9 +620,9 @@ const LMSBuilder = () => {
         `🛡️ *Yearly Maintenance: ${formatINR(recurringFee)}/yr*\n\n` +
         `Please help me get started. Thank you!`
       );
-      window.open(`https://wa.me/919999999999?text=${msg}`, "_blank");
+      window.open(`https://wa.me/918281543610?text=${msg}`, "_blank");
     } else {
-      window.open("tel:+919999999999");
+      window.open("tel:+918281543610");
     }
 
     setTimeout(() => {
@@ -704,7 +704,7 @@ const LMSBuilder = () => {
                     </div>
                     <div className="text-right">
                       <div className="text-2xl font-mono font-bold text-amber-200">{formatINR(BASE_PRICE)}</div>
-                      <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">ONE-TIME SETUP · NO RECURRING FEE</div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">ONE-TIME SETUP</div>
                     </div>
                   </div>
 
@@ -1115,7 +1115,7 @@ const LMSBuilder = () => {
                      <SelectTrigger className="bg-slate-50 border-slate-100 rounded-xl text-slate-900">
                        <SelectValue placeholder="Select type..." />
                      </SelectTrigger>
-                     <SelectContent className="text-slate-900 bg-white">
+                     <SelectContent className="text-slate-900 bg-white z-[100]">
                         <SelectItem value="school">School (K-12)</SelectItem>
                         <SelectItem value="college">College / University</SelectItem>
                         <SelectItem value="coaching">Coaching Center</SelectItem>
@@ -1129,7 +1129,7 @@ const LMSBuilder = () => {
                      <SelectTrigger className="bg-slate-50 border-slate-100 rounded-xl text-slate-900">
                        <SelectValue placeholder="Approx count..." />
                      </SelectTrigger>
-                     <SelectContent className="text-slate-900 bg-white">
+                     <SelectContent className="text-slate-900 bg-white z-[100]">
                         <SelectItem value="200">Below 200</SelectItem>
                         <SelectItem value="500">200 – 500</SelectItem>
                         <SelectItem value="1000">500 – 1,000</SelectItem>
