@@ -688,9 +688,12 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                                 let progressPercent = Math.round((paidSoFar / (totalForProgress || 1)) * 100);
 
                                 if (inv.project) {
-                                    paidSoFar = Number(inv.project.amount_paid) || 0;
-                                    totalForProgress = Number(inv.project.total_amount) || total;
-                                    progressPercent = Math.round((paidSoFar / (totalForProgress || 1)) * 100);
+                                    paidSoFar = Math.max(Number(inv.project.amount_paid || 0), total - balance);
+                                    totalForProgress = Number(inv.project.total_amount || total);
+                                    progressPercent = Math.max(
+                                        Math.round((paidSoFar / (totalForProgress || 1)) * 100),
+                                        inv.project.progress || 0
+                                    );
                                 }
 
                                 const dueDate = inv.due_date || inv.date;

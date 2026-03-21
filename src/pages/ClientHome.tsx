@@ -491,9 +491,12 @@ const ClientHome = ({ profile }: { profile: any }) => {
               let totalForProgress = total;
 
               if (inv.project) {
-                progressPercent = inv.project.progress || 0;
                 totalForProgress = Number(inv.project.total_amount || total);
-                paidSoFar = Number(inv.project.amount_paid || (total - balance));
+                paidSoFar = Math.max(Number(inv.project.amount_paid || 0), total - balance);
+                progressPercent = Math.max(
+                  Math.round((paidSoFar / (totalForProgress || 1)) * 100),
+                  inv.project.progress || 0
+                );
               } else {
                 paidSoFar = total - balance;
                 progressPercent = total > 0 ? Math.min((paidSoFar / total) * 100, 100) : 0;
