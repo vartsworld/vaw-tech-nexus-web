@@ -157,6 +157,25 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
     toast.success("Link copied to clipboard!");
   };
 
+  const handleDeleteLink = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this onboarding link?")) return;
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from("client_onboarding_links")
+        .delete()
+        .eq("id", id);
+      
+      if (error) throw error;
+      
+      toast.success("Onboarding link deleted successfully");
+      fetchLinks();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete link");
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -298,16 +317,22 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
                 <span className="flex-1 truncate">
                   {link.client_name || (link as any).pricing_packages?.name || "Unnamed"}
                 </span>
-                {link.status === "active" && (
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => copyLink(link.token)}>
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => window.open(getFormUrl(link.token), "_blank")}>
-                      <ExternalLink className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
+                
+                <div className="flex gap-1">
+                  {link.status === "active" && (
+                    <>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-primary transition-colors" onClick={() => copyLink(link.token)}>
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-primary transition-colors" onClick={() => window.open(getFormUrl(link.token), "_blank")}>
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </>
+                  )}
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:text-destructive hover:bg-destructive/10 transition-colors" onClick={() => handleDeleteLink(link.id)}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
