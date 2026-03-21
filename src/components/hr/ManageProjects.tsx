@@ -46,6 +46,8 @@ const ManageProjects = () => {
         project_type: "website",
         status: "planning",
         package_type: "basic_design_website",
+        total_amount: 0,
+        amount_paid: 0,
         addons: ""
     });
 
@@ -141,6 +143,8 @@ const ManageProjects = () => {
             project_type: "website",
             status: "planning",
             package_type: "basic",
+            total_amount: 0,
+            amount_paid: 0,
             addons: ""
         });
     };
@@ -326,6 +330,8 @@ const ManageProjects = () => {
                                                             project_type: p.project_type,
                                                             status: p.status,
                                                             package_type: p.package_type || "basic",
+                                                            total_amount: p.total_amount || 0,
+                                                            amount_paid: p.amount_paid || 0,
                                                             addons: p.addons || ""
                                                         });
                                                         setIsEditDialogOpen(true);

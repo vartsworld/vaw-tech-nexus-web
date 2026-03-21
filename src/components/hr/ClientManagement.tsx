@@ -24,7 +24,12 @@ import {
   EyeOff,
   Folder,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  FileText,
+  ExternalLink,
+  Check,
+  X,
+  Trash
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -73,6 +78,11 @@ const ClientManagement = () => {
   const [clientProjects, setClientProjects] = useState<any[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
+  
+  const [isDocsDialogOpen, setIsDocsDialogOpen] = useState(false);
+  const [selectedProjectForDocs, setSelectedProjectForDocs] = useState<any>(null);
+  const [projectDocs, setProjectDocs] = useState<any[]>([]);
+  const [isLoadingDocs, setIsLoadingDocs] = useState(false);
   const [newProject, setNewProject] = useState({
     title: "",
     description: "",
@@ -254,7 +264,7 @@ const ClientManagement = () => {
     try {
       const { data, error } = await supabase
         .from('client_projects')
-        .select('id, title, description, status, project_type, progress, created_at, client_id')
+        .select('id, title, description, status, project_type, total_amount, amount_paid, progress, created_at, client_id')
         .eq('client_id', clientId)
         .order('created_at', { ascending: false });
 
@@ -262,13 +272,43 @@ const ClientManagement = () => {
       setClientProjects(data || []);
     } catch (error) {
       console.error('Error fetching projects:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load projects.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoadingProjects(false);
+    }
+  };
+
+  const fetchProjectDocs = async (projectId) => {
+    setIsLoadingDocs(true);
+    try {
+      const { data, error } = await supabase
+        .from('client_documents')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProjectDocs(data || []);
+    } catch (error) {
+      console.error('Error fetching docs:', error);
+    } finally {
+      setIsLoadingDocs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isDocsDialogOpen && selectedProjectForDocs) {
+      fetchProjectDocs(selectedProjectForDocs.id);
+    }
+  }, [isDocsDialogOpen, selectedProjectForDocs]);
+
+  const handleDeleteDoc = async (docId) => {
+    if (!confirm("Delete this document?")) return;
+    try {
+      const { error } = await supabase.from('client_documents').delete().eq('id', docId);
+      if (error) throw error;
+      setProjectDocs(projectDocs.filter(d => d.id !== docId));
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -1056,6 +1096,17 @@ const ClientManagement = () => {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => {
+                            setSelectedProjectForDocs(project);
+                            setIsDocsDialogOpen(true);
+                          }}
+                          className="text-blue-500 h-8 w-8 p-0 hover:text-blue-600 hover:bg-blue-50"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleDeleteProject(project.id)}
                           className="text-destructive h-8 w-8 p-0"
                         >
@@ -1082,6 +1133,76 @@ const ClientManagement = () => {
             onSuccess={handleProjectSuccess}
             onCancel={() => setIsAddProjectDialogOpen(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Project Documents Dialog */}
+      <Dialog open={isDocsDialogOpen} onOpenChange={setIsDocsDialogOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              Project Financials - {selectedProjectForDocs?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-gray-50 rounded-2xl">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Budget Track</p>
+                <p className="text-xl font-black text-gray-900 mt-1">₹{Number(selectedProjectForDocs?.amount_paid || 0).toLocaleString()} / ₹{Number(selectedProjectForDocs?.total_amount || 0).toLocaleString()}</p>
+              </div>
+              <div className="p-4 bg-gray-50 rounded-2xl text-right">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Completion</p>
+                <p className="text-xl font-black text-blue-600 mt-1">{((Number(selectedProjectForDocs?.amount_paid || 0) / (Number(selectedProjectForDocs?.total_amount) || 1)) * 100).toFixed(0)}% PAID</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Linked Invoices & Confirmations</h4>
+              {isLoadingDocs ? (
+                <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
+              ) : projectDocs.length === 0 ? (
+                <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed text-gray-400 italic text-sm">
+                  No linked documents found for this project.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {projectDocs.map(doc => (
+                    <div key={doc.id} className="flex items-center justify-between p-3 bg-white border rounded-xl hover:border-blue-200 transition-all group">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-50 rounded-lg text-blue-600 group-hover:scale-110 transition-transform">
+                          <FileText className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold truncate max-w-[200px]">{doc.title}</p>
+                          <p className="text-[10px] font-medium text-gray-400">
+                            {doc.doc_type.toUpperCase()} • ₹{Number(doc.amount || 0).toLocaleString()} • {doc.status}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" asChild>
+                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4" /></a>
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-rose-500 hover:text-rose-600"
+                          onClick={() => handleDeleteDoc(doc.id)}
+                        >
+                          <Trash className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <p className="text-[10px] text-gray-400 bg-amber-50 p-3 rounded-xl border border-amber-100 italic">
+              Linking Tip: Use the Payment Center in the client portal to upload confirmations, which will automatically appear here once linked to this project.
+            </p>
+          </div>
         </DialogContent>
       </Dialog>
 

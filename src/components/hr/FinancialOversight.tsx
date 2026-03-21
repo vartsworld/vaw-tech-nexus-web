@@ -12,12 +12,19 @@ import {
     Users,
     Loader2,
     CalendarClock,
-    RefreshCw
+    RefreshCw,
+    Check,
+    X,
+    Image as ImageIcon,
+    FileSearch,
+    ExternalLink,
+    ShieldAlert
 } from "lucide-react";
 import { useRealtimeQuery } from "@/hooks/useRealtimeQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
     AreaChart,
     Area,
@@ -87,8 +94,85 @@ const FinancialOversight = () => {
         select: 'id, company_name, billing_sync_id'
     });
 
+    const { data: pendingVerifications = [], refetch: refetchVerifications } = useRealtimeQuery({
+        queryKey: ['hr-pending-verifications'],
+        table: 'client_documents',
+        filter: "status=eq.pending_verification&doc_type=eq.payment_confirmation"
+    });
+
     const [externalStats, setExternalStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [isProcessing, setIsProcessing] = useState<string | null>(null);
+
+    const handleVerifyStatus = async (doc: any, newStatus: 'verified' | 'rejected') => {
+        setIsProcessing(doc.id);
+        try {
+            // Update document status
+            const { error: docError } = await supabase
+                .from('client_documents')
+                .update({ status: newStatus })
+                .eq('id', doc.id);
+
+            if (docError) throw docError;
+
+            if (newStatus === 'verified' && (doc.amount || doc.total)) {
+                // If linked to a project, update amount_paid
+                if (doc.project_id) {
+                    const { data: project } = await supabase
+                        .from('client_projects')
+                        .select('amount_paid')
+                        .eq('id', doc.project_id)
+                        .single();
+
+                    if (project) {
+                        const newAmount = Number(project.amount_paid || 0) + Number(doc.amount || 0);
+                        await supabase
+                            .from('client_projects')
+                            .update({ amount_paid: newAmount })
+                            .eq('id', doc.project_id);
+                    }
+                }
+
+                // Create a notification for the client
+                await supabase.from('client_notifications').insert({
+                    client_id: doc.client_id,
+                    title: 'Payment Verified',
+                    message: `Your payment of ₹${Number(doc.amount || 0).toLocaleString()} has been verified. Thank you!`,
+                    type: 'payment_verified',
+                    category: 'payment',
+                    priority: 'high'
+                });
+
+                // Sync to billing if client is synced
+                const client = clients.find((c: any) => c.id === doc.client_id);
+                if (client?.billing_sync_id) {
+                    const { syncFinancialEntryToBilling } = await import("@/utils/syncUtils");
+                    await syncFinancialEntryToBilling({
+                        amount: doc.amount,
+                        title: doc.title,
+                        doc_type: 'payment',
+                        status: 'collected',
+                        created_at: new Date().toISOString()
+                    }, client.billing_sync_id);
+                }
+            } else if (newStatus === 'rejected') {
+                await supabase.from('client_notifications').insert({
+                    client_id: doc.client_id,
+                    title: 'Payment Rejected',
+                    message: `Your payment confirmation for ₹${Number(doc.amount || 0).toLocaleString()} was not verified. Please contact support.`,
+                    type: 'alert',
+                    category: 'payment',
+                    priority: 'high'
+                });
+            }
+
+            refetchVerifications();
+        } catch (error: any) {
+            console.error("Verification error:", error);
+        } finally {
+            setIsProcessing(null);
+        }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -502,6 +586,74 @@ const FinancialOversight = () => {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Payment Verification Gateway */}
+            <Card className="bg-black/40 border-white/5 backdrop-blur-xl rounded-[2rem] overflow-hidden">
+                <CardHeader className="p-8">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-3">
+                            <ShieldAlert className="w-5 h-5 text-indigo-500" />
+                            Verification Gateway
+                        </CardTitle>
+                        <Badge className="bg-indigo-600/10 text-indigo-500 border-indigo-500/20 text-[10px]">
+                            {pendingVerifications.length} PENDING REVIEW
+                        </Badge>
+                    </div>
+                </CardHeader>
+                <CardContent className="p-8 pt-0">
+                    {pendingVerifications.length === 0 ? (
+                        <div className="text-center py-10">
+                            <Check className="w-8 h-8 text-green-500 mx-auto mb-3 opacity-20" />
+                            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">All payment confirmations verified</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {pendingVerifications.map((doc: any) => {
+                                const client = clients.find((c: any) => c.id === doc.client_id);
+                                return (
+                                    <div key={doc.id} className="flex flex-col p-5 bg-white/[0.02] border border-white/5 rounded-[1.5rem] hover:border-indigo-500/20 transition-all">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-black text-white truncate">{doc.title}</p>
+                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">
+                                                    Client: {client?.company_name || 'Individual'}
+                                                </p>
+                                                <p className="text-lg font-black text-indigo-400 mt-2">₹{Number(doc.amount || 0).toLocaleString()}</p>
+                                            </div>
+                                            <a 
+                                                href={doc.file_url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
+                                            >
+                                                <ImageIcon className="w-5 h-5" />
+                                            </a>
+                                        </div>
+
+                                        <div className="mt-auto pt-4 flex items-center gap-2 border-t border-white/5">
+                                            <Button 
+                                                className="flex-1 h-10 rounded-xl bg-green-600 hover:bg-green-700 font-bold text-xs"
+                                                disabled={!!isProcessing}
+                                                onClick={() => handleVerifyStatus(doc, 'verified')}
+                                            >
+                                                {isProcessing === doc.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-4 h-4 mr-2" /> Verify</>}
+                                            </Button>
+                                            <Button 
+                                                variant="outline"
+                                                className="flex-1 h-10 rounded-xl border-white/5 hover:bg-rose-500/10 hover:text-rose-500 font-bold text-xs"
+                                                disabled={!!isProcessing}
+                                                onClick={() => handleVerifyStatus(doc, 'rejected')}
+                                            >
+                                                <X className="w-4 h-4 mr-2" /> Reject
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
             {/* Recent Payments Log */}
             <Card className="bg-black/40 border-white/5 backdrop-blur-xl rounded-[2rem]">

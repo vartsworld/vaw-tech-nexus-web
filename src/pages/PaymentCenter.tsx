@@ -200,8 +200,11 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
 
     // Projects with outstanding balances
     const pendingProjectBalances = localProjects.filter((proj: any) => {
-        const balance = (Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0);
-        return balance > 0;
+        const balance = (Number(proj.total_amount) || 0).toFixed(2) === (Number(proj.amount_paid) || 0).toFixed(2) ? 0 : (Number(proj.total_amount) || 0) - (Number(proj.amount_paid) || 0);
+        // If there's a local pending doc linked to this project, don't show the project balance card separately
+        // to avoid duplicate display for the same package payment.
+        const hasLinkedDoc = pendingLocalDocs.some((doc: any) => doc.project_id === proj.id);
+        return balance > 0 && !hasLinkedDoc;
     });
 
     const totalPaid = payments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
@@ -427,9 +430,13 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
             const title = selectedReminder.title || selectedReminder.invoice_number || 'Invoice Payment';
 
             await supabase.from('client_documents').insert({
-                client_id: profile.id, title: `Payment Confirmation - ${title}`,
-                file_url: urlData.publicUrl, doc_type: 'payment_confirmation',
-                amount, status: 'pending_verification'
+                client_id: profile.id, 
+                title: `Payment Confirmation - ${title}`,
+                file_url: urlData.publicUrl, 
+                doc_type: 'payment_confirmation',
+                amount, 
+                status: 'pending_verification',
+                project_id: selectedReminder.project_id || (selectedReminder.type === 'project_balance' ? selectedReminder.id : null)
             });
 
             if (selectedReminder.id && !selectedReminder.invoice_number) {

@@ -23,6 +23,8 @@ const SharedProjectForm = ({ clientId, initialData, onSuccess, onCancel }: Share
         description: initialData?.description || "",
         project_type: initialData?.project_type || "website",
         status: initialData?.status || "planning",
+        total_amount: initialData?.total_amount || 0,
+        amount_paid: initialData?.amount_paid || 0,
         // These are not in DB, we will append to description
         package_type: initialData?.package_type || "basic",
         addons: initialData?.addons || "",
@@ -86,10 +88,11 @@ const SharedProjectForm = ({ clientId, initialData, onSuccess, onCancel }: Share
                 description: formData.description,
                 project_type: formData.project_type,
                 status: formData.status,
-                // total_amount: 0, // Could be added if needed
+                total_amount: Number(formData.total_amount),
+                amount_paid: Number(formData.amount_paid),
             };
 
-            const selectColumns = 'id, title, description, project_type, status, client_id, progress, created_at, updated_at, renewal_date, next_payment_date, clients:client_id(id, company_name)';
+            const selectColumns = 'id, title, description, project_type, status, client_id, total_amount, amount_paid, progress, created_at, updated_at, renewal_date, next_payment_date, clients:client_id(id, company_name)';
 
             let result;
             if (initialData?.id) {
@@ -185,6 +188,30 @@ const SharedProjectForm = ({ clientId, initialData, onSuccess, onCancel }: Share
                             <SelectItem value="completed">Completed</SelectItem>
                         </SelectContent>
                     </Select>
+                </div>
+            </div>
+
+            {/* Financial Parameters */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Total Budget (₹)</Label>
+                    <Input
+                        type="number"
+                        value={formData.total_amount}
+                        onChange={(e) => setFormData({ ...formData, total_amount: e.target.value })}
+                        placeholder="0.00"
+                        className="bg-white/5 border-white/10 h-12 rounded-xl focus:border-indigo-500/50"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Amount Paid (₹)</Label>
+                    <Input
+                        type="number"
+                        value={formData.amount_paid}
+                        onChange={(e) => setFormData({ ...formData, amount_paid: e.target.value })}
+                        placeholder="0.00"
+                        className="bg-white/5 border-white/10 h-12 rounded-xl focus:border-indigo-500/50"
+                    />
                 </div>
             </div>
 
