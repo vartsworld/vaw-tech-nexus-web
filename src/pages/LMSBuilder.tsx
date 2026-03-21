@@ -620,7 +620,7 @@ const LMSBuilder = () => {
         `🛡️ *Yearly Maintenance: ${formatINR(recurringFee)}/yr*\n\n` +
         `Please help me get started. Thank you!`
       );
-      window.open(`https://wa.me/918281543610?text=${msg}`, "_blank");
+      window.open(`https://api.whatsapp.com/send?phone=918281543610&text=${msg}`, "_blank");
     } else {
       window.open("tel:+918281543610");
     }
@@ -1054,10 +1054,10 @@ const LMSBuilder = () => {
 
       {/* MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
           
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[540px] max-h-[90vh] overflow-hidden flex flex-col relative z-70 animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[540px] max-h-[90vh] flex flex-col relative z-40 animate-in zoom-in-95 duration-200 text-slate-900">
             {/* Header */}
             <div className="p-6 bg-slate-900 text-white flex justify-between items-center flex-shrink-0">
                <div className="space-y-0.5">
