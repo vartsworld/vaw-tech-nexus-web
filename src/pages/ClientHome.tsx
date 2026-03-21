@@ -267,17 +267,21 @@ const ClientHome = ({ profile }: { profile: any }) => {
         return;
       }
 
-      const res = await fetch(`${url}/invoices?limit=500`, {
-        headers: { "x-api-key": key, "x-api-secret": secret },
-      });
+      const [invRes, payRes] = await Promise.all([
+        fetch(`${url}/invoices?limit=500`, { headers: { "x-api-key": key, "x-api-secret": secret, "authtoken": key } }),
+        fetch(`${url}/payments?limit=500`, { headers: { "x-api-key": key, "x-api-secret": secret, "authtoken": key } }),
+      ]);
 
-      if (!res.ok) {
+      if (!invRes.ok) {
         setPendingInvoices(localDocs || []);
         return;
       }
 
-      const raw = await res.json();
+      const raw = await invRes.json();
       const allInvoices = Array.isArray(raw) ? raw : raw?.data || [];
+      
+      const payRaw = payRes.ok ? await payRes.json() : [];
+      const allPayments = Array.isArray(payRaw) ? payRaw : payRaw?.data || [];
 
       const matchId = billingId.toLowerCase();
       const apiInvoices = allInvoices.filter((inv: any) => {
@@ -296,11 +300,19 @@ const ClientHome = ({ profile }: { profile: any }) => {
           (apiInv.reference && doc.title.includes(apiInv.reference))
         );
         const linkedProject = projectsData?.find(p => p.id === matchingDoc?.project_id);
+        
+        const invId = apiInv.id || apiInv.invoiceid;
+        let apiPaymentsValue = 0;
+        if (invId) {
+            const matchingPayments = allPayments.filter((p: any) => String(p.invoiceid) === String(invId) || String(p.invoice_id) === String(invId));
+            apiPaymentsValue = matchingPayments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+        }
 
         return {
           ...apiInv,
           project: linkedProject,
-          local_file_url: matchingDoc?.file_url
+          local_file_url: matchingDoc?.file_url,
+          api_payments_total: apiPaymentsValue
         };
       });
 
@@ -486,21 +498,22 @@ const ClientHome = ({ profile }: { profile: any }) => {
               const balance = Number(inv.balance !== undefined ? inv.balance : (inv.status?.toLowerCase() === 'paid' ? 0 : total));
               
               // functional progress
-              let progressPercent = 0;
-              let paidSoFar = 0;
+              const apiPaymentsTotal = inv.api_payments_total || 0;
+              let paidSoFar = Math.max(apiPaymentsTotal, total - balance);
               let totalForProgress = total;
+              let progressPercent = totalForProgress > 0 ? Math.round((paidSoFar / totalForProgress) * 100) : 0;
 
               if (inv.project) {
                 totalForProgress = Number(inv.project.total_amount || total);
-                paidSoFar = Math.max(Number(inv.project.amount_paid || 0), total - balance);
+                paidSoFar = Math.max(Number(inv.project.amount_paid || 0), paidSoFar);
                 progressPercent = Math.max(
                   Math.round((paidSoFar / (totalForProgress || 1)) * 100),
                   inv.project.progress || 0
                 );
-              } else {
-                paidSoFar = total - balance;
-                progressPercent = total > 0 ? Math.min((paidSoFar / total) * 100, 100) : 0;
               }
+
+              // Also ensure balance is mathematically correct if apiPaymentsTotal is used
+              const displayBalance = Math.max(0, total - paidSoFar);
 
               const isPartial = inv.status?.toLowerCase() === "partial" || 
                                inv.status?.toLowerCase() === "partially_paid" || 
@@ -549,7 +562,7 @@ const ClientHome = ({ profile }: { profile: any }) => {
                       </div>
                       <div className="text-right space-y-1">
                         <p className="text-sm font-semibold text-primary">
-                          ₹{balance.toLocaleString("en-IN")}
+                          ₹{displayBalance.toLocaleString("en-IN")}
                         </p>
                         {dueDate && (
                           <p className={cn(

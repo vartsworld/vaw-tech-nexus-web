@@ -226,11 +226,20 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
             linkedProject = localProjects.find(p => p.title && p.title.includes(invNum));
         }
 
+        // Calculate total payments explicitly fetched from the billing API for this invoice
+        const invId = inv.id || inv.invoiceid;
+        let apiPaymentsValue = 0;
+        if (invId) {
+            const matchingPayments = payments.filter((p: any) => String(p.invoiceid) === String(invId) || String(p.invoice_id) === String(invId));
+            apiPaymentsValue = matchingPayments.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+        }
+
         return {
             ...inv,
             local_file_url: matchingDoc?.file_url,
             project: linkedProject,
-            project_id: matchingDoc?.project_id || linkedProject?.id
+            project_id: matchingDoc?.project_id || linkedProject?.id,
+            api_payments_total: apiPaymentsValue
         };
     });
 
@@ -678,23 +687,28 @@ const PaymentCenter = ({ profile }: PaymentCenterProps) => {
                             {/* Billing API invoices */}
                             {enrichedPendingInvoices.map((inv, idx) => {
                                 const total = Number(inv.total) || 0;
-                                const balance = Number(inv.balance) || total;
-                                const amount = balance;
-                                const isPartial = inv.status?.toLowerCase() === 'partial' || inv.status?.toLowerCase() === 'partially_paid';
+                                const originalBalance = Number(inv.balance) || total;
                                 
-                                // Enhanced progress calculation
-                                let paidSoFar = total - balance;
+                                // Provide mathematically accurate paid amount from collected payments
+                                const apiPaymentsTotal = inv.api_payments_total || 0;
+                                let paidSoFar = Math.max(apiPaymentsTotal, total - originalBalance);
                                 let totalForProgress = total;
-                                let progressPercent = Math.round((paidSoFar / (totalForProgress || 1)) * 100);
+                                let progressPercent = totalForProgress > 0 ? Math.round((paidSoFar / totalForProgress) * 100) : 0;
 
                                 if (inv.project) {
-                                    paidSoFar = Math.max(Number(inv.project.amount_paid || 0), total - balance);
                                     totalForProgress = Number(inv.project.total_amount || total);
+                                    paidSoFar = Math.max(Number(inv.project.amount_paid || 0), paidSoFar);
                                     progressPercent = Math.max(
                                         Math.round((paidSoFar / (totalForProgress || 1)) * 100),
                                         inv.project.progress || 0
                                     );
                                 }
+
+                                const displayBalance = Math.max(0, total - paidSoFar);
+                                const amount = displayBalance;
+                                const isPartial = inv.status?.toLowerCase() === 'partial' || 
+                                                  inv.status?.toLowerCase() === 'partially_paid' ||
+                                                  (paidSoFar > 0 && paidSoFar < totalForProgress);
 
                                 const dueDate = inv.due_date || inv.date;
                                 const daysUntil = dueDate ? Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
