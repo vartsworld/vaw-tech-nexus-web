@@ -163,6 +163,22 @@ const ClientManagement = () => {
         throw error;
       }
 
+      // 2. Also create a corresponding client_profile for portal access/billing
+      try {
+        await supabase
+          .from('client_profiles')
+          .insert({
+            id: data.id, // Try to keep IDs synced if possible, though table might ignore it if it generates its own
+            company_name: newClient.company_name,
+            contact_person: newClient.contact_person,
+            email: newClient.email,
+            phone: newClient.phone || null,
+            address: newClient.address || null
+          });
+      } catch (profileErr) {
+        console.warn('Profile sync warning (may already exist):', profileErr);
+      }
+
       setClients([data, ...clients]);
       setIsAddDialogOpen(false);
       setNewClient({
@@ -261,6 +277,49 @@ const ClientManagement = () => {
     }
   };
 
+  const resolveClientProfileId = async (clientId: string) => {
+    try {
+      // 1. Get client email from clients table
+      const { data: clientData } = await supabase
+        .from('clients')
+        .select('email, company_name, contact_person, phone, address')
+        .eq('id', clientId)
+        .single();
+      
+      if (!clientData) return clientId;
+
+      // 2. Resolve the client_profiles.id for that email
+      const { data: profileData } = await supabase
+        .from('client_profiles')
+        .select('id')
+        .eq('email', clientData.email)
+        .maybeSingle();
+
+      if (profileData) return profileData.id;
+
+      // 3. Create profile if missing
+      console.log('No profile found. Creating one on the fly to satisfy foreign key...');
+      const { data: newProfile, error: createError } = await supabase
+        .from('client_profiles')
+        .insert({
+          company_name: clientData.company_name,
+          contact_person: clientData.contact_person,
+          email: clientData.email,
+          phone: clientData.phone,
+          address: clientData.address
+        })
+        .select('id')
+        .single();
+      
+      if (!createError && newProfile) return newProfile.id;
+      
+      return clientId;
+    } catch (err) {
+      console.error('Error resolving profile ID:', err);
+      return clientId;
+    }
+  };
+
   const fetchClientProjects = async (clientId) => {
     setIsLoadingProjects(true);
     try {
@@ -282,6 +341,8 @@ const ClientManagement = () => {
   const fetchProjectDocs = async (projectId, clientId) => {
     setIsLoadingDocs(true);
     try {
+      const profileId = await resolveClientProfileId(clientId);
+      
       const { data: linkedDocs, error: linkedError } = await supabase
         .from('client_documents')
         .select('*')
@@ -291,7 +352,7 @@ const ClientManagement = () => {
       const { data: clientUnlinked, error: unlinkedError } = await supabase
         .from('client_documents')
         .select('*')
-        .eq('client_id', clientId)
+        .eq('client_id', profileId)
         .is('project_id', null)
         .order('created_at', { ascending: false });
 
@@ -363,22 +424,7 @@ const ClientManagement = () => {
           return;
         }
 
-        console.log('Resolving correct profile ID for linking...');
-        // 1. Get client email from clients table
-        const { data: clientData } = await supabase
-          .from('clients')
-          .select('email')
-          .eq('id', selectedProjectForDocs.client_id)
-          .single();
-        
-        // 2. Resolve the client_profiles.id for that email
-        const { data: profileData } = await supabase
-          .from('client_profiles')
-          .select('id')
-          .eq('email', clientData?.email)
-          .single();
-
-        const profileId = profileData?.id || selectedProjectForDocs.client_id;
+        const profileId = await resolveClientProfileId(selectedProjectForDocs.client_id);
         console.log('Linking external doc to Profile ID:', profileId);
 
         const { error } = await supabase.from('client_documents').insert({

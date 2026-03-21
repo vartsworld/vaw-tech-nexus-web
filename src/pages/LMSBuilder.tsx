@@ -634,7 +634,12 @@ const LMSBuilder = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20 md:pb-0">
-      <SEO title="LMS Builder – Build Your School System" description="Interactive configurator to design your institutional LMS." />
+      <SEO 
+        title="Custom LMS Builder | Design Your Institution's Digital Ecosystem" 
+        description="Build your custom School or College management system in minutes. Interactive configurator with Academic, ERP, and AI modules. Get a real-time quote for your institutions digital transformation."
+        keywords="LMS Builder, School Management System, College ERP, Educational Software India, VAW Technologies LMS, AI School Assistant"
+        canonicalUrl="https://vawtech.in/lms"
+      />
       
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 h-16 px-4 md:px-8 flex items-center justify-between">
