@@ -17,6 +17,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Notification {
     id: string;
@@ -147,157 +150,188 @@ const ClientNotificationCenter = ({ clientId }: ClientNotificationCenterProps) =
 
     const unreadCount = notifications.filter(n => !n.is_read).length;
 
-    return (
-        <div className="relative">
-            <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(!isOpen)}
-                className="relative text-gray-400 hover:text-white group"
-            >
-                <Bell className="w-5 h-5 transition-transform group-hover:rotate-12" />
-                {unreadCount > 0 && (
-                    <span className="absolute top-2 right-2 w-2 h-2 bg-tech-red rounded-full border-2 border-black animate-pulse" />
-                )}
-            </Button>
+    const isMobile = useIsMobile();
 
-            <AnimatePresence>
-                {isOpen && (
-                    <>
+    const TriggerButton = (
+        <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => isMobile && setIsOpen(true)}
+            className="relative text-gray-400 hover:text-white group"
+        >
+            <Bell className="w-5 h-5 transition-transform group-hover:rotate-12" />
+            {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 w-2 h-2 bg-tech-red rounded-full border-2 border-black animate-pulse" />
+            )}
+        </Button>
+    );
+
+    const notificationsList = (
+        <div className="max-h-[450px] overflow-y-auto p-2 custom-scrollbar">
+            {loading ? (
+                <div className="py-20 flex flex-col items-center justify-center gap-3">
+                    <div className="w-6 h-6 border-2 border-tech-gold/20 border-t-tech-gold rounded-full animate-spin" />
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Synchronizing...</p>
+                </div>
+            ) : notifications.length === 0 ? (
+                <div className="py-20 text-center">
+                    <Bell className="w-12 h-12 text-gray-800 mx-auto mb-4" />
+                    <p className="text-sm font-bold text-gray-400">Your signal feed is empty</p>
+                    <p className="text-[10px] text-gray-600 uppercase tracking-widest mt-1">No pending transmissions</p>
+                </div>
+            ) : (
+                <div className="space-y-1">
+                    {notifications.map((n) => (
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
-                            onClick={() => setIsOpen(false)}
-                        />
-                        <motion.div
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute right-0 mt-4 w-[350px] md:w-[400px] bg-[#0A0A0A] border border-tech-gold/20 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                            key={n.id}
+                            layout
+                            className={cn(
+                                "p-3 rounded-xl transition-all border border-transparent hover:border-tech-gold/20 group relative",
+                                !n.is_read ? "bg-tech-gold/5" : "bg-transparent opacity-70 hover:opacity-100"
+                            )}
+                            onClick={() => !n.is_read && markAsRead(n.id)}
                         >
-                            <div className="p-4 border-b border-tech-gold/10 flex items-center justify-between bg-tech-gold/5">
-                                <div className="flex items-center gap-2">
-                                    <Bell className="w-4 h-4 text-tech-gold" />
-                                    <h3 className="font-bold text-sm uppercase tracking-wider">Notifications</h3>
-                                    {unreadCount > 0 && (
-                                        <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
-                                            {unreadCount} NEW
-                                        </Badge>
-                                    )}
+                            <div className="flex gap-3">
+                                <div className={cn(
+                                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border",
+                                    !n.is_read ? "bg-tech-gold/10 border-tech-gold/20" : "bg-white/5 border-white/5"
+                                )}>
+                                    {getIcon(n.type, n.priority)}
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    {unreadCount > 0 && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={markAllAsRead}
-                                            className="text-[10px] text-tech-gold hover:text-white h-7 hover:bg-tech-gold/10"
-                                        >
-                                            Mark all read
-                                        </Button>
-                                    )}
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setIsOpen(false)}
-                                        className="h-7 w-7 text-gray-500 hover:text-white"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </Button>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between mb-0.5">
+                                        <h4 className={cn(
+                                            "text-sm font-bold truncate pr-6",
+                                            !n.is_read ? "text-white" : "text-gray-400"
+                                        )}>
+                                            {n.title}
+                                        </h4>
+                                        <span className="text-[9px] text-gray-600 font-medium shrink-0">
+                                            {format(new Date(n.created_at), 'HH:mm')}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                                        {n.message}
+                                    </p>
+                                    <div className="flex items-center justify-between mt-2">
+                                        <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">
+                                            {format(new Date(n.created_at), 'MMM dd, yyyy')}
+                                        </p>
+                                        {!n.is_read && (
+                                            <Badge variant="outline" className="text-[8px] h-4 border-tech-gold/20 text-tech-gold bg-tech-gold/5">
+                                                NEW
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteNotification(n.id);
+                                }}
+                                className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 hover:text-tech-red"
+                            >
+                                <Trash2 className="w-3 h-3" />
+                            </Button>
+                        </motion.div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 
-                            <div className="max-h-[450px] overflow-y-auto p-2 custom-scrollbar">
-                                {loading ? (
-                                    <div className="py-20 flex flex-col items-center justify-center gap-3">
-                                        <div className="w-6 h-6 border-2 border-tech-gold/20 border-t-tech-gold rounded-full animate-spin" />
-                                        <p className="text-[10px] text-gray-500 uppercase tracking-widest">Synchronizing...</p>
-                                    </div>
-                                ) : notifications.length === 0 ? (
-                                    <div className="py-20 text-center">
-                                        <Bell className="w-12 h-12 text-gray-800 mx-auto mb-4" />
-                                        <p className="text-sm font-bold text-gray-400">Your signal feed is empty</p>
-                                        <p className="text-[10px] text-gray-600 uppercase tracking-widest mt-1">No pending transmissions</p>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-1">
-                                        {notifications.map((n) => (
-                                            <motion.div
-                                                key={n.id}
-                                                layout
-                                                className={cn(
-                                                    "p-3 rounded-xl transition-all border border-transparent hover:border-tech-gold/20 group relative",
-                                                    !n.is_read ? "bg-tech-gold/5" : "bg-transparent opacity-70 hover:opacity-100"
-                                                )}
-                                                onClick={() => !n.is_read && markAsRead(n.id)}
-                                            >
-                                                <div className="flex gap-3">
-                                                    <div className={cn(
-                                                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border",
-                                                        !n.is_read ? "bg-tech-gold/10 border-tech-gold/20" : "bg-white/5 border-white/5"
-                                                    )}>
-                                                        {getIcon(n.type, n.priority)}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center justify-between mb-0.5">
-                                                            <h4 className={cn(
-                                                                "text-sm font-bold truncate pr-6",
-                                                                !n.is_read ? "text-white" : "text-gray-400"
-                                                            )}>
-                                                                {n.title}
-                                                            </h4>
-                                                            <span className="text-[9px] text-gray-600 font-medium shrink-0">
-                                                                {format(new Date(n.created_at), 'HH:mm')}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
-                                                            {n.message}
-                                                        </p>
-                                                        <div className="flex items-center justify-between mt-2">
-                                                            <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">
-                                                                {format(new Date(n.created_at), 'MMM dd, yyyy')}
-                                                            </p>
-                                                            {!n.is_read && (
-                                                                <Badge variant="outline" className="text-[8px] h-4 border-tech-gold/20 text-tech-gold bg-tech-gold/5">
-                                                                    NEW
-                                                                </Badge>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        deleteNotification(n.id);
-                                                    }}
-                                                    className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 hover:text-tech-red"
-                                                >
-                                                    <Trash2 className="w-3 h-3" />
-                                                </Button>
-                                            </motion.div>
-                                        ))}
-                                    </div>
+    if (isMobile) {
+        return (
+            <div className="relative">
+                {TriggerButton}
+                <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                    <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] bg-[#0A0A0A] border-t border-tech-gold/20">
+                        <SheetHeader className="pb-2 text-left">
+                            <SheetTitle className="text-base font-bold uppercase tracking-wider flex items-center gap-2 text-white">
+                                <Bell className="w-4 h-4 text-tech-gold" />
+                                Notifications
+                                {unreadCount > 0 && (
+                                    <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                                        {unreadCount} NEW
+                                    </Badge>
                                 )}
-                            </div>
-
-                            <div className="p-3 border-t border-tech-gold/10 bg-black/50 text-center">
+                            </SheetTitle>
+                        </SheetHeader>
+                        <div className="flex justify-end p-2 border-b border-tech-gold/5">
+                            {unreadCount > 0 && (
                                 <Button
                                     variant="ghost"
-                                    className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-600 hover:text-tech-gold w-full py-0 h-6"
-                                    onClick={() => toast.info("Full notification archive coming soon.")}
+                                    size="sm"
+                                    onClick={markAllAsRead}
+                                    className="text-[10px] text-tech-gold hover:text-white h-7 hover:bg-tech-gold/10"
                                 >
-                                    View Full Archive
+                                    Mark all read
                                 </Button>
-                            </div>
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>
-        </div>
+                            )}
+                        </div>
+                        <div className="overflow-y-auto max-h-[60vh] pb-4">
+                            {notificationsList}
+                        </div>
+                    </SheetContent>
+                </Sheet>
+            </div>
+        );
+    }
+
+    return (
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+            <PopoverTrigger asChild>
+                {TriggerButton}
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-[400px] p-0 bg-[#0A0A0A] border border-tech-gold/20 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                <div className="p-4 border-b border-tech-gold/10 flex items-center justify-between bg-tech-gold/5">
+                    <div className="flex items-center gap-2">
+                        <Bell className="w-4 h-4 text-tech-gold" />
+                        <h3 className="font-bold text-sm uppercase tracking-wider text-white">Notifications</h3>
+                        {unreadCount > 0 && (
+                            <Badge variant="destructive" className="h-5 px-1.5 text-[10px]">
+                                {unreadCount} NEW
+                            </Badge>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {unreadCount > 0 && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={markAllAsRead}
+                                className="text-[10px] text-tech-gold hover:text-white h-7 hover:bg-tech-gold/10"
+                            >
+                                Mark all read
+                            </Button>
+                        )}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsOpen(false)}
+                            className="h-7 w-7 text-gray-500 hover:text-white"
+                        >
+                            <X className="w-4 h-4" />
+                        </Button>
+                    </div>
+                </div>
+
+                {notificationsList}
+
+                <div className="p-3 border-t border-tech-gold/10 bg-black/50 text-center">
+                    <Button
+                        variant="ghost"
+                        className="text-[10px] uppercase tracking-[0.2em] font-black text-gray-600 hover:text-tech-gold w-full py-0 h-6"
+                        onClick={() => toast.info("Full notification archive coming soon.")}
+                    >
+                        View Full Archive
+                    </Button>
+                </div>
+            </PopoverContent>
+        </Popover>
     );
 };
 

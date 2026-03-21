@@ -25,6 +25,8 @@ interface NotificationsBarProps {
   userId: string;
 }
 
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 const NotificationsBar = ({ userId }: NotificationsBarProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { toast } = useToast();
@@ -148,27 +150,29 @@ const NotificationsBar = ({ userId }: NotificationsBarProps) => {
     </div>
   );
 
-  return (
-    <div className="relative">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="relative text-white hover:bg-white/10"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <Bell className="w-5 h-5" />
-        {unreadCount > 0 && (
-          <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 text-white text-xs flex items-center justify-center">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </Badge>
-        )}
-      </Button>
+  const TriggerButton = (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="relative text-white hover:bg-white/10"
+      onClick={() => isMobile && setIsExpanded(true)}
+    >
+      <Bell className="w-5 h-5" />
+      {unreadCount > 0 && (
+        <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 bg-red-500 text-white text-xs flex items-center justify-center">
+          {unreadCount > 9 ? '9+' : unreadCount}
+        </Badge>
+      )}
+    </Button>
+  );
 
-      {/* Mobile: Bottom Sheet */}
-      {isMobile ? (
+  if (isMobile) {
+    return (
+      <div className="relative">
+        {TriggerButton}
         <Sheet open={isExpanded} onOpenChange={setIsExpanded}>
-          <SheetContent side="bottom" className="rounded-t-2xl max-h-[70vh] bg-background/98 backdrop-blur-xl">
-            <SheetHeader className="pb-2">
+          <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] bg-background/98 backdrop-blur-xl border-t border-border">
+            <SheetHeader className="pb-2 text-left">
               <SheetTitle className="text-base font-semibold flex items-center gap-2">
                 <Bell className="w-4 h-4" />
                 Notifications
@@ -177,33 +181,45 @@ const NotificationsBar = ({ userId }: NotificationsBarProps) => {
                 )}
               </SheetTitle>
             </SheetHeader>
-            <div className="overflow-y-auto max-h-[55vh] pb-4">
+            <div className="overflow-y-auto max-h-[70vh] pb-4">
               {notificationsList}
             </div>
           </SheetContent>
         </Sheet>
-      ) : (
-        /* Desktop: Dropdown */
-        isExpanded && (
-          <div className="absolute top-12 right-0 w-80 max-h-96 overflow-y-auto bg-background/95 backdrop-blur-lg border border-border rounded-lg shadow-xl z-50">
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <h3 className="text-foreground font-semibold">Notifications</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsExpanded(false)}
-                className="text-foreground hover:bg-muted"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="p-2">
-              {notificationsList}
-            </div>
-          </div>
-        )
-      )}
-    </div>
+      </div>
+    );
+  }
+
+  return (
+    <Popover open={isExpanded} onOpenChange={setIsExpanded}>
+      <PopoverTrigger asChild>
+        {TriggerButton}
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 p-0 border-border bg-background/95 backdrop-blur-lg rounded-xl shadow-xl z-50">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h3 className="text-foreground font-semibold flex items-center gap-2">
+            <Bell className="w-4 h-4" />
+            Notifications
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="h-5 px-1.5 text-xs">
+                {unreadCount} NEW
+              </Badge>
+            )}
+          </h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(false)}
+            className="text-foreground hover:bg-muted h-7 w-7 p-0 rounded-full"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+        <div className="p-2 max-h-[400px] overflow-y-auto">
+          {notificationsList}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 
