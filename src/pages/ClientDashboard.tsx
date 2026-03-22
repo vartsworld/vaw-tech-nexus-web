@@ -16,7 +16,8 @@ import {
     Clock,
     ExternalLink,
     Sun,
-    Moon
+    Moon,
+    Gift
 } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ import PWAInstallPrompt from "@/components/client/PWAInstallPrompt";
 import MobileBottomNav from "@/components/client/MobileBottomNav";
 import BrowserNotificationPrompt from "@/components/client/BrowserNotificationPrompt";
 import ClientNotificationBanner from "@/components/client/ClientNotificationBanner";
+import ClientReferralHub from "@/components/client/ClientReferralHub";
 
 const ClientDashboard = () => {
     // Sidebar closed by default on mobile (< 1024px), open on desktop
@@ -206,6 +208,7 @@ const ClientDashboard = () => {
         { icon: Home, label: "Home", path: "/client/dashboard" },
         { icon: Briefcase, label: "Projects", path: "/client/dashboard/projects" },
         { icon: CreditCard, label: "Financials", path: "/client/dashboard/financials" },
+        { icon: Gift, label: "Referrals", path: "/client/dashboard/referrals" },
         { icon: MessageSquare, label: "Support", path: "/client/dashboard/support" },
         { icon: Settings, label: "Settings", path: "/client/dashboard/settings" },
     ];
@@ -420,6 +423,7 @@ const ClientDashboard = () => {
                                 <Route index element={<ClientHome profile={profile} />} />
                                 <Route path="projects/*" element={<ProjectExplorer profile={profile} />} />
                                 <Route path="financials" element={<PaymentCenter profile={profile} />} />
+                                <Route path="referrals" element={<ClientReferralHub profile={profile} />} />
                                 <Route path="support" element={<SupportNexus profile={profile} />} />
                                 <Route path="settings" element={<ClientSettings profile={profile} onProfileUpdate={checkUser} />} />
                             </Routes>

@@ -48,6 +48,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DataDeletion from "./pages/DataDeletion";
 import LMSBuilder from "./pages/LMSBuilder";
 import ReferralProgram from "./pages/ReferralProgram";
+import ReferralFormPage from "./pages/ReferralFormPage";
 
 
 const queryClient = new QueryClient({
@@ -129,6 +130,7 @@ const AppContent = () => {
           <Route path="/data-deletion" element={<DataDeletion />} />
           <Route path="/lms" element={<LMSBuilder />} />
           <Route path="/referral-program" element={<ReferralProgram />} />
+          <Route path="/refer/:code" element={<ReferralFormPage />} />
           <Route path="/:id" element={<StaffIDCard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
