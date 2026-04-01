@@ -118,7 +118,7 @@ const Team = () => {
               <Users className="w-4 h-4" />
               <span>{totalMembers} members</span>
               <span className="mx-1">·</span>
-              <span>Last updated: March 31, 2026</span>
+              <span>Last updated: February 28, 2026</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight">
               Our Team
