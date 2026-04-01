@@ -3,13 +3,19 @@ import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { Users } from "lucide-react";
 
+const boardOfDirectors = [
+  { name: "Kevin Anjo", role: "CEO & Chairman · Co-Founder" },
+  { name: "Abin B N", role: "CTO · Co-Founder" },
+  { name: "Amal A Kumar", role: "HR Head · Co-Founder" },
+];
+
 const teamData = [
   {
     department: "Leadership & Executive",
     members: [
-      { name: "Kevin Anjo", role: "CEO & Chairman" },
+      { name: "Kevin Anjo", role: "CEO & Chairman · Co-Founder" },
       { name: "Sumesh", role: "COO" },
-      { name: "Abin B N", role: "CTO" },
+      { name: "Abin B N", role: "CTO · Co-Founder" },
       { name: "Milton Manual", role: "CFO" },
       { name: "Sherin", role: "Personal Secretary to CEO" },
     ],
