@@ -1,13 +1,11 @@
-import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
-import { Users, Crown, Briefcase, Code, Palette, Megaphone, HeadphonesIcon, GraduationCap } from "lucide-react";
+import { Users } from "lucide-react";
 
 const teamData = [
   {
     department: "Leadership & Executive",
-    icon: Crown,
     members: [
       { name: "Kevin Anjo", role: "CEO & Chairman" },
       { name: "Sumesh", role: "COO" },
@@ -18,7 +16,6 @@ const teamData = [
   },
   {
     department: "Division Heads",
-    icon: Briefcase,
     members: [
       { name: "Jasmin", role: "Head of Art & Tech" },
       { name: "Stharth Novel", role: "Business Development Head" },
@@ -34,7 +31,6 @@ const teamData = [
   },
   {
     department: "Engineering & Technology",
-    icon: Code,
     members: [
       { name: "Li Wei", role: "Software Engineer" },
       { name: "Zhang Min", role: "AI Engineer" },
@@ -55,7 +51,6 @@ const teamData = [
   },
   {
     department: "Research & Innovation",
-    icon: Palette,
     members: [
       { name: "Athul Krishna", role: "R&D Lead" },
       { name: "Gokul S", role: "AI/ML Engineer" },
@@ -65,7 +60,6 @@ const teamData = [
   },
   {
     department: "Marketing & Content",
-    icon: Megaphone,
     members: [
       { name: "Siva", role: "Social Media Manager" },
       { name: "Hari", role: "Ads Manager" },
@@ -77,7 +71,6 @@ const teamData = [
   },
   {
     department: "Operations & Support",
-    icon: HeadphonesIcon,
     members: [
       { name: "Anoop Raj", role: "Executive Assistant" },
       { name: "Deepak Mohan", role: "Team Assistant" },
@@ -88,7 +81,6 @@ const teamData = [
   },
   {
     department: "Interns",
-    icon: GraduationCap,
     members: [
       { name: "Vighnesh Vishnu Ram", role: "Web Development Intern" },
       { name: "Shiva Hari A", role: "Software Development Intern" },
@@ -101,34 +93,7 @@ const teamData = [
   },
 ];
 
-const getInitials = (name: string) => {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-};
-
-const departmentColors: Record<string, string> = {
-  "Leadership & Executive": "from-amber-500/20 to-yellow-600/10 border-amber-500/30",
-  "Division Heads": "from-primary/20 to-primary/5 border-primary/30",
-  "Engineering & Technology": "from-blue-500/20 to-cyan-500/10 border-blue-500/30",
-  "Research & Innovation": "from-purple-500/20 to-violet-500/10 border-purple-500/30",
-  "Marketing & Content": "from-rose-500/20 to-pink-500/10 border-rose-500/30",
-  "Operations & Support": "from-emerald-500/20 to-green-500/10 border-emerald-500/30",
-  "Interns": "from-sky-500/20 to-indigo-500/10 border-sky-500/30",
-};
-
-const avatarColors: Record<string, string> = {
-  "Leadership & Executive": "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  "Division Heads": "bg-primary/20 text-primary border-primary/30",
-  "Engineering & Technology": "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  "Research & Innovation": "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  "Marketing & Content": "bg-rose-500/20 text-rose-400 border-rose-500/30",
-  "Operations & Support": "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  "Interns": "bg-sky-500/20 text-sky-400 border-sky-500/30",
-};
+const totalMembers = teamData.reduce((sum, d) => sum + d.members.length, 0);
 
 const Team = () => {
   return (
@@ -139,71 +104,45 @@ const Team = () => {
       />
       <Navbar />
 
-      {/* Hero */}
-      <section className="pt-32 pb-16 px-4">
-        <div className="container mx-auto text-center max-w-3xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 mb-6">
-              <Users className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold text-primary">50+ Professionals</span>
+      <section className="pt-32 pb-20 px-4">
+        <div className="container mx-auto max-w-4xl">
+          {/* Header */}
+          <div className="mb-10">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
+              <Users className="w-4 h-4" />
+              <span>{totalMembers} members</span>
+              <span className="mx-1">·</span>
+              <span>Last updated: March 31, 2026</span>
             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-foreground mb-4 tracking-tight">
-              Meet Our <span className="text-primary">Team</span>
+            <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight">
+              Our Team
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              A global collective of engineers, designers, strategists, and innovators united by one mission — building exceptional digital experiences.
+            <p className="text-muted-foreground mt-2 text-sm">
+              This page is intended for internal reference only.
             </p>
-          </motion.div>
-        </div>
-      </section>
+          </div>
 
-      {/* Departments */}
-      <section className="pb-24 px-4">
-        <div className="container mx-auto max-w-6xl space-y-16">
-          {teamData.map((dept, deptIndex) => (
-            <motion.div
-              key={dept.department}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.5, delay: deptIndex * 0.05 }}
-            >
-              {/* Department Header */}
-              <div className="flex items-center gap-3 mb-8">
-                <div className={`p-2.5 rounded-xl bg-gradient-to-br ${departmentColors[dept.department]} border`}>
-                  <dept.icon className="w-5 h-5 text-foreground" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-foreground tracking-tight">{dept.department}</h2>
-                  <p className="text-xs text-muted-foreground font-medium">{dept.members.length} members</p>
-                </div>
+          {/* Department Sections */}
+          <div className="space-y-10">
+            {teamData.map((dept) => (
+              <div key={dept.department}>
+                <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 border-b border-border pb-2">
+                  {dept.department}
+                </h2>
+                <ul className="divide-y divide-border/50">
+                  {dept.members.map((member, i) => (
+                    <li
+                      key={`${member.name}-${member.role}-${i}`}
+                      className="flex items-center justify-between py-2.5 px-1"
+                    >
+                      <span className="text-sm font-semibold text-foreground">{member.name}</span>
+                      <span className="text-xs text-muted-foreground text-right ml-4">{member.role}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-
-              {/* Members Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {dept.members.map((member, memberIndex) => (
-                  <motion.div
-                    key={`${member.name}-${member.role}-${memberIndex}`}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.3, delay: memberIndex * 0.03 }}
-                    className="group relative bg-card border border-border/50 rounded-2xl p-5 text-center hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
-                  >
-                    <div className={`w-14 h-14 mx-auto rounded-xl border ${avatarColors[dept.department]} flex items-center justify-center text-sm font-black mb-3 group-hover:scale-110 transition-transform duration-300`}>
-                      {getInitials(member.name)}
-                    </div>
-                    <h3 className="text-sm font-bold text-foreground leading-tight mb-1">{member.name}</h3>
-                    <p className="text-[11px] text-muted-foreground font-medium leading-snug">{member.role}</p>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
