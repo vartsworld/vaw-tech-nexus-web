@@ -45,6 +45,7 @@ import ClientOnboarding from "./pages/ClientOnboarding";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DataDeletion from "./pages/DataDeletion";
+import Team from "./pages/Team";
 
 const queryClient = new QueryClient({
   defaultOptions: {
