@@ -45,6 +45,7 @@ import ClientOnboarding from "./pages/ClientOnboarding";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DataDeletion from "./pages/DataDeletion";
+import Team from "./pages/Team";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,7 +77,7 @@ const ManifestSwitcher = () => {
 
 const AppContent = () => {
   const { hasCompletedIntro } = useUser();
-  const skipIntroPaths = ['/privacy-policy', '/data-deletion', '/terms-of-service'];
+  const skipIntroPaths = ['/privacy-policy', '/data-deletion', '/terms-of-service', '/team'];
   const shouldSkipIntro = skipIntroPaths.includes(window.location.pathname);
 
   return (
@@ -123,6 +124,7 @@ const AppContent = () => {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/data-deletion" element={<DataDeletion />} />
+          <Route path="/team" element={<Team />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
