@@ -27,7 +27,7 @@ const teamData = [
       { name: "Stharth Novel", role: "Business Development Head" },
       { name: "Johona", role: "Anchors Head & Production" },
       { name: "Ajay Chanthully Suresh", role: "Sales Team Head" },
-      { name: "Amal A Kumar", role: "HR Head" },
+      { name: "Amal A Kumar", role: "HR Head · Co-Founder" },
       { name: "Ganesh", role: "Operations Manager" },
       { name: "Sitharth", role: "Tech Division Head (Team 3)" },
       { name: "Sitharth", role: "Relationship Manager" },
