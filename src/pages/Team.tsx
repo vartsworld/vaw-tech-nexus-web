@@ -128,6 +128,24 @@ const Team = () => {
             </p>
           </div>
 
+          {/* Board of Directors */}
+          <div className="mb-10 p-5 rounded-xl border border-primary/20 bg-primary/5">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-3">
+              Board of Directors
+            </h2>
+            <ul className="divide-y divide-primary/10">
+              {boardOfDirectors.map((member, i) => (
+                <li
+                  key={`board-${i}`}
+                  className="flex items-center justify-between py-2.5 px-1"
+                >
+                  <span className="text-sm font-bold text-foreground">{member.name}</span>
+                  <span className="text-xs text-muted-foreground text-right ml-4">{member.role}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           {/* Department Sections */}
           <div className="space-y-10">
             {teamData.map((dept) => (
