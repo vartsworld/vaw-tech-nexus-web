@@ -77,7 +77,7 @@ const ManifestSwitcher = () => {
 
 const AppContent = () => {
   const { hasCompletedIntro } = useUser();
-  const skipIntroPaths = ['/privacy-policy', '/data-deletion', '/terms-of-service'];
+  const skipIntroPaths = ['/privacy-policy', '/data-deletion', '/terms-of-service', '/team'];
   const shouldSkipIntro = skipIntroPaths.includes(window.location.pathname);
 
   return (
