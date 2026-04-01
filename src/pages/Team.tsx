@@ -3,13 +3,19 @@ import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { Users } from "lucide-react";
 
+const boardOfDirectors = [
+  { name: "Kevin Anjo", role: "CEO & Chairman · Co-Founder" },
+  { name: "Abin B N", role: "CTO · Co-Founder" },
+  { name: "Amal A Kumar", role: "HR Head · Co-Founder" },
+];
+
 const teamData = [
   {
     department: "Leadership & Executive",
     members: [
-      { name: "Kevin Anjo", role: "CEO & Chairman" },
+      { name: "Kevin Anjo", role: "CEO & Chairman · Co-Founder" },
       { name: "Sumesh", role: "COO" },
-      { name: "Abin B N", role: "CTO" },
+      { name: "Abin B N", role: "CTO · Co-Founder" },
       { name: "Milton Manual", role: "CFO" },
       { name: "Sherin", role: "Personal Secretary to CEO" },
     ],
@@ -21,7 +27,7 @@ const teamData = [
       { name: "Stharth Novel", role: "Business Development Head" },
       { name: "Johona", role: "Anchors Head & Production" },
       { name: "Ajay Chanthully Suresh", role: "Sales Team Head" },
-      { name: "Amal A Kumar", role: "HR Head" },
+      { name: "Amal A Kumar", role: "HR Head · Co-Founder" },
       { name: "Ganesh", role: "Operations Manager" },
       { name: "Sitharth", role: "Tech Division Head (Team 3)" },
       { name: "Sitharth", role: "Relationship Manager" },
@@ -120,6 +126,24 @@ const Team = () => {
             <p className="text-muted-foreground mt-2 text-sm">
               This page is intended for internal reference only.
             </p>
+          </div>
+
+          {/* Board of Directors */}
+          <div className="mb-10 p-5 rounded-xl border border-primary/20 bg-primary/5">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-3">
+              Board of Directors
+            </h2>
+            <ul className="divide-y divide-primary/10">
+              {boardOfDirectors.map((member, i) => (
+                <li
+                  key={`board-${i}`}
+                  className="flex items-center justify-between py-2.5 px-1"
+                >
+                  <span className="text-sm font-bold text-foreground">{member.name}</span>
+                  <span className="text-xs text-muted-foreground text-right ml-4">{member.role}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Department Sections */}
