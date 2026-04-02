@@ -517,7 +517,12 @@ const EnhancedStaffForm = ({
                 }}
                 disabled={uploading}
               />
-              {newStaff.cv_url && <span className="text-green-600 text-sm">✓ Uploaded</span>}
+              {newStaff.cv_url && (
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600 text-sm whitespace-nowrap">✓ Uploaded</span>
+                  <Button type="button" variant="link" size="sm" onClick={() => window.open(newStaff.cv_url, '_blank')} className="p-0 h-auto">View</Button>
+                </div>
+              )}
             </div>
           </div>
           <div>
@@ -533,7 +538,12 @@ const EnhancedStaffForm = ({
                 }}
                 disabled={uploading}
               />
-              {newStaff.profile_photo_url && <span className="text-green-600 text-sm">✓ Uploaded</span>}
+              {newStaff.profile_photo_url && (
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600 text-sm whitespace-nowrap">✓ Uploaded</span>
+                  <Button type="button" variant="link" size="sm" onClick={() => window.open(newStaff.profile_photo_url, '_blank')} className="p-0 h-auto">View</Button>
+                </div>
+              )}
             </div>
           </div>
         </div>

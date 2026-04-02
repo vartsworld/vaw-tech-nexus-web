@@ -112,7 +112,7 @@ const StaffLogin = () => {
         console.error('Auth error:', authError);
         toast({
           title: "Authentication Error",
-          description: "Failed to authenticate. Please contact HR.",
+          description: authError.message || "Failed to authenticate. Please contact HR.",
           variant: "destructive",
         });
         return;
@@ -192,7 +192,7 @@ const StaffLogin = () => {
         console.error('Auth error:', authError);
         toast({
           title: "Authentication Error",
-          description: "Failed to authenticate. Please contact HR.",
+          description: authError.message || "Failed to authenticate. Please contact HR.",
           variant: "destructive",
         });
         return;

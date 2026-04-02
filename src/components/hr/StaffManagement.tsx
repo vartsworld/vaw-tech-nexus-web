@@ -379,7 +379,7 @@ const StaffManagement = () => {
       console.error('Error generating passcode:', error);
       toast({
         title: "Error",
-        description: "Failed to generate passcode.",
+        description: error.message || "Failed to generate passcode.",
         variant: "destructive",
       });
     }

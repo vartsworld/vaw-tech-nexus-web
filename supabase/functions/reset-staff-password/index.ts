@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     // Try to update existing user first
     const { error: updateError } = await supabaseClient.auth.admin.updateUserById(
       userId,
-      { password: newPassword }
+      { password: newPassword, email_confirm: true }
     )
 
     // If user doesn't exist, create them
