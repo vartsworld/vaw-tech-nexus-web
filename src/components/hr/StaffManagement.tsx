@@ -137,28 +137,55 @@ const StaffManagement = () => {
 
   const handleAddStaff = async () => {
     try {
+      const normalizedEmail = newStaff.email.trim().toLowerCase();
+      const trimmedName = newStaff.full_name.trim();
+      const trimmedUsername = newStaff.username.trim();
+
+      if (!trimmedName || !normalizedEmail || !trimmedUsername) {
+        throw new Error("Full name, email, and username are required.");
+      }
+
+      if (staff.some(member => member.email?.toLowerCase() === normalizedEmail)) {
+        throw new Error("A staff member with this email already exists.");
+      }
+
+      if (staff.some(member => member.username?.toLowerCase() === trimmedUsername.toLowerCase())) {
+        throw new Error("This username is already in use.");
+      }
+
       // Generate a random first-time passcode
       const firstTimePasscode = Math.random().toString(36).substring(2, 10);
 
-      // Create Supabase Auth user first
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newStaff.email,
-        password: firstTimePasscode,
-        options: {
-          data: {
-            full_name: newStaff.full_name,
-            username: newStaff.username
+      // Prepare or reuse the auth user without triggering email rate limits
+      const { data: authSetupData, error: authSetupError } = await supabase.functions.invoke(
+        'reset-staff-password',
+        {
+          body: {
+            email: normalizedEmail,
+            newPassword: firstTimePasscode,
+            fullName: trimmedName,
+            username: trimmedUsername,
           }
         }
-      });
+      );
 
-      if (authError) throw authError;
-      // Create staff profile with the auth user's ID
+      if (authSetupError) {
+        console.error('Error preparing staff auth:', authSetupError);
+        throw new Error(authSetupError.message || 'Failed to prepare staff login.');
+      }
+
+      if (authSetupData?.error) throw new Error(authSetupData.error);
+      if (!authSetupData?.userId) throw new Error('Staff login could not be prepared.');
+
+      // Create staff profile with the resolved auth user's ID
       const { data, error } = await supabase
         .from('staff_profiles')
         .insert({
           ...newStaff,
-          user_id: authData.user.id,
+          full_name: trimmedName,
+          email: normalizedEmail,
+          username: trimmedUsername,
+          user_id: authSetupData.userId,
           department_id: newStaff.department_id || null,
           role: newStaff.role as string,
           first_time_passcode: firstTimePasscode,
@@ -172,24 +199,11 @@ const StaffManagement = () => {
 
       if (error) throw error;
 
-      // Ensure the auth user is confirmed and has the correct password set via edge function
-      // This solves the 'first time auth not working' issue
-      await supabase.functions.invoke(
-        'reset-staff-password',
-        {
-          body: { 
-            userId: authData.user.id, 
-            email: newStaff.email,
-            newPassword: firstTimePasscode 
-          }
-        }
-      );
-
       // If role is super_admin, also add to super_admins table
       if (newStaff.role === 'super_admin') {
         const { error: superAdminError } = await supabase
           .from('super_admins')
-          .insert({ user_id: authData.user.id });
+          .insert({ user_id: authSetupData.userId });
 
         if (superAdminError && !superAdminError.message.includes('unique constraint')) {
           console.error('Error adding to super_admins:', superAdminError);
@@ -231,11 +245,12 @@ const StaffManagement = () => {
       });
     } catch (error) {
       console.error('Error adding staff:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to add staff member.";
       toast({
         title: "Error",
-        description: error.message?.includes("enum")
+        description: errorMessage.includes("enum")
           ? "The selected role is not supported by the database schema."
-          : (error.message || "Failed to add staff member."),
+          : errorMessage,
         variant: "destructive",
       });
     }

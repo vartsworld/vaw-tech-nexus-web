@@ -5,6 +5,41 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const jsonHeaders = {
+  ...corsHeaders,
+  'Content-Type': 'application/json',
+}
+
+const normalizeEmail = (value?: string | null) => value?.trim().toLowerCase() ?? ''
+
+const buildUserMetadata = (fullName?: string | null, username?: string | null) => ({
+  ...(fullName ? { full_name: fullName } : {}),
+  ...(username ? { username } : {}),
+})
+
+const findAuthUserByEmail = async (supabaseClient: any, email: string) => {
+  const { data, error } = await supabaseClient.auth.admin.listUsers()
+
+  if (error) {
+    throw error
+  }
+
+  return data.users.find((user: any) => normalizeEmail(user.email) === email) ?? null
+}
+
+const syncStaffProfileUserId = async (supabaseClient: any, profileId: string | undefined, userId: string) => {
+  if (!profileId) return
+
+  const { error } = await supabaseClient
+    .from('staff_profiles')
+    .update({ user_id: userId })
+    .eq('id', profileId)
+
+  if (error) {
+    console.error('Error syncing staff profile user_id:', error)
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -17,132 +52,177 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { userId, email, newPassword } = await req.json()
+    const { userId, email, newPassword, fullName, username } = await req.json()
+    const normalizedEmail = normalizeEmail(email)
 
-    if ((!userId && !email) || !newPassword) {
+    if ((!userId && !normalizedEmail) || !newPassword) {
       return new Response(
         JSON.stringify({ error: 'userId or email, and newPassword are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: jsonHeaders }
       )
     }
 
-    // Get staff profile to check if user exists
-    let query = supabaseClient.from('staff_profiles').select('id, email, full_name, username, user_id')
-    
-    if (userId) {
-      query = query.eq('user_id', userId)
-    } else {
-      query = query.eq('email', email)
-    }
-    
-    const { data: staffProfile, error: profileError } = await query.maybeSingle()
+    let staffProfile = null
 
-    if (profileError || !staffProfile) {
-      console.error('Error fetching staff profile:', profileError || 'Profile not found')
-      return new Response(
-        JSON.stringify({ error: 'Staff profile not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+    if (userId || normalizedEmail) {
+      let query = supabaseClient.from('staff_profiles').select('id, email, full_name, username, user_id')
 
-    // Determine the actual user_id to use for auth update
-    const actualUserId = staffProfile.user_id || userId;
-    const targetEmail = staffProfile.email || email;
-
-    let updateError = null;
-    
-    if (actualUserId) {
-      // Try to update existing user by ID
-      const { error } = await supabaseClient.auth.admin.updateUserById(
-        actualUserId,
-        { password: newPassword, email_confirm: true }
-      )
-      updateError = error;
-    } else {
-      // If no actualUserId, we might need to search by email in auth
-      const { data: { users }, error: listError } = await supabaseClient.auth.admin.listUsers()
-      if (listError) {
-        console.error('Error listing users:', listError)
-        updateError = listError;
+      if (userId) {
+        query = query.eq('user_id', userId)
       } else {
-        const existingAuthUser = users.find(u => u.email?.toLowerCase() === targetEmail.toLowerCase())
-        if (existingAuthUser) {
-          const { error } = await supabaseClient.auth.admin.updateUserById(
-            existingAuthUser.id,
-            { password: newPassword, email_confirm: true }
+        query = query.eq('email', normalizedEmail)
+      }
+
+      const { data, error: profileError } = await query.maybeSingle()
+
+      if (profileError) {
+        console.error('Error fetching staff profile:', profileError)
+      } else {
+        staffProfile = data
+      }
+    }
+
+    const targetEmail = normalizeEmail(staffProfile?.email || normalizedEmail)
+
+    if (!targetEmail) {
+      return new Response(
+        JSON.stringify({ error: 'A valid email address is required' }),
+        { status: 400, headers: jsonHeaders }
+      )
+    }
+
+    const userMetadata = buildUserMetadata(
+      staffProfile?.full_name || fullName,
+      staffProfile?.username || username,
+    )
+
+    let resolvedUserId = staffProfile?.user_id || userId || null
+    let created = false
+
+    if (resolvedUserId) {
+      const { error } = await supabaseClient.auth.admin.updateUserById(
+        resolvedUserId,
+        {
+          email: targetEmail,
+          password: newPassword,
+          email_confirm: true,
+          ...(Object.keys(userMetadata).length ? { user_metadata: userMetadata } : {}),
+        }
+      )
+
+      if (error) {
+        console.error('Error updating password by user ID:', error)
+
+        if (!error.message?.includes('User not found')) {
+          return new Response(
+            JSON.stringify({ error: error.message }),
+            { status: 400, headers: jsonHeaders }
           )
-          updateError = error;
-          
-          // Sync the user_id back to staff_profile if it was missing
-          if (!staffProfile.user_id) {
-            await supabaseClient
-              .from('staff_profiles')
-              .update({ user_id: existingAuthUser.id })
-              .eq('id', staffProfile.id)
+        }
+
+        resolvedUserId = null
+      }
+    }
+
+    if (!resolvedUserId) {
+      const existingAuthUser = await findAuthUserByEmail(supabaseClient, targetEmail)
+
+      if (existingAuthUser) {
+        resolvedUserId = existingAuthUser.id
+
+        const { error: updateExistingError } = await supabaseClient.auth.admin.updateUserById(
+          resolvedUserId,
+          {
+            email: targetEmail,
+            password: newPassword,
+            email_confirm: true,
+            ...(Object.keys(userMetadata).length ? { user_metadata: userMetadata } : {}),
+          }
+        )
+
+        if (updateExistingError) {
+          console.error('Error updating existing auth user:', updateExistingError)
+          return new Response(
+            JSON.stringify({ error: updateExistingError.message }),
+            { status: 400, headers: jsonHeaders }
+          )
+        }
+      } else {
+        console.log('User not found, creating new auth user for:', targetEmail)
+
+        const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
+          email: targetEmail,
+          password: newPassword,
+          email_confirm: true,
+          ...(Object.keys(userMetadata).length ? { user_metadata: userMetadata } : {}),
+        })
+
+        if (createError) {
+          console.error('Error creating user:', createError)
+
+          if (createError.message?.includes('already been registered')) {
+            const retryUser = await findAuthUserByEmail(supabaseClient, targetEmail)
+
+            if (!retryUser) {
+              return new Response(
+                JSON.stringify({ error: createError.message }),
+                { status: 400, headers: jsonHeaders }
+              )
+            }
+
+            resolvedUserId = retryUser.id
+
+            const { error: retryUpdateError } = await supabaseClient.auth.admin.updateUserById(
+              resolvedUserId,
+              {
+                email: targetEmail,
+                password: newPassword,
+                email_confirm: true,
+                ...(Object.keys(userMetadata).length ? { user_metadata: userMetadata } : {}),
+              }
+            )
+
+            if (retryUpdateError) {
+              console.error('Error updating already-registered user:', retryUpdateError)
+              return new Response(
+                JSON.stringify({ error: retryUpdateError.message }),
+                { status: 400, headers: jsonHeaders }
+              )
+            }
+          } else {
+            return new Response(
+              JSON.stringify({ error: createError.message }),
+              { status: 400, headers: jsonHeaders }
+            )
           }
         } else {
-          // Trigger the 'User not found' creation logic
-          updateError = { message: 'User not found' };
+          resolvedUserId = newUser.user.id
+          created = true
         }
       }
     }
 
-    // If user doesn't exist, create them
-    if (updateError && updateError.message.includes('User not found')) {
-      console.log('User not found, creating new auth user for:', targetEmail)
-      
-      const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
-        email: targetEmail,
-        password: newPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name: staffProfile.full_name,
-          username: staffProfile.username,
-        }
-      })
-
-      if (createError) {
-        console.error('Error creating user:', createError)
-        return new Response(
-          JSON.stringify({ error: createError.message }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      // Update staff_profiles with the correct user_id
-      const { error: updateProfileError } = await supabaseClient
-        .from('staff_profiles')
-        .update({ user_id: newUser.user.id })
-        .eq('id', staffProfile.id)
-
-      if (updateProfileError) {
-        console.error('Error updating staff profile with new user_id:', updateProfileError)
-      }
-
+    if (!resolvedUserId) {
       return new Response(
-        JSON.stringify({ success: true, created: true }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Unable to resolve auth user for this staff account' }),
+        { status: 500, headers: jsonHeaders }
       )
     }
 
-    if (updateError) {
-      console.error('Error updating password:', updateError)
-      return new Response(
-        JSON.stringify({ error: updateError.message }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    if (staffProfile?.id && staffProfile.user_id !== resolvedUserId) {
+      await syncStaffProfileUserId(supabaseClient, staffProfile.id, resolvedUserId)
     }
 
     return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: true, created, userId: resolvedUserId, email: targetEmail }),
+      { status: 200, headers: jsonHeaders }
     )
   } catch (error) {
     console.error('Error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: jsonHeaders }
     )
   }
 })

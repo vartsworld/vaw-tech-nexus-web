@@ -110,7 +110,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
 
   // ── Timer ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (isTimerRunning && !gameState.isGameOver) {
       interval = setInterval(() => {
         setGameTimer(prev => {
@@ -126,7 +126,9 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
         });
       }, 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isTimerRunning, gameState.turn, gameState.isGameOver]);
 
   // ── Fetch games on mount ────────────────────────────────────────────────────
