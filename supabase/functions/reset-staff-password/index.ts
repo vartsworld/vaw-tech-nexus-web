@@ -18,13 +18,28 @@ const buildUserMetadata = (fullName?: string | null, username?: string | null) =
 })
 
 const findAuthUserByEmail = async (supabaseClient: any, email: string) => {
-  const { data, error } = await supabaseClient.auth.admin.listUsers()
+  let page = 1
+  const perPage = 1000
 
-  if (error) {
-    throw error
+  while (true) {
+    const { data, error } = await supabaseClient.auth.admin.listUsers({ page, perPage })
+
+    if (error) {
+      throw error
+    }
+
+    const matchedUser = data.users.find((user: any) => normalizeEmail(user.email) === email)
+
+    if (matchedUser) {
+      return matchedUser
+    }
+
+    if (!data.nextPage || data.users.length === 0 || page >= data.lastPage) {
+      return null
+    }
+
+    page = data.nextPage
   }
-
-  return data.users.find((user: any) => normalizeEmail(user.email) === email) ?? null
 }
 
 const syncStaffProfileUserId = async (supabaseClient: any, profileId: string | undefined, userId: string) => {
