@@ -18,28 +18,16 @@ const buildUserMetadata = (fullName?: string | null, username?: string | null) =
 })
 
 export const findAuthUserByEmail = async (supabaseClient: any, email: string) => {
-  let page = 1
-  const perPage = 1000
+  const { data, error } = await supabaseClient.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+  })
 
-  while (true) {
-    const { data, error } = await supabaseClient.auth.admin.listUsers({ page, perPage })
-
-    if (error) {
-      throw error
-    }
-
-    const matchedUser = data.users.find((user: any) => normalizeEmail(user.email) === email)
-
-    if (matchedUser) {
-      return matchedUser
-    }
-
-    if (!data.nextPage || data.users.length === 0 || page >= data.lastPage) {
-      return null
-    }
-
-    page = data.nextPage
+  if (error) {
+    throw error
   }
+
+  return data?.user ?? null
 }
 
 const syncStaffProfileUserId = async (supabaseClient: any, profileId: string | undefined, userId: string) => {
@@ -91,7 +79,7 @@ if (import.meta.main) {
 
         const { data, error: profileError } = await query.maybeSingle()
 
-        if (profileError) {
+        if (profileError && profileError.code !== 'PGRST116') {
           console.error('Error fetching staff profile:', profileError)
         } else {
           staffProfile = data
@@ -141,80 +129,56 @@ if (import.meta.main) {
       }
 
       if (!resolvedUserId) {
-        const existingAuthUser = await findAuthUserByEmail(supabaseClient, targetEmail)
+        console.log('Creating or reusing auth user for:', targetEmail)
 
-        if (existingAuthUser) {
-          resolvedUserId = existingAuthUser.id
+        const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
+          email: targetEmail,
+          password: newPassword,
+          email_confirm: true,
+          ...(Object.keys(userMetadata).length ? { user_metadata: userMetadata } : {}),
+        })
 
-          const { error: updateExistingError } = await supabaseClient.auth.admin.updateUserById(
-            resolvedUserId,
-            {
-              email: targetEmail,
-              password: newPassword,
-              email_confirm: true,
-              ...(Object.keys(userMetadata).length ? { user_metadata: userMetadata } : {}),
-            }
-          )
+        if (createError) {
+          console.error('Error creating user:', createError)
 
-          if (updateExistingError) {
-            console.error('Error updating existing auth user:', updateExistingError)
-            return new Response(
-              JSON.stringify({ error: updateExistingError.message }),
-              { status: 400, headers: jsonHeaders }
-            )
-          }
-        } else {
-          console.log('User not found, creating new auth user for:', targetEmail)
+          if (createError.message?.includes('already been registered')) {
+            const existingAuthUser = await findAuthUserByEmail(supabaseClient, targetEmail)
 
-          const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
-            email: targetEmail,
-            password: newPassword,
-            email_confirm: true,
-            ...(Object.keys(userMetadata).length ? { user_metadata: userMetadata } : {}),
-          })
-
-          if (createError) {
-            console.error('Error creating user:', createError)
-
-            if (createError.message?.includes('already been registered')) {
-              const retryUser = await findAuthUserByEmail(supabaseClient, targetEmail)
-
-              if (!retryUser) {
-                return new Response(
-                  JSON.stringify({ error: createError.message }),
-                  { status: 400, headers: jsonHeaders }
-                )
-              }
-
-              resolvedUserId = retryUser.id
-
-              const { error: retryUpdateError } = await supabaseClient.auth.admin.updateUserById(
-                resolvedUserId,
-                {
-                  email: targetEmail,
-                  password: newPassword,
-                  email_confirm: true,
-                  ...(Object.keys(userMetadata).length ? { user_metadata: userMetadata } : {}),
-                }
-              )
-
-              if (retryUpdateError) {
-                console.error('Error updating already-registered user:', retryUpdateError)
-                return new Response(
-                  JSON.stringify({ error: retryUpdateError.message }),
-                  { status: 400, headers: jsonHeaders }
-                )
-              }
-            } else {
+            if (!existingAuthUser) {
               return new Response(
-                JSON.stringify({ error: createError.message }),
+                JSON.stringify({ error: 'User already exists but could not be resolved for password reset' }),
+                { status: 400, headers: jsonHeaders }
+              )
+            }
+
+            resolvedUserId = existingAuthUser.id
+
+            const { error: updateExistingError } = await supabaseClient.auth.admin.updateUserById(
+              resolvedUserId,
+              {
+                email: targetEmail,
+                password: newPassword,
+                email_confirm: true,
+                ...(Object.keys(userMetadata).length ? { user_metadata: userMetadata } : {}),
+              }
+            )
+
+            if (updateExistingError) {
+              console.error('Error updating existing auth user:', updateExistingError)
+              return new Response(
+                JSON.stringify({ error: updateExistingError.message }),
                 { status: 400, headers: jsonHeaders }
               )
             }
           } else {
-            resolvedUserId = newUser.user.id
-            created = true
+            return new Response(
+              JSON.stringify({ error: createError.message }),
+              { status: 400, headers: jsonHeaders }
+            )
           }
+        } else {
+          resolvedUserId = newUser.user.id
+          created = true
         }
       }
 
