@@ -2466,9 +2466,6 @@ const TaskManagement = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
-      </div>
-      </div>
-      </div>
     </TooltipProvider>
   );
 };
