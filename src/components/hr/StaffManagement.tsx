@@ -177,7 +177,11 @@ const StaffManagement = () => {
       await supabase.functions.invoke(
         'reset-staff-password',
         {
-          body: { userId: authData.user.id, newPassword: firstTimePasscode }
+          body: { 
+            userId: authData.user.id, 
+            email: newStaff.email,
+            newPassword: firstTimePasscode 
+          }
         }
       );
 
@@ -341,11 +345,19 @@ const StaffManagement = () => {
       const { data: resetData, error: resetError } = await supabase.functions.invoke(
         'reset-staff-password',
         {
-          body: { userId: staffMember.user_id, newPassword: newPasscode }
+          body: { 
+            userId: staffMember.user_id, 
+            email: staffMember.email,
+            newPassword: newPasscode 
+          }
         }
       );
 
-      if (resetError) throw resetError;
+      if (resetError) {
+        console.error('Edge function error:', resetError);
+        throw new Error(resetError.message || 'Edge Function returned an error');
+      }
+      
       if (resetData?.error) throw new Error(resetData.error);
 
       // Update staff_profiles

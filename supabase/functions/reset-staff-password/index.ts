@@ -17,42 +17,82 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { userId, newPassword } = await req.json()
+    const { userId, email, newPassword } = await req.json()
 
-    if (!userId || !newPassword) {
+    if ((!userId && !email) || !newPassword) {
       return new Response(
-        JSON.stringify({ error: 'userId and newPassword are required' }),
+        JSON.stringify({ error: 'userId or email, and newPassword are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     // Get staff profile to check if user exists
-    const { data: staffProfile, error: profileError } = await supabaseClient
-      .from('staff_profiles')
-      .select('email, full_name, username')
-      .eq('user_id', userId)
-      .single()
+    let query = supabaseClient.from('staff_profiles').select('id, email, full_name, username, user_id')
+    
+    if (userId) {
+      query = query.eq('user_id', userId)
+    } else {
+      query = query.eq('email', email)
+    }
+    
+    const { data: staffProfile, error: profileError } = await query.maybeSingle()
 
-    if (profileError) {
-      console.error('Error fetching staff profile:', profileError)
+    if (profileError || !staffProfile) {
+      console.error('Error fetching staff profile:', profileError || 'Profile not found')
       return new Response(
         JSON.stringify({ error: 'Staff profile not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Try to update existing user first
-    const { error: updateError } = await supabaseClient.auth.admin.updateUserById(
-      userId,
-      { password: newPassword, email_confirm: true }
-    )
+    // Determine the actual user_id to use for auth update
+    const actualUserId = staffProfile.user_id || userId;
+    const targetEmail = staffProfile.email || email;
+
+    let updateError = null;
+    
+    if (actualUserId) {
+      // Try to update existing user by ID
+      const { error } = await supabaseClient.auth.admin.updateUserById(
+        actualUserId,
+        { password: newPassword, email_confirm: true }
+      )
+      updateError = error;
+    } else {
+      // If no actualUserId, we might need to search by email in auth
+      const { data: { users }, error: listError } = await supabaseClient.auth.admin.listUsers()
+      if (listError) {
+        console.error('Error listing users:', listError)
+        updateError = listError;
+      } else {
+        const existingAuthUser = users.find(u => u.email?.toLowerCase() === targetEmail.toLowerCase())
+        if (existingAuthUser) {
+          const { error } = await supabaseClient.auth.admin.updateUserById(
+            existingAuthUser.id,
+            { password: newPassword, email_confirm: true }
+          )
+          updateError = error;
+          
+          // Sync the user_id back to staff_profile if it was missing
+          if (!staffProfile.user_id) {
+            await supabaseClient
+              .from('staff_profiles')
+              .update({ user_id: existingAuthUser.id })
+              .eq('id', staffProfile.id)
+          }
+        } else {
+          // Trigger the 'User not found' creation logic
+          updateError = { message: 'User not found' };
+        }
+      }
+    }
 
     // If user doesn't exist, create them
     if (updateError && updateError.message.includes('User not found')) {
-      console.log('User not found, creating new auth user...')
+      console.log('User not found, creating new auth user for:', targetEmail)
       
       const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
-        email: staffProfile.email,
+        email: targetEmail,
         password: newPassword,
         email_confirm: true,
         user_metadata: {
@@ -73,14 +113,14 @@ Deno.serve(async (req) => {
       const { error: updateProfileError } = await supabaseClient
         .from('staff_profiles')
         .update({ user_id: newUser.user.id })
-        .eq('user_id', userId)
+        .eq('id', staffProfile.id)
 
       if (updateProfileError) {
         console.error('Error updating staff profile with new user_id:', updateProfileError)
       }
 
       return new Response(
-        JSON.stringify({ success: true, data: newUser, created: true }),
+        JSON.stringify({ success: true, created: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
