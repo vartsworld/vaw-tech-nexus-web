@@ -82,7 +82,7 @@ const PointsBalance = ({ points, userId }: PointsBalanceProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {/* Current Balance */}
         <Card className="border-primary/20 bg-gradient-to-br from-primary/20 via-primary/5 to-background shadow-lg hover:shadow-xl transition-all duration-300 border-2">
           <CardContent className="p-6">
@@ -100,32 +100,32 @@ const PointsBalance = ({ points, userId }: PointsBalanceProps) => {
         </Card>
 
         {/* Lifetime Earned */}
-        <Card className="border-border/50 shadow-lg hover:shadow-xl transition-shadow bg-card/50 backdrop-blur-sm text-white">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1">Lifetime Earned</p>
-                <h3 className="text-3xl font-black text-white flex items-center gap-2">
-                  <TrendingUp className="w-6 h-6 text-green-500" />
+        <Card className="border-border/50 shadow-lg hover:shadow-xl transition-shadow bg-card/50 backdrop-blur-sm text-white overflow-hidden min-w-0">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between min-w-0">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1 truncate">Lifetime Earned</p>
+                <h3 className="text-xl sm:text-3xl font-black text-white flex items-center gap-2 truncate">
+                  <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-green-500 shrink-0" />
                   {lifetimeEarned.toLocaleString()}
                 </h3>
-                <p className="text-[10px] text-muted-foreground mt-2 font-medium">TOTAL WEALTH ACCUMULATED</p>
+                <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-2 font-medium truncate uppercase">TOTAL WEALTH ACCUMULATED</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Total Redeemed */}
-        <Card className="border-border/50 shadow-lg hover:shadow-xl transition-shadow bg-card/50 backdrop-blur-sm text-white">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1">Total Redeemed</p>
-                <h3 className="text-3xl font-black text-white flex items-center gap-2">
-                  <Award className="w-6 h-6 text-orange-500" />
+        <Card className="border-border/50 shadow-lg hover:shadow-xl transition-shadow bg-card/50 backdrop-blur-sm text-white overflow-hidden min-w-0">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center justify-between min-w-0">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] sm:text-sm font-bold text-muted-foreground uppercase tracking-wider mb-1 truncate">Total Redeemed</p>
+                <h3 className="text-xl sm:text-3xl font-black text-white flex items-center gap-2 truncate">
+                  <Award className="w-5 h-5 sm:w-6 sm:h-6 text-orange-500 shrink-0" />
                   {totalRedeemed.toLocaleString()}
                 </h3>
-                <p className="text-[10px] text-muted-foreground mt-2 font-medium">REWARDS UNLOCKED TO DATE</p>
+                <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-2 font-medium truncate uppercase">REWARDS UNLOCKED TO DATE</p>
               </div>
             </div>
           </CardContent>

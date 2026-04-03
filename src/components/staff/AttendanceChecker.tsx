@@ -136,19 +136,7 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
             source_type: 'attendance'
           } as any);
 
-        // Update staff_profiles.total_points
-        const { data: profileData } = await supabase
-          .from('staff_profiles')
-          .select('total_points')
-          .eq('user_id', userId)
-          .single();
-
-        if (profileData) {
-          await supabase
-            .from('staff_profiles')
-            .update({ total_points: (profileData.total_points || 0) + points })
-            .eq('user_id', userId);
-        }
+        // Note: staff_profiles.total_points is updated automatically via DB trigger
       }
 
       toast({

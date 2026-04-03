@@ -137,19 +137,7 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
             source_type: 'bonus'
           } as any);
 
-        // Update staff_profiles.total_points
-        const { data: moodProfileData } = await supabase
-          .from('staff_profiles')
-          .select('total_points')
-          .eq('user_id', userId)
-          .single();
-
-        if (moodProfileData) {
-          await supabase
-            .from('staff_profiles')
-            .update({ total_points: (moodProfileData.total_points || 0) + moodPoints })
-            .eq('user_id', userId);
-        }
+        // Note: staff_profiles.total_points is updated automatically via DB trigger
       }
 
       toast({

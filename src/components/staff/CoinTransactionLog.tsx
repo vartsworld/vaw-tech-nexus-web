@@ -103,8 +103,9 @@ const CoinTransactionLog = ({ userId }: CoinTransactionLogProps) => {
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto w-full">
+          <div className="min-w-[700px]">
+            <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-muted/30 border-b border-border/50">
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Date</th>
@@ -164,8 +165,9 @@ const CoinTransactionLog = ({ userId }: CoinTransactionLogProps) => {
             </tbody>
           </table>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </CardContent>
+  </Card>
   );
 };
 

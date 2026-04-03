@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import TeamHeadMobileHome from "@/components/staff/TeamHeadMobileHome";
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,6 +56,7 @@ import { useActivityTracker } from "@/hooks/useActivityTracker";
 import { useUserStatus } from "@/hooks/useUserStatus";
 import { supabase } from "@/integrations/supabase/client";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import CoinPopup from "@/components/staff/CoinPopup";
 
 type RoomType = 'workspace' | 'breakroom' | 'meeting';
 
@@ -89,6 +90,7 @@ const TeamHeadDashboard = () => {
   const [profileForm, setProfileForm] = useState({ full_name: "", about_me: "" });
   const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
   const [showCoinConfigDialog, setShowCoinConfigDialog] = useState(false);
+  const [showCoinPopup, setShowCoinPopup] = useState(false);
 
   // Break timer state (lifted up to persist when minimized)
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
@@ -96,11 +98,26 @@ const TeamHeadDashboard = () => {
   const [breakDuration, setBreakDuration] = useState(15);
 
   // Widgets state
-  const [widgets, setWidgets] = useState([
-    { id: 'chess', name: 'Mini Chess', description: 'Play chess with colleagues', isVisible: true },
-    { id: 'timer', name: 'Focus Timer', description: 'Pomodoro-style focus timer', isVisible: true },
-    { id: 'activity', name: 'Activity Log', description: 'Track your daily activities', isVisible: false },
-  ]);
+  const [widgets, setWidgets] = useState(() => {
+    const saved = localStorage.getItem('th_widgets_v1');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing saved widgets", e);
+      }
+    }
+    return [
+      { id: 'chess', name: 'Mini Chess', description: 'Play chess with colleagues', isVisible: true },
+      { id: 'timer', name: 'Focus Timer', description: 'Pomodoro-style focus timer', isVisible: true },
+      { id: 'activity', name: 'Activity Log', description: 'Track your daily activities', isVisible: false },
+    ];
+  });
+
+  // Save widgets to localStorage
+  useEffect(() => {
+    localStorage.setItem('th_widgets_v1', JSON.stringify(widgets));
+  }, [widgets]);
 
   const { profile } = useStaffData();
 
@@ -134,6 +151,15 @@ const TeamHeadDashboard = () => {
   };
 
   const isShowingMobileHome = isMobile && showMobileHome;
+
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.openCoins) {
+      setShowCoinPopup(true);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (isShowingMobileHome) return;
@@ -556,11 +582,11 @@ const TeamHeadDashboard = () => {
               </div>
 
               <div
-                onClick={() => navigate('/mycoins')}
-                className="flex items-center gap-1 sm:gap-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-lg px-2 sm:px-3 py-1 cursor-pointer hover:from-amber-500/30 hover:to-yellow-500/30 transition-all shadow-lg shadow-amber-500/10 group"
+                onClick={() => setShowCoinPopup(true)}
+                className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-lg px-2.5 py-1.5 cursor-pointer hover:from-amber-500/30 hover:to-yellow-500/30 transition-all shadow-lg shadow-amber-500/10 group hover:scale-105 active:scale-95"
               >
-                <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-                <span className="text-amber-200 text-xs sm:text-sm font-bold">{(profile?.total_points || 0).toLocaleString()} Coins</span>
+                <Coins className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+                <span className="text-amber-200 text-xs font-bold">{(profile?.total_points || 0).toLocaleString()} Coins</span>
               </div>
 
               <Badge className="bg-purple-500/20 border-purple-500/30 text-purple-300">
@@ -612,6 +638,7 @@ const TeamHeadDashboard = () => {
         onlineUsers={onlineUsers}
         userId={profile?.user_id}
         userProfile={profile}
+        onOpenCoins={() => setShowCoinPopup(true)}
         className="flex-1"
       >
         {roomComponents[currentRoom]}
@@ -765,6 +792,16 @@ const TeamHeadDashboard = () => {
         open={showCoinConfigDialog}
         onOpenChange={setShowCoinConfigDialog}
       />
+      
+      {profile?.user_id && (
+        <CoinPopup
+          isOpen={showCoinPopup}
+          onOpenChange={setShowCoinPopup}
+          userId={profile.user_id}
+          userProfile={profile}
+        />
+      )}
+
       <PWAInstallPrompt />
     </div>
   );

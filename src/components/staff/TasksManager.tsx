@@ -128,40 +128,53 @@ const TasksManager = ({
       if (newStatus === 'completed') {
         const task = tasks.find(t => t.id === taskId);
         if (task && !task.trial_period) {
+          let rewardPoints = task.points || 0;
+          let bonusReason = "";
+
+          if (task.due_date) {
+            const dueDate = new Date(task.due_date);
+            const completionDate = new Date();
+            
+            // Set both to midnight for day comparison
+            const dueDay = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+            const completionDay = new Date(completionDate.getFullYear(), completionDate.getMonth(), completionDate.getDate());
+            
+            const diffTime = completionDay.getTime() - dueDay.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) {
+              // Early
+              rewardPoints += 1;
+              bonusReason = " (+1 early bonus)";
+            } else if (diffDays > 0) {
+              // Late
+              rewardPoints = Math.max(0, rewardPoints - diffDays);
+              bonusReason = ` (-${diffDays} late penalty)`;
+            }
+          }
+
           // Log coin transaction (for PointsBalance / MyCoins)
           await supabase.from('user_coin_transactions').insert({
             user_id: userId,
-            coins: task.points,
+            coins: rewardPoints,
             transaction_type: 'earning',
-            reason: `Task Completed: ${task.title}`,
+            reason: `Task Completed: ${task.title}${bonusReason}`,
             source_type: 'task',
           } as any);
 
           // Log to user_points_log (for HR PointsMonitoring visibility)
           await supabase.from('user_points_log').insert({
             user_id: userId,
-            points: task.points,
-            reason: `Task completed: ${task.title}`,
+            points: rewardPoints,
+            reason: `Task completed: ${task.title}${bonusReason}`,
             category: 'task'
           });
 
-          // Update user's total points
-          const { data: profileData } = await supabase
-            .from('staff_profiles')
-            .select('total_points')
-            .eq('user_id', userId)
-            .single();
-
-          if (profileData) {
-            await supabase
-              .from('staff_profiles')
-              .update({ total_points: (profileData.total_points || 0) + task.points })
-              .eq('user_id', userId);
-          }
+          // Note: staff_profiles.total_points is updated automatically via DB trigger
 
           toast({
-            title: "Task Completed! 🎉",
-            description: `You earned ${task.points} coins for completing "${task.title}"`
+            title: rewardPoints > task.points ? "Task Completed Early! 🚀" : rewardPoints < task.points ? "Task Completed Late" : "Task Completed! 🎉",
+            description: `You earned ${rewardPoints} coins for completing "${task.title}"${bonusReason}`
           });
         } else if (task?.trial_period) {
           toast({

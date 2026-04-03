@@ -179,6 +179,19 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
         }
       }
 
+      // Log task assignment for each user
+      if (taskResponse.id && newTask.assigned_to.length > 0) {
+        for (const assigneeId of newTask.assigned_to) {
+          await supabase.from('user_coin_transactions').insert({
+            user_id: assigneeId,
+            coins: 0,
+            transaction_type: 'information',
+            reason: `New Task Assigned: ${newTask.title} (${newTask.points} coins potential)`,
+            source_type: 'task'
+          } as any);
+        }
+      }
+
       toast({ title: "Task Created! 🎉", description: `"${newTask.title}" has been assigned successfully.` });
       onCreated();
     } catch (error: any) {

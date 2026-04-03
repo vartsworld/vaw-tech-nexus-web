@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import AnnouncementBanner from "@/components/staff/AnnouncementBanner";
+import CoinPopup from "@/components/staff/CoinPopup";
 
 type RoomType = 'workspace' | 'breakroom' | 'meeting';
 
@@ -57,6 +58,7 @@ const StaffDashboard = () => {
   const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({});
   const [departmentName, setDepartmentName] = useState<string>("");
   const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
+  const [showCoinPopup, setShowCoinPopup] = useState(false);
 
   // Break timer state
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
@@ -93,6 +95,16 @@ const StaffDashboard = () => {
     }
     return success;
   };
+
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.openCoins) {
+      setShowCoinPopup(true);
+      // Clean up state to prevent re-opening on reload
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Check authentication
   useEffect(() => {
@@ -415,7 +427,10 @@ const StaffDashboard = () => {
                   />
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-amber-500/10">
+                <div 
+                  className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-amber-500/10 cursor-pointer hover:from-amber-500/30 hover:to-yellow-500/30 transition-all hover:scale-105 active:scale-95"
+                  onClick={() => setShowCoinPopup(true)}
+                >
                   <Coins className="w-3.5 h-3.5 text-amber-400" />
                   <span className="text-amber-200 text-xs font-bold tracking-tight">{(profile?.total_points || 0).toLocaleString()} Coins</span>
                 </div>
@@ -442,6 +457,7 @@ const StaffDashboard = () => {
           onlineUsers={onlineUsers}
           userId={profile.user_id}
           userProfile={profile}
+          onOpenCoins={() => setShowCoinPopup(true)}
         >
           {roomComponents[currentRoom]}
         </VirtualOfficeLayout>
@@ -467,6 +483,16 @@ const StaffDashboard = () => {
           reactivationCode={reactivationCode}
           status={status}
           onReactivate={handleReactivate}
+        />
+      )}
+
+      {/* Coin Popup */}
+      {profile?.user_id && (
+        <CoinPopup
+          isOpen={showCoinPopup}
+          onOpenChange={setShowCoinPopup}
+          userId={profile.user_id}
+          userProfile={profile}
         />
       )}
 

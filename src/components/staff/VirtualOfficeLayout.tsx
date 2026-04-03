@@ -37,6 +37,7 @@ interface VirtualOfficeLayoutProps {
   userId?: string;
   userProfile?: any;
   className?: string;
+  onOpenCoins?: () => void;
 }
 
 const VirtualOfficeLayout = ({
@@ -46,7 +47,8 @@ const VirtualOfficeLayout = ({
   onlineUsers = {},
   userId,
   userProfile,
-  className
+  className,
+  onOpenCoins
 }: VirtualOfficeLayoutProps) => {
   const [showActivityLog, setShowActivityLog] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
@@ -238,12 +240,11 @@ const VirtualOfficeLayout = ({
                     Alerts
                   </Button>
 
-                  {/* My Coins Button */}
                   <Button
                     variant="outline"
                     size="sm"
                     className="col-span-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/30 text-white hover:from-amber-500/30 hover:to-yellow-500/30"
-                    onClick={() => navigate('/mycoins')}
+                    onClick={() => onOpenCoins ? onOpenCoins() : navigate('/mycoins')}
                   >
                     <Coins className="w-4 h-4 mr-2" />
                     My Coins
@@ -346,7 +347,7 @@ const VirtualOfficeLayout = ({
         currentRoom={currentRoom}
         onRoomChange={onRoomChange}
         onOpenChat={() => setShowMobileChat(true)}
-        onOpenCoins={() => navigate('/mycoins')}
+        onOpenCoins={onOpenCoins}
       />
 
       {/* Pop-out Team Chat */}
