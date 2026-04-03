@@ -436,7 +436,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
   // Set up presence tracking for online users
   useEffect(() => {
-    const channel = supabase.channel('team-presence');
+    const channel = supabase.channel('team-presence-workspace');
 
     channel
       .on('presence', { event: 'sync' }, () => {
@@ -451,7 +451,6 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          // Track current user's presence
           await channel.track({
             user_id: userId,
             full_name: userProfile?.full_name || 'Unknown',
@@ -462,7 +461,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       });
 
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [userId, userProfile]);
 
