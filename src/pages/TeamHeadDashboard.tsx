@@ -196,7 +196,7 @@ const TeamHeadDashboard = () => {
       });
 
     return () => {
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [profile?.user_id, profile?.full_name, profile?.username, isShowingMobileHome]);
 
