@@ -39,7 +39,8 @@ import {
   DollarSign,
   Zap,
   Tag,
-  HeadphonesIcon
+  HeadphonesIcon,
+  QrCode
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -69,6 +70,8 @@ import PricingManagement from "@/components/hr/PricingManagement";
 import ApiIntegration from "@/components/hr/ApiIntegration";
 import FinancialOversight from "@/components/hr/FinancialOversight";
 import SupportTicketManagement from "@/components/hr/SupportTicketManagement";
+import QRManagement from "@/components/hr/QRManagement";
+
 
 const HRDashboard = () => {
   const navigate = useNavigate();
@@ -239,6 +242,8 @@ const HRDashboard = () => {
         { id: "tasks", label: "Task Board", icon: ClipboardList },
         { id: "templates", label: "Task Templates", icon: Layers },
         { id: "attendance", label: "Attendance", icon: Calendar },
+        { id: "qr", label: "QR Manager", icon: QrCode },
+
       ]
     },
     {
@@ -292,6 +297,8 @@ const HRDashboard = () => {
       case "financials": return <FinancialOversight />;
       case "api-integration": return <ApiIntegration />;
       case "support": return <SupportTicketManagement />;
+      case "qr": return <QRManagement />;
+
       default: return <StatsGrid stats={stats} />;
     }
   };
