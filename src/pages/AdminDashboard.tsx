@@ -14,6 +14,7 @@ import ProjectsManagement from "@/components/admin/ProjectsManagement";
 import PartnersManagement from "@/components/admin/PartnersManagement";
 import ClientLogosManagement from "@/components/admin/ClientLogosManagement";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import SalesDashboard from "./SalesDashboard";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -99,6 +100,9 @@ const AdminDashboard = () => {
             <TabsTrigger value="logos" className="text-xs sm:text-sm px-2 py-2 sm:px-3">
               <span className="hidden sm:inline">Client </span>Logos
             </TabsTrigger>
+            <TabsTrigger value="sales" className="text-xs sm:text-sm px-2 py-2 sm:px-3 bg-blue-500/10 text-blue-400">
+              Sales Hub
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="inquiries">
@@ -135,6 +139,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="logos">
             <ClientLogosManagement />
+          </TabsContent>
+
+          <TabsContent value="sales">
+            <SalesDashboard />
           </TabsContent>
         </Tabs>
       </div>

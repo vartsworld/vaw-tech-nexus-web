@@ -54,6 +54,10 @@ const StaffLogin = () => {
       return '/hr/dashboard';
     }
 
+    if (staffProfile.role === 'sales') {
+      return '/sales/dashboard';
+    }
+
     // Check if user is manager, lead, or department head
     if (staffProfile.role === 'manager' ||
       staffProfile.role === 'lead' ||

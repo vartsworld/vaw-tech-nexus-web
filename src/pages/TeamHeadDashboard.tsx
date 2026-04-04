@@ -605,6 +605,10 @@ const TeamHeadDashboard = () => {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/sales/dashboard")} className="text-blue-500 hover:text-blue-600">
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Sales Hub (Client Entry)
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
                     <User className="mr-2 h-4 w-4" />
                     View/Edit Profile

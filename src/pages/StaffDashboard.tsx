@@ -403,6 +403,16 @@ const StaffDashboard = () => {
                   </Avatar>
                   <span className="hidden sm:inline">Profile</span>
                 </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 h-9 px-2 sm:px-3"
+                  onClick={() => navigate("/sales/dashboard")}
+                >
+                  <Briefcase className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Sales Hub</span>
+                </Button>
 
                 <Button
                   variant="ghost"

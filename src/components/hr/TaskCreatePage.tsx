@@ -185,7 +185,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
           await supabase.from('user_coin_transactions').insert({
             user_id: assigneeId,
             coins: 0,
-            transaction_type: 'information',
+            transaction_type: 'earning',
             reason: `New Task Assigned: ${newTask.title} (${newTask.points} coins potential)`,
             source_type: 'task'
           } as any);

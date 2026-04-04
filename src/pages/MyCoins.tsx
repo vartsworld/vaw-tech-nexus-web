@@ -128,7 +128,7 @@ const MyCoins = () => {
         .insert({
           user_id: userId,
           coins: -coinsCost,
-          transaction_type: "redemption",
+          transaction_type: "earning",
           reason: `Redeemed reward: ${rewards.find(r => r.id === rewardId)?.name || 'Reward'}`,
           source_type: "redemption"
         } as any);

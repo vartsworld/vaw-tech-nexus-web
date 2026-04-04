@@ -51,6 +51,8 @@ import ReferralProgram from "./pages/ReferralProgram";
 import ReferralFormPage from "./pages/ReferralFormPage";
 import Team from "./pages/Team";
 import QRRedirection from "./pages/QRRedirection";
+import SalesDashboard from "./pages/SalesDashboard";
+import AddClient from "./pages/AddClient";
 
 
 
@@ -137,6 +139,8 @@ const AppContent = () => {
           <Route path="/:id" element={<StaffIDCard />} />
           <Route path="/team" element={<Team />} />
           <Route path="/qr" element={<QRRedirection />} />
+          <Route path="/sales/dashboard" element={<SalesDashboard />} />
+          <Route path="/sales/add-client" element={<AddClient />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

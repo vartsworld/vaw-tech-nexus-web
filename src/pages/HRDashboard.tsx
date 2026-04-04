@@ -249,7 +249,8 @@ const HRDashboard = () => {
     {
       label: "RELATIONSHIPS",
       items: [
-        { id: "clients", label: "Clients", icon: Briefcase },
+        { id: "/sales/dashboard", label: "Sales Hub", icon: Briefcase },
+        { id: "clients", label: "Clients", icon: UserPlus },
         { id: "support", label: "Support Tickets", icon: HeadphonesIcon },
         { id: "manage-projects", label: "Manage Projects", icon: FolderSearch },
         { id: "project-monitor", label: "Project Monitor", icon: Activity },
@@ -367,7 +368,7 @@ const HRDashboard = () => {
                   {group.items.map((item) => (
                     <button
                       key={item.id}
-                      onClick={() => navigate(`/hr/${item.id}`)}
+                      onClick={() => item.id.startsWith('/') ? navigate(item.id) : navigate(`/hr/${item.id}`)}
                       className={`
                         w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative
                         ${activeTab === item.id

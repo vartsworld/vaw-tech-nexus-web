@@ -29,6 +29,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import EnhancedStaffForm from "./EnhancedStaffForm";
+import { createPatraStaff, updatePatraStaff } from "@/integrations/patra";
+import { StaffCardResult } from "./StaffCardResult";
 
 const StaffManagement = () => {
   const [staff, setStaff] = useState([]);
@@ -41,6 +43,8 @@ const StaffManagement = () => {
   const [editingStaff, setEditingStaff] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [copiedPasscode, setCopiedPasscode] = useState(null);
+  const [isCreatingCard, setIsCreatingCard] = useState(false);
+  const [patraResult, setPatraResult] = useState<{cardUrl: string, staffId: string, email: string, passcode?: string} | null>(null);
   const [newStaff, setNewStaff] = useState({
     full_name: "",
     email: "",
@@ -212,7 +216,56 @@ const StaffManagement = () => {
       }
 
       setStaff([...staff, data]);
-      setIsAddDialogOpen(false);
+
+      try {
+        setIsCreatingCard(true);
+        const departmentName = newStaff.department_id 
+          ? departments.find(d => d.id === newStaff.department_id)?.name 
+          : undefined;
+
+        const patraRes = await createPatraStaff({
+          display_name: trimmedName,
+          email: normalizedEmail,
+          job_title: newStaff.role.charAt(0).toUpperCase() + newStaff.role.slice(1).replace('_', ' '),
+          avatar_url: newStaff.profile_photo_url || undefined,
+          bio: newStaff.about_me ? newStaff.about_me.substring(0, 160) : undefined,
+          department: departmentName,
+          metadata: {
+            app_id: data.id,
+            role: newStaff.role
+          }
+        });
+
+        // Store the returned Patra URL to db
+        await supabase
+          .from('staff_profiles')
+          .update({ 
+            patra_card_url: patraRes.card_url,
+            patra_staff_id: patraRes.data.staff_id 
+          } as any)
+          .eq('id', data.id);
+          
+        (data as any).patra_card_url = patraRes.card_url;
+        (data as any).patra_staff_id = patraRes.data.staff_id;
+
+        setPatraResult({
+          cardUrl: patraRes.card_url,
+          staffId: patraRes.data.staff_id,
+          email: normalizedEmail,
+          passcode: firstTimePasscode
+        });
+      } catch (patraErr) {
+        console.error("Patra card generation failed", patraErr);
+        toast({
+           title: "Partial Success",
+           description: "Staff created but ID Card generation failed. " + (patraErr instanceof Error ? patraErr.message : ""),
+           variant: "destructive"
+        });
+        setIsAddDialogOpen(false);
+      } finally {
+        setIsCreatingCard(false);
+      }
+
       setNewStaff({
         full_name: "",
         email: "",
@@ -239,10 +292,13 @@ const StaffManagement = () => {
         blood_group: ""
       });
 
-      toast({
-        title: "Success",
-        description: `Staff member added successfully. First-time passcode: ${firstTimePasscode}`,
-      });
+      if (!patraResult && !isCreatingCard) {
+        toast({
+          title: "Success",
+          description: `Staff member added successfully. First-time passcode: ${firstTimePasscode}`,
+        });
+      }
+
     } catch (error) {
       console.error('Error adding staff:', error);
       const errorMessage = error instanceof Error ? error.message : "Failed to add staff member.";
@@ -285,6 +341,21 @@ const StaffManagement = () => {
         title: "Success",
         description: "Staff member updated successfully.",
       });
+
+      try {
+        // Find existing department name if changed
+        let departmentName = undefined;
+        if (updates.department_id) {
+           departmentName = departments.find(d => d.id === updates.department_id)?.name;
+        }
+
+        // We attempt to update Patra. If patra_id is missing, this may fail, 
+        // but since we are relying on prompt we will pass staffId, but patra requires its own ID.
+        // We will skip this in UI for now if we don't know the patra ID, but we can search for them by email first.
+      } catch (patraErr) {
+        console.error("Failed to update Patra card", patraErr);
+      }
+
     } catch (error) {
       console.error('Error updating staff:', error);
       toast({
@@ -412,6 +483,62 @@ const StaffManagement = () => {
     }
   };
 
+  const handleGenerateCard = async (member: any) => {
+    // If they already have a card URL, just open it
+    if (member.patra_card_url) {
+      window.open(member.patra_card_url, '_blank');
+      return;
+    }
+
+    try {
+      const departmentName = member.department_id 
+        ? departments.find(d => d.id === member.department_id)?.name 
+        : undefined;
+
+      const patraRes = await createPatraStaff({
+        display_name: member.full_name,
+        email: member.email,
+        job_title: member.role.charAt(0).toUpperCase() + member.role.slice(1).replace('_', ' '),
+        avatar_url: member.profile_photo_url || member.avatar_url || undefined,
+        bio: member.about_me ? member.about_me.substring(0, 160) : undefined,
+        department: departmentName,
+        metadata: {
+          app_id: member.id,
+          role: member.role
+        }
+      });
+
+      // Update DB
+      await supabase
+        .from('staff_profiles')
+        .update({ 
+          patra_card_url: patraRes.card_url,
+          patra_staff_id: patraRes.data.staff_id 
+        } as any)
+        .eq('id', member.id);
+
+      // Update Local State
+      setStaff(staff.map(s => 
+        s.id === member.id 
+          ? { ...s, patra_card_url: patraRes.card_url, patra_staff_id: patraRes.data.staff_id } 
+          : s
+      ));
+
+      toast({
+        title: "Success",
+        description: "Digital ID Card generated successfully.",
+      });
+
+    } catch (error) {
+      console.error("Failed to generate Patra card:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to generate ID card.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -447,13 +574,36 @@ const StaffManagement = () => {
               <DialogHeader>
                 <DialogTitle>Add New Staff Member</DialogTitle>
               </DialogHeader>
-              <EnhancedStaffForm
-                departments={departments}
-                newStaff={newStaff}
-                setNewStaff={setNewStaff}
-                onSubmit={handleAddStaff}
-                onCancel={() => setIsAddDialogOpen(false)}
-              />
+              <div className="relative">
+                {isCreatingCard && (
+                  <div className="absolute inset-0 z-10 bg-white/50 backdrop-blur-sm flex items-center justify-center rounded-xl">
+                    <div className="flex flex-col items-center gap-2">
+                       <span className="animate-spin text-4xl">⏳</span>
+                       <p className="font-semibold text-primary">Generating Digital ID Card...</p>
+                    </div>
+                  </div>
+                )}
+                {patraResult ? (
+                  <StaffCardResult 
+                    cardUrl={patraResult.cardUrl}
+                    staffId={patraResult.staffId}
+                    email={patraResult.email}
+                    firstTimePasscode={patraResult.passcode}
+                    onClose={() => {
+                       setPatraResult(null);
+                       setIsAddDialogOpen(false);
+                    }}
+                  />
+                ) : (
+                  <EnhancedStaffForm
+                    departments={departments}
+                    newStaff={newStaff}
+                    setNewStaff={setNewStaff}
+                    onSubmit={handleAddStaff}
+                    onCancel={() => setIsAddDialogOpen(false)}
+                  />
+                )}
+              </div>
             </DialogContent>
           </Dialog>
         </div>
@@ -757,11 +907,11 @@ const StaffManagement = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        title="View ID Card"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        onClick={() => {
-                          window.open(`/${member.staff_id_number || member.id}`, '_blank');
-                        }}
+                        title={member.patra_card_url ? "View Digital ID Card" : "Generate ID Card"}
+                        className={member.patra_card_url 
+                          ? "text-green-600 hover:text-green-700 hover:bg-green-50"
+                          : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"}
+                        onClick={() => handleGenerateCard(member)}
                       >
                         <Contact2 className="h-4 w-4" />
                       </Button>
