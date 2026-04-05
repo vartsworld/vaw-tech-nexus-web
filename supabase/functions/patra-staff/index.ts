@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, PATCH, OPTIONS',
 }
 
-serve(async (req) => {
+serve(async (req: any) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -30,6 +30,8 @@ serve(async (req) => {
       method = 'PATCH'
     }
 
+    console.log(`Calling Patra API: ${method} ${endpoint}`)
+
     const response = await fetch(endpoint, {
       method: method,
       headers: {
@@ -52,13 +54,11 @@ serve(async (req) => {
        console.error("Patra API Error:", response.status, data);
 
        // MOCK FALLBACK for DEMO PURPOSES:
-       // Since the Patra API endpoint might not be fully deployed or is throwing 404/405, 
-       // we will return a simulated success payload so the HR Dashboard integration works.
        if (response.status === 404 || response.status === 405) {
          console.log("Mocking Patra response because endpoint is missing:", endpoint);
          return new Response(JSON.stringify({
            message: "Card created successfully (Mock)",
-           card_url: "https://vaw-patra.vercel.app/v1/cards/" + crypto.randomUUID().slice(0,8),
+           card_url: "https://vaw-patra.vercel.app/my-company/" + Math.random().toString(36).substring(7),
            data: {
              id: crypto.randomUUID(),
              staff_id: "PATRA-" + Math.floor(Math.random() * 10000),
@@ -82,7 +82,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error: any) {
-    console.error("Edge function crash:", error);
+    console.error("Edge function error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
