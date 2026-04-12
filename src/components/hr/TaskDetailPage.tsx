@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DragDropContext, Draggable } from "react-beautiful-dnd";
@@ -30,12 +31,13 @@ interface TaskDetailPageProps {
   onDelete: (task: any) => void;
   userProfile: any;
   staff: any[];
+  departments: any[];
   subtaskTemplates: any[];
   taskTemplates: any[];
 }
 
 const TaskDetailPage = ({
-  task, onBack, onStatusUpdate, onEdit, onDelete, userProfile, staff, subtaskTemplates, taskTemplates
+  task, onBack, onStatusUpdate, onEdit, onDelete, userProfile, staff, departments = [], subtaskTemplates, taskTemplates
 }: TaskDetailPageProps) => {
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
@@ -56,6 +58,11 @@ const TaskDetailPage = ({
   const [customStageNames, setCustomStageNames] = useState<Record<number, string>>(
     (task?.stage_names && typeof task.stage_names === 'object') ? task.stage_names : {}
   );
+
+  // Subtask Editing State
+  const [editingSubtask, setEditingSubtask] = useState<any>(null);
+  const [isEditSubtaskDialogOpen, setIsEditSubtaskDialogOpen] = useState(false);
+  const [savingSubtask, setSavingSubtask] = useState(false);
 
   // Subtask submission state (for Team Head inline submit)
   const [expandedSubmitSubtask, setExpandedSubmitSubtask] = useState<string | null>(null);
@@ -198,6 +205,44 @@ const TaskDetailPage = ({
       setSubtasks(prev => prev.map(st => st.id === subtaskId ? { ...st, stage: newStage } : st));
     } catch (error) {
       console.error('Error updating subtask stage:', error);
+    }
+  };
+
+  const handleEditSubtaskSave = async () => {
+    if (!editingSubtask || !editingSubtask.title || !editingSubtask.assigned_to) {
+      toast({ title: "Error", description: "Title and assignee required.", variant: "destructive" });
+      return;
+    }
+    setSavingSubtask(true);
+    try {
+      const updateData = {
+        title: editingSubtask.title,
+        description: editingSubtask.description,
+        assigned_to: editingSubtask.assigned_to,
+        priority: editingSubtask.priority,
+        points: editingSubtask.points,
+        due_date: editingSubtask.due_date || null,
+        due_time: editingSubtask.due_time || null,
+        stage: editingSubtask.stage,
+        updated_at: new Date().toISOString()
+      };
+      
+      const { data, error } = await supabase.from('staff_subtasks')
+        .update(updateData)
+        .eq('id', editingSubtask.id)
+        .select('*, staff_profiles:assigned_to (full_name, username, avatar_url)')
+        .single();
+      
+      if (error) throw error;
+      
+      setSubtasks(prev => prev.map(st => st.id === editingSubtask.id ? data : st));
+      setIsEditSubtaskDialogOpen(false);
+      setEditingSubtask(null);
+      toast({ title: "Subtask updated!" });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setSavingSubtask(false);
     }
   };
 
@@ -703,7 +748,27 @@ const TaskDetailPage = ({
                           <SelectValue placeholder="Assign..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {staff.map(m => <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>)}
+                          {departments.map(dept => {
+                            const deptStaff = staff.filter(s => s.department_id === dept.id);
+                            if (deptStaff.length === 0) return null;
+                            return (
+                              <SelectGroup key={dept.id}>
+                                <SelectLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5">{dept.name}</SelectLabel>
+                                {deptStaff.map(m => (
+                                  <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>
+                                ))}
+                              </SelectGroup>
+                            );
+                          })}
+                          {/* Staff with no department */}
+                          {staff.filter(s => !s.department_id).length > 0 && (
+                            <SelectGroup>
+                              <SelectLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5">Other</SelectLabel>
+                              {staff.filter(s => !s.department_id).map(m => (
+                                <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>
+                              ))}
+                            </SelectGroup>
+                          )}
                         </SelectContent>
                       </Select>
                       <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-400" onClick={() => {
@@ -791,7 +856,18 @@ const TaskDetailPage = ({
                                   <Select value={newSubtask.assigned_to} onValueChange={v => setNewSubtask({ ...newSubtask, assigned_to: v })}>
                                     <SelectTrigger className="h-8 text-xs bg-transparent border-white/10"><SelectValue placeholder="Assign to..." /></SelectTrigger>
                                     <SelectContent>
-                                      {staff.map(m => <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>)}
+                                      {departments.map(dept => {
+                                        const deptStaff = staff.filter(s => s.department_id === dept.id);
+                                        if (deptStaff.length === 0) return null;
+                                        return (
+                                          <SelectGroup key={dept.id}>
+                                            <SelectLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5">{dept.name}</SelectLabel>
+                                            {deptStaff.map(m => (
+                                              <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>
+                                            ))}
+                                          </SelectGroup>
+                                        );
+                                      })}
                                     </SelectContent>
                                   </Select>
                                   <div className="grid grid-cols-2 gap-1">
@@ -849,6 +925,14 @@ const TaskDetailPage = ({
                                         <div className="flex items-start justify-between gap-2">
                                           <span className="text-xs font-medium leading-tight break-words min-w-0">{st.title}</span>
                                           <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                            <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-primary"
+                                              onClick={(e) => { 
+                                                e.stopPropagation(); 
+                                                setEditingSubtask({...st}); 
+                                                setIsEditSubtaskDialogOpen(true);
+                                              }}>
+                                              <Edit className="h-3 w-3" />
+                                            </Button>
                                             <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400"
                                               onClick={(e) => { e.stopPropagation(); handleDeleteSubtask(st.id); }}>
                                               <Trash2 className="h-3 w-3" />
@@ -1341,6 +1425,112 @@ const TaskDetailPage = ({
         onReject={handleSubtaskReject}
         viewOnly={reviewDialogSubtask?.status !== 'review_pending' && reviewDialogSubtask?.status !== 'pending_approval'}
       />
+
+      {/* Edit Subtask Dialog */}
+      <Dialog open={isEditSubtaskDialogOpen} onOpenChange={setIsEditSubtaskDialogOpen}>
+        <DialogContent className="max-w-md bg-black/90 border-white/10 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Edit Subtask</DialogTitle>
+          </DialogHeader>
+          {editingSubtask && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Title</Label>
+                <Input 
+                  value={editingSubtask.title} 
+                  onChange={e => setEditingSubtask({...editingSubtask, title: e.target.value})}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Description</Label>
+                <Textarea 
+                  value={editingSubtask.description || ''} 
+                  onChange={e => setEditingSubtask({...editingSubtask, description: e.target.value})}
+                  className="bg-white/5 border-white/10 min-h-[80px]"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Assignee</Label>
+                  <Select value={editingSubtask.assigned_to} onValueChange={v => setEditingSubtask({...editingSubtask, assigned_to: v})}>
+                    <SelectTrigger className="bg-white/5 border-white/10">
+                      <SelectValue placeholder="Select assignee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map(dept => {
+                        const deptStaff = staff.filter(s => s.department_id === dept.id);
+                        if (deptStaff.length === 0) return null;
+                        return (
+                          <SelectGroup key={dept.id}>
+                            <SelectLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5">{dept.name}</SelectLabel>
+                            {deptStaff.map(m => (
+                              <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>
+                            ))}
+                          </SelectGroup>
+                        );
+                      })}
+                      {staff.filter(s => !s.department_id).length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5">Other</SelectLabel>
+                          {staff.filter(s => !s.department_id).map(m => (
+                            <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Priority</Label>
+                  <Select value={editingSubtask.priority} onValueChange={v => setEditingSubtask({...editingSubtask, priority: v})}>
+                    <SelectTrigger className="bg-white/5 border-white/10 border-white/10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Points</Label>
+                  <Input 
+                    type="number"
+                    value={editingSubtask.points} 
+                    onChange={e => setEditingSubtask({...editingSubtask, points: parseInt(e.target.value) || 0})}
+                    className="bg-white/5 border-white/10"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Stage</Label>
+                  <Select value={String(editingSubtask.stage)} onValueChange={v => setEditingSubtask({...editingSubtask, stage: parseInt(v)})}>
+                    <SelectTrigger className="bg-white/5 border-white/10 border-white/10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {stageNums.map(n => (
+                        <SelectItem key={n} value={String(n)}>{stageLabels[n] || `Stage ${n}`}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsEditSubtaskDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditSubtaskSave} disabled={savingSubtask} className="bg-primary hover:bg-primary/80">
+              {savingSubtask ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

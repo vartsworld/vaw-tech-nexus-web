@@ -50,6 +50,7 @@ import ClientOnboardingCreator from "@/components/staff/ClientOnboardingCreator"
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import SharedProjectForm from "@/components/projects/SharedProjectForm";
 
 /* ─────────────────────────────────────────────────────────
    HELPER: derive a "notes" localStorage key for a client
@@ -80,6 +81,7 @@ const SalesDashboard = () => {
   /* ── Modals ── */
   const [isFilesModalOpen, setIsFilesModalOpen] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
   const [showMarketInsight, setShowMarketInsight] = useState(false);
 
   /* ── File upload ── */
@@ -144,6 +146,12 @@ const SalesDashboard = () => {
     } finally {
       setLoadingProjects(false);
     }
+  };
+
+  const handleProjectSuccess = (newProject: any) => {
+    setClientProjects([newProject, ...clientProjects]);
+    setIsAddProjectDialogOpen(false);
+    refetchClients(); // Refresh stats if needed
   };
 
   /* ─── Fetch client-sales files stored with file_category = 'sales_resource'
@@ -619,6 +627,15 @@ const SalesDashboard = () => {
                       <p className="text-[8px] text-white/40 uppercase font-black">Notepad-style editor</p>
                     </div>
                   </DropdownMenuItem>
+                  <DropdownMenuItem className="p-2.5 rounded-lg hover:bg-white/5 cursor-pointer gap-3" onClick={() => setIsAddProjectDialogOpen(true)}>
+                    <div className="w-8 h-8 bg-indigo-500/10 rounded-lg flex items-center justify-center shrink-0">
+                      <LayoutGrid className="w-4 h-4 text-indigo-400" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-xs">New Project</p>
+                      <p className="text-[8px] text-white/40 uppercase font-black">Initialize & Sync</p>
+                    </div>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -629,6 +646,38 @@ const SalesDashboard = () => {
                 Done
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══════════════════════════════════════════════════
+          ADD PROJECT MODAL
+      ═══════════════════════════════════════════════════ */}
+      <Dialog open={isAddProjectDialogOpen} onOpenChange={setIsAddProjectDialogOpen}>
+        <DialogContent className="
+          w-[99vw] max-w-[99vw] sm:w-[90vw] sm:max-w-lg
+          max-h-[99vh]
+          bg-zinc-950 border-white/10 rounded-2xl p-0
+          overflow-hidden flex flex-col
+          m-auto
+        ">
+          <div className="p-5 sm:p-6 border-b border-white/5 shrink-0">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-black italic tracking-tight uppercase">
+                Initialize <span className="text-indigo-400">Project</span>
+              </DialogTitle>
+              <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">
+                Client: {selectedClient?.company_name}
+              </p>
+            </DialogHeader>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5 sm:p-6 scrollbar-hide">
+            <SharedProjectForm 
+              clientId={selectedClient?.id}
+              onSuccess={handleProjectSuccess}
+              onCancel={() => setIsAddProjectDialogOpen(false)}
+            />
           </div>
         </DialogContent>
       </Dialog>

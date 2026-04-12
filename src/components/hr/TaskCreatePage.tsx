@@ -71,7 +71,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
   }, [newTask.client_id]);
 
   const fetchStaff = async () => {
-    const { data } = await supabase.from('staff_profiles').select('id, user_id, full_name, username, role, avatar_url').order('full_name');
+    const { data } = await supabase.from('staff_profiles').select('id, user_id, full_name, username, role, department_id, avatar_url').order('full_name');
     setStaff(data || []);
   };
 
@@ -315,29 +315,66 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[300px] p-0" align="start">
-                    <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto">
-                      {staff.map((member) => (
-                        <div
-                          key={member.id}
-                          className="flex items-center space-x-2 p-2 hover:bg-muted rounded-lg cursor-pointer transition-colors"
-                          onClick={() => {
-                            const isSelected = newTask.assigned_to.includes(member.user_id);
-                            setNewTask({
-                              ...newTask,
-                              assigned_to: isSelected
-                                ? newTask.assigned_to.filter(id => id !== member.user_id)
-                                : [...newTask.assigned_to, member.user_id]
-                            });
-                          }}
-                        >
-                          <Checkbox checked={newTask.assigned_to.includes(member.user_id)} onCheckedChange={() => {}} />
-                          <div className="flex flex-col flex-1">
-                            <span className="text-sm font-medium">{member.full_name}</span>
-                            <span className="text-[10px] text-muted-foreground">@{member.username}</span>
+                    <div className="p-2 space-y-4 max-h-[350px] overflow-y-auto">
+                      {departments.map(dept => {
+                        const deptStaff = staff.filter(s => s.department_id === dept.id);
+                        if (deptStaff.length === 0) return null;
+                        return (
+                          <div key={dept.id} className="space-y-1">
+                            <h4 className="text-[10px] font-bold uppercase text-muted-foreground px-2 py-1 tracking-wider">{dept.name}</h4>
+                            {deptStaff.map((member) => (
+                              <div
+                                key={member.id}
+                                className="flex items-center space-x-2 p-2 hover:bg-muted rounded-lg cursor-pointer transition-colors"
+                                onClick={() => {
+                                  const isSelected = newTask.assigned_to.includes(member.user_id);
+                                  setNewTask({
+                                    ...newTask,
+                                    assigned_to: isSelected
+                                      ? newTask.assigned_to.filter(id => id !== member.user_id)
+                                      : [...newTask.assigned_to, member.user_id]
+                                  });
+                                }}
+                              >
+                                <Checkbox checked={newTask.assigned_to.includes(member.user_id)} onCheckedChange={() => {}} />
+                                <div className="flex flex-col flex-1">
+                                  <span className="text-sm font-medium">{member.full_name}</span>
+                                  <span className="text-[10px] text-muted-foreground">@{member.username}</span>
+                                </div>
+                                {newTask.assigned_to.includes(member.user_id) && <Check className="h-4 w-4 text-primary" />}
+                              </div>
+                            ))}
                           </div>
-                          {newTask.assigned_to.includes(member.user_id) && <Check className="h-4 w-4 text-primary" />}
+                        );
+                      })}
+                      {/* Staff with no department */}
+                      {staff.some(s => !s.department_id) && (
+                        <div className="space-y-1">
+                          <h4 className="text-[10px] font-bold uppercase text-muted-foreground px-2 py-1 tracking-wider">Other</h4>
+                          {staff.filter(s => !s.department_id).map((member) => (
+                            <div
+                              key={member.id}
+                              className="flex items-center space-x-2 p-2 hover:bg-muted rounded-lg cursor-pointer transition-colors"
+                              onClick={() => {
+                                const isSelected = newTask.assigned_to.includes(member.user_id);
+                                setNewTask({
+                                  ...newTask,
+                                  assigned_to: isSelected
+                                    ? newTask.assigned_to.filter(id => id !== member.user_id)
+                                    : [...newTask.assigned_to, member.user_id]
+                                });
+                              }}
+                            >
+                              <Checkbox checked={newTask.assigned_to.includes(member.user_id)} onCheckedChange={() => {}} />
+                              <div className="flex flex-col flex-1">
+                                  <span className="text-sm font-medium">{member.full_name}</span>
+                                  <span className="text-[10px] text-muted-foreground">@{member.username}</span>
+                                </div>
+                                {newTask.assigned_to.includes(member.user_id) && <Check className="h-4 w-4 text-primary" />}
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
                   </PopoverContent>
                 </Popover>

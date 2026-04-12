@@ -540,7 +540,7 @@ const TaskManagement = () => {
     try {
       const { data, error } = await supabase
         .from('staff_profiles')
-        .select('id, user_id, full_name, username, role')
+        .select('id, user_id, full_name, username, role, department_id, avatar_url')
         .order('full_name');
 
       if (error) throw error;
@@ -1357,6 +1357,7 @@ const TaskManagement = () => {
         onDelete={(t) => { setTaskToDelete(t); setIsDeleteDialogOpen(true); }}
         userProfile={userProfile}
         staff={staff}
+        departments={departments}
         subtaskTemplates={subtaskTemplates}
         taskTemplates={taskTemplates}
       />

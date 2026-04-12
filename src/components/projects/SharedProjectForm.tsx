@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, X, Globe, Link, Monitor } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface SharedProjectFormProps {
@@ -25,6 +26,8 @@ const SharedProjectForm = ({ clientId, initialData, onSuccess, onCancel }: Share
         status: initialData?.status || "planning",
         total_amount: initialData?.total_amount || 0,
         amount_paid: initialData?.amount_paid || 0,
+        sync_to_portal: initialData?.sync_to_portal || false,
+        live_preview_url: initialData?.live_preview_url || "",
         // These are not in DB, we will append to description
         package_type: initialData?.package_type || "basic",
         addons: initialData?.addons || "",
@@ -90,9 +93,11 @@ const SharedProjectForm = ({ clientId, initialData, onSuccess, onCancel }: Share
                 status: formData.status,
                 total_amount: Number(formData.total_amount),
                 amount_paid: Number(formData.amount_paid),
+                sync_to_portal: formData.sync_to_portal,
+                live_preview_url: formData.live_preview_url,
             };
 
-            const selectColumns = 'id, title, description, project_type, status, client_id, total_amount, amount_paid, progress, created_at, updated_at, renewal_date, next_payment_date, clients:client_id(id, company_name)';
+            const selectColumns = 'id, title, description, project_type, status, client_id, total_amount, amount_paid, progress, created_at, updated_at, renewal_date, next_payment_date, sync_to_portal, live_preview_url, clients:client_id(id, company_name)';
 
             let result;
             if (initialData?.id) {
@@ -258,6 +263,39 @@ const SharedProjectForm = ({ clientId, initialData, onSuccess, onCancel }: Share
                         className="bg-white/5 border-white/10 h-12 rounded-xl"
                     />
                 </div>
+            </div>
+
+            {/* Client Portal Sync & Live Preview */}
+            <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-2xl space-y-4">
+                <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <Label className="text-sm font-bold text-indigo-100 flex items-center gap-2">
+                            <Monitor className="h-4 w-4 text-indigo-400" />
+                            Portal Synchronization
+                        </Label>
+                        <p className="text-[10px] text-indigo-300/60 uppercase tracking-widest font-medium">Broadcast progress to Client Node</p>
+                    </div>
+                    <Switch 
+                        checked={formData.sync_to_portal} 
+                        onCheckedChange={(v) => setFormData({ ...formData, sync_to_portal: v })}
+                        className="data-[state=checked]:bg-indigo-600"
+                    />
+                </div>
+
+                {formData.sync_to_portal && (
+                    <div className="space-y-2 animate-in fade-in zoom-in-95 duration-200">
+                        <Label className="text-[10px] font-bold uppercase tracking-widest text-indigo-400/80">Live Deployment URL</Label>
+                        <div className="relative">
+                            <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-indigo-500/50" />
+                            <Input
+                                value={formData.live_preview_url}
+                                onChange={(e) => setFormData({ ...formData, live_preview_url: e.target.value })}
+                                placeholder="https://preview.vaw.tech/project-xyz"
+                                className="bg-black/20 border-indigo-500/20 h-11 pl-10 rounded-xl text-indigo-100 placeholder:text-indigo-500/30 focus:border-indigo-500/50"
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Description */}

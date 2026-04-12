@@ -42,6 +42,7 @@ const Portal = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [client, setClient] = useState<any>(null);
   const [links, setLinks] = useState<PortalLink[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -111,6 +112,18 @@ const Portal = () => {
 
       if (linksError) throw linksError;
       setLinks((linksData as PortalLink[]) || []);
+
+      // Fetch Synced Projects
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('client_projects')
+        .select('*')
+        .eq('client_id', clientData.id)
+        .eq('sync_to_portal', true)
+        .order('updated_at', { ascending: false });
+
+      if (!projectsError) {
+        setProjects(projectsData || []);
+      }
     } catch (error: any) {
       console.error("Portal error:", error);
     } finally {
@@ -256,7 +269,97 @@ const Portal = () => {
               </motion.div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Project Monitors (Live View) */}
+            {projects.length > 0 && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-1 w-10 bg-primary/30 rounded-full" />
+                  <h2 className="text-sm font-black uppercase tracking-[0.3em] text-primary/60">Live Project Monitors</h2>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {projects.map((project, index) => (
+                    <motion.div
+                      key={project.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + (index * 0.1) }}
+                      className="group relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-background border border-primary/20 p-8 rounded-[2.5rem] backdrop-blur-xl shadow-2xl shadow-primary/5"
+                    >
+                      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-100 transition-opacity">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-primary blur-2xl opacity-20 group-hover:opacity-40" />
+                          <Monitor className="h-6 w-6 text-primary relative z-10" />
+                        </div>
+                      </div>
+
+                      <div className="relative z-10 space-y-6">
+                        <div className="space-y-2">
+                          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-[10px] font-black text-primary border border-primary/10 tracking-widest uppercase">
+                            <ShieldCheck className="h-3 w-3" />
+                            Live Deployment
+                          </div>
+                          <h3 className="text-2xl font-black tracking-tight">{project.title}</h3>
+                          <p className="text-muted-foreground/60 text-sm font-medium line-clamp-2 italic">
+                            {project.description || "The future of this project is currently being compiled..."}
+                          </p>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-end">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary/60 italic">Strategic Progress</span>
+                            <span className="text-lg font-black text-primary">{project.progress || 0}%</span>
+                          </div>
+                          <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${project.progress || 0}%` }}
+                              transition={{ duration: 1, delay: 0.5 }}
+                              className="h-full bg-gradient-to-r from-primary/40 via-primary to-primary/40 rounded-full relative"
+                            >
+                              <div className="absolute inset-0 bg-white/20 blur-sm" />
+                            </motion.div>
+                          </div>
+                        </div>
+
+                        {/* Stats & Actions */}
+                        <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                          <div className="flex items-center gap-4">
+                            <div className="flex flex-col">
+                              <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Status</span>
+                              <span className="text-xs font-bold uppercase text-primary/80">{project.status}</span>
+                            </div>
+                            <div className="h-6 w-[1px] bg-white/5" />
+                            <div className="flex flex-col">
+                              <span className="text-[8px] font-black uppercase tracking-widest opacity-30">Category</span>
+                              <span className="text-xs font-bold uppercase text-primary/80">{project.project_type}</span>
+                            </div>
+                          </div>
+
+                          {project.live_preview_url && (
+                            <Button
+                              onClick={() => window.open(project.live_preview_url.startsWith('http') ? project.live_preview_url : `https://${project.live_preview_url}`, '_blank')}
+                              className="bg-primary hover:bg-primary/80 text-white rounded-2xl px-6 h-12 font-black tracking-tighter shadow-lg shadow-primary/20 group/btn"
+                            >
+                              PREVIEW LIVE
+                              <ExternalLink className="ml-2 h-4 w-4 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1 transition-transform" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="h-1 w-10 bg-white/10 rounded-full" />
+                <h2 className="text-sm font-black uppercase tracking-[0.3em] text-muted-foreground/40">Resource Control Center</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {links.map((link, index) => (
                 <motion.div
                   key={link.id}

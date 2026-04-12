@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -59,7 +59,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useStaffData } from "@/hooks/useStaffData";
 
 import { TaskApprovalDialog } from "./TaskApprovalDialog";
-import ClientOnboardingCreator from "./ClientOnboardingCreator";
+
 import SharedProjectForm from "../projects/SharedProjectForm";
 import TaskCreatePage from "../hr/TaskCreatePage";
 import TaskDetailPage from "../hr/TaskDetailPage";
@@ -581,7 +581,6 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       const { data, error } = await supabase
         .from('staff_profiles')
         .select('id, user_id, full_name, username, department_id, role, avatar_url')
-        .eq('department_id', userProfile.department_id)
         .order('full_name');
 
       console.log('Staff fetch result:', { data, error, count: data?.length });
@@ -2079,6 +2078,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         }}
         userProfile={userProfile}
         staff={staff}
+        departments={departments}
         subtaskTemplates={subtaskTemplates}
         taskTemplates={taskTemplates}
       />
@@ -2928,6 +2928,25 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                 </div>
               )}
               <div>
+                <Label htmlFor="edit_department">Department</Label>
+                <Select
+                  value={selectedTask.department_id || "no-department"}
+                  onValueChange={(value) => setSelectedTask({ ...selectedTask, department_id: value === "no-department" ? null : value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no-department">No Department</SelectItem>
+                    {departments.map(dept => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label htmlFor="edit_assigned_to">Reassign To</Label>
                 <Select
                   value={selectedTask.assigned_to}
@@ -2937,11 +2956,31 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                     <SelectValue placeholder="Select staff member" />
                   </SelectTrigger>
                   <SelectContent>
-                    {staff.map((s) => (
-                      <SelectItem key={s.user_id} value={s.user_id}>
-                        {s.full_name} (@{s.username})
-                      </SelectItem>
-                    ))}
+                    {departments.map(dept => {
+                      const deptStaff = staff.filter(s => s.department_id === dept.id);
+                      if (deptStaff.length === 0) return null;
+                      return (
+                        <SelectGroup key={dept.id}>
+                          <SelectLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5">{dept.name}</SelectLabel>
+                          {deptStaff.map(s => (
+                            <SelectItem key={s.user_id} value={s.user_id}>
+                              {s.full_name} (@{s.username})
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      );
+                    })}
+                    {/* Staff with no department */}
+                    {staff.filter(s => !s.department_id).length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5">Other</SelectLabel>
+                        {staff.filter(s => !s.department_id).map(s => (
+                          <SelectItem key={s.user_id} value={s.user_id}>
+                            {s.full_name} (@{s.username})
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -3215,12 +3254,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         </DialogContent>
       </Dialog>
 
-      {/* Client Onboarding Section */}
-      <Card className="bg-black/40 backdrop-blur-md border-white/10">
-        <CardContent className="pt-4">
-          <ClientOnboardingCreator userId={userId} />
-        </CardContent>
-      </Card>
+
 
       <TaskApprovalDialog
         task={selectedTask}
