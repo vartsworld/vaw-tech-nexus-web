@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  QrCode, 
-  Search, 
-  ArrowRight, 
-  Layers, 
-  User, 
-  Settings, 
-  CreditCard, 
+import {
+  QrCode,
+  Search,
+  ArrowRight,
+  Layers,
+  User,
+  Settings,
+  CreditCard,
   ExternalLink,
   ShieldCheck,
   Phone,
   Mail,
   Loader2,
-  LogOut
+  LogOut,
+  Copy,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -128,6 +130,15 @@ const Portal = () => {
     setIdentifier("");
   };
 
+  const handleCopy = (text: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied",
+      description: "Credential copied to clipboard",
+    });
+  };
+
   const getIcon = (iconName: string) => {
     switch (iconName?.toLowerCase()) {
       case 'user': return <User className="h-6 w-6" />;
@@ -142,12 +153,12 @@ const Portal = () => {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col items-center justify-center p-4 md:p-8">
       <ParticleBackground />
-      
+
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background pointer-events-none" />
 
       <AnimatePresence mode="wait">
         {!client ? (
-          <motion.div 
+          <motion.div
             key="login"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -180,8 +191,8 @@ const Portal = () => {
                   autoFocus
                 />
               </div>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isLoading || !identifier}
                 className="w-full h-14 rounded-2xl text-base font-bold transition-all relative overflow-hidden border-0"
               >
@@ -197,7 +208,7 @@ const Portal = () => {
             </form>
           </motion.div>
         ) : (
-          <motion.div 
+          <motion.div
             key="portal"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -218,15 +229,15 @@ const Portal = () => {
                   </p>
                 </motion.div>
               </div>
-              
+
               <motion.div
                 initial={{ x: 10, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
                 className="flex items-center gap-3 bg-muted/40 p-1 rounded-full border border-white/5"
               >
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
                   onClick={handleLogout}
                   className="rounded-full px-6 font-bold hover:bg-background/50 transition-all text-xs"
@@ -246,11 +257,9 @@ const Portal = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  whileHover={{ y: -5 }}
-                  className="h-full"
                 >
-                  <Card 
-                    className="group relative h-full overflow-hidden border-white/5 bg-background/20 backdrop-blur-3xl hover:bg-background/30 transition-all cursor-pointer rounded-[2rem] border-2 hover:border-primary/30 active:scale-[0.98]"
+                  <Card
+                    className="group relative h-full overflow-hidden border-white/5 bg-background/20 backdrop-blur-3xl hover:bg-background/25 transition-all cursor-pointer rounded-[2rem] border-2 hover:border-primary/20"
                     onClick={() => window.open(link.url.startsWith('http') ? link.url : `https://${link.url}`, '_blank')}
                   >
                     <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-100 transition-opacity">
@@ -261,7 +270,7 @@ const Portal = () => {
                       <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center mb-6 text-primary border border-primary/10 group-hover:bg-primary/10 transition-colors">
                         {getIcon(link.icon)}
                       </div>
-                      
+
                       <h3 className="text-xl font-black mb-2 tracking-tight">
                         {link.title}
                       </h3>
@@ -270,17 +279,37 @@ const Portal = () => {
                       </p>
 
                       {(link.page_id || link.password) && (
-                        <div className="bg-white/5 rounded-2xl p-4 mb-6 border border-white/10 backdrop-blur-md">
+                        <div className="bg-white/5 rounded-2xl p-4 mb-6 border border-white/10 backdrop-blur-md space-y-3">
                           {link.page_id && (
-                            <div className="flex justify-between items-center mb-2">
+                            <div className="flex justify-between items-center">
                               <span className="text-[10px] uppercase font-black tracking-widest opacity-30 italic">Login ID</span>
-                              <span className="text-xs font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-lg">{link.page_id}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-lg">{link.page_id}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 rounded-md hover:bg-primary/20 text-primary/60"
+                                  onClick={(e) => handleCopy(link.page_id || "", e)}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           )}
                           {link.password && (
                             <div className="flex justify-between items-center">
                               <span className="text-[10px] uppercase font-black tracking-widest opacity-30 italic">Password</span>
-                              <span className="text-xs font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-lg">{link.password}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-lg">{link.password}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 rounded-md hover:bg-primary/20 text-primary/60"
+                                  onClick={(e) => handleCopy(link.password || "", e)}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </div>
@@ -303,26 +332,24 @@ const Portal = () => {
               )}
             </div>
 
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
               className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6"
             >
-              <div className="flex items-center gap-6 opacity-40">
-                 <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-3 w-3" />
-                    <span className="text-xs font-bold">{client.email}</span>
-                 </div>
-                 {client.phone && (
-                   <div className="flex items-center gap-2 text-muted-foreground">
-                      <Phone className="h-3 w-3" />
-                      <span className="text-xs font-bold">{client.phone}</span>
-                   </div>
-                 )}
-              </div>
-              <div className="text-[10px] font-black tracking-widest text-muted-foreground/20 uppercase">
+              <div className="text-[10px] font-black tracking-widest text-muted-foreground/20 uppercase order-2 md:order-1">
                 VAW TECH NEXUS
+              </div>
+              <div className="flex items-center gap-6 opacity-40 order-1 md:order-2">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Mail className="h-3 w-3" />
+                  <span className="text-xs font-bold">vawoffices@gmail.com</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Phone className="h-3 w-3" />
+                  <span className="text-xs font-bold">+91 8281543610</span>
+                </div>
               </div>
             </motion.div>
           </motion.div>
