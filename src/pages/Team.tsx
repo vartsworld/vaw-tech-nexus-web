@@ -105,8 +105,10 @@ const Team = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Our Team | VAWtech"
-        description="Meet the talented team behind VAWtech — engineers, designers, marketers, and innovators driving digital excellence."
+        title="Meet Our Expert Team | Innovation at VAW Technologies"
+        description="Meet the talented team behind VAW Technologies — engineers, designers, marketers, and innovators driving digital excellence in AI and Web development."
+        keywords="team, leadership, tech experts, VAW team, Varts World, developers, Kerala tech talent"
+        ogImage="/og/team.png"
       />
       <Navbar />
 

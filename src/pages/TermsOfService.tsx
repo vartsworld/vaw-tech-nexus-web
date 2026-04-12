@@ -7,8 +7,9 @@ const TermsOfService = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="Terms of Service"
+        title="Terms of Service | VAW Technologies"
         description="VAW Technologies Terms of Service - Read our terms and conditions for using our services and website."
+        ogImage="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png"
       />
       <Navbar />
       <MobileHeader />

@@ -44,9 +44,10 @@ const VRARDevelopment = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Immersive VR & AR Development"
+        title="Immersive VR & AR Development Services"
         description="Premium VR and AR development services. We create interactive 3D simulations, augmented reality marketing campaigns, and immersive virtual tours. Innovating with Unity and Unreal Engine."
         keywords="VR development, AR development, augmented reality, virtual reality, 3D simulations, Unity 3D, Unreal Engine, VAW, Varts, Kerala tech"
+        ogImage="/og/vr-ar-development.png"
       />
       <Navbar />
       {/* Hero Section */}

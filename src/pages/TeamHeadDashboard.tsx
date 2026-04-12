@@ -50,6 +50,7 @@ import MiniChess from "@/components/staff/MiniChess";
 import TimeboxWidget from "@/components/staff/TimeboxWidget";
 import WidgetManager from "@/components/staff/WidgetManager";
 import { QuickNotes } from "@/components/staff/QuickNotes";
+import ClientOnboardingCreator from "@/components/staff/ClientOnboardingCreator";
 import AnnouncementBanner from "@/components/staff/AnnouncementBanner";
 import { useStaffData } from "@/hooks/useStaffData";
 import { useActivityTracker } from "@/hooks/useActivityTracker";
@@ -483,11 +484,16 @@ const TeamHeadDashboard = () => {
           />
         </div>
 
-        {/* Row 2: Quick Tools (Notes & Timer) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+        {/* Row 2: Quick Tools (Notes, Timer, Onboarding) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start relative z-10">
           {/* Quick Notes */}
           <div className="h-full">
             <QuickNotes userId={profile?.user_id || ''} />
+          </div>
+
+          {/* Onboarding Links */}
+          <div className="h-full bg-black/40 backdrop-blur-md rounded-xl border border-white/10 p-4">
+            <ClientOnboardingCreator userId={profile?.user_id || ''} />
           </div>
 
           {/* Timebox / Timer */}

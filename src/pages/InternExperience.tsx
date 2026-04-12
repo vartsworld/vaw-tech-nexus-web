@@ -408,6 +408,10 @@ const InternExperience = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      <SEO 
+        title="Share Your Intern Experience"
+        description="Provide your feedback and share your journey as a VAW Technologies intern. Your insights help us improve and allow us to issue your completion certificate."
+      />
       <ParticleBackground />
       <Navbar />
       

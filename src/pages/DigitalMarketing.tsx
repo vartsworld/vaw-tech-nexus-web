@@ -134,9 +134,10 @@ const DigitalMarketing = () => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <SEO
-        title="Digital Marketing & Social Media Management"
+        title="Digital Marketing, SEO & Social Media Management"
         description="Premium digital marketing services in Kerala. We offer social media management, content planning, SEO consulting, and paid advertising. Expert digital marketers at VAW Technologies."
         keywords="digital marketing, social media management, SEO, advertising, Kerala marketing, india dev, VAW, Varts, content planning"
+        ogImage="/og/digital-marketing.png"
       />
       <ParticleBackground />
       <Navbar />

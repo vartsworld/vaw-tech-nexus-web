@@ -74,8 +74,8 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
 
   useEffect(() => {
     fetchPackages();
-    fetchLinks();
-  }, []);
+    if (userId) fetchLinks();
+  }, [userId]);
 
   const fetchPackages = async () => {
     const { data } = await supabase

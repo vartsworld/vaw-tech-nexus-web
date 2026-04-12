@@ -15,6 +15,7 @@ import MiniChess from './MiniChess';
 import TimeboxWidget from './TimeboxWidget';
 import WidgetManager from './WidgetManager';
 import { ActivityLogPanel } from './ActivityLogPanel';
+import ClientOnboardingCreator from './ClientOnboardingCreator';
 
 interface DraggableWorkspaceProps {
   userId: string;
@@ -35,6 +36,7 @@ const availableWidgets = [
   { component: 'MiniChess', title: 'Mini Chess', span: 'half' as const, removable: true },
   { component: 'ActivityLogPanel', title: 'Activity Logger', span: 'half' as const, removable: true },
   { component: 'TimeboxWidget', title: 'Focus Timer', span: 'half' as const, removable: true },
+  { component: 'ClientOnboardingCreator', title: 'Onboarding Links', span: 'half' as const, removable: true },
 ];
 
 const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) => {
@@ -186,6 +188,12 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
         return <ActivityLogPanel userId={userId} className="bg-transparent border-0" />;
       case 'TimeboxWidget':
         return <TimeboxWidget userId={userId} userProfile={userProfile} />;
+      case 'ClientOnboardingCreator':
+        return (
+          <div className="p-4 h-full overflow-auto">
+            <ClientOnboardingCreator userId={userId} />
+          </div>
+        );
       default:
         return null;
     }

@@ -26,6 +26,7 @@ const ServiceRequest = () => {
         title="Request a Service"
         description="Book a consultation for web development, AI solutions, or digital marketing. Get a custom quote for your next big project at VAW Technologies."
         keywords="service request, quote, web development quote, AI consultation, digital marketing help, VAW, Varts"
+        ogImage="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
       />
       <ParticleBackground />
       <Navbar />

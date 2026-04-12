@@ -148,6 +148,7 @@ const Internship = () => {
       title="Tech & Design Internship Program"
       description="Join our online Certificate Internship Program in tech and design. Domains include UI/UX, AI training, web development, app development, and digital marketing. Apply now at VAW Technologies."
       keywords="internship, tech internship, design internship, web development internship, Kerala internship, india dev, VAW, Varts, student programs"
+      ogImage="/og/internship.png"
     />
     <ParticleBackground />
     <Navbar />

@@ -42,6 +42,7 @@ import MobileBottomNav from "@/components/client/MobileBottomNav";
 import BrowserNotificationPrompt from "@/components/client/BrowserNotificationPrompt";
 import ClientNotificationBanner from "@/components/client/ClientNotificationBanner";
 import ClientReferralHub from "@/components/client/ClientReferralHub";
+import SEO from "@/components/SEO";
 
 const ClientDashboard = () => {
     // Sidebar closed by default on mobile (< 1024px), open on desktop
@@ -251,6 +252,10 @@ const ClientDashboard = () => {
     const isHomePage = location.pathname === '/client/dashboard';
     return (
         <div className="h-screen bg-background text-foreground flex overflow-hidden">
+            <SEO 
+                title={profile ? `${profile.contact_person} - Client Dashboard` : "Client Dashboard"} 
+                description="Manage your projects, financials, and support in your VAW Technology Client Dashboard."
+            />
             {/* Sidebar - hidden on Home page */}
             {!isHomePage && (
             <AnimatePresence mode="wait">

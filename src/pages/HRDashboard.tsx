@@ -48,6 +48,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import SEO from "@/components/SEO";
 
 // Sub-components
 import StaffManagement from "@/components/hr/StaffManagement";
@@ -306,6 +307,7 @@ const HRDashboard = () => {
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden selection:bg-primary/30">
+      <SEO title="HR Dashboard | VAW Technologies" description="Internal Human Resources portal for VAW Technologies." />
       {/* Background Glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full" />

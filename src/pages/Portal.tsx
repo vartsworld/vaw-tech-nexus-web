@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import SEO from "@/components/SEO";
 import ParticleBackground from "@/components/ParticleBackground";
 
 interface PortalLink {
@@ -152,6 +153,11 @@ const Portal = () => {
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col items-center justify-center p-4 md:p-8">
+      <SEO 
+        title={client ? `Welcome, ${client.contact_person}` : "Access Your Portal"} 
+        description={client ? `Access personalized resources and tools for ${client.company_name} in your VAW Portal.` : "Secure login for your VAW Technology Client Portal."}
+        ogImage="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png"
+      />
       <ParticleBackground />
 
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background pointer-events-none" />

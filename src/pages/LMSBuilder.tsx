@@ -635,10 +635,11 @@ const LMSBuilder = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20 md:pb-0">
       <SEO 
-        title="Custom LMS Builder | Design Your Institution's Digital Ecosystem" 
+        title="Custom LMS Builder | AI-Powered Institutional ERP" 
         description="Build your custom School or College management system in minutes. Interactive configurator with Academic, ERP, and AI modules. Get a real-time quote for your institutions digital transformation."
         keywords="LMS Builder, School Management System, College ERP, Educational Software India, VAW Technologies LMS, AI School Assistant"
         canonicalUrl="https://vawtech.in/lms"
+        ogImage="/og/lms.png"
       />
       
       {/* HEADER */}

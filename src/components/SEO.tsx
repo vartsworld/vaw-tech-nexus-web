@@ -13,7 +13,7 @@ const SEO = ({
   title,
   description = "VAW Technologies - Premium website development, web applications, AI solutions, AR/VR projects, and digital marketing services. Leading tech agency in Kerala, India.",
   keywords = "VAW, Varts, virtual arts, Kerala dev, Kerala hackathon, india dev, web development, designing, marketing, App development, Ai tool development, Advertisement, tech agency kerala",
-  ogImage = "https://lovable.dev/opengraph-image-p98pqg.png",
+  ogImage = "/og/home.png",
   ogType = "website",
   canonicalUrl,
 }: SEOProps) => {
@@ -43,23 +43,28 @@ const SEO = ({
       document.head.appendChild(meta);
     }
 
-    // Update Open Graph tags
-    const updateOGTag = (property: string, content: string) => {
-      const tag = document.querySelector(`meta[property="${property}"]`);
+    // Update Meta tags helper
+    const updateMetaTag = (name: string, content: string, isProperty = false) => {
+      const attr = isProperty ? "property" : "name";
+      const tag = document.querySelector(`meta[${attr}="${name}"]`);
       if (tag) {
         tag.setAttribute("content", content);
       } else {
         const meta = document.createElement("meta");
-        meta.setAttribute("property", property);
+        meta.setAttribute(attr, name);
         meta.content = content;
         document.head.appendChild(meta);
       }
     };
 
-    updateOGTag("og:title", `${title} | VAW`);
-    updateOGTag("og:description", description);
-    updateOGTag("og:image", ogImage);
-    updateOGTag("og:type", ogType);
+    updateMetaTag("og:title", `${title} | VAW`, true);
+    updateMetaTag("og:description", description, true);
+    updateMetaTag("og:image", ogImage, true);
+    updateMetaTag("og:type", ogType, true);
+
+    updateMetaTag("twitter:title", `${title} | VAW`);
+    updateMetaTag("twitter:description", description);
+    updateMetaTag("twitter:image", ogImage);
 
     // Update Canonical URL
     let canonical = document.querySelector('link[rel="canonical"]');

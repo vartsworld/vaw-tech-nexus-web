@@ -72,9 +72,10 @@ const DigitalDesign = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Creative Digital Design & Branding"
+        title="Creative Digital Design & Branding Services"
         description="Professional digital design services. We create eye-catching posters, advertisements, e-books, brand identities, and NFC digital cards. Elevate your brand with VAW Technologies."
         keywords="digital design, branding, logo design, graphic design, posters, advertisements, e-books, NFC cards, brand identity, VAW, Varts"
+        ogImage="/og/digital-design.png"
       />
       <Navbar />
       {/* Hero Section */}

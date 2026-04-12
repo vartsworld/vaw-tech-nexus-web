@@ -15,6 +15,7 @@ import PartnersManagement from "@/components/admin/PartnersManagement";
 import ClientLogosManagement from "@/components/admin/ClientLogosManagement";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import SalesDashboard from "./SalesDashboard";
+import SEO from "@/components/SEO";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -68,6 +69,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO title="Admin Dashboard | VAW Technologies" description="Internal administration portal for VAW Technologies." />
       <AdminHeader />
 
       <div className="container mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">

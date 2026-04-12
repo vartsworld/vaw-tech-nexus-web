@@ -7,8 +7,9 @@ const PrivacyPolicy = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="Privacy Policy"
+        title="Privacy Policy | VAW Technologies"
         description="VAW Technologies Privacy Policy - Learn how we collect, use, and protect your personal data."
+        ogImage="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png"
       />
       <Navbar />
       <MobileHeader />

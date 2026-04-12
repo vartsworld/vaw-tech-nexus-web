@@ -120,9 +120,10 @@ const WebAppDevelopment = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="Scalable Web App Development"
+        title="Scalable Web Application Development & SaaS"
         description="Custom web application development services. We build CRM systems, inventory management apps, and complex project platforms. Scalable, secure, and modern web apps by VAW Technologies."
         keywords="web app development, custom software, CRM development, inventory management systems, SaaS development, VAW, Varts, Kerala tech agency"
+        ogImage="/og/webapp-development.png"
       />
       <Navbar />
 

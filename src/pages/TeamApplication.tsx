@@ -176,9 +176,10 @@ const TeamApplication = () => {
   return (
     <div className="min-h-screen bg-background p-4 pt-24">
       <SEO
-        title="Join Our Core Team"
+        title="Join Our Core Team | Careers at VAW Technologies"
         description="Apply to join the core team at VAW Technologies. We're looking for passionate individuals in tech, design, and management. Start your career with us today."
         keywords="careers, job application, join team, tech jobs, design jobs, VAW, Varts, Kerala tech careers"
+        ogImage="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
       />
       <Navbar />
       <div className="max-w-4xl mx-auto my-10">

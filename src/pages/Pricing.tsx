@@ -138,9 +138,10 @@ const Pricing = () => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <SEO
-        title="Web Development & Tech Service Pricing"
+        title="Predictable Pricing for Web & AI Tech Services"
         description="Transparent and affordable pricing for premium web development, AI integration, e-commerce platforms, and digital marketing services at VAW Technologies."
         keywords="web development pricing, app development cost, SEO pricing, digital marketing packages, VAW, Varts, Kerala tech agency pricing"
+        ogImage="/og/pricing.png"
       />
       <ParticleBackground />
       <Navbar />

@@ -44,9 +44,10 @@ const AISolutions = () => {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Advanced AI Solutions"
+        title="AI Solutions & Intelligent Conversational Agents"
         description="Transform your business with cutting-edge AI solutions. We develop AI character chatbots, voice assistants, predictive analytics tools, and NLP applications."
         keywords="AI development, artificial intelligence, chatbots, voice assistants, machine learning, VAW, Varts, AI tool development"
+        ogImage="/og/ai-solutions.png"
       />
       <Navbar />
       {/* Hero Section */}
