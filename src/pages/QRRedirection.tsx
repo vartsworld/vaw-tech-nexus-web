@@ -21,25 +21,47 @@ const QRRedirection = () => {
       }
 
       try {
-        const { data, error: fetchError } = await supabase
+        const fetchResult: any = await supabase
           .from('qr_redirections')
-          .select('target_url')
+          .select('target_url, is_portal')
           .eq('qr_id', id)
           .maybeSingle();
 
+        const data = fetchResult.data;
+        const fetchError = fetchResult.error;
+
         if (fetchError) throw fetchError;
 
-        if (data && data.target_url) {
+        if (data) {
           let url = data.target_url;
-          // Ensure URL has protocol
-          if (!url.startsWith('http://') && !url.startsWith('https://')) {
-            url = 'https://' + url;
-          }
           
-          // Small delay for the "Wow" animation feel
-          setTimeout(() => {
-            window.location.href = url;
-          }, 1500);
+          if (data.is_portal) {
+            // Redirect to the portal page
+            url = `/portal?qr_id=${id}`;
+            setTimeout(() => {
+              navigate(url);
+            }, 1500);
+            return;
+          }
+
+          if (url) {
+            // Ensure URL has protocol
+            if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) {
+              url = 'https://' + url;
+            }
+            
+            // Small delay for the "Wow" animation feel
+            setTimeout(() => {
+              if (url.startsWith('/')) {
+                navigate(url);
+              } else {
+                window.location.href = url;
+              }
+            }, 1500);
+          } else {
+            setError(`QR Code "${id}" is not configured yet.`);
+            setLoading(false);
+          }
         } else {
           setError(`QR Code "${id}" is not configured yet.`);
           setLoading(false);

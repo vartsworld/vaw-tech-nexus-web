@@ -53,6 +53,7 @@ import Team from "./pages/Team";
 import QRRedirection from "./pages/QRRedirection";
 import SalesDashboard from "./pages/SalesDashboard";
 import AddClient from "./pages/AddClient";
+import Portal from "./pages/Portal";
 
 
 
@@ -141,6 +142,7 @@ const AppContent = () => {
           <Route path="/qr" element={<QRRedirection />} />
           <Route path="/sales/dashboard" element={<SalesDashboard />} />
           <Route path="/sales/add-client" element={<AddClient />} />
+          <Route path="/portal" element={<Portal />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

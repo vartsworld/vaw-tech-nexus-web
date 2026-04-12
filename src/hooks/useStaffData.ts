@@ -57,35 +57,41 @@ export const useStaffData = () => {
 
   useEffect(() => {
     fetchStaffData();
-    
-    // Subscribe to profile changes for real-time points/earnings updates
-    const subscribeToProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      
-      const channel = supabase
-        .channel('profile-changes')
+
+    let isMounted = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      // If component unmounted during the async call, do nothing
+      if (!isMounted || !user) return;
+
+      channel = supabase
+        .channel(`profile-updates-${user.id}`)
         .on('postgres_changes', {
           event: 'UPDATE',
           schema: 'public',
           table: 'staff_profiles',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${user.id}`,
         }, (payload) => {
-          setProfile(prev => prev ? {
-            ...prev,
-            earnings: Number(payload.new.earnings) || 0,
-            total_points: payload.new.total_points || 0,
-            attendance_streak: payload.new.attendance_streak || 0
-          } : null);
+          setProfile(prev =>
+            prev ? {
+              ...prev,
+              earnings: Number(payload.new.earnings) || 0,
+              total_points: payload.new.total_points || 0,
+              attendance_streak: payload.new.attendance_streak || 0,
+            } : null
+          );
         })
         .subscribe();
-        
-      return () => {
+    });
+
+    return () => {
+      isMounted = false;
+      if (channel) {
         supabase.removeChannel(channel);
-      };
+        channel = null;
+      }
     };
-    
-    subscribeToProfile();
   }, []);
 
   const fetchStaffData = async () => {
