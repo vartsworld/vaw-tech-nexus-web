@@ -15,7 +15,8 @@ import {
   Loader2,
   LogOut,
   Copy,
-  Check
+  Check,
+  Monitor
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,7 +115,7 @@ const Portal = () => {
       setLinks((linksData as PortalLink[]) || []);
 
       // Fetch Synced Projects
-      const { data: projectsData, error: projectsError } = await supabase
+      const { data: projectsData, error: projectsError } = await (supabase as any)
         .from('client_projects')
         .select('*')
         .eq('client_id', clientData.id)
@@ -440,6 +441,7 @@ const Portal = () => {
                 </div>
               )}
             </div>
+          </div>
 
             <motion.div
               initial={{ opacity: 0 }}
