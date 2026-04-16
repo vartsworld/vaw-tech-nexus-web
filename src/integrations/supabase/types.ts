@@ -3490,6 +3490,36 @@ export type Database = {
           },
         ]
       }
+      staff_biometric_credentials: {
+        Row: {
+          created_at: string
+          credential_id: string
+          device_name: string | null
+          id: string
+          last_used_at: string | null
+          public_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credential_id: string
+          device_name?: string | null
+          id?: string
+          last_used_at?: string | null
+          public_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credential_id?: string
+          device_name?: string | null
+          id?: string
+          last_used_at?: string | null
+          public_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       staff_notes: {
         Row: {
           content: string
@@ -5629,6 +5659,15 @@ export type Database = {
       get_app_setting: {
         Args: { p_default?: Json; p_key: string }
         Returns: Json
+      }
+      get_biometric_user: {
+        Args: { p_credential_id: string }
+        Returns: {
+          email: string
+          is_department_head: boolean
+          staff_role: string
+          user_id: string
+        }[]
       }
       get_client_dashboard_stats: {
         Args: { p_client_id: string }
