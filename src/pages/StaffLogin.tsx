@@ -327,6 +327,70 @@ const StaffLogin = () => {
     }
   };
 
+  const handleBiometricLogin = async () => {
+    const result = await authenticate();
+    if (!result.success || !result.email) {
+      toast({
+        title: "Biometric Login Failed",
+        description: "Could not verify your identity. Try emoji or passcode login.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      setLoading(true);
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('biometric-login', {
+        body: { user_id: result.userId },
+      });
+      if (fnError || !fnData?.access_token) {
+        toast({ title: "Biometric Login Failed", description: "Please use emoji or passcode login.", variant: "destructive" });
+        return;
+      }
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: fnData.access_token,
+        refresh_token: fnData.refresh_token,
+      });
+      if (sessionError) throw sessionError;
+      const staffData = { role: result.role, is_department_head: result.isDepartmentHead };
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const hasMarkedAttendance = await checkTodayAttendance(authUser.id);
+        const dashboardRoute = getDashboardRoute(staffData);
+        navigate(!hasMarkedAttendance ? dashboardRoute : dashboardRoute, 
+          !hasMarkedAttendance ? { state: { requireAttendance: true } } : undefined);
+      }
+    } catch (err) {
+      console.error('Biometric sign-in error:', err);
+      toast({ title: "Error", description: "Biometric login failed. Please try another method.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBiometricSetup = async () => {
+    const success = await registerBiometric();
+    toast(success
+      ? { title: "Fingerprint Registered!", description: "You can now use fingerprint to log in." }
+      : { title: "Setup Failed", description: "Could not register fingerprint. You can try later in settings.", variant: "destructive" as const });
+    navigateAfterSetup();
+  };
+
+  const skipBiometricSetup = () => navigateAfterSetup();
+
+  const navigateAfterSetup = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return navigate('/staff/dashboard');
+    const { data: staffProfile } = await supabase.from('staff_profiles').select('*').eq('user_id', user.id).single();
+    const profileToUse = userProfile || staffProfile;
+    if (profileToUse) {
+      const hasMarkedAttendance = await checkTodayAttendance(user.id);
+      const dashboardRoute = getDashboardRoute(profileToUse);
+      navigate(dashboardRoute, !hasMarkedAttendance ? { state: { requireAttendance: true } } : undefined);
+    } else {
+      navigate('/staff/dashboard', { state: { requireAttendance: true } });
+    }
+  };
+
   const addEmojiToPassword = (emoji: string, isConfirm = false) => {
     if (isConfirm) {
       if (confirmEmojiPassword.length < 8) {
