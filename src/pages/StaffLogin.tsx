@@ -298,8 +298,13 @@ const StaffLogin = () => {
       // Use stored userProfile or fetch new one
       const profileToUse = userProfile || staffProfile;
 
+      // If biometric is supported, prompt to set it up
+      if (biometricSupported) {
+        setShowBiometricSetup(true);
+        return;
+      }
+
       if (profileToUse) {
-        // Check if attendance is marked for today
         const hasMarkedAttendance = await checkTodayAttendance(user.id);
         const dashboardRoute = getDashboardRoute(profileToUse);
         if (!hasMarkedAttendance) {
@@ -308,7 +313,6 @@ const StaffLogin = () => {
           navigate(dashboardRoute);
         }
       } else {
-        // Fallback - shouldn't happen
         navigate('/staff/dashboard', { state: { requireAttendance: true } });
       }
     } catch (error) {
