@@ -525,6 +525,41 @@ const StaffLogin = () => {
     );
   }
 
+  if (showBiometricSetup) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 p-3 rounded-full bg-green-100">
+              <Fingerprint className="h-8 w-8 text-green-600" />
+            </div>
+            <CardTitle className="text-2xl">Enable Fingerprint Login?</CardTitle>
+            <p className="text-gray-600">Use your fingerprint for quick & secure login next time</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={handleBiometricSetup}
+              disabled={isRegistering}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              {isRegistering ? "Registering..." : "Enable Fingerprint"}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={skipBiometricSetup}
+              className="w-full"
+            >
+              Skip for now
+            </Button>
+            <p className="text-xs text-center text-gray-500">
+              You can enable this later in your profile settings
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <PWAInstallPrompt />
@@ -537,6 +572,31 @@ const StaffLogin = () => {
           <p className="text-gray-600">Access your workspace</p>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Fingerprint Quick Unlock Button */}
+          {biometricSupported && (
+            <Button
+              variant="outline"
+              onClick={handleBiometricLogin}
+              disabled={isAuthenticating || loading}
+              className="w-full flex items-center justify-center gap-2 border-green-300 hover:bg-green-50 hover:border-green-400 py-6"
+            >
+              <Fingerprint className="h-6 w-6 text-green-600" />
+              <span className="text-green-700 font-medium">
+                {isAuthenticating ? "Verifying..." : "Login with Fingerprint"}
+              </span>
+            </Button>
+          )}
+
+          {biometricSupported && (
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">or use</span>
+              </div>
+            </div>
+          )}
           <div className="flex gap-2">
             <Button
               variant={loginMode === "emoji" ? "default" : "outline"}
