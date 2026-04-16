@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, UserCheck, Smartphone } from "lucide-react";
+import { Eye, EyeOff, UserCheck, Smartphone, Fingerprint } from "lucide-react";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import { useBiometricAuth } from "@/hooks/useBiometricAuth";
 
 const EMOJI_OPTIONS = [
   "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
