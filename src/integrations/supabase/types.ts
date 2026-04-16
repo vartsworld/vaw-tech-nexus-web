@@ -1246,6 +1246,41 @@ export type Database = {
           },
         ]
       }
+      client_portals: {
+        Row: {
+          client_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_profiles: {
         Row: {
           address: string | null
@@ -1340,12 +1375,14 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          live_preview_url: string | null
           next_payment_date: string | null
           package_type: string | null
           progress: number | null
           project_type: string
           renewal_date: string | null
           status: string
+          sync_to_portal: boolean | null
           title: string
           total_amount: number | null
           updated_at: string | null
@@ -1357,12 +1394,14 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          live_preview_url?: string | null
           next_payment_date?: string | null
           package_type?: string | null
           progress?: number | null
           project_type: string
           renewal_date?: string | null
           status?: string
+          sync_to_portal?: boolean | null
           title: string
           total_amount?: number | null
           updated_at?: string | null
@@ -1374,12 +1413,14 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          live_preview_url?: string | null
           next_payment_date?: string | null
           package_type?: string | null
           progress?: number | null
           project_type?: string
           renewal_date?: string | null
           status?: string
+          sync_to_portal?: boolean | null
           title?: string
           total_amount?: number | null
           updated_at?: string | null
@@ -2490,6 +2531,59 @@ export type Database = {
           },
         ]
       }
+      portal_links: {
+        Row: {
+          category: string | null
+          client_id: string
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          page_id: string | null
+          password: string | null
+          title: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          category?: string | null
+          client_id: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          page_id?: string | null
+          password?: string | null
+          title: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          category?: string | null
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          page_id?: string | null
+          password?: string | null
+          title?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_links_portal_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_portals"
+            referencedColumns: ["client_id"]
+          },
+        ]
+      }
       pricing_addons: {
         Row: {
           created_at: string | null
@@ -2892,30 +2986,44 @@ export type Database = {
       }
       qr_redirections: {
         Row: {
+          client_id: string | null
           created_at: string
           description: string | null
           id: string
+          is_portal: boolean | null
           qr_id: string
           target_url: string
           updated_at: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
+          is_portal?: boolean | null
           qr_id: string
           target_url: string
           updated_at?: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
+          is_portal?: boolean | null
           qr_id?: string
           target_url?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "qr_redirections_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quests: {
         Row: {
@@ -3502,6 +3610,8 @@ export type Database = {
           marriage_preference: string | null
           mother_name: string | null
           passcode_used: boolean | null
+          patra_card_url: string | null
+          patra_staff_id: string | null
           physical_address: string | null
           profile_photo_url: string | null
           reference_person_name: string | null
@@ -3544,6 +3654,8 @@ export type Database = {
           marriage_preference?: string | null
           mother_name?: string | null
           passcode_used?: boolean | null
+          patra_card_url?: string | null
+          patra_staff_id?: string | null
           physical_address?: string | null
           profile_photo_url?: string | null
           reference_person_name?: string | null
@@ -3586,6 +3698,8 @@ export type Database = {
           marriage_preference?: string | null
           mother_name?: string | null
           passcode_used?: boolean | null
+          patra_card_url?: string | null
+          patra_staff_id?: string | null
           physical_address?: string | null
           profile_photo_url?: string | null
           reference_person_name?: string | null
@@ -5573,6 +5687,8 @@ export type Database = {
           marriage_preference: string | null
           mother_name: string | null
           passcode_used: boolean | null
+          patra_card_url: string | null
+          patra_staff_id: string | null
           physical_address: string | null
           profile_photo_url: string | null
           reference_person_name: string | null
