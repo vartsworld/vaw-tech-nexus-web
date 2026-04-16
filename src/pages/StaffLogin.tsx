@@ -23,7 +23,7 @@ const EMOJI_OPTIONS = [
 ];
 
 const StaffLogin = () => {
-  const [loginMode, setLoginMode] = useState<"first-time" | "emoji">("first-time");
+  const [loginMode, setLoginMode] = useState<"first-time" | "emoji">("emoji");
   const [username, setUsername] = useState("");
   const [passcode, setPasscode] = useState("");
   const [showPasscode, setShowPasscode] = useState(false);
