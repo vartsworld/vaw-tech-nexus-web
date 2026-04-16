@@ -468,18 +468,18 @@ const StaffLogin = () => {
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <Button
-              variant={loginMode === "first-time" ? "default" : "outline"}
-              onClick={() => setLoginMode("first-time")}
-              className="flex-1"
-            >
-              First Time
-            </Button>
-            <Button
               variant={loginMode === "emoji" ? "default" : "outline"}
               onClick={() => setLoginMode("emoji")}
               className="flex-1"
             >
               Emoji Login
+            </Button>
+            <Button
+              variant={loginMode === "first-time" ? "default" : "outline"}
+              onClick={() => setLoginMode("first-time")}
+              className="flex-1"
+            >
+              First Time
             </Button>
           </div>
 
