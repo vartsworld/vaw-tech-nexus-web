@@ -34,8 +34,10 @@ const StaffLogin = () => {
   const [confirmEmojiPassword, setConfirmEmojiPassword] = useState<string[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [showBiometricSetup, setShowBiometricSetup] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isSupported: biometricSupported, isAuthenticating, authenticate, register: registerBiometric, isRegistering } = useBiometricAuth();
 
   const checkTodayAttendance = async (userId: string) => {
     const today = new Date().toISOString().split('T')[0];
