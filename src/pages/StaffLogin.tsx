@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, UserCheck, Smartphone } from "lucide-react";
+import { Eye, EyeOff, UserCheck, Smartphone, Fingerprint } from "lucide-react";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import { useBiometricAuth } from "@/hooks/useBiometricAuth";
 
 const EMOJI_OPTIONS = [
   "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
@@ -33,8 +34,10 @@ const StaffLogin = () => {
   const [confirmEmojiPassword, setConfirmEmojiPassword] = useState<string[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [showBiometricSetup, setShowBiometricSetup] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isSupported: biometricSupported, isAuthenticating, authenticate, register: registerBiometric, isRegistering } = useBiometricAuth();
 
   const checkTodayAttendance = async (userId: string) => {
     const today = new Date().toISOString().split('T')[0];
@@ -295,8 +298,13 @@ const StaffLogin = () => {
       // Use stored userProfile or fetch new one
       const profileToUse = userProfile || staffProfile;
 
+      // If biometric is supported, prompt to set it up
+      if (biometricSupported) {
+        setShowBiometricSetup(true);
+        return;
+      }
+
       if (profileToUse) {
-        // Check if attendance is marked for today
         const hasMarkedAttendance = await checkTodayAttendance(user.id);
         const dashboardRoute = getDashboardRoute(profileToUse);
         if (!hasMarkedAttendance) {
@@ -305,7 +313,6 @@ const StaffLogin = () => {
           navigate(dashboardRoute);
         }
       } else {
-        // Fallback - shouldn't happen
         navigate('/staff/dashboard', { state: { requireAttendance: true } });
       }
     } catch (error) {
@@ -317,6 +324,70 @@ const StaffLogin = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    const result = await authenticate();
+    if (!result.success || !result.email) {
+      toast({
+        title: "Biometric Login Failed",
+        description: "Could not verify your identity. Try emoji or passcode login.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      setLoading(true);
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('biometric-login', {
+        body: { user_id: result.userId },
+      });
+      if (fnError || !fnData?.access_token) {
+        toast({ title: "Biometric Login Failed", description: "Please use emoji or passcode login.", variant: "destructive" });
+        return;
+      }
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: fnData.access_token,
+        refresh_token: fnData.refresh_token,
+      });
+      if (sessionError) throw sessionError;
+      const staffData = { role: result.role, is_department_head: result.isDepartmentHead };
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const hasMarkedAttendance = await checkTodayAttendance(authUser.id);
+        const dashboardRoute = getDashboardRoute(staffData);
+        navigate(!hasMarkedAttendance ? dashboardRoute : dashboardRoute, 
+          !hasMarkedAttendance ? { state: { requireAttendance: true } } : undefined);
+      }
+    } catch (err) {
+      console.error('Biometric sign-in error:', err);
+      toast({ title: "Error", description: "Biometric login failed. Please try another method.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBiometricSetup = async () => {
+    const success = await registerBiometric();
+    toast(success
+      ? { title: "Fingerprint Registered!", description: "You can now use fingerprint to log in." }
+      : { title: "Setup Failed", description: "Could not register fingerprint. You can try later in settings.", variant: "destructive" as const });
+    navigateAfterSetup();
+  };
+
+  const skipBiometricSetup = () => navigateAfterSetup();
+
+  const navigateAfterSetup = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return navigate('/staff/dashboard');
+    const { data: staffProfile } = await supabase.from('staff_profiles').select('*').eq('user_id', user.id).single();
+    const profileToUse = userProfile || staffProfile;
+    if (profileToUse) {
+      const hasMarkedAttendance = await checkTodayAttendance(user.id);
+      const dashboardRoute = getDashboardRoute(profileToUse);
+      navigate(dashboardRoute, !hasMarkedAttendance ? { state: { requireAttendance: true } } : undefined);
+    } else {
+      navigate('/staff/dashboard', { state: { requireAttendance: true } });
     }
   };
 
@@ -454,6 +525,41 @@ const StaffLogin = () => {
     );
   }
 
+  if (showBiometricSetup) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 p-3 rounded-full bg-green-100">
+              <Fingerprint className="h-8 w-8 text-green-600" />
+            </div>
+            <CardTitle className="text-2xl">Enable Fingerprint Login?</CardTitle>
+            <p className="text-gray-600">Use your fingerprint for quick & secure login next time</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={handleBiometricSetup}
+              disabled={isRegistering}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              {isRegistering ? "Registering..." : "Enable Fingerprint"}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={skipBiometricSetup}
+              className="w-full"
+            >
+              Skip for now
+            </Button>
+            <p className="text-xs text-center text-gray-500">
+              You can enable this later in your profile settings
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <PWAInstallPrompt />
@@ -466,6 +572,31 @@ const StaffLogin = () => {
           <p className="text-gray-600">Access your workspace</p>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Fingerprint Quick Unlock Button */}
+          {biometricSupported && (
+            <Button
+              variant="outline"
+              onClick={handleBiometricLogin}
+              disabled={isAuthenticating || loading}
+              className="w-full flex items-center justify-center gap-2 border-green-300 hover:bg-green-50 hover:border-green-400 py-6"
+            >
+              <Fingerprint className="h-6 w-6 text-green-600" />
+              <span className="text-green-700 font-medium">
+                {isAuthenticating ? "Verifying..." : "Login with Fingerprint"}
+              </span>
+            </Button>
+          )}
+
+          {biometricSupported && (
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-500">or use</span>
+              </div>
+            </div>
+          )}
           <div className="flex gap-2">
             <Button
               variant={loginMode === "emoji" ? "default" : "outline"}
