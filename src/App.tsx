@@ -77,6 +77,11 @@ const ManifestSwitcher = () => {
     const manifestLink = document.querySelector('link[rel="manifest"]');
     if (location.pathname.startsWith('/client')) {
       manifestLink?.setAttribute('href', '/client-manifest.json');
+    } else if (
+      location.pathname.startsWith('/staff') ||
+      location.pathname.startsWith('/team-head')
+    ) {
+      manifestLink?.setAttribute('href', '/staff-manifest.json');
     } else {
       manifestLink?.setAttribute('href', '/manifest.json');
     }
