@@ -23,7 +23,7 @@ const EMOJI_OPTIONS = [
 ];
 
 const StaffLogin = () => {
-  const [loginMode, setLoginMode] = useState<"first-time" | "emoji">("first-time");
+  const [loginMode, setLoginMode] = useState<"first-time" | "emoji">("emoji");
   const [username, setUsername] = useState("");
   const [passcode, setPasscode] = useState("");
   const [showPasscode, setShowPasscode] = useState(false);
@@ -468,18 +468,18 @@ const StaffLogin = () => {
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <Button
-              variant={loginMode === "first-time" ? "default" : "outline"}
-              onClick={() => setLoginMode("first-time")}
-              className="flex-1"
-            >
-              First Time
-            </Button>
-            <Button
               variant={loginMode === "emoji" ? "default" : "outline"}
               onClick={() => setLoginMode("emoji")}
               className="flex-1"
             >
               Emoji Login
+            </Button>
+            <Button
+              variant={loginMode === "first-time" ? "default" : "outline"}
+              onClick={() => setLoginMode("first-time")}
+              className="flex-1"
+            >
+              First Time
             </Button>
           </div>
 
