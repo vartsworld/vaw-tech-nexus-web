@@ -601,11 +601,44 @@ const StaffLogin = () => {
       <PWAInstallPrompt />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 p-3 rounded-full bg-blue-100">
-            <UserCheck className="h-8 w-8 text-blue-600" />
+          <div className="mx-auto mb-4 relative h-20 w-20">
+            {/* Default icon - fades out when profile found */}
+            <div
+              className={`absolute inset-0 p-3 rounded-full bg-blue-100 flex items-center justify-center transition-all duration-500 ease-out ${
+                previewProfile ? "opacity-0 scale-75 rotate-12" : "opacity-100 scale-100 rotate-0"
+              }`}
+            >
+              <UserCheck className="h-8 w-8 text-blue-600" />
+            </div>
+            {/* Profile photo - fades in when found */}
+            <div
+              className={`absolute inset-0 transition-all duration-500 ease-out ${
+                previewProfile ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-75 -rotate-12"
+              }`}
+            >
+              <Avatar className="h-20 w-20 ring-4 ring-blue-200 shadow-lg">
+                {(previewProfile?.profile_photo_url || previewProfile?.avatar_url) && (
+                  <AvatarImage
+                    src={previewProfile?.profile_photo_url || previewProfile?.avatar_url}
+                    alt={previewProfile?.full_name || username}
+                    className="object-cover"
+                  />
+                )}
+                <AvatarFallback className="bg-blue-100 text-blue-700 text-2xl font-bold">
+                  {previewProfile?.full_name ? previewProfile.full_name.charAt(0).toUpperCase() : <UserIcon className="h-8 w-8" />}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            {previewLoading && (
+              <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-blue-500 border-2 border-white animate-pulse" />
+            )}
           </div>
-          <CardTitle className="text-2xl">Staff Login</CardTitle>
-          <p className="text-gray-600">Access your workspace</p>
+          <CardTitle className="text-2xl transition-all duration-300">
+            {previewProfile?.full_name ? `Hi, ${previewProfile.full_name.split(" ")[0]}` : "Staff Login"}
+          </CardTitle>
+          <p className="text-gray-600 transition-all duration-300">
+            {previewProfile ? "Welcome back 👋" : "Access your workspace"}
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Fingerprint Quick Unlock Button */}
@@ -658,40 +691,8 @@ const StaffLogin = () => {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your username"
             />
-            {username.trim().length > 0 && (
-              <div className="mt-3 flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-200 transition-all">
-                <Avatar className="h-12 w-12 ring-2 ring-blue-200">
-                  {(previewProfile?.profile_photo_url || previewProfile?.avatar_url) && (
-                    <AvatarImage
-                      src={previewProfile.profile_photo_url || previewProfile.avatar_url}
-                      alt={previewProfile.full_name || username}
-                    />
-                  )}
-                  <AvatarFallback className="bg-blue-100 text-blue-700">
-                    {previewLoading ? (
-                      <span className="animate-pulse">…</span>
-                    ) : previewProfile?.full_name ? (
-                      previewProfile.full_name.charAt(0).toUpperCase()
-                    ) : (
-                      <UserIcon className="h-5 w-5" />
-                    )}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  {previewLoading ? (
-                    <p className="text-sm text-gray-400">Searching…</p>
-                  ) : previewProfile ? (
-                    <>
-                      <p className="text-sm font-semibold text-gray-900 truncate">
-                        {previewProfile.full_name || username}
-                      </p>
-                      <p className="text-xs text-green-600">Welcome back 👋</p>
-                    </>
-                  ) : (
-                    <p className="text-sm text-gray-500">No matching user found</p>
-                  )}
-                </div>
-              </div>
+            {username.trim().length > 0 && !previewLoading && !previewProfile && (
+              <p className="mt-2 text-xs text-gray-500">No matching user found</p>
             )}
           </div>
 
