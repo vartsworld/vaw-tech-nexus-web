@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, UserCheck, Smartphone, Fingerprint, User as UserIcon } from "lucide-react";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { useBiometricAuth } from "@/hooks/useBiometricAuth";
+import vawLogo from "@/assets/vaw-logo.png";
 
 const EMOJI_OPTIONS = [
   "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
@@ -613,13 +614,17 @@ const StaffLogin = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 relative h-20 w-20">
-            {/* Default icon - fades out when profile found */}
+            {/* Default VAW logo - fades out when profile found */}
             <div
-              className={`absolute inset-0 p-3 rounded-full bg-blue-100 flex items-center justify-center transition-all duration-500 ease-out ${
+              className={`absolute inset-0 rounded-full overflow-hidden ring-4 ring-blue-200 shadow-lg bg-[#f5efdf] flex items-center justify-center transition-all duration-500 ease-out ${
                 previewProfile ? "opacity-0 scale-75 rotate-12" : "opacity-100 scale-100 rotate-0"
               }`}
             >
-              <UserCheck className="h-8 w-8 text-blue-600" />
+              <img
+                src={vawLogo}
+                alt="VAW Technologies"
+                className="h-full w-full object-cover"
+              />
             </div>
             {/* Profile photo - fades in when found */}
             <div
