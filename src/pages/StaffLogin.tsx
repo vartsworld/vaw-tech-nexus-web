@@ -76,6 +76,16 @@ const StaffLogin = () => {
     return () => clearTimeout(timer);
   }, [username]);
 
+  // Stagger: hold options off until profile photo finishes its entrance
+  useEffect(() => {
+    if (previewProfile) {
+      setOptionsReady(false);
+      const t = setTimeout(() => setOptionsReady(true), 550);
+      return () => clearTimeout(t);
+    }
+    setOptionsReady(false);
+  }, [previewProfile?.full_name]);
+
   const checkTodayAttendance = async (userId: string) => {
     const today = new Date().toISOString().split('T')[0];
     const { data, error } = await supabase
