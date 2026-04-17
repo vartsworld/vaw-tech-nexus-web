@@ -601,11 +601,44 @@ const StaffLogin = () => {
       <PWAInstallPrompt />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 p-3 rounded-full bg-blue-100">
-            <UserCheck className="h-8 w-8 text-blue-600" />
+          <div className="mx-auto mb-4 relative h-20 w-20">
+            {/* Default icon - fades out when profile found */}
+            <div
+              className={`absolute inset-0 p-3 rounded-full bg-blue-100 flex items-center justify-center transition-all duration-500 ease-out ${
+                previewProfile ? "opacity-0 scale-75 rotate-12" : "opacity-100 scale-100 rotate-0"
+              }`}
+            >
+              <UserCheck className="h-8 w-8 text-blue-600" />
+            </div>
+            {/* Profile photo - fades in when found */}
+            <div
+              className={`absolute inset-0 transition-all duration-500 ease-out ${
+                previewProfile ? "opacity-100 scale-100 rotate-0" : "opacity-0 scale-75 -rotate-12"
+              }`}
+            >
+              <Avatar className="h-20 w-20 ring-4 ring-blue-200 shadow-lg">
+                {(previewProfile?.profile_photo_url || previewProfile?.avatar_url) && (
+                  <AvatarImage
+                    src={previewProfile?.profile_photo_url || previewProfile?.avatar_url}
+                    alt={previewProfile?.full_name || username}
+                    className="object-cover"
+                  />
+                )}
+                <AvatarFallback className="bg-blue-100 text-blue-700 text-2xl font-bold">
+                  {previewProfile?.full_name ? previewProfile.full_name.charAt(0).toUpperCase() : <UserIcon className="h-8 w-8" />}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            {previewLoading && (
+              <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-blue-500 border-2 border-white animate-pulse" />
+            )}
           </div>
-          <CardTitle className="text-2xl">Staff Login</CardTitle>
-          <p className="text-gray-600">Access your workspace</p>
+          <CardTitle className="text-2xl transition-all duration-300">
+            {previewProfile?.full_name ? `Hi, ${previewProfile.full_name.split(" ")[0]}` : "Staff Login"}
+          </CardTitle>
+          <p className="text-gray-600 transition-all duration-300">
+            {previewProfile ? "Welcome back 👋" : "Access your workspace"}
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Fingerprint Quick Unlock Button */}
