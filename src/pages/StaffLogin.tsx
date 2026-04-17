@@ -38,6 +38,7 @@ const StaffLogin = () => {
   const [showBiometricSetup, setShowBiometricSetup] = useState(false);
   const [previewProfile, setPreviewProfile] = useState<{ full_name?: string; avatar_url?: string; profile_photo_url?: string } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [optionsReady, setOptionsReady] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { isSupported: biometricSupported, isAuthenticating, authenticate, register: registerBiometric, isRegistering } = useBiometricAuth();
