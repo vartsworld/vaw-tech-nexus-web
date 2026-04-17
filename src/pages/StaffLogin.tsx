@@ -641,48 +641,7 @@ const StaffLogin = () => {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Fingerprint Quick Unlock Button */}
-          {biometricSupported && (
-            <Button
-              variant="outline"
-              onClick={handleBiometricLogin}
-              disabled={isAuthenticating || loading}
-              className="w-full flex items-center justify-center gap-2 border-green-300 hover:bg-green-50 hover:border-green-400 py-6"
-            >
-              <Fingerprint className="h-6 w-6 text-green-600" />
-              <span className="text-green-700 font-medium">
-                {isAuthenticating ? "Verifying..." : "Login with Fingerprint"}
-              </span>
-            </Button>
-          )}
-
-          {biometricSupported && (
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">or use</span>
-              </div>
-            </div>
-          )}
-          <div className="flex gap-2">
-            <Button
-              variant={loginMode === "emoji" ? "default" : "outline"}
-              onClick={() => setLoginMode("emoji")}
-              className="flex-1"
-            >
-              Emoji Login
-            </Button>
-            <Button
-              variant={loginMode === "first-time" ? "default" : "outline"}
-              onClick={() => setLoginMode("first-time")}
-              className="flex-1"
-            >
-              First Time
-            </Button>
-          </div>
-
+          {/* STEP 1: Username input */}
           <div>
             <Label htmlFor="username">Username</Label>
             <Input
@@ -690,86 +649,155 @@ const StaffLogin = () => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your username"
+              autoFocus
             />
             {username.trim().length > 0 && !previewLoading && !previewProfile && (
               <p className="mt-2 text-xs text-gray-500">No matching user found</p>
             )}
           </div>
 
-          {loginMode === "first-time" ? (
-            <div>
-              <Label htmlFor="passcode">First Time Passcode</Label>
-              <div className="relative">
-                <Input
-                  id="passcode"
-                  type={showPasscode ? "text" : "password"}
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  placeholder="Enter your passcode"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
-                  onClick={() => setShowPasscode(!showPasscode)}
-                >
-                  {showPasscode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <Label>Emoji Password</Label>
-              <div className="min-h-[60px] p-3 border rounded-lg bg-gray-50 flex flex-wrap gap-2 items-center">
-                {emojiPassword.map((emoji, index) => (
-                  <span key={index} className="text-2xl">{emoji}</span>
-                ))}
-                {emojiPassword.length === 0 && (
-                  <span className="text-gray-400">Select your emoji password...</span>
-                )}
-              </div>
-              <div className="flex gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => removeLastEmoji()}
-                  disabled={emojiPassword.length === 0}
-                >
-                  Remove Last
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => clearPassword()}
-                  disabled={emojiPassword.length === 0}
-                >
-                  Clear All
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-10 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg mt-2">
-                {EMOJI_OPTIONS.map((emoji, index) => (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    className="p-2 h-10 text-xl hover:bg-blue-100"
-                    onClick={() => addEmojiToPassword(emoji)}
+          {/* STEP 2: Method picker — animated reveal once profile is found */}
+          {previewProfile && (
+            <div className="space-y-4 animate-fade-in">
+              {!loginMode ? (
+                <div className="space-y-3">
+                  <p className="text-center text-sm text-gray-600 font-medium">
+                    Choose how to sign in
+                  </p>
+                  <div className="grid gap-3">
+                    {biometricSupported && (
+                      <button
+                        onClick={handleBiometricLogin}
+                        disabled={isAuthenticating || loading}
+                        className="group flex items-center gap-4 p-4 rounded-xl border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 hover:border-green-400 hover:shadow-md hover:scale-[1.02] transition-all duration-300 animate-scale-in text-left"
+                      >
+                        <div className="p-3 rounded-full bg-green-100 group-hover:bg-green-200 transition-colors">
+                          <Fingerprint className="h-6 w-6 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-green-800">
+                            {isAuthenticating ? "Verifying…" : "Fingerprint"}
+                          </p>
+                          <p className="text-xs text-green-600">Quick & secure unlock</p>
+                        </div>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setLoginMode("emoji")}
+                      className="group flex items-center gap-4 p-4 rounded-xl border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 hover:border-blue-400 hover:shadow-md hover:scale-[1.02] transition-all duration-300 animate-scale-in text-left"
+                      style={{ animationDelay: "80ms" }}
+                    >
+                      <div className="p-3 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
+                        <span className="text-2xl">🔐</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-blue-800">Emoji Password</p>
+                        <p className="text-xs text-blue-600">Tap your secret emojis</p>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setLoginMode("first-time")}
+                      className="group flex items-center gap-4 p-4 rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 hover:border-amber-400 hover:shadow-md hover:scale-[1.02] transition-all duration-300 animate-scale-in text-left"
+                      style={{ animationDelay: "160ms" }}
+                    >
+                      <div className="p-3 rounded-full bg-amber-100 group-hover:bg-amber-200 transition-colors">
+                        <Smartphone className="h-6 w-6 text-amber-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-amber-800">First Time Passcode</p>
+                        <p className="text-xs text-amber-600">Use your one-time HR code</p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4 animate-fade-in">
+                  <button
+                    onClick={() => setLoginMode(null as any)}
+                    className="text-xs text-blue-600 hover:underline flex items-center gap-1"
                   >
-                    {emoji}
+                    ← Choose different method
+                  </button>
+
+                  {loginMode === "first-time" ? (
+                    <div>
+                      <Label htmlFor="passcode">First Time Passcode</Label>
+                      <div className="relative">
+                        <Input
+                          id="passcode"
+                          type={showPasscode ? "text" : "password"}
+                          value={passcode}
+                          onChange={(e) => setPasscode(e.target.value)}
+                          placeholder="Enter your passcode"
+                          autoFocus
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-2 top-1/2 -translate-y-1/2"
+                          onClick={() => setShowPasscode(!showPasscode)}
+                        >
+                          {showPasscode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <Label>Emoji Password</Label>
+                      <div className="min-h-[60px] p-3 border rounded-lg bg-gray-50 flex flex-wrap gap-2 items-center">
+                        {emojiPassword.map((emoji, index) => (
+                          <span key={index} className="text-2xl">{emoji}</span>
+                        ))}
+                        {emojiPassword.length === 0 && (
+                          <span className="text-gray-400">Select your emoji password...</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeLastEmoji()}
+                          disabled={emojiPassword.length === 0}
+                        >
+                          Remove Last
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => clearPassword()}
+                          disabled={emojiPassword.length === 0}
+                        >
+                          Clear All
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-10 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg mt-2">
+                        {EMOJI_OPTIONS.map((emoji, index) => (
+                          <Button
+                            key={index}
+                            variant="ghost"
+                            className="p-2 h-10 text-xl hover:bg-blue-100"
+                            onClick={() => addEmojiToPassword(emoji)}
+                          >
+                            {emoji}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={loginMode === "first-time" ? handleFirstTimeLogin : handleEmojiLogin}
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    {loading ? "Signing In..." : "Sign In"}
                   </Button>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
-
-          <Button
-            onClick={loginMode === "first-time" ? handleFirstTimeLogin : handleEmojiLogin}
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? "Signing In..." : "Sign In"}
-          </Button>
 
           <div className="text-center text-sm text-gray-600">
             <p>Need help? Contact HR for assistance</p>
