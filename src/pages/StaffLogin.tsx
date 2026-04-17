@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, UserCheck, Smartphone, Fingerprint, User as UserIcon } from "lucide-react";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { useBiometricAuth } from "@/hooks/useBiometricAuth";
+import vawLogo from "@/assets/vaw-logo.png";
 
 const EMOJI_OPTIONS = [
   "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
