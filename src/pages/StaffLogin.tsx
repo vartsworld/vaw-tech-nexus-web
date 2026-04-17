@@ -669,18 +669,25 @@ const StaffLogin = () => {
 
           {/* STEP 2: Method picker — animated reveal once profile is found */}
           {previewProfile && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4">
               {!loginMode ? (
                 <div className="space-y-3">
-                  <p className="text-center text-sm text-gray-600 font-medium">
+                  <p
+                    className={`text-center text-sm text-gray-600 font-medium transition-all duration-500 ease-out ${
+                      optionsReady ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+                    }`}
+                  >
                     Choose how to sign in
                   </p>
                   <div className="grid gap-3">
                     {biometricSupported && (
                       <button
                         onClick={handleBiometricLogin}
-                        disabled={isAuthenticating || loading}
-                        className="group flex items-center gap-4 p-4 rounded-xl border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 hover:border-green-400 hover:shadow-md hover:scale-[1.02] transition-all duration-300 animate-scale-in text-left"
+                        disabled={isAuthenticating || loading || !optionsReady}
+                        style={{ transitionDelay: optionsReady ? "120ms" : "0ms" }}
+                        className={`group flex items-center gap-4 p-4 rounded-xl border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 hover:border-green-400 hover:shadow-lg hover:scale-[1.02] transition-all duration-700 ease-out text-left ${
+                          optionsReady ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"
+                        }`}
                       >
                         <div className="p-3 rounded-full bg-green-100 group-hover:bg-green-200 transition-colors">
                           <Fingerprint className="h-6 w-6 text-green-600" />
@@ -695,8 +702,11 @@ const StaffLogin = () => {
                     )}
                     <button
                       onClick={() => setLoginMode("emoji")}
-                      className="group flex items-center gap-4 p-4 rounded-xl border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 hover:border-blue-400 hover:shadow-md hover:scale-[1.02] transition-all duration-300 animate-scale-in text-left"
-                      style={{ animationDelay: "80ms" }}
+                      disabled={!optionsReady}
+                      style={{ transitionDelay: optionsReady ? "260ms" : "0ms" }}
+                      className={`group flex items-center gap-4 p-4 rounded-xl border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 hover:border-blue-400 hover:shadow-lg hover:scale-[1.02] transition-all duration-700 ease-out text-left ${
+                        optionsReady ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"
+                      }`}
                     >
                       <div className="p-3 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
                         <span className="text-2xl">🔐</span>
@@ -708,8 +718,11 @@ const StaffLogin = () => {
                     </button>
                     <button
                       onClick={() => setLoginMode("first-time")}
-                      className="group flex items-center gap-4 p-4 rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 hover:border-amber-400 hover:shadow-md hover:scale-[1.02] transition-all duration-300 animate-scale-in text-left"
-                      style={{ animationDelay: "160ms" }}
+                      disabled={!optionsReady}
+                      style={{ transitionDelay: optionsReady ? "400ms" : "0ms" }}
+                      className={`group flex items-center gap-4 p-4 rounded-xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 hover:border-amber-400 hover:shadow-lg hover:scale-[1.02] transition-all duration-700 ease-out text-left ${
+                        optionsReady ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"
+                      }`}
                     >
                       <div className="p-3 rounded-full bg-amber-100 group-hover:bg-amber-200 transition-colors">
                         <Smartphone className="h-6 w-6 text-amber-600" />
