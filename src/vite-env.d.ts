@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+declare const __APP_VERSION__: string;
+
 declare module 'react-player' {
   import React from 'react';
   export default class ReactPlayer extends React.Component<any, any> {
