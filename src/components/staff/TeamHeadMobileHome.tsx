@@ -733,6 +733,23 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
           </div>
           <ChevronRight className="w-4 h-4 text-white/20" />
         </motion.button>
+
+        <motion.button
+          onClick={() => setShowBiometricDialog(true)}
+          className="w-full bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-center justify-between active:scale-[0.98] transition-transform"
+          whileTap={{ scale: 0.98 }}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+              <Fingerprint className="w-5 h-5 text-emerald-300" />
+            </div>
+            <div className="text-left">
+              <p className="text-white/90 text-sm font-medium">Fingerprint Login</p>
+              <p className="text-white/40 text-[11px]">Use Touch ID / Face ID to sign in</p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-white/20" />
+        </motion.button>
       </motion.div>
 
       <motion.div variants={fadeUp} custom={2}>
