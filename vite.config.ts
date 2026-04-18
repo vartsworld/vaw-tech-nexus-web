@@ -5,7 +5,12 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
+const APP_VERSION = `${Date.now()}`;
+
 export default defineConfig(({ mode }) => ({
+  define: {
+    __APP_VERSION__: JSON.stringify(APP_VERSION),
+  },
   server: {
     host: "::",
     port: 8080,
@@ -14,6 +19,17 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' &&
     componentTagger(),
+    {
+      name: 'emit-version-json',
+      apply: 'build' as const,
+      generateBundle(this: { emitFile: (opts: { type: 'asset'; fileName: string; source: string }) => void }) {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'version.json',
+          source: JSON.stringify({ version: APP_VERSION, builtAt: new Date().toISOString() }),
+        });
+      },
+    } as never,
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png'],

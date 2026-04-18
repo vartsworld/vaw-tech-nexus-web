@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { CoinConfigDialog } from "@/components/staff/CoinConfigDialog";
 import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
+import UpdateButton from "@/components/staff/UpdateButton";
 import { Fingerprint } from "lucide-react";
 import { toast } from "sonner";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
@@ -580,6 +581,10 @@ const TeamHeadDashboard = () => {
             <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
               <div className="order-3 sm:order-1">
                 <NotificationsBar userId={profile?.user_id || ''} />
+              </div>
+
+              <div className="order-2 sm:order-1">
+                <UpdateButton variant="dark" />
               </div>
 
               <div className="flex items-center gap-1 sm:gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-2 sm:px-3 py-1">

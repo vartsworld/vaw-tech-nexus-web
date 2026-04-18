@@ -24,6 +24,7 @@ import {
   Fingerprint
 } from "lucide-react";
 import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
+import UpdateButton from "@/components/staff/UpdateButton";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import StaffMobileHome from "@/components/staff/StaffMobileHome";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -407,6 +408,8 @@ const StaffDashboard = () => {
                   <span className="hidden sm:inline">Profile</span>
                 </Button>
                 
+                <UpdateButton variant="dark" />
+
                 <Button
                   variant="ghost"
                   size="sm"
