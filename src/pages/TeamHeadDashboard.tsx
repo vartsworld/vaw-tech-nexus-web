@@ -583,6 +583,10 @@ const TeamHeadDashboard = () => {
                 <NotificationsBar userId={profile?.user_id || ''} />
               </div>
 
+              <div className="order-2 sm:order-1">
+                <UpdateButton variant="dark" />
+              </div>
+
               <div className="flex items-center gap-1 sm:gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-2 sm:px-3 py-1">
                 <UserStatusBadge
                   status={status}
