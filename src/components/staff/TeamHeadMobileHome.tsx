@@ -109,6 +109,7 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<ProjectGroup | null>(null);
+  const [showBiometricDialog, setShowBiometricDialog] = useState(false);
 
   const firstName = profile?.full_name?.split(' ')[0] || 'Leader';
 
