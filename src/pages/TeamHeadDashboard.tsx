@@ -809,6 +809,11 @@ const TeamHeadDashboard = () => {
         open={showCoinConfigDialog}
         onOpenChange={setShowCoinConfigDialog}
       />
+
+      <BiometricSettingsDialog
+        open={showBiometricDialog}
+        onOpenChange={setShowBiometricDialog}
+      />
       
       {profile?.user_id && (
         <CoinPopup
