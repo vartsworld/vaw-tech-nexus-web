@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { CoinConfigDialog } from "@/components/staff/CoinConfigDialog";
 import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
+import UpdateButton from "@/components/staff/UpdateButton";
 import { Fingerprint } from "lucide-react";
 import { toast } from "sonner";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
