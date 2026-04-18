@@ -520,6 +520,11 @@ const StaffDashboard = () => {
         />
       )}
 
+      <BiometricSettingsDialog
+        open={showBiometricDialog}
+        onOpenChange={setShowBiometricDialog}
+      />
+
       <PWAInstallPrompt />
     </div>
   );
