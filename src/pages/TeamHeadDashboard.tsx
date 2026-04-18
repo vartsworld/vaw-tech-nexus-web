@@ -626,6 +626,10 @@ const TeamHeadDashboard = () => {
                     <LockIcon className="mr-2 h-4 w-4" />
                     Update Emoji Password
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="text-green-600 hover:text-green-700">
+                    <Fingerprint className="mr-2 h-4 w-4" />
+                    Fingerprint Login
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowCoinConfigDialog(true)} className="text-amber-500 hover:text-amber-600">
                     <Settings2 className="mr-2 h-4 w-4" />
                     Coin Rewards Config
