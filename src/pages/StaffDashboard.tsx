@@ -61,6 +61,7 @@ const StaffDashboard = () => {
   const [departmentName, setDepartmentName] = useState<string>("");
   const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
   const [showCoinPopup, setShowCoinPopup] = useState(false);
+  const [showBiometricDialog, setShowBiometricDialog] = useState(false);
 
   // Break timer state
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
