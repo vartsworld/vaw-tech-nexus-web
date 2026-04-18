@@ -159,16 +159,35 @@ export const useBiometricAuth = () => {
   }> => {
     setIsAuthenticating(true);
     try {
+      // Make sure the device actually has a built-in sensor before prompting
+      if (window.PublicKeyCredential) {
+        const platformAvailable =
+          await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        if (!platformAvailable) {
+          throw new Error(
+            "This device does not have a built-in fingerprint or face sensor."
+          );
+        }
+      }
+
       const challenge = generateChallenge();
 
+      const requestOptions: PublicKeyCredentialRequestOptions & {
+        hints?: string[];
+      } = {
+        challenge,
+        rpId: window.location.hostname,
+        userVerification: "required",
+        // Hint modern browsers (Chrome 122+) to use the BUILT-IN sensor only,
+        // not the cross-device QR / phone passkey flow
+        hints: ["client-device"],
+        timeout: 60000,
+      };
+
       const assertion = (await navigator.credentials.get({
-        publicKey: {
-          challenge,
-          rpId: window.location.hostname,
-          userVerification: "required",
-          timeout: 60000,
-        },
-      })) as PublicKeyCredential | null;
+        publicKey: requestOptions,
+        // Cast required: 'mediation' is supported but missing from older lib types
+      } as CredentialRequestOptions)) as PublicKeyCredential | null;
 
       if (!assertion) throw new Error("Authentication cancelled");
 
