@@ -410,6 +410,17 @@ const StaffDashboard = () => {
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="bg-green-500/10 hover:bg-green-500/20 text-green-300 border border-green-500/20 h-9 px-2 sm:px-3"
+                  onClick={() => setShowBiometricDialog(true)}
+                  title="Fingerprint Login Settings"
+                >
+                  <Fingerprint className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Fingerprint</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 h-9 px-2 sm:px-3"
                   onClick={() => navigate("/sales/dashboard")}
                 >
