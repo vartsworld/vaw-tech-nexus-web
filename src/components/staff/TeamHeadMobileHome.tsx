@@ -19,8 +19,10 @@ import {
   Search,
   Flame,
   Sparkles,
-  LogOut
+  LogOut,
+  Fingerprint
 } from "lucide-react";
+import BiometricSettingsDialog from "@/components/staff/BiometricSettingsDialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
