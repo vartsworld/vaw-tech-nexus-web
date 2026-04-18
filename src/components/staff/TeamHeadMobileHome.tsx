@@ -837,6 +837,8 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
           </div>
         </div>
       </div>
+
+      <BiometricSettingsDialog open={showBiometricDialog} onOpenChange={setShowBiometricDialog} />
     </div>
   );
 };
