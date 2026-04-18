@@ -19,6 +19,17 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' &&
     componentTagger(),
+    {
+      name: 'emit-version-json',
+      apply: 'build' as const,
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'version.json',
+          source: JSON.stringify({ version: APP_VERSION, builtAt: new Date().toISOString() }),
+        });
+      },
+    },
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png'],
