@@ -84,35 +84,39 @@ export const useBiometricAuth = () => {
           );
         }
 
-        const credential = (await navigator.credentials.create({
-          publicKey: {
-            challenge,
-            rp: {
-              name: "VAW Staff Portal",
-              id: window.location.hostname,
-            },
-            user: {
-              id: new TextEncoder().encode(user.id),
-              name: profile?.username || user.email || "staff",
-              displayName: profile?.full_name || "Staff Member",
-            },
-            pubKeyCredParams: [
-              { alg: -7, type: "public-key" }, // ES256
-              { alg: -257, type: "public-key" }, // RS256
-            ],
-            authenticatorSelection: {
-              // Force the BUILT-IN sensor (Touch ID / Windows Hello / Android fingerprint)
-              // and prevent the browser from offering "use phone / security key" flow
-              authenticatorAttachment: "platform",
-              userVerification: "required",
-              requireResidentKey: false,
-              residentKey: "discouraged",
-            },
-            attestation: "none",
-            // Hint modern browsers to prefer client-device only
-            hints: ["client-device"] as never,
-            timeout: 60000,
+        const publicKeyOptions: PublicKeyCredentialCreationOptions & {
+          hints?: string[];
+        } = {
+          challenge,
+          rp: {
+            name: "VAW Staff Portal",
+            id: window.location.hostname,
           },
+          user: {
+            id: new TextEncoder().encode(user.id),
+            name: profile?.username || user.email || "staff",
+            displayName: profile?.full_name || "Staff Member",
+          },
+          pubKeyCredParams: [
+            { alg: -7, type: "public-key" }, // ES256
+            { alg: -257, type: "public-key" }, // RS256
+          ],
+          authenticatorSelection: {
+            // Force the BUILT-IN sensor (Touch ID / Windows Hello / Android fingerprint)
+            // and prevent the browser from offering "use phone / security key" flow
+            authenticatorAttachment: "platform",
+            userVerification: "required",
+            requireResidentKey: false,
+            residentKey: "discouraged",
+          },
+          attestation: "none",
+          // Hint modern browsers to prefer this device only (Chrome 122+)
+          hints: ["client-device"],
+          timeout: 60000,
+        };
+
+        const credential = (await navigator.credentials.create({
+          publicKey: publicKeyOptions,
         })) as PublicKeyCredential | null;
 
         if (!credential) throw new Error("Registration cancelled");
