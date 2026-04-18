@@ -94,6 +94,7 @@ const TeamHeadDashboard = () => {
   const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
   const [showCoinConfigDialog, setShowCoinConfigDialog] = useState(false);
   const [showCoinPopup, setShowCoinPopup] = useState(false);
+  const [showBiometricDialog, setShowBiometricDialog] = useState(false);
 
   // Break timer state (lifted up to persist when minimized)
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
