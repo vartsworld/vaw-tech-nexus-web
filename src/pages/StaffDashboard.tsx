@@ -20,8 +20,10 @@ import {
   LogOut,
   User,
   Trophy,
-  Coins
+  Coins,
+  Fingerprint
 } from "lucide-react";
+import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import StaffMobileHome from "@/components/staff/StaffMobileHome";
 import { useIsMobile } from "@/hooks/use-mobile";
