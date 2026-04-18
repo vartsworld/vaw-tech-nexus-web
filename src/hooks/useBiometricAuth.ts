@@ -75,6 +75,15 @@ export const useBiometricAuth = () => {
 
         const challenge = generateChallenge();
 
+        // Check platform authenticator is actually available before trying
+        const platformAvailable =
+          await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        if (!platformAvailable) {
+          throw new Error(
+            "This device does not have a built-in fingerprint or face sensor."
+          );
+        }
+
         const credential = (await navigator.credentials.create({
           publicKey: {
             challenge,
@@ -92,10 +101,16 @@ export const useBiometricAuth = () => {
               { alg: -257, type: "public-key" }, // RS256
             ],
             authenticatorSelection: {
+              // Force the BUILT-IN sensor (Touch ID / Windows Hello / Android fingerprint)
+              // and prevent the browser from offering "use phone / security key" flow
               authenticatorAttachment: "platform",
               userVerification: "required",
-              residentKey: "preferred",
+              requireResidentKey: false,
+              residentKey: "discouraged",
             },
+            attestation: "none",
+            // Hint modern browsers to prefer client-device only
+            hints: ["client-device"] as never,
             timeout: 60000,
           },
         })) as PublicKeyCredential | null;
