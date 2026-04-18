@@ -407,6 +407,8 @@ const StaffDashboard = () => {
                   <span className="hidden sm:inline">Profile</span>
                 </Button>
                 
+                <UpdateButton variant="dark" />
+
                 <Button
                   variant="ghost"
                   size="sm"
