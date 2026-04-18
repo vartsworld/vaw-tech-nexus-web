@@ -20,8 +20,10 @@ import {
   LogOut,
   User,
   Trophy,
-  Coins
+  Coins,
+  Fingerprint
 } from "lucide-react";
+import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import StaffMobileHome from "@/components/staff/StaffMobileHome";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -59,6 +61,7 @@ const StaffDashboard = () => {
   const [departmentName, setDepartmentName] = useState<string>("");
   const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
   const [showCoinPopup, setShowCoinPopup] = useState(false);
+  const [showBiometricDialog, setShowBiometricDialog] = useState(false);
 
   // Break timer state
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
@@ -407,6 +410,17 @@ const StaffDashboard = () => {
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="bg-green-500/10 hover:bg-green-500/20 text-green-300 border border-green-500/20 h-9 px-2 sm:px-3"
+                  onClick={() => setShowBiometricDialog(true)}
+                  title="Fingerprint Login Settings"
+                >
+                  <Fingerprint className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Fingerprint</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 h-9 px-2 sm:px-3"
                   onClick={() => navigate("/sales/dashboard")}
                 >
@@ -505,6 +519,11 @@ const StaffDashboard = () => {
           userProfile={profile}
         />
       )}
+
+      <BiometricSettingsDialog
+        open={showBiometricDialog}
+        onOpenChange={setShowBiometricDialog}
+      />
 
       <PWAInstallPrompt />
     </div>

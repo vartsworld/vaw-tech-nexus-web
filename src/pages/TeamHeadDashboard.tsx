@@ -33,6 +33,8 @@ import {
   Coins
 } from "lucide-react";
 import { CoinConfigDialog } from "@/components/staff/CoinConfigDialog";
+import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
+import { Fingerprint } from "lucide-react";
 import { toast } from "sonner";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import BreakRoom from "@/components/staff/BreakRoom";
@@ -92,6 +94,7 @@ const TeamHeadDashboard = () => {
   const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
   const [showCoinConfigDialog, setShowCoinConfigDialog] = useState(false);
   const [showCoinPopup, setShowCoinPopup] = useState(false);
+  const [showBiometricDialog, setShowBiometricDialog] = useState(false);
 
   // Break timer state (lifted up to persist when minimized)
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
@@ -623,6 +626,10 @@ const TeamHeadDashboard = () => {
                     <LockIcon className="mr-2 h-4 w-4" />
                     Update Emoji Password
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="text-green-600 hover:text-green-700">
+                    <Fingerprint className="mr-2 h-4 w-4" />
+                    Fingerprint Login
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowCoinConfigDialog(true)} className="text-amber-500 hover:text-amber-600">
                     <Settings2 className="mr-2 h-4 w-4" />
                     Coin Rewards Config
@@ -801,6 +808,11 @@ const TeamHeadDashboard = () => {
       <CoinConfigDialog
         open={showCoinConfigDialog}
         onOpenChange={setShowCoinConfigDialog}
+      />
+
+      <BiometricSettingsDialog
+        open={showBiometricDialog}
+        onOpenChange={setShowBiometricDialog}
       />
       
       {profile?.user_id && (
