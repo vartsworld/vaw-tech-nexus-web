@@ -137,15 +137,14 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [departments, setDepartments] = useState<Department[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [currentView, setCurrentView] = useState<'list' | 'create' | 'detail' | 'edit'>('list');
-  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [clientProjects, setClientProjects] = useState<any[]>([]);
-  const [loadingProjects, setLoadingProjects] = useState(false);
-  const [isHandoverOpen, setIsHandoverOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isViewTaskOpen, setIsViewTaskOpen] = useState(false);
-  const [isApprovalOpen, setIsApprovalOpen] = useState(false);
   const [isAddProjectDialogOpen, setIsAddProjectDialogOpen] = useState(false);
+  const [isHandoverOpen, setIsHandoverOpen] = useState(false);
+  const [isApprovalOpen, setIsApprovalOpen] = useState(false);
+  const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
+  const [loadingProjects, setLoadingProjects] = useState(false);
   const [newProject, setNewProject] = useState({
     title: "",
     description: "",
@@ -426,12 +425,6 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     }
   }, [userId, userProfile?.department_id]);
 
-  // Fetch client projects when editing a task
-  useEffect(() => {
-    if (isEditTaskOpen && selectedTask?.client_id) {
-      fetchClientProjects(selectedTask.client_id);
-    }
-  }, [isEditTaskOpen, selectedTask?.client_id]);
 
   // Set up presence tracking for online users
   useEffect(() => {

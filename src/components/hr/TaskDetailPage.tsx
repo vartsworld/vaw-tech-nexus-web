@@ -1121,6 +1121,102 @@ const TaskDetailPage = ({
             )}
           </div>
 
+          {/* ─── All Attachments Panel ─── */}
+          {(() => {
+            const taskAtts = Array.isArray(task.attachments) ? task.attachments : [];
+            // Collect subtask attachments (from attachments field + comment attachments)
+            const subtaskGroups: Array<{ id: string; title: string; stage: number; files: any[] }> = [];
+            subtasks.forEach(st => {
+              const files: any[] = [];
+              if (Array.isArray(st.attachments)) files.push(...st.attachments);
+              if (Array.isArray(st.comments)) {
+                st.comments.forEach((c: any) => {
+                  if (c.attachment_url) files.push({ name: c.attachment_name || 'Attachment', url: c.attachment_url, publicUrl: c.attachment_url });
+                  if (Array.isArray(c.attachments)) files.push(...c.attachments);
+                });
+              }
+              if (files.length > 0) subtaskGroups.push({ id: st.id, title: st.title, stage: st.stage || 1, files });
+            });
+            const totalFiles = taskAtts.length + subtaskGroups.reduce((s, g) => s + g.files.length, 0);
+            if (totalFiles === 0) return null;
+
+            const renderAttFile = (att: any, i: number) => {
+              const isImage = att.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(att.name || '');
+              const src = att.publicUrl || att.url;
+              const ext = (att.name || '').split('.').pop()?.toLowerCase() || '';
+              const extColor =
+                ext === 'pdf' ? 'bg-red-500/15 text-red-400' :
+                ['doc','docx'].includes(ext) ? 'bg-blue-500/15 text-blue-400' :
+                ['xls','xlsx','csv'].includes(ext) ? 'bg-emerald-500/15 text-emerald-400' :
+                ['zip','rar','7z'].includes(ext) ? 'bg-amber-500/15 text-amber-400' : 'bg-white/5 text-muted-foreground';
+              return (
+                <div key={i} className="group flex flex-col rounded-xl border border-white/10 bg-white/[0.03] overflow-hidden hover:border-primary/30 transition-all cursor-pointer"
+                  onClick={() => handleDownloadAttachment(att)}>
+                  <div className="h-24 bg-black/30 flex items-center justify-center overflow-hidden relative">
+                    {isImage && src ? (
+                      <img src={src} alt={att.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className={`flex flex-col items-center gap-1 rounded-lg px-3 py-2 ${extColor}`}>
+                        <FileText className="h-7 w-7" />
+                        <span className="text-[10px] font-bold uppercase">.{ext || 'file'}</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <span className="bg-primary/90 text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1">
+                        <Download className="h-3 w-3" /> Download
+                      </span>
+                    </div>
+                  </div>
+                  <div className="px-2.5 py-2">
+                    <p className="text-[11px] font-medium truncate">{att.name || `File ${i + 1}`}</p>
+                    {att.size && <p className="text-[10px] text-muted-foreground">{(att.size / 1024).toFixed(1)} KB</p>}
+                  </div>
+                </div>
+              );
+            };
+
+            return (
+              <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-lg p-5 space-y-5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    All Attachments
+                  </h3>
+                  <span className="text-[10px] text-primary font-bold">{totalFiles} file{totalFiles !== 1 ? 's' : ''}</span>
+                </div>
+
+                {/* Task-level attachments */}
+                {taskAtts.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Task Files</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {taskAtts.map((att: any, i: number) => renderAttFile(att, i))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Subtask attachments grouped */}
+                {subtaskGroups.map(group => {
+                  const color = stageColors[(group.stage - 1) % stageColors.length];
+                  return (
+                    <div key={group.id} className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${color.badge}`}>
+                          Stage {group.stage}
+                        </span>
+                        <p className="text-xs font-semibold truncate text-white/80">{group.title}</p>
+                        <span className="text-[10px] text-muted-foreground ml-auto shrink-0">{group.files.length} file{group.files.length !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {group.files.map((f: any, fi: number) => renderAttFile(f, fi))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
           {/* Handover History */}
           {task.comments && Array.isArray(task.comments) && task.comments.filter((c: any) => c.type === 'handover').length > 0 && (
             <div className="rounded-2xl border border-white/10 bg-black/40 backdrop-blur-lg p-6 space-y-3">
@@ -1373,16 +1469,33 @@ const TaskDetailPage = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Attachments</Label>
-                  <span className="text-[10px] text-primary cursor-pointer hover:underline">View all</span>
+                  <span className="text-[10px] text-primary">{task.attachments.length} file{task.attachments.length !== 1 ? 's' : ''}</span>
                 </div>
                 <div className="space-y-1.5">
-                  {task.attachments.slice(0, 3).map((att: any, i: number) => (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
-                      onClick={() => handleDownloadAttachment(att)}>
-                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="text-xs truncate">{att.name || `Attachment ${i + 1}`}</span>
-                    </div>
-                  ))}
+                  {task.attachments.map((att: any, i: number) => {
+                    const isImage = att.type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(att.name || '');
+                    const previewSrc = att.publicUrl || att.url;
+                    const ext = (att.name || '').split('.').pop()?.toLowerCase() || '';
+                    const extColor =
+                      ext === 'pdf' ? 'text-red-400' :
+                      ['doc','docx'].includes(ext) ? 'text-blue-400' :
+                      ['xls','xlsx','csv'].includes(ext) ? 'text-emerald-400' :
+                      ['zip','rar','7z'].includes(ext) ? 'text-amber-400' : 'text-muted-foreground';
+                    return (
+                      <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors group"
+                        onClick={() => handleDownloadAttachment(att)}>
+                        {isImage && previewSrc ? (
+                          <img src={previewSrc} alt={att.name} className="h-8 w-8 rounded object-cover flex-shrink-0 border border-white/10" />
+                        ) : (
+                          <div className={`h-8 w-8 rounded flex items-center justify-center bg-white/5 flex-shrink-0 text-[9px] font-bold uppercase ${extColor}`}>
+                            {ext || 'FILE'}
+                          </div>
+                        )}
+                        <span className="text-xs truncate flex-1">{att.name || `Attachment ${i + 1}`}</span>
+                        <Download className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0 transition-opacity" />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

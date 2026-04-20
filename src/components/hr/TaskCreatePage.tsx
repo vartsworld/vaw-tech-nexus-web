@@ -170,7 +170,8 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
         recurrence_end_date: newTask.is_recurring && newTask.recurrence_end_date ? newTask.recurrence_end_date : null,
         next_recurrence_date: newTask.is_recurring && newTask.due_date ? calculateNextRecurrence(newTask.due_date, newTask.recurrence_type, newTask.recurrence_interval) : null,
         current_stage: newTask.current_stage || 1,
-        attachments: []
+        // When editing, DON'T overwrite attachments — we merge below after upload
+        ...(taskToEdit ? {} : { attachments: [] }),
       };
 
       let taskResponse;
@@ -193,18 +194,43 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
         taskResponse = insertResponse;
       }
 
-      // Handle attachments
+      // Handle attachments — upload to storage AND persist in the JSON column
       if (newTask.attachments.length > 0 && taskResponse.id) {
+        const existingAttachments: any[] = parseJson(taskResponse.attachments) || [];
+        const newUploadedAttachments: any[] = [];
+
         for (const attachment of newTask.attachments) {
           const fileExt = attachment.file.name.split('.').pop();
           const filePath = `${taskResponse.id}/${Date.now()}.${fileExt}`;
           const { error: uploadError } = await supabase.storage.from('task-attachments').upload(filePath, attachment.file);
           if (uploadError) throw uploadError;
           const { data: { publicUrl } } = supabase.storage.from('task-attachments').getPublicUrl(filePath);
+
+          const attMeta = {
+            name: attachment.title || attachment.file.name,
+            url: filePath,
+            publicUrl,
+            type: attachment.file.type,
+            size: attachment.file.size,
+          };
+          newUploadedAttachments.push(attMeta);
+
+          // Also insert into task_attachments table for backwards compatibility
           await (supabase.from('task_attachments' as any) as any).insert({
-            task_id: taskResponse.id, name: attachment.title || attachment.file.name, url: publicUrl, type: attachment.file.type, size: attachment.file.size
+            task_id: taskResponse.id,
+            name: attMeta.name,
+            url: publicUrl,
+            type: attachment.file.type,
+            size: attachment.file.size,
           });
         }
+
+        // Merge new uploads into the JSON column so the edit form can display them
+        const mergedAttachments = [...existingAttachments, ...newUploadedAttachments];
+        await supabase
+          .from('staff_tasks')
+          .update({ attachments: mergedAttachments })
+          .eq('id', taskResponse.id);
       }
 
       // Log task assignment for each user (only for new tasks)
@@ -592,34 +618,62 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
                 <span className="text-xs text-muted-foreground">Click to attach files</span>
               </Button>
               {newTask.attachments.length > 0 && (
-                <div className="space-y-2">
-                  {newTask.attachments.map((att, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-3 bg-white/5 rounded-xl border border-white/10 text-sm">
-                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                      <Input
-                        value={att.title}
-                        onChange={(e) => {
-                          const copy = [...newTask.attachments];
-                          copy[idx] = { ...copy[idx], title: e.target.value };
-                          setNewTask({ ...newTask, attachments: copy });
-                        }}
-                        className="h-7 text-xs bg-transparent border-white/10 flex-1"
-                        placeholder="File name"
-                      />
-                      <span className="text-[10px] text-muted-foreground truncate max-w-[120px] flex-shrink-0">
-                        {att.file.name}
-                      </span>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive flex-shrink-0"
-                        onClick={() => {
-                          const copy = [...newTask.attachments];
-                          copy.splice(idx, 1);
-                          setNewTask({ ...newTask, attachments: copy });
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {newTask.attachments.map((att, idx) => {
+                    const isImage = att.file.type.startsWith('image/');
+                    const previewUrl = isImage ? URL.createObjectURL(att.file) : null;
+                    const sizeKb = (att.file.size / 1024).toFixed(1);
+                    const ext = att.file.name.split('.').pop()?.toLowerCase() || '';
+                    const extColor =
+                      ['pdf'].includes(ext) ? 'text-red-400 bg-red-500/10' :
+                      ['doc','docx'].includes(ext) ? 'text-blue-400 bg-blue-500/10' :
+                      ['xls','xlsx','csv'].includes(ext) ? 'text-emerald-400 bg-emerald-500/10' :
+                      ['zip','rar','7z'].includes(ext) ? 'text-amber-400 bg-amber-500/10' :
+                      'text-muted-foreground bg-white/5';
+                    return (
+                      <div key={idx} className="rounded-xl border border-white/10 bg-white/[0.04] overflow-hidden group">
+                        {/* Preview area */}
+                        <div className="relative h-28 bg-black/30 flex items-center justify-center overflow-hidden">
+                          {isImage && previewUrl ? (
+                            <img src={previewUrl} alt={att.title} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className={`flex flex-col items-center gap-1 ${extColor} rounded-lg p-3`}>
+                              <FileText className="h-8 w-8" />
+                              <span className="text-[10px] font-bold uppercase tracking-wider">.{ext || 'file'}</span>
+                            </div>
+                          )}
+                          {/* Remove button */}
+                          <button
+                            onClick={() => {
+                              const copy = [...newTask.attachments];
+                              copy.splice(idx, 1);
+                              setNewTask({ ...newTask, attachments: copy });
+                            }}
+                            className="absolute top-2 right-2 h-6 w-6 rounded-full bg-black/60 flex items-center justify-center text-white/60 hover:text-red-400 hover:bg-black/80 transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                        {/* Name + meta */}
+                        <div className="p-2.5 space-y-1.5">
+                          <Input
+                            value={att.title}
+                            onChange={(e) => {
+                              const copy = [...newTask.attachments];
+                              copy[idx] = { ...copy[idx], title: e.target.value };
+                              setNewTask({ ...newTask, attachments: copy });
+                            }}
+                            className="h-7 text-xs bg-transparent border-white/10 font-medium"
+                            placeholder="Attachment label…"
+                          />
+                          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                            <span className="truncate max-w-[120px]">{att.file.name}</span>
+                            <span>{sizeKb} KB</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

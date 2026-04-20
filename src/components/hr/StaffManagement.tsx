@@ -13,19 +13,22 @@ import {
   Plus,
   Search,
   Edit,
-  Trash2,
-  Mail,
-  Phone,
-  Calendar,
-  UserCheck,
-  Crown,
-  Building2,
-  Copy,
-  Check,
-  KeyRound,
   Link,
-  Contact2
+  Contact2,
+  Trash2,
+  AlertTriangle,
+  Loader2
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import EnhancedStaffForm from "./EnhancedStaffForm";
@@ -44,6 +47,9 @@ const StaffManagement = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [copiedPasscode, setCopiedPasscode] = useState(null);
   const [isCreatingCard, setIsCreatingCard] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [patraResult, setPatraResult] = useState<{cardUrl: string, staffId: string, email: string, passcode?: string} | null>(null);
   const [newStaff, setNewStaff] = useState({
     full_name: "",
@@ -75,7 +81,13 @@ const StaffManagement = () => {
   useEffect(() => {
     fetchStaff();
     fetchDepartments();
+    getCurrentUser();
   }, []);
+
+  const getCurrentUser = async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data?.user) setCurrentUserId(data.user.id);
+  };
 
   useEffect(() => {
     filterStaffData();
@@ -368,30 +380,82 @@ const StaffManagement = () => {
     }
   };
 
-  const handleDeleteStaff = async (staffId) => {
-    if (!confirm("Are you sure you want to delete this staff member?")) return;
-
-    try {
-      const { error } = await supabase
-        .from('staff_profiles')
-        .delete()
-        .eq('id', staffId);
-
-      if (error) throw error;
-
-      setStaff(staff.filter(member => member.id !== staffId));
-
-      toast({
-        title: "Success",
-        description: "Staff member deleted successfully.",
-      });
-    } catch (error) {
-      console.error('Error deleting staff:', error);
+  const handleDeleteStaff = async (staffMember: any) => {
+    if (!currentUserId) {
       toast({
         title: "Error",
-        description: "Failed to delete staff member.",
+        description: "Your session has expired. Please log in again.",
         variant: "destructive",
       });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // 1. Reassign staff_tasks
+      // Fetch tasks where the user is an assignee
+      const { data: tasks, error: tasksError } = await supabase
+        .from('staff_tasks')
+        .select('id, assigned_to');
+
+      if (tasksError) throw tasksError;
+
+      const userTasks = tasks.filter(t => 
+        Array.isArray(t.assigned_to) && t.assigned_to.includes(staffMember.user_id)
+      );
+
+      for (const task of userTasks) {
+        // Remove the deleted staff and add the HR user (if not already there)
+        const newAssignedTo = (task.assigned_to as string[]).filter(id => id !== staffMember.user_id);
+        if (!newAssignedTo.includes(currentUserId)) {
+          newAssignedTo.push(currentUserId);
+        }
+        
+        await supabase
+          .from('staff_tasks')
+          .update({ assigned_to: newAssignedTo })
+          .eq('id', task.id);
+      }
+
+      // 2. Reassign staff_subtasks
+      await supabase
+        .from('staff_subtasks')
+        .update({ assigned_to: currentUserId })
+        .eq('assigned_to', staffMember.user_id);
+
+      // 3. Delete application (if it exists)
+      if (staffMember.email) {
+        await supabase
+          .from('team_applications_staff')
+          .delete()
+          .eq('email', staffMember.email);
+      }
+
+      // 4. Finally, delete the staff_profile
+      const { error: profileError } = await supabase
+        .from('staff_profiles')
+        .delete()
+        .eq('id', staffMember.id);
+
+      if (profileError) throw profileError;
+
+      setStaff(staff.filter(member => member.id !== staffMember.id));
+      setStaffToDelete(null);
+
+      toast({
+        title: "Staff Member Removed",
+        description: `${staffMember.full_name} has been removed. All their tasks have been reassigned to you.`,
+      });
+
+    } catch (error) {
+      console.error('Error removing staff:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fully remove staff member.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -918,8 +982,9 @@ const StaffManagement = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteStaff(member.id)}
-                        className="text-red-600 hover:text-red-700"
+                        onClick={() => setStaffToDelete(member)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Fully remove staff"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -931,6 +996,51 @@ const StaffManagement = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Full Removal Confirmation Dialog */}
+      <AlertDialog open={!!staffToDelete} onOpenChange={(open) => { if (!open) setStaffToDelete(null); }}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Full Staff Removal
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                You are about to permanently remove <strong>{staffToDelete?.full_name}</strong> from the system.
+              </p>
+              <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-xs space-y-2 border border-red-100 dark:border-red-900/30">
+                <p className="font-bold text-red-700 dark:text-red-400">What happens next?</p>
+                <ul className="list-disc pl-4 space-y-1 text-red-600/80 dark:text-red-400/80">
+                  <li>Staff profile will be deleted permanently.</li>
+                  <li>Original hiring application will be removed.</li>
+                  <li><strong>All assigned tasks & subtasks will be reassigned to YOU (HR)</strong> so they aren't lost.</li>
+                </ul>
+              </div>
+              <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider pt-2">
+                This action is irreversible.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => staffToDelete && handleDeleteStaff(staffToDelete)}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Removing...
+                </>
+              ) : (
+                'Finalize Removal'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

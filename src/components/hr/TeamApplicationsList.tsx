@@ -17,8 +17,20 @@ import {
   Mail,
   Calendar,
   FileText,
-  Link
+  Link,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,6 +39,8 @@ const TeamApplicationsList = () => {
   const [departments, setDepartments] = useState([]);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -95,6 +109,35 @@ const TeamApplicationsList = () => {
         description: "Failed to update application status.",
         variant: "destructive",
       });
+    }
+  };
+
+  const deleteApplication = async (application: any) => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('team_applications_staff')
+        .delete()
+        .eq('id', application.id);
+
+      if (error) throw error;
+
+      setApplications((prev: any[]) => prev.filter(a => a.id !== application.id));
+      setDeleteTarget(null);
+
+      toast({
+        title: "Application Deleted",
+        description: `${application.full_name}'s application has been permanently deleted.`,
+      });
+    } catch (error) {
+      console.error('Error deleting application:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete application.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -266,6 +309,7 @@ const TeamApplicationsList = () => {
                           setSelectedApplication(application);
                           setIsViewDialogOpen(true);
                         }}
+                        title="View application"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -276,6 +320,7 @@ const TeamApplicationsList = () => {
                             size="sm"
                             onClick={() => approveAndCreateStaff(application)}
                             className="text-green-600 hover:text-green-700"
+                            title="Approve"
                           >
                             <CheckCircle className="h-4 w-4" />
                           </Button>
@@ -284,11 +329,21 @@ const TeamApplicationsList = () => {
                             size="sm"
                             onClick={() => updateApplicationStatus(application.id, 'rejected')}
                             className="text-red-600 hover:text-red-700"
+                            title="Reject"
                           >
                             <XCircle className="h-4 w-4" />
                           </Button>
                         </>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeleteTarget(application)}
+                        className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                        title="Delete application"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -414,6 +469,38 @@ const TeamApplicationsList = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Application
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete{' '}
+              <strong>{deleteTarget?.full_name}</strong>'s application?
+              {deleteTarget?.status === 'approved' && (
+                <span className="block mt-2 text-amber-600 font-medium">
+                  ⚠ This application is already approved. Deleting it will NOT remove the created staff profile.
+                </span>
+              )}
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteTarget && deleteApplication(deleteTarget)}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeleting ? 'Deleting…' : 'Yes, Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
