@@ -29,6 +29,9 @@ import {
   Layers,
   Upload,
   X,
+  Edit,
+  Share2,
+  Plus,
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,6 +45,7 @@ interface SubtaskReviewDialogProps {
   onOpenChange: (open: boolean) => void;
   onApprove: (subtaskId: string, attachments?: File[]) => void;
   onReject: (subtaskId: string, note: string, attachments?: File[]) => void;
+  onEdit?: (subtask: any) => void;
   viewOnly?: boolean;
 }
 
@@ -178,10 +182,25 @@ export const SubtaskReviewDialog = ({
                 </p>
               )}
             </div>
-            <Badge variant="outline" className={`${priority.color} text-[10px] font-bold px-2.5 py-1 shrink-0`}>
-              <Flag className="h-3 w-3 mr-1" />
-              {priority.label}
-            </Badge>
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              <Badge variant="outline" className={`${priority.color} text-[10px] font-bold px-2.5 py-1`}>
+                <Flag className="h-3 w-3 mr-1" />
+                {priority.label}
+              </Badge>
+              {onEdit && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-7 text-[10px] border-white/10 hover:bg-white/10 font-bold"
+                  onClick={() => {
+                    onEdit(subtask);
+                    onOpenChange(false);
+                  }}
+                >
+                  <Edit className="h-3 w-3 mr-1" /> EDIT
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Meta chips */}
@@ -259,6 +278,16 @@ export const SubtaskReviewDialog = ({
                   <Paperclip className="h-3.5 w-3.5" />
                   Attachments ({attachments.length})
                 </h4>
+                
+                <div className="flex gap-2 mb-3">
+                   <Button size="sm" variant="outline" className="h-7 text-[10px] border-white/10 hover:bg-white/10" 
+                     onClick={() => {
+                        onEdit?.(subtask);
+                        onOpenChange(false);
+                     }}>
+                     <Plus className="h-3.5 w-3.5 mr-1" /> Add Attachment
+                   </Button>
+                </div>
                 <div className="space-y-2">
                   {attachments.map((file: any, i: number) => (
                     <div key={i} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg p-3">
@@ -339,31 +368,19 @@ export const SubtaskReviewDialog = ({
               </div>
             )}
 
-            {/* Timestamps */}
-            <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-1.5">
-              <div className="flex justify-between text-xs">
-                <span className="text-white/40">Created</span>
-                <span className="text-white/60">
-                  {(() => {
-                    try {
-                      return format(new Date(subtask.created_at), "MMM dd, yyyy HH:mm");
-                    } catch {
-                      return "—";
-                    }
-                  })()}
+            {/* Timestamps in a single row */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] font-bold uppercase tracking-widest text-white/40">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-purple-400" />
+                Created: <span className="text-white/70">
+                  {(() => { try { return format(new Date(subtask.created_at), "MMM dd, yyyy HH:mm"); } catch { return "—"; } })()}
                 </span>
               </div>
               {subtask.updated_at && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-white/40">Last Updated</span>
-                  <span className="text-white/60">
-                    {(() => {
-                      try {
-                        return format(new Date(subtask.updated_at), "MMM dd, yyyy HH:mm");
-                      } catch {
-                        return "—";
-                      }
-                    })()}
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-blue-400" />
+                  Updated: <span className="text-white/70">
+                    {(() => { try { return format(new Date(subtask.updated_at), "MMM dd, yyyy HH:mm"); } catch { return "—"; } })()}
                   </span>
                 </div>
               )}

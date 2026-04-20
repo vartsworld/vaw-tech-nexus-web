@@ -78,10 +78,13 @@ const TaskDetailPage = ({
   const submitFileInputRef = useRef<HTMLInputElement>(null);
 
   const checkScrollability = useCallback(() => {
-    const el = stageScrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 0);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+    // We use a small timeout to ensure the DOM has finished rendering/reflowing
+    setTimeout(() => {
+      const el = stageScrollRef.current;
+      if (!el) return;
+      setCanScrollLeft(el.scrollLeft > 2);
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 5);
+    }, 100);
   }, []);
 
   const scrollStages = (direction: 'left' | 'right') => {
@@ -92,16 +95,18 @@ const TaskDetailPage = ({
   };
 
   useEffect(() => {
-    checkScrollability();
     const el = stageScrollRef.current;
     if (el) {
+      checkScrollability();
       el.addEventListener('scroll', checkScrollability);
+      window.addEventListener('resize', checkScrollability);
       
       return () => {
         el.removeEventListener('scroll', checkScrollability);
+        window.removeEventListener('resize', checkScrollability);
       };
     }
-  }, [subtasks, checkScrollability]);
+  }, [subtasks, loadingSubtasks, checkScrollability]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -840,24 +845,32 @@ const TaskDetailPage = ({
             ) : (
               <div className="relative">
                 {/* Left Arrow */}
-                {canScrollLeft && (
-                  <button
-                    onClick={() => scrollStages('left')}
-                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-background/90 border border-white/15 shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-primary/20 hover:border-primary/40 transition-all -ml-4"
-                  >
-                    <ChevronLeft className="h-5 w-5 text-foreground" />
-                  </button>
-                )}
+                <button
+                  onClick={() => scrollStages('left')}
+                  disabled={!canScrollLeft}
+                  className={cn(
+                    "absolute left-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full border shadow-lg backdrop-blur-sm flex items-center justify-center transition-all -ml-5",
+                    canScrollLeft 
+                      ? "bg-background/90 border-white/20 text-foreground hover:bg-primary/20 hover:border-primary/40 cursor-pointer" 
+                      : "bg-background/50 border-white/5 text-muted-foreground/30 cursor-not-allowed"
+                  )}
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
 
                 {/* Right Arrow */}
-                {canScrollRight && (
-                  <button
-                    onClick={() => scrollStages('right')}
-                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-background/90 border border-white/15 shadow-lg backdrop-blur-sm flex items-center justify-center hover:bg-primary/20 hover:border-primary/40 transition-all -mr-4"
-                  >
-                    <ChevronRight className="h-5 w-5 text-foreground" />
-                  </button>
-                )}
+                <button
+                  onClick={() => scrollStages('right')}
+                  disabled={!canScrollRight}
+                  className={cn(
+                    "absolute right-0 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full border shadow-lg backdrop-blur-sm flex items-center justify-center transition-all -mr-5",
+                    canScrollRight 
+                      ? "bg-background/90 border-white/20 text-foreground hover:bg-primary/20 hover:border-primary/40 cursor-pointer" 
+                      : "bg-background/50 border-white/5 text-muted-foreground/30 cursor-not-allowed"
+                  )}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
 
                 <DragDropContext onDragEnd={onSubtaskDragEnd}>
                   <div
@@ -1647,6 +1660,10 @@ const TaskDetailPage = ({
         }}
         onApprove={handleSubtaskApprove}
         onReject={handleSubtaskReject}
+        onEdit={(st) => {
+          setEditingSubtask({...st});
+          setIsEditSubtaskDialogOpen(true);
+        }}
         viewOnly={reviewDialogSubtask?.status !== 'review_pending' && reviewDialogSubtask?.status !== 'pending_approval'}
       />
 
