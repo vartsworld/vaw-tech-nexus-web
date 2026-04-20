@@ -21,7 +21,8 @@ import {
   User,
   Trophy,
   Coins,
-  Fingerprint
+  Fingerprint,
+  Loader2
 } from "lucide-react";
 import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
 import UpdateButton from "@/components/staff/UpdateButton";
@@ -315,8 +316,11 @@ const StaffDashboard = () => {
   // Don't render dashboard until profile is loaded
   if (!profile?.user_id) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
-        <div className="text-white text-lg">Loading your workspace...</div>
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <div className="flex flex-col items-center gap-4 text-white">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <p className="text-lg font-medium opacity-70">Initializing VAW Nexus...</p>
+        </div>
       </div>
     );
   }

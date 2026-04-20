@@ -30,7 +30,8 @@ import {
   Settings2,
   Lock as LockIcon,
   LogOut,
-  Coins
+  Coins,
+  Loader2
 } from "lucide-react";
 import { CoinConfigDialog } from "@/components/staff/CoinConfigDialog";
 import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
