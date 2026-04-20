@@ -32,11 +32,14 @@ import {
   Edit,
   Share2,
   Plus,
+  ExternalLink,
+  Link2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { getFaviconUrl, extractDomain } from "@/lib/linkMetadata";
 
 interface SubtaskReviewDialogProps {
   subtask: any | null;
@@ -286,47 +289,98 @@ export const SubtaskReviewDialog = ({
             )}
 
             {/* Attachments */}
-            {attachments.length > 0 && (
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2 flex items-center gap-1.5">
-                  <Paperclip className="h-3.5 w-3.5" />
-                  Attachments ({attachments.length})
-                </h4>
-                
-                <div className="flex gap-2 mb-3">
-                   <Button size="sm" variant="outline" className="h-7 text-[10px] border-white/10 hover:bg-white/10" 
-                     onClick={() => {
-                        onEdit?.(subtask);
-                        onOpenChange(false);
-                     }}>
-                     <Plus className="h-3.5 w-3.5 mr-1" /> Add Attachment
-                   </Button>
-                </div>
-                <div className="space-y-2">
-                  {attachments.map((file: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg p-3">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="p-2 bg-blue-500/15 rounded-lg">
-                          <FileText className="h-4 w-4 text-blue-400" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{file.name || file.file_name || `File ${i + 1}`}</p>
-                          {file.size && <p className="text-xs text-white/40">{(file.size / 1024).toFixed(1)} KB</p>}
-                        </div>
+            {attachments.length > 0 && (() => {
+              const links = attachments.filter((a: any) => a.type === 'url');
+              const files = attachments.filter((a: any) => a.type !== 'url');
+              return (
+                <div className="space-y-4">
+                  {/* Links Section */}
+                  {links.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2 flex items-center gap-1.5">
+                        <Link2 className="h-3.5 w-3.5" />
+                        Links ({links.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {links.map((link: any, i: number) => (
+                          <a
+                            key={`link-${i}`}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 hover:bg-blue-500/10 hover:border-blue-500/30 transition-all group cursor-pointer"
+                          >
+                            <div className="p-2 bg-blue-500/15 rounded-lg shrink-0">
+                              <img
+                                src={link.favicon || getFaviconUrl(link.url)}
+                                alt=""
+                                className="h-5 w-5 rounded-sm"
+                                onError={(e) => {
+                                  const img = e.target as HTMLImageElement;
+                                  img.style.display = 'none';
+                                  img.parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+                                }}
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate group-hover:text-blue-300 transition-colors">
+                                {link.name || 'Link'}
+                              </p>
+                              <p className="text-xs text-white/40 truncate">
+                                {link.domain || extractDomain(link.url)}
+                              </p>
+                            </div>
+                            <ExternalLink className="h-4 w-4 text-blue-400/50 group-hover:text-blue-300 shrink-0 transition-colors" />
+                          </a>
+                        ))}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-blue-300 hover:bg-blue-500/20 h-8"
-                        onClick={() => handleDownloadAttachment(file)}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
                     </div>
-                  ))}
+                  )}
+
+                  {/* File Attachments Section */}
+                  {files.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2 flex items-center gap-1.5">
+                        <Paperclip className="h-3.5 w-3.5" />
+                        Files ({files.length})
+                      </h4>
+                      <div className="flex gap-2 mb-3">
+                        <Button size="sm" variant="outline" className="h-7 text-[10px] border-white/10 hover:bg-white/10" 
+                          onClick={() => {
+                            onEdit?.(subtask);
+                            onOpenChange(false);
+                          }}>
+                          <Plus className="h-3.5 w-3.5 mr-1" /> Add Attachment
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {files.map((file: any, i: number) => (
+                          <div key={`file-${i}`} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg p-3">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="p-2 bg-blue-500/15 rounded-lg">
+                                <FileText className="h-4 w-4 text-blue-400" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{file.name || file.file_name || `File ${i + 1}`}</p>
+                                {file.size && <p className="text-xs text-white/40">{(file.size / 1024).toFixed(1)} KB</p>}
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-blue-300 hover:bg-blue-500/20 h-8"
+                              onClick={() => handleDownloadAttachment(file)}
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Comments / Activity */}
             {comments.length > 0 && (

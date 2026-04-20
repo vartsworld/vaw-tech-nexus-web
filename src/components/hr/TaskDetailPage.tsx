@@ -15,7 +15,7 @@ import {
   ArrowLeft, CheckCircle, Clock, Target, Flag, Eye, Edit, Trash2,
   Plus, Calendar, User, Layers, FileText, Download, MessageSquare,
   Loader2, Share2, LayoutTemplate, Minimize2, Maximize2, ChevronLeft, ChevronRight,
-  AlertCircle, Upload, Lock, Unlock, ListOrdered
+  AlertCircle, Upload, Lock, Unlock, ListOrdered, ExternalLink, Link2, Globe
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { SubtaskReviewDialog } from "@/components/staff/SubtaskReviewDialog";
@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { buildLinkAttachment, fetchLinkTitle, getFaviconUrl, extractDomain } from "@/lib/linkMetadata";
 
 interface TaskDetailPageProps {
   task: any;
@@ -63,6 +64,8 @@ const TaskDetailPage = ({
   // Attachment state for creation
   const [newSubtaskAttachType, setNewSubtaskAttachType] = useState<'none' | 'url' | 'file'>('none');
   const [newSubtaskURL, setNewSubtaskURL] = useState("");
+  const [newSubtaskLinkName, setNewSubtaskLinkName] = useState("");
+  const [isFetchingLinkMeta, setIsFetchingLinkMeta] = useState(false);
   const [newSubtaskFiles, setNewSubtaskFiles] = useState<any[]>([]);
 
   // Subtask Editing State
@@ -167,6 +170,12 @@ const TaskDetailPage = ({
     }
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      // Build link attachment with metadata if URL is present
+      const linkAttachments: any[] = [];
+      if (newSubtaskURL.trim()) {
+        const link = buildLinkAttachment(newSubtaskURL.trim(), newSubtaskLinkName.trim() || undefined);
+        linkAttachments.push(link);
+      }
       const insertData = {
         task_id: task.id, title: newSubtask.title, description: newSubtask.description,
         assigned_to: newSubtask.assigned_to, priority: newSubtask.priority, points: newSubtask.points || 0,
@@ -175,7 +184,7 @@ const TaskDetailPage = ({
         rank: (subtasks.filter(s => s.stage === newSubtask.stage).length + 1) * 10,
         attachments: [
           ...newSubtaskFiles,
-          ...(newSubtaskURL.trim() ? [{ name: 'Linked URL', url: newSubtaskURL.trim(), type: 'url' }] : [])
+          ...linkAttachments
         ]
       } as any;
       const { data, error } = await supabase.from('staff_subtasks').insert(insertData)
@@ -184,6 +193,7 @@ const TaskDetailPage = ({
       setSubtasks([data, ...subtasks]);
       setNewSubtask({ title: "", description: "", assigned_to: "", priority: "medium", points: 0, due_date: "", due_time: "", stage: newSubtask.stage, rank: 0 });
       setNewSubtaskURL("");
+      setNewSubtaskLinkName("");
       setNewSubtaskFiles([]);
       setNewSubtaskAttachType('none');
       setQuickAddStage(null);
@@ -1040,7 +1050,30 @@ const TaskDetailPage = ({
                                         </Button>
                                       </div>
                                       {newSubtaskAttachType === 'url' && (
-                                        <Input placeholder="https://..." value={newSubtaskURL} onChange={e => setNewSubtaskURL(e.target.value)} className="h-7 text-[10px] bg-transparent" />
+                                        <div className="space-y-1.5">
+                                          <div className="flex gap-1">
+                                            <Input placeholder="https://..." value={newSubtaskURL}
+                                              onChange={e => setNewSubtaskURL(e.target.value)}
+                                              onBlur={async () => {
+                                                if (newSubtaskURL.trim() && !newSubtaskLinkName) {
+                                                  setIsFetchingLinkMeta(true);
+                                                  const title = await fetchLinkTitle(newSubtaskURL.trim());
+                                                  setNewSubtaskLinkName(title);
+                                                  setIsFetchingLinkMeta(false);
+                                                }
+                                              }}
+                                              className="h-7 text-[10px] bg-transparent flex-1" />
+                                            {isFetchingLinkMeta && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground mt-2" />}
+                                          </div>
+                                          <div className="flex gap-1 items-center">
+                                            {newSubtaskURL.trim() && (
+                                              <img src={getFaviconUrl(newSubtaskURL)} alt="" className="h-3.5 w-3.5 rounded-sm" />
+                                            )}
+                                            <Input placeholder="Link name (auto-fetched)" value={newSubtaskLinkName}
+                                              onChange={e => setNewSubtaskLinkName(e.target.value)}
+                                              className="h-7 text-[10px] bg-transparent flex-1" />
+                                          </div>
+                                        </div>
                                       )}
                                       {newSubtaskAttachType === 'file' && (
                                         <>
@@ -1142,6 +1175,30 @@ const TaskDetailPage = ({
                                                 <span className="text-[9px] text-primary font-semibold">{st.points} pts</span>
                                               </div>
                                             )}
+
+                                            {/* Link indicators */}
+                                            {(() => {
+                                              const links = (Array.isArray(st.attachments) ? st.attachments : []).filter((a: any) => a.type === 'url');
+                                              if (links.length === 0) return null;
+                                              return (
+                                                <div className="flex flex-wrap gap-1">
+                                                  {links.map((link: any, li: number) => (
+                                                    <a
+                                                      key={li}
+                                                      href={link.url}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      onClick={(e) => e.stopPropagation()}
+                                                      className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 transition-colors group/link"
+                                                    >
+                                                      <img src={link.favicon || getFaviconUrl(link.url)} alt="" className="h-3 w-3 rounded-sm" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                                      <span className="text-[8px] text-blue-300 truncate max-w-[80px] group-hover/link:text-blue-200">{link.name || link.domain || 'Link'}</span>
+                                                      <ExternalLink className="h-2 w-2 text-blue-400/60 shrink-0" />
+                                                    </a>
+                                                  ))}
+                                                </div>
+                                              );
+                                            })()}
 
                                             <div className="flex items-center justify-between gap-1">
                                               {st.staff_profiles && (
@@ -1693,6 +1750,59 @@ const TaskDetailPage = ({
               </div>
             )}
 
+            {/* Aggregated Links from All Subtasks */}
+            {(() => {
+              const allLinks = subtasks.flatMap(st => {
+                const atts = Array.isArray(st.attachments) ? st.attachments : [];
+                return atts.filter((a: any) => a.type === 'url').map((link: any) => ({
+                  ...link,
+                  subtaskTitle: st.title,
+                  subtaskId: st.id,
+                  stageNum: st.stage || 1
+                }));
+              });
+              if (allLinks.length === 0) return null;
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                      <Link2 className="h-3 w-3" />
+                      Links
+                    </Label>
+                    <span className="text-[10px] text-primary">{allLinks.length} link{allLinks.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {allLinks.map((link: any, i: number) => (
+                      <a
+                        key={i}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2.5 p-2.5 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-blue-500/10 hover:border-blue-500/30 transition-all group"
+                      >
+                        <div className="h-8 w-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                          <img
+                            src={link.favicon || getFaviconUrl(link.url)}
+                            alt=""
+                            className="h-4 w-4 rounded-sm"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).parentElement!.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate group-hover:text-blue-300 transition-colors">{link.name || link.domain || 'Link'}</p>
+                          <p className="text-[9px] text-muted-foreground truncate">{link.domain || extractDomain(link.url)} · {link.subtaskTitle}</p>
+                        </div>
+                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 shrink-0 transition-opacity" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Quick Actions */}
             <div className="space-y-2 pt-4 border-t border-white/10">
               <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Quick Actions</h3>
@@ -1859,30 +1969,74 @@ const TaskDetailPage = ({
                 </div>
 
                 {newSubtaskAttachType === 'url' && (
-                  <div className="flex gap-2">
-                    <Input placeholder="https://..." value={newSubtaskURL} onChange={e => setNewSubtaskURL(e.target.value)} className="h-8 text-xs bg-white/5" />
-                    <Button size="sm" className="h-8 text-xs" onClick={() => {
-                      if (newSubtaskURL.trim()) {
-                        setEditingSubtask({
-                          ...editingSubtask,
-                          attachments: [...(Array.isArray(editingSubtask.attachments) ? editingSubtask.attachments : []), { name: 'Linked URL', url: newSubtaskURL.trim(), type: 'url' }]
-                        });
-                        setNewSubtaskURL("");
-                        setNewSubtaskAttachType('none');
-                      }
-                    }}>Add</Button>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input placeholder="https://..." value={newSubtaskURL}
+                        onChange={e => setNewSubtaskURL(e.target.value)}
+                        onBlur={async () => {
+                          if (newSubtaskURL.trim() && !newSubtaskLinkName) {
+                            setIsFetchingLinkMeta(true);
+                            const title = await fetchLinkTitle(newSubtaskURL.trim());
+                            setNewSubtaskLinkName(title);
+                            setIsFetchingLinkMeta(false);
+                          }
+                        }}
+                        className="h-8 text-xs bg-white/5 flex-1" />
+                      {isFetchingLinkMeta && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mt-2" />}
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      {newSubtaskURL.trim() && (
+                        <img src={getFaviconUrl(newSubtaskURL)} alt="" className="h-4 w-4 rounded-sm" />
+                      )}
+                      <Input placeholder="Link name (auto-fetched)" value={newSubtaskLinkName}
+                        onChange={e => setNewSubtaskLinkName(e.target.value)}
+                        className="h-8 text-xs bg-white/5 flex-1" />
+                      <Button size="sm" className="h-8 text-xs" onClick={() => {
+                        if (newSubtaskURL.trim()) {
+                          const link = buildLinkAttachment(newSubtaskURL.trim(), newSubtaskLinkName.trim() || undefined);
+                          setEditingSubtask({
+                            ...editingSubtask,
+                            attachments: [...(Array.isArray(editingSubtask.attachments) ? editingSubtask.attachments : []), link]
+                          });
+                          setNewSubtaskURL("");
+                          setNewSubtaskLinkName("");
+                          setNewSubtaskAttachType('none');
+                        }
+                      }}>Add</Button>
+                    </div>
                   </div>
                 )}
 
                 {(editingSubtask.attachments || []).length > 0 && (
                   <div className="space-y-2 border-t border-white/10 pt-3">
                     {editingSubtask.attachments.map((att: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between bg-white/5 p-2 rounded-lg border border-white/10">
-                        <div className="flex items-center gap-2 truncate">
-                          <FileText className="h-3 w-3 text-blue-400" />
-                          <span className="text-xs truncate">{att.name}</span>
+                      <div key={i} className={cn(
+                        "flex items-center justify-between p-2 rounded-lg border",
+                        att.type === 'url'
+                          ? "bg-blue-500/5 border-blue-500/20 hover:bg-blue-500/10"
+                          : "bg-white/5 border-white/10"
+                      )}>
+                        <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+                          {att.type === 'url' ? (
+                            <img src={att.favicon || getFaviconUrl(att.url)} alt="" className="h-4 w-4 rounded-sm shrink-0"
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          ) : (
+                            <FileText className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <span className="text-xs truncate block">{att.name || 'Attachment'}</span>
+                            {att.type === 'url' && att.domain && (
+                              <span className="text-[9px] text-muted-foreground truncate block">{att.domain}</span>
+                            )}
+                          </div>
+                          {att.type === 'url' && (
+                            <a href={att.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                              className="ml-auto mr-1">
+                              <ExternalLink className="h-3 w-3 text-blue-400 hover:text-blue-300" />
+                            </a>
+                          )}
                         </div>
-                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-400" onClick={() => {
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-400 shrink-0" onClick={() => {
                           setEditingSubtask({
                             ...editingSubtask,
                             attachments: editingSubtask.attachments.filter((_: any, j: number) => j !== i)
