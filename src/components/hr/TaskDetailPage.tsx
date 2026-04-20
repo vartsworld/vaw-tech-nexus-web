@@ -15,7 +15,7 @@ import {
   ArrowLeft, CheckCircle, Clock, Target, Flag, Eye, Edit, Trash2,
   Plus, Calendar, User, Layers, FileText, Download, MessageSquare,
   Loader2, Share2, LayoutTemplate, Minimize2, Maximize2, ChevronLeft, ChevronRight,
-  AlertCircle
+  AlertCircle, Upload
 } from "lucide-react";
 import { SubtaskReviewDialog } from "@/components/staff/SubtaskReviewDialog";
 import { format } from "date-fns";
@@ -50,7 +50,7 @@ const TaskDetailPage = ({
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const stageScrollRef = useRef<HTMLDivElement>(null);
   const [newSubtask, setNewSubtask] = useState({
-    title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1
+    title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1, rank: 0
   });
   const [newStageName, setNewStageName] = useState("");
   const [editingStageNum, setEditingStageNum] = useState<number | null>(null);
@@ -58,6 +58,11 @@ const TaskDetailPage = ({
   const [customStageNames, setCustomStageNames] = useState<Record<number, string>>(
     (task?.stage_names && typeof task.stage_names === 'object') ? task.stage_names : {}
   );
+  
+  // Attachment state for creation
+  const [newSubtaskAttachType, setNewSubtaskAttachType] = useState<'none' | 'url' | 'file'>('none');
+  const [newSubtaskURL, setNewSubtaskURL] = useState("");
+  const [newSubtaskFiles, setNewSubtaskFiles] = useState<any[]>([]);
 
   // Subtask Editing State
   const [editingSubtask, setEditingSubtask] = useState<any>(null);
@@ -89,8 +94,23 @@ const TaskDetailPage = ({
   useEffect(() => {
     checkScrollability();
     const el = stageScrollRef.current;
-    if (el) el.addEventListener('scroll', checkScrollability);
-    return () => { if (el) el.removeEventListener('scroll', checkScrollability); };
+    if (el) {
+      el.addEventListener('scroll', checkScrollability);
+      
+      // Horizontal scroll with wheel
+      const onWheel = (e: WheelEvent) => {
+        if (e.deltaY !== 0) {
+          e.preventDefault();
+          el.scrollBy({ left: e.deltaY * 2, behavior: 'auto' });
+        }
+      };
+      el.addEventListener('wheel', onWheel, { passive: false });
+      
+      return () => {
+        el.removeEventListener('scroll', checkScrollability);
+        el.removeEventListener('wheel', onWheel);
+      };
+    }
   }, [subtasks, checkScrollability]);
   const { toast } = useToast();
 
@@ -124,13 +144,21 @@ const TaskDetailPage = ({
         task_id: task.id, title: newSubtask.title, description: newSubtask.description,
         assigned_to: newSubtask.assigned_to, priority: newSubtask.priority, points: newSubtask.points || 0,
         due_date: newSubtask.due_date || null, due_time: newSubtask.due_time || null,
-        created_by: user?.id, stage: newSubtask.stage || 1, status: 'pending'
+        created_by: user?.id, stage: newSubtask.stage || 1, status: 'pending',
+        rank: (subtasks.filter(s => s.stage === newSubtask.stage).length + 1) * 10,
+        attachments: [
+          ...newSubtaskFiles,
+          ...(newSubtaskURL.trim() ? [{ name: 'Linked URL', url: newSubtaskURL.trim(), type: 'url' }] : [])
+        ]
       } as any;
       const { data, error } = await supabase.from('staff_subtasks').insert(insertData)
         .select('*, staff_profiles:assigned_to (full_name, username, avatar_url)').single();
       if (error) throw error;
       setSubtasks([data, ...subtasks]);
-      setNewSubtask({ title: "", description: "", assigned_to: "", priority: "medium", points: 0, due_date: "", due_time: "", stage: newSubtask.stage });
+      setNewSubtask({ title: "", description: "", assigned_to: "", priority: "medium", points: 0, due_date: "", due_time: "", stage: newSubtask.stage, rank: 0 });
+      setNewSubtaskURL("");
+      setNewSubtaskFiles([]);
+      setNewSubtaskAttachType('none');
       setQuickAddStage(null);
       toast({ title: "Subtask created!" });
     } catch (error: any) {
@@ -224,6 +252,8 @@ const TaskDetailPage = ({
         due_date: editingSubtask.due_date || null,
         due_time: editingSubtask.due_time || null,
         stage: editingSubtask.stage,
+        rank: editingSubtask.rank || 0,
+        attachments: editingSubtask.attachments || [],
         updated_at: new Date().toISOString()
       };
       
@@ -246,7 +276,7 @@ const TaskDetailPage = ({
     }
   };
 
-  // Team Head subtask file upload
+  // Team Head subtask work submission file upload
   const handleSubmitFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || !task) return;
@@ -254,7 +284,7 @@ const TaskDetailPage = ({
     try {
       const uploadPromises = Array.from(files).map(async file => {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${task.id}/subtask_${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
+        const fileName = `${task.id}/subtask_submit_${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
         const { error: uploadError } = await supabase.storage.from('task-attachments').upload(fileName, file);
         if (uploadError) throw uploadError;
         const { data: { publicUrl } } = supabase.storage.from('task-attachments').getPublicUrl(fileName);
@@ -262,6 +292,38 @@ const TaskDetailPage = ({
       });
       const newFiles = await Promise.all(uploadPromises);
       setSubmitFiles(prev => [...prev, ...newFiles]);
+    } catch (error) {
+      toast({ title: "Upload failed", variant: "destructive" });
+    } finally {
+      setIsUploadingSubtaskFile(false);
+      if (event.target) event.target.value = '';
+    }
+  };
+
+  // New subtask file upload handler (for creation/edit phase)
+  const handleNewSubtaskFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || !task) return;
+    setIsUploadingSubtaskFile(true);
+    try {
+      const uploadPromises = Array.from(files).map(async file => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${task.id}/subtask_init_${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from('task-attachments').upload(fileName, file);
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from('task-attachments').getPublicUrl(fileName);
+        return { name: file.name, url: fileName, publicUrl, size: file.size, type: file.type };
+      });
+      const newFiles = await Promise.all(uploadPromises);
+      
+      if (isEditSubtaskDialogOpen && editingSubtask) {
+        setEditingSubtask({
+          ...editingSubtask,
+          attachments: [...(Array.isArray(editingSubtask.attachments) ? editingSubtask.attachments : []), ...newFiles]
+        });
+      } else {
+        setNewSubtaskFiles(prev => [...prev, ...newFiles]);
+      }
     } catch (error) {
       toast({ title: "Upload failed", variant: "destructive" });
     } finally {
@@ -810,13 +872,14 @@ const TaskDetailPage = ({
                 <DragDropContext onDragEnd={onSubtaskDragEnd}>
                   <div
                     ref={stageScrollRef}
-                    className="flex gap-3 pb-2 overflow-x-auto"
+                    className="flex gap-3 pb-4 overflow-x-auto no-scrollbar scroll-smooth"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                   >
                     {stageNums.map((stageNum) => {
                       const color = stageColors[(stageNum - 1) % stageColors.length];
-                      const stageSubtasks = stageMap[stageNum] || [];
+                      const stageSubtasks = (stageMap[stageNum] || []).sort((a, b) => (a.rank || 0) - (b.rank || 0));
                       const isQuickAddOpen = quickAddStage === stageNum;
+                      const isStageUnlocked = !stageNums.some(otherNum => otherNum < stageNum && (stageMap[otherNum] || []).some(st => st.status !== 'completed'));
 
                       return (
                         <StrictModeDroppable key={stageNum} droppableId={`stage-${stageNum}`}>
@@ -825,12 +888,18 @@ const TaskDetailPage = ({
                               {...provided.droppableProps}
                               ref={provided.innerRef}
                               className={cn(
-                                "w-[240px] shrink-0 rounded-xl border p-3 transition-colors flex flex-col",
+                                "w-[260px] shrink-0 rounded-xl border p-3 transition-colors flex flex-col",
                                 color.border, color.bg,
-                                snapshot.isDraggingOver && "bg-white/5 shadow-inner"
+                                snapshot.isDraggingOver && "bg-white/5 shadow-inner",
+                                !isStageUnlocked && "opacity-50 grayscale select-none"
                               )}
                             >
-                              <div className="flex items-center justify-between mb-2">
+                               {!isStageUnlocked && (
+                                  <div className="absolute inset-x-0 -top-1 flex justify-center z-10">
+                                      <Badge className="bg-black/60 border-white/20 text-[8px] h-4">Locked Stage</Badge>
+                                  </div>
+                                )}
+                                <div className="flex items-center justify-between mb-2">
                                 <span className={`text-[10px] font-bold uppercase tracking-wider ${color.text}`}>
                                   {stageLabels[stageNum] || `Stage ${stageNum}`}
                                 </span>
@@ -880,13 +949,50 @@ const TaskDetailPage = ({
                                         <SelectItem value="urgent" className="text-xs">Urgent</SelectItem>
                                       </SelectContent>
                                     </Select>
-                                    <Input type="number" placeholder="Points" value={newSubtask.points || ''}
-                                      onChange={e => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
-                                      className="h-7 text-[10px] bg-transparent border-white/10" />
+                                    <div className="flex flex-col flex-1 gap-1">
+                                      <Label className="text-[9px] text-muted-foreground uppercase">Rank</Label>
+                                      <Input type="number" placeholder="Order" value={newSubtask.rank || ''}
+                                        onChange={e => setNewSubtask({ ...newSubtask, rank: parseInt(e.target.value) || 0 })}
+                                        className="h-7 text-[10px] bg-transparent border-white/10" />
+                                    </div>
+                                    <div className="flex flex-col flex-1 gap-1">
+                                      <Label className="text-[9px] text-muted-foreground uppercase">Points</Label>
+                                      <Input type="number" placeholder="Points" value={newSubtask.points || ''}
+                                        onChange={e => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })}
+                                        className="h-7 text-[10px] bg-transparent border-white/10" />
+                                    </div>
                                   </div>
                                   <div className="flex gap-1">
-                                    <Button size="sm" className="flex-1 h-7 text-[10px] bg-primary/80 hover:bg-primary" onClick={handleCreateSubtask}>
-                                      <Plus className="h-3 w-3 mr-1" /> Add
+                                    <div className="flex flex-col flex-1 gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <Button size="sm" variant="outline" className="h-7 text-[10px] flex-1 border-white/10" onClick={() => setNewSubtaskAttachType(newSubtaskAttachType === 'url' ? 'none' : 'url')}>
+                                          <Share2 className="h-3 w-3 mr-1" /> URL
+                                        </Button>
+                                        <Button size="sm" variant="outline" className="h-7 text-[10px] flex-1 border-white/10" onClick={() => setNewSubtaskAttachType(newSubtaskAttachType === 'file' ? 'none' : 'file')}>
+                                          <Upload className="h-3 w-3 mr-1" /> File
+                                        </Button>
+                                      </div>
+                                      {newSubtaskAttachType === 'url' && (
+                                        <Input placeholder="https://..." value={newSubtaskURL} onChange={e => setNewSubtaskURL(e.target.value)} className="h-7 text-[10px] bg-transparent" />
+                                      )}
+                                      {newSubtaskAttachType === 'file' && (
+                                        <>
+                                          <div className="p-2 border border-dashed border-white/20 rounded text-center cursor-pointer" onClick={() => {
+                                              setNewSubtaskAttachType('file');
+                                              // Trigger the hidden file input
+                                              const fileInput = document.getElementById('new-subtask-file-input') as HTMLInputElement;
+                                              fileInput?.click();
+                                            }}>
+                                            <span className="text-[9px] text-muted-foreground">{newSubtaskFiles.length > 0 ? `${newSubtaskFiles.length} file(s) selected` : 'Drag & Drop or Click'}</span>
+                                          </div>
+                                          <input id="new-subtask-file-input" type="file" multiple hidden onChange={handleNewSubtaskFileUpload} />
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button size="sm" className="flex-1 h-7 text-[10px] bg-primary/80 hover:bg-primary font-bold" onClick={handleCreateSubtask}>
+                                      <Plus className="h-3 w-3 mr-1" /> ADD SUBTASK
                                     </Button>
                                     <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => setQuickAddStage(null)}>Cancel</Button>
                                   </div>
@@ -895,161 +1001,177 @@ const TaskDetailPage = ({
 
                               {/* Scrollable subtask list */}
                               <div className="flex-1 overflow-y-auto max-h-[400px] space-y-2 pr-0.5" style={{ scrollbarWidth: 'thin' }}>
-                                {stageSubtasks.map((st, index) => (
-                                  <Draggable key={st.id} draggableId={st.id} index={index}>
-                                    {(provided, snapshot) => (
-                                      <div
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        {...provided.dragHandleProps}
-                                        className={cn(
-                                          "rounded-lg border bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group cursor-pointer",
-                                          (st.status === 'review_pending' || st.status === 'pending_approval')
-                                            ? "border-orange-500/40 ring-1 ring-orange-500/20"
-                                            : "border-white/10",
-                                          snapshot.isDragging && "rotate-2 scale-105 shadow-2xl"
-                                        )}
-                                        onClick={() => {
-                                          setReviewDialogSubtask(st);
-                                          setReviewDialogOpen(true);
-                                        }}
-                                      >
-                                        {/* Review Request Banner */}
-                                        {(st.status === 'review_pending' || st.status === 'pending_approval') && (
-                                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-orange-500/15 border border-orange-500/30 -mt-1 mb-1">
-                                            <AlertCircle className="h-3 w-3 text-orange-400 animate-pulse" />
-                                            <span className="text-[9px] font-bold text-orange-300 uppercase tracking-wider">Review Requested</span>
-                                          </div>
-                                        )}
+                                  {stageSubtasks.map((st, index) => (
+                                    <Draggable key={st.id} draggableId={st.id} index={index}>
+                                      {(provided, snapshot) => {
+                                        const isSubtaskLocked = !isStageUnlocked || stageSubtasks.some((other, oi) => {
+                                          const otherRank = (other as any).rank || (oi * 10);
+                                          const myRank = (st as any).rank || (index * 10);
+                                          return otherRank < myRank && other.status !== 'completed';
+                                        });
 
-                                        <div className="flex items-start justify-between gap-2">
-                                          <span className="text-xs font-medium leading-tight break-words min-w-0">{st.title}</span>
-                                          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                            <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-primary"
-                                              onClick={(e) => { 
-                                                e.stopPropagation(); 
-                                                setEditingSubtask({...st}); 
-                                                setIsEditSubtaskDialogOpen(true);
-                                              }}>
-                                              <Edit className="h-3 w-3" />
-                                            </Button>
-                                            <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400"
-                                              onClick={(e) => { e.stopPropagation(); handleDeleteSubtask(st.id); }}>
-                                              <Trash2 className="h-3 w-3" />
-                                            </Button>
-                                          </div>
-                                        </div>
+                                        return (
+                                          <div
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            {...provided.dragHandleProps}
+                                            className={cn(
+                                              "rounded-lg border bg-black/30 p-3 space-y-2 transition-all hover:border-white/20 group cursor-pointer relative",
+                                              (st.status === 'review_pending' || st.status === 'pending_approval')
+                                                ? "border-orange-500/40 ring-1 ring-orange-500/20"
+                                                : "border-white/10",
+                                              isSubtaskLocked && "opacity-40 grayscale pointer-events-none",
+                                              snapshot.isDragging && "rotate-2 scale-105 shadow-2xl z-50"
+                                            )}
+                                            onClick={() => {
+                                              if (isSubtaskLocked) return;
+                                              setReviewDialogSubtask(st);
+                                              setReviewDialogOpen(true);
+                                            }}
+                                          >
+                                            {isSubtaskLocked && (
+                                              <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-lg pointer-events-none">
+                                                <AlertCircle className="h-4 w-4 text-white/20" />
+                                              </div>
+                                            )}
+                                            
+                                            {/* Review Request Banner */}
+                                            {(st.status === 'review_pending' || st.status === 'pending_approval') && (
+                                              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-orange-500/15 border border-orange-500/30 -mt-1 mb-1">
+                                                <AlertCircle className="h-3 w-3 text-orange-400 animate-pulse" />
+                                                <span className="text-[9px] font-bold text-orange-300 uppercase tracking-wider">Review Requested</span>
+                                              </div>
+                                            )}
 
-                                        {st.description && (
-                                          <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2 break-words">{st.description}</p>
-                                        )}
-
-                                        {st.points > 0 && (
-                                          <div className="flex items-center gap-1">
-                                            <Target className="h-3 w-3 text-primary" />
-                                            <span className="text-[9px] text-primary font-semibold">{st.points} pts</span>
-                                          </div>
-                                        )}
-
-                                        <div className="flex items-center justify-between gap-1">
-                                          {st.staff_profiles && (
-                                            <div className="flex items-center gap-1.5 min-w-0">
-                                              <Avatar className="h-5 w-5 border border-white/10 shrink-0">
-                                                <AvatarImage src={st.staff_profiles.avatar_url} />
-                                                <AvatarFallback className="text-[8px]">
-                                                  {st.staff_profiles.full_name?.substring(0, 2).toUpperCase()}
-                                                </AvatarFallback>
-                                              </Avatar>
-                                              <span className="text-[10px] text-muted-foreground truncate">{st.staff_profiles.full_name}</span>
+                                            <div className="flex items-start justify-between gap-2">
+                                              <span className="text-xs font-medium leading-tight break-words min-w-0">{st.title}</span>
+                                              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                                <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-primary"
+                                                  onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    setEditingSubtask({...st}); 
+                                                    setIsEditSubtaskDialogOpen(true);
+                                                  }}>
+                                                  <Edit className="h-3 w-3" />
+                                                </Button>
+                                                <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400"
+                                                  onClick={(e) => { e.stopPropagation(); handleDeleteSubtask(st.id); }}>
+                                                  <Trash2 className="h-3 w-3" />
+                                                </Button>
+                                              </div>
                                             </div>
-                                          )}
-                                          <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${
-                                            st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                                            : (st.status === 'review_pending' || st.status === 'pending_approval') ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
-                                            : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
-                                              : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                                            }`}>
-                                            {st.status === 'completed' ? 'DONE' : (st.status === 'review_pending' || st.status === 'pending_approval') ? 'IN REVIEW' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
-                                          </Badge>
-                                        </div>
 
-                                        {/* Status toggle */}
-                                        <div onClick={(e) => e.stopPropagation()}>
-                                          <Select value={st.status} onValueChange={(v) => handleSubtaskStatusUpdate(st.id, v)}>
-                                            <SelectTrigger className="h-6 text-[9px] bg-transparent border-white/5">
-                                              <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              <SelectItem value="pending" className="text-xs">Pending</SelectItem>
-                                              <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
-                                              <SelectItem value="review_pending" className="text-xs">Review Pending</SelectItem>
-                                              <SelectItem value="pending_approval" className="text-xs">Pending Approval</SelectItem>
-                                              <SelectItem value="completed" className="text-xs">Completed</SelectItem>
-                                            </SelectContent>
-                                          </Select>
-                                        </div>
+                                            {st.description && (
+                                              <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2 break-words">{st.description}</p>
+                                            )}
 
-                                        {/* Team Head Submit Button */}
-                                        {(st.status === 'in_progress' || st.status === 'pending') && (
-                                          <div onClick={(e) => e.stopPropagation()}>
-                                            <Button
-                                              size="sm"
-                                              className="w-full h-6 text-[9px] bg-purple-600/80 hover:bg-purple-600 mt-1"
-                                              onClick={() => {
-                                                setExpandedSubmitSubtask(expandedSubmitSubtask === st.id ? null : st.id);
-                                                setSubmitNotes("");
-                                                setSubmitFiles([]);
-                                              }}
-                                            >
-                                              {expandedSubmitSubtask === st.id ? 'Cancel' : 'Write & Submit'}
-                                            </Button>
-                                          </div>
-                                        )}
+                                            {st.points > 0 && (
+                                              <div className="flex items-center gap-1">
+                                                <Target className="h-3 w-3 text-primary" />
+                                                <span className="text-[9px] text-primary font-semibold">{st.points} pts</span>
+                                              </div>
+                                            )}
 
-                                        {/* Expanded Submission Form */}
-                                        {expandedSubmitSubtask === st.id && (
-                                          <div className="space-y-2 mt-2 pt-2 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
-                                            <Textarea
-                                              placeholder="Add notes..."
-                                              value={submitNotes}
-                                              onChange={(e) => setSubmitNotes(e.target.value)}
-                                              className="bg-black/50 border-white/10 text-[10px] min-h-[50px] placeholder:text-white/30"
-                                            />
-                                            <div className="flex flex-wrap gap-1">
-                                              {submitFiles.map((file, fidx) => (
-                                                <div key={fidx} className="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">
-                                                  <FileText className="w-2.5 h-2.5 text-blue-400" />
-                                                  <span className="text-[8px] text-white/60 max-w-[60px] truncate">{file.name}</span>
-                                                  <button className="text-red-400 hover:text-red-300" onClick={() => setSubmitFiles(submitFiles.filter((_, i) => i !== fidx))}>
-                                                    <Trash2 className="h-2.5 w-2.5" />
-                                                  </button>
+                                            <div className="flex items-center justify-between gap-1">
+                                              {st.staff_profiles && (
+                                                <div className="flex items-center gap-1.5 min-w-0">
+                                                  <Avatar className="h-5 w-5 border border-white/10 shrink-0">
+                                                    <AvatarImage src={st.staff_profiles.avatar_url} />
+                                                    <AvatarFallback className="text-[8px]">
+                                                      {st.staff_profiles.full_name?.substring(0, 2).toUpperCase()}
+                                                    </AvatarFallback>
+                                                  </Avatar>
+                                                  <span className="text-[10px] text-muted-foreground truncate">{st.staff_profiles.full_name}</span>
                                                 </div>
-                                              ))}
-                                              <Button variant="outline" size="sm" className="h-5 text-[8px] border-dashed border-white/20 px-1.5"
-                                                onClick={() => submitFileInputRef.current?.click()} disabled={isUploadingSubtaskFile}>
-                                                {isUploadingSubtaskFile ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Plus className="h-2.5 w-2.5 mr-0.5" />}
-                                                Upload
-                                              </Button>
-                                              <input type="file" multiple hidden ref={submitFileInputRef} onChange={handleSubmitFileUpload} />
+                                              )}
+                                              <Badge variant="outline" className={`text-[8px] h-4 px-1.5 shrink-0 ${
+                                                st.status === 'completed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                                : (st.status === 'review_pending' || st.status === 'pending_approval') ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
+                                                : st.status === 'in_progress' ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                                                  : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                                }`}>
+                                                {st.status === 'completed' ? 'DONE' : (st.status === 'review_pending' || st.status === 'pending_approval') ? 'IN REVIEW' : st.status === 'in_progress' ? 'ACTIVE' : 'PENDING'}
+                                              </Badge>
                                             </div>
-                                            <div className="flex gap-1">
-                                              <Button size="sm" className="flex-1 h-6 text-[9px] bg-emerald-600 hover:bg-emerald-700"
-                                                onClick={() => handleTeamHeadSubtaskSubmit(st.id, 'completed')} disabled={isSubmittingSubtask}>
-                                                {isSubmittingSubtask ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
-                                                Complete
-                                              </Button>
-                                              <Button size="sm" className="flex-1 h-6 text-[9px] bg-orange-600 hover:bg-orange-700"
-                                                onClick={() => handleTeamHeadSubtaskSubmit(st.id, 'pending_approval')} disabled={isSubmittingSubtask}>
-                                                {isSubmittingSubtask ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3 mr-1" />}
-                                                For Review
-                                              </Button>
+
+                                            {/* Status toggle */}
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                              <Select value={st.status} onValueChange={(v) => handleSubtaskStatusUpdate(st.id, v)}>
+                                                <SelectTrigger className="h-6 text-[9px] bg-transparent border-white/5">
+                                                  <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem value="pending" className="text-xs">Pending</SelectItem>
+                                                  <SelectItem value="in_progress" className="text-xs">In Progress</SelectItem>
+                                                  <SelectItem value="review_pending" className="text-xs">Review Pending</SelectItem>
+                                                  <SelectItem value="pending_approval" className="text-xs">Pending Approval</SelectItem>
+                                                  <SelectItem value="completed" className="text-xs">Completed</SelectItem>
+                                                </SelectContent>
+                                              </Select>
                                             </div>
+
+                                            {/* Team Head Submit Button */}
+                                            {(st.status === 'in_progress' || st.status === 'pending') && (
+                                              <div onClick={(e) => e.stopPropagation()}>
+                                                <Button
+                                                  size="sm"
+                                                  className="w-full h-6 text-[9px] bg-purple-600/80 hover:bg-purple-600 mt-1"
+                                                  onClick={() => {
+                                                    setExpandedSubmitSubtask(expandedSubmitSubtask === st.id ? null : st.id);
+                                                    setSubmitNotes("");
+                                                    setSubmitFiles([]);
+                                                  }}
+                                                >
+                                                  {expandedSubmitSubtask === st.id ? 'Cancel' : 'Write & Submit'}
+                                                </Button>
+                                              </div>
+                                            )}
+
+                                            {/* Expanded Submission Form */}
+                                            {expandedSubmitSubtask === st.id && (
+                                              <div className="space-y-2 mt-2 pt-2 border-t border-white/10" onClick={(e) => e.stopPropagation()}>
+                                                <Textarea
+                                                  placeholder="Add notes..."
+                                                  value={submitNotes}
+                                                  onChange={(e) => setSubmitNotes(e.target.value)}
+                                                  className="bg-black/50 border-white/10 text-[10px] min-h-[50px] placeholder:text-white/30"
+                                                />
+                                                <div className="flex flex-wrap gap-1">
+                                                  {submitFiles.map((file, fidx) => (
+                                                    <div key={fidx} className="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded border border-white/10">
+                                                      <FileText className="w-2.5 h-2.5 text-blue-400" />
+                                                      <span className="text-[8px] text-white/60 max-w-[60px] truncate">{file.name}</span>
+                                                      <button className="text-red-400 hover:text-red-300" onClick={() => setSubmitFiles(submitFiles.filter((_, i) => i !== fidx))}>
+                                                        <Trash2 className="h-2.5 w-2.5" />
+                                                      </button>
+                                                    </div>
+                                                  ))}
+                                                  <Button variant="outline" size="sm" className="h-5 text-[8px] border-dashed border-white/20 px-1.5"
+                                                    onClick={() => submitFileInputRef.current?.click()} disabled={isUploadingSubtaskFile}>
+                                                    {isUploadingSubtaskFile ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Plus className="h-2.5 w-2.5 mr-0.5" />}
+                                                    Upload
+                                                  </Button>
+                                                  <input type="file" multiple hidden ref={submitFileInputRef} onChange={handleSubmitFileUpload} />
+                                                </div>
+                                                <div className="flex gap-1">
+                                                  <Button size="sm" className="flex-1 h-6 text-[9px] bg-emerald-600 hover:bg-emerald-700"
+                                                    onClick={() => handleTeamHeadSubtaskSubmit(st.id, 'completed')} disabled={isSubmittingSubtask}>
+                                                    {isSubmittingSubtask ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
+                                                    Complete
+                                                  </Button>
+                                                  <Button size="sm" className="flex-1 h-6 text-[9px] bg-orange-600 hover:bg-orange-700"
+                                                    onClick={() => handleTeamHeadSubtaskSubmit(st.id, 'pending_approval')} disabled={isSubmittingSubtask}>
+                                                    {isSubmittingSubtask ? <Loader2 className="h-3 w-3 animate-spin" /> : <Share2 className="h-3 w-3 mr-1" />}
+                                                    For Review
+                                                  </Button>
+                                                </div>
+                                              </div>
+                                            )}
                                           </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                ))}
+                                        );
+                                      }}
+                                    </Draggable>
+                                  ))}
 
                                 {stageSubtasks.length === 0 && !isQuickAddOpen && (
                                   <div className="py-6 text-center text-[10px] text-muted-foreground/50 border border-dashed border-white/10 rounded-lg">
@@ -1632,6 +1754,71 @@ const TaskDetailPage = ({
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                   <Label className="text-xs text-muted-foreground uppercase tracking-widest">Rank / Order</Label>
+                   <Input 
+                     type="number"
+                     value={editingSubtask.rank || 0} 
+                     onChange={e => setEditingSubtask({...editingSubtask, rank: parseInt(e.target.value) || 0})}
+                     className="bg-white/5 border-white/10"
+                   />
+                </div>
+              </div>
+
+              {/* Edit Attachments */}
+              <div className="space-y-4 pt-2">
+                <input type="file" multiple hidden id="edit-subtask-file-input" onChange={handleNewSubtaskFileUpload} />
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Attachments</Label>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="outline" className="h-6 text-[9px] border-white/10" onClick={() => setNewSubtaskAttachType(newSubtaskAttachType === 'url' ? 'none' : 'url')}>
+                      <Share2 className="h-2.5 w-2.5 mr-1" /> URL
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-6 text-[9px] border-white/10" onClick={() => {
+                        setNewSubtaskAttachType('file');
+                        document.getElementById('edit-subtask-file-input')?.click();
+                      }}>
+                      <Upload className="h-2.5 w-2.5 mr-1" /> File
+                    </Button>
+                  </div>
+                </div>
+
+                {newSubtaskAttachType === 'url' && (
+                  <div className="flex gap-2">
+                    <Input placeholder="https://..." value={newSubtaskURL} onChange={e => setNewSubtaskURL(e.target.value)} className="h-8 text-xs bg-white/5" />
+                    <Button size="sm" className="h-8 text-xs" onClick={() => {
+                      if (newSubtaskURL.trim()) {
+                        setEditingSubtask({
+                          ...editingSubtask,
+                          attachments: [...(Array.isArray(editingSubtask.attachments) ? editingSubtask.attachments : []), { name: 'Linked URL', url: newSubtaskURL.trim(), type: 'url' }]
+                        });
+                        setNewSubtaskURL("");
+                        setNewSubtaskAttachType('none');
+                      }
+                    }}>Add</Button>
+                  </div>
+                )}
+
+                {(editingSubtask.attachments || []).length > 0 && (
+                  <div className="space-y-2 border-t border-white/10 pt-3">
+                    {editingSubtask.attachments.map((att: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between bg-white/5 p-2 rounded-lg border border-white/10">
+                        <div className="flex items-center gap-2 truncate">
+                          <FileText className="h-3 w-3 text-blue-400" />
+                          <span className="text-xs truncate">{att.name}</span>
+                        </div>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-red-400" onClick={() => {
+                          setEditingSubtask({
+                            ...editingSubtask,
+                            attachments: editingSubtask.attachments.filter((_: any, j: number) => j !== i)
+                          });
+                        }}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
