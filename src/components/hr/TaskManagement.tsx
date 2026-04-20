@@ -91,7 +91,6 @@ const TaskManagement = () => {
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isHandoverDialogOpen, setIsHandoverDialogOpen] = useState(false);
   const [handoverTaskId, setHandoverTaskId] = useState<string | null>(null);
   const [handoverDepartmentId, setHandoverDepartmentId] = useState("");
@@ -99,7 +98,6 @@ const TaskManagement = () => {
   const [taskToDelete, setTaskToDelete] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
-  const [savingEdit, setSavingEdit] = useState(false);
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
   const [subtaskTemplates, setSubtaskTemplates] = useState<any[]>([]);
@@ -177,12 +175,6 @@ const TaskManagement = () => {
     }
   }, [newTask.client_id, isAddDialogOpen]);
 
-  // Fetch projects when client_id changes in editTask
-  useEffect(() => {
-    if (editTask?.client_id && editTask.client_id !== "no-client" && isEditDialogOpen) {
-      fetchClientProjects(editTask.client_id);
-    }
-  }, [editTask?.client_id, isEditDialogOpen]);
 
   useEffect(() => {
     filterTasks();
@@ -2107,143 +2099,6 @@ const TaskManagement = () => {
           </DialogContent>
         </Dialog>
 
-                    <Label htmlFor="edit-project">Project</Label>
-                    <Select value={editTask.project_id || "no-project"} onValueChange={(value) => setEditTask({ ...editTask, project_id: value })}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue placeholder="Select project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="no-project">No Project</SelectItem>
-                        {projects.map((project: any) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.title || project.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="edit-department">Department</Label>
-                  <Select value={editTask.department_id || "no-department"} onValueChange={(value) => setEditTask({ ...editTask, department_id: value })}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no-department">No Department</SelectItem>
-                      {departments.map(dept => (
-                        <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-current_stage">Current Stage</Label>
-                  <Select value={editTask.current_stage?.toString() || "1"} onValueChange={(value) => setEditTask({ ...editTask, current_stage: parseInt(value) })}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => (
-                        <SelectItem key={s} value={s.toString()}>Stage {s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-due_date">Due Date</Label>
-                    <Input
-                      id="edit-due_date"
-                      type="date"
-                      value={editTask.due_date}
-                      onChange={(e) => setEditTask({ ...editTask, due_date: e.target.value })}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-due_time">Due Time</Label>
-                    <Input
-                      id="edit-due_time"
-                      type="time"
-                      value={editTask.due_time}
-                      onChange={(e) => setEditTask({ ...editTask, due_time: e.target.value })}
-                      className="mt-2"
-                    />
-                  </div>
-                </div>
-
-                {/* Recurring Task Section */}
-                <div className="border rounded-lg p-4 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Repeat className="h-4 w-4 text-muted-foreground" />
-                      <Label htmlFor="edit-recurring" className="font-medium">Recurring Task</Label>
-                    </div>
-                    <Switch
-                      id="edit-recurring"
-                      checked={editTask.is_recurring}
-                      onCheckedChange={(checked) => setEditTask({ ...editTask, is_recurring: checked })}
-                    />
-                  </div>
-                  {editTask.is_recurring && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                      <div>
-                        <Label>Frequency</Label>
-                        <Select value={editTask.recurrence_type} onValueChange={(value) => setEditTask({ ...editTask, recurrence_type: value })}>
-                          <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="daily">Daily</SelectItem>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Every</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="30"
-                          value={editTask.recurrence_interval}
-                          onChange={(e) => setEditTask({ ...editTask, recurrence_interval: parseInt(e.target.value) || 1 })}
-                          className="mt-2"
-                        />
-                      </div>
-                      <div>
-                        <Label>End Date</Label>
-                        <Input
-                          type="date"
-                          value={editTask.recurrence_end_date}
-                          onChange={(e) => setEditTask({ ...editTask, recurrence_end_date: e.target.value })}
-                          className="mt-2"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleEditTask} disabled={savingEdit}>
-                    {savingEdit ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Changes"
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
