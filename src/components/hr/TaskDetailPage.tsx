@@ -97,18 +97,8 @@ const TaskDetailPage = ({
     if (el) {
       el.addEventListener('scroll', checkScrollability);
       
-      // Horizontal scroll with wheel
-      const onWheel = (e: WheelEvent) => {
-        if (e.deltaY !== 0) {
-          e.preventDefault();
-          el.scrollBy({ left: e.deltaY * 2, behavior: 'auto' });
-        }
-      };
-      el.addEventListener('wheel', onWheel, { passive: false });
-      
       return () => {
         el.removeEventListener('scroll', checkScrollability);
-        el.removeEventListener('wheel', onWheel);
       };
     }
   }, [subtasks, checkScrollability]);
@@ -872,8 +862,7 @@ const TaskDetailPage = ({
                 <DragDropContext onDragEnd={onSubtaskDragEnd}>
                   <div
                     ref={stageScrollRef}
-                    className="flex gap-3 pb-4 overflow-x-auto no-scrollbar scroll-smooth"
-                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    className="flex gap-3 pb-4 overflow-x-auto scroll-smooth"
                   >
                     {stageNums.map((stageNum) => {
                       const color = stageColors[(stageNum - 1) % stageColors.length];
