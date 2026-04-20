@@ -207,8 +207,8 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
         }
       }
 
-      // Log task assignment for each user
-      if (taskResponse.id && newTask.assigned_to.length > 0) {
+      // Log task assignment for each user (only for new tasks)
+      if (!taskToEdit && taskResponse.id && newTask.assigned_to.length > 0) {
         for (const assigneeId of newTask.assigned_to) {
           await supabase.from('user_coin_transactions').insert({
             user_id: assigneeId,
