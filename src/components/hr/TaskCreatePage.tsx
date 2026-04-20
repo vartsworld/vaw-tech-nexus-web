@@ -21,9 +21,10 @@ interface TaskCreatePageProps {
   onBack: () => void;
   onCreated: () => void;
   userProfile: any;
+  taskToEdit?: any;
 }
 
-const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps) => {
+const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCreatePageProps) => {
   const [staff, setStaff] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -32,26 +33,36 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const { toast } = useToast();
 
+  const parseJson = (val: any) => {
+    if (!val) return [];
+    if (typeof val === 'object') return val;
+    try {
+      return JSON.parse(val);
+    } catch {
+      return [val];
+    }
+  };
+
   const [newTask, setNewTask] = useState({
-    title: "",
-    description: "",
-    assigned_to: [] as string[],
-    project_id: "",
-    client_id: "",
-    department_id: "",
-    status: "pending",
-    priority: "auto",
-    due_date: "",
-    due_time: "",
-    trial_period: false,
-    points: 10,
+    title: taskToEdit?.title || "",
+    description: taskToEdit?.description || "",
+    assigned_to: parseJson(taskToEdit?.assigned_to),
+    project_id: taskToEdit?.client_project_id || "",
+    client_id: taskToEdit?.client_id || "",
+    department_id: taskToEdit?.department_id || "",
+    status: taskToEdit?.status || "pending",
+    priority: taskToEdit?.priority || "auto",
+    due_date: taskToEdit?.due_date || "",
+    due_time: taskToEdit?.due_time || "",
+    trial_period: taskToEdit?.trial_period || false,
+    points: taskToEdit?.points ?? 10,
     attachments: [] as Array<{ file: File; title: string }>,
-    is_recurring: false,
-    recurrence_type: "weekly",
-    recurrence_interval: 1,
-    recurrence_end_date: "",
-    current_stage: 1,
-    auto_stage: true,
+    is_recurring: taskToEdit?.is_recurring || false,
+    recurrence_type: taskToEdit?.recurrence_type || "weekly",
+    recurrence_interval: taskToEdit?.recurrence_interval || 1,
+    recurrence_end_date: taskToEdit?.recurrence_end_date || "",
+    current_stage: taskToEdit?.current_stage || 1,
+    auto_stage: taskToEdit?.auto_stage ?? true,
   });
 
   const [newClient, setNewClient] = useState({
@@ -162,8 +173,25 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
         attachments: []
       };
 
-      const { data: taskResponse, error: taskError } = await supabase.from('staff_tasks').insert(taskData).select('*').single();
-      if (taskError) throw taskError;
+      let taskResponse;
+      if (taskToEdit) {
+        const { data: updateResponse, error: updateError } = await supabase
+          .from('staff_tasks')
+          .update(taskData)
+          .eq('id', taskToEdit.id)
+          .select('*')
+          .single();
+        if (updateError) throw updateError;
+        taskResponse = updateResponse;
+      } else {
+        const { data: insertResponse, error: insertError } = await supabase
+          .from('staff_tasks')
+          .insert(taskData)
+          .select('*')
+          .single();
+        if (insertError) throw insertError;
+        taskResponse = insertResponse;
+      }
 
       // Handle attachments
       if (newTask.attachments.length > 0 && taskResponse.id) {
@@ -192,7 +220,10 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
         }
       }
 
-      toast({ title: "Task Created! 🎉", description: `"${newTask.title}" has been assigned successfully.` });
+      toast({ 
+        title: taskToEdit ? "Task Updated! ✨" : "Task Created! 🎉", 
+        description: `"${newTask.title}" has been ${taskToEdit ? "updated" : "assigned"} successfully.` 
+      });
       onCreated();
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to create task.", variant: "destructive" });
@@ -239,8 +270,8 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Create New Task</h1>
-          <p className="text-sm text-muted-foreground">Fill in the details to assign a new task</p>
+          <h1 className="text-2xl font-bold tracking-tight">{taskToEdit ? "Edit Task" : "Create New Task"}</h1>
+          <p className="text-sm text-muted-foreground">{taskToEdit ? "Update task details and assignments" : "Fill in the details to assign a new task"}</p>
         </div>
       </div>
 
@@ -474,11 +505,75 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
             )}
           </div>
 
+          {/* Existing Attachments Area (when editing) */}
+          {taskToEdit && parseJson(taskToEdit.attachments).length > 0 && (
+            <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-4">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <Paperclip className="h-4 w-4 text-primary" />
+                Existing Attachments
+              </h3>
+              <div className="space-y-2">
+                {parseJson(taskToEdit.attachments).map((att: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10 text-sm">
+                    <div className="flex items-center gap-2 truncate">
+                      <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="truncate">{att.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-primary hover:bg-primary/10"
+                        onClick={async () => {
+                          const { data } = await supabase.storage
+                            .from('task-attachments')
+                            .download(att.url);
+                          if (data) {
+                            const url = URL.createObjectURL(data);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = att.name;
+                            a.click();
+                          }
+                        }}
+                      >
+                        Download
+                      </Button>
+                      <Button
+                        variant="ghost" size="sm"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={async () => {
+                          if (!window.confirm("Delete this attachment?")) return;
+                          try {
+                            // 1. Storage remove
+                            await supabase.storage.from('task-attachments').remove([att.url]);
+                            // 2. DB update
+                            const currentAtts = parseJson(taskToEdit.attachments);
+                            const updatedAtts = currentAtts.filter((_: any, i: number) => i !== idx);
+                            await supabase.from('staff_tasks').update({ attachments: updatedAtts }).eq('id', taskToEdit.id);
+                            // 3. Update local state (best effort - might need to notify parent)
+                            taskToEdit.attachments = updatedAtts;
+                            toast({ title: "Attachment deleted" });
+                            setNewTask({ ...newTask }); // Force re-render
+                          } catch (e: any) {
+                            toast({ title: "Error", description: e.message, variant: "destructive" });
+                          }
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Attachments Card */}
           <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
-              Attachments
+              {taskToEdit ? "Add New Attachments" : "Attachments"}
             </h3>
             <div className="space-y-3">
               <input type="file" id="file-upload-create" className="hidden" multiple
@@ -639,9 +734,9 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile }: TaskCreatePageProps)
                 className="w-full h-12 text-sm font-bold bg-primary hover:bg-primary/90 rounded-xl shadow-lg shadow-primary/20"
               >
                 {uploadingFiles ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {taskToEdit ? "Updating..." : "Creating..."}</>
                 ) : (
-                  <><Sparkles className="mr-2 h-4 w-4" /> Create Task</>
+                  <><Sparkles className="mr-2 h-4 w-4" /> {taskToEdit ? "Update Task" : "Create Task"}</>
                 )}
               </Button>
               <Button variant="ghost" onClick={onBack} className="w-full h-10 text-sm text-muted-foreground">

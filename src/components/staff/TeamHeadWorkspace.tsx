@@ -136,12 +136,11 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [staff, setStaff] = useState<Staff[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [clients, setClients] = useState<any[]>([]);
-  const [currentView, setCurrentView] = useState<'list' | 'create' | 'detail'>('list');
+  const [currentView, setCurrentView] = useState<'list' | 'create' | 'detail' | 'edit'>('list');
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [clientProjects, setClientProjects] = useState<any[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
-  const [isEditTaskOpen, setIsEditTaskOpen] = useState(false);
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewTaskOpen, setIsViewTaskOpen] = useState(false);
@@ -2057,6 +2056,21 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     );
   }
 
+  // Full-page Edit Task view
+  if (currentView === 'edit' && selectedTask) {
+    return (
+      <TaskCreatePage
+        taskToEdit={selectedTask}
+        onBack={() => setCurrentView('list')}
+        onCreated={() => {
+          setCurrentView('list');
+          fetchTasks();
+        }}
+        userProfile={userProfile}
+      />
+    );
+  }
+
   // Full-page Task Detail view
   if (currentView === 'detail' && selectedTask) {
     return (
@@ -2068,8 +2082,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         }}
         onEdit={(task) => {
           setSelectedTask(task);
-          setIsEditTaskOpen(true);
-          setCurrentView('list');
+          setCurrentView('edit');
         }}
         onDelete={(task) => {
           setSelectedTask(task);
@@ -2660,10 +2673,10 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                                     size="icon"
                                     variant="ghost"
                                     className="h-8 w-8"
-                                    onClick={() => {
-                                      setSelectedTask(task);
-                                      setIsEditTaskOpen(true);
-                                    }}
+                                      onClick={() => {
+                                        setSelectedTask(task);
+                                        setCurrentView('edit');
+                                      }}
                                     title="Edit task"
                                   >
                                     <Edit className="h-4 w-4" />
@@ -2815,7 +2828,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                               className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10 h-8 text-xs"
                               onClick={() => {
                                 setSelectedTask(task);
-                                setIsEditTaskOpen(true);
+                                setCurrentView('edit');
                               }}
                             >
                               <Edit className="h-3.5 w-3.5 mr-1.5" />
@@ -2848,258 +2861,6 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         </div>
       </div>
       {/* Handover Dialog */}
-      {/* Edit Task Dialog */}
-      <Dialog open={isEditTaskOpen} onOpenChange={setIsEditTaskOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Task</DialogTitle>
-          </DialogHeader>
-          {selectedTask && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit_title">Task Title</Label>
-                <Input
-                  id="edit_title"
-                  value={selectedTask.title}
-                  onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_description">Description</Label>
-                <Textarea
-                  id="edit_description"
-                  value={selectedTask.description}
-                  onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })}
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_client">Client</Label>
-                <Select
-                  value={selectedTask.client_id}
-                  onValueChange={(value) => {
-                    setSelectedTask({ ...selectedTask, client_id: value, client_project_id: "" });
-                    fetchClientProjects(value);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map(client => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.company_name} - {client.contact_person}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {selectedTask.client_id && (
-                <div className="animate-in fade-in slide-in-from-top-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <Label htmlFor="edit_client_project" className="mb-0">Client Project (Optional)</Label>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      onClick={() => setIsAddProjectDialogOpen(true)}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      New Project
-                    </Button>
-                  </div>
-                  <Select
-                    value={selectedTask.client_project_id}
-                    onValueChange={(value) => setSelectedTask({ ...selectedTask, client_project_id: value })}
-                    disabled={loadingProjects}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={loadingProjects ? "Loading projects..." : "Select project (if any)"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None / Individual Task</SelectItem>
-                      {clientProjects.map(project => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              <div>
-                <Label htmlFor="edit_department">Department</Label>
-                <Select
-                  value={selectedTask.department_id || "no-department"}
-                  onValueChange={(value) => setSelectedTask({ ...selectedTask, department_id: value === "no-department" ? null : value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="no-department">No Department</SelectItem>
-                    {departments.map(dept => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="edit_assigned_to">Reassign To</Label>
-                <Select
-                  value={selectedTask.assigned_to}
-                  onValueChange={(value) => setSelectedTask({ ...selectedTask, assigned_to: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select staff member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map(dept => {
-                      const deptStaff = staff.filter(s => s.department_id === dept.id);
-                      if (deptStaff.length === 0) return null;
-                      return (
-                        <SelectGroup key={dept.id}>
-                          <SelectLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5">{dept.name}</SelectLabel>
-                          {deptStaff.map(s => (
-                            <SelectItem key={s.user_id} value={s.user_id}>
-                              {s.full_name} (@{s.username})
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      );
-                    })}
-                    {/* Staff with no department */}
-                    {staff.filter(s => !s.department_id).length > 0 && (
-                      <SelectGroup>
-                        <SelectLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5">Other</SelectLabel>
-                        {staff.filter(s => !s.department_id).map(s => (
-                          <SelectItem key={s.user_id} value={s.user_id}>
-                            {s.full_name} (@{s.username})
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit_priority">Priority</Label>
-                  <Select
-                    value={selectedTask.priority}
-                    onValueChange={(value) => setSelectedTask({ ...selectedTask, priority: value as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit_points">Points</Label>
-                  <Input
-                    id="edit_points"
-                    type="number"
-                    value={selectedTask.points}
-                    onChange={(e) => setSelectedTask({ ...selectedTask, points: parseInt(e.target.value) || 10 })}
-                    min="1"
-                    max="100"
-                    disabled={selectedTask.trial_period}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10">
-                <div className="space-y-0.5">
-                  <Label htmlFor="edit_trial" className="text-sm font-medium">Trial Period</Label>
-                  <p className="text-xs text-muted-foreground">Staff won't earn points</p>
-                </div>
-                <Switch
-                  id="edit_trial"
-                  checked={selectedTask.trial_period}
-                  onCheckedChange={(checked) => setSelectedTask({ ...selectedTask, trial_period: checked })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit_due_date">Due Date</Label>
-                  <Input
-                    id="edit_due_date"
-                    type="date"
-                    value={selectedTask.due_date || ''}
-                    onChange={(e) => setSelectedTask({ ...selectedTask, due_date: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit_due_time">Due Time</Label>
-                  <Input
-                    id="edit_due_time"
-                    type="time"
-                    value={selectedTask.due_time || ''}
-                    onChange={(e) => setSelectedTask({ ...selectedTask, due_time: e.target.value })}
-                  />
-                </div>
-              </div>
-              {Array.isArray(selectedTask.attachments) && selectedTask.attachments.length > 0 && (
-                <div>
-                  <Label>Attachments</Label>
-                  <div className="space-y-1 mt-2">
-                    {selectedTask.attachments.map((att: any, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10 text-sm">
-                        <div className="flex items-center gap-2 truncate">
-                          <Paperclip className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">{att.name}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={async () => {
-                              const { data } = await supabase.storage
-                                .from('task-attachments')
-                                .download(att.url);
-                              if (data) {
-                                const url = URL.createObjectURL(data);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = att.name;
-                                a.click();
-                              }
-                            }}
-                          >
-                            <Download className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteTaskAttachment(att.url, idx)}
-                          >
-                            <X className="h-3 w-3 text-red-400" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsEditTaskOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleUpdateTask}>
-                  Update Task
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
