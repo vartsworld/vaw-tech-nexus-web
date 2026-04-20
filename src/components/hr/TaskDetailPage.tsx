@@ -1047,6 +1047,7 @@ const TaskDetailPage = ({
                               <div className="flex-1 overflow-y-auto max-h-[400px] space-y-2 pr-0.5" style={{ scrollbarWidth: 'thin' }}>
                                   {stageSubtasks.map((st, index) => (
                                     <Draggable key={st.id} draggableId={st.id} index={index}>
+                                      {(provided, snapshot) => {
                                         const isSequentialStage = !!task.stage_config?.[stageNum]?.sequential;
                                         
                                         const isSubtaskLocked = !isStageUnlocked || (
