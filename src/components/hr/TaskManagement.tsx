@@ -121,8 +121,12 @@ const TaskManagement = () => {
     points: 0,
     due_date: "",
     due_time: "",
-    stage: 1
+    stage: 1,
+    rank: 0
   });
+
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   // Track which stage column has the quick-add form open
   const [quickAddStage, setQuickAddStage] = useState<number | null>(null);
 
@@ -371,7 +375,8 @@ const TaskManagement = () => {
           due_time: newSubtask.due_time || null,
           created_by: user?.id,
           stage: newSubtask.stage || 1,
-          status: 'pending'
+          status: 'pending',
+          rank: (subtasks.filter(s => s.stage === (newSubtask.stage || 1)).length + 1) * 10
         })
         .select(`
           *,
@@ -393,7 +398,8 @@ const TaskManagement = () => {
         points: 0,
         due_date: "",
         due_time: "",
-        stage: newSubtask.stage
+        stage: newSubtask.stage,
+        rank: 0
       });
       setQuickAddStage(null);
       setSelectedSubtaskTemplateId("none");
@@ -927,7 +933,7 @@ const TaskManagement = () => {
   };
 
   const handleEditTask = async () => {
-    if (!editTask || !editTask.title || editTask.assigned_to.length === 0) {
+    if (!selectedEditTask || !selectedEditTask.title || selectedEditTask.assigned_to.length === 0) {
       toast({ title: "Validation Error", description: "Title and at least one Assignee are required.", variant: "destructive" });
       return;
     }
@@ -936,37 +942,37 @@ const TaskManagement = () => {
       setSavingEdit(true);
 
       const updateData: any = {
-        title: editTask.title,
-        description: editTask.description,
-        assigned_to: serializeAssignedTo(editTask.assigned_to),
-        project_id: editTask.project_id === "no-project" ? null : editTask.project_id || null,
-        client_project_id: editTask.project_id === "no-project" ? null : editTask.project_id || null,
-        client_id: editTask.client_id === "no-client" ? null : editTask.client_id || null,
-        department_id: editTask.department_id === "no-department" ? null : editTask.department_id || null,
-        status: editTask.status,
-        priority: editTask.priority,
-        due_date: editTask.due_date || null,
-        due_time: editTask.due_time || null,
-        trial_period: editTask.trial_period,
-        points: editTask.points,
-        is_recurring: editTask.is_recurring,
-        recurrence_type: editTask.is_recurring ? editTask.recurrence_type : null,
-        recurrence_interval: editTask.is_recurring ? editTask.recurrence_interval : 1,
-        recurrence_end_date: editTask.is_recurring && editTask.recurrence_end_date ? editTask.recurrence_end_date : null,
-        current_stage: editTask.current_stage || 1,
+        title: selectedEditTask.title,
+        description: selectedEditTask.description,
+        assigned_to: serializeAssignedTo(selectedEditTask.assigned_to),
+        project_id: selectedEditTask.project_id === "no-project" ? null : selectedEditTask.project_id || null,
+        client_project_id: selectedEditTask.project_id === "no-project" ? null : selectedEditTask.project_id || null,
+        client_id: selectedEditTask.client_id === "no-client" ? null : selectedEditTask.client_id || null,
+        department_id: selectedEditTask.department_id === "no-department" ? null : selectedEditTask.department_id || null,
+        status: selectedEditTask.status,
+        priority: selectedEditTask.priority,
+        due_date: selectedEditTask.due_date || null,
+        due_time: selectedEditTask.due_time || null,
+        trial_period: selectedEditTask.trial_period,
+        points: selectedEditTask.points,
+        is_recurring: selectedEditTask.is_recurring,
+        recurrence_type: selectedEditTask.is_recurring ? selectedEditTask.recurrence_type : null,
+        recurrence_interval: selectedEditTask.is_recurring ? selectedEditTask.recurrence_interval : 1,
+        recurrence_end_date: selectedEditTask.is_recurring && selectedEditTask.recurrence_end_date ? selectedEditTask.recurrence_end_date : null,
+        current_stage: selectedEditTask.current_stage || 1,
         updated_at: new Date().toISOString()
       };
 
       const { error } = await supabase
         .from('staff_tasks')
         .update(updateData)
-        .eq('id', editTask.id);
+        .eq('id', selectedEditTask.id);
 
       if (error) throw error;
 
-      toast({ title: "Success", description: `Task updated with ${editTask.assigned_to.length} assignee${editTask.assigned_to.length > 1 ? 's' : ''} successfully.` });
+      toast({ title: "Success", description: `Task updated with ${selectedEditTask.assigned_to.length} assignee${selectedEditTask.assigned_to.length > 1 ? 's' : ''} successfully.` });
       setIsEditDialogOpen(false);
-      setEditTask(null);
+      setSelectedEditTask(null);
       await fetchTasks();
     } catch (error: any) {
       console.error('Error updating task:', error);
