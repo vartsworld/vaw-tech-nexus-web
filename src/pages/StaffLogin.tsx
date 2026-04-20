@@ -60,10 +60,16 @@ const StaffLogin = () => {
           .maybeSingle();
         const data = rawData as any;
         if (data) {
+          // Fetch biometric credential IDs using the new secure RPC to force local fingerprint sensor
+          const { data: bioIds } = await supabase
+            .rpc('get_staff_biometric_ids' as any, { p_user_id: data.user_id });
+
           setPreviewProfile({
+            user_id: data.user_id,
             full_name: data.full_name,
             avatar_url: data.avatar_url,
             profile_photo_url: data.profile_photo_url,
+            biometric_ids: bioIds || []
           });
         } else {
           setPreviewProfile(null);
@@ -353,15 +359,10 @@ const StaffLogin = () => {
       }
 
       if (profileToUse) {
-        const hasMarkedAttendance = await checkTodayAttendance(user.id);
-        const dashboardRoute = getDashboardRoute(profileToUse);
-        if (!hasMarkedAttendance) {
-          navigate(dashboardRoute, { state: { requireAttendance: true } });
-        } else {
-          navigate(dashboardRoute);
-        }
+        // Instead of dashboard, force a re-login to verify new credentials
+        navigateAfterSetup();
       } else {
-        navigate('/staff/dashboard', { state: { requireAttendance: true } });
+        navigateAfterSetup();
       }
     } catch (error) {
       console.error('Error setting emoji password:', error);
@@ -376,7 +377,9 @@ const StaffLogin = () => {
   };
 
   const handleBiometricLogin = async () => {
-    const result = await authenticate();
+    // If we have previewed a profile and it has biometric IDs, pass them to force local sensor
+    const allowedIds = (previewProfile as any)?.biometric_ids;
+    const result = await authenticate(allowedIds);
     if (!result.success || !result.email) {
       toast({
         title: "Biometric Login Failed",
@@ -426,17 +429,14 @@ const StaffLogin = () => {
   const skipBiometricSetup = () => navigateAfterSetup();
 
   const navigateAfterSetup = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return navigate('/staff/dashboard');
-    const { data: staffProfile } = await supabase.from('staff_profiles').select('*').eq('user_id', user.id).single();
-    const profileToUse = userProfile || staffProfile;
-    if (profileToUse) {
-      const hasMarkedAttendance = await checkTodayAttendance(user.id);
-      const dashboardRoute = getDashboardRoute(profileToUse);
-      navigate(dashboardRoute, !hasMarkedAttendance ? { state: { requireAttendance: true } } : undefined);
-    } else {
-      navigate('/staff/dashboard', { state: { requireAttendance: true } });
-    }
+    toast({
+      title: "Setup Complete!",
+      description: "Please log in again with your new credentials.",
+    });
+    // Sign out to clear the temporary first-time session
+    await supabase.auth.signOut();
+    // Refresh page to take them back to the start (username entry)
+    window.location.reload();
   };
 
   const addEmojiToPassword = (emoji: string, isConfirm = false) => {

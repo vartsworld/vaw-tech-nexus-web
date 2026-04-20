@@ -131,6 +131,8 @@ export const useBiometricAuth = () => {
             user_id: user.id,
             credential_id: credentialId,
             public_key: publicKey,
+            // Store that this is an internal platform sensor
+            transports: ['internal'],
             device_name:
               deviceName ||
               (navigator.userAgent.includes("Mobile") ? "Phone" : "Computer"),
@@ -150,7 +152,7 @@ export const useBiometricAuth = () => {
     [loadCredentials]
   );
 
-  const authenticate = useCallback(async (): Promise<{
+  const authenticate = useCallback(async (allowedCredentialIds?: string[]): Promise<{
     success: boolean;
     userId?: string;
     email?: string;
@@ -178,6 +180,12 @@ export const useBiometricAuth = () => {
         challenge,
         rpId: window.location.hostname,
         userVerification: "required",
+        // Limit to specific credentials registered on this device if provided
+        allowCredentials: allowedCredentialIds?.map(id => ({
+          type: "public-key",
+          id: base64ToBuffer(id),
+          transports: ["internal"] as AuthenticatorTransport[]
+        })),
         // Hint modern browsers (Chrome 122+) to use the BUILT-IN sensor only,
         // not the cross-device QR / phone passkey flow
         hints: ["client-device"],
@@ -186,8 +194,8 @@ export const useBiometricAuth = () => {
 
       const assertion = (await navigator.credentials.get({
         publicKey: requestOptions,
-        // Cast required: 'mediation' is supported but missing from older lib types
-      } as CredentialRequestOptions)) as PublicKeyCredential | null;
+        // Explicitly set mediation but cast to avoid type errors in broad environments
+      } as any)) as PublicKeyCredential | null;
 
       if (!assertion) throw new Error("Authentication cancelled");
 
