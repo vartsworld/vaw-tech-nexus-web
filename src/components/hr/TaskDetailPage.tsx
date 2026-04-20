@@ -913,7 +913,20 @@ const TaskDetailPage = ({
                       const color = stageColors[(stageNum - 1) % stageColors.length];
                       const stageSubtasks = (stageMap[stageNum] || []).sort((a, b) => (a.rank || 0) - (b.rank || 0));
                       const isQuickAddOpen = quickAddStage === stageNum;
-                      const isStageUnlocked = !stageNums.some(otherNum => otherNum < stageNum && (stageMap[otherNum] || []).some(st => st.status !== 'completed'));
+                      
+                      // Stages are NOT locked by default.
+                      // Locking only occurs if:
+                      // 1. The stage itself is sequential (subtasks must be done in order)
+                      // 2. OR if we want to enforce that Stage 2 only starts after Stage 1 is done.
+                      // The user said: "The locking of the subtask should only taken into effect only if the stage is opted or toggle with follow btn"
+                      // and "the stages shouldn't be locked by default".
+                      // So we treat the toggle as "Follow Sequential Order" for that stage's subtasks.
+                      const isSequential = !!task.stage_config?.[stageNum]?.sequential;
+                      
+                      // For stage-level locking (can't even see/do subtasks of Stage 2 until Stage 1 is done):
+                      // We'll only do this if it's explicitly opted-in as "Follow Previous".
+                      const followPrevious = !!task.stage_config?.[stageNum]?.followPrevious;
+                      const isStageUnlocked = !followPrevious || !stageNums.some(otherNum => otherNum < stageNum && (stageMap[otherNum] || []).some(st => st.status !== 'completed'));
 
                       return (
                         <StrictModeDroppable key={stageNum} droppableId={`stage-${stageNum}`}>
@@ -935,11 +948,21 @@ const TaskDetailPage = ({
                                 )}
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-2">
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
-                                      <span className="text-[8px] font-bold text-white/30 uppercase tracking-tighter">Follow</span>
+                                    <div className={cn(
+                                      "flex items-center gap-1.5 px-2 py-0.5 rounded-full border transition-all duration-300",
+                                      isSequential 
+                                        ? "bg-primary/20 border-primary/40 shadow-[0_0_8px_rgba(var(--primary-rgb),0.2)]" 
+                                        : "bg-white/5 border-white/5"
+                                    )}>
+                                      <span className={cn(
+                                        "text-[8px] font-extrabold uppercase tracking-tighter transition-colors",
+                                        isSequential ? "text-primary/90" : "text-white/30"
+                                      )}>
+                                        {isSequential ? "Following" : "Follow"}
+                                      </span>
                                       <Switch 
-                                        className="h-3 w-6 scale-75"
-                                        checked={!!task.stage_config?.[stageNum]?.sequential}
+                                        className="h-3 w-6 scale-75 data-[state=checked]:bg-primary"
+                                        checked={isSequential}
                                         onCheckedChange={() => toggleStageSequential(stageNum)}
                                       />
                                     </div>

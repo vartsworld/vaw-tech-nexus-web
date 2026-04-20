@@ -238,6 +238,19 @@ export const SubtaskReviewDialog = ({
               <Clock className="h-3 w-3 mr-1" />
               {subtask.status === 'completed' ? 'COMPLETED' : isReviewable ? 'PENDING APPROVAL' : subtask.status === 'in_progress' ? 'IN PROGRESS' : 'PENDING'}
             </Badge>
+
+            {/* Time stamps chip */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] text-white/40">
+              <div className="flex items-center gap-1">
+                <span className="font-bold uppercase tracking-tighter opacity-50">Created:</span>
+                <span className="text-white/60">{subtask.created_at ? format(new Date(subtask.created_at), "MMM dd, HH:mm") : '—'}</span>
+              </div>
+              <div className="w-px h-2.5 bg-white/10 hidden sm:block" />
+              <div className="flex items-center gap-1">
+                <span className="font-bold uppercase tracking-tighter opacity-50">Updated:</span>
+                <span className="text-white/60">{subtask.updated_at ? format(new Date(subtask.updated_at), "MMM dd, HH:mm") : '—'}</span>
+              </div>
+            </div>
           </div>
         </div>
 

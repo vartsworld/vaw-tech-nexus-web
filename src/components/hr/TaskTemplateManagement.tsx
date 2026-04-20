@@ -30,6 +30,7 @@ interface SubtaskTemplate {
   stage?: number;
   stage_label?: string | null;
   stage_color?: string | null;
+  rank?: number;
   isNew?: boolean;
 }
 
@@ -221,6 +222,7 @@ const TaskTemplateManagement = () => {
             stage,
             stage_label: label,
             stage_color: color,
+            rank: (prev.subtasks.filter(s => s.stage === stage).length + 1) * 10,
             isNew: true
           }
         ];
@@ -253,6 +255,7 @@ const TaskTemplateManagement = () => {
             stage: nextStage,
             stage_label: label,
             stage_color: color,
+            rank: 10,
             isNew: true
           }
         ]
@@ -360,6 +363,7 @@ const TaskTemplateManagement = () => {
         st.frontEndId && selectedSubtaskIds.includes(st.frontEndId)
           ? {
               ...st,
+              rank: st.rank || (st.stage || 1) * 10,
               stage: targetStage,
               stage_label: st.stage_label ?? label,
               stage_color: st.stage_color ?? color,
@@ -412,7 +416,8 @@ const TaskTemplateManagement = () => {
             sort_order: i,
             stage: s.stage ?? 1,
             stage_label: s.stage_label ?? null,
-            stage_color: s.stage_color ?? null
+            stage_color: s.stage_color ?? null,
+            rank: s.rank || 0
           }));
 
           const { error: subError } = await supabase
@@ -457,7 +462,8 @@ const TaskTemplateManagement = () => {
             sort_order: i,
             stage: s.stage ?? 1,
             stage_label: s.stage_label ?? null,
-            stage_color: s.stage_color ?? null
+            stage_color: s.stage_color ?? null,
+            rank: s.rank || 0
           }));
 
           const { error: subError } = await supabase
@@ -1052,13 +1058,23 @@ const TaskTemplateManagement = () => {
                                             <Trash2 className="h-3 w-3" />
                                           </Button>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-[1fr_80px] gap-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_80px] gap-3">
                                           <div className="space-y-1">
                                             <Label className="text-xs text-muted-foreground">Title</Label>
                                             <Input
                                               placeholder="Subtask title"
                                               value={subtask.title}
                                               onChange={(e) => updateSubtask(rawIdx, 'title', e.target.value)}
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <Label className="text-xs text-muted-foreground">Rank</Label>
+                                            <Input
+                                              type="number"
+                                              placeholder="Order"
+                                              value={subtask.rank || 0}
+                                              onChange={(e) => updateSubtask(rawIdx, 'rank', parseInt(e.target.value) || 0)}
+                                              min="0"
                                             />
                                           </div>
                                           <div className="space-y-1">
