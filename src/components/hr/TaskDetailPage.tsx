@@ -15,8 +15,9 @@ import {
   ArrowLeft, CheckCircle, Clock, Target, Flag, Eye, Edit, Trash2,
   Plus, Calendar, User, Layers, FileText, Download, MessageSquare,
   Loader2, Share2, LayoutTemplate, Minimize2, Maximize2, ChevronLeft, ChevronRight,
-  AlertCircle, Upload
+  AlertCircle, Upload, Lock, Unlock, ListOrdered
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { SubtaskReviewDialog } from "@/components/staff/SubtaskReviewDialog";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,6 +93,37 @@ const TaskDetailPage = ({
     if (!el) return;
     el.scrollBy({ left: direction === 'left' ? -260 : 260, behavior: 'smooth' });
     setTimeout(checkScrollability, 350);
+  };
+
+  const toggleStageSequential = async (stageNum: number) => {
+    const currentConfig = task.stage_config || {};
+    const stageSettings = currentConfig[stageNum] || {};
+    const isSequential = !!stageSettings.sequential;
+    
+    const newConfig = {
+      ...currentConfig,
+      [stageNum]: {
+        ...stageSettings,
+        sequential: !isSequential
+      }
+    };
+
+    try {
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({ stage_config: newConfig })
+        .eq('id', task.id);
+
+      if (error) throw error;
+      
+      toast({
+        title: isSequential ? "Sequential order disabled" : "Sequential order enabled",
+        description: `Subtasks in ${stageLabels[stageNum] || `Stage ${stageNum}`} will ${isSequential ? 'no longer' : 'now'} strictly follow rank order.`
+      });
+    } catch (e: any) {
+       console.error(e);
+       toast({ title: "Update failed", description: e.message, variant: "destructive" });
+    }
   };
 
   useEffect(() => {
@@ -902,9 +934,19 @@ const TaskDetailPage = ({
                                   </div>
                                 )}
                                 <div className="flex items-center justify-between mb-2">
-                                <span className={`text-[10px] font-bold uppercase tracking-wider ${color.text}`}>
-                                  {stageLabels[stageNum] || `Stage ${stageNum}`}
-                                </span>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
+                                      <span className="text-[8px] font-bold text-white/30 uppercase tracking-tighter">Follow</span>
+                                      <Switch 
+                                        className="h-3 w-6 scale-75"
+                                        checked={!!task.stage_config?.[stageNum]?.sequential}
+                                        onCheckedChange={() => toggleStageSequential(stageNum)}
+                                      />
+                                    </div>
+                                    <span className={`text-[10px] font-bold uppercase tracking-wider ${color.text}`}>
+                                      {stageLabels[stageNum] || `Stage ${stageNum}`}
+                                    </span>
+                                  </div>
                                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-primary"
                                   onClick={() => {
                                     setQuickAddStage(isQuickAddOpen ? null : stageNum);
@@ -1005,12 +1047,15 @@ const TaskDetailPage = ({
                               <div className="flex-1 overflow-y-auto max-h-[400px] space-y-2 pr-0.5" style={{ scrollbarWidth: 'thin' }}>
                                   {stageSubtasks.map((st, index) => (
                                     <Draggable key={st.id} draggableId={st.id} index={index}>
-                                      {(provided, snapshot) => {
-                                        const isSubtaskLocked = !isStageUnlocked || stageSubtasks.some((other, oi) => {
-                                          const otherRank = (other as any).rank || (oi * 10);
-                                          const myRank = (st as any).rank || (index * 10);
-                                          return otherRank < myRank && other.status !== 'completed';
-                                        });
+                                        const isSequentialStage = !!task.stage_config?.[stageNum]?.sequential;
+                                        
+                                        const isSubtaskLocked = !isStageUnlocked || (
+                                          isSequentialStage && stageSubtasks.some((other, oi) => {
+                                            const otherRank = (other as any).rank || (oi * 10);
+                                            const myRank = (st as any).rank || (index * 10);
+                                            return otherRank < myRank && other.status !== 'completed' && other.status !== 'review_pending' && other.status !== 'pending_approval';
+                                          })
+                                        );
 
                                         return (
                                           <div
