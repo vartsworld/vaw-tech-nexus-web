@@ -57,13 +57,13 @@ const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile }: CoinPopupProps
       
       if (profile) setTotalPoints(profile.total_points || 0);
 
-      // Fetch latest 10 transactions
+      // Fetch latest 50 transactions for better tracking
       const { data: txData, error: txError } = await supabase
         .from("user_coin_transactions")
         .select("*")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(50);
 
       if (txError) throw txError;
       setTransactions(txData || []);
@@ -132,34 +132,40 @@ const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile }: CoinPopupProps
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Syncing...</p>
                 </div>
               ) : transactions.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 opacity-20 border-2 border-dashed border-white/5 rounded-2xl">
-                  <History className="w-12 h-12 mb-2" />
-                  <p className="text-[10px] font-black uppercase tracking-widest">No Records Found</p>
+                <div className="flex flex-col items-center justify-center py-12 opacity-40 border-2 border-dashed border-white/5 rounded-2xl">
+                  <History className="w-12 h-12 mb-2 text-muted-foreground" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">No Records Found</p>
+                  <p className="text-[8px] font-medium text-muted-foreground/60 mt-1 uppercase tracking-tight">Transactions will appear here after your next activity</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {transactions.map((tx) => (
                     <div key={tx.id} className="p-3 bg-white/5 rounded-xl border border-white/5 hover:bg-white/[0.08] transition-all group relative overflow-hidden">
-                      <div className="flex items-center justify-between mb-1.5 relative z-10">
-                        <div className="flex items-center gap-2">
-                          {getTransactionBadge(tx.source_type || tx.transaction_type)}
-                          <span className="text-[9px] text-muted-foreground font-medium flex items-center gap-1">
-                            <Clock className="w-2.5 h-2.5" />
-                            {format(new Date(tx.created_at), "HH:mm")}
+                      <div className="relative z-10">
+                        {/* Time & Date Header */}
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[9px] text-muted-foreground font-black uppercase tracking-wider flex items-center gap-1.5">
+                            <Clock className="w-2.5 h-2.5 text-primary/50" />
+                            {format(new Date(tx.created_at), "hh:mm a EEEE dd/MM/yyyy")}
                           </span>
+                          {getTransactionBadge(tx.source_type || tx.transaction_type)}
                         </div>
-                        <div className={cn(
-                          "text-sm font-black italic",
-                          tx.coins > 0 ? "text-emerald-400" : tx.coins < 0 ? "text-rose-400" : "text-white/40"
-                        )}>
-                          {tx.coins > 0 ? "+" : ""}{tx.coins.toLocaleString()}
+
+                        {/* Activity & Coin Route */}
+                        <div className="flex items-baseline justify-between gap-4">
+                          <p className="text-xs font-bold text-white group-hover:text-primary transition-colors leading-tight">
+                            {tx.reason || tx.transaction_type}
+                          </p>
+                          <div className={cn(
+                            "text-sm font-black italic shrink-0",
+                            tx.coins > 0 ? "text-emerald-400" : tx.coins < 0 ? "text-rose-400" : "text-white/40"
+                          )}>
+                            {tx.coins > 0 ? "+" : ""}{tx.coins.toLocaleString()} COIN
+                          </div>
                         </div>
                       </div>
-                      <p className="text-[11px] font-semibold text-white/70 group-hover:text-white transition-colors relative z-10">
-                        {tx.reason || tx.transaction_type}
-                      </p>
                       
-                      {/* Subtile background glow for transactions */}
+                      {/* Subtle background glow for transactions */}
                       <div className={cn(
                         "absolute -right-4 -top-4 w-12 h-12 blur-2xl opacity-10 rounded-full",
                         tx.coins > 0 ? "bg-emerald-500" : "bg-rose-500"
