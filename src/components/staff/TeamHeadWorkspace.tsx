@@ -391,9 +391,9 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   });
 
   useEffect(() => {
-    if (userProfile?.department_id) {
-      fetchTasks();
-    }
+    if (!userId || !userProfile?.department_id) return;
+
+    fetchTasks();
     fetchDepartments();
     fetchClients();
     fetchNotes();
@@ -420,7 +420,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
   // Fetch staff only when userProfile is loaded
   useEffect(() => {
-    if (userProfile?.department_id) {
+    if (userId && userProfile?.department_id) {
       fetchStaff();
     }
   }, [userId, userProfile?.department_id]);

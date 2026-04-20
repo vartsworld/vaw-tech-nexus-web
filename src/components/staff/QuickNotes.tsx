@@ -18,7 +18,9 @@ export const QuickNotes = ({ userId }: QuickNotesProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchNotes();
+    if (userId) {
+      fetchNotes();
+    }
   }, [userId]);
 
   const fetchNotes = async () => {

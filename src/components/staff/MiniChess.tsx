@@ -18,7 +18,8 @@ import {
   RotateCcw,
   Loader2,
   UserPlus,
-  Gamepad2
+  Gamepad2,
+  Coins
 } from "lucide-react";
 import { Chess } from 'chess.js';
 import { supabase } from "@/integrations/supabase/client";
@@ -98,6 +99,8 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
   const [gameHistory, setGameHistory] = useState<string[]>([]);
   const [isGameOver, setIsGameOver] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
+  const [myColor, setMyColor] = useState<'w' | 'b'>('w');
+  const [gameOverTime, setGameOverTime] = useState<number | null>(null);
 
   // Team & invites
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -113,26 +116,22 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
   const [coinsEarned, setCoinsEarned] = useState<number>(0);
 
   useEffect(() => {
+    if (!userId) return;
+
     fetchTeamMembers();
     fetchPendingInvites();
     fetchStats();
 
-    // Subscribe to chess invites
+    // Subscribe to chess channel for BROADCASTING moves (fast)
     const channel = supabase
-      .channel('chess_realtime_channel')
+      .channel(`chess_game_${activeGameId || 'global'}`)
       .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'chess_games',
-          filter: `player1_id=eq.${userId}`
-        },
+        'broadcast',
+        { event: 'move' },
         (payload: any) => {
-          if (payload.new && payload.new.status === 'active' && activeGameId === payload.new.id) {
-            handleRealtimeMove(payload.new);
+          if (payload.payload.gameId === activeGameId) {
+            handleRealtimeMove(payload.payload.gameData);
           }
-          fetchPendingInvites();
         }
       )
       .on(
@@ -141,13 +140,16 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
           event: '*',
           schema: 'public',
           table: 'chess_games',
-          filter: `player2_id=eq.${userId}`
+          filter: `id=eq.${activeGameId}`
         },
         (payload: any) => {
-          if (payload.new && payload.new.status === 'active' && activeGameId === payload.new.id) {
+          if (payload.new && payload.new.status === 'active') {
             handleRealtimeMove(payload.new);
           }
-          fetchPendingInvites();
+          if (payload.new && payload.new.status === 'completed') {
+             // Game ended in DB
+             handleRealtimeMove(payload.new);
+          }
         }
       )
       .subscribe();
@@ -156,6 +158,18 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
       supabase.removeChannel(channel);
     };
   }, [userId, activeGameId]);
+
+  // Check for game over display timeout
+  useEffect(() => {
+    if (gameOverTime) {
+      const fiveMinutesInMs = 5 * 60 * 1000;
+      const timeout = setTimeout(() => {
+        setGameOverTime(null);
+        resetGame();
+      }, fiveMinutesInMs);
+      return () => clearTimeout(timeout);
+    }
+  }, [gameOverTime]);
 
   const handleRealtimeMove = (game: any) => {
     if (game.game_state && game.game_state.fen !== chess.fen()) {
@@ -167,12 +181,17 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
         const winnerColor = chess.turn() === 'w' ? 'Black' : 'White';
         setIsGameOver(true);
         setWinner(winnerColor);
+        
+        // If my color won, or its a draw, process rewards
+        const isMyWin = (winnerColor === 'White' && myColor === 'w') || (winnerColor === 'Black' && myColor === 'b');
         triggerGameOver(winnerColor === 'White' ? game.player1_id : game.player2_id, chess.isDraw());
       }
     }
   };
 
   const triggerGameOver = (winnerId: string | null, isDraw: boolean) => {
+    if (isGameOver && gameOverTime) return; // Prevent double trigger
+
     confetti({
       particleCount: 150,
       spread: 70,
@@ -184,15 +203,17 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
       winner_id: winnerId,
       player1_id: userId,
       player2_id: opponentId || '',
-      player1_name: 'You',
+      player1_name: 'You (White)',
       player2_name: isDraw ? 'Draw' : (opponentName || 'Opponent'),
       game_id: activeGameId || 'local',
       duration_seconds: 0
     });
+    
+    setGameOverTime(Date.now());
     setShowGameOverDialog(true);
   };
 
-  // Function to finalize game and trigger ELO calculation
+  // Function to finalize game and trigger ELO calculation & rewards
   const finalizeGame = async (winnerId: string | null, isDraw: boolean = false) => {
     if (!activeGameId || isVsBot) {
       if (isVsBot) {
@@ -202,46 +223,58 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
     }
 
     try {
-      // Calculate ELO directly if possible or let trigger do it
       const myRating = stats.rating;
-      // For calculation, assume opponent is around same rating if not found
       const opponentRating = 1200;
-
-      // Standard ELO formula: Ra' = Ra + K * (Sa - Ea)
-      // Ea = 1 / (1 + 10^((Rb-Ra)/400))
       const kFactor = 32;
       const ea = 1 / (1 + Math.pow(10, (opponentRating - myRating) / 400));
       const sa = isDraw ? 0.5 : (winnerId === userId ? 1 : 0);
       const newRating = Math.round(myRating + kFactor * (sa - ea));
 
-      const updateData: any = {
-        status: 'completed',
-        winner_id: winnerId,
-        ended_at: new Date().toISOString(),
-        game_state: {
-          fen: chess.fen(),
-          history: gameHistory,
-          turn: chess.turn()
-        }
-      };
+      // Calculate coins: Win 10, Draw 5, Loss 0
+      const coins = isDraw ? 5 : (winnerId === userId ? 10 : 0);
+      setCoinsEarned(coins);
 
-      const { error } = await supabase
+      // Save Coins to DB
+      if (coins > 0) {
+        await supabase.from("user_coin_transactions").insert({
+          user_id: userId,
+          coins: coins,
+          transaction_type: 'earning',
+          reason: `Chess Game: ${isDraw ? 'Draw' : 'Victory'} vs ${opponentName}`,
+          source_type: 'bonus'
+        });
+      }
+
+      await supabase
         .from('chess_games')
-        .update(updateData)
+        .update({
+          status: 'completed',
+          winner_id: winnerId,
+          ended_at: new Date().toISOString(),
+          game_state: {
+            fen: chess.fen(),
+            history: gameHistory,
+            turn: chess.turn()
+          }
+        })
         .eq('id', activeGameId);
 
-      if (error) throw error;
+      // Update Stats
+      const winCount = isDraw ? stats.wins : (winnerId === userId ? stats.wins + 1 : stats.wins);
+      await supabase.from('chess_stats').upsert({
+        user_id: userId,
+        games_played: stats.games + 1,
+        games_won: winCount,
+        elo_rating: newRating
+      });
 
-      // Update local profile with new ELO (usually handled by DB trigger, but we update stat for UI)
-      setStats(prev => ({ ...prev, rating: newRating }));
+      setStats({
+        wins: winCount,
+        games: stats.games + 1,
+        rating: newRating
+      });
 
       triggerGameOver(winnerId, isDraw);
-
-      const message = isDraw
-        ? 'Game ended in a draw!'
-        : `${winnerId === userId ? `You won! +10 Coins 🪙` : opponentName + ' wins!'}`;
-
-      toast.success(message);
     } catch (error) {
       console.error('Error finalizing game:', error);
       toast.error('Failed to update game results');
@@ -349,6 +382,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
     setIsVsBot(true);
     setOpponentName('Chess Bot');
     setActiveGameId(null); // No DB tracking for bot games
+    setMyColor('w');
     setGameMode('playing');
     toast.success("Game started! You play as White.");
   };
@@ -390,10 +424,11 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
         setOpponentName(opponentProfile?.full_name || 'Opponent');
         setActiveGameId(game.id); // Track game ID
         setIsVsBot(false);
+        setMyColor('b'); // Joined game, usually player 2 (Black)
         chess.reset();
         setBoard(chess.board());
         setGameMode('playing');
-        toast.success(`Matched with ${opponentProfile?.full_name || 'opponent'}!`);
+        toast.success(`Matched with ${opponentProfile?.full_name || 'opponent'}! You are Black.`);
       } else {
         // Create waiting game
         const { data: newGame } = await supabase
@@ -430,10 +465,11 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
             setOpponentName(oppProfile?.full_name || 'Opponent');
             setActiveGameId(newGame?.id || null); // Track game ID
             setIsVsBot(false);
+            setMyColor('w'); // Created game, player 1 (White)
             chess.reset();
             setBoard(chess.board());
             setGameMode('playing');
-            toast.success(`Matched with ${oppProfile?.full_name || 'opponent'}!`);
+            toast.success(`Matched with ${oppProfile?.full_name || 'opponent'}! You are White.`);
             matched = true;
             break;
           }
@@ -485,6 +521,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
       setOpponentName(invite.from_profile?.full_name || 'Opponent');
       setActiveGameId(invite.id); // Track game ID
       setIsVsBot(false);
+      setMyColor('b'); // Invitee is Black
       chess.reset();
       setBoard(chess.board());
       setGameHistory([]);
@@ -539,7 +576,25 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
           setSelectedSquare(null);
           setPossibleMoves([]);
 
-          // Sync move to database
+          // Broadcasting move (realtime fast sync)
+          const gameChannel = supabase.channel(`chess_game_${activeGameId || 'global'}`);
+          await gameChannel.send({
+            type: 'broadcast',
+            event: 'move',
+            payload: {
+              gameId: activeGameId,
+              userId: userId,
+              gameData: {
+                game_state: {
+                   fen: chess.fen(),
+                   history: [...gameHistory, moveResult.san],
+                   turn: chess.turn()
+                }
+              }
+            }
+          });
+
+          // Sync move to database (persistence)
           if (activeGameId) {
             await supabase
               .from('chess_games')
@@ -567,19 +622,23 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
           setSelectedSquare(null);
           setPossibleMoves([]);
         }
-      } catch {
+      } catch (err) {
+        console.error("Move error:", err);
         setSelectedSquare(null);
         setPossibleMoves([]);
       }
     } else {
       const piece = chess.get(square as any);
       if (piece && piece.color === chess.turn()) {
+        // Ensure player only moves their own pieces
+        if (!isVsBot && piece.color !== myColor) return;
+        
         setSelectedSquare(square);
         const moves = chess.moves({ square: square as any, verbose: true });
         setPossibleMoves(moves.map((move: any) => move.to));
       }
     }
-  }, [selectedSquare, chess, gameHistory, isGameOver, isVsBot]);
+  }, [selectedSquare, chess, gameHistory, isGameOver, isVsBot, myColor, activeGameId, userId, opponentId, opponentName]);
 
   const makeBotMove = () => {
     const moves = chess.moves({ verbose: true });
@@ -638,6 +697,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
     setGameHistory([]);
     setIsGameOver(false);
     setWinner(null);
+    setGameOverTime(null);
   };
 
 
@@ -887,7 +947,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
 
       <CardContent className={compact ? 'p-1.5' : 'p-2 sm:p-4 space-y-4'}>
         {/* Chess Board */}
-        <div className="flex justify-center items-center w-full">
+        <div className="flex justify-center items-center w-full relative">
           <div
             className={`relative shadow-2xl rounded-lg overflow-hidden bg-[#5d4037] ${compact ? 'border-2 border-[#5d4037]' : 'border-4 border-[#5d4037] rounded-xl'}`}
             style={{
@@ -895,14 +955,17 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
               aspectRatio: '1/1'
             }}
           >
-            {/* Actual board grid */}
+            {/* Visual Board Flipping Logic */}
             <div
-              className="grid grid-cols-8 grid-rows-8 h-full w-full"
+              className={`grid grid-cols-8 grid-rows-8 h-full w-full transition-transform duration-500 ${myColor === 'b' ? 'rotate-180' : ''}`}
               style={{ gridTemplateRows: 'repeat(8, 1fr)' }}
             >
               {[...Array(64)].map((_, i) => {
-                const row = Math.floor(i / 8);
-                const col = i % 8;
+                // If black, we flip the index for visual mapping
+                const displayIndex = myColor === 'b' ? 63 - i : i;
+                const row = Math.floor(displayIndex / 8);
+                const col = displayIndex % 8;
+                
                 const isLight = (row + col) % 2 === 0;
                 const piece = board[row][col];
                 const isSelected = isSquareHighlighted(row, col);
@@ -922,17 +985,19 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
                     `}
                   >
                     {piece && (
-                      <ChessPiece piece={piece.type} color={piece.color} compact={compact} />
+                      <div className={myColor === 'b' ? 'rotate-180' : ''}>
+                        <ChessPiece piece={piece.type} color={piece.color} compact={compact} />
+                      </div>
                     )}
 
                     {/* Coordinate Labels */}
                     {col === 0 && (
-                      <span className={`absolute top-0 left-0.5 font-bold opacity-30 select-none ${compact ? 'text-[5px]' : 'text-[7px] sm:text-[10px]'} ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>
+                      <span className={`absolute top-0 left-0.5 font-bold opacity-30 select-none ${compact ? 'text-[5px]' : 'text-[7px] sm:text-[10px]'} ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'} ${myColor === 'b' ? 'rotate-180' : ''}`}>
                         {8 - row}
                       </span>
                     )}
                     {row === 7 && (
-                      <span className={`absolute bottom-0 right-0.5 font-bold opacity-30 select-none ${compact ? 'text-[5px]' : 'text-[7px] sm:text-[10px]'} ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'}`}>
+                      <span className={`absolute bottom-0 right-0.5 font-bold opacity-30 select-none ${compact ? 'text-[5px]' : 'text-[7px] sm:text-[10px]'} ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'} ${myColor === 'b' ? 'rotate-180' : ''}`}>
                         {String.fromCharCode(97 + col)}
                       </span>
                     )}
@@ -940,6 +1005,35 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
                 );
               })}
             </div>
+
+            {/* Game Over Overlay (for next 5 min) */}
+            {gameOverTime && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500">
+                    <div className="text-center p-6 rounded-2xl bg-gradient-to-br from-amber-500/20 to-transparent border border-amber-500/30">
+                        <Trophy className="w-16 h-16 text-yellow-400 mx-auto mb-4 animate-bounce" />
+                        <h2 className="text-3xl font-black text-white italic tracking-tighter mb-2 uppercase">
+                            {chess.isDraw() ? "Game Drawn!" : (winner === (myColor === 'w' ? 'White' : 'Black') ? "Victory!" : "Defeat")}
+                        </h2>
+                        <div className="p-4 bg-white/5 rounded-xl border border-white/10 mb-4">
+                            <p className="text-amber-400 font-bold flex items-center justify-center gap-2">
+                                <Coins className="w-5 h-5" />
+                                {coinsEarned > 0 ? `+${coinsEarned} VAW Coins Earned` : "0 Coins (Try harder next time!)"}
+                            </p>
+                        </div>
+                        <p className="text-[10px] text-white/50 uppercase font-bold tracking-widest">
+                            Analyzing position... (Resets automatically)
+                        </p>
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-6 border-white/10 hover:bg-white/5 text-white/70"
+                            onClick={resetGame}
+                        >
+                            Return to Arena
+                        </Button>
+                    </div>
+                </div>
+            )}
           </div>
         </div>
       </CardContent>
@@ -949,7 +1043,6 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
           open={showGameOverDialog}
           onClose={() => {
             setShowGameOverDialog(false);
-            resetGame(); // Reset game when dialog is closed
           }}
           gameData={gameOverData}
           eloChanges={eloChanges}

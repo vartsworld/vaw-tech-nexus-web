@@ -54,6 +54,8 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
 
   // Load saved layout on mount
   useEffect(() => {
+    if (!userId) return;
+
     const loadWorkspaceLayout = async () => {
       try {
         const { data, error } = await supabase
@@ -80,7 +82,7 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
 
   // Save layout when items change
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !userId) return;
 
     const saveLayout = async () => {
       try {

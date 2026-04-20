@@ -429,6 +429,18 @@ const TeamHeadDashboard = () => {
     );
   }
 
+  // Don't render until profile is fully loaded to prevent 400 errors in sub-components
+  if (!profile?.user_id) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <div className="flex flex-col items-center gap-4 text-white">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          <p className="text-lg font-medium opacity-70">Initializing VAW Nexus...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Show mobile home on small screens
   if (isMobile && showMobileHome && profile?.user_id) {
     return (
