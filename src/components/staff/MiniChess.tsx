@@ -122,40 +122,59 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
     fetchPendingInvites();
     fetchStats();
 
-    // Subscribe to chess channel for BROADCASTING moves (fast)
-    const channel = supabase
-      .channel(`chess_game_${activeGameId || 'global'}`)
-      .on(
-        'broadcast',
-        { event: 'move' },
-        (payload: any) => {
-          if (payload.payload.gameId === activeGameId) {
-            handleRealtimeMove(payload.payload.gameData);
-          }
-        }
-      )
+    // 1. Permanent channel for invites and general updates
+    const lobbyChannel = supabase
+      .channel(`chess_lobby_${userId}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'chess_games',
-          filter: `id=eq.${activeGameId}`
+          filter: `player2_id=eq.${userId}`
         },
-        (payload: any) => {
-          if (payload.new && payload.new.status === 'active') {
-            handleRealtimeMove(payload.new);
-          }
-          if (payload.new && payload.new.status === 'completed') {
-             // Game ended in DB
-             handleRealtimeMove(payload.new);
-          }
+        () => {
+          fetchPendingInvites();
         }
       )
       .subscribe();
 
+    // 2. Dynamic channel for active game moves
+    let gameChannel: any = null;
+    if (activeGameId) {
+      gameChannel = supabase
+        .channel(`chess_game_${activeGameId}`)
+        .on(
+          'broadcast',
+          { event: 'move' },
+          (payload: any) => {
+            if (payload.payload.gameId === activeGameId) {
+              handleRealtimeMove(payload.payload.gameData);
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'chess_games',
+            filter: `id=eq.${activeGameId}`
+          },
+          (payload: any) => {
+            if (payload.new && (payload.new.status === 'active' || payload.new.status === 'completed')) {
+              handleRealtimeMove(payload.new);
+            }
+          }
+        )
+        .subscribe();
+    }
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(lobbyChannel);
+      if (gameChannel) {
+        supabase.removeChannel(gameChannel);
+      }
     };
   }, [userId, activeGameId]);
 
