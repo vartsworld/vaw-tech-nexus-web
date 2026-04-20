@@ -16,7 +16,13 @@ import {
   AlertCircle,
   TrendingUp,
   Users,
-  BarChart3
+  BarChart3,
+  MessageSquare,
+  Smile,
+  Meh,
+  Frown,
+  Zap,
+  Activity
 } from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,17 +83,29 @@ const AttendanceReports = () => {
       const { data, error } = await query;
       if (error) throw error;
 
+      // Fetch mood entries for the same date range
+      const { data: moodData } = await supabase
+        .from('user_mood_entries')
+        .select('*')
+        .gte('date', format(dateRange.from, 'yyyy-MM-dd'))
+        .lte('date', format(dateRange.to, 'yyyy-MM-dd'));
+
+      // Merge attendance with mood data
+      const mergedData = (data || []).map(record => {
+        const moodEntry = moodData?.find(m => m.user_id === record.user_id && m.date === record.date);
+        return {
+          ...record,
+          mood: moodEntry?.mood,
+          note: moodEntry?.personal_quote
+        };
+      });
+
       // Filter by department if selected
-      let filteredData = data || [];
+      let filteredData = mergedData;
       if (filterDepartment !== "all") {
-        // Filter by department - simplified for now since relations need proper setup
         filteredData = filteredData.filter(record => {
           const profile = record.staff_profiles as any;
-          if (!profile || typeof profile !== 'object') {
-            return false;
-          }
-          const fullName = profile.full_name;
-          return fullName && String(fullName).toLowerCase().includes(filterDepartment.toLowerCase());
+          return profile?.departments?.name === filterDepartment;
         });
       }
 
@@ -135,9 +153,11 @@ const AttendanceReports = () => {
       ...attendanceData.map(record => [
         record.date,
         record.staff_profiles?.full_name || 'Unknown',
-        record.check_in_time ? format(new Date(record.check_in_time), 'HH:mm:ss') : 'N/A',
+        record.check_in_time ? format(new Date(record.check_in_time), 'hh:mm:ss a') : 'N/A',
         record.is_late ? 'Late' : 'On Time',
-        record.staff_profiles?.departments?.name || 'Unassigned'
+        record.staff_profiles?.departments?.name || 'Unassigned',
+        record.mood || 'N/A',
+        record.note || 'N/A'
       ].join(','))
     ].join('\n');
 
@@ -297,6 +317,8 @@ const AttendanceReports = () => {
                 <TableHead>Check-in Time</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Department</TableHead>
+                <TableHead>Emotion</TableHead>
+                <TableHead>Note</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -317,7 +339,7 @@ const AttendanceReports = () => {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-gray-400" />
-                      {record.check_in_time ? format(new Date(record.check_in_time), 'HH:mm:ss') : 'N/A'}
+                      {record.check_in_time ? format(new Date(record.check_in_time), 'hh:mm:ss a') : 'N/A'}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -335,6 +357,32 @@ const AttendanceReports = () => {
                   </TableCell>
                    <TableCell>
                      {record.staff_profiles?.departments?.name || 'Unassigned'}
+                   </TableCell>
+                   <TableCell>
+                      {record.mood ? (
+                        <div className="flex items-center gap-2">
+                          {record.mood === 'happy' && <Smile className="h-4 w-4 text-green-500" title="Happy" />}
+                          {record.mood === 'neutral' && <Meh className="h-4 w-4 text-blue-500" title="Neutral" />}
+                          {record.mood === 'sad' && <Frown className="h-4 w-4 text-orange-500" title="Sad" />}
+                          {record.mood === 'stressed' && <Zap className="h-4 w-4 text-red-500" title="Stressed" />}
+                          {record.mood === 'excited' && <Activity className="h-4 w-4 text-purple-500" title="Excited" />}
+                          <span className="capitalize text-sm">{record.mood}</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-sm">N/A</span>
+                      )}
+                   </TableCell>
+                   <TableCell>
+                      {record.note ? (
+                        <div className="flex items-center gap-2 group relative">
+                          <MessageSquare className="h-4 w-4 text-gray-400 shrink-0" />
+                          <span className="text-sm truncate max-w-[150px]" title={record.note}>
+                            {record.note}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-sm">-</span>
+                      )}
                    </TableCell>
                 </TableRow>
               ))}
