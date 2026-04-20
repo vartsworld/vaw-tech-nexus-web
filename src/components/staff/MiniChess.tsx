@@ -115,6 +115,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
   const [eloChanges, setEloChanges] = useState<any>(null);
   const [coinsEarned, setCoinsEarned] = useState<number>(0);
 
+  // 1. Permanent lobby channel for invites and general updates
   useEffect(() => {
     if (!userId) return;
 
@@ -122,9 +123,13 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
     fetchPendingInvites();
     fetchStats();
 
-    // 1. Permanent channel for invites and general updates
-    const lobbyChannel = supabase
-      .channel(`chess_lobby_${userId}`)
+    // Generate unique name to avoid "callbacks after subscribe" collisions
+    const lobbyName = `lobby_${userId}_${Math.random().toString(36).substring(7)}`;
+    const lobbyChannel = supabase.channel(lobbyName);
+
+    console.log(`[Chess] Joining lobby channel: ${lobbyName}`);
+
+    lobbyChannel
       .on(
         'postgres_changes',
         {
@@ -137,44 +142,67 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
           fetchPendingInvites();
         }
       )
-      .subscribe();
-
-    // 2. Dynamic channel for active game moves
-    let gameChannel: any = null;
-    if (activeGameId) {
-      gameChannel = supabase
-        .channel(`chess_game_${activeGameId}`)
-        .on(
-          'broadcast',
-          { event: 'move' },
-          (payload: any) => {
-            if (payload.payload.gameId === activeGameId) {
-              handleRealtimeMove(payload.payload.gameData);
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'chess_games',
-            filter: `id=eq.${activeGameId}`
-          },
-          (payload: any) => {
-            if (payload.new && (payload.new.status === 'active' || payload.new.status === 'completed')) {
-              handleRealtimeMove(payload.new);
-            }
-          }
-        )
-        .subscribe();
-    }
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`[Chess] Lobby joined successfully`);
+        }
+      });
 
     return () => {
+      console.log(`[Chess] Cleaning up lobby: ${lobbyName}`);
       supabase.removeChannel(lobbyChannel);
-      if (gameChannel) {
-        supabase.removeChannel(gameChannel);
-      }
+    };
+  }, [userId]);
+
+  // 2. Dynamic channel for active game moves
+  useEffect(() => {
+    if (!userId || !activeGameId) return;
+
+    const gameName = `game_${activeGameId}_${Math.random().toString(36).substring(7)}`;
+    const gameChannel = supabase.channel(gameName);
+
+    console.log(`[Chess] Joining game channel: ${gameName}`);
+
+    gameChannel
+      .on(
+        'broadcast',
+        { event: 'move' },
+        (payload: any) => {
+          if (payload.payload.gameId === activeGameId) {
+            handleRealtimeMove(payload.payload.gameData);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chess_games',
+          filter: `id=eq.${activeGameId}`
+        },
+        (payload: any) => {
+          const game = payload.new;
+          if (game && game.status === 'completed' && !isGameOver) {
+            chess.load(game.fen_string);
+            setBoard(chess.board());
+            setIsGameOver(true);
+            setWinner(game.winner_id);
+            setGameOverData(game);
+            setShowGameOverDialog(true);
+            triggerGameOver(game.winner_id, game.winner_id === null);
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`[Chess] Game channel joined successfully`);
+        }
+      });
+
+    return () => {
+      console.log(`[Chess] Cleaning up game: ${gameName}`);
+      supabase.removeChannel(gameChannel);
     };
   }, [userId, activeGameId]);
 

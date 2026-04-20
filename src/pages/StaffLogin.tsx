@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, UserCheck, Smartphone, Fingerprint, User as UserIcon } from "lucide-react";
+import { Eye, EyeOff, UserCheck, Smartphone, Fingerprint, User as UserIcon, Loader2 } from "lucide-react";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { useBiometricAuth } from "@/hooks/useBiometricAuth";
 import vawLogo from "@/assets/vaw-logo.png";
@@ -61,8 +61,14 @@ const StaffLogin = () => {
         const data = rawData as any;
         if (data) {
           // Fetch biometric credential IDs using the new secure RPC to force local fingerprint sensor
-          const { data: bioIds } = await supabase
-            .rpc('get_staff_biometric_ids' as any, { p_user_id: data.user_id });
+          let bioIds = [];
+          try {
+            const { data: bData } = await supabase
+              .rpc('get_staff_biometric_ids' as any, { p_user_id: data.user_id });
+            bioIds = bData || [];
+          } catch (e) {
+            console.warn("Biometric RPC check failed:", e);
+          }
 
           setPreviewProfile({
             user_id: data.user_id,
@@ -345,18 +351,15 @@ const StaffLogin = () => {
         .single();
 
       toast({
-        title: "Success",
-        description: "Emoji password set successfully!",
+        title: "Setup Complete!",
+        description: "Emoji password set successfully! Please login to continue.",
       });
 
-      // Use stored userProfile or fetch new one
-      const profileToUse = userProfile || staffProfile;
-
-      // If biometric is supported, prompt to set it up
-      if (biometricSupported) {
-        setShowBiometricSetup(true);
-        return;
-      }
+      // Redirect to login after a brief delay to show the toast
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+      return;
 
       if (profileToUse) {
         // Instead of dashboard, force a re-login to verify new credentials

@@ -10,7 +10,9 @@ import {
   Moon,
   ZapOff,
   Wifi,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  Coins
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -20,6 +22,7 @@ interface ActivityLog {
   created_at: string;
   duration_minutes: number | null;
   metadata: any;
+  logType?: 'activity' | 'coin';
 }
 
 interface ActivityLogPanelProps {
@@ -35,38 +38,70 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
     if (!userId) return;
 
     const fetchLogs = async () => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      setLoading(true);
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-      const { data, error } = await supabase
-        .from('user_activity_log')
-        .select('*')
-        .eq('user_id', userId)
-        .gte('created_at', today.toISOString())
-        .order('created_at', { ascending: false });
+        // Fetch activity logs
+        const { data: activityData, error: activityError } = await supabase
+          .from('user_activity_log')
+          .select('*')
+          .eq('user_id', userId)
+          .gte('created_at', today.toISOString())
+          .order('created_at', { ascending: false });
 
-      if (data && !error) {
-        setLogs(data);
+        if (activityError) throw activityError;
+
+        // Fetch coin transactions (the "route" of each coin)
+        const { data: coinData, error: coinError } = await supabase
+          .from('user_coin_transactions')
+          .select('*')
+          .eq('user_id', userId)
+          .gte('created_at', today.toISOString())
+          .order('created_at', { ascending: false });
+
+        if (coinError) throw coinError;
+
+        // Merge and sort
+        const combinedLogs = [
+          ...(activityData || []).map(log => ({ ...log, logType: 'activity' })),
+          ...(coinData || []).map(coin => ({ 
+            ...coin, 
+            logType: 'coin',
+            activity_type: 'coin_transaction',
+            metadata: { 
+              reason: coin.reason, 
+              amount: coin.coins, 
+              type: coin.transaction_type 
+            }
+          }))
+        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+        setLogs(combinedLogs as any);
+      } catch (err) {
+        console.error("Error fetching logs:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchLogs();
 
-    // Subscribe to real-time updates
-    const channel = supabase
-      .channel(`activity_log:${userId}`)
+    // Subscribe to both
+    const channelName = `unified_logs_${userId}_${Date.now()}`;
+    const channel = supabase.channel(channelName);
+    
+    channel
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'user_activity_log',
-          filter: `user_id=eq.${userId}`
-        },
-        (payload) => {
-          setLogs(prev => [payload.new as ActivityLog, ...prev]);
-        }
+        { event: 'INSERT', schema: 'public', table: 'user_activity_log', filter: `user_id=eq.${userId}` },
+        () => fetchLogs()
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'user_coin_transactions', filter: `user_id=eq.${userId}` },
+        () => fetchLogs()
       )
       .subscribe();
 
@@ -75,8 +110,18 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
     };
   }, [userId]);
 
-  const getActivityConfig = (type: string) => {
-    const configs: Record<string, { icon: any; label: string; color: string }> = {
+  const getActivityConfig = (type: string, log?: any) => {
+    if (log?.logType === 'coin') {
+      const isPositive = log.metadata?.type === 'earning' || log.metadata?.type === 'bonus';
+      return { 
+        icon: Coins, 
+        label: log.metadata?.reason || 'Coin Transaction', 
+        color: isPositive ? 'text-amber-400' : 'text-red-400',
+        detail: `${isPositive ? '+' : ''}${log.metadata?.amount} Coins`
+      };
+    }
+
+    const configs: Record<string, { icon: any; label: string; color: string; detail?: string }> = {
       attendance: { icon: LogIn, label: 'Attendance Marked', color: 'text-emerald-500' },
       break_start: { icon: Coffee, label: 'Break Started', color: 'text-orange-500' },
       break_end: { icon: Coffee, label: 'Returned from Break', color: 'text-emerald-500' },
@@ -94,62 +139,65 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
 
   if (loading) {
     return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle className="text-sm">Today's Activity</CardTitle>
+      <Card className={`bg-black/40 border-white/10 ${className}`}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-bold text-white/70">Activity Route</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">Loading...</p>
+        <CardContent className="flex items-center justify-center py-10">
+          <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className={`bg-white/5 backdrop-blur-xl border-white/10 shadow-2xl ${className}`}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-white text-base flex items-center gap-2">
-          <Clock className="h-5 w-5 text-blue-400" />
-          Today's Activity Log
+    <Card className={`bg-black/40 backdrop-blur-xl border-white/10 ${className}`}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-bold text-white/70 flex items-center justify-between">
+          Activity & Coin Ledger
+          <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded-full font-normal">Today</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[400px] pr-4">
-          {logs.length === 0 ? (
-            <div className="text-center py-12">
-              <Clock className="h-12 w-12 text-white/20 mx-auto mb-3" />
-              <p className="text-sm text-white/50">No activity recorded today</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {logs.map((log) => {
-                const config = getActivityConfig(log.activity_type);
+      <CardContent className="px-0">
+        <ScrollArea className="h-[400px] px-4">
+          <div className="space-y-4 pb-4">
+            {logs.length === 0 ? (
+              <div className="text-center py-10 opacity-30">
+                <Clock className="w-8 h-8 mx-auto mb-2" />
+                <p className="text-xs">No activity tracked today</p>
+              </div>
+            ) : (
+              logs.map((log) => {
+                const config = getActivityConfig(log.activity_type, log);
                 const Icon = config.icon;
-
+                
                 return (
-                  <div
-                    key={log.id}
-                    className="flex items-start gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
-                  >
-                    <div className={`mt-0.5 rounded-full p-2 bg-black/20 backdrop-blur-sm border border-white/10 ${config.color}`}>
-                      <Icon className="h-4 w-4" />
+                  <div key={log.id} className="flex gap-3 group">
+                    <div className="flex flex-col items-center">
+                      <div className={`p-2 rounded-full bg-white/5 border border-white/10 ${config.color} group-hover:scale-110 transition-transform`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="w-0.5 h-full bg-white/5 group-last:hidden mt-2" />
                     </div>
-                    <div className="flex-1 space-y-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{config.label}</p>
-                      <p className="text-xs text-white/50">
-                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                      </p>
+                    <div className="flex-1 pt-1">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-sm font-medium text-white/90">{config.label}</span>
+                        <span className="text-[10px] text-white/30 font-mono">
+                          {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
+                      {config.detail && (
+                        <p className={`text-sm font-bold ${config.color}`}>{config.detail}</p>
+                      )}
                       {log.duration_minutes && (
-                        <p className="text-xs text-blue-300/70">
-                          Duration: {log.duration_minutes} minutes
-                        </p>
+                        <p className="text-[11px] text-white/50">Duration: {log.duration_minutes} mins</p>
                       )}
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          )}
+              })
+            )}
+          </div>
         </ScrollArea>
       </CardContent>
     </Card>
