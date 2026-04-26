@@ -19,7 +19,8 @@ const SEO = ({
 }: SEOProps) => {
   useEffect(() => {
     // Update Document Title
-    document.title = `${title} | VAW`;
+    const fullTitle = title.includes("VAW") ? title : `${title} | VAW Technologies`;
+    document.title = fullTitle;
 
     // Update Meta Description
     const metaDescription = document.querySelector('meta[name="description"]');
@@ -57,12 +58,12 @@ const SEO = ({
       }
     };
 
-    updateMetaTag("og:title", `${title} | VAW`, true);
+    updateMetaTag("og:title", fullTitle, true);
     updateMetaTag("og:description", description, true);
     updateMetaTag("og:image", ogImage, true);
     updateMetaTag("og:type", ogType, true);
 
-    updateMetaTag("twitter:title", `${title} | VAW`);
+    updateMetaTag("twitter:title", fullTitle);
     updateMetaTag("twitter:description", description);
     updateMetaTag("twitter:image", ogImage);
 

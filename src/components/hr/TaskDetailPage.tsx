@@ -456,10 +456,22 @@ const TaskDetailPage = ({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const toInsert = bulkSubtasks.map(st => ({
-        task_id: task.id, title: st.title, description: st.description, assigned_to: st.assigned_to,
-        priority: st.priority || 'medium', points: st.points || 0, stage: st.stage ?? 1, created_by: user.id, status: 'pending'
-      }));
+      const toInsert = bulkSubtasks.map(st => {
+        let dueDateStr = null;
+        if (st.deadline_days && task.created_at) {
+          const d = new Date(task.created_at);
+          d.setDate(d.getDate() + st.deadline_days);
+          dueDateStr = d.toISOString().split('T')[0];
+        } else if (st.deadline_days) {
+          const d = new Date();
+          d.setDate(d.getDate() + st.deadline_days);
+          dueDateStr = d.toISOString().split('T')[0];
+        }
+        return {
+          task_id: task.id, title: st.title, description: st.description, assigned_to: st.assigned_to,
+          priority: st.priority || 'medium', points: st.points || 0, stage: st.stage ?? 1, created_by: user.id, status: 'pending', due_date: dueDateStr
+        };
+      });
       const { data, error } = await supabase.from('staff_subtasks').insert(toInsert as any)
         .select('*, staff_profiles:assigned_to (full_name, username, avatar_url)');
       if (error) throw error;
@@ -802,7 +814,8 @@ const TaskDetailPage = ({
                     if (tpl?.subtask_templates) {
                       setBulkSubtasks(tpl.subtask_templates.map((st: any) => ({
                         title: st.title, description: st.description || '', assigned_to: '',
-                        priority: st.priority || 'medium', points: st.points || 0, stage: st.stage ?? 1
+                        priority: st.priority || 'medium', points: st.points || 0, stage: st.stage ?? 1,
+                        deadline_days: st.deadline_days || 0
                       })));
                     }
                   } else {
@@ -838,6 +851,11 @@ const TaskDetailPage = ({
                   {bulkSubtasks.map((bs, i) => (
                     <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-black/20 border border-white/5">
                       <span className="text-xs flex-1 truncate">{bs.title}</span>
+                      {bs.deadline_days > 0 && (
+                        <Badge variant="outline" className="text-[8px] h-4 px-1.5 shrink-0 bg-amber-500/10 text-amber-400 border-amber-500/20">
+                          {bs.deadline_days}d
+                        </Badge>
+                      )}
                       <Select value={bs.assigned_to || ''} onValueChange={v => {
                         const updated = [...bulkSubtasks];
                         updated[i] = { ...updated[i], assigned_to: v };
@@ -1173,6 +1191,15 @@ const TaskDetailPage = ({
                                               <div className="flex items-center gap-1">
                                                 <Target className="h-3 w-3 text-primary" />
                                                 <span className="text-[9px] text-primary font-semibold">{st.points} pts</span>
+                                              </div>
+                                            )}
+
+                                            {st.due_date && (
+                                              <div className="flex items-center gap-1">
+                                                <Calendar className="h-3 w-3 text-amber-400" />
+                                                <span className="text-[9px] text-amber-400 font-medium">
+                                                  {(() => { try { return format(new Date(st.due_date), 'MMM dd'); } catch { return st.due_date; } })()}
+                                                </span>
                                               </div>
                                             )}
 

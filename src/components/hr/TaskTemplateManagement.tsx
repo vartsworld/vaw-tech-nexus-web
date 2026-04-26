@@ -31,6 +31,7 @@ interface SubtaskTemplate {
   stage_label?: string | null;
   stage_color?: string | null;
   rank?: number;
+  deadline_days?: number;
   isNew?: boolean;
 }
 
@@ -196,6 +197,7 @@ const TaskTemplateManagement = () => {
           stage,
           stage_label: s.stage_label ?? `Stage ${stage}`,
           stage_color: s.stage_color ?? getDefaultStageColor(stage),
+          deadline_days: s.deadline_days || 0,
           frontEndId: s.id || (typeof crypto !== 'undefined' ? crypto.randomUUID() : `${stage}-${Math.random()}`)
         };
       })
@@ -222,6 +224,7 @@ const TaskTemplateManagement = () => {
             stage,
             stage_label: label,
             stage_color: color,
+            deadline_days: 0,
             rank: (prev.subtasks.filter(s => s.stage === stage).length + 1) * 10,
             isNew: true
           }
@@ -255,6 +258,7 @@ const TaskTemplateManagement = () => {
             stage: nextStage,
             stage_label: label,
             stage_color: color,
+            deadline_days: 0,
             rank: 10,
             isNew: true
           }
@@ -417,6 +421,7 @@ const TaskTemplateManagement = () => {
             stage: s.stage ?? 1,
             stage_label: s.stage_label ?? null,
             stage_color: s.stage_color ?? null,
+            deadline_days: s.deadline_days || 0,
             rank: s.rank || 0
           }));
 
@@ -463,6 +468,7 @@ const TaskTemplateManagement = () => {
             stage: s.stage ?? 1,
             stage_label: s.stage_label ?? null,
             stage_color: s.stage_color ?? null,
+            deadline_days: s.deadline_days || 0,
             rank: s.rank || 0
           }));
 
@@ -1058,7 +1064,7 @@ const TaskTemplateManagement = () => {
                                             <Trash2 className="h-3 w-3" />
                                           </Button>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_80px] gap-3">
+                                        <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_80px_90px] gap-3">
                                           <div className="space-y-1">
                                             <Label className="text-xs text-muted-foreground">Title</Label>
                                             <Input
@@ -1084,6 +1090,16 @@ const TaskTemplateManagement = () => {
                                               placeholder="Points"
                                               value={subtask.points}
                                               onChange={(e) => updateSubtask(rawIdx, 'points', parseInt(e.target.value) || 0)}
+                                              min="0"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <Label className="text-xs text-muted-foreground">Days to Due</Label>
+                                            <Input
+                                              type="number"
+                                              placeholder="Days"
+                                              value={subtask.deadline_days || 0}
+                                              onChange={(e) => updateSubtask(rawIdx, 'deadline_days', parseInt(e.target.value) || 0)}
                                               min="0"
                                             />
                                           </div>

@@ -11,3 +11,4 @@ COMMENT ON COLUMN public.staff_subtasks.rank IS 'Numerical order of the subtask 
 
 -- Notify PostgREST to reload schema
 NOTIFY pgrst, 'reload schema';
+
