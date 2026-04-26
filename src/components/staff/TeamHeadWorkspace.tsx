@@ -698,17 +698,30 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const subtasksToInsert = bulkSubtasks.map(st => ({
-        task_id: selectedTask.id,
-        title: st.title,
-        description: st.description,
-        assigned_to: st.assigned_to,
-        priority: st.priority || 'medium',
-        points: st.points || 0,
-        stage: (st as any).stage ?? 1,
-        created_by: user.id,
-        status: 'pending'
-      }));
+      const subtasksToInsert = bulkSubtasks.map(st => {
+        let dueDateStr = null;
+        if (st.deadline_days && selectedTask.created_at) {
+          const d = new Date(selectedTask.created_at);
+          d.setDate(d.getDate() + st.deadline_days);
+          dueDateStr = d.toISOString().split('T')[0];
+        } else if (st.deadline_days) {
+          const d = new Date();
+          d.setDate(d.getDate() + st.deadline_days);
+          dueDateStr = d.toISOString().split('T')[0];
+        }
+        return {
+          task_id: selectedTask.id,
+          title: st.title,
+          description: st.description,
+          assigned_to: st.assigned_to,
+          priority: st.priority || 'medium',
+          points: st.points || 0,
+          stage: (st as any).stage ?? 1,
+          created_by: user.id,
+          status: 'pending',
+          due_date: dueDateStr
+        };
+      });
 
       const { data, error } = await supabase
         .from('staff_subtasks')
