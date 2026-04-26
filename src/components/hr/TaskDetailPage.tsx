@@ -1034,7 +1034,7 @@ const TaskDetailPage = ({
                                       })}
                                     </SelectContent>
                                   </Select>
-                                  <div className="grid grid-cols-2 gap-1">
+                                  <div className="grid grid-cols-3 gap-1">
                                     <Select value={newSubtask.priority} onValueChange={v => setNewSubtask({ ...newSubtask, priority: v })}>
                                       <SelectTrigger className="h-7 text-[10px] bg-transparent border-white/10"><SelectValue /></SelectTrigger>
                                       <SelectContent>
@@ -1045,14 +1045,25 @@ const TaskDetailPage = ({
                                       </SelectContent>
                                     </Select>
                                     <div className="flex flex-col flex-1 gap-1">
+                                      <Label className="text-[9px] text-muted-foreground uppercase">Days to Due</Label>
+                                      <Input type="number" placeholder="Days" onChange={e => {
+                                        const days = parseInt(e.target.value);
+                                        if (!isNaN(days)) {
+                                          const d = new Date(task.created_at || new Date());
+                                          d.setDate(d.getDate() + days);
+                                          setNewSubtask({ ...newSubtask, due_date: d.toISOString().split('T')[0] });
+                                        }
+                                      }} className="h-7 text-[10px] bg-transparent border-white/10" />
+                                    </div>
+                                    <div className="flex flex-col flex-1 gap-1">
                                       <Label className="text-[9px] text-muted-foreground uppercase">Due Date</Label>
                                       <Input type="date" value={newSubtask.due_date || ''} onChange={e => setNewSubtask({ ...newSubtask, due_date: e.target.value })} className="h-7 text-[10px] bg-transparent border-white/10" />
                                     </div>
-                                    <div className="flex flex-col flex-1 gap-1">
+                                    <div className="flex flex-col flex-1 gap-1 col-span-3 sm:col-span-1">
                                       <Label className="text-[9px] text-muted-foreground uppercase">Rank</Label>
                                       <Input type="number" placeholder="Order" value={newSubtask.rank || ''} onChange={e => setNewSubtask({ ...newSubtask, rank: parseInt(e.target.value) || 0 })} className="h-7 text-[10px] bg-transparent border-white/10" />
                                     </div>
-                                    <div className="flex flex-col flex-1 gap-1">
+                                    <div className="flex flex-col flex-1 gap-1 col-span-3 sm:col-span-2">
                                       <Label className="text-[9px] text-muted-foreground uppercase">Points</Label>
                                       <Input type="number" placeholder="Points" value={newSubtask.points || ''} onChange={e => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })} className="h-7 text-[10px] bg-transparent border-white/10" />
                                     </div>
@@ -1954,8 +1965,24 @@ const TaskDetailPage = ({
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Days to Due</Label>
+                  <Input 
+                    type="number"
+                    placeholder="Days"
+                    onChange={e => {
+                      const days = parseInt(e.target.value);
+                      if (!isNaN(days)) {
+                        const d = new Date(task.created_at || new Date());
+                        d.setDate(d.getDate() + days);
+                        setEditingSubtask({...editingSubtask, due_date: d.toISOString().split('T')[0]});
+                      }
+                    }}
+                    className="bg-white/5 border-white/10 text-xs"
+                  />
+                </div>
+                <div className="space-y-2 col-span-2">
                   <Label className="text-xs text-muted-foreground uppercase tracking-widest">Due Date</Label>
                   <Input 
                     type="date"
