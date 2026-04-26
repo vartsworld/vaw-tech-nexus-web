@@ -110,6 +110,7 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<ProjectGroup | null>(null);
   const [showBiometricDialog, setShowBiometricDialog] = useState(false);
+  const [tasksFilter, setTasksFilter] = useState<string>('all');
 
   const firstName = profile?.full_name?.split(' ')[0] || 'Leader';
 
@@ -297,14 +298,18 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
       {/* Quick Stats Row */}
       <motion.div variants={fadeUp} custom={2} className="grid grid-cols-3 gap-3">
         {[
-          { label: 'To do', count: todoTasks.length, color: 'text-slate-300', bg: 'bg-white/5' },
-          { label: 'In Progress', count: inProgressTasks.length, color: 'text-blue-300', bg: 'bg-blue-500/10' },
-          { label: 'Done', count: completedTasks.length, color: 'text-emerald-300', bg: 'bg-emerald-500/10' },
+          { label: 'To do', count: todoTasks.length, color: 'text-slate-300', bg: 'bg-white/5', filterKey: 'pending' },
+          { label: 'In Progress', count: inProgressTasks.length, color: 'text-blue-300', bg: 'bg-blue-500/10', filterKey: 'in_progress' },
+          { label: 'Done', count: completedTasks.length, color: 'text-emerald-300', bg: 'bg-emerald-500/10', filterKey: 'completed' },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
-            className={cn("rounded-xl p-3 text-center border border-white/5", stat.bg)}
+            className={cn("rounded-xl p-3 text-center border border-white/5 cursor-pointer", stat.bg)}
             whileTap={{ scale: 0.97 }}
+            onClick={() => {
+              setTasksFilter(stat.filterKey);
+              setActiveTab('tasks');
+            }}
           >
             <p className={cn("text-2xl font-bold", stat.color)}>{stat.count}</p>
             <p className="text-white/40 text-[10px] font-medium uppercase tracking-wider mt-0.5">{stat.label}</p>
@@ -314,7 +319,10 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
 
       {/* Todays Tasks To Do */}
       <motion.div variants={fadeUp} custom={3}>
-        <div className="flex items-center justify-between mb-3">
+        <div 
+          className="flex items-center justify-between mb-3 cursor-pointer" 
+          onClick={() => { setTasksFilter('pending'); setActiveTab('tasks'); }}
+        >
           <h2 className="text-sm font-semibold text-white/80 flex items-center gap-2">
             <Target className="w-4 h-4 text-violet-400" />
             Today's Tasks to do
@@ -322,6 +330,7 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
               {todoTasks.length}
             </Badge>
           </h2>
+          <ChevronRight className="w-4 h-4 text-white/30" />
         </div>
         <div className="space-y-2">
           {todoTasks.slice(0, 4).map((task, i) => (
@@ -330,7 +339,8 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 + i * 0.05, duration: 0.4 }}
-              className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3.5 flex items-center gap-3 active:scale-[0.98] transition-transform"
+              onClick={() => { toast("Opening workspace..."); onEnterDesktop(); }}
+              className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3.5 flex items-center gap-3 active:scale-[0.98] transition-transform cursor-pointer"
             >
               <div className="w-9 h-9 rounded-xl bg-violet-500/15 flex items-center justify-center flex-shrink-0">
                 <Target className="w-4 h-4 text-violet-400" />
@@ -362,7 +372,10 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
 
       {/* In Progress */}
       <motion.div variants={fadeUp} custom={4}>
-        <div className="flex items-center justify-between mb-3">
+        <div 
+          className="flex items-center justify-between mb-3 cursor-pointer"
+          onClick={() => { setTasksFilter('in_progress'); setActiveTab('tasks'); }}
+        >
           <h2 className="text-sm font-semibold text-white/80 flex items-center gap-2">
             <Play className="w-4 h-4 text-blue-400" />
             In progress
@@ -370,6 +383,7 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
               {inProgressTasks.length}
             </Badge>
           </h2>
+          <ChevronRight className="w-4 h-4 text-white/30" />
         </div>
         <div className="space-y-2">
           {inProgressTasks.slice(0, 4).map((task, i) => (
@@ -378,7 +392,8 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5 + i * 0.05, duration: 0.4 }}
-              className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3.5 flex items-center gap-3"
+              onClick={() => { toast("Opening workspace..."); onEnterDesktop(); }}
+              className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-3.5 flex items-center gap-3 active:scale-[0.98] transition-transform cursor-pointer"
             >
               <div className="w-9 h-9 rounded-xl bg-blue-500/15 flex items-center justify-center flex-shrink-0 relative">
                 <Play className="w-4 h-4 text-blue-400" />
@@ -552,7 +567,8 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
               key={task.id}
               variants={fadeUp}
               custom={i}
-              className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 space-y-2.5"
+              onClick={() => { toast("Opening workspace..."); onEnterDesktop(); }}
+              className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 space-y-2.5 active:scale-[0.98] transition-transform cursor-pointer"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
@@ -592,14 +608,13 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
 
   // ──────────────────────── TASKS TAB ────────────────────────
   const TasksView = () => {
-    const [filter, setFilter] = useState<string>('all');
     const filters = [
       { key: 'all', label: 'All', count: tasks.length },
       { key: 'pending', label: 'To do', count: todoTasks.length },
       { key: 'in_progress', label: 'In Progress', count: inProgressTasks.length },
       { key: 'completed', label: 'Done', count: completedTasks.length },
     ];
-    const filteredTasks = filter === 'all' ? tasks : tasks.filter(t => t.status === filter);
+    const filteredTasks = tasksFilter === 'all' ? tasks : tasks.filter(t => t.status === tasksFilter);
 
     return (
       <motion.div
@@ -618,10 +633,10 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
           {filters.map(f => (
             <motion.button
               key={f.key}
-              onClick={() => setFilter(f.key)}
+              onClick={() => setTasksFilter(f.key)}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all",
-                filter === f.key
+                tasksFilter === f.key
                   ? "bg-violet-500 text-white shadow-lg shadow-violet-500/30"
                   : "bg-white/5 text-white/50"
               )}
@@ -630,7 +645,7 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
               {f.label}
               <span className={cn(
                 "text-[10px] font-bold px-1.5 py-0 rounded-full",
-                filter === f.key ? "bg-white/20" : "bg-white/5"
+                tasksFilter === f.key ? "bg-white/20" : "bg-white/5"
               )}>
                 {f.count}
               </span>
@@ -645,7 +660,8 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
               key={task.id}
               variants={fadeUp}
               custom={i}
-              className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 space-y-2.5 active:scale-[0.98] transition-transform"
+              onClick={() => { toast("Opening workspace..."); onEnterDesktop(); }}
+              className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 space-y-2.5 active:scale-[0.98] transition-transform cursor-pointer"
             >
               <div className="flex items-start gap-3">
                 <div className="mt-0.5">{getStatusIcon(task.status)}</div>
