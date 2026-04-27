@@ -288,6 +288,40 @@ export const SubtaskReviewDialog = ({
               </div>
             )}
 
+            {/* Timing & Penalty Info */}
+            {(subtask.ready_at || subtask.accepted_at || (subtask.time_limit_hr > 0)) && (
+              <div className="bg-white/5 border border-white/10 rounded-xl p-3 space-y-2">
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/40 flex items-center gap-1.5">
+                  <Clock className="h-3 w-3" />
+                  Timing & Penalties
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-[9px] text-white/30 uppercase">Acceptance Window</p>
+                    <p className="text-xs font-medium">
+                      {subtask.ready_at ? `Ready: ${format(new Date(subtask.ready_at), "HH:mm")}` : 'Not ready yet'}
+                    </p>
+                    {subtask.accepted_at && (
+                      <p className="text-[10px] text-emerald-400">
+                        Accepted: {format(new Date(subtask.accepted_at), "HH:mm")}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-1 text-right">
+                    <p className="text-[9px] text-white/30 uppercase">Time Limit & Penalty</p>
+                    <p className="text-xs font-medium">
+                      {subtask.time_limit_hr ? `${subtask.time_limit_hr} hours limit` : 'No time limit'}
+                    </p>
+                    {subtask.penalty_coins > 0 && (
+                      <p className="text-[10px] text-red-400">
+                        Penalty: {subtask.penalty_coins} coins
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Attachments */}
             {attachments.length > 0 && (() => {
               const links = attachments.filter((a: any) => a.type === 'url');

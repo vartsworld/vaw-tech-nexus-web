@@ -3817,12 +3817,17 @@ export type Database = {
           points: number | null
           priority: Database["public"]["Enums"]["task_priority"] | null
           stage: number
+          rank: number | null
           stage_color: string | null
           stage_name: string | null
           status: Database["public"]["Enums"]["task_status"] | null
           task_id: string
           title: string
           updated_at: string | null
+          time_limit_hr: number | null
+          penalty_coins: number | null
+          accepted_at: string | null
+          ready_at: string | null
         }
         Insert: {
           approved_at?: string | null
@@ -3840,12 +3845,17 @@ export type Database = {
           points?: number | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           stage?: number
+          rank?: number | null
           stage_color?: string | null
           stage_name?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           task_id: string
           title: string
           updated_at?: string | null
+          time_limit_hr?: number | null
+          penalty_coins?: number | null
+          accepted_at?: string | null
+          ready_at?: string | null
         }
         Update: {
           approved_at?: string | null
@@ -3863,12 +3873,17 @@ export type Database = {
           points?: number | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
           stage?: number
+          rank?: number | null
           stage_color?: string | null
           stage_name?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           task_id?: string
           title?: string
           updated_at?: string | null
+          time_limit_hr?: number | null
+          penalty_coins?: number | null
+          accepted_at?: string | null
+          ready_at?: string | null
         }
         Relationships: [
           {
@@ -3944,6 +3959,7 @@ export type Database = {
           recurrence_interval: number | null
           recurrence_type: string | null
           stage_names: Json | null
+          stage_config: Json | null
           status: Database["public"]["Enums"]["task_status"] | null
           timer_started_at: string | null
           title: string
@@ -3978,6 +3994,7 @@ export type Database = {
           recurrence_interval?: number | null
           recurrence_type?: string | null
           stage_names?: Json | null
+          stage_config?: Json | null
           status?: Database["public"]["Enums"]["task_status"] | null
           timer_started_at?: string | null
           title: string
@@ -4012,6 +4029,7 @@ export type Database = {
           recurrence_interval?: number | null
           recurrence_type?: string | null
           stage_names?: Json | null
+          stage_config?: Json | null
           status?: Database["public"]["Enums"]["task_status"] | null
           timer_started_at?: string | null
           title?: string

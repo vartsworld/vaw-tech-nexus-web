@@ -52,7 +52,8 @@ const TaskDetailPage = ({
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const stageScrollRef = useRef<HTMLDivElement>(null);
   const [newSubtask, setNewSubtask] = useState({
-    title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1, rank: 0
+    title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1, rank: 0,
+    time_limit_hr: 0, penalty_coins: 0
   });
   const [newStageName, setNewStageName] = useState("");
   const [editingStageNum, setEditingStageNum] = useState<number | null>(null);
@@ -182,6 +183,8 @@ const TaskDetailPage = ({
         due_date: newSubtask.due_date || null, due_time: newSubtask.due_time || null,
         created_by: user?.id, stage: newSubtask.stage || 1, status: 'pending',
         rank: (subtasks.filter(s => s.stage === newSubtask.stage).length + 1) * 10,
+        time_limit_hr: newSubtask.time_limit_hr || 0,
+        penalty_coins: newSubtask.penalty_coins || 0,
         attachments: [
           ...newSubtaskFiles,
           ...linkAttachments
@@ -191,7 +194,7 @@ const TaskDetailPage = ({
         .select('*, staff_profiles:assigned_to (full_name, username, avatar_url)').single();
       if (error) throw error;
       setSubtasks([data, ...subtasks]);
-      setNewSubtask({ title: "", description: "", assigned_to: "", priority: "medium", points: 0, due_date: "", due_time: "", stage: newSubtask.stage, rank: 0 });
+      setNewSubtask({ title: "", description: "", assigned_to: "", priority: "medium", points: 0, due_date: "", due_time: "", stage: newSubtask.stage, rank: 0, time_limit_hr: 0, penalty_coins: 0 });
       setNewSubtaskURL("");
       setNewSubtaskLinkName("");
       setNewSubtaskFiles([]);
@@ -200,6 +203,24 @@ const TaskDetailPage = ({
       toast({ title: "Subtask created!" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleAcceptSubtask = async (subtaskId: string) => {
+    try {
+      const now = new Date().toISOString();
+      const { error } = await supabase.from('staff_subtasks')
+        .update({ 
+          accepted_at: now,
+          status: 'in_progress' as any,
+          updated_at: now
+        })
+        .eq('id', subtaskId);
+      if (error) throw error;
+      setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, accepted_at: now, status: 'in_progress' } : s));
+      toast({ title: "Subtask Accepted! 🚀", description: "The timer has started." });
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to accept subtask.", variant: "destructive" });
     }
   };
 
@@ -290,6 +311,8 @@ const TaskDetailPage = ({
         due_time: editingSubtask.due_time || null,
         stage: editingSubtask.stage,
         rank: editingSubtask.rank || 0,
+        time_limit_hr: editingSubtask.time_limit_hr || 0,
+        penalty_coins: editingSubtask.penalty_coins || 0,
         attachments: editingSubtask.attachments || [],
         updated_at: new Date().toISOString()
       };
@@ -581,15 +604,68 @@ const TaskDetailPage = ({
       if (error) throw error;
       setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, status: 'completed', ...(updateData.comments ? { comments: updateData.comments } : {}) } : s));
 
+      // Calculate penalties
+      let finalPoints = subtaskToApprove?.points || 0;
+      let penaltyDetail = "";
+      
+      // 1. Acceptance Penalty (5 coins)
+      if (subtaskToApprove?.ready_at && subtaskToApprove?.accepted_at) {
+        const readyDate = new Date(subtaskToApprove.ready_at);
+        const acceptedDate = new Date(subtaskToApprove.accepted_at);
+        const diffMins = (acceptedDate.getTime() - readyDate.getTime()) / (1000 * 60);
+        if (diffMins > 30) {
+          finalPoints -= 5;
+          penaltyDetail += "Acceptance delay (-5 pts). ";
+        }
+      } else if (subtaskToApprove?.ready_at && !subtaskToApprove?.accepted_at) {
+        // If completed without accepting but it was ready for more than 30 mins
+        const readyDate = new Date(subtaskToApprove.ready_at);
+        const now = new Date();
+        const diffMins = (now.getTime() - readyDate.getTime()) / (1000 * 60);
+        if (diffMins > 30) {
+          finalPoints -= 5;
+          penaltyDetail += "Acceptance delay (-5 pts). ";
+        }
+      }
+      
+      // 2. Completion Penalty
+      if (subtaskToApprove?.accepted_at && (subtaskToApprove?.time_limit_hr || 0) > 0) {
+        const acceptedDate = new Date(subtaskToApprove.accepted_at);
+        const completedDate = new Date();
+        const diffHrs = (completedDate.getTime() - acceptedDate.getTime()) / (1000 * 60 * 60);
+        if (diffHrs > subtaskToApprove.time_limit_hr) {
+          const penalty = subtaskToApprove.penalty_coins || 0;
+          finalPoints -= penalty;
+          penaltyDetail += `Completion delay (-${penalty} pts). `;
+        }
+      }
+      
+      finalPoints = Math.max(0, finalPoints);
+
       // Award points if applicable
-      if (subtaskToApprove?.points > 0 && subtaskToApprove?.assigned_to) {
+      if (finalPoints > 0 && subtaskToApprove?.assigned_to) {
         await supabase.rpc('increment_points' as any, {
           user_id_param: subtaskToApprove.assigned_to,
-          points_param: subtaskToApprove.points
+          points_param: finalPoints
         });
       }
 
-      toast({ title: "Subtask Approved! ✅", description: `Points awarded: ${subtaskToApprove?.points || 0}` });
+      // Trigger next subtask "ready" state
+      const currentRank = subtaskToApprove?.rank || 0;
+      const nextSubtask = [...subtasks]
+        .sort((a, b) => (a.rank || 0) - (b.rank || 0))
+        .find(s => s.status === 'pending' && (s.rank || 0) > currentRank);
+        
+      if (nextSubtask) {
+        await supabase.from('staff_subtasks')
+          .update({ ready_at: new Date().toISOString() })
+          .eq('id', nextSubtask.id);
+      }
+
+      toast({ 
+        title: "Subtask Approved! ✅", 
+        description: penaltyDetail ? `Awarded: ${finalPoints} pts (${penaltyDetail})` : `Awarded: ${finalPoints} pts` 
+      });
     } catch (error) {
       toast({ title: "Error", description: "Failed to approve subtask.", variant: "destructive" });
     }
@@ -1067,6 +1143,14 @@ const TaskDetailPage = ({
                                       <Label className="text-[9px] text-muted-foreground uppercase">Points</Label>
                                       <Input type="number" placeholder="Points" value={newSubtask.points || ''} onChange={e => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })} className="h-7 text-[10px] bg-transparent border-white/10" />
                                     </div>
+                                    <div className="flex flex-col flex-1 gap-1 col-span-3 sm:col-span-1">
+                                      <Label className="text-[9px] text-muted-foreground uppercase">Time Limit (hr)</Label>
+                                      <Input type="number" placeholder="Hrs" value={newSubtask.time_limit_hr || ''} onChange={e => setNewSubtask({ ...newSubtask, time_limit_hr: parseInt(e.target.value) || 0 })} className="h-7 text-[10px] bg-transparent border-white/10" />
+                                    </div>
+                                    <div className="flex flex-col flex-1 gap-1 col-span-3 sm:col-span-2">
+                                      <Label className="text-[9px] text-muted-foreground uppercase">Penalty Coins</Label>
+                                      <Input type="number" placeholder="Coins" value={newSubtask.penalty_coins || ''} onChange={e => setNewSubtask({ ...newSubtask, penalty_coins: parseInt(e.target.value) || 0 })} className="h-7 text-[10px] bg-transparent border-white/10" />
+                                    </div>
                                   </div>
                                   <div className="flex gap-1">
                                     <div className="flex flex-col flex-1 gap-2">
@@ -1193,6 +1277,42 @@ const TaskDetailPage = ({
                                                 </Button>
                                               </div>
                                             </div>
+
+                                            {/* Accept Button & Timing Info */}
+                                            {st.status === 'pending' && !st.accepted_at && st.ready_at && (
+                                              <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                                                <Button 
+                                                  size="sm" 
+                                                  className="w-full h-7 text-[10px] bg-green-600/90 hover:bg-green-600 font-bold shadow-sm"
+                                                  onClick={() => handleAcceptSubtask(st.id)}
+                                                >
+                                                  <CheckCircle className="h-3 w-3 mr-1" /> ACCEPT SUBTASK
+                                                </Button>
+                                                <div className="flex items-center justify-between mt-1 px-1">
+                                                   <span className="text-[8px] text-muted-foreground uppercase font-bold flex items-center gap-1">
+                                                     <Clock className="h-2 w-2" /> Buffer: 30m
+                                                   </span>
+                                                   <Badge variant="outline" className="text-[7px] h-3 px-1 bg-amber-500/10 text-amber-500 border-amber-500/20">READY</Badge>
+                                                </div>
+                                              </div>
+                                            )}
+
+                                            {/* Timer if accepted */}
+                                            {st.accepted_at && st.status === 'in_progress' && (
+                                               <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
+                                                  <Clock className="h-3 w-3 text-blue-400 animate-pulse" />
+                                                  <div className="flex flex-col">
+                                                     <span className="text-[8px] font-bold text-blue-300 uppercase leading-none">Started</span>
+                                                     <span className="text-[9px] font-bold text-blue-300">{format(new Date(st.accepted_at), 'MMM dd, HH:mm')}</span>
+                                                  </div>
+                                                  {st.time_limit_hr > 0 && (
+                                                    <div className="ml-auto flex flex-col items-end">
+                                                      <span className="text-[8px] text-muted-foreground uppercase leading-none">Limit</span>
+                                                      <span className="text-[9px] text-white/70 font-bold">{st.time_limit_hr}h</span>
+                                                    </div>
+                                                  )}
+                                               </div>
+                                            )}
 
                                             {st.description && (
                                               <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2 break-words">{st.description}</p>
@@ -1961,6 +2081,26 @@ const TaskDetailPage = ({
                     type="number"
                     value={editingSubtask.points} 
                     onChange={e => setEditingSubtask({...editingSubtask, points: parseInt(e.target.value) || 0})}
+                    className="bg-white/5 border-white/10"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Time Limit (hr)</Label>
+                  <Input 
+                    type="number"
+                    value={editingSubtask.time_limit_hr || 0} 
+                    onChange={e => setEditingSubtask({...editingSubtask, time_limit_hr: parseInt(e.target.value) || 0})}
+                    className="bg-white/5 border-white/10"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Penalty Coins</Label>
+                  <Input 
+                    type="number"
+                    value={editingSubtask.penalty_coins || 0} 
+                    onChange={e => setEditingSubtask({...editingSubtask, penalty_coins: parseInt(e.target.value) || 0})}
                     className="bg-white/5 border-white/10"
                   />
                 </div>
