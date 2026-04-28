@@ -43,6 +43,7 @@ const TaskDetailPage = ({
   task, onBack, onStatusUpdate, onEdit, onDelete, userProfile, staff, departments = [], subtaskTemplates, taskTemplates
 }: TaskDetailPageProps) => {
   const [subtasks, setSubtasks] = useState<any[]>([]);
+  console.log("TaskDetailPage rendered with task:", task?.id, task?.title);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
   const [quickAddStage, setQuickAddStage] = useState<number | null>(null);
   const [isCreateSubtaskDialogOpen, setIsCreateSubtaskDialogOpen] = useState(false);
@@ -181,6 +182,7 @@ const TaskDetailPage = ({
   };
 
   const fetchFeedbackForm = async (taskId: string) => {
+    console.log("Fetching feedback form for task:", taskId);
     setLoadingFeedback(true);
     try {
       const { data, error } = await supabase
@@ -192,9 +194,12 @@ const TaskDetailPage = ({
       if (error) throw error;
       
       if (data) {
+        console.log("Feedback form found:", data);
         setFeedbackForm(data);
         setFeedbackQuestions((data as any).questions || []);
         setFeedbackResponses((data as any).task_feedback_responses || []);
+      } else {
+        console.log("No feedback form found for this task.");
       }
     } catch (e) {
       console.error("Error fetching feedback form:", e);
@@ -204,6 +209,7 @@ const TaskDetailPage = ({
   };
 
   const handleCreateFeedbackForm = async () => {
+    console.log("Creating feedback form for task:", task.id);
     try {
       const { data, error } = await supabase
         .from('task_feedback_forms' as any)
@@ -220,6 +226,7 @@ const TaskDetailPage = ({
       setIsFeedbackBuilderOpen(false);
       toast({ title: "Feedback form created!" });
     } catch (e: any) {
+      console.error("Error creating feedback form:", e);
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
   };
@@ -1950,9 +1957,11 @@ const TaskDetailPage = ({
                   )}
                 </div>
 
-                {!feedbackForm ? (
                   <Button variant="outline" className="w-full h-10 rounded-xl border-dashed border-white/20 hover:border-primary/50 hover:bg-primary/5 text-xs group"
-                    onClick={() => setIsFeedbackBuilderOpen(true)}>
+                    onClick={() => {
+                      console.log("Opening feedback builder (create mode)");
+                      setIsFeedbackBuilderOpen(true);
+                    }}>
                     <PlusCircle className="h-4 w-4 mr-2 text-primary group-hover:scale-110 transition-transform" />
                     Setup Feedback Form
                   </Button>
@@ -1968,7 +1977,10 @@ const TaskDetailPage = ({
                         <Copy className="h-3.5 w-3.5 mr-2 text-blue-400" /> Copy Link
                       </Button>
                       <Button variant="outline" className="flex-1 h-9 rounded-lg border-white/10 bg-white/5 hover:bg-white/10 text-[11px]"
-                        onClick={() => setIsFeedbackBuilderOpen(true)}>
+                        onClick={() => {
+                          console.log("Opening feedback builder (edit mode)");
+                          setIsFeedbackBuilderOpen(true);
+                        }}>
                         <Edit className="h-3.5 w-3.5 mr-2 text-orange-400" /> Edit Form
                       </Button>
                     </div>
@@ -2528,6 +2540,97 @@ const TaskDetailPage = ({
             <Button variant="ghost" onClick={() => setIsCreateSubtaskDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleCreateSubtask} className="bg-primary hover:bg-primary/80">
               Add Subtask
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Feedback Builder Dialog */}
+      <Dialog open={isFeedbackBuilderOpen} onOpenChange={(open) => {
+        console.log("Feedback builder open state change:", open);
+        setIsFeedbackBuilderOpen(open);
+      }}>
+        <DialogContent className="max-w-md bg-black/95 border-white/10 backdrop-blur-2xl shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              Configure Feedback Form
+            </DialogTitle>
+            <p className="text-xs text-muted-foreground">Define questions for the client feedback form.</p>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar border-t border-white/5">
+            {feedbackQuestions.map((q, idx) => (
+              <div key={q.id} className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3 relative group">
+                <button 
+                  onClick={() => setFeedbackQuestions(prev => prev.filter(item => item.id !== q.id))}
+                  className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash className="h-3.5 w-3.5" />
+                </button>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase text-muted-foreground">Type</Label>
+                    <Select value={q.type} onValueChange={(val) => {
+                      const updated = [...feedbackQuestions];
+                      updated[idx].type = val;
+                      setFeedbackQuestions(updated);
+                    }}>
+                      <SelectTrigger className="h-8 bg-black/40 border-white/10 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="star">Star Rating (1-5)</SelectItem>
+                        <SelectItem value="short">Short Answer</SelectItem>
+                        <SelectItem value="long">Long Answer (Descriptive)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end pb-1.5">
+                    <div className="flex items-center gap-2">
+                      <Switch checked={q.required} onCheckedChange={(val) => {
+                         const updated = [...feedbackQuestions];
+                         updated[idx].required = val;
+                         setFeedbackQuestions(updated);
+                      }} />
+                      <Label className="text-[10px] uppercase text-muted-foreground">Required</Label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase text-muted-foreground">Question Label</Label>
+                  <Input 
+                    value={q.label} 
+                    onChange={e => {
+                      const updated = [...feedbackQuestions];
+                      updated[idx].label = e.target.value;
+                      setFeedbackQuestions(updated);
+                    }}
+                    placeholder="Enter question..."
+                    className="h-9 bg-black/40 border-white/10 text-sm"
+                  />
+                </div>
+              </div>
+            ))}
+            
+            <Button variant="outline" className="w-full border-dashed border-white/10 hover:border-primary/50 hover:bg-primary/5"
+              onClick={() => setFeedbackQuestions([...feedbackQuestions, { id: Math.random().toString(36).substr(2, 9), type: 'short', label: 'New Question', required: false }])}>
+              <Plus className="h-4 w-4 mr-2" /> Add Question
+            </Button>
+          </div>
+
+          <DialogFooter className="gap-2 border-t border-white/5 pt-4">
+            <Button variant="ghost" onClick={() => setIsFeedbackBuilderOpen(false)} className="text-muted-foreground">Cancel</Button>
+            <Button 
+              onClick={() => {
+                console.log("Submit button clicked, mode:", feedbackForm ? "update" : "create");
+                feedbackForm ? handleUpdateFeedbackForm() : handleCreateFeedbackForm();
+              }} 
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+            >
+              {feedbackForm ? "Update Form" : "Create Form"}
             </Button>
           </DialogFooter>
         </DialogContent>
