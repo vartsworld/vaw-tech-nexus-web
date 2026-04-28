@@ -44,6 +44,7 @@ const TaskDetailPage = ({
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [loadingSubtasks, setLoadingSubtasks] = useState(false);
   const [quickAddStage, setQuickAddStage] = useState<number | null>(null);
+  const [isCreateSubtaskDialogOpen, setIsCreateSubtaskDialogOpen] = useState(false);
   const [bulkSubtasks, setBulkSubtasks] = useState<any[]>([]);
   const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState("none");
   const [canScrollLeft, setCanScrollLeft] = useState(false);
