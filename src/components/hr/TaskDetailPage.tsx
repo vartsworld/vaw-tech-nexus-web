@@ -15,7 +15,8 @@ import {
   ArrowLeft, CheckCircle, Clock, Target, Flag, Eye, Edit, Trash2,
   Plus, Calendar, User, Layers, FileText, Download, MessageSquare,
   Loader2, Share2, LayoutTemplate, Minimize2, Maximize2, ChevronLeft, ChevronRight,
-  AlertCircle, Upload, Lock, Unlock, ListOrdered, ExternalLink, Link2, Globe
+  AlertCircle, Upload, Lock, Unlock, ListOrdered, ExternalLink, Link2, Globe,
+  Copy, Star, Trash, PlusCircle, X
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { SubtaskReviewDialog } from "@/components/staff/SubtaskReviewDialog";
@@ -83,6 +84,18 @@ const TaskDetailPage = ({
   const [isUploadingSubtaskFile, setIsUploadingSubtaskFile] = useState(false);
   const submitFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Feedback System State
+  const [feedbackForm, setFeedbackForm] = useState<any>(null);
+  const [isFeedbackBuilderOpen, setIsFeedbackBuilderOpen] = useState(false);
+  const [feedbackQuestions, setFeedbackQuestions] = useState<any[]>([
+    { id: '1', type: 'star', label: 'Overall Service Rating', required: true },
+    { id: '2', type: 'short', label: 'What did you like most?', required: false },
+    { id: '3', type: 'long', label: 'Areas for improvement', required: false }
+  ]);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
+  const [feedbackResponses, setFeedbackResponses] = useState<any[]>([]);
+  const [showResponses, setShowResponses] = useState(false);
+
   const checkScrollability = useCallback(() => {
     // We use a small timeout to ensure the DOM has finished rendering/reflowing
     setTimeout(() => {
@@ -147,7 +160,10 @@ const TaskDetailPage = ({
   const { toast } = useToast();
 
   useEffect(() => {
-    if (task?.id) fetchSubtasks(task.id);
+    if (task?.id) {
+      fetchSubtasks(task.id);
+      fetchFeedbackForm(task.id);
+    }
   }, [task?.id]);
 
   const fetchSubtasks = async (taskId: string) => {
@@ -156,12 +172,99 @@ const TaskDetailPage = ({
       const { data, error } = await supabase.from('staff_subtasks')
         .select('*, staff_profiles:assigned_to (full_name, username, avatar_url)')
         .eq('task_id', taskId).order('created_at', { ascending: false });
-      if (error) throw error;
       setSubtasks(data || []);
-    } catch (error) {
-      console.error('Error fetching subtasks:', error);
+    } catch (e: any) {
+      console.error(e);
     } finally {
       setLoadingSubtasks(false);
+    }
+  };
+
+  const fetchFeedbackForm = async (taskId: string) => {
+    setLoadingFeedback(true);
+    try {
+      const { data, error } = await supabase
+        .from('task_feedback_forms' as any)
+        .select('*, task_feedback_responses(*)')
+        .eq('task_id', taskId)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data) {
+        setFeedbackForm(data);
+        setFeedbackQuestions((data as any).questions || []);
+        setFeedbackResponses((data as any).task_feedback_responses || []);
+      }
+    } catch (e) {
+      console.error("Error fetching feedback form:", e);
+    } finally {
+      setLoadingFeedback(false);
+    }
+  };
+
+  const handleCreateFeedbackForm = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('task_feedback_forms' as any)
+        .insert({
+          task_id: task.id,
+          questions: feedbackQuestions,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setFeedbackForm(data);
+      setIsFeedbackBuilderOpen(false);
+      toast({ title: "Feedback form created!" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleUpdateFeedbackForm = async () => {
+    if (!feedbackForm) return;
+    try {
+      const { error } = await supabase
+        .from('task_feedback_forms' as any)
+        .update({ questions: feedbackQuestions } as any)
+        .eq('id', (feedbackForm as any).id);
+
+      if (error) throw error;
+      setFeedbackForm({ ...feedbackForm, questions: feedbackQuestions });
+      setIsFeedbackBuilderOpen(false);
+      toast({ title: "Feedback form updated!" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleCreateSubtaskDirectly = async (data: { title: string, description: string, assigned_to: string, priority: string, points: number, stage: number }) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const insertData = {
+        task_id: task.id,
+        title: data.title,
+        description: data.description,
+        assigned_to: data.assigned_to,
+        priority: data.priority as any,
+        points: data.points,
+        stage: data.stage,
+        status: 'pending' as any,
+        created_by: user?.id,
+        rank: (subtasks.filter(s => (s.stage || 1) === data.stage).length + 1) * 10,
+        ready_at: new Date().toISOString()
+      };
+      
+      const { data: inserted, error } = await supabase.from('staff_subtasks').insert(insertData)
+        .select('*, staff_profiles:assigned_to (full_name, username, avatar_url)').single();
+      
+      if (error) throw error;
+      setSubtasks(prev => [inserted, ...prev]);
+    } catch (e: any) {
+      console.error("Error creating direct subtask:", e);
     }
   };
 
@@ -1836,16 +1939,101 @@ const TaskDetailPage = ({
               );
             })()}
 
-            {/* Quick Actions */}
-            <div className="space-y-2 pt-4 border-t border-white/10">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Quick Actions</h3>
+              {/* Feedback System UI */}
+              <div className="space-y-3 py-4 border-t border-white/10">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Feedback Form</h3>
+                  {feedbackForm && (
+                    <Badge variant="outline" className={cn("text-[9px] uppercase", feedbackResponses.length > 0 ? "bg-green-500/10 text-green-400 border-green-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20")}>
+                      {feedbackResponses.length} {feedbackResponses.length === 1 ? 'Response' : 'Responses'}
+                    </Badge>
+                  )}
+                </div>
 
-              {task.status === 'review_pending' && (userProfile?.role === 'hr' || userProfile?.role === 'admin') && (
-                <Button className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm"
-                  onClick={() => onStatusUpdate(task.id, 'completed')}>
-                  <CheckCircle className="h-4 w-4 mr-2" /> Mark as Complete
-                </Button>
-              )}
+                {!feedbackForm ? (
+                  <Button variant="outline" className="w-full h-10 rounded-xl border-dashed border-white/20 hover:border-primary/50 hover:bg-primary/5 text-xs group"
+                    onClick={() => setIsFeedbackBuilderOpen(true)}>
+                    <PlusCircle className="h-4 w-4 mr-2 text-primary group-hover:scale-110 transition-transform" />
+                    Setup Feedback Form
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1 h-9 rounded-lg border-white/10 bg-white/5 hover:bg-white/10 text-[11px]"
+                        onClick={() => {
+                          const url = `${window.location.origin}/feedback/${feedbackForm.token}`;
+                          navigator.clipboard.writeText(url);
+                          toast({ title: "Link copied!", description: "Share this link with your client." });
+                        }}>
+                        <Copy className="h-3.5 w-3.5 mr-2 text-blue-400" /> Copy Link
+                      </Button>
+                      <Button variant="outline" className="flex-1 h-9 rounded-lg border-white/10 bg-white/5 hover:bg-white/10 text-[11px]"
+                        onClick={() => setIsFeedbackBuilderOpen(true)}>
+                        <Edit className="h-3.5 w-3.5 mr-2 text-orange-400" /> Edit Form
+                      </Button>
+                    </div>
+                    
+                    {feedbackResponses.length > 0 && (
+                      <Button variant="outline" className="w-full h-9 rounded-lg border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary text-[11px]"
+                        onClick={() => setShowResponses(!showResponses)}>
+                        <Eye className="h-3.5 w-3.5 mr-2" /> 
+                        {showResponses ? "Hide Results" : "View Feedback Results"}
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {showResponses && feedbackResponses.length > 0 && (
+                  <div className="space-y-3 mt-2 animate-in slide-in-from-top-2 duration-300">
+                    {feedbackResponses.map((res: any, idx: number) => (
+                      <div key={idx} className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-2">
+                        <div className="flex justify-between items-center border-b border-white/5 pb-1 mb-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase">Response #{feedbackResponses.length - idx}</span>
+                          <span className="text-[9px] text-muted-foreground">{format(new Date(res.submitted_at), 'MMM d, h:mm a')}</span>
+                        </div>
+                        {feedbackQuestions.map((q: any) => (
+                          <div key={q.id} className="space-y-1">
+                            <p className="text-[10px] font-medium text-muted-foreground">{q.label}</p>
+                            {q.type === 'star' ? (
+                              <div className="flex gap-0.5">
+                                {[1,2,3,4,5].map(s => (
+                                  <Star key={s} className={cn("h-3 w-3", s <= (res.responses[q.id] || 0) ? "text-yellow-400 fill-yellow-400" : "text-white/10")} />
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-white/90">{res.responses[q.id] || '-'}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Actions */}
+              <div className="space-y-2 pt-4 border-t border-white/10">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Quick Actions</h3>
+
+                {task.status === 'review_pending' && (userProfile?.role === 'hr' || userProfile?.role === 'admin') && (
+                  <Button className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm"
+                    onClick={() => {
+                      onStatusUpdate(task.id, 'completed');
+                      // Automation: Auto-add feedback subtask if form exists
+                      if (feedbackForm) {
+                        handleCreateSubtaskDirectly({
+                          title: "Send Feedback Form to Client",
+                          description: `Feedback link: ${window.location.origin}/feedback/${feedbackForm.token}`,
+                          assigned_to: task.assigned_to,
+                          priority: 'high',
+                          points: 5,
+                          stage: task.current_stage || 1
+                        });
+                      }
+                    }}>
+                    <CheckCircle className="h-4 w-4 mr-2" /> Mark as Complete
+                  </Button>
+                )}
 
               <Button variant="outline" className="w-full h-10 rounded-xl border-white/10 hover:bg-white/5 text-sm"
                 onClick={() => onEdit(task)}>

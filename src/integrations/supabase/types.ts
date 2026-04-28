@@ -5284,7 +5284,78 @@ export type Database = {
         }
         Relationships: []
       }
+      task_feedback_forms: {
+        Row: {
+          created_at: string | null
+          id: string
+          questions: Json | null
+          status: string | null
+          task_id: string | null
+          token: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          questions?: Json | null
+          status?: string | null
+          task_id?: string | null
+          token?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          questions?: Json | null
+          status?: string | null
+          task_id?: string | null
+          token?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_feedback_forms_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "staff_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_feedback_responses: {
+        Row: {
+          client_info: Json | null
+          form_id: string | null
+          id: string
+          responses: Json | null
+          submitted_at: string | null
+        }
+        Insert: {
+          client_info?: Json | null
+          form_id?: string | null
+          id?: string
+          responses?: Json | null
+          submitted_at?: string | null
+        }
+        Update: {
+          client_info?: Json | null
+          form_id?: string | null
+          id?: string
+          responses?: Json | null
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_feedback_responses_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "task_feedback_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
+
     Views: {
       chess_leaderboard: {
         Row: {
