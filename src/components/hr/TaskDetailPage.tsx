@@ -201,6 +201,7 @@ const TaskDetailPage = ({
       setNewSubtaskFiles([]);
       setNewSubtaskAttachType('none');
       setQuickAddStage(null);
+      setIsCreateSubtaskDialogOpen(false);
       toast({ title: "Subtask created!" });
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -1077,141 +1078,14 @@ const TaskDetailPage = ({
                                   </div>
                                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-primary"
                                   onClick={() => {
-                                    setQuickAddStage(isQuickAddOpen ? null : stageNum);
                                     setNewSubtask(prev => ({ ...prev, stage: stageNum, title: '', assigned_to: '' }));
+                                    setIsCreateSubtaskDialogOpen(true);
                                   }}
                                 >
                                   <Plus className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
 
-                              {/* Quick Add */}
-                              {isQuickAddOpen && (
-                                <div className="space-y-2 p-2.5 bg-black/30 rounded-lg border border-white/10 animate-in fade-in duration-200 mb-2">
-                                  <Input autoFocus placeholder="Subtask title *" value={newSubtask.title}
-                                    onChange={e => setNewSubtask({ ...newSubtask, title: e.target.value })}
-                                    className="h-8 text-xs bg-transparent border-white/10" />
-                                  <Textarea placeholder="Description (optional)" value={newSubtask.description}
-                                    onChange={e => setNewSubtask({ ...newSubtask, description: e.target.value })}
-                                    className="text-xs bg-transparent border-white/10 min-h-[50px] resize-none" />
-                                  <Select value={newSubtask.assigned_to} onValueChange={v => setNewSubtask({ ...newSubtask, assigned_to: v })}>
-                                    <SelectTrigger className="h-8 text-xs bg-transparent border-white/10"><SelectValue placeholder="Assign to..." /></SelectTrigger>
-                                    <SelectContent>
-                                      {departments.map(dept => {
-                                        const deptStaff = staff.filter(s => s.department_id === dept.id);
-                                        if (deptStaff.length === 0) return null;
-                                        return (
-                                          <SelectGroup key={dept.id}>
-                                            <SelectLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5">{dept.name}</SelectLabel>
-                                            {deptStaff.map(m => (
-                                              <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>
-                                            ))}
-                                          </SelectGroup>
-                                        );
-                                      })}
-                                    </SelectContent>
-                                  </Select>
-                                  <div className="grid grid-cols-3 gap-1">
-                                    <Select value={newSubtask.priority} onValueChange={v => setNewSubtask({ ...newSubtask, priority: v })}>
-                                      <SelectTrigger className="h-7 text-[10px] bg-transparent border-white/10"><SelectValue /></SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="low" className="text-xs">Low</SelectItem>
-                                        <SelectItem value="medium" className="text-xs">Medium</SelectItem>
-                                        <SelectItem value="high" className="text-xs">High</SelectItem>
-                                        <SelectItem value="urgent" className="text-xs">Urgent</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                    <div className="flex flex-col flex-1 gap-1">
-                                      <Label className="text-[9px] text-muted-foreground uppercase">Days to Due</Label>
-                                      <Input type="number" placeholder="Days" onChange={e => {
-                                        const days = parseInt(e.target.value);
-                                        if (!isNaN(days)) {
-                                          const d = new Date(task.created_at || new Date());
-                                          d.setDate(d.getDate() + days);
-                                          setNewSubtask({ ...newSubtask, due_date: d.toISOString().split('T')[0] });
-                                        }
-                                      }} className="h-7 text-[10px] bg-transparent border-white/10" />
-                                    </div>
-                                    <div className="flex flex-col flex-1 gap-1">
-                                      <Label className="text-[9px] text-muted-foreground uppercase">Due Date</Label>
-                                      <Input type="date" value={newSubtask.due_date || ''} onChange={e => setNewSubtask({ ...newSubtask, due_date: e.target.value })} className="h-7 text-[10px] bg-transparent border-white/10" />
-                                    </div>
-                                    <div className="flex flex-col flex-1 gap-1 col-span-3 sm:col-span-1">
-                                      <Label className="text-[9px] text-muted-foreground uppercase">Rank</Label>
-                                      <Input type="number" placeholder="Order" value={newSubtask.rank || ''} onChange={e => setNewSubtask({ ...newSubtask, rank: parseInt(e.target.value) || 0 })} className="h-7 text-[10px] bg-transparent border-white/10" />
-                                    </div>
-                                    <div className="flex flex-col flex-1 gap-1 col-span-3 sm:col-span-2">
-                                      <Label className="text-[9px] text-muted-foreground uppercase">Points</Label>
-                                      <Input type="number" placeholder="Points" value={newSubtask.points || ''} onChange={e => setNewSubtask({ ...newSubtask, points: parseInt(e.target.value) || 0 })} className="h-7 text-[10px] bg-transparent border-white/10" />
-                                    </div>
-                                    <div className="flex flex-col flex-1 gap-1 col-span-3 sm:col-span-1">
-                                      <Label className="text-[9px] text-muted-foreground uppercase">Time Limit (hr)</Label>
-                                      <Input type="number" placeholder="Hrs" value={newSubtask.time_limit_hr || ''} onChange={e => setNewSubtask({ ...newSubtask, time_limit_hr: parseInt(e.target.value) || 0 })} className="h-7 text-[10px] bg-transparent border-white/10" />
-                                    </div>
-                                    <div className="flex flex-col flex-1 gap-1 col-span-3 sm:col-span-2">
-                                      <Label className="text-[9px] text-muted-foreground uppercase">Penalty Coins</Label>
-                                      <Input type="number" placeholder="Coins" value={newSubtask.penalty_coins || ''} onChange={e => setNewSubtask({ ...newSubtask, penalty_coins: parseInt(e.target.value) || 0 })} className="h-7 text-[10px] bg-transparent border-white/10" />
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-1">
-                                    <div className="flex flex-col flex-1 gap-2">
-                                      <div className="flex items-center gap-2">
-                                        <Button size="sm" variant="outline" className="h-7 text-[10px] flex-1 border-white/10" onClick={() => setNewSubtaskAttachType(newSubtaskAttachType === 'url' ? 'none' : 'url')}>
-                                          <Share2 className="h-3 w-3 mr-1" /> URL
-                                        </Button>
-                                        <Button size="sm" variant="outline" className="h-7 text-[10px] flex-1 border-white/10" onClick={() => setNewSubtaskAttachType(newSubtaskAttachType === 'file' ? 'none' : 'file')}>
-                                          <Upload className="h-3 w-3 mr-1" /> File
-                                        </Button>
-                                      </div>
-                                      {newSubtaskAttachType === 'url' && (
-                                        <div className="space-y-1.5">
-                                          <div className="flex gap-1">
-                                            <Input placeholder="https://..." value={newSubtaskURL}
-                                              onChange={e => setNewSubtaskURL(e.target.value)}
-                                              onBlur={async () => {
-                                                if (newSubtaskURL.trim() && !newSubtaskLinkName) {
-                                                  setIsFetchingLinkMeta(true);
-                                                  const title = await fetchLinkTitle(newSubtaskURL.trim());
-                                                  setNewSubtaskLinkName(title);
-                                                  setIsFetchingLinkMeta(false);
-                                                }
-                                              }}
-                                              className="h-7 text-[10px] bg-transparent flex-1" />
-                                            {isFetchingLinkMeta && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground mt-2" />}
-                                          </div>
-                                          <div className="flex gap-1 items-center">
-                                            {newSubtaskURL.trim() && (
-                                              <img src={getFaviconUrl(newSubtaskURL)} alt="" className="h-3.5 w-3.5 rounded-sm" />
-                                            )}
-                                            <Input placeholder="Link name (auto-fetched)" value={newSubtaskLinkName}
-                                              onChange={e => setNewSubtaskLinkName(e.target.value)}
-                                              className="h-7 text-[10px] bg-transparent flex-1" />
-                                          </div>
-                                        </div>
-                                      )}
-                                      {newSubtaskAttachType === 'file' && (
-                                        <>
-                                          <div className="p-2 border border-dashed border-white/20 rounded text-center cursor-pointer" onClick={() => {
-                                              setNewSubtaskAttachType('file');
-                                              // Trigger the hidden file input
-                                              const fileInput = document.getElementById('new-subtask-file-input') as HTMLInputElement;
-                                              fileInput?.click();
-                                            }}>
-                                            <span className="text-[9px] text-muted-foreground">{newSubtaskFiles.length > 0 ? `${newSubtaskFiles.length} file(s) selected` : 'Drag & Drop or Click'}</span>
-                                          </div>
-                                          <input id="new-subtask-file-input" type="file" multiple hidden onChange={handleNewSubtaskFileUpload} />
-                                        </>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-1">
-                                    <Button size="sm" className="flex-1 h-7 text-[10px] bg-primary/80 hover:bg-primary font-bold" onClick={handleCreateSubtask}>
-                                      <Plus className="h-3 w-3 mr-1" /> ADD SUBTASK
-                                    </Button>
-                                    <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => setQuickAddStage(null)}>Cancel</Button>
-                                  </div>
-                                </div>
-                              )}
 
                               {/* Scrollable subtask list */}
                               <div className="flex-1 overflow-y-auto max-h-[400px] space-y-2 pr-0.5" style={{ scrollbarWidth: 'thin' }}>
@@ -2262,6 +2136,210 @@ const TaskDetailPage = ({
             <Button onClick={handleEditSubtaskSave} disabled={savingSubtask} className="bg-primary hover:bg-primary/80">
               {savingSubtask ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Subtask Dialog */}
+      <Dialog open={isCreateSubtaskDialogOpen} onOpenChange={setIsCreateSubtaskDialogOpen}>
+        <DialogContent className="max-w-md bg-black/90 border-white/10 backdrop-blur-xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Add New Subtask</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground uppercase tracking-widest">Title *</Label>
+              <Input 
+                autoFocus
+                placeholder="Subtask title"
+                value={newSubtask.title} 
+                onChange={e => setNewSubtask({...newSubtask, title: e.target.value})}
+                className="bg-white/5 border-white/10"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground uppercase tracking-widest">Description</Label>
+              <Textarea 
+                placeholder="Description (optional)"
+                value={newSubtask.description || ''} 
+                onChange={e => setNewSubtask({...newSubtask, description: e.target.value})}
+                className="bg-white/5 border-white/10 min-h-[80px]"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Assignee *</Label>
+                <Select value={newSubtask.assigned_to} onValueChange={v => setNewSubtask({...newSubtask, assigned_to: v})}>
+                  <SelectTrigger className="bg-white/5 border-white/10">
+                    <SelectValue placeholder="Select assignee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map(dept => {
+                      const deptStaff = staff.filter(s => s.department_id === dept.id);
+                      if (deptStaff.length === 0) return null;
+                      return (
+                        <SelectGroup key={dept.id}>
+                          <SelectLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5">{dept.name}</SelectLabel>
+                          {deptStaff.map(m => (
+                            <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Priority</Label>
+                <Select value={newSubtask.priority} onValueChange={v => setNewSubtask({...newSubtask, priority: v})}>
+                  <SelectTrigger className="bg-white/5 border-white/10">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Points</Label>
+                <Input 
+                  type="number"
+                  value={newSubtask.points} 
+                  onChange={e => setNewSubtask({...newSubtask, points: parseInt(e.target.value) || 0})}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Rank / Order</Label>
+                <Input 
+                  type="number"
+                  value={newSubtask.rank} 
+                  onChange={e => setNewSubtask({...newSubtask, rank: parseInt(e.target.value) || 0})}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Time Limit (hr)</Label>
+                <Input 
+                  type="number"
+                  value={newSubtask.time_limit_hr} 
+                  onChange={e => setNewSubtask({...newSubtask, time_limit_hr: parseInt(e.target.value) || 0})}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Penalty Coins</Label>
+                <Input 
+                  type="number"
+                  value={newSubtask.penalty_coins} 
+                  onChange={e => setNewSubtask({...newSubtask, penalty_coins: parseInt(e.target.value) || 0})}
+                  className="bg-white/5 border-white/10"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Days to Due</Label>
+                <Input 
+                  type="number"
+                  placeholder="Days"
+                  onChange={e => {
+                    const days = parseInt(e.target.value);
+                    if (!isNaN(days)) {
+                      const d = new Date(task.created_at || new Date());
+                      d.setDate(d.getDate() + days);
+                      setNewSubtask({...newSubtask, due_date: d.toISOString().split('T')[0]});
+                    }
+                  }}
+                  className="bg-white/5 border-white/10 text-xs"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Due Date</Label>
+                <Input 
+                  type="date"
+                  value={newSubtask.due_date || ''} 
+                  onChange={e => setNewSubtask({...newSubtask, due_date: e.target.value})}
+                  className="bg-white/5 border-white/10 text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Attachments */}
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Attachments</Label>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" className="h-6 text-[9px] border-white/10" onClick={() => setNewSubtaskAttachType(newSubtaskAttachType === 'url' ? 'none' : 'url')}>
+                    <Share2 className="h-2.5 w-2.5 mr-1" /> URL
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-6 text-[9px] border-white/10" onClick={() => {
+                      setNewSubtaskAttachType('file');
+                      document.getElementById('new-subtask-file-input-dialog')?.click();
+                    }}>
+                    <Upload className="h-2.5 w-2.5 mr-1" /> File
+                  </Button>
+                </div>
+              </div>
+              
+              <input type="file" multiple hidden id="new-subtask-file-input-dialog" onChange={handleNewSubtaskFileUpload} />
+
+              {newSubtaskAttachType === 'url' && (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input placeholder="https://..." value={newSubtaskURL}
+                      onChange={e => setNewSubtaskURL(e.target.value)}
+                      onBlur={async () => {
+                        if (newSubtaskURL.trim() && !newSubtaskLinkName) {
+                          setIsFetchingLinkMeta(true);
+                          const title = await fetchLinkTitle(newSubtaskURL.trim());
+                          setNewSubtaskLinkName(title);
+                          setIsFetchingLinkMeta(false);
+                        }
+                      }}
+                      className="h-8 text-xs bg-white/5 flex-1" />
+                    {isFetchingLinkMeta && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mt-2" />}
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    {newSubtaskURL.trim() && (
+                      <img src={getFaviconUrl(newSubtaskURL)} alt="" className="h-4 w-4 rounded-sm" />
+                    )}
+                    <Input placeholder="Link name (auto-fetched)" value={newSubtaskLinkName}
+                      onChange={e => setNewSubtaskLinkName(e.target.value)}
+                      className="h-8 text-xs bg-white/5 flex-1" />
+                  </div>
+                </div>
+              )}
+
+              {newSubtaskFiles.length > 0 && (
+                <div className="space-y-1">
+                  {newSubtaskFiles.map((file: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between p-2 rounded bg-white/5 border border-white/10 text-[10px]">
+                      <div className="flex items-center gap-2 truncate">
+                        <FileText className="h-3 w-3 text-blue-400" />
+                        <span className="truncate">{file.name}</span>
+                      </div>
+                      <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400" onClick={() => setNewSubtaskFiles(prev => prev.filter((_, j) => j !== i))}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsCreateSubtaskDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateSubtask} className="bg-primary hover:bg-primary/80">
+              Add Subtask
             </Button>
           </DialogFooter>
         </DialogContent>
