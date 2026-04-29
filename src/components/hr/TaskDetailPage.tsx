@@ -89,9 +89,13 @@ const TaskDetailPage = ({
   const [feedbackForm, setFeedbackForm] = useState<any>(null);
   const [isFeedbackBuilderOpen, setIsFeedbackBuilderOpen] = useState(false);
   const [feedbackQuestions, setFeedbackQuestions] = useState<any[]>([
-    { id: '1', type: 'star', label: 'Overall Service Rating', required: true },
-    { id: '2', type: 'short', label: 'What did you like most?', required: false },
-    { id: '3', type: 'long', label: 'Areas for improvement', required: false }
+    { id: 'q1', type: 'star', label: 'How satisfied are you with the final outcome?', required: true },
+    { id: 'q2', type: 'star', label: 'Was communication clear and timely throughout the project?', required: true },
+    { id: 'q3', type: 'star', label: 'Are you satisfied with the design/development quality?', required: true },
+    { id: 'q4', type: 'short', label: 'Has the project helped your business goals so far?', required: false },
+    { id: 'q5', type: 'long', label: 'What could we have done better?', required: false },
+    { id: 'q6', type: 'star', label: 'Would you work with us again or recommend us?', required: true },
+    { id: 'q7', type: 'long', label: 'Can you share a short testimonial about your experience?', required: false }
   ]);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [feedbackResponses, setFeedbackResponses] = useState<any[]>([]);
