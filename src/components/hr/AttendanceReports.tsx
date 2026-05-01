@@ -361,11 +361,11 @@ const AttendanceReports = () => {
                    <TableCell>
                       {record.mood ? (
                         <div className="flex items-center gap-2">
-                          {record.mood === 'happy' && <Smile className="h-4 w-4 text-green-500" title="Happy" />}
-                          {record.mood === 'neutral' && <Meh className="h-4 w-4 text-blue-500" title="Neutral" />}
-                          {record.mood === 'sad' && <Frown className="h-4 w-4 text-orange-500" title="Sad" />}
-                          {record.mood === 'stressed' && <Zap className="h-4 w-4 text-red-500" title="Stressed" />}
-                          {record.mood === 'excited' && <Activity className="h-4 w-4 text-purple-500" title="Excited" />}
+                          {record.mood === 'happy' && <span title="Happy"><Smile className="h-4 w-4 text-green-500" /></span>}
+                          {record.mood === 'neutral' && <span title="Neutral"><Meh className="h-4 w-4 text-blue-500" /></span>}
+                          {record.mood === 'sad' && <span title="Sad"><Frown className="h-4 w-4 text-orange-500" /></span>}
+                          {record.mood === 'stressed' && <span title="Stressed"><Zap className="h-4 w-4 text-red-500" /></span>}
+                          {record.mood === 'excited' && <span title="Excited"><Activity className="h-4 w-4 text-purple-500" /></span>}
                           <span className="capitalize text-sm">{record.mood}</span>
                         </div>
                       ) : (
