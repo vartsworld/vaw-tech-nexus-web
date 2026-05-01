@@ -296,12 +296,8 @@ const HRDashboard = () => {
       case "rewards": return <div className="space-y-6"><RewardsManagement /><RedemptionApprovals /></div>;
       case "notifications": return <NotificationCenter />;
       case "banners": return <BannerManagement />;
-      case "applications": return (
-        <div className="space-y-6">
-          <TeamApplicationsList />
-          <InternshipApplicationsList />
-        </div>
-      );
+      case "applications": return <TeamApplicationsList />;
+      case "interns": return <InternshipApplicationsList />;
       case "pricing": return <PricingManagement />;
       case "financials": return <FinancialOversight />;
       case "api-integration": return <ApiIntegration />;
