@@ -161,8 +161,19 @@ serve(async (req) => {
       });
     }
 
-    // Compare password using constant-time comparison
-    const isValid = secureCompare(password, adminUser.password_hash);
+    // Compare password: support bcrypt hashes and plaintext fallback
+    let isValid = false;
+    const stored = adminUser.password_hash || "";
+    if (stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$")) {
+      try {
+        isValid = await bcrypt.compare(password, stored);
+      } catch (e) {
+        console.log("bcrypt compare error:", e instanceof Error ? e.message : String(e));
+        isValid = false;
+      }
+    } else {
+      isValid = secureCompare(password, stored);
+    }
 
     if (!isValid) {
       console.log(`Invalid password for: ${emailLower}`);
