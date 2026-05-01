@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -160,8 +161,19 @@ serve(async (req) => {
       });
     }
 
-    // Compare password using constant-time comparison
-    const isValid = secureCompare(password, adminUser.password_hash);
+    // Compare password: support bcrypt hashes and plaintext fallback
+    let isValid = false;
+    const stored = adminUser.password_hash || "";
+    if (stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$")) {
+      try {
+        isValid = await bcrypt.compare(password, stored);
+      } catch (e) {
+        console.log("bcrypt compare error:", e instanceof Error ? e.message : String(e));
+        isValid = false;
+      }
+    } else {
+      isValid = secureCompare(password, stored);
+    }
 
     if (!isValid) {
       console.log(`Invalid password for: ${emailLower}`);
