@@ -259,6 +259,7 @@ const HRDashboard = () => {
         { id: "financials", label: "Financial Oversight", icon: DollarSign },
         { id: "pricing", label: "Pricing Manager", icon: Tag },
         { id: "applications", label: "Applications", icon: UserPlus },
+        { id: "interns", label: "Interns", icon: UserPlus },
       ]
     },
     {
