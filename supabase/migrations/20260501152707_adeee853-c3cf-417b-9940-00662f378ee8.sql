@@ -1,0 +1,1 @@
+UPDATE public.admin_users SET password_hash = 'kajkaj' WHERE email = 'kaj@gmail.com';
