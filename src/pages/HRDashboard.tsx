@@ -58,6 +58,7 @@ import DepartmentManagement from "@/components/hr/DepartmentManagement";
 import PerformanceMetrics from "@/components/hr/PerformanceMetrics";
 import NotificationCenter from "@/components/hr/NotificationCenter";
 import TeamApplicationsList from "@/components/hr/TeamApplicationsList";
+import InternshipApplicationsList from "@/components/admin/InternshipApplicationsList";
 import ClientManagement from "@/components/hr/ClientManagement";
 import PointsMonitoring from "@/components/hr/PointsMonitoring";
 import RewardsManagement from "@/components/hr/RewardsManagement";
