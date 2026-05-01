@@ -37,7 +37,7 @@ const StaffLogin = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showBiometricSetup, setShowBiometricSetup] = useState(false);
-  const [previewProfile, setPreviewProfile] = useState<{ full_name?: string; avatar_url?: string; profile_photo_url?: string } | null>(null);
+  const [previewProfile, setPreviewProfile] = useState<{ user_id?: string; full_name?: string; avatar_url?: string; profile_photo_url?: string; biometric_ids?: string[] } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [optionsReady, setOptionsReady] = useState(false);
   const { toast } = useToast();
@@ -361,12 +361,7 @@ const StaffLogin = () => {
       }, 2000);
       return;
 
-      if (profileToUse) {
-        // Instead of dashboard, force a re-login to verify new credentials
-        navigateAfterSetup();
-      } else {
-        navigateAfterSetup();
-      }
+      // Unreachable code removed (early return above).
     } catch (error) {
       console.error('Error setting emoji password:', error);
       toast({

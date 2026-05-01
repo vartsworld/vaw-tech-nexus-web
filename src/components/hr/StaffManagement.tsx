@@ -415,14 +415,17 @@ const StaffManagement = () => {
 
       for (const task of userTasks) {
         // Remove the deleted staff and add the HR user (if not already there)
-        const newAssignedTo = (task.assigned_to as string[]).filter(id => id !== staffMember.user_id);
+        const currentAssigned = Array.isArray(task.assigned_to)
+          ? (task.assigned_to as unknown as string[])
+          : [];
+        const newAssignedTo = currentAssigned.filter(id => id !== staffMember.user_id);
         if (!newAssignedTo.includes(currentUserId)) {
           newAssignedTo.push(currentUserId);
         }
-        
+
         await supabase
           .from('staff_tasks')
-          .update({ assigned_to: newAssignedTo })
+          .update({ assigned_to: newAssignedTo as any })
           .eq('id', task.id);
       }
 
