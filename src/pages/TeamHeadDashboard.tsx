@@ -62,6 +62,8 @@ import { useUserStatus } from "@/hooks/useUserStatus";
 import { supabase } from "@/integrations/supabase/client";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import CoinPopup from "@/components/staff/CoinPopup";
+import EmmaAssistant from "@/components/ai/EmmaAssistant";
+import { Sparkles } from "lucide-react";
 
 type RoomType = 'workspace' | 'breakroom' | 'meeting';
 
