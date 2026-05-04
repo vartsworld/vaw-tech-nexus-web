@@ -285,6 +285,7 @@ const HRDashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard": return <div className="space-y-6"><StatsGrid stats={stats} /><div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><Activities activities={recentActivities} /><PerformanceInsights stats={stats} /></div></div>;
+      case "emma": return <EmmaAssistant role="hr" />;
       case "staff": return <StaffManagement />;
       case "attendance": return <AttendanceReports />;
       case "tasks": return <TaskManagement />;
