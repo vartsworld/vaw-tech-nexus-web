@@ -845,6 +845,21 @@ const TeamHeadDashboard = () => {
         />
       )}
 
+      {/* EMMA AI floating button + dialog */}
+      <Button
+        onClick={() => setShowEmma(true)}
+        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-br from-primary to-purple-500 hover:scale-105 transition-transform"
+        size="icon"
+        title="Ask EMMA"
+      >
+        <Sparkles className="w-6 h-6" />
+      </Button>
+      <Dialog open={showEmma} onOpenChange={setShowEmma}>
+        <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
+          <EmmaAssistant role="team_head" />
+        </DialogContent>
+      </Dialog>
+
       <PWAInstallPrompt />
     </div>
   );
