@@ -59,6 +59,7 @@ import PerformanceMetrics from "@/components/hr/PerformanceMetrics";
 import NotificationCenter from "@/components/hr/NotificationCenter";
 import TeamApplicationsList from "@/components/hr/TeamApplicationsList";
 import InternshipApplicationsList from "@/components/admin/InternshipApplicationsList";
+import EmmaAssistant from "@/components/ai/EmmaAssistant";
 import ClientManagement from "@/components/hr/ClientManagement";
 import PointsMonitoring from "@/components/hr/PointsMonitoring";
 import RewardsManagement from "@/components/hr/RewardsManagement";
@@ -241,6 +242,7 @@ const HRDashboard = () => {
     {
       label: "OPERATIONS",
       items: [
+        { id: "emma", label: "EMMA AI", icon: Sparkles },
         { id: "tasks", label: "Task Board", icon: ClipboardList },
         { id: "templates", label: "Task Templates", icon: Layers },
         { id: "attendance", label: "Attendance", icon: Calendar },
@@ -283,6 +285,7 @@ const HRDashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard": return <div className="space-y-6"><StatsGrid stats={stats} /><div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><Activities activities={recentActivities} /><PerformanceInsights stats={stats} /></div></div>;
+      case "emma": return <EmmaAssistant role="hr" />;
       case "staff": return <StaffManagement />;
       case "attendance": return <AttendanceReports />;
       case "tasks": return <TaskManagement />;

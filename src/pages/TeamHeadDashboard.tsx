@@ -62,6 +62,8 @@ import { useUserStatus } from "@/hooks/useUserStatus";
 import { supabase } from "@/integrations/supabase/client";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import CoinPopup from "@/components/staff/CoinPopup";
+import EmmaAssistant from "@/components/ai/EmmaAssistant";
+import { Sparkles } from "lucide-react";
 
 type RoomType = 'workspace' | 'breakroom' | 'meeting';
 
@@ -97,6 +99,7 @@ const TeamHeadDashboard = () => {
   const [showCoinConfigDialog, setShowCoinConfigDialog] = useState(false);
   const [showCoinPopup, setShowCoinPopup] = useState(false);
   const [showBiometricDialog, setShowBiometricDialog] = useState(false);
+  const [showEmma, setShowEmma] = useState(false);
 
   // Break timer state (lifted up to persist when minimized)
   const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
@@ -841,6 +844,21 @@ const TeamHeadDashboard = () => {
           userProfile={profile}
         />
       )}
+
+      {/* EMMA AI floating button + dialog */}
+      <Button
+        onClick={() => setShowEmma(true)}
+        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-br from-primary to-purple-500 hover:scale-105 transition-transform"
+        size="icon"
+        title="Ask EMMA"
+      >
+        <Sparkles className="w-6 h-6" />
+      </Button>
+      <Dialog open={showEmma} onOpenChange={setShowEmma}>
+        <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
+          <EmmaAssistant role="team_head" />
+        </DialogContent>
+      </Dialog>
 
       <PWAInstallPrompt />
     </div>
