@@ -232,6 +232,12 @@ const HRDashboard = () => {
 
   const menuGroups = [
     {
+      label: "ASSISTANT",
+      items: [
+        { id: "emma", label: "EMMA AI", icon: Sparkles },
+      ]
+    },
+    {
       label: "CORE",
       items: [
         { id: "dashboard", label: "Overview", icon: LayoutDashboard },
@@ -242,7 +248,6 @@ const HRDashboard = () => {
     {
       label: "OPERATIONS",
       items: [
-        { id: "emma", label: "EMMA AI", icon: Sparkles },
         { id: "tasks", label: "Task Board", icon: ClipboardList },
         { id: "templates", label: "Task Templates", icon: Layers },
         { id: "attendance", label: "Attendance", icon: Calendar },
