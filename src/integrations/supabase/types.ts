@@ -3619,6 +3619,7 @@ export type Database = {
           attendance_streak: number | null
           avatar_url: string | null
           blood_group: string | null
+          coins: number | null
           created_at: string | null
           cv_url: string | null
           date_of_birth: string | null
@@ -3663,6 +3664,7 @@ export type Database = {
           attendance_streak?: number | null
           avatar_url?: string | null
           blood_group?: string | null
+          coins?: number | null
           created_at?: string | null
           cv_url?: string | null
           date_of_birth?: string | null
@@ -3707,6 +3709,7 @@ export type Database = {
           attendance_streak?: number | null
           avatar_url?: string | null
           blood_group?: string | null
+          coins?: number | null
           created_at?: string | null
           cv_url?: string | null
           date_of_birth?: string | null
@@ -3802,6 +3805,7 @@ export type Database = {
       }
       staff_subtasks: {
         Row: {
+          accepted_at: string | null
           approved_at: string | null
           approved_by: string | null
           assigned_to: string
@@ -3814,22 +3818,22 @@ export type Database = {
           due_date: string | null
           due_time: string | null
           id: string
+          penalty_coins: number | null
           points: number | null
           priority: Database["public"]["Enums"]["task_priority"] | null
-          stage: number
           rank: number | null
+          ready_at: string | null
+          stage: number
           stage_color: string | null
           stage_name: string | null
           status: Database["public"]["Enums"]["task_status"] | null
           task_id: string
+          time_limit_hr: number | null
           title: string
           updated_at: string | null
-          time_limit_hr: number | null
-          penalty_coins: number | null
-          accepted_at: string | null
-          ready_at: string | null
         }
         Insert: {
+          accepted_at?: string | null
           approved_at?: string | null
           approved_by?: string | null
           assigned_to: string
@@ -3842,22 +3846,22 @@ export type Database = {
           due_date?: string | null
           due_time?: string | null
           id?: string
+          penalty_coins?: number | null
           points?: number | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
-          stage?: number
           rank?: number | null
+          ready_at?: string | null
+          stage?: number
           stage_color?: string | null
           stage_name?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           task_id: string
+          time_limit_hr?: number | null
           title: string
           updated_at?: string | null
-          time_limit_hr?: number | null
-          penalty_coins?: number | null
-          accepted_at?: string | null
-          ready_at?: string | null
         }
         Update: {
+          accepted_at?: string | null
           approved_at?: string | null
           approved_by?: string | null
           assigned_to?: string
@@ -3870,20 +3874,19 @@ export type Database = {
           due_date?: string | null
           due_time?: string | null
           id?: string
+          penalty_coins?: number | null
           points?: number | null
           priority?: Database["public"]["Enums"]["task_priority"] | null
-          stage?: number
           rank?: number | null
+          ready_at?: string | null
+          stage?: number
           stage_color?: string | null
           stage_name?: string | null
           status?: Database["public"]["Enums"]["task_status"] | null
           task_id?: string
+          time_limit_hr?: number | null
           title?: string
           updated_at?: string | null
-          time_limit_hr?: number | null
-          penalty_coins?: number | null
-          accepted_at?: string | null
-          ready_at?: string | null
         }
         Relationships: [
           {
@@ -3958,8 +3961,8 @@ export type Database = {
           recurrence_end_date: string | null
           recurrence_interval: number | null
           recurrence_type: string | null
-          stage_names: Json | null
           stage_config: Json | null
+          stage_names: Json | null
           status: Database["public"]["Enums"]["task_status"] | null
           timer_started_at: string | null
           title: string
@@ -3993,8 +3996,8 @@ export type Database = {
           recurrence_end_date?: string | null
           recurrence_interval?: number | null
           recurrence_type?: string | null
-          stage_names?: Json | null
           stage_config?: Json | null
+          stage_names?: Json | null
           status?: Database["public"]["Enums"]["task_status"] | null
           timer_started_at?: string | null
           title: string
@@ -4028,8 +4031,8 @@ export type Database = {
           recurrence_end_date?: string | null
           recurrence_interval?: number | null
           recurrence_type?: string | null
-          stage_names?: Json | null
           stage_config?: Json | null
+          stage_names?: Json | null
           status?: Database["public"]["Enums"]["task_status"] | null
           timer_started_at?: string | null
           title?: string
@@ -4084,6 +4087,7 @@ export type Database = {
       subtask_templates: {
         Row: {
           created_at: string | null
+          deadline_days: number | null
           description: string | null
           id: string
           points: number | null
@@ -4097,6 +4101,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          deadline_days?: number | null
           description?: string | null
           id?: string
           points?: number | null
@@ -4110,6 +4115,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          deadline_days?: number | null
           description?: string | null
           id?: string
           points?: number | null
@@ -4205,6 +4211,83 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      task_feedback_forms: {
+        Row: {
+          created_at: string | null
+          id: string
+          questions: Json | null
+          status: string | null
+          task_id: string | null
+          token: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          questions?: Json | null
+          status?: string | null
+          task_id?: string | null
+          token?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          questions?: Json | null
+          status?: string | null
+          task_id?: string | null
+          token?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_feedback_forms_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "client_task_timeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_feedback_forms_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "staff_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_feedback_responses: {
+        Row: {
+          client_info: Json | null
+          form_id: string | null
+          id: string
+          responses: Json | null
+          submitted_at: string | null
+        }
+        Insert: {
+          client_info?: Json | null
+          form_id?: string | null
+          id?: string
+          responses?: Json | null
+          submitted_at?: string | null
+        }
+        Update: {
+          client_info?: Json | null
+          form_id?: string | null
+          id?: string
+          responses?: Json | null
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_feedback_responses_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "task_feedback_forms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       task_templates: {
         Row: {
@@ -5284,78 +5367,7 @@ export type Database = {
         }
         Relationships: []
       }
-      task_feedback_forms: {
-        Row: {
-          created_at: string | null
-          id: string
-          questions: Json | null
-          status: string | null
-          task_id: string | null
-          token: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          questions?: Json | null
-          status?: string | null
-          task_id?: string | null
-          token?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          questions?: Json | null
-          status?: string | null
-          task_id?: string | null
-          token?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "task_feedback_forms_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "staff_tasks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      task_feedback_responses: {
-        Row: {
-          client_info: Json | null
-          form_id: string | null
-          id: string
-          responses: Json | null
-          submitted_at: string | null
-        }
-        Insert: {
-          client_info?: Json | null
-          form_id?: string | null
-          id?: string
-          responses?: Json | null
-          submitted_at?: string | null
-        }
-        Update: {
-          client_info?: Json | null
-          form_id?: string | null
-          id?: string
-          responses?: Json | null
-          submitted_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "task_feedback_responses_form_id_fkey"
-            columns: ["form_id"]
-            isOneToOne: false
-            referencedRelation: "task_feedback_forms"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
-
     Views: {
       chess_leaderboard: {
         Row: {
@@ -5785,6 +5797,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_staff_biometric_ids: {
+        Args: { p_user_id: string }
+        Returns: string[]
+      }
       get_staff_login_details: {
         Args: { p_username: string }
         Returns: {
@@ -5794,6 +5810,7 @@ export type Database = {
           attendance_streak: number | null
           avatar_url: string | null
           blood_group: string | null
+          coins: number | null
           created_at: string | null
           cv_url: string | null
           date_of_birth: string | null

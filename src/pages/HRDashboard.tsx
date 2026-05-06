@@ -58,6 +58,8 @@ import DepartmentManagement from "@/components/hr/DepartmentManagement";
 import PerformanceMetrics from "@/components/hr/PerformanceMetrics";
 import NotificationCenter from "@/components/hr/NotificationCenter";
 import TeamApplicationsList from "@/components/hr/TeamApplicationsList";
+import InternshipApplicationsList from "@/components/admin/InternshipApplicationsList";
+import EmmaAssistant from "@/components/ai/EmmaAssistant";
 import ClientManagement from "@/components/hr/ClientManagement";
 import PointsMonitoring from "@/components/hr/PointsMonitoring";
 import RewardsManagement from "@/components/hr/RewardsManagement";
@@ -230,6 +232,12 @@ const HRDashboard = () => {
 
   const menuGroups = [
     {
+      label: "ASSISTANT",
+      items: [
+        { id: "emma", label: "EMMA AI", icon: Sparkles },
+      ]
+    },
+    {
       label: "CORE",
       items: [
         { id: "dashboard", label: "Overview", icon: LayoutDashboard },
@@ -258,6 +266,7 @@ const HRDashboard = () => {
         { id: "financials", label: "Financial Oversight", icon: DollarSign },
         { id: "pricing", label: "Pricing Manager", icon: Tag },
         { id: "applications", label: "Applications", icon: UserPlus },
+        { id: "interns", label: "Interns", icon: UserPlus },
       ]
     },
     {
@@ -281,6 +290,7 @@ const HRDashboard = () => {
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard": return <div className="space-y-6"><StatsGrid stats={stats} /><div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><Activities activities={recentActivities} /><PerformanceInsights stats={stats} /></div></div>;
+      case "emma": return <EmmaAssistant role="hr" />;
       case "staff": return <StaffManagement />;
       case "attendance": return <AttendanceReports />;
       case "tasks": return <TaskManagement />;
@@ -295,6 +305,7 @@ const HRDashboard = () => {
       case "notifications": return <NotificationCenter />;
       case "banners": return <BannerManagement />;
       case "applications": return <TeamApplicationsList />;
+      case "interns": return <InternshipApplicationsList />;
       case "pricing": return <PricingManagement />;
       case "financials": return <FinancialOversight />;
       case "api-integration": return <ApiIntegration />;
