@@ -51,7 +51,6 @@ import { ActivityLogPanel } from "@/components/staff/ActivityLogPanel";
 import { ReactivationDialog } from "@/components/staff/ReactivationDialog";
 import MiniChess from "@/components/staff/MiniChess";
 // TeamChat moved to sidebar via VirtualOfficeLayout
-import TimeboxWidget from "@/components/staff/TimeboxWidget";
 import WidgetManager from "@/components/staff/WidgetManager";
 import { QuickNotes } from "@/components/staff/QuickNotes";
 import ClientOnboardingCreator from "@/components/staff/ClientOnboardingCreator";
@@ -115,7 +114,6 @@ const TeamHeadDashboard = () => {
     }
     return [
       { id: 'chess', name: 'Mini Chess', description: 'Play chess with colleagues', isVisible: true },
-      { id: 'timer', name: 'Focus Timer', description: 'Pomodoro-style focus timer', isVisible: true },
       { id: 'activity', name: 'Activity Log', description: 'Track your daily activities', isVisible: false },
     ];
   });
@@ -473,9 +471,6 @@ const TeamHeadDashboard = () => {
           <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
         </div>
       )}
-      {widgets.find(w => w.id === 'timer')?.isVisible && (
-        <TimeboxWidget userId={profile?.user_id || ''} userProfile={profile} />
-      )}
       {widgets.find(w => w.id === 'activity')?.isVisible && (
         <ActivityLogPanel userId={profile?.user_id || ''} className="bg-white/10 backdrop-blur-sm border-white/20" />
       )}
@@ -513,12 +508,7 @@ const TeamHeadDashboard = () => {
             <ClientOnboardingCreator userId={profile?.user_id || ''} />
           </div>
 
-          {/* Timebox / Timer */}
-          {widgets.find(w => w.id === 'timer')?.isVisible && (
-            <div className="h-full">
-              <TimeboxWidget userId={profile?.user_id || ''} userProfile={profile} />
-            </div>
-          )}
+          {/* Quick Notes */}
         </div>
 
         {/* Row 3: Activity Log */}

@@ -20,13 +20,15 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  PlaneTakeoff
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import TeamChat from "./TeamChat";
 import { ActivityLogPanel } from "./ActivityLogPanel";
 import MobileBottomNav from "./MobileBottomNav";
 import MiniChess from "./MiniChess";
+import LeaveApplicationDialog from "./LeaveApplicationDialog";
 
 
 interface VirtualOfficeLayoutProps {
@@ -59,6 +61,7 @@ const VirtualOfficeLayout = ({
   const [actionsCollapsed, setActionsCollapsed] = useState(false);
   const [popoutChat, setPopoutChat] = useState(false);
   const [popoutDM, setPopoutDM] = useState(false);
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const navigate = useNavigate();
   const mainContentRef = useRef<HTMLDivElement>(null);
 
@@ -231,9 +234,14 @@ const VirtualOfficeLayout = ({
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Chat
                   </Button>
-                  <Button variant="outline" size="sm" className="bg-yellow-500/20 border-yellow-500/30 text-white hover:bg-yellow-500/30">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Schedule
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-orange-500/20 border-orange-500/30 text-white hover:bg-orange-500/30"
+                    onClick={() => setShowLeaveDialog(true)}
+                  >
+                    <PlaneTakeoff className="w-4 h-4 mr-2" />
+                    Leave
                   </Button>
                   <Button variant="outline" size="sm" className="bg-green-500/20 border-green-500/30 text-white hover:bg-green-500/30">
                     <Bell className="w-4 h-4 mr-2" />
@@ -372,6 +380,15 @@ const VirtualOfficeLayout = ({
             <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
           </div>
         </ChatPopout>
+      )}
+
+      {/* Leave Application Dialog */}
+      {userId && (
+        <LeaveApplicationDialog 
+          open={showLeaveDialog} 
+          onOpenChange={setShowLeaveDialog} 
+          userId={userId} 
+        />
       )}
     </div>
   );
