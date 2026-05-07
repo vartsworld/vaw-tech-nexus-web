@@ -1,456 +1,1724 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Website Proposal – Global Education Trust | VAW Technologies</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --navy: #0B1D3A;
-  --navy-light: #1A2B4A;
-  --gold: #C9A84C;
-  --gold-light: #E8C96A;
-  --green: #1A6B3A;
-  --green-light: #2E9957;
-  --cream: #FDFBFA;
-  --cream-dark: #F5F1EB;
-  --text: #1C1C1E;
-  --text-muted: #5A5A6A;
-  --white: #FFFFFF;
-  --border: #E8E2D5;
-  --accent: #C9A84C;
-  --shadow: 0 10px 30px -5px rgba(11, 29, 58, 0.08);
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Website Redesign Proposal – GPS Kochi | VAW Technologies</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body { 
-  font-family: 'Outfit', sans-serif; 
-  background: var(--cream); 
-  color: var(--text); 
-  font-size: 15px; 
-  line-height: 1.6;
-  overflow-x: hidden;
-}
+    :root {
+      --navy: #0B1D3A;
+      --navy-light: #122550;
+      --gold: #C9A84C;
+      --gold-light: #E8C96A;
+      --green: #1A6B3A;
+      --green-light: #2E9957;
+      --cream: #F9F6EF;
+      --cream-dark: #EDE8DC;
+      --text: #1C1C1E;
+      --text-muted: #5A5A6A;
+      --white: #FFFFFF;
+      --border: #D9D2C0;
+      --react: #61DAFB;
+      --react-dark: #00B4D8;
+    }
 
-/* Navigation */
-nav {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(11, 29, 58, 0.98);
-  backdrop-filter: blur(10px);
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 48px; height: 72px;
-  box-shadow: 0 4px 30px rgba(0,0,0,0.1);
-}
-.nav-logo { display: flex; align-items: center; gap: 12px; }
-.nav-logo img { height: 40px; width: auto; filter: brightness(0) invert(1); }
-.nav-links { display: flex; gap: 32px; }
-.nav-links a { 
-  color: rgba(255,255,255,0.7); 
-  text-decoration: none; 
-  font-size: 13px; 
-  font-weight: 500; 
-  letter-spacing: 0.03em; 
-  transition: all 0.3s ease;
-}
-.nav-links a:hover { color: var(--gold-light); transform: translateY(-1px); }
+    html {
+      scroll-behavior: smooth
+    }
 
-/* Hero Section */
-.hero {
-  position: relative;
-  min-height: 650px;
-  display: flex; align-items: center;
-  padding: 100px 48px;
-  background: var(--navy);
-  color: var(--white);
-  overflow: hidden;
-}
-.hero-bg {
-  position: absolute; inset: 0;
-  background: linear-gradient(to right, rgba(11, 29, 58, 0.95), rgba(11, 29, 58, 0.7)), 
-              url('educational_institution_hero_background_1778153527999.png');
-  background-size: cover;
-  background-position: center;
-  z-index: 0;
-}
-.hero-content { position: relative; z-index: 1; max-width: 850px; }
-.hero-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.4);
-  color: var(--gold-light); border-radius: 100px; padding: 8px 20px;
-  font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 28px;
-}
-.hero h1 {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(40px, 6vw, 72px); font-weight: 700;
-  line-height: 1.1; margin-bottom: 24px;
-}
-.hero h1 span { color: var(--gold-light); }
-.hero p { color: rgba(255,255,255,0.85); font-size: 18px; max-width: 650px; margin-bottom: 40px; font-weight: 300; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.7
+    }
 
-.hero-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 32px; }
-.hero-meta-item { color: rgba(255,255,255,0.5); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
-.hero-meta-item strong { display: block; color: var(--gold-light); font-size: 16px; font-weight: 600; margin-top: 4px; text-transform: none; }
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--navy);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 48px;
+      height: 64px;
+      box-shadow: 0 2px 20px rgba(0, 0, 0, .3)
+    }
 
-/* Page Layout */
-.container { max-width: 1100px; margin: 0 auto; padding: 0 48px; }
-.section-wrap { padding: 96px 0; }
-.section-label {
-  display: inline-block; color: var(--gold); font-size: 12px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
-  margin-bottom: 16px; position: relative; padding-left: 40px;
-}
-.section-label::before { content: ''; position: absolute; left: 0; top: 50%; width: 30px; height: 1px; background: var(--gold); }
-.section-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(32px, 4vw, 48px); font-weight: 700; color: var(--navy); margin-bottom: 24px; line-height: 1.2;
-}
-.section-desc { color: var(--text-muted); font-size: 16px; max-width: 800px; margin-bottom: 48px; }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
 
-/* Flex Cards Row */
-.card-row { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 40px; }
-.info-card {
-  flex: 1; min-width: 300px;
-  background: var(--white); border: 1px solid var(--border); border-radius: 20px;
-  padding: 40px; box-shadow: var(--shadow);
-  display: flex; flex-direction: column;
-  transition: transform 0.3s ease;
-}
-.info-card:hover { transform: translateY(-5px); }
-.info-card h3 { 
-  font-family: 'Cormorant Garamond', serif; font-size: 28px; color: var(--navy); margin-bottom: 16px; 
-}
-.info-card p { color: var(--text-muted); font-size: 15px; flex-grow: 1; }
+    .nav-logo img {
+      height: 36px;
+      width: auto
+    }
 
-/* Grid Layouts */
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
-.feature-card {
-  background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 32px;
-  transition: all 0.3s ease;
-  display: flex; flex-direction: column;
-}
-.feature-card:hover { border-color: var(--gold); box-shadow: var(--shadow); }
-.feature-icon { font-size: 32px; margin-bottom: 20px; display: block; opacity: 0.9; }
-.feature-card h4 { font-size: 18px; font-weight: 600; color: var(--navy); margin-bottom: 12px; }
-.feature-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; flex-grow: 1; }
+    .nav-links {
+      display: flex;
+      gap: 28px
+    }
 
-/* Deliverables & Payment */
-.deliverables-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-.deliverable-item {
-  display: flex; align-items: center; gap: 12px;
-  background: var(--cream-dark); padding: 16px 20px; border-radius: 12px;
-  font-size: 14px; font-weight: 500; color: var(--navy);
-}
-.deliverable-item::before { content: '✓'; color: var(--green); font-weight: 700; }
+    .nav-links a {
+      color: rgba(255, 255, 255, .75);
+      text-decoration: none;
+      font-size: 12.5px;
+      font-weight: 500;
+      letter-spacing: .04em;
+      transition: color .2s
+    }
 
-.payment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-top: 32px; }
-.payment-step {
-  background: var(--navy); color: var(--white); padding: 32px; border-radius: 16px; text-align: center;
-  position: relative; overflow: hidden;
-}
-.payment-step::after {
-  content: ''; position: absolute; top: -20px; right: -20px; width: 60px; height: 60px;
-  background: var(--gold); opacity: 0.1; border-radius: 50%;
-}
-.payment-val { font-size: 36px; font-weight: 700; color: var(--gold-light); margin-bottom: 8px; }
-.payment-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.6); }
+    .nav-links a:hover {
+      color: var(--gold-light)
+    }
 
-/* Timeline */
-.timeline { position: relative; margin-top: 48px; padding-left: 40px; border-left: 2px solid var(--border); }
-.timeline-item { position: relative; margin-bottom: 48px; }
-.timeline-item::before {
-  content: ''; position: absolute; left: -49px; top: 0; width: 16px; height: 16px;
-  background: var(--gold); border: 4px solid var(--cream); border-radius: 50%;
-}
-.timeline-item h4 { font-size: 18px; font-weight: 600; color: var(--navy); margin-bottom: 8px; }
-.timeline-content { background: var(--white); padding: 24px; border-radius: 16px; border: 1px solid var(--border); }
-.timeline-tasks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.task-pill { font-size: 12px; background: var(--cream-dark); padding: 6px 12px; border-radius: 100px; color: var(--text-muted); }
+    .hero {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 50%, var(--green) 100%);
+      min-height: 500px;
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      padding: 80px 48px
+    }
 
-/* Footer & CTA */
-.cta {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
-  padding: 100px 48px; text-align: center; color: var(--white);
-}
-.cta h2 { font-family: 'Cormorant Garamond', serif; font-size: 48px; margin-bottom: 24px; }
-.cta p { max-width: 600px; margin: 0 auto 40px; color: rgba(255,255,255,0.7); font-size: 18px; }
-.contact-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; }
-.contact-box {
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-  padding: 24px 40px; border-radius: 16px; min-width: 250px;
-}
-.contact-box .lbl { font-size: 11px; text-transform: uppercase; color: var(--gold-light); margin-bottom: 8px; }
-.contact-box .val { font-size: 18px; font-weight: 500; }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
 
-footer {
-  background: #060F1F; padding: 48px; color: rgba(255,255,255,0.4); font-size: 13px;
-  display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center;
-}
-.footer-logo { filter: brightness(0) invert(1); opacity: 0.8; height: 32px; }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 740px
+    }
 
-/* Responsive */
-@media (max-width: 768px) {
-  nav { padding: 0 24px; }
-  .nav-links { display: none; }
-  .hero { padding: 80px 24px; min-height: 500px; }
-  .container { padding: 0 24px; }
-  .info-card { padding: 32px; }
-  .feature-card { padding: 24px; }
-  .section-wrap { padding: 64px 0; }
-  .payment-grid { grid-template-columns: 1fr; }
-}
-</style>
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(201, 168, 76, .15);
+      border: 1px solid rgba(201, 168, 76, .4);
+      color: var(--gold-light);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 24px
+    }
+
+    .hero h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(36px, 5vw, 62px);
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.15;
+      margin-bottom: 20px
+    }
+
+    .hero h1 span {
+      color: var(--gold-light)
+    }
+
+    .hero p {
+      color: rgba(255, 255, 255, .8);
+      font-size: 16px;
+      max-width: 580px;
+      margin-bottom: 32px
+    }
+
+    .hero-meta {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap
+    }
+
+    .hero-meta-item {
+      color: rgba(255, 255, 255, .6);
+      font-size: 12px
+    }
+
+    .hero-meta-item strong {
+      display: block;
+      color: var(--gold-light);
+      font-size: 14px;
+      font-weight: 600
+    }
+
+    /* tech stack pill strip in hero */
+    .tech-strip {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 28px
+    }
+
+    .tech-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, .08);
+      border: 1px solid rgba(255, 255, 255, .2);
+      color: rgba(255, 255, 255, .85);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 500
+    }
+
+    .tech-pill .dot-react {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--react)
+    }
+
+    .tech-pill .dot-cloud {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #A78BFA
+    }
+
+    .tech-pill .dot-seo {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #4ADE80
+    }
+
+    .tech-pill .dot-social {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #F97316
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 32px
+    }
+
+    .section-wrap {
+      padding: 72px 0 48px
+    }
+
+    .section-label {
+      display: inline-block;
+      color: var(--gold);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      border-left: 3px solid var(--gold);
+      padding-left: 12px;
+      margin-bottom: 12px
+    }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(28px, 3.5vw, 40px);
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 16px
+    }
+
+    .section-body {
+      color: var(--text-muted);
+      max-width: 700px;
+      font-size: 15px
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0
+    }
+
+    /* TECH STACK SECTION */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 36px
+    }
+
+    .tech-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 22px;
+      position: relative;
+      overflow: hidden
+    }
+
+    .tech-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent-color, var(--navy))
+    }
+
+    .tech-card.react {
+      --accent-color: #61DAFB
+    }
+
+    .tech-card.cloud {
+      --accent-color: #A78BFA
+    }
+
+    .tech-card.seo {
+      --accent-color: #4ADE80
+    }
+
+    .tech-card.social {
+      --accent-color: #F97316
+    }
+
+    .tech-card.cms {
+      --accent-color: #F59E0B
+    }
+
+    .tech-card.perf {
+      --accent-color: #EF4444
+    }
+
+    .tech-card-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+      display: block
+    }
+
+    .tech-card h4 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 8px
+    }
+
+    .tech-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6
+    }
+
+    .tech-card .tag {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--tag-bg, #EEF);
+      color: var(--tag-color, #334)
+    }
+
+    .tech-card.react .tag {
+      background: #E0F7FF;
+      color: #0369A1
+    }
+
+    .tech-card.cloud .tag {
+      background: #EDE9FE;
+      color: #6D28D9
+    }
+
+    .tech-card.seo .tag {
+      background: #DCFCE7;
+      color: #166534
+    }
+
+    .tech-card.social .tag {
+      background: #FFF7ED;
+      color: #C2410C
+    }
+
+    .tech-card.cms .tag {
+      background: #FEF3C7;
+      color: #92400E
+    }
+
+    .tech-card.perf .tag {
+      background: #FEF2F2;
+      color: #991B1B
+    }
+
+    /* GPS highlights */
+    .gps-highlights {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 36px
+    }
+
+    .highlight-box {
+      background: var(--navy);
+      color: var(--white);
+      border-radius: 10px;
+      padding: 24px 20px;
+      text-align: center
+    }
+
+    .highlight-box .num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px;
+      color: var(--gold-light);
+      font-weight: 700
+    }
+
+    .highlight-box .lbl {
+      font-size: 12px;
+      color: rgba(255, 255, 255, .6);
+      margin-top: 4px
+    }
+
+    /* PAGES WE BUILD — full menu list */
+    .menu-section {
+      margin-top: 36px
+    }
+
+    .menu-group {
+      margin-bottom: 28px
+    }
+
+    .menu-group-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 14px
+    }
+
+    .menu-items {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--navy)
+    }
+
+    .menu-item .mi-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--green)
+    }
+
+    .menu-item.new .mi-dot {
+      background: var(--gold)
+    }
+
+    .menu-item .mi-badge {
+      margin-left: auto;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 20px;
+      background: #FEF3C7;
+      color: #92400E
+    }
+
+    /* SOCIAL AUTOMATION */
+    .social-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 36px
+    }
+
+    .social-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start
+    }
+
+    .social-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0
+    }
+
+    .social-card h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 6px
+    }
+
+    .social-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6
+    }
+
+    /* problems */
+    .problems-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 36px
+    }
+
+    .problem-card {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px 24px
+    }
+
+    .problem-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      background: #FFF0F0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 20px
+    }
+
+    .problem-card h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 6px
+    }
+
+    .problem-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6
+    }
+
+    /* TIMELINE — 5 weeks */
+    .timeline-outer {
+      margin-top: 40px;
+      position: relative
+    }
+
+    .week-row {
+      display: block;
+      border-left: 2px solid var(--border);
+      margin-left: 20px;
+      padding: 0 0 40px 32px;
+      position: relative
+    }
+
+    .week-row:last-child {
+      padding-bottom: 0;
+      border-left-color: transparent
+    }
+
+    .week-row::before {
+      content: '';
+      position: absolute;
+      left: -9px;
+      top: 8px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--cream);
+      flex-shrink: 0
+    }
+
+    .week-row.wk1::before {
+      background: #61DAFB
+    }
+
+    .week-row.wk2::before {
+      background: #A78BFA
+    }
+
+    .week-row.wk3::before {
+      background: #4ADE80
+    }
+
+    .week-row.wk4::before {
+      background: var(--gold)
+    }
+
+    .week-row.wk5::before {
+      background: #F97316
+    }
+
+    .week-row h4 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 12px
+    }
+
+    .week-tasks {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px
+    }
+
+    .week-task {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13.5px;
+      color: var(--text);
+      line-height: 1.55;
+      width: 100%
+    }
+
+    .week-task .tk {
+      width: 24px;
+      height: 24px;
+      min-width: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--white);
+      flex-shrink: 0;
+      margin-top: 1px
+    }
+
+    .wk1 .tk {
+      background: #61DAFB;
+      color: #0B1D3A
+    }
+
+    .wk2 .tk {
+      background: #A78BFA
+    }
+
+    .wk3 .tk {
+      background: #4ADE80;
+      color: #0B1D3A
+    }
+
+    .wk4 .tk {
+      background: var(--gold);
+      color: #0B1D3A
+    }
+
+    .wk5 .tk {
+      background: #F97316
+    }
+
+    .week-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 10px
+    }
+
+    .wk1 .week-badge {
+      background: #E0F7FF;
+      color: #0369A1
+    }
+
+    .wk2 .week-badge {
+      background: #EDE9FE;
+      color: #6D28D9
+    }
+
+    .wk3 .week-badge {
+      background: #DCFCE7;
+      color: #166534
+    }
+
+    .wk4 .week-badge {
+      background: #FEF3C7;
+      color: #92400E
+    }
+
+    .wk5 .week-badge {
+      background: #FFF7ED;
+      color: #C2410C
+    }
+
+    /* INVESTMENT */
+    .inv-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--white);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border)
+    }
+
+    .inv-table thead tr {
+      background: var(--navy)
+    }
+
+    .inv-table thead th {
+      padding: 14px 24px;
+      text-align: left;
+      color: var(--gold-light);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase
+    }
+
+    .inv-table tbody tr {
+      border-bottom: 1px solid var(--border)
+    }
+
+    .inv-table tbody tr:nth-child(even) {
+      background: var(--cream)
+    }
+
+    .inv-table tbody tr.total-row {
+      background: var(--navy);
+      border: none
+    }
+
+    .inv-table tbody td {
+      padding: 15px 24px;
+      font-size: 14px;
+      color: var(--text)
+    }
+
+    .inv-table tbody tr.total-row td {
+      color: var(--gold-light);
+      font-weight: 700;
+      font-size: 16px
+    }
+
+    .inv-note {
+      margin-top: 16px;
+      background: #FFF9EC;
+      border: 1px solid #F0D98A;
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 13px;
+      color: #7A5C00
+    }
+
+    .inv-highlight {
+      margin-top: 20px;
+      background: linear-gradient(135deg, var(--navy), var(--green));
+      border-radius: 12px;
+      padding: 28px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px
+    }
+
+    .inv-highlight .big {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 52px;
+      color: var(--gold-light);
+      font-weight: 700;
+      line-height: 1
+    }
+
+    .inv-highlight .sub {
+      color: rgba(255, 255, 255, .65);
+      font-size: 14px;
+      margin-top: 4px
+    }
+
+    .inv-highlight .note {
+      color: rgba(255, 255, 255, .7);
+      font-size: 13px;
+      max-width: 380px;
+      line-height: 1.6
+    }
+
+    /* WHY VAW */
+    .why-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 36px
+    }
+
+    .why-card {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 22px
+    }
+
+    .why-icon {
+      font-size: 22px;
+      line-height: 1;
+      flex-shrink: 0
+    }
+
+    .why-card h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 5px
+    }
+
+    .why-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6
+    }
+
+    /* CTA */
+    .cta-section {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--green) 100%);
+      padding: 72px 48px;
+      text-align: center
+    }
+
+    .cta-section h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 42px;
+      color: var(--white);
+      margin-bottom: 14px
+    }
+
+    .cta-section p {
+      color: rgba(255, 255, 255, .75);
+      max-width: 520px;
+      margin: 0 auto 36px;
+      font-size: 16px
+    }
+
+    .contact-cards {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap
+    }
+
+    .contact-card {
+      background: rgba(255, 255, 255, .1);
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 10px;
+      padding: 20px 28px;
+      min-width: 200px
+    }
+
+    .contact-card .label {
+      color: rgba(255, 255, 255, .55);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 6px
+    }
+
+    .contact-card .value {
+      color: var(--gold-light);
+      font-size: 15px;
+      font-weight: 600
+    }
+
+    footer {
+      background: var(--navy);
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px
+    }
+
+    footer .foot-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    footer .foot-logo img {
+      height: 30px;
+      width: auto;
+      opacity: .9
+    }
+
+    footer p {
+      color: rgba(255, 255, 255, .4);
+      font-size: 12px
+    }
+
+    footer .subsidiary {
+      color: rgba(255, 255, 255, .5);
+      font-size: 11px;
+      font-style: italic
+    }
+
+    @media(max-width:720px) {
+      nav {
+        padding: 0 20px
+      }
+
+      .nav-links {
+        display: none
+      }
+
+      .hero {
+        padding: 56px 20px
+      }
+
+      .page {
+        padding: 0 18px
+      }
+
+      .tech-grid,
+      .gps-highlights,
+      .problems-grid,
+      .social-grid,
+      .why-grid {
+        grid-template-columns: 1fr
+      }
+
+      .menu-items {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .cta-section {
+        padding: 48px 20px
+      }
+
+      footer {
+        padding: 20px 20px;
+        flex-direction: column;
+        align-items: flex-start
+      }
+
+      .inv-highlight {
+        flex-direction: column
+      }
+
+      .week-row {
+        grid-template-columns: 1fr
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<nav>
-  <div class="nav-logo">
-    <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCACYAb8DASIAAhEBAxEB/8QAHQABAAICAwEBAAAAAAAAAAAAAAcIBgkBBAUDAv/EAGIQAAECBQEEBgQGCQ4JCQkAAAECAwAEBQYRBwgSITETQVFhcYEJFCKRFRgjMoKhFkJWkpSVorHTJCU2Q1JVYnJ1srPR0vAXMzQ1N2N2k8EZJjg5RFdzdNRGU2Rlg7TD4fH/xAAcAQEAAwEBAQEBAAAAAAAAAAAABQYHBAMIAgH/xAA3EQACAQIEAwUHAgUFAAAAAAAAAQIDBAURITEGQXESExQigRUyYZGxwdFRU1JyoeHxBzOSsvD/2gAMAwEAAhEDEQA/AKw6WSFMqNddZqLKXsNZbQsApJzxznyiUPsWt395pL/dJiDKJPLplVlp5vmy4FY7YsNIzCJuSZmWz7DqAoecXvhSNrcUZ0qkE5ReeqWz/BS+J3c0KsatObUXpo+aPM+xa3f3mkv9ymORa9vDB+B5IY/1QH5o9iEW32baftR+SKr7Ruv3JfNkd6iWZIIpDlSpUulhxgby0I4JUkc+HbEVxZZ5tDzK2XEhSFgggxX26qWujV2ZkVoUlKVZb3hzSeXj2Z7oonFWFwtqka9JZRlo8ts/7/Yu3DOIzuacqVV5yjt0PLhCEVItAhCEAcpBUoJSCSeAA649mVtS45poOsUabUg8QSjGffGY6G28meqL9ZmW0Ll5YFtAUMjf4HPHuibMYGAMARFXmJdxU7EVmXbAeEfaNuritNxT2SXJcytAsu6f3kmvcP648qp06epkx6vUJV2WdxndWnGYtWfGMO1Yt4122XFS7RXNymXm91OVKCUkqT38M+6PChi7nNRmkkzuxPgeFtazrUajbis8nlqV6hCEThnYhCEAIsXsw6W0as0J26blpqZxLjxbkmnhlsoHBSinrO9kDPZEA0GmTNZrUnSpNJVMTbyWkDGeJOM+A5xsEtajStvW7IUSSGJeTZS0jvwOffnnFH45xmdjaRo0ZZTm+W6S3+e3zJvBLRVqznNZqP1PEVpjp8Tk2fR8/wDlUxx/gx0+H/shR/wVMZf1RxGRe1b796X/ACf5LX4Wj/AvkjERplp8OVoUfP8A5VMV+2r7as+3Jykt0GRl5CoPJUp5hhO6ktcQFFI4ZzkZ7ota6tDTS3HFBKEpKlE9QHEmKIay3W5eGoNRqu+FSyHCxK45dEkkJPnz84vHArvry9dWpUk4QWubbTb2X3IXG1RpUVGMVm/gYbCEI10qYhCEAIQhACEIQAhCEAIQhACEIQAhCEAIQhACEIQAhCEAIQhACEIQAhCEAIQhACEIQAiX9IKsmboi6ctSlPSx68n2Dy7h2eRiII9+wqqqk3LLOle6y6ro3c8sHhErgt94K8hUb0ej6P8A9mRuL2avLWVPnuuqJ5hHCVJWkLSoKCuIIOcxzGvrUyhrJ5M5HDJiONZaOFyzNYZbO82dx4gcN04xEjR1KzJN1KmTEk6fZeQUnjiI7F7JXtpOlzyzXVbEjhV47O6jU5c+hXKEfefllyc69KufPaWUnhjOOuPhGOtNPJmrpprNCPpLtLffbYaG844oISO0k4EfOM90WoHwrconn0b0vJjeHDOXOGP7+EeNaqqVNzfI7bCzne3MLeG8nl/f0JfsejIoNtSkiAOlSgKdI61kcY9sYhkYBzDhFNqTc5OT5n0Bb0IW1KNKmslFZfIY7ozLTamJcVM1F9KFNlJl0JUM5z84+7A8zGHtNuPOoaZRvuLUEoT2knAiYKLJIp1Ll5JsABpACiPtlfbHzOYrPEt66FsqcXk5fQi8auFTpKmt5fQo5rbaarN1EqFMT/kzqvWZU4/alkkDyOR5RhMW52tbTVWLJar8q2kzFJWVukDiWVcFe44PkYqNF/4axT2nh0KrfmWkuq/O5iuI23hriUVtuhCEcpBUQACSeAA64njhJ02QLUVUbtmbpeADNLT0bORzdWkjPkn+dFrzyEYPofav2Jac02nPMpROOo6eaxzK1HOCe4YHlGc9cYBxXiftDEpzi/LHyrovy82XzC7bw9sk93qziOI5hmK2kSJGO0pdhtfTaaal1Ym6mfVGuPFIUDvH3A++KUxLG1Ddabi1HckZZalSlJR6snjwLmcrI88DPdETxvnCOF+z8NgpLzT8z9dl6IomK3PiLhtbLRCEIRZyNEela9EqFy3FIUCkoacn6g+mXlkOOpbSpxRwkbyiAMnhxMebH3p829IT8vPSytx+XdS62rsUk5B94gCaxsoa3fczKfjSX/tx16psu6zU2lzVRmrclgxKsred3KiwpW6kFRwArJOByEbDNNLnlbzsGiXRKH5OoybbyknmhZHtpPeFAjyjIHm0OtLacSFIWkpUD1g84A00wjLtZrVFk6p3FayAoMyE8tDG9zLR9ps/eKTGIwAhCP002t11DTaSpa1BKUjmSeQgCS9OtB9Tb/tpFxWvQmpumrdW0h1c6y0VKScK4LUDz64yL4qeuH3Ky340lv0kX70ZtduzNLLcttDPRLk5BtL46y8RvOE95WVGMqmX2ZaXcmJh1DTLSCtxxZwlKQMkk9QAgDUbqJZVw2Bcrlu3RKNSlSbaQ6tlD6Hd1KhlOSgkZxxxnrjHYynVm7Jq+NR67dU24Vrn5tS28/atD2W0+SEpHlGLQBmulult7amTE8zZ1JTPmRSlUwVzDbKUbxISMrUMk4PLsjO/ipa3/ctLfjSW/SRajYRspu2NFWK06hQnrheM44VDGGh7LQHdgFWevf8ACLAQBrQntlzWuSkn5x61WeiYbU6vcqUupW6kEnAC8k8OQiFo3LqAUkpUAQRgg9casNpazjY2tVxUVuXLEkuZVNSKccOgdO8kDtAyU/RMARvEiaZaLah6kUZ+r2hR2J+Ul3yw6pU6y0UrwDjC1A8iIjuLc+jcuN1i57ntRxzLM3KtzzSCfmrbVuKIHeFjP8UQBGvxU9cM/sVlvxpLfpIjnUywLp04r7VCu6nokZ92WTNIbS+h0FtSlJBygkc0K4c+Ebb4pt6Smht9DaNyoSek3n5JxXd7K0D+fAFMIQjsU2VcnqjLSTKVKdmHUtISkZJUogAAdfEwBKllbOWq94WvI3JQ6HLO02eQXJdxyeZbUtIJGd1SsjiDzj2Rsna2fc9JfjNj+1GxC1KSxQLXpVDlUJbYp8m1KtpTyCUICQB7o9OANN9Rk5mnVCYkJ1pTMzLOqZebVzQtJIUD4EGOvEu7YVAVb20NdDAZ6NiceRPMHGApLqEqUR3BZWPKIigDsU2SmajUZanybfSzMy6lllGQN5aiABk8OZiZ/ip64Z/YpL/jSW/SRj+ytbrtza+WpIoSS0xOidfO7kBtn5Q58SkJ+lG0mANZtT2YdZaZTJqpT9tykvKSjK333V1SWwhtCSpSj8pyABMQzGzvbBudq19ALidUvdeqLYprABwVKd4KH3gWfAGNYkAIQhAE66dVf4WtthSiC8z8m4OHV3Dl/wDyMjiHNI6r6nXzIr+ZNpwnJ5KHH835omPyxGscPX3i7KPaesdH6bf0Mxx+y8LdyyXllqvuIdXd1whE6QmxEesVJ9Wq7dTbACJkYXyHtD68/wD6jA4n2+qUKtbU2wlIU8lBW2SM4I4+PVEBrSpCilQIUDgg9RjK+JbHwt65R92eq+5pnD174m0Se8dH9ghKlqCUglROAB1mLIaaUJFCtWXZUgCYeAdfyPtiOXlEQaRUEVq621ug+ryY6ZRA4bw+aPfx8osL1YzFBxe42pLqzZuBMM9+9mvhH7v7fMcTzhCPy6tLTSnFqCUJBKlHqHbEEaQ3kZRp1TRN1gzrrRUzKjeSTy6Q8vcMn3RI8eBp6iT+xSSm5J4PtzaOn6UfbFXZ4DA8sx75jLseu3c3kv0jovQo9/deJrOcduR16lJy1RkH5CcaS7LzDam3EK5KSRgiKBah23M2leVSoMyOMs6ejVnO82eKD7iPPMbBRwEV12xbRDslT7xk2PbZPq06sfuDjoyfA5H0osnAWLeGvXazflqbfzLb57fIq+O2veUe9jvH6FZYkLZ8tQXXqVIMTDSlyUmfWpkjlhPzRnvVj3GI9i3eyXanwPYjlffTiZq6t9OQMpaSSE4PfxMaPxPifs7DqlRPzPRdX+Fmyu4ZbeIuIx5LVk0jhy4QED5Qj57zL8DGLaq3OzaNiVOtLcCHm2iiXGeKnVDCR74ynqisG2Ndan6pTrSlnUlphAm5kJOfbOUpB8gTjvEWDhjDPaOI06TXlWr6L87HBiVz4e3lJb7L1K/TT701MuzMw4px51ZW4tXNSicknzj5whH0IlkUEQhCAEIQgC+3o7bxcq2nFVtGZcCnKHNBxjjxDL2TjyWlfvi0Ua0Ni+8k2hrvSUzMz0EhV0qp0wSfZyvi3n/6gQO7MbL4Aol6Rm1BIX7Q7tlpbcaqkmZeYcA4F5o8Ce8oUkfRiqkbK9t71H7p0CqqpRkOzNHdRU0jrCGwoOHybUs+Ua1IARKmyhaT14a725JoZDkvIzAqM0TyS2yQrJ8VbqfpCIri6Po3rQUiXuO+X+AWU02VHXgYW4r60DyMAXHiFNtS8mrS0IqzCVqTO1simy27/D4uH/dpX5kRNcUL9IleTlT1GplmMrHqtFlQ+6B1vvYPHwQEffGAKtxkOm9sTt533RrXkEBT9Rm0M5JwEJJ9pR7gnJ8ox6LU+jrstFUvurXpNNFTVGlxLy2eXTu5yrvIQFD6eeyALzUqSl6bS5SnSjaW5eVZQw0hIwEoSkJAA6uAjENWdRqXp8q2xUSgmtVdqnpSScpSrO84O5JKc+MZxFA/SDXn8Kat063JNxQTbsqCpQPJ97dWceCQ35+EAX8in/pHrLU/Srfv6XAJlV/Bk0AOO4recbV4AhY8ViLJ6OXSq9tLbdulzd6aoSKHHwnkHR7Lg++SqPhrjZ7F9aU3BbbrHTOzEmtUoOtMwgbzRH0gPrgDU3Es7ItyO2ztAWzMpXuszr5kHwTgKQ8CkZ8FbqvFIiKXm1svLadSUOIUUqSeYI4ER2KNUJmk1iSqkk4W5mTmG5hlY+1WhQUk+8CANxsQFt5278N6Azc+kfKUadYnU8ccCS0rx4OxNdq1ZuvWzS620kJRPyjUylIOQN9AVj648HWyhruTSK66GykKem6U+hoYJ9sIJTwHP2gIA1LxLmyBbqbk2g7Zl3WOmZk3lT7mRkJ6FJWkn6YT5kREigQSCMERcT0bFvb8/dl0uMcGm2ZBl0p5lRK1gHuCUZ8RAF04RwpQSkqUQEgZJPVHh2Fc8heVqSVyUxK0yk5vlsLxvYStSeOP4sAVG9JPby0Va07paZ+TeZekX3ABwUkhaAfEKX97FPY2U7cFvrruz3WHWWukepbzM8kDqSlW6s+SFqPlGtaALSejkoTk5qhXK+pALFNpnRBXX0jqxjH0UL+qL6RWP0dFGXJ6R1esuNKQajVlJbJHz0NNpGR3byljyMWcgCnnpJLoaRTrYs1pZLzjjlRfSD81IBbRnxJc9xilUTdtt3Q3cmv9Yal1FUvSEN05JzzUgZc6upalDyz1xCMAIQhAH0l3VsPtvtnC21BST2EHIiwdtVFuq0SWnm8+2gZBPJXWDFeIknRqsbrkxR33SAR0jAJ4Z6wP79cWbha/8Pd91J+Wenry/BXeJLLv7XvIrWGvpzJQjiOY4jTzNweR4A+MQbqPR0Uq5nUS7ZSw+A42MHr5j3/nico8yrUCUrFQpz8yVAyjwWN3Htd2fHjFb4psvEWLqJZyhqunMs3Cldxv40M8lU09eR9tK6B8BWq0lze9YmcPOgpxgkcvIRlh5xx4fVHMfPFWpKrNylzPsyytKdnbwoU9orIRherlfNFthbTDgE1NHo0DPFIIOTGaHAGTgAcTk9UV31ZrfwzdbyW1hTEp8i2RyJ6z7/8AjHZhtDvqyb2WpAcW4n4GwcYvzT0XTn/QnTY9u71ujTlozSyXZImYlsn9rUfaA8Dx84sD+eKA6YXM7aN80yuIWtLTTwTMBP2zROFjHXw447QIvxIzLM7JMzkuvpGX0BxtQ60kZBigceYV4W+VzBeWp/2W/wA9ykYHdd7Q7tvWP0PtHl3bRJS47aqFEnU7zE4yWld3Ye7Bxxj1AOMcnuik0asqNSNSDya1XVEzOKlFxktGUColmVKe1HZsxbZRNeudA7vAjdSD7SvDdGfdF9KXJsU+nS8jLIShmXbS2hIGMAAARiMpZtAb1dm7sbWFVRUkkLa3eCMnd3we0gAHxHbGbcot3FmPPFO5ilklFN/zPf5ciIwi0jb9tpp65eiBh1QzDnwimEydGvVKXo1EnatNqShmUYW8snsSkn/hGv67q1MXFc9Rrk1npZ2YW6R+5BPBPkMDyizO19dgptqStrSzhEzU19I9g8mU8xz61Y8cGKoxsvAGF+Hs5XU15qm38q/LKhjtz3lVUltH6iEIRfyBEIQgBCEIA+spMPSk01NS7hbeZWHG1jmlQOQffG2zSm62b405oV1sICBUZRLq0DkhweytPkoKHlGo6L2+jnvFypWLWrMmplKl0aYTMSjale0GXioqCRnkFgk45FzvgC0NYkGKpSJymTIyxOMLYdHalaSk/UY1GX5b8zal6Vq2ps7z1MnnZVShyXuLKQodxAB842+xr19IDaLVB1lZr0q2UMV6SS+52dOglC8fRDZ8SYArjG0/ZktJuy9ELapAbKJh2VE5NE81Ove2rPhkJ8EiNdGgtqKvXV+2rdMv6wzMTqFzKCMp6Fv23M926k/mjbBAHWqs9K0umTVSnnksykoyt99xRwEISCpRPgAY1H6i3FMXbfdbuWZWpblRnnZgb32qVKO6nwCcDyjYHtx3mLU0MnpBkn1u4HRTWwDxDagVOq8N1JT9MRrdgAOJwI2gbJdlLsfQ6iSE1LoZn55Jn5sDnvu8UgntCNwHwjX5s/WYL+1et+2nUrMq/M9JNbvUy2CtfHqyEkZ7xG1ptCW20toSEoSAEpAwAB1QB8ahNsSEhMT0yvcYl2lOuK7EpGSfcI1G6iXJOXffNZuaeI6eozjj5A5JBPspHcBgeUbC9tm7k2voPVJZqZLM7Wlpp7ASfaUlRy5ju3EqBP8AC8I1rYPYYAvj6Oi63alp3WrUmpnfXR5xLss2pXFLLwJIA7AtKz9KLTRra2ILrRa+vFOl5p8sydZaXT3MnCStWC1nqzvpSB/GjZLAGsjbEsxyztdq2kJHqlXX8KSygOYdUSseIWFj3dsQ9F7/AEilloqVh0m9ZZlZmqRM+rTCkjILDvIq8FhOD/DPdFEIA2YbFlyruTZ9oQfVvP0orpyznmls+x+QUDyiaIpv6Nm5lmXumz3CChKm6kwMjgSA25+Zv+5i5EAaidTKOugaiXFRVtqb9SqUwylKhg7ocISfMYMbDdii3VW/s90JbzPRTFTU7PuAgZIWshBPihKD5xU7bMtZ740U3IU2WSXq4JR1hpOBvuOJS2fetJOe8xsOoVPZpFEkaVL/AOJk5duXRw+1QkJH5oAxLX26PsO0duevpx07MgtuXHa657CPLeUCe4GIi9HrdTlY0knrfmFbztFn1Bs9fRPe2Pyuk9/dHU9IrdCqbphSLYYOHKvP9I8c/tTKckea1I+9MRH6O66F0vVio20sjoK1IFQBP7aySpJ+9U5/cQBeu6qW3XLYqtFeGW5+TelleC0FP/GNQVUkpmm1Kap842W5mWeUy6g/At-started-badge { 
-      background: var(--gold); color: var(--navy); padding: 10px 24px; border-radius: 100px; 
-      font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;
-      display: inline-block; margin-bottom: 24px;
-    }
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">
+      <img
+        src="vaw-logo-dark.png"
+        alt="VAW Technologies">
+    </div>
+    <div class="nav-links">
+      <a href="#techstack">Tech Stack</a>
+      <a href="#pages">Pages</a>
+      <a href="#social">Social Automation</a>
+      <a href="#timeline">Timeline</a>
+      <a href="#investment">Investment</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">● Website Redesign Proposal · May 2026</div>
+      <h1>Proposal for<br><span>Global Education Trust</span></h1>
+      <p>A complete reimagination of GPS Kochi's web presence — built on React, hosted on cloud infrastructure, and
+        engineered for peak SEO performance. Delivered in 5 weeks.</p>
+      <div class="hero-meta">
+        <div class="hero-meta-item">
+          <strong>Prepared For</strong>Global Education Trust, Kochi
+        </div>
+        <div class="hero-meta-item">
+          <strong>Prepared By</strong>VAW Technologies
+        </div>
+        <div class="hero-meta-item">
+          <strong>Date</strong>May 2026
+        </div>
+        <div class="hero-meta-item">
+          <strong>Total Investment</strong>₹1,50,000
+        </div>
+        <div class="hero-meta-item">
+          <strong>Delivery</strong>5 Weeks
+        </div>
+      </div>
+      <div class="tech-strip">
+        <div class="tech-pill"><span class="dot-react"></span>React.js</div>
+        <div class="tech-pill"><span class="dot-cloud"></span>Cloud Hosting</div>
+        <div class="tech-pill"><span class="dot-seo"></span>SEO Optimised</div>
+        <div class="tech-pill"><span class="dot-social"></span>Social Media Automation</div>
+        <div class="tech-pill"><span class="dot-react"></span>Next.js SSR</div>
+        <div class="tech-pill"><span class="dot-cloud"></span>CDN Enabled</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="page">
+
+    <!-- EXECUTIVE SUMMARY -->
+    <section class="section-wrap">
+      <div class="section-label">01 · Executive Summary</div>
+      <h2 class="section-title">Why This Redesign Matters</h2>
+      <p class="section-body">VAW Technologies is pleased to present this proposal for a comprehensive redesign and
+        redevelopment of the Global Public School (GPS) Kochi website. GPS is one of Kerala's most prestigious CBSE and
+        Cambridge-affiliated institutions — a 4× Green School Award Recipient with a rich legacy of holistic,
+        world-class education. Your current digital presence does not reflect this standing. We will change that —
+        fully, beautifully, and within 5 weeks.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:20px;margin-top:32px">
+        <div
+          style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:28px 28px;flex:1;min-width:280px">
+          <h3 style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--navy);margin-bottom:10px">Our
+            Commitment</h3>
+          <p style="color:var(--text-muted);font-size:14px">We will design and build a website that makes every visiting
+            parent feel: <em>"This is where I want my child to grow."</em> Every page, interaction, and detail —
+            purposefully crafted to earn trust and inspire action.</p>
+        </div>
+        <div
+          style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:28px 28px;flex:1;min-width:280px">
+          <h3 style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--navy);margin-bottom:10px">About
+            VAW Technologies</h3>
+          <p style="color:var(--text-muted);font-size:14px">A full-service digital solutions company and a proud
+            subsidiary of <strong>V Arts World Pvt. Ltd.</strong> — dedicated to Human-centric Art and Innovations. We
+            build digital experiences that perform as beautifully as they look.</p>
+        </div>
+      </div>
+    </section>
+    <div class="divider"></div>
+
+    <!-- TECH STACK -->
+    <section class="section-wrap" id="techstack">
+      <div class="section-label">02 · Technology Stack</div>
+      <h2 class="section-title">Built on Modern, Future-Proof Technology</h2>
+      <p class="section-body">We don't just build websites — we engineer digital platforms. Every technology choice is
+        deliberate, chosen for performance, scalability, and the best possible experience for GPS students, parents, and
+        staff.</p>
+      <div class="tech-grid">
+        <div class="tech-card react">
+          <span class="tech-card-icon">⚛️</span>
+          <h4>React.js + Next.js</h4>
+          <p>Built with React for a fast, component-driven UI. Next.js adds server-side rendering (SSR) and static
+            generation — critical for speed and SEO. Pages load instantly, even on mobile networks.</p>
+          <span class="tag">Frontend Framework</span>
+        </div>
+        <div class="tech-card cloud">
+          <span class="tech-card-icon">☁️</span>
+          <h4>Cloud-Based Hosting</h4>
+          <p>Hosted on enterprise cloud infrastructure (AWS / Vercel / Google Cloud) with auto-scaling, 99.9% uptime
+            SLA, and global edge delivery. Your website never goes down during admission season peaks.</p>
+          <span class="tag">Infrastructure</span>
+        </div>
+        <div class="tech-card seo">
+          <span class="tech-card-icon">🔍</span>
+          <h4>SEO-First Architecture</h4>
+          <p>Server-side rendering ensures every page is fully crawlable by Google. Structured data (Schema.org), Open
+            Graph tags, XML sitemaps, canonical URLs, and Core Web Vitals optimisation built in from day one.</p>
+          <span class="tag">Search Optimisation</span>
+        </div>
+        <div class="tech-card social">
+          <span class="tech-card-icon">📲</span>
+          <h4>Social Media Automation</h4>
+          <p>A custom integration that automatically pulls your Instagram, Facebook, and YouTube posts directly into the
+            website — news, events, and achievements update on-site the moment you post socially. Zero manual effort.
+          </p>
+          <span class="tag">Auto Content Sync</span>
+        </div>
+        <div class="tech-card cms">
+          <span class="tech-card-icon">🗂️</span>
+          <h4>Headless CMS</h4>
+          <p>A powerful, user-friendly admin panel so GPS staff can update content, add news, manage events, and upload
+            photos — no technical knowledge required. Built on a headless CMS for maximum flexibility.</p>
+          <span class="tag">Content Management</span>
+        </div>
+        <div class="tech-card perf">
+          <span class="tech-card-icon">⚡</span>
+          <h4>Global CDN + Performance</h4>
+          <p>All assets delivered via a global Content Delivery Network (CDN) for sub-second load times worldwide.
+            Optimised images, lazy loading, code splitting, and caching — scoring 95+ on Google PageSpeed.</p>
+          <span class="tag">Performance</span>
+        </div>
+      </div>
+    </section>
+    <div class="divider"></div>
+
+    <!-- ABOUT GPS -->
+    <section class="section-wrap">
+      <div class="section-label">03 · Understanding GPS</div>
+      <h2 class="section-title">Your Institution — Your Story</h2>
+      <p class="section-body">Before we design a single component, we study what makes GPS exceptional. Here is what the
+        world must see the moment they land on your website.</p>
+      <div class="gps-highlights">
+        <div class="highlight-box">
+          <div class="num">4×</div>
+          <div class="lbl">Green School Award Recipient</div>
+        </div>
+        <div class="highlight-box">
+          <div class="num">1:10</div>
+          <div class="lbl">Teacher–Student Ratio</div>
+        </div>
+        <div class="highlight-box">
+          <div class="num">20+</div>
+          <div class="lbl">Years of Excellence</div>
+        </div>
+        <div class="highlight-box">
+          <div class="num">4</div>
+          <div class="lbl">Curricula: CBSE, Cambridge, IB, KG</div>
+        </div>
+        <div class="highlight-box">
+          <div class="num">RS</div>
+          <div class="lbl">Round Square Member School</div>
+        </div>
+        <div class="highlight-box">
+          <div class="num">3–17</div>
+          <div class="lbl">Age Range · Day & Boarding</div>
+        </div>
+      </div>
+    </section>
+    <div class="divider"></div>
+
+    <!-- ALL PAGES WE BUILD -->
+    <section class="section-wrap" id="pages">
+      <div class="section-label">04 · Complete Page Build</div>
+      <h2 class="section-title">Every Page GPS Needs — Built from Scratch</h2>
+      <p class="section-body">We will build all necessary pages, including every menu item currently on your website,
+        plus new pages that are missing but essential. Every page is fully designed, developed, and content-ready.</p>
+
+      <div class="menu-section">
+
+        <div class="menu-group">
+          <div class="menu-group-title">Main Navigation — Core Pages</div>
+          <div class="menu-items">
+            <div class="menu-item"><span class="mi-dot"></span>Home</div>
+            <div class="menu-item"><span class="mi-dot"></span>About GPS</div>
+            <div class="menu-item"><span class="mi-dot"></span>Vision &amp; Mission</div>
+            <div class="menu-item"><span class="mi-dot"></span>Leadership &amp; Management</div>
+            <div class="menu-item"><span class="mi-dot"></span>Awards &amp; Recognition</div>
+            <div class="menu-item"><span class="mi-dot"></span>Round Square Membership</div>
+          </div>
+        </div>
+
+        <div class="menu-group">
+          <div class="menu-group-title">Academics</div>
+          <div class="menu-items">
+            <div class="menu-item"><span class="mi-dot"></span>CBSE Programme (Grade 1–12)</div>
+            <div class="menu-item"><span class="mi-dot"></span>Cambridge IGCSE (Grade 6–10)</div>
+            <div class="menu-item"><span class="mi-dot"></span>Cambridge AS &amp; A Level (11–12)</div>
+            <div class="menu-item"><span class="mi-dot"></span>IB PYP — GBS Brookes (Grade 1–5)</div>
+            <div class="menu-item"><span class="mi-dot"></span>IB DYP — GBS Brookes (11–12)</div>
+            <div class="menu-item"><span class="mi-dot"></span>Stepping Stones Kindergarten</div>
+            <div class="menu-item"><span class="mi-dot"></span>Curriculum Overview</div>
+            <div class="menu-item new"><span class="mi-dot"></span>Academic Calendar <span class="mi-badge">New</span>
+            </div>
+            <div class="menu-item new"><span class="mi-dot"></span>Exam Results &amp; Achievements <span
+                class="mi-badge">New</span></div>
+          </div>
+        </div>
+
+        <div class="menu-group">
+          <div class="menu-group-title">Admissions</div>
+          <div class="menu-items">
+            <div class="menu-item"><span class="mi-dot"></span>Admissions Overview</div>
+            <div class="menu-item"><span class="mi-dot"></span>Eligibility &amp; Age Criteria</div>
+            <div class="menu-item"><span class="mi-dot"></span>Admission Process</div>
+            <div class="menu-item"><span class="mi-dot"></span>Fee Structure</div>
+            <div class="menu-item"><span class="mi-dot"></span>Key Dates &amp; Deadlines</div>
+            <div class="menu-item new"><span class="mi-dot"></span>Online Enquiry Form <span class="mi-badge">New</span>
+            </div>
+            <div class="menu-item new"><span class="mi-dot"></span>Schedule a School Visit <span
+                class="mi-badge">New</span></div>
+            <div class="menu-item new"><span class="mi-dot"></span>International Students <span
+                class="mi-badge">New</span></div>
+          </div>
+        </div>
+
+        <div class="menu-group">
+          <div class="menu-group-title">Campus Life</div>
+          <div class="menu-items">
+            <div class="menu-item"><span class="mi-dot"></span>Boarding Life</div>
+            <div class="menu-item"><span class="mi-dot"></span>Day School</div>
+            <div class="menu-item"><span class="mi-dot"></span>Sports &amp; Athletics</div>
+            <div class="menu-item"><span class="mi-dot"></span>Swimming Pool</div>
+            <div class="menu-item"><span class="mi-dot"></span>Equestrian Facility</div>
+            <div class="menu-item"><span class="mi-dot"></span>Music &amp; Performing Arts</div>
+            <div class="menu-item"><span class="mi-dot"></span>Library &amp; Labs</div>
+            <div class="menu-item"><span class="mi-dot"></span>Cafeteria &amp; Nutrition</div>
+            <div class="menu-item"><span class="mi-dot"></span>Co-Curricular Activities</div>
+            <div class="menu-item"><span class="mi-dot"></span>Hostel &amp; Accommodation</div>
+            <div class="menu-item new"><span class="mi-dot"></span>Photo Gallery <span class="mi-badge">New</span></div>
+            <div class="menu-item new"><span class="mi-dot"></span>Video Walkthroughs <span class="mi-badge">New</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-group">
+          <div class="menu-group-title">News, Events &amp; Community</div>
+          <div class="menu-items">
+            <div class="menu-item"><span class="mi-dot"></span>Latest News</div>
+            <div class="menu-item"><span class="mi-dot"></span>Events &amp; Upcoming Activities</div>
+            <div class="menu-item"><span class="mi-dot"></span>Student Achievements</div>
+            <div class="menu-item new"><span class="mi-dot"></span>Social Media Feed (Auto) <span
+                class="mi-badge">New</span></div>
+            <div class="menu-item new"><span class="mi-dot"></span>Parent Testimonials <span class="mi-badge">New</span>
+            </div>
+            <div class="menu-item new"><span class="mi-dot"></span>Alumni Network <span class="mi-badge">New</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="menu-group">
+          <div class="menu-group-title">Contact &amp; Information</div>
+          <div class="menu-items">
+            <div class="menu-item"><span class="mi-dot"></span>Contact Us</div>
+            <div class="menu-item"><span class="mi-dot"></span>Location &amp; Directions</div>
+            <div class="menu-item"><span class="mi-dot"></span>Transport &amp; Bus Routes</div>
+            <div class="menu-item new"><span class="mi-dot"></span>FAQ Page <span class="mi-badge">New</span></div>
+            <div class="menu-item new"><span class="mi-dot"></span>Privacy Policy <span class="mi-badge">New</span>
+            </div>
+            <div class="menu-item new"><span class="mi-dot"></span>Sitemap <span class="mi-badge">New</span></div>
+          </div>
+        </div>
+
+      </div>
+      <p
+        style="margin-top:20px;font-size:13px;color:var(--text-muted);padding:14px 18px;background:var(--white);border:1px solid var(--border);border-radius:8px">
+        <strong style="color:var(--navy)">Note:</strong> Pages marked <span
+          style="background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.06em">NEW</span>
+        are additions we recommend building to significantly improve parent experience, admissions conversion, and SEO
+        coverage. All pages are included in the quoted price.
+      </p>
+    </section>
+    <div class="divider"></div>
+
+    <!-- SOCIAL MEDIA AUTOMATION -->
+    <section class="section-wrap" id="social">
+      <div class="section-label">05 · Social Media Automation</div>
+      <h2 class="section-title">Your Website Updates Itself — Automatically</h2>
+      <p class="section-body">One of the biggest pain points for school websites is keeping content fresh. We solve this
+        permanently with a smart social media automation layer — whenever GPS posts on Instagram, Facebook, or YouTube,
+        it instantly appears on your website. No manual work, ever.</p>
+      <div class="social-grid">
+        <div class="social-card">
+          <div class="social-icon" style="background:#FFF0F9">📸</div>
+          <div>
+            <h4>Instagram Auto-Sync</h4>
+            <p>Every photo and reel posted on GPS's Instagram account is automatically pulled into the website's gallery
+              and news feed — organised by event, activity, or date. Your campus life page stays alive without lifting a
+              finger.</p>
+          </div>
+        </div>
+        <div class="social-card">
+          <div class="social-icon" style="background:#EEF2FF">📘</div>
+          <div>
+            <h4>Facebook Post Integration</h4>
+            <p>Facebook announcements, events, and updates sync directly to the website's news and events section.
+              Parents see the same content in one place — no need to follow multiple platforms.</p>
+          </div>
+        </div>
+        <div class="social-card">
+          <div class="social-icon" style="background:#FFF5F5">▶️</div>
+          <div>
+            <h4>YouTube Video Embedding</h4>
+            <p>GPS's YouTube videos — school tours, event coverage, student performances — are automatically featured on
+              the website. Every new upload appears on the Video Gallery page without any manual action.</p>
+          </div>
+        </div>
+        <div class="social-card">
+          <div class="social-icon" style="background:#F0FDF4">🔄</div>
+          <div>
+            <h4>Unified Content Dashboard</h4>
+            <p>A single admin dashboard lets the school team review, approve, or filter social content before it appears
+              on the website. Full control, zero extra workload. Content can be tagged, categorised, and scheduled.</p>
+          </div>
+        </div>
+      </div>
+      <div
+        style="margin-top:20px;background:var(--navy);border-radius:10px;padding:22px 26px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        <div style="font-size:28px">💡</div>
+        <div>
+          <div style="color:var(--gold-light);font-weight:600;font-size:14px;margin-bottom:4px">How It Works</div>
+          <div style="color:rgba(255,255,255,.7);font-size:13px;line-height:1.65">GPS posts on Instagram → Our
+            integration fetches the post via API → Content is categorised automatically → It appears on the website
+            within minutes. The same flow applies to Facebook and YouTube. GPS's social presence and website become one
+            living, breathing content engine.</div>
+        </div>
+      </div>
+    </section>
+    <div class="divider"></div>
+
+    <!-- CURRENT ISSUES -->
+    <section class="section-wrap">
+      <div class="section-label">06 · Current Website Issues</div>
+      <h2 class="section-title">What We're Fixing</h2>
+      <p class="section-body">Our review of the existing GPS digital presence identified critical gaps that are costing
+        you prospective admissions and parent trust every single day.</p>
+      <div class="problems-grid">
+        <div class="problem-card">
+          <div class="problem-icon">🎨</div>
+          <div>
+            <h4>Outdated Visual Design</h4>
+            <p>The current design lacks a strong visual identity and fails to reflect the prestige and modern outlook of
+              GPS. First impressions are lost.</p>
+          </div>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">📱</div>
+          <div>
+            <h4>Poor Mobile Experience</h4>
+            <p>Most parents research schools on phones. The current site is not optimised for mobile — poor readability,
+              broken layouts, lost trust.</p>
+          </div>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">🗂️</div>
+          <div>
+            <h4>Weak Information Architecture</h4>
+            <p>Key information — curricula, boarding, facilities, fees, admissions — is buried or incomplete. Visitors
+              leave frustrated without answers.</p>
+          </div>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">📋</div>
+          <div>
+            <h4>No Admissions Funnel</h4>
+            <p>No guided pathway for parents to enquire, apply, or book a visit. This results in lost leads that could
+              have become enrolled students.</p>
+          </div>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">📰</div>
+          <div>
+            <h4>Stale, Static Content</h4>
+            <p>No dynamic content. The website feels dead rather than reflecting the vibrant, active community GPS truly
+              is.</p>
+          </div>
+        </div>
+        <div class="problem-card">
+          <div class="problem-icon">🔍</div>
+          <div>
+            <h4>Invisible on Google</h4>
+            <p>Not optimised for SEO or speed — GPS loses organic visibility when parents search for top CBSE or
+              Cambridge schools in Kochi.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="divider"></div>
+
+    <!-- TIMELINE -->
+    <section class="section-wrap" id="timeline">
+      <div class="section-label">07 · Project Timeline</div>
+      <h2 class="section-title">5-Week Sprint to Launch</h2>
+      <p class="section-body">A tight, focused 5-week delivery with clear milestones every week — including a dedicated
+        final week for SEO optimisation, Google indexing, and performance tuning after launch.</p>
+
+      <div class="timeline-outer">
+
+        <div class="week-row wk1">
+          <div>
+            <span class="week-badge">Week 1</span>
+            <h4>Discovery, Design &amp; Architecture</h4>
+            <div class="week-tasks">
+              <div class="week-task">
+                <div class="tk">1</div>Stakeholder briefing, content audit &amp; competitor research
+              </div>
+              <div class="week-task">
+                <div class="tk">2</div>Sitemap, wireframes &amp; full information architecture
+              </div>
+              <div class="week-task">
+                <div class="tk">3</div>UI Design — Homepage, inner page templates &amp; brand style guide
+              </div>
+              <div class="week-task">
+                <div class="tk">4</div>Client design review &amp; approval sign-off
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="week-row wk2">
+          <div>
+            <span class="week-badge">Week 2</span>
+            <h4>React Frontend Development</h4>
+            <div class="week-tasks">
+              <div class="week-task">
+                <div class="tk">1</div>Next.js + React project setup, component library &amp; design system
+              </div>
+              <div class="week-task">
+                <div class="tk">2</div>Homepage, About, Academics &amp; Admissions page development
+              </div>
+              <div class="week-task">
+                <div class="tk">3</div>Campus Life, News, Gallery &amp; Contact pages
+              </div>
+              <div class="week-task">
+                <div class="tk">4</div>All remaining pages built — complete page list covered
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="week-row wk3">
+          <div>
+            <span class="week-badge">Week 3</span>
+            <h4>Backend, CMS &amp; Social Media Automation</h4>
+            <div class="week-tasks">
+              <div class="week-task">
+                <div class="tk">1</div>Headless CMS setup — admin panel, content types &amp; user roles
+              </div>
+              <div class="week-task">
+                <div class="tk">2</div>Instagram, Facebook &amp; YouTube API integration for auto content sync
+              </div>
+              <div class="week-task">
+                <div class="tk">3</div>Online admission enquiry forms, WhatsApp integration &amp; email alerts
+              </div>
+              <div class="week-task">
+                <div class="tk">4</div>Cloud server setup, domain configuration &amp; CDN provisioning
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="week-row wk4">
+          <div>
+            <span class="week-badge">Week 4</span>
+            <h4>Content Migration, Testing &amp; Launch</h4>
+            <div class="week-tasks">
+              <div class="week-task">
+                <div class="tk">1</div>All existing content migrated, formatted &amp; loaded into CMS
+              </div>
+              <div class="week-task">
+                <div class="tk">2</div>Cross-browser, mobile &amp; device testing — full QA pass
+              </div>
+              <div class="week-task">
+                <div class="tk">3</div>Client final review, revisions &amp; approval
+              </div>
+              <div class="week-task">
+                <div class="tk">4</div>🚀 Website goes LIVE on cloud infrastructure
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="week-row wk5">
+          <div>
+            <span class="week-badge">Week 5 — SEO Sprint</span>
+            <h4>Dedicated SEO Optimisation &amp; Google Indexing</h4>
+            <div class="week-tasks">
+              <div class="week-task">
+                <div class="tk">1</div>Keyword research — target "CBSE school Kochi", "Cambridge school Kerala", "best
+                boarding school Kochi" &amp; 20+ terms
+              </div>
+              <div class="week-task">
+                <div class="tk">2</div>On-page SEO — meta titles, descriptions, headings, alt tags &amp; structured data
+                (Schema.org) for every page
+              </div>
+              <div class="week-task">
+                <div class="tk">3</div>Google Search Console setup, XML sitemap submission &amp; indexing requests
+              </div>
+              <div class="week-task">
+                <div class="tk">4</div>Core Web Vitals audit — achieve 90+ PageSpeed score on mobile &amp; desktop
+              </div>
+              <div class="week-task">
+                <div class="tk">5</div>Google My Business optimisation &amp; local SEO setup for Kochi searches
+              </div>
+              <div class="week-task">
+                <div class="tk">6</div>Final SEO report with rankings baseline &amp; ongoing keyword tracking setup
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+    <div class="divider"></div>
+
+    <!-- INVESTMENT -->
+    <section class="section-wrap" id="investment">
+      <div class="section-label">08 · Investment</div>
+      <h2 class="section-title">Complete Website. One Clear Price.</h2>
+      <p class="section-body">Everything included — React development, cloud hosting setup, all pages, social media
+        automation, CMS, SEO sprint, testing, launch, and post-launch support. No hidden costs, no surprises.</p>
+
+      <div style="margin-top:36px">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th>Deliverable</th>
+              <th style="text-align:right">Included</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>UI/UX Design — All pages, style guide, brand system</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">✓ Included</td>
+            </tr>
+            <tr>
+              <td>React.js + Next.js Frontend Development (All Pages)</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">✓ Included</td>
+            </tr>
+            <tr>
+              <td>Cloud Hosting Setup — AWS / Vercel + CDN Configuration</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">✓ Included</td>
+            </tr>
+            <tr>
+              <td>Headless CMS + Admin Panel (School Staff Access)</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">✓ Included</td>
+            </tr>
+            <tr>
+              <td>Social Media Automation — Instagram, Facebook &amp; YouTube</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">✓ Included</td>
+            </tr>
+            <tr>
+              <td>Admissions Enquiry, Contact &amp; Visit Booking Forms</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">✓ Included</td>
+            </tr>
+            <tr>
+              <td>WhatsApp Chat Integration + Email Auto-Responder</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">✓ Included</td>
+            </tr>
+            <tr>
+              <td>Content Migration — All Existing Pages &amp; Assets</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">✓ Included</td>
+            </tr>
+            <tr>
+              <td>Full QA Testing — Mobile, Browser, Speed &amp; Accessibility</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">✓ Included</td>
+            </tr>
+            <tr>
+              <td>Week 5 SEO Sprint — On-page, Technical &amp; Local SEO</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">✓ Included</td>
+            </tr>
+            <tr>
+              <td>Google Search Console + Analytics Setup</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">✓ Included</td>
+            </tr>
+            <tr>
+              <td>3 Months Post-Launch Support</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">✓ Included</td>
+            </tr>
+            <tr class="total-row">
+              <td><strong>Total Project Investment</strong></td>
+              <td style="text-align:right"><strong>₹1,50,000</strong></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="inv-highlight">
+          <div>
+            <div class="big">₹1,50,000</div>
+            <div class="sub">Complete project · All-inclusive</div>
+          </div>
+          <div class="note">
+            Everything GPS needs for a world-class digital presence — React frontend, cloud infrastructure, social
+            automation, full SEO sprint, CMS, all pages, content migration, and 3 months support. One price, zero
+            surprises.24/7 Support.
+          </div>
+        </div>
+
+        <div class="inv-note" style="margin-top:16px;display:flex;align-items:center;flex-wrap:wrap;gap:10px">
+          <div><strong>Annual Maintenance:</strong> &nbsp;<span style="font-size:16px;font-weight:700;color:#92400E;background:#FEF3C7;border:1px solid #F0D98A;padding:4px 12px;border-radius:8px;white-space:nowrap">₹25,000 / year</span></div>
+          <div style="color:#7A5C00;font-size:13px">Includes cloud hosting management, security patches, uptime monitoring, and monthly SEO performance report.</div>
+        </div>
+      </div>
+    </section>
+    <div class="divider"></div>
+
+    <!-- PAYMENT TERMS -->
+    <section class="section-wrap">
+      <div class="section-label">09 · Payment Terms</div>
+      <h2 class="section-title">Simple, Milestone-Based Payments</h2>
+      <p class="section-body">We keep payments straightforward and tied to real project milestones — so you only pay as we deliver. No surprises, no upfront full commitment.</p>
+
+      <div style="display:flex;flex-wrap:wrap;gap:20px;margin-top:36px">
+
+        <!-- Step 1 -->
+        <div style="flex:1;min-width:240px;background:var(--navy);border-radius:16px;padding:32px 28px;text-align:center;position:relative;overflow:hidden">
+          <div style="position:absolute;top:-16px;right:-16px;width:72px;height:72px;background:var(--gold);opacity:0.08;border-radius:50%"></div>
+          <div style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:12px">Step 1 · Project Kick-off</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:700;color:var(--gold-light);line-height:1">50%</div>
+          <div style="font-size:13px;font-weight:600;color:var(--white);margin-top:10px">Advance Payment</div>
+          <p style="font-size:12px;color:rgba(255,255,255,.5);margin-top:8px;line-height:1.6">Paid at project start to initiate design, architecture planning, and resource allocation.</p>
+        </div>
+
+        <!-- Step 2 -->
+        <div style="flex:1;min-width:240px;background:var(--navy);border-radius:16px;padding:32px 28px;text-align:center;position:relative;overflow:hidden">
+          <div style="position:absolute;top:-16px;right:-16px;width:72px;height:72px;background:var(--gold);opacity:0.08;border-radius:50%"></div>
+          <div style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:12px">Step 2 · Final Preview</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:700;color:var(--gold-light);line-height:1">25%</div>
+          <div style="font-size:13px;font-weight:600;color:var(--white);margin-top:10px">Preview & Testing Phase</div>
+          <p style="font-size:12px;color:rgba(255,255,255,.5);margin-top:8px;line-height:1.6">Paid when the complete website is ready for client review, feedback, and final testing sign-off.</p>
+        </div>
+
+        <!-- Step 3 -->
+        <div style="flex:1;min-width:240px;background:var(--navy);border-radius:16px;padding:32px 28px;text-align:center;position:relative;overflow:hidden">
+          <div style="position:absolute;top:-16px;right:-16px;width:72px;height:72px;background:var(--gold);opacity:0.08;border-radius:50%"></div>
+          <div style="font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-bottom:12px">Step 3 · Go Live</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:700;color:var(--gold-light);line-height:1">25%</div>
+          <div style="font-size:13px;font-weight:600;color:var(--white);margin-top:10px">Final Handover</div>
+          <p style="font-size:12px;color:rgba(255,255,255,.5);margin-top:8px;line-height:1.6">Paid on final handover, live deployment, and delivery of all credentials and documentation.</p>
+        </div>
+
+      </div>
+
+      <div style="margin-top:20px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px 20px;font-size:13px;color:#166534">
+        <strong>✓ No hidden fees.</strong> &nbsp;All amounts are inclusive of taxes. Payment via bank transfer or UPI. A formal invoice is issued at each milestone.
+      </div>
+    </section>
+    <div class="divider"></div>
+
+    <!-- WHY VAW -->
+    <section class="section-wrap">
+      <div class="section-label">09 · Why VAW Technologies</div>
+      <h2 class="section-title">What Sets Us Apart</h2>
+      <p class="section-body">We are not just a web agency. We are a team that believes digital experiences should be as
+        human-centred and purposeful as great education itself — backed by V Arts World Pvt. Ltd.</p>
+      <div class="why-grid">
+        <div class="why-card">
+          <div class="why-icon">⚛️</div>
+          <div>
+            <h4>React Specialists</h4>
+            <p>We build exclusively on modern frameworks — not WordPress templates. Your site will be fast, scalable,
+              and maintainable for years.</p>
+          </div>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">🎓</div>
+          <div>
+            <h4>We Understand Education</h4>
+            <p>We know how parents research and choose schools. We design for real human decisions, not just aesthetics.
+            </p>
+          </div>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">🔍</div>
+          <div>
+            <h4>SEO is Not an Afterthought</h4>
+            <p>We dedicate a full week post-launch to SEO. Most agencies add basic meta tags and call it done. We go
+              further — structured data, Core Web Vitals, local SEO, and Search Console monitoring.</p>
+          </div>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">🤝</div>
+          <div>
+            <h4>Clear Communication</h4>
+            <p>Regular updates, shared progress every step of the way. You are a partner throughout — not a bystander
+              waiting for delivery.</p>
+          </div>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">🛡️</div>
+          <div>
+            <h4>We Stand Behind Our Work</h4>
+            <p>3 months of post-launch support included. We are not done until the website is performing exactly as
+              promised.</p>
+          </div>
+        </div>
+        <div class="why-card">
+          <div class="why-icon">📍</div>
+          <div>
+            <h4>Global Mindset</h4>
+            <p>W understand your audience, your culture, and your context. Backed by V Arts World
+              Pvt. Ltd., Human-centric Art and Innovations.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </div>
-  <h1>Website Proposal for<br><span>Global Education Trust</span></h1>
-  <p>A sophisticated digital transformation strategy engineered to elevate your institution's global standing, enhance parent trust, and streamline admissions through modern technology.</p>
-  
-  <div class="hero-meta">
-    <div class="hero-meta-item">Client<strong>Global Education Trust</strong></div>
-    <div class="hero-meta-item">Agency<strong>VAW Technologies</strong></div>
-    <div class="hero-meta-item">Project Cost<strong>₹1,50,000</strong></div>
-    <div class="hero-meta-item">Timeline<strong>5 Weeks</strong></div>
-  </div>
-</section>
 
-<div class="container">
-
-  <!-- EXECUTIVE SUMMARY -->
-  <section class="section-wrap">
-    <div class="section-label">01 · Executive Summary</div>
-    <h2 class="section-title">Elevating Your Educational Vision</h2>
-    <p class="section-desc">At VAW Technologies, we understand that a school's website is more than just a digital brochure—it is the first point of contact for parents and the digital heart of your community. Our proposal focuses on creating a premium, trust-oriented platform that reflects the excellence of Global Education Trust.</p>
-    
-    <div class="card-row">
-      <div class="info-card">
-        <h3>Our Commitment</h3>
-        <p>We aim to build a digital experience that resonates with parents' aspirations for their children. By blending high-end aesthetics with seamless functionality, we ensure your institution stands out as a leader in holistic education.</p>
+  <!-- CTA -->
+  <section class="cta-section" id="contact">
+    <h2>Let's Build Something Extraordinary</h2>
+    <p>We propose a 30-minute discovery call with the GPS management team to understand your priorities and confirm the
+      scope. One conversation is all it takes to get started.</p>
+    <div class="contact-cards">
+      <div class="contact-card">
+        <div class="label">Phone / WhatsApp</div>
+        <div class="value">+91 82815 43610</div>
       </div>
-      <div class="info-card">
-        <h3>About VAW</h3>
-        <p>A proud subsidiary of <strong>V Arts World Pvt. Ltd.</strong>, we specialize in human-centric innovations. Our team combines artistic design with enterprise-grade engineering to deliver websites that are as reliable as they are beautiful.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- DELIVERABLES -->
-  <section class="section-wrap" style="background: var(--cream-dark); margin: 0 -48px; padding: 96px 48px; border-radius: 40px;">
-    <div class="section-label">02 · Project Deliverables</div>
-    <h2 class="section-title">What We Deliver</h2>
-    <p class="section-desc">A comprehensive, end-to-end solution covering every aspect of your digital presence.</p>
-    
-    <ul class="deliverables-list">
-      <li class="deliverable-item">Bespoke UI/UX Design (Figma-to-Web)</li>
-      <li class="deliverable-item">High-Performance React/Next.js Frontend</li>
-      <li class="deliverable-item">Enterprise Cloud Infrastructure Setup</li>
-      <li class="deliverable-item">Automated Social Media Sync (IG/FB/YT)</li>
-      <li class="deliverable-item">Full SEO Strategy & Implementation</li>
-      <li class="deliverable-item">Content Management System (Staff Portal)</li>
-      <li class="deliverable-item">Online Admission & Enquiry Funnel</li>
-      <li class="deliverable-item">3-Month Priority Post-Launch Support</li>
-    </ul>
-  </section>
-
-  <!-- TECHNOLOGY -->
-  <section class="section-wrap" id="techstack">
-    <div class="section-label">03 · Tech Stack</div>
-    <h2 class="section-title">Modern, Secure & Scalable</h2>
-    <p class="section-desc">We leverage the same technology used by global leaders like Netflix and Airbnb to ensure your website is fast, secure, and future-proof.</p>
-    
-    <div class="grid">
-      <div class="feature-card">
-        <span class="feature-icon">⚛️</span>
-        <h4>React + Next.js</h4>
-        <p>Ultra-fast page loads and superior SEO through server-side rendering. Provides a smooth, "app-like" experience for users.</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">☁️</span>
-        <h4>Cloud Infrastructure</h4>
-        <p>Hosted on enterprise-grade cloud servers with auto-scaling to handle peak admission traffic without slowdowns.</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">🔍</span>
-        <h4>SEO-First Core</h4>
-        <p>Structured data, optimized metadata, and lightning-fast performance ensures high rankings for key educational search terms.</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">📲</span>
-        <h4>Social Automation</h4>
-        <p>Real-time sync with Instagram, Facebook, and YouTube keeps your site fresh with campus updates automatically.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- SOLUTIONS -->
-  <section class="section-wrap">
-    <div class="section-label">04 · Strategic Solutions</div>
-    <h2 class="section-title">Solving Your Digital Challenges</h2>
-    <p class="section-desc">We address critical gaps to transform your website into a powerful institutional asset.</p>
-    
-    <div class="grid">
-      <div class="feature-card">
-        <span class="feature-icon">🎓</span>
-        <h4>Identity Revitalization</h4>
-        <p>Replacing outdated designs with a sophisticated visual language that reflects your prestige.</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">📱</span>
-        <h4>Mobile-First Access</h4>
-        <p>Flawless experience on smartphones, where 80% of parents conduct their initial research.</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">📈</span>
-        <h4>Admissions Funnel</h4>
-        <p>Guided pathways for enquiries and school visits to convert visitors into enrolled students.</p>
-      </div>
-      <div class="feature-card">
-        <span class="feature-icon">🛡️</span>
-        <h4>Enterprise Security</h4>
-        <p>Advanced protection for school data and student information with 99.9% uptime guarantee.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- TIMELINE -->
-  <section class="section-wrap" id="timeline">
-    <div class="section-label">05 · Project Timeline</div>
-    <h2 class="section-title">5-Week Accelerated Delivery</h2>
-    
-    <div class="timeline">
-      <div class="timeline-item">
-        <h4>Week 1: Strategy & Design</h4>
-        <div class="timeline-content">
-          Content audit, stakeholder briefing, and bespoke UI design concepts for key pages.
-          <div class="timeline-tasks">
-            <span class="task-pill">Sitemap</span> <span class="task-pill">Wireframes</span> <span class="task-pill">Moodboard</span>
-          </div>
+      <div class="contact-card">
+        <div class="label">Email</div>
+        <div class="value">vawoffices@gmail.com
+        </div>
+        <div class="contact-card">
+          <div class="label">Website</div>
+          <div class="value">www.vawtech.in</div>
         </div>
       </div>
-      <div class="timeline-item">
-        <h4>Week 2: Frontend Engineering</h4>
-        <div class="timeline-content">
-          Developing the core responsive interface using React/Next.js and our custom design system.
-          <div class="timeline-tasks">
-            <span class="task-pill">Components</span> <span class="task-pill">Page Layouts</span> <span class="task-pill">Responsiveness</span>
-          </div>
-        </div>
-      </div>
-      <div class="timeline-item">
-        <h4>Week 3: Systems & Automation</h4>
-        <div class="timeline-content">
-          CMS integration, social media API setup, and cloud infrastructure provisioning.
-          <div class="timeline-tasks">
-            <span class="task-pill">CMS Portal</span> <span class="task-pill">Social Sync</span> <span class="task-pill">Cloud Setup</span>
-          </div>
-        </div>
-      </div>
-      <div class="timeline-item">
-        <h4>Week 4: QA & Deployment</h4>
-        <div class="timeline-content">
-          Comprehensive testing across devices, content loading, and official production launch.
-          <div class="timeline-tasks">
-            <span class="task-pill">QA Testing</span> <span class="task-pill">Final Review</span> <span class="task-pill">🚀 Go Live</span>
-          </div>
-        </div>
-      </div>
-      <div class="timeline-item">
-        <h4>Week 5: SEO & Indexing</h4>
-        <div class="timeline-content">
-          Dedicated post-launch week for Google Search Console setup and local SEO optimization.
-          <div class="timeline-tasks">
-            <span class="task-pill">Metadata</span> <span class="task-pill">Sitemaps</span> <span class="task-pill">Keyword Tracking</span>
-          </div>
-        </div>
-      </div>
-    </div>
   </section>
 
-  <!-- INVESTMENT & PAYMENT -->
-  <section class="section-wrap" id="investment">
-    <div class="section-label">06 · Investment & Terms</div>
-    <h2 class="section-title">Transparent Pricing</h2>
-    <p class="section-desc">A complete institutional platform with no hidden costs.</p>
-    
-    <div style="background: var(--navy); color: var(--white); padding: 48px; border-radius: 24px; text-align: center;">
-      <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold-light); margin-bottom: 16px;">Total Project Cost</div>
-      <div style="font-family: 'Cormorant Garamond', serif; font-size: 64px; font-weight: 700; margin-bottom: 24px;">₹1,50,000</div>
-      <p style="opacity: 0.7; max-width: 500px; margin: 0 auto; font-size: 14px;">Includes all deliverables listed in Section 02, cloud setup, and 3 months of premium support.</p>
-    </div>
-
-    <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 32px; color: var(--navy); margin: 48px 0 24px;">Payment Schedule</h3>
-    <div class="payment-grid">
-      <div class="payment-step">
-        <div class="payment-val">50%</div>
-        <div class="payment-label">Advance Payment</div>
-        <p style="font-size: 12px; opacity: 0.6; margin-top: 12px;">At project kick-off</p>
-      </div>
-      <div class="payment-step">
-        <div class="payment-val">25%</div>
-        <div class="payment-label">Interim Payment</div>
-        <p style="font-size: 12px; opacity: 0.6; margin-top: 12px;">Final preview/testing</p>
-      </div>
-      <div class="payment-step">
-        <div class="payment-val">25%</div>
-        <div class="payment-label">Final Payment</div>
-        <p style="font-size: 12px; opacity: 0.6; margin-top: 12px;">Handover & deployment</p>
+  <!-- FOOTER -->
+  <footer>
+    <div class="foot-logo">
+      <img
+        src="vaw-logo-dark.png"
+        alt="VAW Technologies">
+      <div>
+        <div style="color:rgba(255,255,255,.85);font-size:13px;font-weight:600">VAW Technologies</div>
+        <div class="subsidiary">A subsidiary of V Arts World Pvt. Ltd. · Human-centric Art and Innovations</div>
       </div>
     </div>
-  </section>
-
-</div>
-
-<!-- CTA -->
-<section class="cta" id="contact">
-  <div class="container">
-    <h2>Ready to Transform Your Digital Presence?</h2>
-    <p>We propose a discovery session with your management team to align our strategy with your institutional goals.</p>
-
-    <a href="https://wa.me/918281543610?text=Hi%20VAW%20Technologies!%20I%20reviewed%20your%20website%20proposal%20for%20Global%20Education%20Trust%20and%20I'm%20interested%20in%20getting%20started.%20Can%20we%20schedule%20a%20discovery%20call%3F" target="_blank" style="
-      display: inline-flex; align-items: center; gap: 12px;
-      background: #25D366; color: #fff;
-      text-decoration: none; font-weight: 600; font-size: 16px;
-      padding: 16px 36px; border-radius: 100px;
-      margin-bottom: 40px;
-      box-shadow: 0 8px 32px rgba(37,211,102,0.35);
-      transition: transform 0.2s, box-shadow 0.2s;
-      letter-spacing: 0.02em;
-    " onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 40px rgba(37,211,102,0.45)'" onmouseout="this.style.transform='';this.style.boxShadow='0 8px 32px rgba(37,211,102,0.35)'">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      Let's Get Started on WhatsApp
-    </a>
-
-    <div class="contact-grid">
-      <div class="contact-box">
-        <div class="lbl">WhatsApp / Mobile</div>
-        <div class="val">+91 82815 43610</div>
-      </div>
-      <div class="contact-box">
-        <div class="lbl">Email</div>
-        <div class="val" style="font-size:14px;">info@vawtech.in<br><span style="opacity:0.7;font-size:13px;">info.virtualarts@gmail.com</span></div>
-      </div>
-      <div class="contact-box">
-        <div class="lbl">Official Website</div>
-        <div class="val">www.vawtechnologies.com</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<footer>
-  <img src="data:image/jpeg;base64,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" class="footer-logo" alt="VAW Technologies">
-  <p>© 2026 VAW Technologies · Confidential Proposal for Global Education Trust</p>
-  <p style="font-size: 12px; opacity: 0.6; margin-top: 4px;">info@vawtech.in &nbsp;·&nbsp; info.virtualarts@gmail.com</p>
-  <p style="font-size: 11px; opacity: 0.4;">A subsidiary of V Arts World Pvt. Ltd. · Human-centric Art and Innovations</p>
-</footer>
+    <p>© 2026 VAW Technologies · Confidential — Prepared exclusively for Global Public School, Kochi</p>
+  </footer>
 
 </body>
+
 </html>
