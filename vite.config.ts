@@ -66,6 +66,7 @@ export default defineConfig(({ mode }) => ({
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8 MB limit
         globPatterns: ['**/*.{js,css,html,ico,svg,woff2}'],
         globIgnores: ['**/lovable-uploads/**'],
+        navigateFallbackDenylist: [/^\/lovable-uploads/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -83,7 +84,7 @@ export default defineConfig(({ mode }) => ({
           },
           {
             urlPattern: /\/lovable-uploads\/.*/i,
-            handler: 'CacheFirst',
+            handler: 'NetworkFirst',
             options: {
               cacheName: 'images-cache',
               expiration: {

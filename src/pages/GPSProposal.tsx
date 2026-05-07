@@ -31,7 +31,7 @@ const GPSProposal = () => {
           display: "block",
         }}
         title="Website Proposal – Global Education Trust"
-        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-top-navigation"
+        sandbox="allow-scripts allow-popups allow-forms allow-top-navigation"
       />
     </div>
   );

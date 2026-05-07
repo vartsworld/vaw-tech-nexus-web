@@ -1,7 +1,11 @@
 {
   "rewrites": [
     {
-      "source": "/((?!lovable-uploads/).*)",
+      "source": "/lovable-uploads/:path*",
+      "destination": "/lovable-uploads/:path*"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
