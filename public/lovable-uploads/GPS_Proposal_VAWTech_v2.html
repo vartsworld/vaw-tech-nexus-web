@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Website Proposal – Global Education Trust | VAW Technologies</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0B1D3A;
+  --navy-light: #1A2B4A;
+  --gold: #C9A84C;
+  --gold-light: #E8C96A;
+  --green: #1A6B3A;
+  --green-light: #2E9957;
+  --cream: #FDFBFA;
+  --cream-dark: #F5F1EB;
+  --text: #1C1C1E;
+  --text-muted: #5A5A6A;
+  --white: #FFFFFF;
+  --border: #E8E2D5;
+  --accent: #C9A84C;
+  --shadow: 0 10px 30px -5px rgba(11, 29, 58, 0.08);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { 
+  font-family: 'Outfit', sans-serif; 
+  background: var(--cream); 
+  color: var(--text); 
+  font-size: 15px; 
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Navigation */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(11, 29, 58, 0.98);
+  backdrop-filter: blur(10px);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 48px; height: 72px;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.1);
+}
+.nav-logo { display: flex; align-items: center; gap: 12px; }
+.nav-logo img { height: 40px; width: auto; filter: brightness(0) invert(1); }
+.nav-links { display: flex; gap: 32px; }
+.nav-links a { 
+  color: rgba(255,255,255,0.7); 
+  text-decoration: none; 
+  font-size: 13px; 
+  font-weight: 500; 
+  letter-spacing: 0.03em; 
+  transition: all 0.3s ease;
+}
+.nav-links a:hover { color: var(--gold-light); transform: translateY(-1px); }
+
+/* Hero Section */
+.hero {
+  position: relative;
+  min-height: 650px;
+  display: flex; align-items: center;
+  padding: 100px 48px;
+  background: var(--navy);
+  color: var(--white);
+  overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(to right, rgba(11, 29, 58, 0.95), rgba(11, 29, 58, 0.7)), 
+              url('educational_institution_hero_background_1778153527999.png');
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+}
+.hero-content { position: relative; z-index: 1; max-width: 850px; }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.4);
+  color: var(--gold-light); border-radius: 100px; padding: 8px 20px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 28px;
+}
+.hero h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(40px, 6vw, 72px); font-weight: 700;
+  line-height: 1.1; margin-bottom: 24px;
+}
+.hero h1 span { color: var(--gold-light); }
+.hero p { color: rgba(255,255,255,0.85); font-size: 18px; max-width: 650px; margin-bottom: 40px; font-weight: 300; }
+
+.hero-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 32px; }
+.hero-meta-item { color: rgba(255,255,255,0.5); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+.hero-meta-item strong { display: block; color: var(--gold-light); font-size: 16px; font-weight: 600; margin-top: 4px; text-transform: none; }
+
+/* Page Layout */
+.container { max-width: 1100px; margin: 0 auto; padding: 0 48px; }
+.section-wrap { padding: 96px 0; }
+.section-label {
+  display: inline-block; color: var(--gold); font-size: 12px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+  margin-bottom: 16px; position: relative; padding-left: 40px;
+}
+.section-label::before { content: ''; position: absolute; left: 0; top: 50%; width: 30px; height: 1px; background: var(--gold); }
+.section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(32px, 4vw, 48px); font-weight: 700; color: var(--navy); margin-bottom: 24px; line-height: 1.2;
+}
+.section-desc { color: var(--text-muted); font-size: 16px; max-width: 800px; margin-bottom: 48px; }
+
+/* Flex Cards Row */
+.card-row { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 40px; }
+.info-card {
+  flex: 1; min-width: 300px;
+  background: var(--white); border: 1px solid var(--border); border-radius: 20px;
+  padding: 40px; box-shadow: var(--shadow);
+  display: flex; flex-direction: column;
+  transition: transform 0.3s ease;
+}
+.info-card:hover { transform: translateY(-5px); }
+.info-card h3 { 
+  font-family: 'Cormorant Garamond', serif; font-size: 28px; color: var(--navy); margin-bottom: 16px; 
+}
+.info-card p { color: var(--text-muted); font-size: 15px; flex-grow: 1; }
+
+/* Grid Layouts */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.feature-card {
+  background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 32px;
+  transition: all 0.3s ease;
+  display: flex; flex-direction: column;
+}
+.feature-card:hover { border-color: var(--gold); box-shadow: var(--shadow); }
+.feature-icon { font-size: 32px; margin-bottom: 20px; display: block; opacity: 0.9; }
+.feature-card h4 { font-size: 18px; font-weight: 600; color: var(--navy); margin-bottom: 12px; }
+.feature-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; flex-grow: 1; }
+
+/* Deliverables & Payment */
+.deliverables-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.deliverable-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--cream-dark); padding: 16px 20px; border-radius: 12px;
+  font-size: 14px; font-weight: 500; color: var(--navy);
+}
+.deliverable-item::before { content: '✓'; color: var(--green); font-weight: 700; }
+
+.payment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-top: 32px; }
+.payment-step {
+  background: var(--navy); color: var(--white); padding: 32px; border-radius: 16px; text-align: center;
+  position: relative; overflow: hidden;
+}
+.payment-step::after {
+  content: ''; position: absolute; top: -20px; right: -20px; width: 60px; height: 60px;
+  background: var(--gold); opacity: 0.1; border-radius: 50%;
+}
+.payment-val { font-size: 36px; font-weight: 700; color: var(--gold-light); margin-bottom: 8px; }
+.payment-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.6); }
+
+/* Timeline */
+.timeline { position: relative; margin-top: 48px; padding-left: 40px; border-left: 2px solid var(--border); }
+.timeline-item { position: relative; margin-bottom: 48px; }
+.timeline-item::before {
+  content: ''; position: absolute; left: -49px; top: 0; width: 16px; height: 16px;
+  background: var(--gold); border: 4px solid var(--cream); border-radius: 50%;
+}
+.timeline-item h4 { font-size: 18px; font-weight: 600; color: var(--navy); margin-bottom: 8px; }
+.timeline-content { background: var(--white); padding: 24px; border-radius: 16px; border: 1px solid var(--border); }
+.timeline-tasks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.task-pill { font-size: 12px; background: var(--cream-dark); padding: 6px 12px; border-radius: 100px; color: var(--text-muted); }
+
+/* Footer & CTA */
+.cta {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  padding: 100px 48px; text-align: center; color: var(--white);
+}
+.cta h2 { font-family: 'Cormorant Garamond', serif; font-size: 48px; margin-bottom: 24px; }
+.cta p { max-width: 600px; margin: 0 auto 40px; color: rgba(255,255,255,0.7); font-size: 18px; }
+.contact-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; }
+.contact-box {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  padding: 24px 40px; border-radius: 16px; min-width: 250px;
+}
+.contact-box .lbl { font-size: 11px; text-transform: uppercase; color: var(--gold-light); margin-bottom: 8px; }
+.contact-box .val { font-size: 18px; font-weight: 500; }
+
+footer {
+  background: #060F1F; padding: 48px; color: rgba(255,255,255,0.4); font-size: 13px;
+  display: flex; flex-direction: column; align-items: center; gap: 24px; text-align: center;
+}
+.footer-logo { filter: brightness(0) invert(1); opacity: 0.8; height: 32px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  nav { padding: 0 24px; }
+  .nav-links { display: none; }
+  .hero { padding: 80px 24px; min-height: 500px; }
+  .container { padding: 0 24px; }
+  .info-card { padding: 32px; }
+  .feature-card { padding: 24px; }
+  .section-wrap { padding: 64px 0; }
+  .payment-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <img src="data:image/jpeg;base64,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-started-badge { 
+      background: var(--gold); color: var(--navy); padding: 10px 24px; border-radius: 100px; 
+      font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;
+      display: inline-block; margin-bottom: 24px;
+    }
+  </div>
+  <h1>Website Proposal for<br><span>Global Education Trust</span></h1>
+  <p>A sophisticated digital transformation strategy engineered to elevate your institution's global standing, enhance parent trust, and streamline admissions through modern technology.</p>
+  
+  <div class="hero-meta">
+    <div class="hero-meta-item">Client<strong>Global Education Trust</strong></div>
+    <div class="hero-meta-item">Agency<strong>VAW Technologies</strong></div>
+    <div class="hero-meta-item">Project Cost<strong>₹1,50,000</strong></div>
+    <div class="hero-meta-item">Timeline<strong>5 Weeks</strong></div>
+  </div>
+</section>
+
+<div class="container">
+
+  <!-- EXECUTIVE SUMMARY -->
+  <section class="section-wrap">
+    <div class="section-label">01 · Executive Summary</div>
+    <h2 class="section-title">Elevating Your Educational Vision</h2>
+    <p class="section-desc">At VAW Technologies, we understand that a school's website is more than just a digital brochure—it is the first point of contact for parents and the digital heart of your community. Our proposal focuses on creating a premium, trust-oriented platform that reflects the excellence of Global Education Trust.</p>
+    
+    <div class="card-row">
+      <div class="info-card">
+        <h3>Our Commitment</h3>
+        <p>We aim to build a digital experience that resonates with parents' aspirations for their children. By blending high-end aesthetics with seamless functionality, we ensure your institution stands out as a leader in holistic education.</p>
+      </div>
+      <div class="info-card">
+        <h3>About VAW</h3>
+        <p>A proud subsidiary of <strong>V Arts World Pvt. Ltd.</strong>, we specialize in human-centric innovations. Our team combines artistic design with enterprise-grade engineering to deliver websites that are as reliable as they are beautiful.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DELIVERABLES -->
+  <section class="section-wrap" style="background: var(--cream-dark); margin: 0 -48px; padding: 96px 48px; border-radius: 40px;">
+    <div class="section-label">02 · Project Deliverables</div>
+    <h2 class="section-title">What We Deliver</h2>
+    <p class="section-desc">A comprehensive, end-to-end solution covering every aspect of your digital presence.</p>
+    
+    <ul class="deliverables-list">
+      <li class="deliverable-item">Bespoke UI/UX Design (Figma-to-Web)</li>
+      <li class="deliverable-item">High-Performance React/Next.js Frontend</li>
+      <li class="deliverable-item">Enterprise Cloud Infrastructure Setup</li>
+      <li class="deliverable-item">Automated Social Media Sync (IG/FB/YT)</li>
+      <li class="deliverable-item">Full SEO Strategy & Implementation</li>
+      <li class="deliverable-item">Content Management System (Staff Portal)</li>
+      <li class="deliverable-item">Online Admission & Enquiry Funnel</li>
+      <li class="deliverable-item">3-Month Priority Post-Launch Support</li>
+    </ul>
+  </section>
+
+  <!-- TECHNOLOGY -->
+  <section class="section-wrap" id="techstack">
+    <div class="section-label">03 · Tech Stack</div>
+    <h2 class="section-title">Modern, Secure & Scalable</h2>
+    <p class="section-desc">We leverage the same technology used by global leaders like Netflix and Airbnb to ensure your website is fast, secure, and future-proof.</p>
+    
+    <div class="grid">
+      <div class="feature-card">
+        <span class="feature-icon">⚛️</span>
+        <h4>React + Next.js</h4>
+        <p>Ultra-fast page loads and superior SEO through server-side rendering. Provides a smooth, "app-like" experience for users.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">☁️</span>
+        <h4>Cloud Infrastructure</h4>
+        <p>Hosted on enterprise-grade cloud servers with auto-scaling to handle peak admission traffic without slowdowns.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔍</span>
+        <h4>SEO-First Core</h4>
+        <p>Structured data, optimized metadata, and lightning-fast performance ensures high rankings for key educational search terms.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📲</span>
+        <h4>Social Automation</h4>
+        <p>Real-time sync with Instagram, Facebook, and YouTube keeps your site fresh with campus updates automatically.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOLUTIONS -->
+  <section class="section-wrap">
+    <div class="section-label">04 · Strategic Solutions</div>
+    <h2 class="section-title">Solving Your Digital Challenges</h2>
+    <p class="section-desc">We address critical gaps to transform your website into a powerful institutional asset.</p>
+    
+    <div class="grid">
+      <div class="feature-card">
+        <span class="feature-icon">🎓</span>
+        <h4>Identity Revitalization</h4>
+        <p>Replacing outdated designs with a sophisticated visual language that reflects your prestige.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📱</span>
+        <h4>Mobile-First Access</h4>
+        <p>Flawless experience on smartphones, where 80% of parents conduct their initial research.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📈</span>
+        <h4>Admissions Funnel</h4>
+        <p>Guided pathways for enquiries and school visits to convert visitors into enrolled students.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🛡️</span>
+        <h4>Enterprise Security</h4>
+        <p>Advanced protection for school data and student information with 99.9% uptime guarantee.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- TIMELINE -->
+  <section class="section-wrap" id="timeline">
+    <div class="section-label">05 · Project Timeline</div>
+    <h2 class="section-title">5-Week Accelerated Delivery</h2>
+    
+    <div class="timeline">
+      <div class="timeline-item">
+        <h4>Week 1: Strategy & Design</h4>
+        <div class="timeline-content">
+          Content audit, stakeholder briefing, and bespoke UI design concepts for key pages.
+          <div class="timeline-tasks">
+            <span class="task-pill">Sitemap</span> <span class="task-pill">Wireframes</span> <span class="task-pill">Moodboard</span>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <h4>Week 2: Frontend Engineering</h4>
+        <div class="timeline-content">
+          Developing the core responsive interface using React/Next.js and our custom design system.
+          <div class="timeline-tasks">
+            <span class="task-pill">Components</span> <span class="task-pill">Page Layouts</span> <span class="task-pill">Responsiveness</span>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <h4>Week 3: Systems & Automation</h4>
+        <div class="timeline-content">
+          CMS integration, social media API setup, and cloud infrastructure provisioning.
+          <div class="timeline-tasks">
+            <span class="task-pill">CMS Portal</span> <span class="task-pill">Social Sync</span> <span class="task-pill">Cloud Setup</span>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <h4>Week 4: QA & Deployment</h4>
+        <div class="timeline-content">
+          Comprehensive testing across devices, content loading, and official production launch.
+          <div class="timeline-tasks">
+            <span class="task-pill">QA Testing</span> <span class="task-pill">Final Review</span> <span class="task-pill">🚀 Go Live</span>
+          </div>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <h4>Week 5: SEO & Indexing</h4>
+        <div class="timeline-content">
+          Dedicated post-launch week for Google Search Console setup and local SEO optimization.
+          <div class="timeline-tasks">
+            <span class="task-pill">Metadata</span> <span class="task-pill">Sitemaps</span> <span class="task-pill">Keyword Tracking</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INVESTMENT & PAYMENT -->
+  <section class="section-wrap" id="investment">
+    <div class="section-label">06 · Investment & Terms</div>
+    <h2 class="section-title">Transparent Pricing</h2>
+    <p class="section-desc">A complete institutional platform with no hidden costs.</p>
+    
+    <div style="background: var(--navy); color: var(--white); padding: 48px; border-radius: 24px; text-align: center;">
+      <div style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold-light); margin-bottom: 16px;">Total Project Cost</div>
+      <div style="font-family: 'Cormorant Garamond', serif; font-size: 64px; font-weight: 700; margin-bottom: 24px;">₹1,50,000</div>
+      <p style="opacity: 0.7; max-width: 500px; margin: 0 auto; font-size: 14px;">Includes all deliverables listed in Section 02, cloud setup, and 3 months of premium support.</p>
+    </div>
+
+    <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 32px; color: var(--navy); margin: 48px 0 24px;">Payment Schedule</h3>
+    <div class="payment-grid">
+      <div class="payment-step">
+        <div class="payment-val">50%</div>
+        <div class="payment-label">Advance Payment</div>
+        <p style="font-size: 12px; opacity: 0.6; margin-top: 12px;">At project kick-off</p>
+      </div>
+      <div class="payment-step">
+        <div class="payment-val">25%</div>
+        <div class="payment-label">Interim Payment</div>
+        <p style="font-size: 12px; opacity: 0.6; margin-top: 12px;">Final preview/testing</p>
+      </div>
+      <div class="payment-step">
+        <div class="payment-val">25%</div>
+        <div class="payment-label">Final Payment</div>
+        <p style="font-size: 12px; opacity: 0.6; margin-top: 12px;">Handover & deployment</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- CTA -->
+<section class="cta" id="contact">
+  <div class="container">
+    <h2>Ready to Transform Your Digital Presence?</h2>
+    <p>We propose a discovery session with your management team to align our strategy with your institutional goals.</p>
+    <div class="contact-grid">
+      <div class="contact-box">
+        <div class="lbl">WhatsApp / Mobile</div>
+        <div class="val">+91 82815 43610</div>
+      </div>
+      <div class="contact-box">
+        <div class="lbl">Email Address</div>
+        <div class="val">hello@vawtechnologies.com</div>
+      </div>
+      <div class="contact-box">
+        <div class="lbl">Official Website</div>
+        <div class="val">www.vawtechnologies.com</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCACYAb8DASIAAhEBAxEB/8QAHQABAAICAwEBAAAAAAAAAAAAAAcIBgkBBAUDAv/EAGIQAAECBQEEBgQGCQ4JCQkAAAECAwAEBQYRBwgSITETQVFhcYEJFCKRFRgjMoKhFkJWkpSVorHTJCU2Q1JVYnJ1srPR0vAXMzQ1N2N2k8EZJjg5RFdzdNRGU2Rlg7TD4fH/xAAcAQEAAwEBAQEBAAAAAAAAAAAABQYHBAMIAgH/xAA3EQACAQIEAwUHAgUFAAAAAAAAAQIDBAURITEGQXESExQigRUyYZGxwdFRU1JyoeHxBzOSsvD/2gAMAwEAAhEDEQA/AKw6WSFMqNddZqLKXsNZbQsApJzxznyiUPsWt395pL/dJiDKJPLplVlp5vmy4FY7YsNIzCJuSZmWz7DqAoecXvhSNrcUZ0qkE5ReeqWz/BS+J3c0KsatObUXpo+aPM+xa3f3mkv9ymORa9vDB+B5IY/1QH5o9iEW32baftR+SKr7Ruv3JfNkd6iWZIIpDlSpUulhxgby0I4JUkc+HbEVxZZ5tDzK2XEhSFgggxX26qWujV2ZkVoUlKVZb3hzSeXj2Z7oonFWFwtqka9JZRlo8ts/7/Yu3DOIzuacqVV5yjt0PLhCEVItAhCEAcpBUoJSCSeAA649mVtS45poOsUabUg8QSjGffGY6G28meqL9ZmW0Ll5YFtAUMjf4HPHuibMYGAMARFXmJdxU7EVmXbAeEfaNuritNxT2SXJcytAsu6f3kmvcP648qp06epkx6vUJV2WdxndWnGYtWfGMO1Yt4122XFS7RXNymXm91OVKCUkqT38M+6PChi7nNRmkkzuxPgeFtazrUajbis8nlqV6hCEThnYhCEAIsXsw6W0as0J26blpqZxLjxbkmnhlsoHBSinrO9kDPZEA0GmTNZrUnSpNJVMTbyWkDGeJOM+A5xsEtajStvW7IUSSGJeTZS0jvwOffnnFH45xmdjaRo0ZZTm+W6S3+e3zJvBLRVqznNZqP1PEVpjp8Tk2fR8/wDlUxx/gx0+H/shR/wVMZf1RxGRe1b796X/ACf5LX4Wj/AvkjERplp8OVoUfP8S0vxSj/3Y5NAs0HIsm08/xSj/AN2PoYQA+BLMH/8AEm0vxSj/AN2Pf+B7Z/etSvxSX/WxxCPuU5vmbP1OpRgtYfRHz+BrZ/erSvxSX/WxHmsW0LZmkdwMW1U6FVZ+fdlUzGJZKEtoaUSkZKlcSdBXAcMeMTDEW65aF2Tq3MyE7X3qnIT0k0pkTUgtCVuNHiEKCkqBAJUR3qPfHLjFpGztKlejBykvRdfic2D8QyxC8p29aSUXp8X0IDunaxv2pXGqfocm3RaW2CIZl0oW653uLIOT4ADujH9btX6jrC/bz1Ro0rlPH6NScq4HicAeQiZvib6S/dtfH4ZL/oIjrWjZrsLS7Tyfun4UvCrTrO61Jsh6XShTyuRUdzkBk+A74zC94gxW6pujVpZRe6yX8+fXp8C9WltZUKqlCevL9uX9SBoQhFOJ8QhCAEIQgBCEIAQhCAEIQgBCEIAQhCAEIQgBCEIAQhCAEIQgBCEIAQhCAEIQgBCEIAQhCAEIQgBCEIAQhCAEIQgD/2Q==" class="footer-logo" alt="VAW Technologies">
+  <p>© 2026 VAW Technologies · Confidential Proposal for Global Education Trust</p>
+  <p style="font-size: 11px; opacity: 0.5;">A subsidiary of V Arts World Pvt. Ltd. · Human-centric Art and Innovations</p>
+</footer>
+
+</body>
+</html>
