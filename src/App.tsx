@@ -144,6 +144,7 @@ const AppContent = () => {
           <Route path="/lms" element={<LMSBuilder />} />
           <Route path="/referral-program" element={<ReferralProgram />} />
           <Route path="/refer/:code" element={<ReferralFormPage />} />
+          <Route path="/proposal/gps" element={<GPSProposal />} />
           <Route path="/:id" element={<StaffIDCard />} />
           <Route path="/team" element={<Team />} />
           <Route path="/qr" element={<QRRedirection />} />
@@ -151,7 +152,6 @@ const AppContent = () => {
           <Route path="/sales/add-client" element={<AddClient />} />
           <Route path="/portal" element={<Portal />} />
           <Route path="/feedback/:token" element={<ClientFeedback />} />
-          <Route path="/proposal/gps" element={<GPSProposal />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
