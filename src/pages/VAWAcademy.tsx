@@ -11,20 +11,33 @@ import heroImg from "@/assets/vaw-academy-hero.jpg";
 import toolsImg from "@/assets/vaw-academy-tools.jpg";
 import SEO from "@/components/SEO";
 
-const aiTools = [
-  { name: "ChatGPT", logo: "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg", color: "from-emerald-500/20 to-teal-500/20" },
-  { name: "Gemini", logo: "https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg", color: "from-blue-500/20 to-indigo-500/20" },
-  { name: "Claude", logo: "https://upload.wikimedia.org/wikipedia/commons/1/14/Claude_AI_symbol.svg", color: "from-orange-500/20 to-amber-500/20" },
-  { name: "Midjourney", logo: "https://seeklogo.com/images/M/midjourney-logo-031A0A1864-seeklogo.com.png", color: "from-purple-500/20 to-pink-500/20" },
-  { name: "DALL·E", logo: "https://upload.wikimedia.org/wikipedia/commons/e/ec/DALL-E_Logo.png", color: "from-rose-500/20 to-red-500/20" },
-  { name: "Figma", logo: "https://upload.wikimedia.org/wikipedia/commons/3/33/Figma-logo.svg", color: "from-pink-500/20 to-purple-500/20" },
-  { name: "Canva", logo: "https://upload.wikimedia.org/wikipedia/commons/0/08/Canva_icon_2021.svg", color: "from-cyan-500/20 to-blue-500/20" },
-  { name: "Photoshop", logo: "https://upload.wikimedia.org/wikipedia/commons/a/af/Adobe_Photoshop_CC_icon.svg", color: "from-blue-600/20 to-indigo-700/20" },
-  { name: "Illustrator", logo: "https://upload.wikimedia.org/wikipedia/commons/f/fb/Adobe_Illustrator_CC_icon.svg", color: "from-orange-500/20 to-yellow-500/20" },
-  { name: "Premiere Pro", logo: "https://upload.wikimedia.org/wikipedia/commons/4/40/Adobe_Premiere_Pro_CC_icon.svg", color: "from-purple-600/20 to-violet-700/20" },
-  { name: "CapCut", logo: "https://upload.wikimedia.org/wikipedia/commons/d/df/CapCut_logo.svg", color: "from-slate-500/20 to-zinc-600/20" },
-  { name: "GitHub", logo: "https://upload.wikimedia.org/wikipedia/commons/9/91/Octicons-mark-github.svg", color: "from-zinc-700/30 to-zinc-900/30" },
+const aiAgents = [
+  { name: "Lovable", logo: "https://lovable.dev/favicon.ico", tag: "AI App Builder" },
+  { name: "ChatGPT", logo: "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg", tag: "OpenAI" },
+  { name: "Claude", logo: "https://upload.wikimedia.org/wikipedia/commons/1/14/Claude_AI_symbol.svg", tag: "Anthropic" },
+  { name: "Gemini", logo: "https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg", tag: "Google" },
+  { name: "GitHub Copilot", logo: "https://github.githubassets.com/images/modules/site/copilot/copilot.png", tag: "Code Agent" },
+  { name: "Cursor", logo: "https://www.cursor.com/apple-touch-icon.png", tag: "AI IDE" },
+  { name: "Perplexity", logo: "https://www.perplexity.ai/favicon.svg", tag: "Research AI" },
+  { name: "Grok", logo: "https://x.ai/favicon.ico", tag: "xAI" },
+  { name: "DeepSeek", logo: "https://www.deepseek.com/favicon.ico", tag: "Reasoning AI" },
+  { name: "Midjourney", logo: "https://seeklogo.com/images/M/midjourney-logo-031A0A1864-seeklogo.com.png", tag: "Image AI" },
+  { name: "DALL·E", logo: "https://upload.wikimedia.org/wikipedia/commons/e/ec/DALL-E_Logo.png", tag: "OpenAI Image" },
+  { name: "Stable Diffusion", logo: "https://upload.wikimedia.org/wikipedia/commons/d/d5/Stability_AI_logo.png", tag: "Open Image AI" },
+  { name: "Runway", logo: "https://runwayml.com/favicon.ico", tag: "AI Video" },
+  { name: "Sora", logo: "https://openai.com/favicon.ico", tag: "OpenAI Video" },
+  { name: "ElevenLabs", logo: "https://elevenlabs.io/favicon.ico", tag: "AI Voice" },
+  { name: "Suno", logo: "https://suno.com/favicon.ico", tag: "AI Music" },
+  { name: "Notion AI", logo: "https://www.notion.so/front-static/favicon.ico", tag: "Workspace AI" },
+  { name: "Figma AI", logo: "https://upload.wikimedia.org/wikipedia/commons/3/33/Figma-logo.svg", tag: "Design AI" },
+  { name: "Canva AI", logo: "https://upload.wikimedia.org/wikipedia/commons/0/08/Canva_icon_2021.svg", tag: "Creative AI" },
+  { name: "n8n", logo: "https://n8n.io/favicon.ico", tag: "Automation" },
+  { name: "Zapier AI", logo: "https://cdn.zapier.com/zapier/images/favicon.ico", tag: "Workflow AI" },
+  { name: "Hugging Face", logo: "https://huggingface.co/favicon.ico", tag: "Model Hub" },
+  { name: "Replit Agent", logo: "https://replit.com/public/icons/favicon-196.png", tag: "Code Agent" },
+  { name: "v0", logo: "https://v0.dev/favicon.ico", tag: "Vercel AI" },
 ];
+
 
 const whyChoose = [
   "Industry-Oriented Training", "Live Practical Sessions", "Real Project Experience",
