@@ -56,6 +56,7 @@ import AddClient from "./pages/AddClient";
 import Portal from "./pages/Portal";
 import ClientFeedback from "./pages/ClientFeedback";
 import GPSProposal from "./pages/GPSProposal";
+import VAWAcademy from "./pages/VAWAcademy";
 
 
 
@@ -145,6 +146,8 @@ const AppContent = () => {
           <Route path="/referral-program" element={<ReferralProgram />} />
           <Route path="/refer/:code" element={<ReferralFormPage />} />
           <Route path="/proposal/gps" element={<GPSProposal />} />
+          <Route path="/academy" element={<VAWAcademy />} />
+          <Route path="/vaw-academy" element={<VAWAcademy />} />
           <Route path="/:id" element={<StaffIDCard />} />
           <Route path="/team" element={<Team />} />
           <Route path="/qr" element={<QRRedirection />} />

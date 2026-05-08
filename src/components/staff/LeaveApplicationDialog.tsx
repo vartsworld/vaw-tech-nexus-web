@@ -52,14 +52,14 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
   const fetchRequests = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('staff_leave_requests')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRequests(data || []);
+      setRequests((data as LeaveRequest[]) || []);
     } catch (error) {
       console.error("Error fetching leave requests:", error);
       toast.error("Failed to load your leave requests.");
@@ -76,7 +76,7 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('staff_leave_requests')
         .insert({
           user_id: userId,
