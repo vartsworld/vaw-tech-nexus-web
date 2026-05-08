@@ -146,6 +146,8 @@ const AppContent = () => {
           <Route path="/referral-program" element={<ReferralProgram />} />
           <Route path="/refer/:code" element={<ReferralFormPage />} />
           <Route path="/proposal/gps" element={<GPSProposal />} />
+          <Route path="/academy" element={<VAWAcademy />} />
+          <Route path="/vaw-academy" element={<VAWAcademy />} />
           <Route path="/:id" element={<StaffIDCard />} />
           <Route path="/team" element={<Team />} />
           <Route path="/qr" element={<QRRedirection />} />
