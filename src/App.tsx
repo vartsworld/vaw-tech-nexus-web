@@ -56,6 +56,7 @@ import AddClient from "./pages/AddClient";
 import Portal from "./pages/Portal";
 import ClientFeedback from "./pages/ClientFeedback";
 import GPSProposal from "./pages/GPSProposal";
+import VAWAcademy from "./pages/VAWAcademy";
 
 
 
