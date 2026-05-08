@@ -162,24 +162,53 @@ export default function VAWAcademy() {
         </div>
       </section>
 
-      {/* AI TOOLS SHOWCASE */}
+      {/* AI-FIRST CALLOUT */}
+      <section className="container mx-auto px-4 py-12">
+        <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/15 via-primary/5 to-background p-8 md:p-12 text-center">
+          <Badge className="mb-4 bg-primary/20 text-primary border-primary/40">
+            <Sparkles className="w-3.5 h-3.5 mr-1.5" /> 100% AI-Powered Learning
+          </Badge>
+          <h2 className="text-2xl md:text-4xl font-bold mb-4 max-w-3xl mx-auto">
+            All Our Courses Are Built Around AI Agents & Modern AI Tools
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg">
+            We don't rely on traditional software. Every program teaches you to <span className="text-primary font-semibold">build, design, code, and create with AI agents</span> — the same workflows used by today's top creators, founders and agencies.
+          </p>
+        </div>
+      </section>
+
+      {/* AI AGENTS & TOOLS SHOWCASE */}
       <section className="container mx-auto px-4 py-20">
         <div className="text-center mb-12">
-          <Badge variant="outline" className="mb-4 border-primary/40 text-primary">AI TOOLS YOU WILL MASTER</Badge>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Industry-Leading Tools & Platforms</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">Hands-on training with the same tools used by top creators, agencies and AI teams worldwide.</p>
+          <Badge variant="outline" className="mb-4 border-primary/40 text-primary">AI AGENTS & TOOLS YOU WILL MASTER</Badge>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">The Most Advanced AI Stack</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">From AI app builders like <span className="text-primary font-semibold">Lovable</span> to coding agents, image, video, voice and automation AIs — train with the future, not the past.</p>
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4 max-w-6xl mx-auto">
-          {aiTools.map((tool) => (
-            <div key={tool.name} className={`group relative rounded-2xl bg-gradient-to-br ${tool.color} backdrop-blur-md border border-white/10 p-5 hover:scale-105 hover:border-primary/50 transition-all duration-300`}>
-              <div className="aspect-square flex items-center justify-center mb-3 rounded-xl bg-background/40 p-3">
-                <img src={tool.logo} alt={tool.name} className="max-h-12 max-w-full object-contain" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          {aiAgents.map((tool) => (
+            <div key={tool.name} className="group relative rounded-2xl bg-card/40 backdrop-blur-md border border-border/50 p-4 hover:scale-105 hover:border-primary/60 hover:bg-card/70 transition-all duration-300">
+              <div className="aspect-square flex items-center justify-center mb-3 rounded-xl bg-background/60 border border-border/30 p-3">
+                <img
+                  src={tool.logo}
+                  alt={`${tool.name} logo`}
+                  className="max-h-12 max-w-full object-contain"
+                  loading="lazy"
+                  onError={(e) => {
+                    const t = e.target as HTMLImageElement;
+                    t.outerHTML = `<div class="w-12 h-12 rounded-lg bg-primary/15 flex items-center justify-center text-primary font-bold text-lg">${tool.name.charAt(0)}</div>`;
+                  }}
+                />
               </div>
-              <p className="text-center text-sm font-semibold">{tool.name}</p>
+              <p className="text-center text-xs font-semibold leading-tight">{tool.name}</p>
+              <p className="text-center text-[10px] text-muted-foreground mt-0.5">{tool.tag}</p>
             </div>
           ))}
         </div>
+        <p className="text-center text-xs text-muted-foreground mt-8 max-w-2xl mx-auto italic">
+          + many more emerging AI agents and models added every month as the ecosystem evolves.
+        </p>
       </section>
+
 
       {/* MASTER COURSE */}
       <section className="container mx-auto px-4 py-20">
