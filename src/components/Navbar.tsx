@@ -25,6 +25,9 @@ const navigationItems = [{
 }, {
   name: "Internship",
   href: "/internship"
+}, {
+  name: "Academy",
+  href: "/academy"
 }];
 const servicesItems = [{
   name: "All Our Services",
