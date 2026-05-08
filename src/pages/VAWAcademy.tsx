@@ -220,10 +220,14 @@ export default function VAWAcademy() {
                 <div className="p-3 rounded-xl bg-primary/15"><Brain className="w-6 h-6 text-primary" /></div>
                 <h3 className="text-2xl md:text-3xl font-bold">{masterCourse.title}</h3>
               </div>
-              <div className="flex flex-wrap gap-3 mb-6">
-                <Badge variant="secondary" className="text-sm py-1.5 px-3"><IndianRupee className="w-3.5 h-3.5 mr-1" />{masterCourse.fee.replace('₹','')}</Badge>
-                <Badge variant="secondary" className="text-sm py-1.5 px-3"><Clock className="w-3.5 h-3.5 mr-1" />{masterCourse.duration}</Badge>
-                <Badge variant="secondary" className="text-sm py-1.5 px-3">Online / Offline</Badge>
+              <div className="mb-6">
+                <div className="text-4xl font-bold text-primary mb-4">
+                  {masterCourse.fee}
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <Badge variant="secondary" className="text-sm py-1.5 px-3"><Clock className="w-3.5 h-3.5 mr-1" />{masterCourse.duration}</Badge>
+                  <Badge variant="secondary" className="text-sm py-1.5 px-3">Online / Offline</Badge>
+                </div>
               </div>
               <p className="text-muted-foreground mb-6">A complete beginner-to-intermediate program introducing learners to AI, modern AI tools, automation, and future technologies.</p>
               <h4 className="font-semibold mb-3">What You Will Learn</h4>
@@ -262,12 +266,14 @@ export default function VAWAcademy() {
             return (
               <Card key={s.title} className="group bg-card/50 backdrop-blur border-border/50 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 overflow-hidden">
                 <CardHeader>
-                  <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-start mb-3">
                     <div className="p-3 rounded-xl bg-primary/15 group-hover:scale-110 transition-transform"><Icon className="w-6 h-6 text-primary" /></div>
-                    <Badge variant="outline" className="border-primary/40 text-primary font-semibold">{s.fee}</Badge>
                   </div>
                   <CardTitle className="text-xl">{s.title}</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-2">{s.desc}</p>
+                  <div className="my-2">
+                    <span className="text-3xl font-bold text-primary">{s.fee}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">{s.desc}</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
