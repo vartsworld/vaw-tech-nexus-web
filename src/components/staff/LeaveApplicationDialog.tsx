@@ -76,7 +76,7 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('staff_leave_requests')
         .insert({
           user_id: userId,
