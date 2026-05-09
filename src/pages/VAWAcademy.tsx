@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import EnrollDialog from "@/components/academy/EnrollDialog";
 import {
   Sparkles, Brain, Palette, Code2, Smartphone, Megaphone, Video, PenTool,
   Database, MessageSquare, CheckCircle2, GraduationCap, Briefcase, Users,
@@ -98,8 +100,17 @@ const highlights = [
 const audience = ["Students","College Graduates","Entrepreneurs","Freelancers","Working Professionals","Beginners in Tech"];
 
 export default function VAWAcademy() {
+  const [enrollOpen, setEnrollOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<{ title: string; fee?: string }>({ title: "AI & Digital Skills Master Program" });
+
+  const openEnroll = (title: string, fee?: string) => {
+    setSelectedCourse({ title, fee });
+    setEnrollOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <EnrollDialog open={enrollOpen} onOpenChange={setEnrollOpen} courseTitle={selectedCourse.title} courseFee={selectedCourse.fee} />
       <SEO
         title="VAW Online Internship & AI Digital Skills Master Program"
         description="Future-Ready AI & Digital Skills Courses by VArts World Academy. Learn AI, UI/UX, Web Dev, Prompt Engineering, Marketing & more with live sessions, real projects, and certification."
@@ -125,7 +136,7 @@ export default function VAWAcademy() {
             job seekers, entrepreneurs, and professionals.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => openEnroll("AI & Digital Skills Master Program")}>
               Enroll Now <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
             <Button size="lg" variant="outline" asChild>
@@ -236,7 +247,7 @@ export default function VAWAcademy() {
                   <div key={m} className="flex items-center gap-2 text-sm"><CheckCircle2 className="w-4 h-4 text-primary shrink-0" />{m}</div>
                 ))}
               </div>
-              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Enroll in Master Course <ArrowRight className="ml-2 w-4 h-4" /></Button>
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => openEnroll(masterCourse.title, masterCourse.fee)}>Enroll in Master Course <ArrowRight className="ml-2 w-4 h-4" /></Button>
             </div>
             <div className="bg-muted/30 p-8 md:p-12 border-l border-border/50">
               <h4 className="font-semibold mb-4 flex items-center gap-2"><Briefcase className="w-4 h-4 text-primary" />Career Opportunities</h4>
@@ -295,7 +306,7 @@ export default function VAWAcademy() {
                       {s.careers.map(c => <li key={c} className="text-xs flex items-center gap-1.5"><ArrowRight className="w-3 h-3 text-primary" />{c}</li>)}
                     </ul>
                   </div>
-                  <Button variant="outline" className="w-full mt-2 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">Enroll Now</Button>
+                  <Button variant="outline" className="w-full mt-2 group-hover:bg-primary group-hover:text-primary-foreground transition-colors" onClick={() => openEnroll(s.title, s.fee)}>Enroll Now</Button>
                 </CardContent>
               </Card>
             );
@@ -356,7 +367,7 @@ export default function VAWAcademy() {
               With AI, creativity, and digital innovation — your next opportunity starts at VAW Technologies Academy & ESCHOOLBOOKS.
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">Apply for Admission <ArrowRight className="ml-2 w-4 h-4" /></Button>
+              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => openEnroll("AI & Digital Skills Master Program")}>Apply for Admission <ArrowRight className="ml-2 w-4 h-4" /></Button>
               <Button size="lg" variant="outline" asChild><Link to="/">Contact Us</Link></Button>
             </div>
             <p className="mt-8 text-sm text-muted-foreground">VAW Technologies Academy · ESCHOOLBOOKS</p>
