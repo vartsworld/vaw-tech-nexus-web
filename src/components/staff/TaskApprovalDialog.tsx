@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Maximize2, X as XIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
