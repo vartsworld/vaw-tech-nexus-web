@@ -334,10 +334,11 @@ export const TaskApprovalDialog = ({
       });
     }
   };
-
   if (!task) return null;
 
   return (
+    <>
+    <ImageLightbox image={lightboxImage} onClose={() => setLightboxImage(null)} onDownload={handleDownloadAttachment} />
     <Dialog open={open} onOpenChange={(isOpen) => {
       if (!isOpen) resetState();
       onOpenChange(isOpen);
