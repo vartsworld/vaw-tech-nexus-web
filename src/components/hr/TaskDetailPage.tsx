@@ -16,9 +16,14 @@ import {
   Plus, Calendar, User, Layers, FileText, Download, MessageSquare,
   Loader2, Share2, LayoutTemplate, Minimize2, Maximize2, ChevronLeft, ChevronRight,
   AlertCircle, Upload, Lock, Unlock, ListOrdered, ExternalLink, Link2, Globe,
-  Copy, Star, Trash, PlusCircle, X
+  Copy, Star, Trash, PlusCircle, X, MoreVertical, ArrowRightLeft, UserCog
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SubtaskReviewDialog } from "@/components/staff/SubtaskReviewDialog";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
