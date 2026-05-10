@@ -68,6 +68,7 @@ export const TaskApprovalDialog = ({
   const [requireHandover, setRequireHandover] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showReworkSection, setShowReworkSection] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; name: string; storagePath: string } | null>(null);
   const [reworkNote, setReworkNote] = useState("");
   const [newDeadline, setNewDeadline] = useState<Date | undefined>(undefined);
   const [deadlineTime, setDeadlineTime] = useState("17:00");
