@@ -1279,19 +1279,68 @@ const TaskDetailPage = ({
 
                                             <div className="flex items-start justify-between gap-2">
                                               <span className="text-xs font-medium leading-tight break-words min-w-0">{st.title}</span>
-                                              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                                <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-primary"
-                                                  onClick={(e) => { 
-                                                    e.stopPropagation(); 
-                                                    setEditingSubtask({...st}); 
-                                                    setIsEditSubtaskDialogOpen(true);
-                                                  }}>
-                                                  <Edit className="h-3 w-3" />
-                                                </Button>
-                                                <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-red-400"
-                                                  onClick={(e) => { e.stopPropagation(); handleDeleteSubtask(st.id); }}>
-                                                  <Trash2 className="h-3 w-3" />
-                                                </Button>
+                                              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                <DropdownMenu>
+                                                  <DropdownMenuTrigger asChild>
+                                                    <Button size="sm" variant="ghost" className="h-5 w-5 p-0 text-white/70 hover:text-white">
+                                                      <MoreVertical className="h-3 w-3" />
+                                                    </Button>
+                                                  </DropdownMenuTrigger>
+                                                  <DropdownMenuContent align="end" className="w-52 bg-zinc-950 border-white/10 text-white">
+                                                    {st.status !== 'completed' && (
+                                                      <DropdownMenuItem onClick={() => handleSubtaskMarkComplete(st.id)} className="cursor-pointer">
+                                                        <CheckCircle className="h-3.5 w-3.5 mr-2 text-emerald-400" /> Mark Complete
+                                                      </DropdownMenuItem>
+                                                    )}
+                                                    <DropdownMenuSub>
+                                                      <DropdownMenuSubTrigger>
+                                                        <ArrowRightLeft className="h-3.5 w-3.5 mr-2 text-blue-400" /> Move to Stage
+                                                      </DropdownMenuSubTrigger>
+                                                      <DropdownMenuSubContent className="bg-zinc-950 border-white/10 text-white">
+                                                        {stageNums.map((sn) => (
+                                                          <DropdownMenuItem
+                                                            key={sn}
+                                                            disabled={sn === (st.stage || 1)}
+                                                            onClick={() => handleSubtaskStageUpdate(st.id, sn)}
+                                                            className="cursor-pointer"
+                                                          >
+                                                            {stageLabels[sn] || `Stage ${sn}`}
+                                                            {sn === (st.stage || 1) && <span className="ml-2 text-[9px] text-white/40">(current)</span>}
+                                                          </DropdownMenuItem>
+                                                        ))}
+                                                      </DropdownMenuSubContent>
+                                                    </DropdownMenuSub>
+                                                    <DropdownMenuSub>
+                                                      <DropdownMenuSubTrigger>
+                                                        <UserCog className="h-3.5 w-3.5 mr-2 text-purple-400" /> Change Assignee
+                                                      </DropdownMenuSubTrigger>
+                                                      <DropdownMenuSubContent className="bg-zinc-950 border-white/10 text-white max-h-72 overflow-y-auto">
+                                                        {staff.map((s: any) => (
+                                                          <DropdownMenuItem
+                                                            key={s.user_id}
+                                                            disabled={s.user_id === st.assigned_to}
+                                                            onClick={() => handleSubtaskAssigneeUpdate(st.id, s.user_id)}
+                                                            className="cursor-pointer"
+                                                          >
+                                                            <Avatar className="h-4 w-4 mr-2">
+                                                              <AvatarImage src={s.avatar_url} />
+                                                              <AvatarFallback className="text-[8px]">{s.full_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                                                            </Avatar>
+                                                            <span className="truncate">{s.full_name}</span>
+                                                            {s.user_id === st.assigned_to && <span className="ml-auto text-[9px] text-white/40">current</span>}
+                                                          </DropdownMenuItem>
+                                                        ))}
+                                                      </DropdownMenuSubContent>
+                                                    </DropdownMenuSub>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => { setEditingSubtask({...st}); setIsEditSubtaskDialogOpen(true); }} className="cursor-pointer">
+                                                      <Edit className="h-3.5 w-3.5 mr-2 text-primary" /> Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleDeleteSubtask(st.id)} className="cursor-pointer text-red-400 focus:text-red-400">
+                                                      <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                                                    </DropdownMenuItem>
+                                                  </DropdownMenuContent>
+                                                </DropdownMenu>
                                               </div>
                                             </div>
 
