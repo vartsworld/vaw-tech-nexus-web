@@ -405,9 +405,32 @@ const TaskDetailPage = ({
     try {
       await supabase.from('staff_subtasks').update({ stage: newStage }).eq('id', subtaskId);
       setSubtasks(prev => prev.map(st => st.id === subtaskId ? { ...st, stage: newStage } : st));
+      toast({ title: "Stage updated", description: `Moved to Stage ${newStage}` });
     } catch (error) {
       console.error('Error updating subtask stage:', error);
+      toast({ title: "Error", description: "Failed to move subtask.", variant: "destructive" });
     }
+  };
+
+  const handleSubtaskAssigneeUpdate = async (subtaskId: string, newAssigneeId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('staff_subtasks')
+        .update({ assigned_to: newAssigneeId, updated_at: new Date().toISOString() })
+        .eq('id', subtaskId)
+        .select('*, staff_profiles:assigned_to(full_name, avatar_url, username)')
+        .single();
+      if (error) throw error;
+      setSubtasks(prev => prev.map(st => st.id === subtaskId ? { ...st, ...data } : st));
+      toast({ title: "Assignee updated", description: "Subtask reassigned successfully." });
+    } catch (error) {
+      console.error('Error updating subtask assignee:', error);
+      toast({ title: "Error", description: "Failed to reassign subtask.", variant: "destructive" });
+    }
+  };
+
+  const handleSubtaskMarkComplete = async (subtaskId: string) => {
+    await handleSubtaskStatusUpdate(subtaskId, 'completed');
   };
 
   const handleEditSubtaskSave = async () => {
