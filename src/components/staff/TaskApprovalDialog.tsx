@@ -640,5 +640,78 @@ export const TaskApprovalDialog = ({
         </ScrollArea>
       </DialogContent>
     </Dialog>
+    </>
+  );
+};
+
+const isImageFile = (name?: string) => !!name && /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+
+const AttachmentPreview = ({ file, onOpen, onDownload }: { file: any; onOpen: (img: { url: string; name: string; storagePath: string }) => void; onDownload: (a: { name: string; url: string }) => void; }) => {
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const displayName = file.title || file.name;
+  const isImage = isImageFile(file.name);
+
+  useEffect(() => {
+    if (!isImage || !file.url) return;
+    let cancelled = false;
+    supabase.storage.from('task-attachments').createSignedUrl(file.url, 3600).then(({ data }) => {
+      if (!cancelled && data?.signedUrl) setSignedUrl(data.signedUrl);
+    });
+    return () => { cancelled = true; };
+  }, [file.url, isImage]);
+
+  if (isImage && signedUrl) {
+    return (
+      <div className="bg-black/30 rounded-lg p-3 border border-white/10 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-white text-sm font-medium truncate flex-1">{displayName}</p>
+          <div className="flex gap-1 flex-shrink-0">
+            <Button size="sm" variant="outline" className="border-blue-400/50 text-blue-300 hover:bg-blue-500/20" onClick={() => onOpen({ url: signedUrl, name: displayName, storagePath: file.url })}>
+              <Maximize2 className="w-4 h-4" />
+            </Button>
+            <Button size="sm" variant="outline" className="border-blue-400/50 text-blue-300 hover:bg-blue-500/20" onClick={() => onDownload(file)}>
+              <Download className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+        <button type="button" onClick={() => onOpen({ url: signedUrl, name: displayName, storagePath: file.url })} className="block w-full">
+          <img src={signedUrl} alt={displayName} className="w-full max-h-64 object-contain rounded-md bg-black/40 cursor-zoom-in" />
+        </button>
+        {file.size && <p className="text-white/50 text-xs">{(file.size / 1024).toFixed(2)} KB</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between bg-black/30 rounded-lg p-3 border border-white/10">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <FileText className="w-5 h-5 text-blue-400 flex-shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="text-white text-sm font-medium truncate">{displayName}</p>
+          {file.size && <p className="text-white/50 text-xs">{(file.size / 1024).toFixed(2)} KB</p>}
+        </div>
+      </div>
+      <Button size="sm" variant="outline" className="border-blue-400/50 text-blue-300 hover:bg-blue-500/20 flex-shrink-0" onClick={() => onDownload(file)}>
+        <Download className="w-4 h-4 mr-1" />
+        Download
+      </Button>
+    </div>
+  );
+};
+
+const ImageLightbox = ({ image, onClose, onDownload }: { image: { url: string; name: string; storagePath: string } | null; onClose: () => void; onDownload: (a: { name: string; url: string }) => void; }) => {
+  if (!image) return null;
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute top-4 right-4 flex gap-2 z-10">
+        <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={(e) => { e.stopPropagation(); onDownload({ name: image.name, url: image.storagePath }); }}>
+          <Download className="w-4 h-4 mr-1" /> Download
+        </Button>
+        <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={onClose}>
+          <XIcon className="w-4 h-4" />
+        </Button>
+      </div>
+      <img src={image.url} alt={image.name} className="max-w-full max-h-full object-contain" onClick={(e) => e.stopPropagation()} />
+    </div>
   );
 };
