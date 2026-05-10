@@ -449,33 +449,12 @@ export const TaskApprovalDialog = ({
                   </h3>
                   <div className="space-y-2">
                     {task.attachments.map((file: any, index: number) => (
-                      <div
+                      <AttachmentPreview
                         key={index}
-                        className="flex items-center justify-between bg-black/30 rounded-lg p-3 border border-white/10"
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <FileText className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-white text-sm font-medium truncate">
-                              {file.title || file.name}
-                            </p>
-                            {file.size && (
-                              <p className="text-white/50 text-xs">
-                                {(file.size / 1024).toFixed(2)} KB
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-blue-400/50 text-blue-300 hover:bg-blue-500/20 flex-shrink-0"
-                          onClick={() => handleDownloadAttachment(file)}
-                        >
-                          <Download className="w-4 h-4 mr-1" />
-                          Download
-                        </Button>
-                      </div>
+                        file={file}
+                        onOpen={setLightboxImage}
+                        onDownload={handleDownloadAttachment}
+                      />
                     ))}
                   </div>
                 </div>
