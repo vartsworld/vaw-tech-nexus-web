@@ -141,7 +141,7 @@ const PartnersManagement = () => {
             featured: partnerData.featured || false,
             display_order: partnerData.display_order || 0,
             updated_at: new Date().toISOString(),
-          })
+          } as any)
           .eq("id", currentPartner.id);
       } else {
         // Create new partner
@@ -154,7 +154,7 @@ const PartnersManagement = () => {
             description: partnerData.description || null,
             featured: partnerData.featured || false,
             display_order: partners.length,
-          });
+          } as any);
       }
 
       if (response.error) throw response.error;
