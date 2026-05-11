@@ -154,7 +154,7 @@ const PartnersManagement = () => {
             description: partnerData.description || null,
             featured: partnerData.featured || false,
             display_order: partners.length,
-          });
+          } as any);
       }
 
       if (response.error) throw response.error;
