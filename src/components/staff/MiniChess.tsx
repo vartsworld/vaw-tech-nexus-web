@@ -303,7 +303,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
             history: gameHistory,
             turn: chess.turn()
           }
-        })
+        } as any)
         .eq('id', activeGameId);
 
       // Update Stats
