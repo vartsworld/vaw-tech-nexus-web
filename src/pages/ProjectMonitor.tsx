@@ -323,7 +323,7 @@ const ProjectMonitorPage = ({ standalone = false }: { standalone?: boolean }) =>
 
       const { error } = await supabase
         .from('project_monitors')
-        .update(updatePayload)
+        .update(updatePayload as any)
         .eq('id', renewalProject.id);
 
       if (error) throw error;
