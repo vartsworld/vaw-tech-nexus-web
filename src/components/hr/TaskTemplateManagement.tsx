@@ -432,7 +432,7 @@ const TaskTemplateManagement = () => {
           if (subError) {
             console.warn("Insert with stage failed, retrying without stage", subError);
             const fallbackSubtasks = subtasksToInsert.map(({ stage, ...rest }) => rest);
-            const { error: retryError } = await supabase.from('subtask_templates').insert(fallbackSubtasks);
+            const { error: retryError } = await supabase.from('subtask_templates').insert(fallbackSubtasks as any);
             if (retryError) throw retryError;
           }
         }
