@@ -198,7 +198,7 @@ const PaymentReminderManager = () => {
                     category: "payment",
                     priority: "high",
                     read: false
-                });
+                } as any);
 
             if (error) throw error;
 
