@@ -427,7 +427,7 @@ const TaskTemplateManagement = () => {
 
           const { error: subError } = await supabase
             .from('subtask_templates')
-            .insert(subtasksToInsert);
+            .insert(subtasksToInsert as any);
 
           if (subError) {
             console.warn("Insert with stage failed, retrying without stage", subError);
