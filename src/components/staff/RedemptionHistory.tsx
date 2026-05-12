@@ -134,30 +134,36 @@ const RedemptionHistory = ({ userId }: RedemptionHistoryProps) => {
   }
 
   return (
-    <Card className="border-border/50 shadow-lg bg-card/50 backdrop-blur-sm">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <History className="w-5 h-5 text-primary" />
-          Redemption History
-        </CardTitle>
-        <CardDescription>View your past redemption requests and their status</CardDescription>
+    <Card className="border-white/10 shadow-2xl bg-slate-900/40 backdrop-blur-2xl overflow-hidden rounded-[2.5rem] border">
+      <CardHeader className="bg-gradient-to-br from-purple-500/10 to-transparent border-b border-white/5 p-6">
+        <div className="space-y-1">
+          <CardTitle className="flex items-center gap-3 text-xl font-black italic uppercase tracking-tighter text-white">
+            <div className="p-2 bg-purple-500/20 rounded-2xl border border-purple-500/30">
+              <History className="w-5 h-5 text-purple-400" />
+            </div>
+            Redemption History
+          </CardTitle>
+          <CardDescription className="text-white/40 font-medium text-[10px] uppercase tracking-widest">Tracking your reward acquisitions</CardDescription>
+        </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6">
         {redemptions.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <History className="w-16 h-16 mx-auto mb-4 opacity-20" />
-            <p>No redemptions yet</p>
-            <p className="text-sm mt-2">Start redeeming your coins for exciting rewards!</p>
+          <div className="py-16 text-center">
+            <div className="w-20 h-20 rounded-[2rem] bg-white/[0.02] border border-white/5 flex items-center justify-center mx-auto mb-4">
+              <Package className="w-10 h-10 text-white/10" />
+            </div>
+            <p className="text-lg font-black uppercase tracking-tighter text-white/60">No Assets Claimed</p>
+            <p className="text-xs text-white/20 font-medium max-w-[200px] mx-auto mt-1">Start converting your coins into high-value rewards.</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {redemptions.map(redemption => (
               <div
                 key={redemption.id}
-                className="flex items-center gap-4 p-4 border border-border/50 rounded-xl hover:bg-muted/50 transition-colors bg-background/50"
+                className="group flex items-center gap-4 p-5 bg-white/[0.02] border border-white/5 rounded-3xl hover:bg-white/[0.04] transition-all"
               >
                 {/* Reward Image */}
-                <div className="w-16 h-16 bg-muted rounded-lg flex-shrink-0 overflow-hidden border border-border/50">
+                <div className="w-16 h-16 bg-slate-800 rounded-2xl flex-shrink-0 overflow-hidden border border-white/10 group-hover:border-purple-500/30 transition-colors">
                   {redemption.reward.image_url ? (
                     <img
                       src={redemption.reward.image_url}
@@ -166,29 +172,31 @@ const RedemptionHistory = ({ userId }: RedemptionHistoryProps) => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Package className="w-6 h-6 text-muted-foreground" />
+                      <Package className="w-6 h-6 text-white/10" />
                     </div>
                   )}
                 </div>
 
                 {/* Details */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-foreground truncate">
+                  <h4 className="font-black text-white/90 truncate text-sm uppercase tracking-tight">
                     {redemption.reward.name || redemption.reward.title || 'Reward'}
                   </h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-muted-foreground font-medium">
-                      {format(new Date(redemption.created_at), "MMM dd, yyyy")}
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <span className="text-[10px] text-white/30 font-black uppercase tracking-widest">
+                      {format(new Date(redemption.created_at), "MMM dd")}
                     </span>
-                    <span className="text-sm text-muted-foreground">•</span>
-                    <span className="text-sm font-black text-primary">
-                      {redemption.coins_spent.toLocaleString()} Coins
+                    <span className="text-white/10 text-[10px]">•</span>
+                    <span className="text-xs font-black text-emerald-400">
+                      {redemption.coins_spent.toLocaleString()} <span className="text-[8px] opacity-60">COINS</span>
                     </span>
                   </div>
                   {redemption.rejection_reason && (
-                    <p className="text-xs text-destructive mt-1">
-                      Reason: {redemption.rejection_reason}
-                    </p>
+                    <div className="mt-2 p-2 bg-rose-500/10 border border-rose-500/20 rounded-lg">
+                      <p className="text-[10px] text-rose-400 font-bold">
+                        Reason: {redemption.rejection_reason}
+                      </p>
+                    </div>
                   )}
                 </div>
 

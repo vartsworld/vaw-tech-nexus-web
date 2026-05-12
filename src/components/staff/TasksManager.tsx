@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,8 @@ import {
   LayoutDashboard,
   ArrowRight,
   HandMetal,
-  Layers
+  Layers,
+  Flame
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -63,53 +65,78 @@ const TasksManager = ({
   userId,
   userProfile
 }: TasksManagerProps) => {
-  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'handover'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'handover'>('in_progress');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const { toast } = useToast();
-
-  // Use real-time query for tasks — supports both single UUID and JSON-array multi-assign
-  const { data: tasksData, isLoading: tasksLoading, refetch } = useRealtimeQuery<any[]>({
-    queryKey: ['tasks', userId],
-    table: 'staff_tasks',
-    // orFilters: matches exact UUID (single assign) OR JSON array containing UUID (multi-assign)
-    orFilters: `assigned_to.eq.${userId},assigned_to.like.*${userId}*`,
-    select: '*, due_time, trial_period, attachments, comments',
+  // Use real-time query for subtasks assigned to the user
+  const { data: subtasksData, isLoading: tasksLoading, refetch } = useRealtimeQuery<any[]>({
+    queryKey: ['subtasks', userId],
+    table: 'staff_subtasks',
+    filter: `assigned_to=eq.${userId}`,
+    select: '*, staff_tasks(*)',
     order: { column: 'created_at', ascending: false },
     staleTime: 2 * 60 * 1000,
   });
 
-  // Fetch assigner profiles and map to tasks
-  const tasks: Task[] = (tasksData || []).map((task) => ({
-    ...task,
-    assignedBy: { full_name: 'Loading...' }, // Will be populated by separate query
-  }));
+  // Group subtasks by parent task and map to Task interface
+  const tasks: Task[] = useMemo(() => {
+    const subtaskItems = (subtasksData || []) as any[];
+    const taskGroups: Record<string, any[]> = {};
+    
+    subtaskItems.forEach(st => {
+      if (!st.task_id || !st.staff_tasks) return;
+      if (!taskGroups[st.task_id]) taskGroups[st.task_id] = [];
+      taskGroups[st.task_id].push(st);
+    });
 
-  // Real-time subscription for new task assignments with toast notification
+    return Object.entries(taskGroups).map(([taskId, subs]) => {
+      const parent = subs[0].staff_tasks;
+      
+      // Determine "effective" status for this user's dashboard view
+      let effectiveStatus = "pending";
+      if (subs.some(s => s.status === 'in_progress')) {
+        effectiveStatus = 'in_progress';
+      } else if (subs.every(s => ['completed', 'review_pending', 'pending_approval', 'handover'].includes(s.status || ''))) {
+        effectiveStatus = 'completed';
+      }
+
+      // Use earliest due date from assigned subtasks
+      const subtasksWithDates = subs.filter(s => s.due_date);
+      const earliestDueDate = subtasksWithDates.length > 0 
+        ? subtasksWithDates.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0].due_date 
+        : parent.due_date;
+
+      // Check for overdue (if not completed and date passed)
+      const isPastDue = earliestDueDate && new Date(earliestDueDate) < new Date(new Date().setHours(0,0,0,0));
+      if (effectiveStatus !== 'completed' && isPastDue) {
+        effectiveStatus = 'overdue';
+      }
+
+      return {
+        ...parent,
+        status: effectiveStatus,
+        due_date: earliestDueDate,
+        assignedBy: { full_name: 'Team Lead' }, // Profile fetching can be added if needed
+      };
+    });
+  }, [subtasksData]);
+
+  // Real-time subscription for new subtask assignments
   useRealtimeSubscription({
-    table: 'staff_tasks',
+    table: 'staff_subtasks',
     onInsert: (payload) => {
       const newTask = payload.new as any;
-      // Check if this task is assigned to current user (single or multi-assign)
-      const assignedTo: string = newTask.assigned_to || '';
-      const isAssigned = assignedTo === userId || assignedTo.includes(userId);
-      if (!isAssigned) return;
+      if (newTask.assigned_to !== userId) return;
       toast({
-        title: "🎯 New Task Assigned!",
+        title: "🎯 New Subtask Assigned!",
         description: `You have been assigned: "${newTask.title}"`,
         duration: 5000,
       });
       refetch();
     },
     onUpdate: (payload) => {
-      const updatedTask = payload.new as any;
-      if (updatedTask.status === 'completed' && selectedTask?.id === updatedTask.id) {
-        toast({
-          title: "✅ Task Updated",
-          description: `Task "${updatedTask.title}" has been updated`,
-        });
-      }
       refetch();
     },
   });
@@ -262,10 +289,14 @@ const TasksManager = ({
     );
   };
 
-  const filteredTasks = tasks.filter(task => filter === 'all' || task.status === filter);
-  const completedTasks = tasks.filter(t => t.status === 'completed').length;
+  const filteredTasks = tasks.filter(task => {
+    if (filter === 'all') return true;
+    if (filter === 'completed') return ['completed', 'review_pending', 'pending_approval'].includes(task.status);
+    return task.status === filter;
+  });
+  const completedCount = tasks.filter(t => ['completed', 'review_pending', 'pending_approval'].includes(t.status)).length;
   const totalTasks = tasks.length;
-  const completionRate = totalTasks > 0 ? completedTasks / totalTasks * 100 : 0;
+  const completionRate = totalTasks > 0 ? completedCount / totalTasks * 100 : 0;
   // If a task is selected, show inline detail view
   if (selectedTask) {
     return (
@@ -318,36 +349,41 @@ const TasksManager = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
             {[{
-              key: 'all',
-              label: 'All',
-              count: tasks.length
-            }, {
-              key: 'pending',
-              label: 'Pending',
-              count: tasks.filter(t => t.status === 'pending').length
+              key: 'overdue',
+              label: 'Overdue',
+              count: tasks.filter(t => t.status === 'overdue').length
             }, {
               key: 'in_progress',
-              label: 'Active',
+              label: 'Current',
               count: tasks.filter(t => t.status === 'in_progress').length
             }, {
+              key: 'pending',
+              label: 'Upcoming',
+              count: tasks.filter(t => t.status === 'pending').length
+            }, {
               key: 'completed',
-              label: 'Finished',
-              count: tasks.filter(t => t.status === 'completed').length
+              label: 'Submitted',
+              count: tasks.filter(t => ['completed', 'review_pending', 'pending_approval'].includes(t.status)).length
             }, {
               key: 'handover',
               label: 'Handover',
               count: tasks.filter(t => t.status === 'handover').length
+            }, {
+              key: 'all',
+              label: 'All',
+              count: tasks.length
             }].map(filterOption => (
               <Button
                 key={filterOption.key}
                 variant={filter === filterOption.key ? "default" : "ghost"}
                 size="sm"
                 className={`flex items-center gap-2 px-3 h-8 rounded-full transition-all ${filter === filterOption.key
-                  ? "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
+                  ? filterOption.key === 'overdue' ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20" : "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
                   : "text-white/60 hover:text-white hover:bg-white/10"
                   }`}
                 onClick={() => setFilter(filterOption.key as any)}
               >
+                {filterOption.key === 'overdue' && <Flame className={cn("w-3 h-3", filter === 'overdue' ? "text-white" : "text-red-400")} />}
                 <span className="text-xs font-medium">{filterOption.label}</span>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${filter === filterOption.key ? "bg-white/20" : "bg-white/10"
                   }`}>

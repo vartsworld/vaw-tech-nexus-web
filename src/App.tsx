@@ -26,6 +26,8 @@ import { UserProvider } from "./context/UserContext";
 import IntroScreen from "./components/IntroScreen";
 import { useUser } from "./context/UserContext";
 import StaffDashboard from "./pages/StaffDashboard";
+import StaffTaskDetail from "./pages/StaffTaskDetail";
+import StaffWork from "./pages/StaffWork";
 import StaffLogin from "./pages/StaffLogin";
 import TeamHeadDashboard from "./pages/TeamHeadDashboard";
 import AccountDashboard from "./pages/AccountDashboard";
@@ -123,6 +125,8 @@ const AppContent = () => {
           <Route path="/hr/*" element={<HRDashboard />} />
           <Route path="/staff/login" element={<StaffLogin />} />
           <Route path="/staff/dashboard" element={<StaffDashboard />} />
+          <Route path="/staff/task/:taskId" element={<StaffTaskDetail />} />
+          <Route path="/staff/work" element={<StaffWork />} />
           <Route path="/team-head/dashboard" element={<TeamHeadDashboard />} />
           <Route path="/mycoins" element={<MyCoins />} />
           <Route path="/account" element={<AccountDashboard />} />

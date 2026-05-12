@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
@@ -16,13 +17,12 @@ import {
   ChevronRight,
   LogOut,
   Home,
-  Flame
+  Flame,
+  CheckCircle
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { TaskDetailDialog } from "@/components/staff/TaskDetailDialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 type RoomType = 'workspace' | 'breakroom' | 'meeting';
@@ -89,9 +89,7 @@ const StaffMobileHome = ({
   const [completedToday, setCompletedToday] = useState(0);
   const [loading, setLoading] = useState(true);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [activeNav, setActiveNav] = useState("home");
-
   const firstName = profile?.full_name?.split(" ")[0] || "there";
   const coinsBalance = profile?.total_points || 0;
   const streak = profile?.attendance_streak || 0;
@@ -99,33 +97,90 @@ const StaffMobileHome = ({
   // Fetch tasks
   const fetchTasks = useCallback(async () => {
     if (!profile?.user_id) return;
-    const { data } = await supabase
-      .from("staff_tasks")
-      .select("id, title, description, status, priority, points, assigned_by, created_at, due_date, due_time, trial_period, comments, attachments, client_project_id, timer_started_at, current_stage")
-      .or(`assigned_to.eq.${profile.user_id},assigned_to.like.%${profile.user_id}%`)
-      .in("status", ["pending", "in_progress"])
-      .order("created_at", { ascending: false })
-      .limit(20);
+    setLoading(true);
+    try {
+      // 1. Fetch all subtasks assigned to this user with their parent tasks
+      const { data: subtasks, error } = await supabase
+        .from("staff_subtasks")
+        .select("*, staff_tasks(*)")
+        .eq("assigned_to", profile.user_id);
 
-    const taskItems = (data as unknown as TaskItem[]) || [];
+      if (error) throw error;
 
-    // Fetch project titles for tasks that have client_project_id
-    const projectIds = [...new Set(taskItems.filter(t => t.client_project_id).map(t => t.client_project_id!))];
-    if (projectIds.length > 0) {
-      const { data: projects } = await supabase
-        .from("client_projects")
-        .select("id, title")
-        .in("id", projectIds);
-      if (projects) {
-        const projectMap = Object.fromEntries(projects.map(p => [p.id, p.title]));
-        taskItems.forEach(t => {
-          if (t.client_project_id) t.project_title = projectMap[t.client_project_id] || undefined;
-        });
+      const subtaskItems = (subtasks as any[]) || [];
+      
+      // 2. Group by task_id to find unique parent tasks
+      const taskGroups: Record<string, any[]> = {};
+      subtaskItems.forEach(st => {
+        if (!st.task_id || !st.staff_tasks) return;
+        if (!taskGroups[st.task_id]) taskGroups[st.task_id] = [];
+        taskGroups[st.task_id].push(st);
+      });
+
+      // 3. Map to TaskItem interface, deriving status/dates from subtasks
+      const taskItems: TaskItem[] = Object.entries(taskGroups).map(([taskId, subs]) => {
+        const parent = subs[0].staff_tasks;
+        
+        // Determine "effective" status for this user's view
+        // Priority: in_progress > pending > completed
+        let effectiveStatus = "pending";
+        if (subs.some(s => s.status === 'in_progress')) {
+          effectiveStatus = 'in_progress';
+        } else if (subs.every(s => ['completed', 'review_pending', 'pending_approval', 'handover'].includes(s.status || ''))) {
+          effectiveStatus = 'completed';
+        }
+
+        // Use earliest due date from assigned subtasks
+        const subtasksWithDates = subs.filter(s => s.due_date);
+        const earliestDueDate = subtasksWithDates.length > 0 
+          ? subtasksWithDates.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0].due_date 
+          : parent.due_date;
+
+        // Check for overdue (if not completed and date passed)
+        const isPastDue = earliestDueDate && new Date(earliestDueDate) < new Date(new Date().setHours(0,0,0,0));
+        if (effectiveStatus !== 'completed' && isPastDue) {
+          effectiveStatus = 'overdue';
+        }
+
+        return {
+          id: parent.id,
+          title: parent.title,
+          description: parent.description,
+          status: effectiveStatus,
+          priority: parent.priority,
+          points: parent.points,
+          assigned_by: parent.assigned_by,
+          created_at: parent.created_at,
+          due_date: earliestDueDate,
+          due_time: parent.due_time,
+          trial_period: parent.trial_period,
+          client_project_id: parent.client_project_id,
+          project_title: parent.title, // Default to parent title
+          current_stage: parent.current_stage,
+        };
+      });
+
+      // 4. Fetch project titles for context
+      const projectIds = [...new Set(taskItems.filter(t => t.client_project_id).map(t => t.client_project_id!))];
+      if (projectIds.length > 0) {
+        const { data: projects } = await supabase
+          .from("client_projects")
+          .select("id, title")
+          .in("id", projectIds);
+        if (projects) {
+          const projectMap = Object.fromEntries(projects.map(p => [p.id, p.title]));
+          taskItems.forEach(t => {
+            if (t.client_project_id) t.project_title = projectMap[t.client_project_id] || t.project_title;
+          });
+        }
       }
-    }
 
-    setTasks(taskItems);
-    setLoading(false);
+      setTasks(taskItems);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [profile?.user_id]);
 
   // Fetch completed today count
@@ -133,9 +188,9 @@ const StaffMobileHome = ({
     if (!profile?.user_id) return;
     const today = new Date().toISOString().split("T")[0];
     const { count } = await supabase
-      .from("staff_tasks")
+      .from("staff_subtasks")
       .select("id", { count: "exact", head: true })
-      .or(`assigned_to.eq.${profile.user_id},assigned_to.like.%${profile.user_id}%`)
+      .eq("assigned_to", profile.user_id)
       .eq("status", "completed" as any)
       .gte("completed_at", today + "T00:00:00");
     setCompletedToday(count || 0);
@@ -144,12 +199,19 @@ const StaffMobileHome = ({
   // Fetch unread notifications
   const fetchNotifications = useCallback(async () => {
     if (!profile?.user_id) return;
-    const { count } = await (supabase
-      .from("staff_notifications") as any)
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", profile.user_id)
-      .eq("is_read", false);
-    setUnreadNotifications(count || 0);
+    const { data } = await supabase
+      .from("staff_notifications")
+      .select("id, read_by, expires_at")
+      .order('created_at', { ascending: false })
+      .limit(20);
+    
+    if (data) {
+      const activeNotifications = data.filter(n => 
+        !n.expires_at || new Date(n.expires_at) > new Date()
+      );
+      const unreadCount = activeNotifications.filter(n => !n.read_by?.includes(profile.user_id)).length;
+      setUnreadNotifications(unreadCount);
+    }
   }, [profile?.user_id]);
 
   useEffect(() => {
@@ -174,31 +236,15 @@ const StaffMobileHome = ({
     return () => { supabase.removeChannel(channel); };
   }, [profile?.user_id, fetchTasks, fetchCompletedToday, fetchNotifications]);
 
-  const todoTasks = useMemo(() => tasks.filter((t) => t.status === "pending"), [tasks]);
-  const inProgressTasks = useMemo(() => tasks.filter((t) => t.status === "in_progress"), [tasks]);
-  const totalTasks = tasks.length + completedToday;
-
-  const dialogTask = useMemo(() => {
-    if (!selectedTask) return null;
-    return {
-      id: selectedTask.id,
-      title: selectedTask.title,
-      description: selectedTask.description,
-      status: selectedTask.status as any,
-      priority: (selectedTask.priority || "medium") as any,
-      due_date: selectedTask.due_date,
-      due_time: selectedTask.due_time,
-      points: selectedTask.points || 0,
-      assigned_by: selectedTask.assigned_by,
-      created_at: selectedTask.created_at,
-      trial_period: selectedTask.trial_period,
-      comments: selectedTask.comments,
-      attachments: selectedTask.attachments,
-    };
-  }, [selectedTask]);
+  const overdueTasks = useMemo(() => tasks.filter((t) => t.status === "overdue"), [tasks]);
+  const upcomingTasks = useMemo(() => tasks.filter((t) => t.status === "pending"), [tasks]);
+  const currentTasks = useMemo(() => tasks.filter((t) => t.status === "in_progress"), [tasks]);
+  const submittedTasks = useMemo(() => tasks.filter((t) => ["completed", "review_pending", "pending_approval", "handover"].includes(t.status)), [tasks]);
+  
+  const totalTasks = overdueTasks.length + upcomingTasks.length + currentTasks.length + completedToday;
 
   const handleTaskClick = (task: TaskItem) => {
-    setSelectedTask(task);
+    navigate(`/staff/task/${task.id}`);
   };
 
   const handleStatusUpdate = async (taskId: string, newStatus: string) => {
@@ -214,9 +260,9 @@ const StaffMobileHome = ({
   };
 
   const navItems = [
-    { id: "home", label: "Home", icon: Home },
-    { id: "workspace", label: "Work", icon: Briefcase, action: onEnterWorkspace },
+    { id: "workspace", label: "Work", icon: Briefcase, action: () => navigate("/staff/work") },
     { id: "chat", label: "Chat", icon: MessageCircle, action: onOpenChat },
+    { id: "home", label: "Home", icon: Home },
     { id: "coins", label: "Coins", icon: Coins, action: () => navigate("/mycoins") },
     { id: "profile", label: "Profile", icon: User, action: () => navigate("/account") },
   ];
@@ -230,22 +276,23 @@ const StaffMobileHome = ({
     }
   };
 
-  // Calculate subtask-based progress for in-progress tasks
+  // Calculate subtask-based progress for in-progress tasks (only for subtasks assigned to me)
   const [taskProgress, setTaskProgress] = useState<Record<string, number>>({});
   useEffect(() => {
     const fetchProgress = async () => {
-      const ipIds = inProgressTasks.map(t => t.id);
-      if (ipIds.length === 0) return;
+      const ipIds = currentTasks.map(t => t.id);
+      if (ipIds.length === 0 || !profile?.user_id) return;
       const { data: subtasks } = await supabase
         .from("staff_subtasks")
         .select("task_id, status")
+        .eq("assigned_to", profile.user_id)
         .in("task_id", ipIds);
       if (!subtasks) return;
       const map: Record<string, { total: number; done: number }> = {};
       subtasks.forEach(st => {
         if (!map[st.task_id]) map[st.task_id] = { total: 0, done: 0 };
         map[st.task_id].total++;
-        if (st.status === "completed") map[st.task_id].done++;
+        if (["completed", "review_pending", "pending_approval", "handover"].includes(st.status)) map[st.task_id].done++;
       });
       const progress: Record<string, number> = {};
       Object.entries(map).forEach(([id, { total, done }]) => {
@@ -254,7 +301,7 @@ const StaffMobileHome = ({
       setTaskProgress(progress);
     };
     fetchProgress();
-  }, [inProgressTasks]);
+  }, [currentTasks, profile?.user_id]);
 
   return (
     <div className="lg:hidden min-h-screen bg-background flex flex-col relative">
@@ -335,7 +382,7 @@ const StaffMobileHome = ({
                 </span>
               </div>
               <p className="text-white/40 text-[10px] mt-1.5 font-medium">
-                {inProgressTasks.length} active · {todoTasks.length} pending
+                {currentTasks.length} current · {upcomingTasks.length} upcoming
               </p>
             </div>
             <div className="w-16 h-16 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
@@ -360,25 +407,180 @@ const StaffMobileHome = ({
 
       {/* Scrollable Task Sections */}
       <div className="flex-1 overflow-y-auto px-5 pb-28 mt-2">
-        {/* To Do Section */}
+        {/* Overdue Section */}
+        {overdueTasks.length > 0 && (
+          <motion.div {...fadeUp(0.3)} className="mt-4 mb-8">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-red-400 flex items-center gap-1.5">
+                  <Flame className="w-4 h-4" /> Overdue
+                </h2>
+                <span className="text-[10px] bg-red-500/20 text-red-400 rounded-full px-2 py-0.5 font-bold border border-red-500/20">
+                  {overdueTasks.length}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {overdueTasks.map((task, i) => (
+                <motion.button
+                  key={task.id}
+                  {...fadeUp(0.35 + i * 0.05)}
+                  onClick={() => handleTaskClick(task)}
+                  className="w-full bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/20 rounded-[2rem] p-5 shadow-lg shadow-red-500/5 text-left active:scale-[0.98] transition-all relative overflow-hidden group"
+                >
+                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Flame className="w-12 h-12 text-red-500" />
+                  </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-2.5 py-1 rounded-lg border border-red-500/20 uppercase tracking-tight">
+                        {task.project_title || "Overdue"}
+                      </span>
+                    </div>
+                    <Badge variant="destructive" className="text-[8px] font-black uppercase px-2 py-0.5 rounded-md animate-pulse">
+                      Urgent
+                    </Badge>
+                  </div>
+                  <p className="text-[15px] font-bold text-red-50/90 leading-snug line-clamp-1 tracking-tight mb-4">
+                    {task.title}
+                  </p>
+                  <div className="flex items-center justify-between pt-1 border-t border-red-500/10 mt-auto">
+                    <div className="flex items-center gap-1.5 text-red-400 bg-red-500/10 px-2.5 py-1.5 rounded-xl">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-bold">
+                        Expired {task.due_date ? new Date(task.due_date).toLocaleDateString("en-US", { day: "numeric", month: "short" }) : ""}
+                      </span>
+                    </div>
+                    {task.points > 0 && (
+                      <div className="flex items-center gap-1.5 bg-red-500/10 px-3 py-1.5 rounded-xl border border-red-500/10">
+                        <Coins className="w-3.5 h-3.5 text-red-400" />
+                        <span className="text-[10px] font-black text-red-400 tracking-tight">{task.points} COINS</span>
+                      </div>
+                    )}
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Current Section */}
         <motion.div {...fadeUp(0.35)}>
           <div className="flex items-center justify-between mb-3 mt-2">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-foreground">Todays Task to do</h2>
-              <span className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5 font-bold">
-                {todoTasks.length}
+              <h2 className="text-sm font-semibold text-foreground">Current</h2>
+              <span className="text-[10px] bg-emerald-500/15 text-emerald-400 rounded-full px-2 py-0.5 font-bold">
+                {currentTasks.length}
               </span>
             </div>
-            {todoTasks.length > 4 && (
+            {currentTasks.length > 5 && (
               <button onClick={onEnterWorkspace} className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
                 See all <ChevronRight className="w-3 h-3" />
               </button>
             )}
           </div>
 
-          {todoTasks.length === 0 && !loading ? (
+          {currentTasks.length === 0 && !loading ? (
+            <div className="text-center py-10 bg-card/30 rounded-3xl border border-dashed border-border/50">
+              <div className="bg-emerald-500/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                <CheckCircle className="w-6 h-6 text-emerald-500" />
+              </div>
+              <p className="text-xs text-muted-foreground">All caught up! No active tasks.</p>
+            </div>
+          ) : loading ? (
+            <div className="space-y-4">
+              <div className="h-32 bg-card rounded-3xl animate-pulse" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {currentTasks.slice(0, 6).map((task, i) => {
+                const progress = taskProgress[task.id] || 0;
+                return (
+                  <motion.button
+                    key={task.id}
+                    {...fadeUp(0.4 + i * 0.05)}
+                    onClick={() => handleTaskClick(task)}
+                    className="w-full bg-gradient-to-br from-card to-card/50 border border-white/5 rounded-[2rem] p-5 shadow-lg shadow-black/5 text-left active:scale-[0.98] transition-all"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 uppercase tracking-tight">
+                          {task.project_title || "Project"}
+                        </span>
+                        {task.current_stage && (
+                          <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20 uppercase tracking-tight">
+                            Stage {task.current_stage}
+                          </span>
+                        )}
+                      </div>
+                      {task.priority && (
+                        <span className={cn("text-[8px] font-black uppercase px-2 py-0.5 rounded-md border shadow-sm", getPriorityColor(task.priority))}>
+                          {task.priority}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <p className="text-[15px] font-bold text-foreground leading-snug flex-1 line-clamp-1 tracking-tight">
+                        {task.title}
+                      </p>
+                      <div className="text-right">
+                        <span className="text-sm font-black text-emerald-400 tracking-tighter">
+                          {progress}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${progress}%` }}
+                          transition={{ duration: 1, ease: "easeOut" }}
+                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-white/5 mt-auto">
+                      <div className="flex items-center gap-1.5 text-muted-foreground/80 bg-white/5 px-2.5 py-1.5 rounded-xl">
+                        <Clock className="w-3.5 h-3.5 text-orange-400" />
+                        <span className="text-[10px] font-medium">
+                          {task.due_date
+                            ? new Date(task.due_date).toLocaleDateString("en-US", { day: "numeric", month: "short" })
+                            : "Ongoing"}
+                        </span>
+                      </div>
+                      {task.points > 0 && (
+                        <div className="flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/10">
+                          <Coins className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-[10px] font-black text-emerald-400 tracking-tight">{task.points} COINS</span>
+                        </div>
+                      )}
+                    </div>
+                  </motion.button>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Upcoming Section */}
+        <motion.div {...fadeUp(0.5)} className="mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-foreground">Upcoming</h2>
+              <span className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5 font-bold">
+                {upcomingTasks.length}
+              </span>
+            </div>
+            {upcomingTasks.length > 4 && (
+              <button onClick={onEnterWorkspace} className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
+                See all <ChevronRight className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {upcomingTasks.length === 0 && !loading ? (
             <div className="text-center py-8 text-muted-foreground text-xs bg-card/50 rounded-2xl border border-border/50">
-              No pending tasks 🎉
+              No upcoming tasks 🎉
             </div>
           ) : loading ? (
             <div className="grid grid-cols-2 gap-3">
@@ -388,10 +590,10 @@ const StaffMobileHome = ({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              {todoTasks.slice(0, 4).map((task, i) => (
+              {upcomingTasks.slice(0, 4).map((task, i) => (
                 <motion.button
                   key={task.id}
-                  {...fadeUp(0.38 + i * 0.05)}
+                  {...fadeUp(0.55 + i * 0.05)}
                   onClick={() => handleTaskClick(task)}
                   className="bg-card border border-border rounded-2xl p-3.5 space-y-2 shadow-sm text-left active:scale-[0.97] transition-transform"
                 >
@@ -427,84 +629,68 @@ const StaffMobileHome = ({
             </div>
           )}
         </motion.div>
-
-        {/* In Progress Section */}
-        <motion.div {...fadeUp(0.5)} className="mt-6">
+        {/* Submitted Section */}
+        <motion.div {...fadeUp(0.6)} className="mt-6">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-foreground">In progress</h2>
-              <span className="text-[10px] bg-emerald-500/15 text-emerald-400 rounded-full px-2 py-0.5 font-bold">
-                {inProgressTasks.length}
+              <h2 className="text-sm font-semibold text-foreground">Submitted</h2>
+              <span className="text-[10px] bg-blue-500/15 text-blue-400 rounded-full px-2 py-0.5 font-bold">
+                {submittedTasks.length}
               </span>
             </div>
-            {inProgressTasks.length > 5 && (
-              <button onClick={onEnterWorkspace} className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
+            {submittedTasks.length > 5 && (
+              <button onClick={onEnterWorkspace} className="text-[10px] text-blue-400 font-semibold flex items-center gap-0.5">
                 See all <ChevronRight className="w-3 h-3" />
               </button>
             )}
           </div>
 
-          {inProgressTasks.length === 0 && !loading ? (
+          {submittedTasks.length === 0 && !loading ? (
             <div className="text-center py-8 text-muted-foreground text-xs bg-card/50 rounded-2xl border border-border/50">
-              No active tasks
+              No submitted tasks
             </div>
           ) : loading ? (
             <div className="space-y-3">
-              {[1, 2].map(i => (
+              {[1].map(i => (
                 <div key={i} className="bg-card border border-border rounded-2xl p-4 h-24 animate-pulse" />
               ))}
             </div>
           ) : (
-            <div className="space-y-3">
-              {inProgressTasks.slice(0, 6).map((task, i) => {
-                const progress = taskProgress[task.id] || 0;
-                return (
-                  <motion.button
-                    key={task.id}
-                    {...fadeUp(0.55 + i * 0.05)}
-                    onClick={() => handleTaskClick(task)}
-                    className="w-full bg-card border border-border rounded-2xl p-4 shadow-sm text-left active:scale-[0.98] transition-transform"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider truncate flex-1">
-                        {task.project_title || "Project"}
+            <div className="space-y-3 opacity-80">
+              {submittedTasks.slice(0, 6).map((task, i) => (
+                <motion.button
+                  key={task.id}
+                  {...fadeUp(0.65 + i * 0.05)}
+                  onClick={() => handleTaskClick(task)}
+                  className="w-full bg-card/20 border border-white/5 rounded-2xl p-4 shadow-sm text-left active:scale-[0.98] transition-transform grayscale-[0.8]"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest truncate flex-1">
+                      {task.project_title || "Project"}
+                    </span>
+                    <Badge variant="outline" className="text-[7px] font-black uppercase px-2 py-0.5 rounded-md bg-blue-500/5 text-blue-400/60 border-blue-500/10">
+                      {task.status.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-bold text-foreground/40 leading-snug flex-1 line-clamp-1 line-through decoration-muted-foreground/20">
+                      {task.title}
+                    </p>
+                    <div className="flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg">
+                      <Coins className="w-2.5 h-2.5 text-emerald-400/40" />
+                      <span className="text-[9px] font-black text-emerald-400/40">+{task.points}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/[0.03]">
+                    <div className="flex items-center gap-1 text-muted-foreground/40">
+                      <CheckCircle className="w-3 h-3" />
+                      <span className="text-[9px] font-medium tracking-tight">
+                        Archived
                       </span>
-                      {task.priority && (
-                        <span className={cn("text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-full border", getPriorityColor(task.priority))}>
-                          {task.priority}
-                        </span>
-                      )}
                     </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-foreground leading-snug flex-1 line-clamp-1">
-                        {task.title}
-                      </p>
-                      <span className="text-xs font-bold text-emerald-400 flex-shrink-0">
-                        {progress}%
-                      </span>
-                    </div>
-                    <div className="mt-2.5">
-                      <Progress value={progress} className="h-1.5 bg-muted" />
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        <span className="text-[9px]">
-                          {task.due_date
-                            ? new Date(task.due_date).toLocaleDateString("en-US", { day: "numeric", month: "short" })
-                            : "Ongoing"}
-                        </span>
-                      </div>
-                      {task.points > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Coins className="w-3 h-3 text-emerald-400" />
-                          <span className="text-[9px] font-bold text-emerald-400">{task.points} pts</span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.button>
-                );
-              })}
+                  </div>
+                </motion.button>
+              ))}
             </div>
           )}
         </motion.div>
@@ -577,27 +763,6 @@ const StaffMobileHome = ({
           </div>
         </div>
       </nav>
-
-      {/* Task Detail Dialog */}
-      {selectedTask && (
-        <TaskDetailDialog
-          task={dialogTask}
-          open={!!selectedTask}
-          onOpenChange={(open) => { if (!open) setSelectedTask(null); }}
-          onStatusUpdate={(taskId, status) => {
-            handleStatusUpdate(taskId, status);
-            setSelectedTask(null);
-          }}
-          userId={profile?.user_id || ""}
-          isTeamHead={!!profile?.is_department_head}
-        />
-      )}
-
-      <style>{`
-        .safe-area-inset-bottom {
-          padding-bottom: env(safe-area-inset-bottom);
-        }
-      `}</style>
     </div>
   );
 };

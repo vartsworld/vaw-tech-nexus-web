@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Clock, Calendar, User, Target, Play, Coffee, CheckCircle, AlertCircle, FileText, Download, Award, MessageSquare, Upload, Send, X, Loader2, Eye } from "lucide-react";
+import { Clock, Calendar, User, Target, Play, Coffee, CheckCircle, AlertCircle, FileText, Download, Award, MessageSquare, Upload, Send, X, Loader2, Eye, LayoutGrid, List } from "lucide-react";
 import { format, differenceInSeconds } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -77,6 +77,19 @@ export const TaskDetailDialog = ({
   const [userProfile, setUserProfile] = useState<{ full_name: string, avatar_url: string } | null>(null);
   const [projectInfo, setProjectInfo] = useState<any>(null);
   const [viewingSubtask, setViewingSubtask] = useState<any>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<any | null>(null);
+  const [attachmentViewMode, setAttachmentViewMode] = useState<'grid' | 'list'>('grid');
+
+  const isImage = (name: string) => {
+    return /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
+  };
+
+  const getFileUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    const { data } = supabase.storage.from('task-attachments').getPublicUrl(path);
+    return data.publicUrl;
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const subtaskFileInputRef = useRef<HTMLInputElement>(null);
@@ -646,7 +659,7 @@ export const TaskDetailDialog = ({
         <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wider">Description</h3>
       </div>
       <div className="p-5">
-        <p className="text-white/70 leading-relaxed text-sm">{task.description || 'No description provided.'}</p>
+        <p className="text-white/70 leading-relaxed text-sm whitespace-pre-wrap">{task.description || 'No description provided.'}</p>
       </div>
     </div>
   );
@@ -654,28 +667,98 @@ export const TaskDetailDialog = ({
   const attachmentsCard = task.attachments && Array.isArray(task.attachments) && task.attachments.length > 0 ? (
     <div className="rounded-xl border border-white/[0.12] bg-white/[0.06] backdrop-blur-xl overflow-hidden">
       <div className="px-5 py-3 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wider flex items-center gap-2">
-          <FileText className="w-4 h-4 text-blue-400" /> Attached Files
-        </h3>
-        <Badge variant="outline" className="text-[10px] border-white/10 text-white/50">{task.attachments.length}</Badge>
+        <div className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-blue-400" />
+          <h3 className="text-sm font-semibold text-white/80 uppercase tracking-wider">
+            Attached Files
+          </h3>
+          <Badge variant="outline" className="text-[10px] border-white/10 text-white/50">{task.attachments.length}</Badge>
+        </div>
+        <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-white/5">
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className={`h-7 w-7 p-0 ${attachmentViewMode === 'grid' ? 'bg-blue-500/20 text-blue-400' : 'text-white/30 hover:text-white'}`}
+            onClick={() => setAttachmentViewMode('grid')}
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </Button>
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className={`h-7 w-7 p-0 ${attachmentViewMode === 'list' ? 'bg-blue-500/20 text-blue-400' : 'text-white/30 hover:text-white'}`}
+            onClick={() => setAttachmentViewMode('list')}
+          >
+            <List className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
-      <div className="p-4 space-y-2">
-        {task.attachments.map((attachment, index) => (
-          <div key={index} className="flex items-center justify-between bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 transition-colors group">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="h-9 w-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <FileText className="w-4 h-4 text-blue-400" />
+      <div className={attachmentViewMode === 'grid' ? "p-4 grid grid-cols-2 sm:grid-cols-3 gap-3" : "p-4 space-y-2"}>
+        {task.attachments.map((attachment, index) => {
+          const isImg = isImage(attachment.name);
+          const url = getFileUrl(attachment.url);
+          
+          if (attachmentViewMode === 'grid') {
+            return (
+              <div 
+                key={index} 
+                className="group relative aspect-square bg-black/40 rounded-xl border border-white/5 overflow-hidden cursor-pointer hover:border-blue-500/50 transition-all shadow-lg"
+                onClick={() => isImg ? setPreviewAttachment({ ...attachment, publicUrl: url }) : handleDownloadAttachment(attachment)}
+              >
+                {isImg ? (
+                  <img src={url} alt={attachment.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                ) : (
+                  <div className="h-full w-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br from-blue-500/5 to-purple-500/5">
+                    <FileText className="w-8 h-8 text-blue-400/40 mb-2" />
+                  </div>
+                )}
+                
+                {/* Always visible info bar */}
+                <div className="absolute bottom-0 inset-x-0 bg-black/70 backdrop-blur-md p-2 border-t border-white/5">
+                  <p className="text-[10px] text-white/90 font-medium truncate text-center">{attachment.name}</p>
+                </div>
+
+                {/* Quick Download Button (Always Visible) */}
+                <Button 
+                  size="icon" 
+                  variant="secondary" 
+                  className="absolute top-1.5 right-1.5 h-7 w-7 rounded-lg bg-black/40 hover:bg-blue-500 border border-white/10 text-white z-10 transition-colors backdrop-blur-sm" 
+                  onClick={(e) => { e.stopPropagation(); handleDownloadAttachment(attachment); }}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                </Button>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-white text-sm font-medium truncate">{attachment.name}</p>
-                {attachment.size && <p className="text-white/40 text-xs">{(attachment.size / 1024).toFixed(1)} KB</p>}
+            );
+          }
+
+          return (
+            <div key={index} className="flex items-center justify-between bg-black/20 rounded-lg p-3 border border-white/5 hover:bg-black/30 transition-colors group">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="h-10 w-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {isImg ? (
+                    <img src={url} alt={attachment.name} className="h-full w-full object-cover cursor-pointer hover:scale-110 transition-transform" onClick={() => setPreviewAttachment({ ...attachment, publicUrl: url })} />
+                  ) : (
+                    <FileText className="w-4 h-4 text-blue-400" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-white text-sm font-medium truncate">{attachment.name}</p>
+                  {attachment.size && <p className="text-white/40 text-xs">{(attachment.size / 1024).toFixed(1)} KB</p>}
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                {isImg && (
+                  <Button size="sm" variant="ghost" className="text-blue-400 hover:bg-blue-500/20" onClick={(e) => { e.stopPropagation(); setPreviewAttachment({ ...attachment, publicUrl: url }); }}>
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" className="text-blue-400 hover:bg-blue-500/20 opacity-60 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); handleDownloadAttachment(attachment); }}>
+                  <Download className="w-4 h-4" />
+                </Button>
               </div>
             </div>
-            <Button size="sm" variant="ghost" className="text-blue-400 hover:bg-blue-500/20 opacity-60 group-hover:opacity-100 transition-opacity" onClick={() => handleDownloadAttachment(attachment)}>
-              <Download className="w-4 h-4" />
-            </Button>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   ) : null;
@@ -775,7 +858,7 @@ export const TaskDetailDialog = ({
         {task.description && (
           <div>
             <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Description</p>
-            <p className="text-sm text-white/70 leading-relaxed">{task.description}</p>
+            <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">{task.description}</p>
           </div>
         )}
 
@@ -872,12 +955,19 @@ export const TaskDetailDialog = ({
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className={`text-sm font-semibold truncate ${st.status === 'completed' ? 'text-green-400 line-through' : 'text-white'}`}>{st.title}</h4>
-                      <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <span className="text-[9px] text-blue-300/80 border border-blue-400/40 rounded-full px-1.5 py-0.5 bg-blue-500/10">Stage {stage}</span>
                         <span className="text-[9px] text-white/40">{st.points || 0} pts</span>
                         <span className={`text-[9px] font-medium ${isAssignedToMe ? 'text-purple-400' : 'text-white/30'}`}>
                           {isAssignedToMe ? 'You' : 'Others'}
                         </span>
+                        {st.due_date && (
+                          <span className="text-[9px] text-orange-300/80 flex items-center gap-1 bg-orange-500/10 px-1.5 py-0.5 rounded-full border border-orange-500/20">
+                            <Calendar className="w-2.5 h-2.5" />
+                            {format(new Date(st.due_date), 'MMM dd')}
+                            {st.due_time && ` ${st.due_time}`}
+                          </span>
+                        )}
                         <Eye className="w-3 h-3 text-white/20 ml-auto" />
                       </div>
                     </div>
@@ -1204,11 +1294,52 @@ export const TaskDetailDialog = ({
     </Dialog>
   );
 
+  const attachmentPreviewDialog = (
+    <Dialog open={!!previewAttachment} onOpenChange={() => setPreviewAttachment(null)}>
+      <DialogContent className="max-w-4xl bg-black/95 border-white/10 p-0 overflow-hidden shadow-2xl z-[70]">
+        <DialogHeader className="hidden">
+          <DialogTitle>{previewAttachment?.name || 'Image Preview'}</DialogTitle>
+        </DialogHeader>
+        <div className="relative w-full h-full flex flex-col">
+          <div className="p-4 flex items-center justify-between bg-black/50 backdrop-blur-md border-b border-white/5 z-10">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <FileText className="w-4 h-4 text-blue-400" />
+              </div>
+              <h3 className="text-sm font-medium text-white truncate max-w-[200px] sm:max-w-md">
+                {previewAttachment?.name}
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="border-white/10 text-white hover:bg-white/10" onClick={() => handleDownloadAttachment(previewAttachment)}>
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button>
+              <Button size="sm" variant="ghost" className="text-white/50 hover:text-white" onClick={() => setPreviewAttachment(null)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center p-4 min-h-[300px] max-h-[85vh] overflow-auto bg-black/40">
+            {previewAttachment && (
+              <img 
+                src={previewAttachment.publicUrl} 
+                alt={previewAttachment.name} 
+                className="max-w-full max-h-full object-contain shadow-2xl rounded-sm animate-in zoom-in-95 duration-200" 
+              />
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   if (mode === 'inline') {
     return (
       <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.12] rounded-2xl text-white p-6 lg:p-8">
         {content}
         {subtaskDetailDialog}
+        {attachmentPreviewDialog}
       </div>
     );
   }
@@ -1231,6 +1362,7 @@ export const TaskDetailDialog = ({
         </DialogContent>
       </Dialog>
       {subtaskDetailDialog}
+      {attachmentPreviewDialog}
     </>
   );
 };
