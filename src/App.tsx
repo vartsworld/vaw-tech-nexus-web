@@ -58,6 +58,7 @@ import AddClient from "./pages/AddClient";
 import Portal from "./pages/Portal";
 import ClientFeedback from "./pages/ClientFeedback";
 import GPSProposal from "./pages/GPSProposal";
+import GPSAIProposal from "./pages/GPSAIProposal";
 import VAWAcademy from "./pages/VAWAcademy";
 
 
@@ -97,7 +98,7 @@ const ManifestSwitcher = () => {
 
 const AppContent = () => {
   const { hasCompletedIntro } = useUser();
-  const skipIntroPaths = ['/privacy-policy', '/data-deletion', '/terms-of-service', '/proposal/gps'];
+  const skipIntroPaths = ['/privacy-policy', '/data-deletion', '/terms-of-service', '/proposal/gps', '/proposal/gps-ai', '/gps-ai'];
   const shouldSkipIntro = skipIntroPaths.includes(window.location.pathname);
 
   return (
@@ -150,6 +151,8 @@ const AppContent = () => {
           <Route path="/referral-program" element={<ReferralProgram />} />
           <Route path="/refer/:code" element={<ReferralFormPage />} />
           <Route path="/proposal/gps" element={<GPSProposal />} />
+          <Route path="/proposal/gps-ai" element={<GPSAIProposal />} />
+          <Route path="/gps-ai" element={<GPSAIProposal />} />
           <Route path="/academy" element={<VAWAcademy />} />
           <Route path="/vaw-academy" element={<VAWAcademy />} />
           <Route path="/:id" element={<StaffIDCard />} />

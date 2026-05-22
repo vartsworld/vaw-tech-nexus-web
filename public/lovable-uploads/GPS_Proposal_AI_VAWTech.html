@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Chatbot Proposal — Global Public School</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --navy: #0d2137;
+      --green: #2a5e3f;
+      --gold: #c9a84c;
+      --cream: #f5f0e8;
+      --white: #ffffff;
+      --text: #2c2c2c;
+      --muted: #6b6b6b;
+      --border: #ddd8cc;
+      --accent-green: #3a7d5a;
+    }
+
+    body {
+      font-family: 'Source Sans 3', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+
+    /* ── TOP NAV ── */
+    .topnav {
+      background: var(--navy);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 40px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .topnav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--white);
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--gold);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .topnav-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .topnav-links a {
+      color: rgba(255, 255, 255, .65);
+      text-decoration: none;
+      font-size: 12px;
+      transition: color .2s;
+    }
+
+    .topnav-links a:hover {
+      color: var(--white);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, var(--navy) 0%, #183a55 60%, var(--green) 100%);
+      padding: 60px 40px 50px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      right: -80px;
+      top: -80px;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: rgba(201, 168, 76, .07);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--navy);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 2px;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 38px;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.2;
+      max-width: 560px;
+      margin-bottom: 12px;
+    }
+
+    .hero h1 span {
+      color: var(--gold);
+    }
+
+    .hero-sub {
+      color: rgba(255, 255, 255, .7);
+      font-size: 14px;
+      max-width: 520px;
+      margin-bottom: 28px;
+    }
+
+    .hero-meta {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .hero-meta-item {
+      color: rgba(255, 255, 255, .55);
+      font-size: 12px;
+    }
+
+    .hero-meta-item strong {
+      color: var(--gold);
+      font-size: 13px;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* ── SECTION WRAPPERS ── */
+    .section {
+      padding: 52px 40px;
+    }
+
+    .section-alt {
+      background: var(--white);
+    }
+
+    .section-dark {
+      background: var(--navy);
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 6px;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 12px;
+      line-height: 1.25;
+    }
+
+    .section-title.light {
+      color: var(--white);
+    }
+
+    .section-body {
+      color: var(--muted);
+      max-width: 680px;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+
+    /* ── TWO COLUMN GRID ── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 22px;
+    }
+
+    .card.navy-card {
+      background: var(--navy);
+      border-color: rgba(255, 255, 255, .1);
+      color: var(--white);
+    }
+
+    .card.green-card {
+      background: var(--green);
+      border-color: transparent;
+      color: var(--white);
+    }
+
+    .card-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin-bottom: 14px;
+    }
+
+    .card-icon.gold {
+      background: rgba(201, 168, 76, .15);
+    }
+
+    .card-icon.green {
+      background: rgba(42, 94, 63, .12);
+    }
+
+    .card-icon.navy {
+      background: rgba(13, 33, 55, .1);
+    }
+
+    .card-title {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--navy);
+    }
+
+    .card.navy-card .card-title,
+    .card.green-card .card-title {
+      color: var(--white);
+    }
+
+    .card-text {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .card.navy-card .card-text,
+    .card.green-card .card-text {
+      color: rgba(255, 255, 255, .7);
+    }
+
+    /* ── STAT BLOCKS ── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .stat-block {
+      background: var(--navy);
+      border-radius: 8px;
+      padding: 24px 20px;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, .6);
+    }
+
+    /* ── CHECKLIST TABLE ── */
+    .feature-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .feature-table th {
+      background: var(--navy);
+      color: var(--white);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      padding: 10px 14px;
+      text-align: left;
+    }
+
+    .feature-table tr:nth-child(even) td {
+      background: rgba(0, 0, 0, .025);
+    }
+
+    .feature-table td {
+      padding: 9px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .check {
+      color: var(--green);
+      font-size: 15px;
+    }
+
+    .cross {
+      color: #c0392b;
+      font-size: 15px;
+    }
+
+    .badge-pill {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .05em;
+    }
+
+    .pill-green {
+      background: rgba(42, 94, 63, .12);
+      color: var(--green);
+    }
+
+    .pill-gold {
+      background: rgba(201, 168, 76, .15);
+      color: #8a6d20;
+    }
+
+    .pill-navy {
+      background: rgba(13, 33, 55, .1);
+      color: var(--navy);
+    }
+
+    /* ── SPRINT TIMELINE ── */
+    .sprint {
+      border-left: 3px solid var(--border);
+      padding-left: 20px;
+      margin-bottom: 28px;
+      position: relative;
+    }
+
+    .sprint::before {
+      content: attr(data-num);
+      position: absolute;
+      left: -16px;
+      top: 0;
+      width: 28px;
+      height: 28px;
+      background: var(--navy);
+      color: var(--gold);
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sprint-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--navy);
+      margin-bottom: 8px;
+    }
+
+    .sprint-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .sprint-dot {
+      color: var(--gold);
+      font-size: 16px;
+      line-height: 1.2;
+      flex-shrink: 0;
+    }
+
+    .sprint-week {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--white);
+      background: var(--green);
+      padding: 3px 9px;
+      border-radius: 3px;
+      margin-bottom: 10px;
+    }
+
+    /* ── PRICING TABLE ── */
+    .pricing-wrap {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .pricing-header {
+      background: var(--navy);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      padding: 14px 22px;
+    }
+
+    .pricing-header span {
+      color: var(--white);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .pricing-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      padding: 12px 22px;
+      border-bottom: 1px solid var(--border);
+      align-items: center;
+    }
+
+    .pricing-row:last-child {
+      border-bottom: none;
+    }
+
+    .pricing-row:nth-child(even) {
+      background: rgba(0, 0, 0, .018);
+    }
+
+    .pricing-item {
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .pricing-item small {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    .pricing-amt {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--navy);
+      white-space: nowrap;
+    }
+
+    .pricing-total-row {
+      background: var(--green);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      padding: 18px 22px;
+      align-items: center;
+    }
+
+    .pricing-total-label {
+      color: var(--white);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .pricing-total-amt {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .pricing-note {
+      font-size: 11px;
+      color: rgba(255, 255, 255, .65);
+      margin-top: 4px;
+    }
+
+    /* ── MILESTONE PAYMENTS ── */
+    .milestone-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .milestone-card {
+      border-radius: 8px;
+      padding: 26px 20px;
+      text-align: center;
+    }
+
+    .milestone-card.m1 {
+      background: var(--navy);
+    }
+
+    .milestone-card.m2 {
+      background: var(--green);
+    }
+
+    .milestone-card.m3 {
+      background: #1a3a2a;
+    }
+
+    .milestone-pct {
+      font-family: 'Playfair Display', serif;
+      font-size: 42px;
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .milestone-title {
+      color: var(--white);
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .milestone-desc {
+      color: rgba(255, 255, 255, .6);
+      font-size: 12px;
+    }
+
+    .milestone-amt {
+      color: var(--gold);
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+
+    /* ── MAINTENANCE BOX ── */
+    .maintenance-box {
+      background: var(--navy);
+      border-radius: 10px;
+      padding: 30px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .maintenance-box .left {}
+
+    .maintenance-box .right {}
+
+    .maint-price {
+      font-family: 'Playfair Display', serif;
+      font-size: 46px;
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    .maint-sub {
+      color: rgba(255, 255, 255, .6);
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    .maint-list {
+      list-style: none;
+      margin-top: 16px;
+    }
+
+    .maint-list li {
+      color: rgba(255, 255, 255, .8);
+      font-size: 13px;
+      padding: 5px 0;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .maint-list li::before {
+      content: '✦';
+      color: var(--gold);
+      font-size: 9px;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+
+    .warning-box {
+      background: rgba(201, 168, 76, .12);
+      border: 1px solid rgba(201, 168, 76, .35);
+      border-radius: 6px;
+      padding: 14px 16px;
+      margin-top: 16px;
+    }
+
+    .warning-box p {
+      color: rgba(255, 255, 255, .75);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .warning-box strong {
+      color: var(--gold);
+    }
+
+    /* ── WHAT WE FIX ── */
+    .fix-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .fix-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      background: var(--white);
+    }
+
+    .fix-icon {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+
+    .fix-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+
+    .fix-text {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ── CTA FOOTER ── */
+    .cta-section {
+      background: var(--navy);
+      padding: 52px 40px;
+      text-align: center;
+    }
+
+    .cta-section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 30px;
+      color: var(--white);
+      margin-bottom: 12px;
+    }
+
+    .cta-section p {
+      color: rgba(255, 255, 255, .6);
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 13px 28px;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      letter-spacing: .04em;
+      transition: transform .15s, opacity .15s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      opacity: .9;
+    }
+
+    .btn-gold {
+      background: var(--gold);
+      color: var(--navy);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--white);
+      border: 1px solid rgba(255, 255, 255, .35);
+    }
+
+    /* ── FOOTER BAR ── */
+    .footer-bar {
+      background: #080f18;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-bar p {
+      color: rgba(255, 255, 255, .35);
+      font-size: 11px;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0;
+    }
+
+    /* ── SEPARATOR LABEL ── */
+    .sep-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .sep-label::before,
+    .sep-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .sep-label span {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    @media (max-width: 700px) {
+
+      .grid-2,
+      .grid-3,
+      .grid-4,
+      .fix-grid,
+      .milestone-grid,
+      .stat-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .maintenance-box {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h1 {
+        font-size: 26px;
+      }
+
+      .section {
+        padding: 36px 20px;
+      }
+
+      .hero {
+        padding: 40px 20px 36px;
+      }
+
+      .topnav {
+        padding: 10px 20px;
+      }
+
+      .topnav-links {
+        display: none;
+      }
+
+      .cta-section {
+        padding: 40px 20px;
+      }
+
+      .footer-bar {
+        padding: 16px 20px;
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- TOP NAV -->
+  <nav class="topnav">
+    <a href="#" class="topnav-logo">
+      <!-- <div class="logo-icon"> -->
+      <img src="https://vawtech.in/assets/vaw-logo-dark-VxjFAFVi.png" width="70px" alt="vaw logo">
+      <!-- </div> -->
+      <!-- <span>VAW Technologies</span> -->
+    </a>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-badge">AI Proposal · Confidential</div>
+    <h1>AI Chatbot Proposal for<br /><span>Global Public School</span></h1>
+    <p class="hero-sub">A fully integrated, intelligent AI chatbot built into your school's website — answering student,
+      parent &amp; staff queries 24/7, powered by Gemini &amp; Groq.</p>
+    <div class="hero-meta">
+      <div class="hero-meta-item"><strong>Prepared For</strong>Global Public School</div>
+      <div class="hero-meta-item"><strong>Prepared By</strong>VAW Technologies</div>
+      <div class="hero-meta-item"><strong>Project Type</strong>AI Chatbot Integration</div>
+      <div class="hero-meta-item"><strong>Validity</strong>30 Days from Issue</div>
+    </div>
+  </header>
+
+  <!-- WHY THIS MATTERS -->
+  <section class="section">
+    <p class="section-label">Overview</p>
+    <h2 class="section-title">Why This Chatbot Matters</h2>
+    <p class="section-body">Your school website is the first point of contact for parents, students, and prospective
+      families. A smart AI chatbot eliminates friction — answering admissions queries, fee structures, timetables, event
+      info, and more, any time of day without burdening your staff.</p>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-icon gold">📞</div>
+        <div class="card-title">Reduce Staff Phone Load</div>
+        <div class="card-text">The chatbot handles repetitive queries about admissions, schedules, fees, and holidays —
+          freeing your administrative team to focus on high-value tasks.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon green">🤖</div>
+        <div class="card-title">Always-On, Always Accurate</div>
+        <div class="card-text">Powered by Google Gemini &amp; Groq's ultra-fast inference, the bot responds in under a
+          second with school-specific, contextually accurate answers.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon navy">🎓</div>
+        <div class="card-title">Built for Education and Support</div>
+        <div class="card-text">The assistant is trained on your school's data — curriculum, staff info, timings,
+          policies — so responses reflect your institution's voice and facts.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon gold">📱</div>
+        <div class="card-title">Works on All Devices</div>
+        <div class="card-text">Mobile-first, responsive chat widget seamlessly embedded into your existing website
+          without requiring any platform migration.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section class="section section-alt">
+    <p class="section-label">Technology</p>
+    <h2 class="section-title">Built on Modern, Future-Proof AI Technology</h2>
+    <p class="section-body">We use only production-grade AI infrastructure proven at scale, with fallback mechanisms
+      ensuring near-100% uptime.</p>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-icon gold">✦</div>
+        <div class="card-title">Google Gemini</div>
+        <div class="card-text">Primary AI engine for deep reasoning, multi-language support, and nuanced educational
+          context understanding.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon green">⚡</div>
+        <div class="card-title">Groq Inference</div>
+        <div class="card-text">World's fastest AI inference API — responses in milliseconds. Used for real-time, snappy
+          interactions and high-traffic moments.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon navy">🔒</div>
+        <div class="card-title">RAG Architecture</div>
+        <div class="card-text">Retrieval-Augmented Generation ensures the bot only answers from verified school data —
+          no hallucinations, no made-up facts.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon gold">🌐</div>
+        <div class="card-title">Website Integration</div>
+        <div class="card-text">A lightweight JavaScript widget embeds the chatbot into any page. Works with WordPress,
+          custom HTML, or any CMS.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon green">📊</div>
+        <div class="card-title">Analytics Dashboard</div>
+        <div class="card-text">Monthly reports on most asked questions, peak usage hours, and unanswered queries —
+          helping you improve continuously.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon navy">🛡️</div>
+        <div class="card-title">Secure &amp; Private</div>
+        <div class="card-text">No personal data stored. All conversations are ephemeral, GDPR-aligned, and cannot be
+          used to retrain any model.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS 
+<section class="section section-dark">
+  <p class="section-label" style="color:var(--gold)">Impact</p>
+  <h2 class="section-title light">Your Institution — Better Served</h2>
+  <p class="section-body" style="color:rgba(255,255,255,.6)">Based on similar school deployments, institutions typically see these outcomes within the first 90 days.</p>
+  <div class="stat-grid">
+    <div class="stat-block">
+      <div class="stat-num">80%</div>
+      <div class="stat-label">Reduction in routine admin queries</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-num">24/7</div>
+      <div class="stat-label">Round-the-clock availability</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-num">&lt;1s</div>
+      <div class="stat-label">Average response time (Groq)</div>
+    </div>
+  </div>
+  <div class="stat-grid" style="margin-bottom:0">
+    <div class="stat-block">
+      <div class="stat-num">5+</div>
+      <div class="stat-label">Languages supported (incl. Malayalam)</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-num">∞</div>
+      <div class="stat-label">Simultaneous conversations</div>
+    </div>
+    <div class="stat-block">
+      <div class="stat-num">99.9%</div>
+      <div class="stat-label">Uptime SLA with failover</div>
+    </div>
+  </div>
+</section>
+
+-->
+
+  <!-- FEATURES CHECKLIST -->
+  <section class="section">
+    <p class="section-label">Scope of Work</p>
+    <h2 class="section-title">Every Feature — Built from Scratch</h2>
+    <p class="section-body">This is not a plug-and-play generic chatbot. Every element is purpose-built for Global
+      Public School and trained on your content.</p>
+    <table class="feature-table">
+      <thead>
+        <tr>
+          <th>Feature / Deliverable</th>
+          <th>Included</th>
+          <th>Category</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Custom AI chatbot widget (embedded on website)</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-green">Core</span></td>
+        </tr>
+        <tr>
+          <td>School data ingestion &amp; knowledge base setup (RAG)</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-green">Core</span></td>
+        </tr>
+        <tr>
+          <td>Google Gemini API integration</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-navy">AI</span></td>
+        </tr>
+        <tr>
+          <td>Groq inference integration (fast fallback)</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-navy">AI</span></td>
+        </tr>
+        <tr>
+          <td>Admissions FAQ automation</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-green">Core</span></td>
+        </tr>
+        <tr>
+          <td>Fee structure &amp; payment query handling</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-green">Core</span></td>
+        </tr>
+        <tr>
+          <td>Academic calendar &amp; event announcements</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-green">Core</span></td>
+        </tr>
+        <tr>
+          <td>Staff &amp; department directory lookups</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-green">Core</span></td>
+        </tr>
+        <tr>
+          <td>Mobile-responsive chat UI</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-green">Core</span></td>
+        </tr>
+        <tr>
+          <td>Branded UI matching school's color scheme</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-gold">Design</span></td>
+        </tr>
+        <tr>
+          <td>Multi-language support (English + Malayalam)</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-navy">AI</span></td>
+        </tr>
+        <tr>
+          <td>Admin dashboard with query analytics</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-gold">Dashboard</span></td>
+        </tr>
+        <tr>
+          <td>Escalation flow (bot → human handoff via email)</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-green">Core</span></td>
+        </tr>
+        <tr>
+          <td>Conversation history export (admin only)</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-gold">Dashboard</span></td>
+        </tr>
+        <tr>
+          <td>Knowledge base update portal (for school admin)</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-gold">Dashboard</span></td>
+        </tr>
+        <tr>
+          <td>Integration with existing school website CMS</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-green">Core</span></td>
+        </tr>
+        <tr>
+          <td>1-month post-launch support (bugs, tuning)</td>
+          <td><span class="check">✔</span></td>
+          <td><span class="badge-pill pill-gold">Support</span></td>
+        </tr>
+        <!-- <tr><td>Voice input / voice assistant</td><td><span class="cross">✗</span></td><td><span class="badge-pill pill-gold">Add-on</span></td></tr> -->
+        <!-- <tr><td>SMS / WhatsApp bot integration</td><td><span class="cross">✗</span></td><td><span class="badge-pill pill-gold">Add-on</span></td></tr> -->
+        <!-- <tr><td>Student login-gated personalised bot</td><td><span class="cross">✗</span></td><td><span class="badge-pill pill-gold">Add-on</span></td></tr> -->
+      </tbody>
+    </table>
+  </section>
+
+  <!-- AUTO-UPDATE / HOW IT WORKS -->
+  <section class="section section-alt">
+    <p class="section-label">How It Works</p>
+    <h2 class="section-title">Your Chatbot Updates Itself — Automatically</h2>
+    <p class="section-body">When you update content on your school website, the chatbot's knowledge base re-indexes
+      automatically, so it always gives parents the latest fee or event information.</p>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-icon gold">🔄</div>
+        <div class="card-title">Auto Content Sync</div>
+        <div class="card-text">Connect your website pages or Google Drive folder. Any update triggers a re-indexing
+          pipeline — zero manual effort from your team.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon green">🎯</div>
+        <div class="card-title">Intent-Based Routing</div>
+        <div class="card-text">The AI detects whether a visitor is asking about admissions, fees, academics, or general
+          info — and routes to the right knowledge context.</div>
+      </div>
+    </div>
+    <div style="margin-top:20px">
+      <div class="card navy-card">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="font-size:22px; color:var(--gold)">⚡</span>
+          <div>
+            <div class="card-title">Groq Fallback Guarantee</div>
+            <div class="card-text">If the primary Gemini model experiences delays, the system automatically falls back
+              to Groq's LLaMA-3 model with no interruption to the user experience. This ensures &lt;2s response times
+              even during peak school events like admissions season.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHAT WE FIX -->
+  <section class="section">
+    <p class="section-label">Problem → Solution</p>
+    <h2 class="section-title">What We're Fixing</h2>
+    <p class="section-body">These are the real pain points that GPS families and staff face today — and exactly what the
+      AI chatbot solves.</p>
+    <div class="fix-grid">
+      <div class="fix-card">
+        <div class="fix-icon">📞</div>
+        <div class="fix-title">Fixes the daily hustle</div>
+        <div class="fix-text">Parents call to ask about fee due dates, holiday schedules, and bus routes. The chatbot
+          answers these instantly — no call needed.</div>
+      </div>
+      <div class="fix-card">
+        <div class="fix-icon">🌙</div>
+        <div class="fix-title">No Support After School Hours</div>
+        <div class="fix-text">Prospective parents often visit the website at night or on weekends. The chatbot is
+          available 24/7, converting interest into inquiries.</div>
+      </div>
+      <div class="fix-card">
+        <div class="fix-icon">🗂️</div>
+        <div class="fix-title">Information Buried in the Website</div>
+        <div class="fix-text">Important policies are hard to find. The bot surfaces the right answer from any page in
+          plain language, conversationally.</div>
+      </div>
+      <div class="fix-card">
+        <div class="fix-icon">🌍</div>
+        <div class="fix-title">Language Barrier for Some Parents</div>
+        <div class="fix-text">Not all parents are comfortable in English. The bot supports Malayalam queries, making the
+          school more inclusive and accessible.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5-WEEK SPRINT PLAN -->
+  <section class="section section-alt">
+    <p class="section-label">Timeline</p>
+    <h2 class="section-title">5-Week Sprint to Launch</h2>
+    <p class="section-body">We operate in focused sprints. Each sprint has a clear deliverable you can review before we
+      proceed to the next phase.</p>
+
+    <div class="sprint" data-num="1">
+      <span class="sprint-week">Week 1</span>
+      <div class="sprint-title">Discovery &amp; Data Collection</div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Kick-off call with school administration to define
+          chatbot scope</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Collect school documents: prospectus, fee
+          structure, calendar, policies, FAQs</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Audit existing website structure and CMS
+          access</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Define conversation flows and escalation
+          triggers</span></div>
+    </div>
+
+    <div class="sprint" data-num="2">
+      <span class="sprint-week">Week 2</span>
+      <div class="sprint-title">Knowledge Base &amp; AI Model Setup</div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Process and embed all school documents into vector
+          knowledge base</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Configure Gemini + Groq API pipelines with RAG
+          retrieval logic</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Prompt engineering for school-specific tone and
+          guardrails</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Internal testing with 50+ sample questions</span>
+      </div>
+    </div>
+
+    <div class="sprint" data-num="3">
+      <span class="sprint-week">Week 3</span>
+      <div class="sprint-title">UI/Widget Development</div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Design branded chat widget matching Global Public
+          School's visual identity</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Build responsive mobile/desktop chat
+          interface</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Implement quick-reply buttons for top 10 common
+          questions</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Admin dashboard build for analytics &amp;
+          knowledge base management</span></div>
+    </div>
+
+    <div class="sprint" data-num="4">
+      <span class="sprint-week">Week 4</span>
+      <div class="sprint-title">Integration &amp; UAT</div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Embed chatbot widget into school website (all key
+          pages)</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>User Acceptance Testing with school staff &amp; a
+          parent group</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Refine responses based on real-world testing
+          feedback</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Load testing for concurrent users (admissions
+          season simulation)</span></div>
+    </div>
+
+    <div class="sprint" data-num="5" style="margin-bottom:0">
+      <span class="sprint-week">Week 5</span>
+      <div class="sprint-title">Launch &amp; Handover</div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Go-live on school website with monitoring
+          enabled</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Admin training session (how to update knowledge
+          base)</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>Handover documentation and video
+          walkthrough</span></div>
+      <div class="sprint-item"><span class="sprint-dot">◆</span><span>30-day free support period begins</span></div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="section">
+    <p class="section-label">Investment</p>
+    <h2 class="section-title">Complete Chatbot — One Clear Price</h2>
+    <p class="section-body">No hidden costs, no surprise invoices. The project price covers everything from discovery to
+      deployment. Monthly maintenance is a separate, transparent line item.</p>
+
+    <div class="pricing-wrap">
+      <div class="pricing-header">
+        <span>Line Item</span>
+        <span>Amount (INR)</span>
+      </div>
+      <div class="pricing-row">
+        <div class="pricing-item">AI Chatbot Development (full build)<small>RAG pipeline, Gemini + Groq integration,
+            conversation flows</small></div>
+        <div class="pricing-amt">₹28,000</div>
+      </div>
+      <div class="pricing-row">
+        <div class="pricing-item">UI/UX Design &amp; Branded Widget<small>Custom chat widget matching GPS brand
+            identity, mobile-responsive</small></div>
+        <div class="pricing-amt">₹8,000</div>
+      </div>
+      <div class="pricing-row">
+        <div class="pricing-item">Knowledge Base Setup &amp; Data Ingestion<small>Processing school documents,
+            embedding, vector store setup</small></div>
+        <div class="pricing-amt">₹6,000</div>
+      </div>
+      <div class="pricing-row">
+        <div class="pricing-item">Admin Dashboard &amp; Analytics Panel<small>Query logs, top questions, unanswered
+            query alerts</small></div>
+        <div class="pricing-amt">₹7,000</div>
+      </div>
+      <div class="pricing-row">
+        <div class="pricing-item">Website Integration &amp; Deployment<small>CMS embedding, cross-browser testing, live
+            deployment</small></div>
+        <div class="pricing-amt">₹5,000</div>
+      </div>
+      <div class="pricing-row">
+        <div class="pricing-item">UAT, QA &amp; Performance Testing<small>Load testing, 50+ real-world query
+            validation</small></div>
+        <div class="pricing-amt">₹3,000</div>
+      </div>
+      <div class="pricing-row">
+        <div class="pricing-item">Documentation, Training &amp; 30-Day Support<small>Admin training, handover docs,
+            video walkthrough</small></div>
+        <div class="pricing-amt">₹3,000</div>
+      </div>
+      <div class="pricing-total-row">
+        <div>
+          <div class="pricing-total-label">Total Project Investment</div>
+          <div class="pricing-note">One-time cost · GST as applicable · No recurring platform fee</div>
+        </div>
+        <div>
+          <div class="pricing-total-amt">₹60,000</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAINTENANCE -->
+    <div class="maintenance-box">
+      <div class="left">
+        <p
+          style="color:var(--gold); font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; margin-bottom:8px;">
+          Monthly Maintenance</p>
+        <div class="maint-price">₹5,000<span style="font-size:16px; color:rgba(255,255,255,.5)">/month</span></div>
+        <div class="maint-sub">Ongoing AI token usage &amp; platform maintenance</div>
+        <ul class="maint-list">
+          <li>Gemini API token usage (monthly consumption)</li>
+          <li>Groq API token usage &amp; inference costs</li>
+          <li>Server/hosting for chatbot backend</li>
+          <li>Knowledge base sync &amp; re-indexing</li>
+          <li>Bug fixes and minor content updates</li>
+          <li>Monthly analytics report delivery</li>
+        </ul>
+      </div>
+      <div class="right">
+        <div class="warning-box">
+          <p><strong>⚠ Important — Token Usage Transparency</strong><br />The ₹5,000/month covers standard usage with
+            Gemini and Groq. If query volume significantly exceeds baseline (e.g., during admissions season), token
+            costs may increase. We will notify you proactively before any overage billing.</p>
+        </div>
+        <div class="warning-box"
+          style="margin-top:12px; background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.1)">
+          <p><strong style="color:var(--white)">Additional AI Models</strong><br />If the project scope requires
+            integration of additional AI models (e.g., OpenAI GPT-4o, Anthropic Claude, ElevenLabs for voice), those API
+            costs will be quoted and billed separately with prior approval.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MILESTONE PAYMENTS -->
+  <section class="section section-alt">
+    <p class="section-label">Payment Structure</p>
+    <h2 class="section-title">Simple, Milestone-Based Payments</h2>
+    <p class="section-body">We believe in earning trust at every stage. Payments are tied to tangible deliverables — you
+      only pay when you've seen and approved the work.</p>
+    <div class="milestone-grid">
+      <div class="milestone-card m1">
+        <div class="milestone-pct">50%</div>
+        <div class="milestone-title">Project Kickoff</div>
+        <div class="milestone-desc">Paid on agreement signing. Covers discovery, data collection, and initial AI model
+          setup.</div>
+        <div class="milestone-amt">₹30,000</div>
+      </div>
+      <div class="milestone-card m2">
+        <div class="milestone-pct">25%</div>
+        <div class="milestone-title">UAT Approval</div>
+        <div class="milestone-desc">Paid after successful User Acceptance Testing and your sign-off on chatbot
+          responses.</div>
+        <div class="milestone-amt">₹15,000</div>
+      </div>
+      <div class="milestone-card m3">
+        <div class="milestone-pct">25%</div>
+        <div class="milestone-title">Go-Live</div>
+        <div class="milestone-desc">Final payment on successful live deployment of the chatbot on your school website.
+        </div>
+        <div class="milestone-amt">₹15,000</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY US -->
+  <section class="section">
+    <p class="section-label">Why Choose Us</p>
+    <h2 class="section-title">What Sets Us Apart</h2>
+    <p class="section-body">We're not a large agency with layers of account managers. We're a focused team that ships
+      high-quality AI products fast, with full transparency.</p>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-icon gold">🏫</div>
+        <div class="card-title">Education-Sector Experience</div>
+        <div class="card-text">We've built digital systems for educational institutions and understand the unique trust,
+          language, and data requirements of school environments.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon green">🛠️</div>
+        <div class="card-title">No "Black Box" AI</div>
+        <div class="card-text">You'll always know what the bot knows, why it gave an answer, and how to update it. Full
+          transparency and admin control at all times.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon navy">📈</div>
+        <div class="card-title">Designed to Scale</div>
+        <div class="card-text">Start with the website chatbot. Later expand to WhatsApp, parent app, or student portal
+          with the same underlying AI engine.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon gold">🤝</div>
+        <div class="card-title">Dedicated Point of Contact</div>
+        <div class="card-text">One senior developer handles your project start-to-finish. No tickets, no queues — direct
+          WhatsApp and email access throughout.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <!-- <section class="cta-section"> 
+  <h2>Let's Build Something Extraordinary<br/>for Global Public School</h2>
+  <p>This proposal is valid for 30 days. Reach out to discuss, ask questions, or get started today.</p>
+  <div class="cta-buttons">
+    <a href="mailto:info.virtualarts@gmail.com" class="btn btn-gold">Accept Proposal &amp; Get Started</a>
+    <a href="tel:+91-8281543610" class="btn btn-ghost">Schedule a Call</a>
+  </div>
+  <div style="margin-top:40px; display:grid; grid-template-columns:repeat(3,1fr); gap:20px; max-width:600px; margin-left:auto; margin-right:auto; margin-top:40px;">
+    <div style="text-align:center;">
+      <div style="color:var(--gold); font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px;">Email</div>
+      <div style="color:rgba(255,255,255,.7); font-size:13px;">hello@visioncraft.studio</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="color:var(--gold); font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px;">WhatsApp</div>
+      <div style="color:rgba(255,255,255,.7); font-size:13px;">+91 XXXXX XXXXX</div>
+    </div>
+    <div style="text-align:center;">
+      <div style="color:var(--gold); font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px;">Valid Until</div>
+      <div style="color:rgba(255,255,255,.7); font-size:13px;">30 days from issue</div>
+    </div>
+  </div>
+</section>
+-->
+  <!-- FOOTER -->
+  <footer class="footer-bar">
+    <div class="topnav-logo" style="color:rgba(255,255,255,.4)">
+      <img src="https://vawtech.in/assets/vaw-logo-dark-VxjFAFVi.png" width="70px" alt="vaw logo">
+      <span>VAW Technologies</span>
+    </div>
+    <p>Confidential · Prepared for Global Public School · All amounts in INR · GST applicable</p>
+  </footer>
+
+</body>
+
+</html>
