@@ -39,8 +39,7 @@ import UpdateButton from "@/components/staff/UpdateButton";
 import { Fingerprint } from "lucide-react";
 import { toast } from "sonner";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
-import BreakRoom from "@/components/staff/BreakRoom";
-import BreakRoomWidget from "@/components/staff/BreakRoomWidget";
+
 import MeetingRoom from "@/components/staff/MeetingRoom";
 import AttendanceChecker from "@/components/staff/AttendanceChecker";
 import MoodQuoteChecker from "@/components/staff/MoodQuoteChecker";
@@ -63,8 +62,9 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import CoinPopup from "@/components/staff/CoinPopup";
 import EmmaAssistant from "@/components/ai/EmmaAssistant";
 import { Sparkles } from "lucide-react";
+import OfficeZenHome from "@/components/staff/OfficeZenHome";
 
-type RoomType = 'workspace' | 'breakroom' | 'meeting';
+type RoomType = 'home' | 'workspace' | 'meeting';
 
 const EMOJI_OPTIONS = [
   "😀", "😃", "😄", "😁", "😊", "🙂", "😎", "🤩", "🥳", "😇",
@@ -83,7 +83,7 @@ const TeamHeadDashboard = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [showMobileHome, setShowMobileHome] = useState(true);
-  const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
+  const [currentRoom, setCurrentRoom] = useState<RoomType>('home');
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -94,16 +94,10 @@ const TeamHeadDashboard = () => {
   const [newEmojiPassword, setNewEmojiPassword] = useState<string[]>([]);
   const [confirmEmojiPassword, setConfirmEmojiPassword] = useState<string[]>([]);
   const [profileForm, setProfileForm] = useState({ full_name: "", about_me: "" });
-  const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
   const [showCoinConfigDialog, setShowCoinConfigDialog] = useState(false);
   const [showCoinPopup, setShowCoinPopup] = useState(false);
   const [showBiometricDialog, setShowBiometricDialog] = useState(false);
   const [showEmma, setShowEmma] = useState(false);
-
-  // Break timer state (lifted up to persist when minimized)
-  const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
-  const [isBreakActive, setIsBreakActive] = useState(false);
-  const [breakDuration, setBreakDuration] = useState(15);
 
   // Widgets state
   const [widgets, setWidgets] = useState(() => {
@@ -481,6 +475,13 @@ const TeamHeadDashboard = () => {
   );
 
   const roomComponents = {
+    home: (
+      <OfficeZenHome 
+        userId={profile?.user_id || ''}
+        userProfile={profile}
+        onEnterWorkspace={() => setCurrentRoom('workspace')}
+      />
+    ),
     workspace: (
       <div className="flex flex-col space-y-6 pb-8">
         {/* Row 1: Main Workspace (Header & Tasks) */}
@@ -531,18 +532,6 @@ const TeamHeadDashboard = () => {
         )}
       </div>
     ),
-    breakroom: isBreakRoomMinimized ? null : (
-      <BreakRoom
-        breakTimeRemaining={breakTimeRemaining}
-        setBreakTimeRemaining={setBreakTimeRemaining}
-        isBreakActive={isBreakActive}
-        setIsBreakActive={setIsBreakActive}
-        breakDuration={breakDuration}
-        setBreakDuration={setBreakDuration}
-        userId={profile?.user_id || ''}
-        onStatusChange={updateStatus}
-      />
-    ),
     meeting: <MeetingRoom />
   };
 
@@ -550,16 +539,17 @@ const TeamHeadDashboard = () => {
     <div className="min-h-screen h-screen flex flex-col relative overflow-hidden bg-zinc-950">
       {/* Background Layer - Fixed to viewport */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-black/70 z-10 transition-opacity duration-700"></div>
+        <div className="absolute inset-0 bg-black/60 z-10"></div>
         <img
           src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
           alt="Modern office background"
-          className="w-full h-full object-cover scale-105"
+          className="w-full h-full object-cover scale-105 opacity-100"
         />
       </div>
 
       {/* Office Header */}
-      <header className="relative z-30 bg-black/80 backdrop-blur-xl border-b border-white/20 shadow-2xl">
+      {currentRoom !== 'home' && (
+        <header className="relative z-30 bg-black/80 backdrop-blur-xl border-b border-white/20 shadow-2xl">
         <div className="container mx-auto px-4 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3 sm:gap-4">
@@ -596,8 +586,8 @@ const TeamHeadDashboard = () => {
               <div className="flex items-center gap-1 sm:gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-2 sm:px-3 py-1">
                 <UserStatusBadge
                   status={status}
-                  isBreakActive={isBreakActive}
-                  breakTimeRemaining={breakTimeRemaining}
+                  isBreakActive={false}
+                  breakTimeRemaining={0}
                 />
               </div>
 
@@ -656,21 +646,26 @@ const TeamHeadDashboard = () => {
           </div>
         </div>
       </header>
+      )}
 
       {/* Announcement Banner */}
-      <AnnouncementBanner userId={profile?.user_id || ''} departmentId={profile?.department_id} />
+      {currentRoom !== 'home' && (
+        <AnnouncementBanner userId={profile?.user_id || ''} departmentId={profile?.department_id} />
+      )}
 
-      <VirtualOfficeLayout
-        currentRoom={currentRoom}
-        onRoomChange={setCurrentRoom}
-        onlineUsers={onlineUsers}
-        userId={profile?.user_id}
-        userProfile={profile}
-        onOpenCoins={() => setShowCoinPopup(true)}
-        className="flex-1"
-      >
-        {roomComponents[currentRoom]}
-      </VirtualOfficeLayout>
+      <div className="flex-1 overflow-hidden relative z-10">
+        <VirtualOfficeLayout
+          currentRoom={currentRoom}
+          onRoomChange={setCurrentRoom}
+          onlineUsers={onlineUsers}
+          userId={profile?.user_id}
+          userProfile={profile}
+          onOpenCoins={() => setShowCoinPopup(true)}
+          className="h-full w-full"
+        >
+          {roomComponents[currentRoom]}
+        </VirtualOfficeLayout>
+      </div>
 
       {/* Profile Edit Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
@@ -793,18 +788,7 @@ const TeamHeadDashboard = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Break Room Widget (when minimized) */}
-      {isBreakRoomMinimized && (
-        <BreakRoomWidget
-          onMaximize={() => {
-            setIsBreakRoomMinimized(false);
-            setCurrentRoom('breakroom');
-          }}
-          isBreakActive={isBreakActive}
-          breakTimeRemaining={breakTimeRemaining}
-          unreadChatCount={0}
-        />
-      )}
+
 
       {/* Reactivation Dialog */}
       {showReactivationDialog && reactivationCode && (

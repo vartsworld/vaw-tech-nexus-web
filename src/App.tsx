@@ -60,6 +60,7 @@ import ClientFeedback from "./pages/ClientFeedback";
 import GPSProposal from "./pages/GPSProposal";
 import GPSAIProposal from "./pages/GPSAIProposal";
 import VAWAcademy from "./pages/VAWAcademy";
+import ToolsNexus from "./pages/ToolsNexus";
 
 
 
@@ -126,6 +127,7 @@ const AppContent = () => {
           <Route path="/hr/*" element={<HRDashboard />} />
           <Route path="/staff/login" element={<StaffLogin />} />
           <Route path="/staff/dashboard" element={<StaffDashboard />} />
+          <Route path="/staff/tools-nexus" element={<ToolsNexus />} />
           <Route path="/staff/task/:taskId" element={<StaffTaskDetail />} />
           <Route path="/staff/work" element={<StaffWork />} />
           <Route path="/team-head/dashboard" element={<TeamHeadDashboard />} />

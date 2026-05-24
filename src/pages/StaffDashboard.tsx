@@ -22,7 +22,8 @@ import {
   Trophy,
   Coins,
   Fingerprint,
-  Loader2
+  Loader2,
+  Sparkles
 } from "lucide-react";
 import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
 import UpdateButton from "@/components/staff/UpdateButton";
@@ -30,8 +31,7 @@ import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import StaffMobileHome from "@/components/staff/StaffMobileHome";
 import { useIsMobile } from "@/hooks/use-mobile";
 import WorkspaceRoom from "@/components/staff/WorkspaceRoom";
-import BreakRoom from "@/components/staff/BreakRoom";
-import BreakRoomWidget from "@/components/staff/BreakRoomWidget";
+
 import MeetingRoom from "@/components/staff/MeetingRoom";
 import AttendanceChecker from "@/components/staff/AttendanceChecker";
 import MoodQuoteChecker from "@/components/staff/MoodQuoteChecker";
@@ -48,27 +48,25 @@ import { toast } from "sonner";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import AnnouncementBanner from "@/components/staff/AnnouncementBanner";
 import CoinPopup from "@/components/staff/CoinPopup";
+import OfficeZenHome from "@/components/staff/OfficeZenHome";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import EmmaAssistant from "@/components/ai/EmmaAssistant";
 
-type RoomType = 'workspace' | 'breakroom' | 'meeting';
+type RoomType = 'home' | 'workspace' | 'meeting';
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
+  const [currentRoom, setCurrentRoom] = useState<RoomType>('home');
   const [showMobileHome, setShowMobileHome] = useState(true);
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({});
   const [departmentName, setDepartmentName] = useState<string>("");
-  const [isBreakRoomMinimized, setIsBreakRoomMinimized] = useState(false);
   const [showCoinPopup, setShowCoinPopup] = useState(false);
   const [showBiometricDialog, setShowBiometricDialog] = useState(false);
-
-  // Break timer state
-  const [breakTimeRemaining, setBreakTimeRemaining] = useState(900);
-  const [isBreakActive, setIsBreakActive] = useState(false);
-  const [breakDuration, setBreakDuration] = useState(15);
+  const [showEmma, setShowEmma] = useState(false);
 
   const { profile, loading } = useStaffData();
 
@@ -326,19 +324,14 @@ const StaffDashboard = () => {
   }
 
   const roomComponents = {
-    workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} />,
-    breakroom: isBreakRoomMinimized ? null : (
-      <BreakRoom
-        breakTimeRemaining={breakTimeRemaining}
-        setBreakTimeRemaining={setBreakTimeRemaining}
-        isBreakActive={isBreakActive}
-        setIsBreakActive={setIsBreakActive}
-        breakDuration={breakDuration}
-        setBreakDuration={setBreakDuration}
+    home: (
+      <OfficeZenHome 
         userId={profile.user_id}
-        onStatusChange={updateStatus}
+        userProfile={profile}
+        onEnterWorkspace={() => setCurrentRoom('workspace')}
       />
     ),
+    workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} />,
     meeting: <MeetingRoom />
   };
 
@@ -359,8 +352,8 @@ const StaffDashboard = () => {
   return (
     <div className="min-h-screen h-screen flex flex-col relative overflow-hidden">
       {/* Background Images */}
-      <div className="fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60"></div>
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
         <img
           src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
           alt="Modern office background"
@@ -373,7 +366,8 @@ const StaffDashboard = () => {
         />
       </div>
       {/* Office Header */}
-      <header className="relative z-30 bg-black/20 backdrop-blur-lg border-b border-white/10 flex-shrink-0">
+      {currentRoom !== 'home' && (
+        <header className="relative z-30 bg-black/20 backdrop-blur-lg border-b border-white/10 flex-shrink-0">
         <div className="container mx-auto px-4 py-3">
           <div className="flex flex-col gap-3">
             {/* Top Row: Logo and Main Info */}
@@ -453,8 +447,8 @@ const StaffDashboard = () => {
                 <div className="flex items-center gap-1.5 bg-green-500/20 border border-green-500/30 rounded-lg px-2.5 py-1.5">
                   <UserStatusBadge
                     status={status}
-                    isBreakActive={isBreakActive}
-                    breakTimeRemaining={breakTimeRemaining}
+                    isBreakActive={false}
+                    breakTimeRemaining={0}
                   />
                 </div>
 
@@ -477,9 +471,12 @@ const StaffDashboard = () => {
           </div>
         </div>
       </header>
+      )}
 
       {/* Announcement Banner */}
-      <AnnouncementBanner userId={profile.user_id} departmentId={profile.department_id} />
+      {currentRoom !== 'home' && (
+        <AnnouncementBanner userId={profile.user_id} departmentId={profile.department_id} />
+      )}
 
       <div className="flex-1 overflow-hidden relative z-10">
         <VirtualOfficeLayout
@@ -494,18 +491,7 @@ const StaffDashboard = () => {
         </VirtualOfficeLayout>
       </div>
 
-      {/* Break Room Widget (when minimized) */}
-      {isBreakRoomMinimized && (
-        <BreakRoomWidget
-          onMaximize={() => {
-            setIsBreakRoomMinimized(false);
-            setCurrentRoom('breakroom');
-          }}
-          isBreakActive={isBreakActive}
-          breakTimeRemaining={breakTimeRemaining}
-          unreadChatCount={0}
-        />
-      )}
+
 
       {/* Reactivation Dialog */}
       {showReactivationDialog && reactivationCode && (
@@ -531,6 +517,21 @@ const StaffDashboard = () => {
         open={showBiometricDialog}
         onOpenChange={setShowBiometricDialog}
       />
+
+      {/* EMMA AI floating button + dialog */}
+      <Button
+        onClick={() => setShowEmma(true)}
+        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-br from-primary to-purple-500 hover:scale-105 transition-transform"
+        size="icon"
+        title="Ask EMMA"
+      >
+        <Sparkles className="w-6 h-6 text-white" />
+      </Button>
+      <Dialog open={showEmma} onOpenChange={setShowEmma}>
+        <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
+          <EmmaAssistant role="team_head" />
+        </DialogContent>
+      </Dialog>
 
       <PWAInstallPrompt />
     </div>

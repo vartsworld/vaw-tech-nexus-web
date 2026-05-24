@@ -21,7 +21,10 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
-  PlaneTakeoff
+  PlaneTakeoff,
+  Trophy,
+  Compass,
+  Laptop
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import TeamChat from "./TeamChat";
@@ -29,12 +32,16 @@ import { ActivityLogPanel } from "./ActivityLogPanel";
 import MobileBottomNav from "./MobileBottomNav";
 import MiniChess from "./MiniChess";
 import LeaveApplicationDialog from "./LeaveApplicationDialog";
+import { CompletedTasksDialog } from "./CompletedTasksDialog";
+import { supabase } from "@/integrations/supabase/client";
+import confetti from "canvas-confetti";
+import { Badge } from "@/components/ui/badge";
 
 
 interface VirtualOfficeLayoutProps {
   children: ReactNode;
-  currentRoom: 'workspace' | 'breakroom' | 'meeting';
-  onRoomChange: (room: 'workspace' | 'breakroom' | 'meeting') => void;
+  currentRoom: 'home' | 'workspace' | 'breakroom' | 'meeting';
+  onRoomChange: (room: 'home' | 'workspace' | 'breakroom' | 'meeting') => void;
   onlineUsers?: Record<string, any>;
   userId?: string;
   userProfile?: any;
@@ -62,8 +69,194 @@ const VirtualOfficeLayout = ({
   const [popoutChat, setPopoutChat] = useState(false);
   const [popoutDM, setPopoutDM] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [showCompletedTasksDialog, setShowCompletedTasksDialog] = useState(false);
+  const [celebrationTask, setCelebrationTask] = useState<any | null>(null);
   const navigate = useNavigate();
   const mainContentRef = useRef<HTMLDivElement>(null);
+
+  // Check for completed tasks to trigger confetti/celebration (supports offline-recovery)
+  useEffect(() => {
+    if (!userId || currentRoom !== 'workspace') return;
+
+    const checkNewCompletions = async () => {
+      try {
+        const { data: tasksData, error: tasksError } = await supabase
+          .from("staff_tasks")
+          .select("*, staff_subtasks(*)")
+          .eq("status", "completed");
+
+        if (tasksError) throw tasksError;
+
+        const rawTasks = tasksData || [];
+        const unseenCompleted: any[] = [];
+
+        const seenTasksStr = localStorage.getItem(`seen_completed_tasks_${userId}`) || "[]";
+        let seenTasks: string[] = [];
+        try {
+          seenTasks = JSON.parse(seenTasksStr);
+        } catch {
+          seenTasks = [];
+        }
+
+        rawTasks.forEach((task) => {
+          if (seenTasks.includes(task.id)) return;
+
+          // Check if user is directly assigned
+          let isDirectlyAssigned = false;
+          if (task.assigned_to) {
+            try {
+              const parsed = typeof task.assigned_to === "string"
+                ? JSON.parse(task.assigned_to)
+                : task.assigned_to;
+              if (Array.isArray(parsed) && parsed.includes(userId)) {
+                isDirectlyAssigned = true;
+              }
+            } catch (e) {
+              if (typeof task.assigned_to === "string" && task.assigned_to.includes(userId)) {
+                isDirectlyAssigned = true;
+              }
+            }
+          }
+
+          // Check if user has assigned subtasks
+          const hasUserSubtasks = (task.staff_subtasks || []).some(
+            (st: any) => st.assigned_to === userId
+          );
+
+          if (isDirectlyAssigned || hasUserSubtasks) {
+            unseenCompleted.push(task);
+          }
+        });
+
+        if (unseenCompleted.length > 0) {
+          const taskToCelebrate = unseenCompleted[0];
+          
+          // Fire gorgeous triple confetti bursts!
+          confetti({
+            particleCount: 150,
+            spread: 80,
+            origin: { y: 0.5 }
+          });
+          setTimeout(() => {
+            confetti({
+              particleCount: 100,
+              spread: 100,
+              origin: { y: 0.5, x: 0.3 }
+            });
+          }, 250);
+          setTimeout(() => {
+            confetti({
+              particleCount: 100,
+              spread: 100,
+              origin: { y: 0.5, x: 0.7 }
+            });
+          }, 500);
+
+          setCelebrationTask(taskToCelebrate);
+
+          // Save all as seen so we don't duplicate on reload
+          const allFoundIds = unseenCompleted.map(t => t.id);
+          const newSeenList = Array.from(new Set([...seenTasks, ...allFoundIds]));
+          localStorage.setItem(`seen_completed_tasks_${userId}`, JSON.stringify(newSeenList));
+        }
+      } catch (err) {
+        console.error("Error checking completed tasks celebration:", err);
+      }
+    };
+
+    // Tiny timeout to let workspace page load fully
+    const timer = setTimeout(checkNewCompletions, 1200);
+    return () => clearTimeout(timer);
+  }, [userId, currentRoom]);
+
+  // Real-time subscription to trigger confetti instantly for online users
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel("completed-task-celebration-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "staff_tasks",
+        },
+        async (payload) => {
+          const newTask = payload.new as any;
+          if (newTask.status === "completed") {
+            const seenTasksStr = localStorage.getItem(`seen_completed_tasks_${userId}`) || "[]";
+            let seenTasks: string[] = [];
+            try {
+              seenTasks = JSON.parse(seenTasksStr);
+            } catch {
+              seenTasks = [];
+            }
+
+            if (seenTasks.includes(newTask.id)) return;
+
+            // Check if user is directly assigned
+            let isDirectlyAssigned = false;
+            if (newTask.assigned_to) {
+              try {
+                const parsed = typeof newTask.assigned_to === "string"
+                  ? JSON.parse(newTask.assigned_to)
+                  : newTask.assigned_to;
+                if (Array.isArray(parsed) && parsed.includes(userId)) {
+                  isDirectlyAssigned = true;
+                }
+              } catch (e) {
+                if (typeof newTask.assigned_to === "string" && newTask.assigned_to.includes(userId)) {
+                  isDirectlyAssigned = true;
+                }
+              }
+            }
+
+            // Also check subtasks from database
+            const { data: subtasks } = await supabase
+              .from("staff_subtasks")
+              .select("id")
+              .eq("task_id", newTask.id)
+              .eq("assigned_to", userId);
+
+            const hasUserSubtasks = subtasks && subtasks.length > 0;
+
+            if (isDirectlyAssigned || hasUserSubtasks) {
+              confetti({
+                particleCount: 150,
+                spread: 80,
+                origin: { y: 0.5 }
+              });
+              setTimeout(() => {
+                confetti({
+                  particleCount: 100,
+                  spread: 100,
+                  origin: { y: 0.5, x: 0.3 }
+                });
+              }, 250);
+              setTimeout(() => {
+                confetti({
+                  particleCount: 100,
+                  spread: 100,
+                  origin: { y: 0.5, x: 0.7 }
+                });
+              }, 500);
+
+              setCelebrationTask(newTask);
+
+              // Mark as seen
+              const newSeenList = Array.from(new Set([...seenTasks, newTask.id]));
+              localStorage.setItem(`seen_completed_tasks_${userId}`, JSON.stringify(newSeenList));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (mainContentRef.current) {
@@ -75,8 +268,8 @@ const VirtualOfficeLayout = ({
   }, [currentRoom]);
 
   const rooms = [
+    { id: 'home' as const, name: 'Office', icon: Compass, color: 'from-emerald-500 to-teal-600' },
     { id: 'workspace' as const, name: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
-    { id: 'breakroom' as const, name: 'Break Room', icon: Coffee, color: 'from-red-500 to-red-600' },
     { id: 'meeting' as const, name: 'Meeting Room', icon: Users, color: 'from-yellow-500 to-yellow-600' }
   ];
 
@@ -128,7 +321,8 @@ const VirtualOfficeLayout = ({
       </Sheet>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 overflow-hidden flex-shrink-0 z-20">
+      {currentRoom !== 'home' && (
+        <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 overflow-hidden flex-shrink-0 z-20">
         <div className="p-6 pb-4 space-y-4 flex-shrink-0 overflow-y-auto">
           {/* Room Navigation - Collapsible */}
           <div>
@@ -258,6 +452,28 @@ const VirtualOfficeLayout = ({
                     My Coins
                   </Button>
 
+                  {/* Completed Tasks Button */}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="col-span-2 bg-emerald-500/20 border-emerald-500/30 text-emerald-200 hover:from-emerald-500/30 hover:to-teal-500/30 hover:bg-emerald-500/30"
+                    onClick={() => setShowCompletedTasksDialog(true)}
+                  >
+                    <Trophy className="w-4 h-4 mr-2 text-amber-300 animate-pulse" />
+                    Completed Tasks
+                  </Button>
+
+                  {/* VAW Tools Nexus Button */}
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="col-span-2 bg-gradient-to-r from-blue-600/35 to-cyan-500/35 border-blue-500/40 text-blue-200 hover:from-blue-600/45 hover:to-cyan-500/45 hover:text-white hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    onClick={() => navigate('/staff/tools-nexus')}
+                  >
+                    <Laptop className="w-4 h-4 mr-2 text-cyan-300 animate-pulse" />
+                    Tools Nexus
+                  </Button>
+
                   {/* Activity Log Dialog */}
                   {userId && (
                     <Dialog open={showActivityLog} onOpenChange={setShowActivityLog}>
@@ -344,6 +560,7 @@ const VirtualOfficeLayout = ({
           </div>
         </div>
       </aside>
+      )}
 
       {/* Main Content Area */}
       <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
@@ -390,6 +607,66 @@ const VirtualOfficeLayout = ({
           userId={userId} 
         />
       )}
+
+      {/* Completed Tasks Dialog */}
+      {userId && (
+        <CompletedTasksDialog
+          open={showCompletedTasksDialog}
+          onOpenChange={setShowCompletedTasksDialog}
+          userId={userId}
+          userProfile={userProfile}
+        />
+      )}
+
+      {/* Celebration Modal Overlay */}
+      <Dialog open={!!celebrationTask} onOpenChange={() => setCelebrationTask(null)}>
+        <DialogContent className="max-w-md bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 border-amber-500/40 text-white rounded-2xl p-6 text-center shadow-[0_0_50px_rgba(245,158,11,0.2)] border animate-in fade-in zoom-in-95 duration-300">
+          <DialogHeader className="flex flex-col items-center space-y-4">
+            <div className="relative">
+              {/* Outer glowing halo */}
+              <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl scale-125 animate-pulse" />
+              <div className="h-20 w-20 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 border border-amber-300/30 flex items-center justify-center shadow-2xl relative">
+                <Trophy className="h-10 w-10 text-slate-950 animate-bounce" />
+              </div>
+            </div>
+            <div>
+              <DialogTitle className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-300 tracking-tight uppercase">
+                Mission Accomplished!
+              </DialogTitle>
+              <p className="text-[10px] text-amber-400/70 mt-1 font-bold uppercase tracking-widest">
+                Achievement Unlocked
+              </p>
+            </div>
+          </DialogHeader>
+
+          <div className="my-6 space-y-4">
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">
+                COMPLETED TASK
+              </span>
+              <h4 className="font-extrabold text-white text-base leading-snug">
+                {celebrationTask?.title}
+              </h4>
+              {celebrationTask?.points && (
+                <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs px-2.5 py-0.5 mt-1 font-bold">
+                  +{celebrationTask.points} Coins Earned
+                </Badge>
+              )}
+            </div>
+            
+            <p className="text-xs text-white/60 leading-relaxed max-w-[280px] mx-auto">
+              Your dedication and focus have finalized this objective. Your points balance has been updated successfully!
+            </p>
+          </div>
+
+          <Button
+            onClick={() => setCelebrationTask(null)}
+            className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-xs rounded-xl py-5 shadow-lg shadow-amber-500/10 border-none"
+          >
+            CLAIM REWARD
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

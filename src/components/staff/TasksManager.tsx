@@ -65,7 +65,7 @@ const TasksManager = ({
   userId,
   userProfile
 }: TasksManagerProps) => {
-  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'handover'>('in_progress');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue'>('in_progress');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
@@ -290,8 +290,8 @@ const TasksManager = ({
   };
 
   const filteredTasks = tasks.filter(task => {
-    if (filter === 'all') return true;
-    if (filter === 'completed') return ['completed', 'review_pending', 'pending_approval'].includes(task.status);
+    if (filter === 'all') return task.status !== 'completed';
+    if (filter === 'completed') return ['review_pending', 'pending_approval'].includes(task.status);
     return task.status === filter;
   });
   const completedCount = tasks.filter(t => ['completed', 'review_pending', 'pending_approval'].includes(t.status)).length;

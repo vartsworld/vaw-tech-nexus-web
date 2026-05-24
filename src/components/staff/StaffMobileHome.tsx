@@ -25,7 +25,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-type RoomType = 'workspace' | 'breakroom' | 'meeting';
+type RoomType = 'home' | 'workspace' | 'breakroom' | 'meeting';
 
 interface StaffMobileHomeProps {
   profile: any;

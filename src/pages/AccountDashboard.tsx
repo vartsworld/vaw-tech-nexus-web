@@ -102,7 +102,7 @@ const AccountDashboard = () => {
 
       if (error) throw error;
 
-      const completed = tasks.filter(t => t.status === "completed" || t.status === "Completed").length;
+      const completed = tasks.filter(t => t.status === "completed").length;
       setCompletedTasksCount(completed);
       
       if (tasks.length > 0) {

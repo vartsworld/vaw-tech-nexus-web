@@ -50,7 +50,9 @@ import {
   Check,
   LayoutTemplate,
   ChevronRight,
-  ListChecks
+  ListChecks,
+  FolderOpen,
+  Folder
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
@@ -91,7 +93,7 @@ interface Task {
   id: string;
   title: string;
   description?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue' | 'pending_approval';
+  status: 'pending' | 'in_progress' | 'completed' | 'handover' | 'overdue' | 'pending_approval' | 'review_pending';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date?: string;
   due_time?: string;
@@ -106,6 +108,8 @@ interface Task {
   client_project_id?: string;
   created_at: string;
   staff_profiles?: any;
+  current_stage?: number;
+  stage_names?: any;
 }
 
 interface Department {
@@ -132,6 +136,11 @@ interface TeamHeadWorkspaceProps {
 
 const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorkspaceProps) => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [activeToggle, setActiveToggle] = useState<'upcoming' | 'current' | 'handover' | 'folders'>('current');
+  const [selectedFolderProject, setSelectedFolderProject] = useState<any | null>(null);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [folderSubtasks, setFolderSubtasks] = useState<any[]>([]);
+  const [folderSearchQuery, setFolderSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [staff, setStaff] = useState<Staff[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -545,6 +554,17 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       );
 
       setTasks(enrichedTasks as Task[]);
+
+      // Fetch all projects for the folders explorer
+      try {
+        const { data: projData } = await supabase
+          .from('client_projects')
+          .select('*, client_project_files(*)')
+          .order('title');
+        if (projData) setProjects(projData);
+      } catch (err) {
+        console.error('Error loading folders projects:', err);
+      }
 
       // Also fetch subtask review queues for this head
       await fetchReviewQueues();
@@ -2104,6 +2124,33 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     );
   }
 
+  const getFileUrl = (file: any) => {
+    if (typeof file === 'string') return file;
+    return file?.file_url || file?.url || '';
+  };
+
+  const getFileName = (file: any) => {
+    if (typeof file === 'string') {
+      const parts = file.split('/');
+      return parts[parts.length - 1];
+    }
+    return file?.file_name || file?.name || 'Attachment';
+  };
+
+  const filteredTasksForToggle = tasks.filter(task => {
+    if (task.status === 'completed') return false; 
+    if (activeToggle === 'upcoming') {
+      return task.status === 'pending';
+    }
+    if (activeToggle === 'current') {
+      return task.status === 'in_progress' || task.status === 'pending_approval' || task.status === 'review_pending' || task.status === 'overdue';
+    }
+    if (activeToggle === 'handover') {
+      return task.status === 'handover';
+    }
+    return true; 
+  });
+
   return (
     <div className="px-1 py-4 space-y-8 max-w-7xl mx-auto min-h-full">
       {/* Header */}
@@ -2478,196 +2525,578 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           )}
 
           <Card className="bg-black/20 backdrop-blur-lg border-white/10 text-white overflow-hidden relative z-10">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4">
               <CardTitle className="text-lg font-medium text-white flex items-center gap-2">
                 <LayoutDashboard className="h-5 w-5 text-purple-400" />
                 Team Tasks
               </CardTitle>
-              <div className="flex bg-white/5 rounded-lg p-1 gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`h-7 w-7 p-0 ${viewMode === 'card' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
-                  onClick={() => setViewMode('card')}
-                  title="Card View"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`h-7 w-7 p-0 ${viewMode === 'table' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
-                  onClick={() => setViewMode('table')}
-                  title="Table View"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-              </div>
+              
+              {activeToggle !== 'folders' && (
+                <div className="flex bg-white/5 rounded-lg p-1 gap-1 self-end sm:self-auto">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-7 w-7 p-0 ${viewMode === 'card' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
+                    onClick={() => setViewMode('card')}
+                    title="Card View"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-7 w-7 p-0 ${viewMode === 'table' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
+                    onClick={() => setViewMode('table')}
+                    title="Table View"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </CardHeader>
+
+            {/* Shimmering Big 4 Toggle Controls */}
+            <div className="px-6 pb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10">
+                {[
+                  { id: 'upcoming' as const, label: 'Upcoming Tasks', icon: Calendar, color: 'text-cyan-400 bg-cyan-400/10' },
+                  { id: 'current' as const, label: 'Current Space', icon: Clock, color: 'text-amber-400 bg-amber-400/10' },
+                  { id: 'handover' as const, label: 'Handover Tasks', icon: ArrowRight, color: 'text-purple-400 bg-purple-400/10' },
+                  { id: 'folders' as const, label: 'Project Folders', icon: FolderOpen, color: 'text-emerald-400 bg-emerald-400/10' }
+                ].map(tab => {
+                  const Icon = tab.icon;
+                  const isActive = activeToggle === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        setActiveToggle(tab.id);
+                        setSelectedFolderProject(null); // Reset open folder
+                      }}
+                      className={cn(
+                        "flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300",
+                        isActive
+                          ? `${tab.color} border border-white/10 shadow-lg text-white`
+                          : "text-white/40 hover:text-white hover:bg-white/5 border border-transparent"
+                      )}
+                    >
+                      <Icon className={cn("w-4 h-4", isActive ? "" : "text-white/30")} />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <CardContent>
-              <ScrollArea className="h-[500px] sm:h-[600px] w-full">
-                {viewMode === 'table' ? (
-                  <div className="overflow-x-auto">
-                    <Table className="min-w-[800px]">
-                      <TableHeader>
-                        <TableRow className="border-white/10 hover:bg-white/5">
-                          <TableHead className="text-white/80 w-[28%]">Task</TableHead>
-                          <TableHead className="text-white/80 w-[18%]">Assigned To</TableHead>
-                          <TableHead className="text-white/80 w-[14%]">Stage</TableHead>
-                          <TableHead className="text-white/80 w-[12%]">Status</TableHead>
-                          <TableHead className="text-white/80 w-[10%]">Priority</TableHead>
-                          <TableHead className="text-white/80 text-right w-[18%]">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {tasks.map((task) => (
-                          <TableRow key={task.id} className="border-white/10 hover:bg-white/5">
-                            <TableCell className="align-top">
-                              <div>
-                                <div className="font-medium text-white text-sm sm:text-base">{task.title}</div>
-                                {task.description && (
-                                  <div className="text-xs sm:text-sm text-white/60 truncate max-w-[200px] sm:max-w-xs">
-                                    {task.description}
-                                  </div>
-                                )}
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {task.trial_period && (
-                                    <Badge variant="outline" className="text-[10px] sm:text-xs bg-yellow-500/20 border-yellow-500/30 text-yellow-300">
-                                      Trial
-                                    </Badge>
-                                  )}
-                                  {(task.due_date || task.due_time) && (
-                                    <div className="text-[10px] sm:text-xs text-white/50 flex items-center gap-1">
-                                      <Calendar className="h-3 w-3" />
-                                      {task.due_date && task.due_date.trim() !== '' && (() => {
-                                        try {
-                                          const date = new Date(task.due_date);
-                                          if (isNaN(date.getTime())) return 'Invalid date';
-                                          return format(date, 'MMM dd');
-                                        } catch {
-                                          return 'Invalid date';
-                                        }
-                                      })()}
-                                      {task.due_time && ` ${task.due_time}`}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="align-top">
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-7 w-7 border border-white/10 bg-white/5">
-                                  <AvatarImage
-                                    src={
-                                      getAssigneeProfiles(task.assigned_to)[0]?.avatar_url || undefined
+              {activeToggle === 'folders' ? (
+                <div className="space-y-6">
+                  {selectedFolderProject === null ? (
+                    // FOLDERS VIEW
+                    <div className="space-y-6">
+                      {/* Search and Metadata Controls */}
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
+                        <div className="relative flex-1 max-w-md">
+                          <Search className="absolute left-3 top-3 h-4 w-4 text-white/40" />
+                          <Input
+                            placeholder="Search project folders..."
+                            className="pl-10 bg-white/5 border-white/10 text-white rounded-xl focus:ring-emerald-500/20 h-10"
+                            value={folderSearchQuery}
+                            onChange={(e) => setFolderSearchQuery(e.target.value)}
+                          />
+                        </div>
+                        <div className="text-xs text-white/50 font-bold uppercase tracking-widest">
+                          📁 {projects.length} Project Matrix Folders
+                        </div>
+                      </div>
+
+                      {/* Folder Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {projects.filter(p => p.title.toLowerCase().includes(folderSearchQuery.toLowerCase())).length > 0 ? (
+                          projects
+                            .filter(p => p.title.toLowerCase().includes(folderSearchQuery.toLowerCase()))
+                            .map((project) => {
+                              const projectTasks = tasks.filter(t => t.client_project_id === project.id);
+                              const clientInfo = clients.find(c => c.id === project.client_id);
+                              const totalTasks = projectTasks.length;
+                              const completedTasks = projectTasks.filter(t => t.status === 'completed').length;
+                              const taskProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : (project.progress || 0);
+
+                              return (
+                                <div
+                                  key={project.id}
+                                  onClick={async () => {
+                                    setSelectedFolderProject(project);
+                                    try {
+                                      const { data } = await supabase
+                                        .from('staff_subtasks')
+                                        .select('*, staff_profiles:assigned_to(full_name, username)')
+                                        .in('task_id', projectTasks.map(t => t.id));
+                                      if (data) setFolderSubtasks(data);
+                                    } catch (e) {
+                                      console.error("Error loading folder subtasks:", e);
                                     }
-                                    alt={getAssigneeName(task.assigned_to)}
-                                  />
-                                  <AvatarFallback className="text-[10px]">
-                                    {getAssigneeName(task.assigned_to)
-                                      .split(" ")
-                                      .map((n) => n[0])
-                                      .join("")
-                                      .slice(0, 2)
-                                      .toUpperCase() || "U"}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="min-w-0">
-                                  <div className="font-medium text-white/90 text-sm truncate">
-                                    {getAssigneeName(task.assigned_to)}
+                                  }}
+                                  className="group cursor-pointer bg-white/5 border border-white/10 hover:border-emerald-500/40 rounded-2xl p-5 space-y-4 hover:bg-emerald-500/5 transition-all duration-300 relative overflow-hidden flex flex-col justify-between"
+                                >
+                                  <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 blur-[30px] group-hover:bg-emerald-500/10 pointer-events-none transition-all" />
+
+                                  <div className="space-y-3">
+                                    <div className="flex items-start justify-between">
+                                      <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 group-hover:bg-emerald-500/20 transition-all">
+                                        <Folder className="w-8 h-8 text-emerald-400" />
+                                      </div>
+                                      <Badge variant="outline" className="border-emerald-500/30 text-emerald-300 bg-emerald-500/5 text-[9px] uppercase font-black">
+                                        {project.status || 'Active'}
+                                      </Badge>
+                                    </div>
+
+                                    <div>
+                                      <h4 className="font-bold text-white text-lg group-hover:text-emerald-400 transition-colors line-clamp-1">
+                                        {project.title}
+                                      </h4>
+                                      <p className="text-white/40 text-xs font-bold uppercase tracking-wider mt-0.5">
+                                        Client: {clientInfo?.company_name || 'Individual'}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div className="text-[11px] text-white/50 truncate">
-                                    @{getAssigneeUsername(task.assigned_to)} • {getAssigneeCount(task.assigned_to)}{" "}
-                                    assignee{getAssigneeCount(task.assigned_to) === 1 ? "" : "s"}
-                                  </div>
-                                  <div className="text-[10px] text-white/40 truncate">
-                                    Created by {getCreatorName(task.assigned_by)}
+
+                                  <div className="space-y-2 pt-2 border-t border-white/5 mt-auto">
+                                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-white/50">
+                                      <span>Progress</span>
+                                      <span className="text-emerald-400 font-bold">{taskProgress}%</span>
+                                    </div>
+                                    <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden border border-white/5">
+                                      <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${taskProgress}%` }} />
+                                    </div>
+                                    <div className="flex justify-between text-[10px] text-white/30 font-bold pt-1">
+                                      <span>{totalTasks} synced task(s)</span>
+                                      <span>{(project.client_project_files?.length || 0) + projectTasks.reduce((acc, t) => acc + (t.attachments?.length || 0), 0)} file(s)</span>
+                                    </div>
                                   </div>
                                 </div>
+                              );
+                            })
+                        ) : (
+                          <div className="col-span-full py-20 text-center border-2 border-dashed border-white/10 rounded-2xl">
+                            <FolderOpen className="w-12 h-12 text-white/20 mx-auto mb-3" />
+                            <h5 className="font-bold text-white text-base">No projects matched your search.</h5>
+                            <p className="text-white/40 text-xs mt-1">Try refining your keyword query.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    // OPENED FOLDER VIEW
+                    <div className="space-y-6">
+                      {/* Folder Breadcrumbs & Navigation */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/5 p-4 rounded-2xl border border-white/10">
+                        <div className="flex items-center gap-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedFolderProject(null)}
+                            className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/25 h-9"
+                          >
+                            <ArrowRight className="w-4 h-4 mr-2 rotate-180" />
+                            Back to Explorer
+                          </Button>
+                          <div className="h-4 w-px bg-white/10 hidden sm:block" />
+                          <div className="text-sm font-bold text-white flex items-center gap-1.5">
+                            <span className="text-white/40">Project Folders</span>
+                            <span className="text-white/30">/</span>
+                            <span className="text-emerald-400">{selectedFolderProject.title}</span>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="border-emerald-500/30 text-emerald-300 bg-emerald-500/5 font-black uppercase text-xs px-3 py-1">
+                          {selectedFolderProject.project_type || 'Custom Package'}
+                        </Badge>
+                      </div>
+
+                      {/* Detailed Workspace Columns */}
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Info Column (Left) */}
+                        <div className="lg:col-span-1 space-y-4">
+                          <Card className="bg-white/5 border-white/10 text-white rounded-2xl overflow-hidden relative">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 blur-2xl pointer-events-none" />
+                            <CardHeader className="pb-3 border-b border-white/5">
+                              <CardTitle className="text-sm font-black uppercase tracking-wider text-emerald-400">
+                                Folder Metadata
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-5 space-y-4">
+                              <div>
+                                <span className="text-[10px] text-white/40 font-black uppercase tracking-wider block">Description</span>
+                                <p className="text-sm font-semibold leading-relaxed text-white/80 mt-1">
+                                  {selectedFolderProject.description || "No description provided for this blueprint initiative."}
+                                </p>
                               </div>
-                            </TableCell>
-                            <TableCell className="align-top">
-                              {(() => {
-                                const stageInfo = (task as any)._stageInfo;
-                                const currentStage = (task as any).current_stage;
-                                if (!stageInfo) {
-                                  return (
-                                    <span className="text-[10px] text-white/30 italic">No subtasks</span>
-                                  );
-                                }
-                                const { totalStages, completedStages, stageTitle, stageMap } = stageInfo;
-                                const allDone = completedStages >= totalStages;
-                                const progressPct = totalStages > 0 ? Math.round((completedStages / totalStages) * 100) : 0;
+
+                              <div className="grid grid-cols-2 gap-4 pt-2">
+                                <div>
+                                  <span className="text-[10px] text-white/40 font-black uppercase tracking-wider">Package Level</span>
+                                  <span className="text-xs font-bold block text-white/90 uppercase mt-0.5">
+                                    {selectedFolderProject.package_type || "Basic Codebase"}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-[10px] text-white/40 font-black uppercase tracking-wider">Project Type</span>
+                                  <span className="text-xs font-bold block text-white/90 uppercase mt-0.5">
+                                    {selectedFolderProject.project_type || "Software"}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {selectedFolderProject.addons && (
+                                <div className="pt-2 border-t border-white/5">
+                                  <span className="text-[10px] text-white/40 font-black uppercase tracking-wider block">Addons / Modules</span>
+                                  <span className="text-xs font-bold text-white/80 mt-1 block">
+                                    {selectedFolderProject.addons}
+                                  </span>
+                                </div>
+                              )}
+
+                              <div className="pt-4 border-t border-white/5 space-y-3">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-white/50 font-bold">Total Pipeline Budget</span>
+                                  <span className="text-xs font-bold text-emerald-300">
+                                    ₹{Number(selectedFolderProject.total_amount || 0).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-white/50 font-bold">Collected Revenue</span>
+                                  <span className="text-xs font-bold text-emerald-400">
+                                    ₹{Number(selectedFolderProject.amount_paid || 0).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                                  <span className="text-xs text-white/50 font-bold">Outstanding Balance</span>
+                                  <span className="text-xs font-bold text-red-400">
+                                    ₹{(Number(selectedFolderProject.total_amount || 0) - Number(selectedFolderProject.amount_paid || 0)).toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        {/* Files & Tasks Column (Right) */}
+                        <div className="lg:col-span-2 space-y-6">
+                          {/* Sync Tasks */}
+                          <div className="space-y-4">
+                            <h4 className="text-sm font-black uppercase tracking-wider text-white/60 flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-emerald-400" />
+                              Development Sub-Task Registry
+                            </h4>
+
+                            {tasks.filter(t => t.client_project_id === selectedFolderProject.id).length > 0 ? (
+                              <div className="space-y-4">
+                                {tasks
+                                  .filter(t => t.client_project_id === selectedFolderProject.id)
+                                  .map((task) => {
+                                    const taskAttachments = task.attachments ? (task.attachments as any[]) : [];
+                                    const assigneeInfo = staff.find(s => s.id === task.assigned_to);
+                                    const taskSubtasks = folderSubtasks.filter(st => st.task_id === task.id);
+                                    const completedSubCount = taskSubtasks.filter(st => st.status === 'completed').length;
+                                    const subPercent = taskSubtasks.length > 0 ? Math.round((completedSubCount / taskSubtasks.length) * 100) : 0;
+
+                                    return (
+                                      <div key={task.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
+                                        {/* Task Header */}
+                                        <div className="flex justify-between items-start gap-4">
+                                          <div>
+                                            <h5 className="font-bold text-white text-base leading-tight">
+                                              {task.title}
+                                            </h5>
+                                            <div className="flex flex-wrap items-center gap-2 mt-2">
+                                              <Badge variant="outline" className="text-[10px] uppercase border-emerald-500/30 text-emerald-400">
+                                                {task.status.replace('_', ' ')}
+                                              </Badge>
+                                              <Badge variant="outline" className="text-[10px] uppercase border-red-500/30 text-red-400">
+                                                {task.priority} Priority
+                                              </Badge>
+                                              {task.due_date && (
+                                                <span className="text-[10px] text-white/40 flex items-center gap-1">
+                                                  <Calendar className="w-3 h-3" />
+                                                  Due: {format(new Date(task.due_date), 'MMM dd, yyyy')}
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          {/* Assignee Avatar */}
+                                          {assigneeInfo && (
+                                            <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
+                                              <Avatar className="h-7 w-7 border border-white/10">
+                                                <AvatarFallback className="text-[9px] font-black">
+                                                  {assigneeInfo.full_name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()}
+                                                </AvatarFallback>
+                                              </Avatar>
+                                              <div className="text-left">
+                                                <span className="text-xs font-bold text-white/90 block leading-none">{assigneeInfo.full_name}</span>
+                                                <span className="text-[9px] text-white/40 block mt-0.5">@{assigneeInfo.username}</span>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Subtasks checklists */}
+                                        {taskSubtasks.length > 0 && (
+                                          <div className="bg-black/20 rounded-xl p-3.5 border border-white/5 space-y-3.5">
+                                            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-white/40">
+                                              <span>Subtask Checklist ({completedSubCount}/{taskSubtasks.length})</span>
+                                              <span className="text-emerald-400">{subPercent}%</span>
+                                            </div>
+                                            <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
+                                              <div className="bg-emerald-500 h-full rounded-full transition-all duration-300" style={{ width: `${subPercent}%` }} />
+                                            </div>
+                                            <div className="space-y-2">
+                                              {taskSubtasks.map(st => (
+                                                <div key={st.id} className="flex items-center justify-between gap-3 text-xs">
+                                                  <div className="flex items-center gap-2 text-white/80 min-w-0">
+                                                    <div className={cn("w-1.5 h-1.5 rounded-full", st.status === 'completed' ? "bg-emerald-400" : "bg-amber-400")} />
+                                                    <span className={cn("truncate", st.status === 'completed' && "line-through text-white/40")}>{st.title}</span>
+                                                  </div>
+                                                  <Badge variant="outline" className="text-[9px] text-white/40">
+                                                    {st.staff_profiles?.full_name || 'Unassigned'}
+                                                  </Badge>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Task Attachments inside folder */}
+                                        {taskAttachments.length > 0 && (
+                                          <div className="space-y-2">
+                                            <span className="text-[10px] text-white/40 font-black uppercase tracking-wider">Attachments</span>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                              {taskAttachments.map((file, idx) => (
+                                                <a
+                                                  key={idx}
+                                                  href={getFileUrl(file)}
+                                                  target="_blank"
+                                                  rel="noreferrer"
+                                                  className="flex items-center justify-between p-2.5 bg-black/20 hover:bg-emerald-500/5 rounded-xl border border-white/5 hover:border-emerald-500/30 transition-all text-xs text-white/80"
+                                                >
+                                                  <div className="flex items-center gap-2 min-w-0">
+                                                    <FileText className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                                                    <span className="truncate">{getFileName(file)}</span>
+                                                  </div>
+                                                  <Download className="w-3.5 h-3.5 text-white/30 hover:text-white" />
+                                                </a>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                              </div>
+                            ) : (
+                              <div className="bg-white/5 border border-white/5 rounded-2xl p-6 text-center text-white/40 text-xs font-semibold">
+                                No development tasks synced to this project folder.
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Shared Vault (Combined Attachments & Cloud Files) */}
+                          <div className="space-y-4">
+                            <h4 className="text-sm font-black uppercase tracking-wider text-white/60 flex items-center gap-2">
+                              <FolderOpen className="w-4 h-4 text-emerald-400" />
+                              Folder shared cloud assets vault
+                            </h4>
+
+                            {(() => {
+                              const projectTasks = tasks.filter(t => t.client_project_id === selectedFolderProject.id);
+                              const allFiles = [
+                                ...(selectedFolderProject.client_project_files || []),
+                                ...projectTasks.flatMap(t => (t.attachments ? (t.attachments as any[]) : []).map((file: any) => ({
+                                  id: getFileUrl(file),
+                                  file_name: getFileName(file),
+                                  file_url: getFileUrl(file),
+                                  file_type: 'attachment',
+                                  created_at: t.created_at
+                                })))
+                              ];
+
+                              if (allFiles.length === 0) {
                                 return (
-                                  <div className="space-y-1.5">
-                                    <div className="flex items-center gap-1.5">
-                                      {allDone ? (
-                                        <Badge className="bg-green-500/20 text-green-300 border-green-500/30 text-[10px] px-1.5 py-0">
-                                          ✅ All Done
-                                        </Badge>
-                                      ) : (
-                                        <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 text-[10px] px-1.5 py-0">
-                                          Stage {currentStage}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    {stageTitle && !allDone && (
-                                      <div className="text-[10px] text-white/50 truncate max-w-[120px]" title={stageTitle}>
-                                        {stageTitle}
-                                      </div>
-                                    )}
-                                    <div className="flex items-center gap-1.5">
-                                      <div className="w-16 bg-white/10 h-1.5 rounded-full overflow-hidden">
-                                        <div
-                                          className={`h-full rounded-full transition-all duration-500 ${allDone ? 'bg-green-500' : 'bg-indigo-500'}`}
-                                          style={{ width: `${progressPct}%` }}
-                                        />
-                                      </div>
-                                      <span className="text-[9px] text-white/40">
-                                        {completedStages}/{totalStages}
-                                      </span>
-                                    </div>
+                                  <div className="bg-white/5 border border-white/5 rounded-2xl p-6 text-center text-white/40 text-xs font-semibold">
+                                    Shared folder cloud vaults are empty.
                                   </div>
                                 );
-                              })()}
-                            </TableCell>
-                            <TableCell className="align-top">
-                              <div className="scale-90 origin-left">
-                                {getStatusBadge(task.status)}
-                              </div>
-                            </TableCell>
-                            <TableCell className="align-top">
-                              <div className="scale-90 origin-left">
-                                {getPriorityBadge(task.priority)}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right align-top">
-                              <div className="flex gap-1 justify-end flex-wrap sm:flex-nowrap">
-                                <Select
-                                  value={task.status}
-                                  onValueChange={(value) => handleTaskStatusUpdate(task.id, value)}
-                                >
-                                  <SelectTrigger className="w-24 sm:w-32 h-8 text-xs">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">Pending</SelectItem>
-                                    <SelectItem value="in_progress">In Progress</SelectItem>
-                                    <SelectItem value="completed">Completed</SelectItem>
-                                    <SelectItem value="handover">Handover</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                              }
 
-                                <div className="flex gap-0.5">
+                              return (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  {allFiles.map((file, idx) => (
+                                    <div
+                                      key={file.id || idx}
+                                      className="bg-white/5 border border-white/10 hover:border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between gap-4 hover:bg-emerald-500/5 transition-all duration-300"
+                                    >
+                                      <div className="flex items-center gap-3 min-w-0">
+                                        <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-emerald-400">
+                                          <FileText className="w-5 h-5" />
+                                        </div>
+                                        <div className="min-w-0">
+                                          <span className="font-bold text-white text-xs block truncate" title={file.file_name}>
+                                            {file.file_name}
+                                          </span>
+                                          <span className="text-[10px] text-white/40 block mt-0.5 uppercase tracking-wide">
+                                            {file.file_type || 'Attachment'}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8 text-white/50 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl flex-shrink-0"
+                                        asChild
+                                      >
+                                        <a href={file.file_url} target="_blank" rel="noreferrer">
+                                          <Download className="w-4 h-4" />
+                                        </a>
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <ScrollArea className="h-[500px] sm:h-[600px] w-full">
+                  {viewMode === 'table' ? (
+                    <div className="overflow-x-auto">
+                      <Table className="min-w-[800px]">
+                        <TableHeader>
+                          <TableRow className="border-white/10 hover:bg-white/5">
+                            <TableHead className="text-white/80 w-[28%]">Task</TableHead>
+                            <TableHead className="text-white/80 w-[18%]">Assigned To</TableHead>
+                            <TableHead className="text-white/80 w-[14%]">Stage</TableHead>
+                            <TableHead className="text-white/80 w-[12%]">Status</TableHead>
+                            <TableHead className="text-white/80 w-[10%]">Priority</TableHead>
+                            <TableHead className="text-white/80 text-right w-[18%]">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredTasksForToggle.map((task) => (
+                            <TableRow key={task.id} className="border-white/10 hover:bg-white/5">
+                              <TableCell className="align-top">
+                                <div>
+                                  <div className="font-medium text-white text-sm sm:text-base">{task.title}</div>
+                                  {task.description && (
+                                    <div className="text-xs sm:text-sm text-white/60 truncate max-w-[200px] sm:max-w-xs">
+                                      {task.description}
+                                    </div>
+                                  )}
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {task.trial_period && (
+                                      <Badge variant="outline" className="text-[10px] sm:text-xs bg-yellow-500/20 border-yellow-500/30 text-yellow-300">
+                                        Trial
+                                      </Badge>
+                                    )}
+                                    {(task.due_date || task.due_time) && (
+                                      <div className="text-[10px] sm:text-xs text-white/50 flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" />
+                                        {task.due_date && task.due_date.trim() !== '' && (() => {
+                                          try {
+                                            const date = new Date(task.due_date);
+                                            if (isNaN(date.getTime())) return 'Invalid date';
+                                            return format(date, 'MMM dd');
+                                          } catch {
+                                            return 'Invalid date';
+                                          }
+                                        })()}
+                                        {task.due_time && ` ${task.due_time}`}
+                                      </div>
+                                    )}
+                                    {task.attachments && task.attachments.length > 0 && (
+                                      <div className="text-[10px] sm:text-xs text-white/50 flex items-center gap-1">
+                                        <FileText className="h-3 w-3 text-emerald-400" />
+                                        {task.attachments.length} file(s)
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="align-top">
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-7 w-7 border border-white/10 bg-white/5">
+                                    <AvatarImage
+                                      src={
+                                        getAssigneeProfiles(task.assigned_to)[0]?.avatar_url || undefined
+                                      }
+                                      alt={getAssigneeName(task.assigned_to)}
+                                    />
+                                    <AvatarFallback className="text-[10px]">
+                                      {getAssigneeName(task.assigned_to)
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")
+                                        .slice(0, 2)
+                                        .toUpperCase() || "U"}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="min-w-0">
+                                    <div className="font-medium text-white/90 truncate text-xs sm:text-sm">
+                                      {getAssigneeName(task.assigned_to)}
+                                    </div>
+                                    <div className="text-[10px] text-white/50 truncate">
+                                      @{getAssigneeUsername(task.assigned_to)} • {getAssigneeCount(task.assigned_to)}{" "}
+                                      assignee{getAssigneeCount(task.assigned_to) === 1 ? "" : "s"}
+                                    </div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="align-top text-xs sm:text-sm">
+                                <div className="text-white/80">
+                                  {task.current_stage ? `Stage ${task.current_stage}` : "—"}
+                                </div>
+                                {task.current_stage && task.stage_names && task.stage_names[String(task.current_stage)] && (
+                                  <div className="text-[10px] text-white/50 truncate max-w-[100px]">
+                                    {task.stage_names[String(task.current_stage)]}
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="align-top">
+                                {getStatusBadge(task.status)}
+                              </TableCell>
+                              <TableCell className="align-top">
+                                {getPriorityBadge(task.priority)}
+                              </TableCell>
+                              <TableCell className="align-top text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <Select
+                                    value={task.status}
+                                    onValueChange={(value) => handleTaskStatusUpdate(task.id, value)}
+                                  >
+                                    <SelectTrigger className="w-[100px] bg-white/5 border-white/10 text-white h-8 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">Pending</SelectItem>
+                                      <SelectItem value="in_progress">In Progress</SelectItem>
+                                      <SelectItem value="completed">Completed</SelectItem>
+                                      <SelectItem value="handover">Handover</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+
                                   <Button
                                     size="icon"
                                     variant="ghost"
-                                    className="h-8 w-8"
+                                    className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
                                     onClick={async () => {
                                       try {
                                         setSelectedTask(task);
                                         await fetchSubtasks(task.id);
-                                         setCurrentView('detail');
+                                        setCurrentView('detail');
                                       } catch (e) { console.error('Error opening task view:', e); }
                                     }}
                                     title="View details"
@@ -2678,17 +3107,16 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                                   <Button
                                     size="icon"
                                     variant="ghost"
-                                    className="h-8 w-8"
-                                      onClick={() => {
-                                        setSelectedTask(task);
-                                        setCurrentView('edit');
-                                      }}
+                                    className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10"
+                                    onClick={() => {
+                                      setSelectedTask(task);
+                                      setCurrentView('edit');
+                                    }}
                                     title="Edit task"
                                   >
                                     <Edit className="h-4 w-4" />
                                   </Button>
 
-                                  {/* Only show delete button for tasks created by this team head */}
                                   {task.assigned_by === userId && (
                                     <Button
                                       size="icon"
@@ -2704,164 +3132,164 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                                     </Button>
                                   )}
                                 </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
-                    {tasks.map((task) => (
-                      <div key={task.id} className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3 flex flex-col h-full hover:bg-white/10 transition-colors">
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="min-w-0 flex-1">
-                            <h4 className="font-medium text-white text-base truncate" title={task.title}>{task.title}</h4>
-                            {task.description && (
-                              <p className="text-white/60 text-sm line-clamp-2 mt-1" title={task.description}>
-                                {task.description}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex-shrink-0">
-                            {getPriorityBadge(task.priority)}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 text-sm flex-1">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7 border border-white/10 bg-white/5">
-                              <AvatarImage
-                                src={
-                                  getAssigneeProfiles(task.assigned_to)[0]?.avatar_url || undefined
-                                }
-                                alt={getAssigneeName(task.assigned_to)}
-                              />
-                              <AvatarFallback className="text-[10px]">
-                                {getAssigneeName(task.assigned_to)
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")
-                                  .slice(0, 2)
-                                  .toUpperCase() || "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0">
-                              <div className="font-medium text-white/90 truncate">
-                                {getAssigneeName(task.assigned_to)}
-                              </div>
-                              <div className="text-[11px] text-white/50 truncate">
-                                @{getAssigneeUsername(task.assigned_to)} • {getAssigneeCount(task.assigned_to)}{" "}
-                                assignee{getAssigneeCount(task.assigned_to) === 1 ? "" : "s"}
-                              </div>
-                              <div className="text-[10px] text-white/40 truncate">
-                                Created by {getCreatorName(task.assigned_by)}
-                              </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                      {filteredTasksForToggle.map((task) => (
+                        <div key={task.id} className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3 flex flex-col h-full hover:bg-white/10 transition-colors">
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-medium text-white text-base truncate" title={task.title}>{task.title}</h4>
+                              {task.description && (
+                                <p className="text-white/60 text-sm line-clamp-2 mt-1" title={task.description}>
+                                  {task.description}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {getPriorityBadge(task.priority)}
                             </div>
                           </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <Badge variant="outline" className="text-white/70 border-white/20 w-fit">
-                              {task.points} pts
-                            </Badge>
-                            {task.trial_period && (
-                              <Badge variant="outline" className="text-[10px] bg-yellow-500/20 border-yellow-500/30 text-yellow-300 w-fit">
-                                Trial
-                              </Badge>
-                            )}
-                          </div>
 
-                          {(task.due_date || task.due_time) && (
-                            <div className="flex items-center gap-2 col-span-2 text-white/50 pt-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>
-                                {task.due_date && task.due_date.trim() !== '' && (() => {
-                                  try {
-                                    const date = new Date(task.due_date);
-                                    if (isNaN(date.getTime())) return 'Invalid date';
-                                    return format(date, 'MMM dd');
-                                  } catch {
-                                    return 'Invalid date';
+                          <div className="grid grid-cols-2 gap-2 text-sm flex-1">
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-7 w-7 border border-white/10 bg-white/5">
+                                <AvatarImage
+                                  src={
+                                    getAssigneeProfiles(task.assigned_to)[0]?.avatar_url || undefined
                                   }
-                                })()}
-                                {task.due_time && ` ${task.due_time}`}
-                              </span>
+                                  alt={getAssigneeName(task.assigned_to)}
+                                />
+                                <AvatarFallback className="text-[10px]">
+                                  {getAssigneeName(task.assigned_to)
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .slice(0, 2)
+                                    .toUpperCase() || "U"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <div className="font-medium text-white/90 truncate">
+                                  {getAssigneeName(task.assigned_to)}
+                                </div>
+                                <div className="text-[11px] text-white/50 truncate">
+                                  @{getAssigneeUsername(task.assigned_to)} • {getAssigneeCount(task.assigned_to)}{" "}
+                                  assignee{getAssigneeCount(task.assigned_to) === 1 ? "" : "s"}
+                                </div>
+                                <div className="text-[10px] text-white/40 truncate">
+                                  Created by {getCreatorName(task.assigned_by)}
+                                </div>
+                              </div>
                             </div>
-                          )}
-                        </div>
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge variant="outline" className="text-white/70 border-white/20 w-fit">
+                                {task.points} pts
+                              </Badge>
+                              {task.trial_period && (
+                                <Badge variant="outline" className="text-[10px] bg-yellow-500/20 border-yellow-500/30 text-yellow-300 w-fit">
+                                  Trial
+                                </Badge>
+                              )}
+                            </div>
 
-                        <div className="space-y-3 pt-3 border-t border-white/10 mt-auto">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-white/60">Status:</span>
-                            {getStatusBadge(task.status)}
+                            {(task.due_date || task.due_time) && (
+                              <div className="flex items-center gap-2 col-span-2 text-white/50 pt-1">
+                                <Calendar className="h-4 w-4" />
+                                <span>
+                                  {task.due_date && task.due_date.trim() !== '' && (() => {
+                                    try {
+                                      const date = new Date(task.due_date);
+                                      if (isNaN(date.getTime())) return 'Invalid date';
+                                      return format(date, 'MMM dd');
+                                    } catch {
+                                      return 'Invalid date';
+                                    }
+                                  })()}
+                                  {task.due_time && ` ${task.due_time}`}
+                                </span>
+                              </div>
+                            )}
                           </div>
 
-                          <Select
-                            value={task.status}
-                            onValueChange={(value) => handleTaskStatusUpdate(task.id, value)}
-                          >
-                            <SelectTrigger className="w-full bg-white/5 border-white/10 text-white h-9">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="in_progress">In Progress</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                              <SelectItem value="handover">Handover</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="space-y-3 pt-3 border-t border-white/10 mt-auto">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-white/60">Status:</span>
+                              {getStatusBadge(task.status)}
+                            </div>
 
-                          <div className="flex gap-2 justify-end">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10 h-8 text-xs"
-                              onClick={async () => {
-                                try {
-                                  setSelectedTask(task);
-                                  await fetchSubtasks(task.id);
-                                  setCurrentView('detail');
-                                } catch (e) { console.error('Error opening task view:', e); }
-                              }}
+                            <Select
+                              value={task.status}
+                              onValueChange={(value) => handleTaskStatusUpdate(task.id, value)}
                             >
-                              <Eye className="h-3.5 w-3.5 mr-1.5" />
-                              View
-                            </Button>
+                              <SelectTrigger className="w-full bg-white/5 border-white/10 text-white h-9">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="in_progress">In Progress</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                                <SelectItem value="handover">Handover</SelectItem>
+                              </SelectContent>
+                            </Select>
 
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10 h-8 text-xs"
-                              onClick={() => {
-                                setSelectedTask(task);
-                                setCurrentView('edit');
-                              }}
-                            >
-                              <Edit className="h-3.5 w-3.5 mr-1.5" />
-                              Edit
-                            </Button>
-
-                            {task.assigned_by === userId && (
+                            <div className="flex gap-2 justify-end">
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="flex-1 bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300 h-8 text-xs"
-                                onClick={() => {
-                                  setSelectedTask(task);
-                                  setIsDeleteDialogOpen(true);
+                                className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10 h-8 text-xs"
+                                onClick={async () => {
+                                  try {
+                                    setSelectedTask(task);
+                                    await fetchSubtasks(task.id);
+                                    setCurrentView('detail');
+                                  } catch (e) { console.error('Error opening task view:', e); }
                                 }}
                               >
-                                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                                Delete
+                                <Eye className="h-3.5 w-3.5 mr-1.5" />
+                                View
                               </Button>
-                            )}
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10 h-8 text-xs"
+                                onClick={() => {
+                                  setSelectedTask(task);
+                                  setCurrentView('edit');
+                                }}
+                              >
+                                <Edit className="h-3.5 w-3.5 mr-1.5" />
+                                Edit
+                              </Button>
+
+                              {task.assigned_by === userId && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300 h-8 text-xs"
+                                  onClick={() => {
+                                    setSelectedTask(task);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                                  Delete
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              )}
             </CardContent>
           </Card>
         </div>

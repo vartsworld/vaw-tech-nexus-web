@@ -34,6 +34,9 @@ import {
   Plus,
   ExternalLink,
   Link2,
+  Eye,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -87,6 +90,20 @@ export const SubtaskReviewDialog = ({
   const approveFileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const [previewAttachment, setPreviewAttachment] = useState<any | null>(null);
+  const [attachmentViewMode, setAttachmentViewMode] = useState<'grid' | 'list'>('grid');
+
+  const isImage = (name: string) => {
+    return /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
+  };
+
+  const getFileUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    const { data } = supabase.storage.from('task-attachments').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   const resetState = () => {
     setRejectionNote("");
     setShowRejectSection(false);
@@ -94,6 +111,7 @@ export const SubtaskReviewDialog = ({
     setRejectFiles([]);
     setApproveFiles([]);
     setShowApproveAttach(false);
+    setPreviewAttachment(null);
   };
 
   const handleApprove = async () => {
@@ -161,13 +179,14 @@ export const SubtaskReviewDialog = ({
   const stageName = stageNames[subtask.stage || 1] || `Stage ${subtask.stage || 1}`;
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) resetState();
-        onOpenChange(isOpen);
-      }}
-    >
+    <>
+      <Dialog
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) resetState();
+          onOpenChange(isOpen);
+        }}
+      >
       <DialogContent className="sm:max-w-[720px] max-h-[90vh] bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/80 border-purple-500/30 text-white p-0 overflow-hidden">
         {/* Hero header */}
         <div className="relative px-6 pt-6 pb-4 bg-gradient-to-r from-purple-600/20 via-blue-600/15 to-indigo-600/20 border-b border-white/10">
@@ -374,10 +393,32 @@ export const SubtaskReviewDialog = ({
                   {/* File Attachments Section */}
                   {files.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2 flex items-center gap-1.5">
-                        <Paperclip className="h-3.5 w-3.5" />
-                        Files ({files.length})
-                      </h4>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-white/40 flex items-center gap-1.5">
+                          <Paperclip className="h-3.5 w-3.5" />
+                          Files ({files.length})
+                        </h4>
+                        <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-white/5">
+                          <Button 
+                            size="sm" 
+                            type="button"
+                            variant="ghost" 
+                            className={`h-7 w-7 p-0 ${attachmentViewMode === 'grid' ? 'bg-purple-500/20 text-purple-300' : 'text-white/30 hover:text-white'}`}
+                            onClick={() => setAttachmentViewMode('grid')}
+                          >
+                            <LayoutGrid className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            type="button"
+                            variant="ghost" 
+                            className={`h-7 w-7 p-0 ${attachmentViewMode === 'list' ? 'bg-purple-500/20 text-purple-300' : 'text-white/30 hover:text-white'}`}
+                            onClick={() => setAttachmentViewMode('list')}
+                          >
+                            <List className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
                       <div className="flex gap-2 mb-3">
                         <Button size="sm" variant="outline" className="h-7 text-[10px] border-white/10 hover:bg-white/10" 
                           onClick={() => {
@@ -387,28 +428,89 @@ export const SubtaskReviewDialog = ({
                           <Plus className="h-3.5 w-3.5 mr-1" /> Add Attachment
                         </Button>
                       </div>
-                      <div className="space-y-2">
-                        {files.map((file: any, i: number) => (
-                          <div key={`file-${i}`} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg p-3">
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className="p-2 bg-blue-500/15 rounded-lg">
-                                <FileText className="h-4 w-4 text-blue-400" />
+                      
+                      <div className={attachmentViewMode === 'grid' ? "grid grid-cols-2 sm:grid-cols-3 gap-3" : "space-y-2"}>
+                        {files.map((file: any, i: number) => {
+                          const fileName = file.name || file.file_name || `File ${i + 1}`;
+                          const isImg = isImage(fileName);
+                          const url = getFileUrl(file.url || file.file_url);
+
+                          if (attachmentViewMode === 'grid') {
+                            return (
+                              <div 
+                                key={`file-grid-${i}`} 
+                                className="group relative aspect-square bg-black/40 rounded-xl border border-white/5 overflow-hidden cursor-pointer hover:border-purple-500/50 transition-all shadow-lg"
+                                onClick={() => isImg ? setPreviewAttachment({ name: fileName, url: file.url || file.file_url, publicUrl: url }) : handleDownloadAttachment(file)}
+                              >
+                                {isImg ? (
+                                  <img src={url} alt={fileName} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                ) : (
+                                  <div className="h-full w-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br from-purple-500/5 to-indigo-500/5">
+                                    <FileText className="w-8 h-8 text-purple-400/40 mb-2" />
+                                  </div>
+                                )}
+                                
+                                {/* Always visible info bar */}
+                                <div className="absolute bottom-0 inset-x-0 bg-black/70 backdrop-blur-md p-2 border-t border-white/5">
+                                  <p className="text-[10px] text-white/90 font-medium truncate text-center">{fileName}</p>
+                                </div>
+
+                                {/* Quick Download Button (Always Visible) */}
+                                <Button 
+                                  size="icon" 
+                                  variant="secondary" 
+                                  className="absolute top-1.5 right-1.5 h-7 w-7 rounded-lg bg-black/40 hover:bg-purple-500 border border-white/10 text-white z-10 transition-colors backdrop-blur-sm" 
+                                  onClick={(e) => { e.stopPropagation(); handleDownloadAttachment(file); }}
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </Button>
                               </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium truncate">{file.name || file.file_name || `File ${i + 1}`}</p>
-                                {file.size && <p className="text-xs text-white/40">{(file.size / 1024).toFixed(1)} KB</p>}
+                            );
+                          }
+
+                          return (
+                            <div key={`file-list-${i}`} className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg p-3 group">
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="h-10 w-10 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                  {isImg ? (
+                                    <img 
+                                      src={url} 
+                                      alt={fileName} 
+                                      className="h-full w-full object-cover cursor-pointer hover:scale-110 transition-transform" 
+                                      onClick={() => setPreviewAttachment({ name: fileName, url: file.url || file.file_url, publicUrl: url })} 
+                                    />
+                                  ) : (
+                                    <FileText className="h-4 w-4 text-purple-400" />
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium truncate">{fileName}</p>
+                                  {file.size && <p className="text-xs text-white/40">{(file.size / 1024).toFixed(1)} KB</p>}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {isImg && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="ghost" 
+                                    className="text-purple-300 hover:bg-purple-500/20 h-8" 
+                                    onClick={() => setPreviewAttachment({ name: fileName, url: file.url || file.file_url, publicUrl: url })}
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-purple-300 hover:bg-purple-500/20 h-8"
+                                  onClick={() => handleDownloadAttachment(file)}
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
                               </div>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-blue-300 hover:bg-blue-500/20 h-8"
-                              onClick={() => handleDownloadAttachment(file)}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -613,5 +715,45 @@ export const SubtaskReviewDialog = ({
         )}
       </DialogContent>
     </Dialog>
-  );
+
+    {/* Attachment Preview Dialog */}
+    <Dialog open={!!previewAttachment} onOpenChange={() => setPreviewAttachment(null)}>
+      <DialogContent className="max-w-4xl bg-black/95 border-white/10 p-0 overflow-hidden shadow-2xl z-[70]">
+        <DialogHeader className="hidden">
+          <DialogTitle>{previewAttachment?.name || 'Image Preview'}</DialogTitle>
+        </DialogHeader>
+        <div className="relative w-full h-full flex flex-col">
+          <div className="p-4 flex items-center justify-between bg-black/50 backdrop-blur-md border-b border-white/5 z-10">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                <FileText className="w-4 h-4 text-purple-400" />
+              </div>
+              <h3 className="text-sm font-medium text-white truncate max-w-[200px] sm:max-w-md">
+                {previewAttachment?.name}
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="border-white/10 text-white hover:bg-white/10" onClick={() => handleDownloadAttachment(previewAttachment)}>
+                <Download className="w-4 h-4 mr-2" />
+                Download
+              </Button>
+              <Button size="sm" variant="ghost" className="text-white/50 hover:text-white" onClick={() => setPreviewAttachment(null)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center p-4 min-h-[300px] max-h-[85vh] overflow-auto bg-black/40">
+            {previewAttachment && (
+              <img 
+                src={previewAttachment.publicUrl} 
+                alt={previewAttachment.name} 
+                className="max-w-full max-h-full object-contain shadow-2xl rounded-sm animate-in zoom-in-95 duration-200" 
+              />
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  </>
+);
 };
