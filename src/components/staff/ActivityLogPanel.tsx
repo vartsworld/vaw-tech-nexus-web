@@ -46,42 +46,54 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
     const fetchLogs = async () => {
       setLoading(true);
       try {
-        // Fetch activity logs - last 50
-        const { data: activityData, error: activityError } = await supabase
-          .from('user_activity_log')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(50);
+        const results = await Promise.allSettled([
+          supabase.from('user_activity_log').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+          supabase.from('user_coin_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+          supabase.from('user_points_log').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50)
+        ]);
 
-        if (activityError) throw activityError;
+        const combinedLogs: any[] = [];
 
-        // Fetch coin transactions - last 50
-        const { data: coinData, error: coinError } = await supabase
-          .from('user_coin_transactions')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(50);
+        // activity log
+        if (results[0].status === 'fulfilled' && !results[0].value.error) {
+          combinedLogs.push(...(results[0].value.data || []).map(log => ({ ...log, logType: 'activity' })));
+        }
 
-        if (coinError) throw coinError;
-
-        // Merge and sort
-        const combinedLogs = [
-          ...(activityData || []).map(log => ({ ...log, logType: 'activity' })),
-          ...(coinData || []).map(coin => ({ 
+        // coin transactions
+        if (results[1].status === 'fulfilled' && !results[1].value.error) {
+          combinedLogs.push(...(results[1].value.data || []).map(coin => ({
             ...coin, 
             logType: 'coin',
             activity_type: 'coin_transaction',
             metadata: { 
-              reason: coin.reason, 
-              amount: coin.coins, 
+              reason: coin.reason || coin.description,
+              amount: coin.coins ?? (coin as any).amount,
               type: coin.transaction_type 
             }
-          }))
-        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          })));
+        }
 
-        setLogs(combinedLogs as any);
+        // points log
+        if (results[2].status === 'fulfilled' && !results[2].value.error) {
+          combinedLogs.push(...(results[2].value.data || []).map(p => ({
+            ...p,
+            logType: 'coin',
+            activity_type: 'coin_transaction',
+            metadata: {
+              reason: p.reason,
+              amount: p.points,
+              type: 'earning'
+            }
+          })));
+        }
+
+        const sorted = combinedLogs.sort((a, b) => {
+          const dateA = new Date(a.created_at || a.timestamp || 0).getTime();
+          const dateB = new Date(b.created_at || b.timestamp || 0).getTime();
+          return dateB - dateA;
+        });
+
+        setLogs(sorted.slice(0, 100));
       } catch (err) {
         console.error("Error fetching logs:", err);
       } finally {

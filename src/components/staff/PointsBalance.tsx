@@ -28,16 +28,12 @@ const PointsBalance = ({ points, userId }: PointsBalanceProps) => {
     if (!userId) return;
 
     try {
-      // Get all transactions to calculate totals and breakdown
-      const { data: txData, error: txError } = await supabase
-        .from("user_coin_transactions")
-        .select("coins, source_type, transaction_type")
-        .eq("user_id", userId);
-
-      if (txError) {
-        console.error("Error fetching transactions:", txError);
-        return;
-      }
+      // Get all transactions from multiple sources to calculate totals and breakdown
+      const [txRes, pointsRes, activityRes] = await Promise.all([
+        supabase.from("user_coin_transactions").select("*").eq("user_id", userId),
+        supabase.from("user_points_log").select("*").eq("user_id", userId),
+        supabase.from("user_activity_log").select("*").eq("user_id", userId).not("points_earned", "is", null).neq("points_earned", 0)
+      ]);
 
       let earned = 0;
       let redeemed = 0;
@@ -49,30 +45,36 @@ const PointsBalance = ({ points, userId }: PointsBalanceProps) => {
         other: 0,
       };
 
-      txData?.forEach(tx => {
-        if (tx.coins > 0) {
-          earned += tx.coins;
-          // Map both source_type and transaction_type to categories
+      const processEntry = (coins: number, type: string, transactionType?: string) => {
+        if (coins > 0) {
+          earned += coins;
           let category = 'other';
-          if (tx.source_type === 'task' || tx.transaction_type === 'task_earned') {
+          const tType = (transactionType || type || '').toLowerCase();
+
+          if (type === 'task' || tType.includes('task') || tType.includes('project')) {
             category = 'task';
-          } else if (tx.source_type === 'attendance') {
+          } else if (type === 'attendance' || tType.includes('attendance')) {
             category = 'attendance';
-          } else if (tx.transaction_type === 'chess_reward') {
+          } else if (tType.includes('chess') || tType.includes('game') || tType.includes('quiz') || tType.includes('puzzle') || tType.includes('word')) {
             category = 'game';
-          } else if (tx.transaction_type === 'half_time_bonus' || tx.transaction_type === 'hr_grant') {
+          } else if (tType.includes('bonus') || tType.includes('grant') || tType.includes('mood')) {
             category = 'bonus';
           }
 
           if (categories[category] !== undefined) {
-            categories[category] += tx.coins;
+            categories[category] += coins;
           } else {
-            categories.other += tx.coins;
+            categories.other += coins;
           }
         } else {
-          redeemed += Math.abs(tx.coins);
+          redeemed += Math.abs(coins);
         }
-      });
+      };
+
+      txRes.data?.forEach(tx => processEntry(tx.coins ?? (tx as any).amount ?? 0, tx.source_type, tx.transaction_type));
+      pointsRes.data?.forEach(p => processEntry(p.points, p.category, 'earning'));
+      activityRes.data?.forEach(al => processEntry(al.points_earned, al.activity_type, al.activity_type));
+
 
       setLifetimeEarned(earned);
       setTotalRedeemed(redeemed);

@@ -59,14 +59,15 @@ const MyCoins = () => {
       if (profile) {
         setUserCoins(profile.total_points || 0);
       } else {
-        // Fallback to transaction calculation only if profile fails
-        const { data: txData } = await supabase
-          .from("user_coin_transactions")
-          .select("coins")
-          .eq("user_id", user.id);
+        // Fallback to transaction calculation from multiple sources only if profile fails
+        const [txRes, pointsRes] = await Promise.all([
+          supabase.from("user_coin_transactions").select("*").eq("user_id", user.id),
+          supabase.from("user_points_log").select("*").eq("user_id", user.id)
+        ]);
         
-        const calculatedBalance = txData?.reduce((sum, tx) => sum + tx.coins, 0) || 0;
-        setUserCoins(calculatedBalance);
+        const txSum = txRes.data?.reduce((sum, tx) => sum + (tx.coins ?? (tx as any).amount ?? 0), 0) || 0;
+        const pointsSum = pointsRes.data?.reduce((sum, p) => sum + p.points, 0) || 0;
+        setUserCoins(txSum + pointsSum);
       }
 
     } catch (error) {

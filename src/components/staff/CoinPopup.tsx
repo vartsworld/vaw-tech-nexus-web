@@ -48,27 +48,91 @@ const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile }: CoinPopupProps
     try {
       setLoading(true);
       
-      // Fetch latest profile points
-      const { data: profile } = await supabase
+      // 1. Fetch latest profile points
+      const { data: profile, error: profileError } = await supabase
         .from('staff_profiles')
         .select('total_points')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
+      if (profileError) console.error("Profile fetch error:", profileError);
       if (profile) setTotalPoints(profile.total_points || 0);
 
-      // Fetch latest 50 transactions for better tracking
-      const { data: txData, error: txError } = await supabase
-        .from("user_coin_transactions")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      // 2. Fetch from all possible log tables resiliently
+      const results = await Promise.allSettled([
+        supabase.from("user_coin_transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
+        supabase.from("user_points_log").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
+        supabase.from("user_activity_log").select("*").eq("user_id", userId).not("points_earned", "is", null).neq("points_earned", 0).order("created_at", { ascending: false }).limit(50)
+      ]);
 
-      if (txError) throw txError;
-      setTransactions(txData || []);
+      const allLogs: any[] = [];
+
+      // Process user_coin_transactions
+      if (results[0].status === 'fulfilled' && !results[0].value.error) {
+        const data = results[0].value.data || [];
+        allLogs.push(...data.map(tx => ({
+          id: tx.id,
+          coins: tx.coins ?? (tx as any).amount ?? 0,
+          transaction_type: tx.transaction_type || 'earning',
+          reason: tx.reason || tx.description || 'Transaction',
+          source_type: tx.source_type || 'coin',
+          created_at: tx.created_at,
+          type: 'coin'
+        })));
+      } else {
+        console.error("user_coin_transactions fetch failed:", results[0]);
+      }
+
+      // Process user_points_log
+      if (results[1].status === 'fulfilled' && !results[1].value.error) {
+        const data = results[1].value.data || [];
+        allLogs.push(...data.map(pl => ({
+          id: pl.id,
+          coins: pl.points,
+          transaction_type: 'earning',
+          reason: pl.reason || 'Points Earned',
+          source_type: pl.category || 'points',
+          created_at: pl.created_at,
+          type: 'points'
+        })));
+      } else {
+        console.error("user_points_log fetch failed:", results[1]);
+      }
+
+      // Process user_activity_log
+      if (results[2].status === 'fulfilled' && !results[2].value.error) {
+        const data = results[2].value.data || [];
+        allLogs.push(...data.map(al => {
+          let metadata: any = {};
+          try {
+            metadata = typeof al.metadata === 'string' ? JSON.parse(al.metadata) : (al.metadata || {});
+          } catch (e) { metadata = {}; }
+
+          return {
+            id: al.id,
+            coins: al.points_earned,
+            transaction_type: al.activity_type,
+            reason: metadata.reason || metadata.task_title || al.activity_type.replace(/_/g, ' '),
+            source_type: al.activity_type,
+            created_at: al.created_at || al.timestamp,
+            type: 'activity'
+          };
+        }));
+      } else {
+        console.error("user_activity_log fetch failed:", results[2]);
+      }
+
+      const combined = allLogs
+        .sort((a, b) => {
+          const dateA = new Date(a.created_at || 0).getTime();
+          const dateB = new Date(b.created_at || 0).getTime();
+          return dateB - dateA;
+        })
+        .slice(0, 50);
+
+      setTransactions(combined);
     } catch (error) {
-      console.error("Error fetching coin data:", error);
+      console.error("Critical error in fetchData:", error);
     } finally {
       setLoading(false);
     }
@@ -88,6 +152,9 @@ const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile }: CoinPopupProps
       bonus: "bg-amber-500/10 text-amber-500 border-amber-500/20",
       task: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
       attendance: "bg-sky-500/10 text-sky-500 border-sky-500/20",
+      chat_engagement: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
+      mood_checkin: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+      sales: "bg-orange-500/10 text-orange-500 border-orange-500/20",
     };
 
     return (
