@@ -77,6 +77,13 @@ const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile }: CoinPopupProps
   const getTransactionBadge = (type: string) => {
     const badgeStyles: Record<string, string> = {
       earning: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+      task_earned: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+      half_time_bonus: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+      quest_reward: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+      hr_grant: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+      late_penalty: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+      reward_spent: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+      chess_reward: "bg-blue-500/10 text-blue-500 border-blue-500/20",
       redemption: "bg-rose-500/10 text-rose-500 border-rose-500/20",
       bonus: "bg-amber-500/10 text-amber-500 border-amber-500/20",
       task: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
@@ -84,8 +91,8 @@ const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile }: CoinPopupProps
     };
 
     return (
-      <Badge variant="outline" className={cn("text-[9px] uppercase font-bold px-1.5 py-0", badgeStyles[type] || "bg-muted")}>
-        {type.replace("_", " ")}
+      <Badge variant="outline" className={cn("text-[9px] uppercase font-bold px-1.5 py-0 whitespace-nowrap", badgeStyles[type] || "bg-muted")}>
+        {type.replace(/_/g, " ")}
       </Badge>
     );
   };

@@ -120,10 +120,19 @@ const AddClient = () => {
       await supabase.from('user_coin_transactions').insert({
         user_id: profile.user_id,
         coins: points,
-        transaction_type: 'earning',
+        transaction_type: 'hr_grant',
+        category: 'other',
         reason: `Added new client: ${form.company_name}`,
         source_type: 'client_onboarding'
       } as any);
+
+      // Log to user_activity_log
+      await supabase.from('user_activity_log').insert({
+        user_id: profile.user_id,
+        activity_type: 'coin_earned',
+        points_earned: points,
+        metadata: { client_name: form.company_name, action: 'added_client' }
+      });
 
       await supabase.from('user_points_log').insert({
         user_id: profile.user_id,

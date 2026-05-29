@@ -128,12 +128,21 @@ const MyCoins = () => {
         .insert({
           user_id: userId,
           coins: -coinsCost,
-          transaction_type: "earning",
+          transaction_type: "reward_spent",
           reason: `Redeemed reward: ${rewards.find(r => r.id === rewardId)?.name || 'Reward'}`,
+          category: "reward_redemption",
           source_type: "redemption"
         } as any);
 
       if (transactionError) throw transactionError;
+
+      // Log to user_activity_log
+      await supabase.from('user_activity_log').insert({
+        user_id: userId,
+        activity_type: 'coin_spent',
+        points_earned: -coinsCost,
+        metadata: { reward_id: rewardId, reward_name: rewards.find(r => r.id === rewardId)?.name }
+      });
 
       // Trigger will update profile points automatically
       setUserCoins(prev => prev - coinsCost);

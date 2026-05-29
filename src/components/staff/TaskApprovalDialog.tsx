@@ -150,10 +150,20 @@ export const TaskApprovalDialog = ({
             .insert({
               user_id: task.assigned_to,
               coins: task.points,
-              transaction_type: 'earning',
+              transaction_type: 'task_earned',
+              category: 'task_completion',
               reason: `Task Completed: ${task.title}`,
               source_type: 'task',
+              related_task_id: task.id
             } as any);
+
+          // Log to user_activity_log
+          await supabase.from('user_activity_log').insert({
+            user_id: task.assigned_to,
+            activity_type: 'task_completed',
+            points_earned: task.points,
+            metadata: { task_id: task.id, task_title: task.title, approved_by: user.id }
+          });
         }
       }
 

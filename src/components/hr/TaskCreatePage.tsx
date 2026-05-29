@@ -239,10 +239,19 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
           await supabase.from('user_coin_transactions').insert({
             user_id: assigneeId,
             coins: 0,
-            transaction_type: 'earning',
+            transaction_type: 'task_earned',
+            category: 'task_completion',
             reason: `New Task Assigned: ${newTask.title} (${newTask.points} coins potential)`,
-            source_type: 'task'
+            source_type: 'task',
+            related_task_id: taskResponse.id
           } as any);
+
+          // Log to user_activity_log
+          await supabase.from('user_activity_log').insert({
+            user_id: assigneeId,
+            activity_type: 'task_assigned',
+            metadata: { task_id: taskResponse.id, task_title: newTask.title, assigned_by: user?.id }
+          });
         }
       }
 

@@ -57,6 +57,13 @@ const CoinTransactionLog = ({ userId }: CoinTransactionLogProps) => {
   const getTransactionBadge = (type: string) => {
     const badgeStyles: Record<string, string> = {
       earning: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+      task_earned: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+      half_time_bonus: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+      quest_reward: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+      hr_grant: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+      late_penalty: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+      reward_spent: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+      chess_reward: "bg-blue-500/10 text-blue-500 border-blue-500/20",
       redemption: "bg-rose-500/10 text-rose-500 border-rose-500/20",
       bonus: "bg-amber-500/10 text-amber-500 border-amber-500/20",
       task: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
@@ -65,8 +72,8 @@ const CoinTransactionLog = ({ userId }: CoinTransactionLogProps) => {
     };
 
     return (
-      <Badge variant="outline" className={cn("font-bold text-[10px] uppercase tracking-tighter", badgeStyles[type] || "bg-muted")}>
-        {type.replace("_", " ")}
+      <Badge variant="outline" className={cn("font-bold text-[10px] uppercase tracking-tighter whitespace-nowrap", badgeStyles[type] || "bg-muted")}>
+        {type.replace(/_/g, " ")}
       </Badge>
     );
   };

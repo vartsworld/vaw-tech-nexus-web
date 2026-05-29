@@ -31,7 +31,7 @@ const PointsBalance = ({ points, userId }: PointsBalanceProps) => {
       // Get all transactions to calculate totals and breakdown
       const { data: txData, error: txError } = await supabase
         .from("user_coin_transactions")
-        .select("coins, source_type")
+        .select("coins, source_type, transaction_type")
         .eq("user_id", userId);
 
       if (txError) {
@@ -52,9 +52,20 @@ const PointsBalance = ({ points, userId }: PointsBalanceProps) => {
       txData?.forEach(tx => {
         if (tx.coins > 0) {
           earned += tx.coins;
-          const type = tx.source_type || 'other';
-          if (categories[type] !== undefined) {
-            categories[type] += tx.coins;
+          // Map both source_type and transaction_type to categories
+          let category = 'other';
+          if (tx.source_type === 'task' || tx.transaction_type === 'task_earned') {
+            category = 'task';
+          } else if (tx.source_type === 'attendance') {
+            category = 'attendance';
+          } else if (tx.transaction_type === 'chess_reward') {
+            category = 'game';
+          } else if (tx.transaction_type === 'half_time_bonus' || tx.transaction_type === 'hr_grant') {
+            category = 'bonus';
+          }
+
+          if (categories[category] !== undefined) {
+            categories[category] += tx.coins;
           } else {
             categories.other += tx.coins;
           }
