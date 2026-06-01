@@ -32,6 +32,7 @@ const MobileBottomNav = ({
   const navItems = [
     { id: 'home' as const, label: 'Office', icon: Compass, isRoom: true },
     { id: 'workspace' as const, label: 'Work', icon: Monitor, isRoom: true },
+    { id: 'meeting' as const, label: 'Meet', icon: Users, isRoom: true },
     { id: 'chat', label: 'Chat', icon: MessageCircle, isRoom: false, action: onOpenChat },
     { id: 'menu', label: 'More', icon: Menu, isRoom: false, action: () => setShowMenu(true) },
   ];

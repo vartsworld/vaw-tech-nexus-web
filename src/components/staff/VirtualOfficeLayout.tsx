@@ -64,6 +64,7 @@ const VirtualOfficeLayout = ({
   const [sidebarTab, setSidebarTab] = useState<'status' | 'chat'>('status');
   const [mobileSidebarTab, setMobileSidebarTab] = useState<'status' | 'chat'>('status');
   const [chessArenaMode, setChessArenaMode] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(currentRoom === 'meeting');
   const [roomsCollapsed, setRoomsCollapsed] = useState(false);
   const [actionsCollapsed, setActionsCollapsed] = useState(false);
   const [popoutChat, setPopoutChat] = useState(false);
@@ -265,6 +266,11 @@ const VirtualOfficeLayout = ({
         behavior: 'smooth'
       });
     }
+    if (currentRoom === 'meeting') {
+      setIsSidebarCollapsed(true);
+    } else {
+      setIsSidebarCollapsed(false);
+    }
   }, [currentRoom]);
 
   const rooms = [
@@ -321,8 +327,8 @@ const VirtualOfficeLayout = ({
       </Sheet>
 
       {/* Desktop Sidebar */}
-      {currentRoom !== 'home' && (
-        <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 overflow-hidden flex-shrink-0 z-20">
+      {currentRoom !== 'home' && !isSidebarCollapsed && (
+        <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 overflow-hidden flex-shrink-0 z-20 transition-all duration-300">
         <div className="p-6 pb-4 space-y-4 flex-shrink-0 overflow-y-auto">
           {/* Room Navigation - Collapsible */}
           <div>
@@ -563,7 +569,18 @@ const VirtualOfficeLayout = ({
       )}
 
       {/* Main Content Area */}
-      <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
+      <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6 relative">
+        {isSidebarCollapsed && currentRoom !== 'home' && (
+          <Button
+            variant="outline"
+            size="icon"
+            title="Expand Sidebar"
+            className="absolute top-4 left-4 z-50 bg-black/40 border-white/10 text-white hover:bg-white/10 backdrop-blur-md hidden lg:flex"
+            onClick={() => setIsSidebarCollapsed(false)}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </Button>
+        )}
         {children}
       </main>
 

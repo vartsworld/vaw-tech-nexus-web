@@ -21,6 +21,7 @@ import {
   Zap,
   Globe,
   Settings,
+  User,
   Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";

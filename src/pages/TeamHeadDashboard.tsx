@@ -64,7 +64,7 @@ import EmmaAssistant from "@/components/ai/EmmaAssistant";
 import { Sparkles } from "lucide-react";
 import OfficeZenHome from "@/components/staff/OfficeZenHome";
 
-type RoomType = 'home' | 'workspace' | 'meeting';
+type RoomType = 'home' | 'workspace' | 'meeting' | 'breakroom';
 
 const EMOJI_OPTIONS = [
   "😀", "😃", "😄", "😁", "😊", "🙂", "😎", "🤩", "🥳", "😇",
@@ -366,16 +366,7 @@ const TeamHeadDashboard = () => {
   // Show attendance check first
   if (showAttendanceCheck) {
     return (
-      <div className="min-h-screen relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
-          <img
-            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
-            alt="Modern office background"
-            className="absolute inset-0 w-full h-full object-cover opacity-80"
-          />
-        </div>
-
+      <div className="min-h-screen relative overflow-hidden bg-zinc-950">
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-md space-y-4">
             <div className="text-center mb-4">
@@ -397,16 +388,7 @@ const TeamHeadDashboard = () => {
   // Show mood check after attendance
   if (showMoodCheck) {
     return (
-      <div className="min-h-screen relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
-          <img
-            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
-            alt="Modern office background"
-            className="absolute inset-0 w-full h-full object-cover opacity-80"
-          />
-        </div>
-
+      <div className="min-h-screen relative overflow-hidden bg-zinc-950">
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-lg space-y-4">
             <div className="text-center mb-4">
@@ -532,20 +514,23 @@ const TeamHeadDashboard = () => {
         )}
       </div>
     ),
-    meeting: <MeetingRoom />
+    meeting: <MeetingRoom />,
+    breakroom: null
   };
 
   return (
     <div className="min-h-screen h-screen flex flex-col relative overflow-hidden bg-zinc-950">
       {/* Background Layer - Fixed to viewport */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-black/60 z-10"></div>
-        <img
-          src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
-          alt="Modern office background"
-          className="w-full h-full object-cover scale-105 opacity-100"
-        />
-      </div>
+      {currentRoom !== 'home' && (
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <div className="absolute inset-0 bg-black/60 z-10"></div>
+          <img
+            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
+            alt="Modern office background"
+            className="w-full h-full object-cover scale-105 opacity-100"
+          />
+        </div>
+      )}
 
       {/* Office Header */}
       {currentRoom !== 'home' && (

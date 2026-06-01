@@ -52,7 +52,7 @@ import OfficeZenHome from "@/components/staff/OfficeZenHome";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import EmmaAssistant from "@/components/ai/EmmaAssistant";
 
-type RoomType = 'home' | 'workspace' | 'meeting';
+type RoomType = 'home' | 'workspace' | 'meeting' | 'breakroom';
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
@@ -252,16 +252,7 @@ const StaffDashboard = () => {
   // Show attendance check first
   if (showAttendanceCheck) {
     return (
-      <div className="min-h-screen relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
-          <img
-            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
-            alt="Modern office background"
-            className="absolute inset-0 w-full h-full object-cover opacity-80"
-          />
-        </div>
-
+      <div className="min-h-screen relative overflow-hidden bg-zinc-950">
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-md space-y-4">
             <div className="text-center mb-4">
@@ -283,16 +274,7 @@ const StaffDashboard = () => {
   // Show mood check after attendance
   if (showMoodCheck) {
     return (
-      <div className="min-h-screen relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
-          <img
-            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
-            alt="Modern office background"
-            className="absolute inset-0 w-full h-full object-cover opacity-80"
-          />
-        </div>
-
+      <div className="min-h-screen relative overflow-hidden bg-zinc-950">
         <div className="relative z-20 flex items-center justify-center min-h-screen p-4">
           <div className="w-full max-w-lg space-y-4">
             <div className="text-center mb-4">
@@ -332,7 +314,8 @@ const StaffDashboard = () => {
       />
     ),
     workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} />,
-    meeting: <MeetingRoom />
+    meeting: <MeetingRoom />,
+    breakroom: null
   };
 
   // Show mobile home on small screens
@@ -350,21 +333,23 @@ const StaffDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen h-screen flex flex-col relative overflow-hidden">
-      {/* Background Images */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/40 to-black/60 z-10"></div>
-        <img
-          src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
-          alt="Modern office background"
-          className="absolute inset-0 w-full h-full object-cover opacity-80"
-        />
-        <img
-          src="/lovable-uploads/508d91e4-1f4c-42a4-9e98-bcb4df6e023d.png"
-          alt="Office meeting space"
-          className="absolute top-1/2 left-1/2 w-full h-full object-cover opacity-60 mix-blend-overlay"
-        />
-      </div>
+    <div className="min-h-screen h-screen flex flex-col relative overflow-hidden bg-zinc-950">
+      {/* Background Layer - Fixed to viewport */}
+      {currentRoom !== 'home' && (
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <div className="absolute inset-0 bg-black/60 z-10"></div>
+          <img
+            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
+            alt="Modern office background"
+            className="absolute inset-0 w-full h-full object-cover opacity-80"
+          />
+          <img
+            src="/lovable-uploads/508d91e4-1f4c-42a4-9e98-bcb4df6e023d.png"
+            alt="Office meeting space"
+            className="absolute top-1/2 left-1/2 w-full h-full object-cover opacity-60 mix-blend-overlay"
+          />
+        </div>
+      )}
       {/* Office Header */}
       {currentRoom !== 'home' && (
         <header className="relative z-30 bg-black/20 backdrop-blur-lg border-b border-white/10 flex-shrink-0">
