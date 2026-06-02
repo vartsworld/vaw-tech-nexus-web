@@ -78,7 +78,7 @@ const SuperAdminStaffManager = () => {
                 .select(`
                     *,
                     departments (id, name),
-                    user_coin_transactions (id, amount)
+                    user_coin_transactions (id, coins)
                 `)
                 .order('full_name', { ascending: true });
 
@@ -225,7 +225,7 @@ const SuperAdminStaffManager = () => {
                                         <div className="flex items-center gap-2">
                                             <CreditCard className="w-4 h-4 text-tech-gold" />
                                             <p className="font-black text-white">
-                                                {person.user_coin_transactions?.reduce((acc: number, t: any) => acc + (t.amount || 0), 0) || 0}
+                                                {person.user_coin_transactions?.reduce((acc: number, t: any) => acc + (t.coins || 0), 0) || 0}
                                             </p>
                                         </div>
                                     </TableCell>

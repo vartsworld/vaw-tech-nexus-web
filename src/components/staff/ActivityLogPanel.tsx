@@ -12,7 +12,11 @@ import {
   Wifi,
   AlertCircle,
   Loader2,
-  Coins
+  Coins,
+  CheckCircle2,
+  Award,
+  Smile,
+  Gift
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -23,6 +27,8 @@ interface ActivityLog {
   duration_minutes: number | null;
   metadata: any;
   logType?: 'activity' | 'coin';
+  coins?: number;
+  reason?: string;
 }
 
 interface ActivityLogPanelProps {
@@ -40,45 +46,54 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
     const fetchLogs = async () => {
       setLoading(true);
       try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const results = await Promise.allSettled([
+          supabase.from('user_activity_log').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+          supabase.from('user_coin_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
+          supabase.from('user_points_log').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(50)
+        ]);
 
-        // Fetch activity logs
-        const { data: activityData, error: activityError } = await supabase
-          .from('user_activity_log')
-          .select('*')
-          .eq('user_id', userId)
-          .gte('created_at', today.toISOString())
-          .order('created_at', { ascending: false });
+        const combinedLogs: any[] = [];
 
-        if (activityError) throw activityError;
+        // activity log
+        if (results[0].status === 'fulfilled' && !results[0].value.error) {
+          combinedLogs.push(...(results[0].value.data || []).map(log => ({ ...log, logType: 'activity' })));
+        }
 
-        // Fetch coin transactions (the "route" of each coin)
-        const { data: coinData, error: coinError } = await supabase
-          .from('user_coin_transactions')
-          .select('*')
-          .eq('user_id', userId)
-          .gte('created_at', today.toISOString())
-          .order('created_at', { ascending: false });
-
-        if (coinError) throw coinError;
-
-        // Merge and sort
-        const combinedLogs = [
-          ...(activityData || []).map(log => ({ ...log, logType: 'activity' })),
-          ...(coinData || []).map(coin => ({ 
+        // coin transactions
+        if (results[1].status === 'fulfilled' && !results[1].value.error) {
+          combinedLogs.push(...(results[1].value.data || []).map(coin => ({
             ...coin, 
             logType: 'coin',
             activity_type: 'coin_transaction',
             metadata: { 
-              reason: coin.reason, 
-              amount: coin.coins, 
+              reason: coin.reason || coin.description,
+              amount: coin.coins ?? (coin as any).amount,
               type: coin.transaction_type 
             }
-          }))
-        ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          })));
+        }
 
-        setLogs(combinedLogs as any);
+        // points log
+        if (results[2].status === 'fulfilled' && !results[2].value.error) {
+          combinedLogs.push(...(results[2].value.data || []).map(p => ({
+            ...p,
+            logType: 'coin',
+            activity_type: 'coin_transaction',
+            metadata: {
+              reason: p.reason,
+              amount: p.points,
+              type: 'earning'
+            }
+          })));
+        }
+
+        const sorted = combinedLogs.sort((a, b) => {
+          const dateA = new Date(a.created_at || a.timestamp || 0).getTime();
+          const dateB = new Date(b.created_at || b.timestamp || 0).getTime();
+          return dateB - dateA;
+        });
+
+        setLogs(sorted.slice(0, 100));
       } catch (err) {
         console.error("Error fetching logs:", err);
       } finally {
@@ -112,17 +127,23 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
 
   const getActivityConfig = (type: string, log?: any) => {
     if (log?.logType === 'coin') {
-      const isPositive = log.metadata?.type === 'earning' || log.metadata?.type === 'bonus';
+      const isPositive = log.coins > 0;
       return { 
         icon: Coins, 
-        label: log.metadata?.reason || 'Coin Transaction', 
+        label: log.reason || 'Coin Transaction',
         color: isPositive ? 'text-amber-400' : 'text-red-400',
-        detail: `${isPositive ? '+' : ''}${log.metadata?.amount} Coins`
+        detail: `${isPositive ? '+' : ''}${log.coins} Coins`
       };
     }
 
     const configs: Record<string, { icon: any; label: string; color: string; detail?: string }> = {
+      attendance_marked: { icon: LogIn, label: 'Attendance Marked', color: 'text-emerald-500' },
       attendance: { icon: LogIn, label: 'Attendance Marked', color: 'text-emerald-500' },
+      task_completed: { icon: CheckCircle2, label: 'Task Completed', color: 'text-blue-500' },
+      coin_earned: { icon: Coins, label: 'Coins Earned', color: 'text-amber-400' },
+      coin_spent: { icon: Gift, label: 'Coins Spent', color: 'text-red-400' },
+      quest_completed: { icon: Award, label: 'Quest Completed', color: 'text-purple-500' },
+      mood_submitted: { icon: Smile, label: 'Mood Submitted', color: 'text-pink-500' },
       break_start: { icon: Coffee, label: 'Break Started', color: 'text-orange-500' },
       break_end: { icon: Coffee, label: 'Returned from Break', color: 'text-emerald-500' },
       coffee_break: { icon: Coffee, label: 'Coffee Break', color: 'text-orange-500' },
@@ -155,7 +176,7 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-bold text-white/70 flex items-center justify-between">
           Activity & Coin Ledger
-          <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded-full font-normal">Today</span>
+          <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded-full font-normal">Recent</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="px-0">
@@ -164,7 +185,7 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
             {logs.length === 0 ? (
               <div className="text-center py-10 opacity-30">
                 <Clock className="w-8 h-8 mx-auto mb-2" />
-                <p className="text-xs">No activity tracked today</p>
+                <p className="text-xs">No activity tracked yet</p>
               </div>
             ) : (
               logs.map((log) => {

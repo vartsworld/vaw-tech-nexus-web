@@ -131,10 +131,19 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
           .insert({
             user_id: userId,
             coins: points,
-            transaction_type: 'earning',
+            transaction_type: 'hr_grant',
             reason: isLate ? 'Attendance (Outside Standard Hours)' : 'Attendance (On Time)',
+            category: 'bonus',
             source_type: 'attendance'
           } as any);
+
+        // Log to user_activity_log for ActivityLogPanel
+        await supabase.from('user_activity_log').insert({
+          user_id: userId,
+          activity_type: 'attendance_marked',
+          points_earned: points,
+          metadata: { is_late: isLate, check_in_time: now.toISOString() }
+        });
 
         // Note: staff_profiles.total_points is updated automatically via DB trigger
       }

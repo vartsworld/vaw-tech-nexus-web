@@ -1142,10 +1142,21 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
             .insert({
               user_id: data.assigned_to,
               coins: data.points,
-              transaction_type: 'earning',
+              transaction_type: 'task_earned',
+              category: 'task_completion',
               reason: `Subtask Completed: ${data.title}`,
               source_type: 'subtask',
+              related_task_id: data.task_id,
+              metadata: { subtask_id: data.id }
             } as any);
+
+          // 4. Log to user_activity_log
+          await supabase.from('user_activity_log').insert({
+            user_id: data.assigned_to,
+            activity_type: 'task_completed',
+            points_earned: data.points,
+            metadata: { task_id: data.task_id, subtask_id: data.id, subtask_title: data.title, approved_by: user.id }
+          });
         }
       }
 
