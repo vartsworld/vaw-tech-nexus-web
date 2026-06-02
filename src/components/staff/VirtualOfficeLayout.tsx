@@ -40,13 +40,15 @@ import { Badge } from "@/components/ui/badge";
 
 interface VirtualOfficeLayoutProps {
   children: ReactNode;
-  currentRoom: 'home' | 'workspace' | 'breakroom' | 'meeting';
-  onRoomChange: (room: 'home' | 'workspace' | 'breakroom' | 'meeting') => void;
+  currentRoom: string;
+  onRoomChange: (room: string) => void;
   onlineUsers?: Record<string, any>;
   userId?: string;
   userProfile?: any;
   className?: string;
   onOpenCoins?: () => void;
+  isSidebarCollapsed?: boolean;
+  onSidebarCollapse?: (collapsed: boolean) => void;
 }
 
 const VirtualOfficeLayout = ({
@@ -57,14 +59,15 @@ const VirtualOfficeLayout = ({
   userId,
   userProfile,
   className,
-  onOpenCoins
+  onOpenCoins,
+  isSidebarCollapsed = false,
+  onSidebarCollapse
 }: VirtualOfficeLayoutProps) => {
   const [showActivityLog, setShowActivityLog] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<'status' | 'chat'>('status');
   const [mobileSidebarTab, setMobileSidebarTab] = useState<'status' | 'chat'>('status');
   const [chessArenaMode, setChessArenaMode] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(currentRoom === 'meeting');
   const [roomsCollapsed, setRoomsCollapsed] = useState(false);
   const [actionsCollapsed, setActionsCollapsed] = useState(false);
   const [popoutChat, setPopoutChat] = useState(false);
@@ -267,16 +270,21 @@ const VirtualOfficeLayout = ({
       });
     }
     if (currentRoom === 'meeting') {
-      setIsSidebarCollapsed(true);
+      if (onSidebarCollapse) onSidebarCollapse(true);
     } else {
-      setIsSidebarCollapsed(false);
+      if (onSidebarCollapse) onSidebarCollapse(false);
     }
   }, [currentRoom]);
 
   const rooms = [
-    { id: 'home' as const, name: 'Office', icon: Compass, color: 'from-emerald-500 to-teal-600' },
-    { id: 'workspace' as const, name: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
-    { id: 'meeting' as const, name: 'Meeting Room', icon: Users, color: 'from-yellow-500 to-yellow-600' }
+    { id: 'home', name: 'Office', icon: Compass, color: 'from-emerald-500 to-teal-600' },
+    { id: 'workspace', name: 'Dashboard', icon: Monitor, color: 'from-blue-500 to-blue-600' },
+    { id: 'meeting', name: 'Meeting Room', icon: Users, color: 'from-yellow-500 to-yellow-600' },
+    { id: 'chat', name: 'Team Chat', icon: MessageCircle, color: 'from-purple-500 to-purple-600' },
+    { id: 'staff', name: 'Staff List', icon: Users, color: 'from-indigo-500 to-indigo-600' },
+    { id: 'leave', name: 'Leave Hub', icon: PlaneTakeoff, color: 'from-orange-500 to-orange-600' },
+    { id: 'coin', name: 'Coin Center', icon: Coins, color: 'from-amber-500 to-amber-600' },
+    { id: 'game', name: 'Games Arena', icon: Swords, color: 'from-red-500 to-rose-600' }
   ];
 
   return (
@@ -430,7 +438,12 @@ const VirtualOfficeLayout = ({
                     </span>
                   </Button>
 
-                  <Button variant="outline" size="sm" className="bg-red-500/20 border-red-500/30 text-white hover:bg-red-500/30">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-red-500/20 border-red-500/30 text-white hover:bg-red-500/30"
+                    onClick={() => onRoomChange('chat')}
+                  >
                     <MessageCircle className="w-4 h-4 mr-2" />
                     Chat
                   </Button>
@@ -438,7 +451,7 @@ const VirtualOfficeLayout = ({
                     variant="outline" 
                     size="sm" 
                     className="bg-orange-500/20 border-orange-500/30 text-white hover:bg-orange-500/30"
-                    onClick={() => setShowLeaveDialog(true)}
+                    onClick={() => onRoomChange('leave')}
                   >
                     <PlaneTakeoff className="w-4 h-4 mr-2" />
                     Leave
@@ -576,7 +589,7 @@ const VirtualOfficeLayout = ({
             size="icon"
             title="Expand Sidebar"
             className="absolute top-4 left-4 z-50 bg-black/40 border-white/10 text-white hover:bg-white/10 backdrop-blur-md hidden lg:flex"
-            onClick={() => setIsSidebarCollapsed(false)}
+            onClick={() => onSidebarCollapse && onSidebarCollapse(false)}
           >
             <ChevronRight className="w-5 h-5" />
           </Button>
@@ -586,8 +599,8 @@ const VirtualOfficeLayout = ({
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav
-        currentRoom={currentRoom}
-        onRoomChange={onRoomChange}
+        currentRoom={currentRoom as any}
+        onRoomChange={onRoomChange as any}
         onOpenChat={() => setShowMobileChat(true)}
         onOpenCoins={onOpenCoins}
       />

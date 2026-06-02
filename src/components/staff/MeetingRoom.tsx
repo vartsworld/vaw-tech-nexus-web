@@ -24,11 +24,17 @@ import {
   Maximize,
   Minimize,
   Settings,
-  UserPlus
+  UserPlus,
+  Hand,
+  Smile,
+  ThumbsUp,
+  ThumbsDown,
+  Heart,
+  Copy
 } from "lucide-react";
 
 // Video component
-const VideoPlayer = ({ stream, isLocal, name, isMuted, isVideoOff, profileImage, onPin, isPinned, isActiveSpeaker, isAdmin, onAdminAction }: { stream: MediaStream | null, isLocal?: boolean, name?: string, isMuted?: boolean, isVideoOff?: boolean, profileImage?: string, onPin?: () => void, isPinned?: boolean, isActiveSpeaker?: boolean, isAdmin?: boolean, onAdminAction?: (action: string) => void }) => {
+const VideoPlayer = ({ stream, isLocal, name, isMuted, isVideoOff, profileImage, onPin, isPinned, isActiveSpeaker, isAdmin, onAdminAction, isHandRaised, reaction }: { stream: MediaStream | null, isLocal?: boolean, name?: string, isMuted?: boolean, isVideoOff?: boolean, profileImage?: string, onPin?: () => void, isPinned?: boolean, isActiveSpeaker?: boolean, isAdmin?: boolean, onAdminAction?: (action: string) => void, isHandRaised?: boolean, reaction?: string | null }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [computedAudioLevel, setComputedAudioLevel] = useState(false);
 
@@ -78,12 +84,27 @@ const VideoPlayer = ({ stream, isLocal, name, isMuted, isVideoOff, profileImage,
   }, [stream, isLocal, isVideoOff]);
 
   const active = isActiveSpeaker || computedAudioLevel;
+  
+  let borderColor = 'border-white/10';
+  let shadow = '';
+  if (isHandRaised) {
+      borderColor = 'border-amber-400';
+      shadow = 'shadow-[0_0_20px_rgba(251,191,36,0.5)]';
+  } else if (active) {
+      borderColor = 'border-green-500';
+      shadow = 'shadow-[0_0_20px_rgba(34,197,94,0.3)]';
+  }
 
   return (
-    <div className={`relative aspect-video bg-zinc-900/60 rounded-2xl overflow-hidden border transition-all duration-300 group shadow-lg ${active ? 'border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)]' : 'border-white/10'}`}>
+    <div className={`relative aspect-video bg-zinc-900/60 rounded-2xl overflow-hidden border-2 transition-all duration-300 group shadow-lg ${borderColor} ${shadow}`}>
+       {reaction && (
+          <div className="absolute inset-0 flex items-center justify-center z-30 pointer-events-none animate-in zoom-in slide-in-from-bottom-10 fade-in duration-500">
+             <span className="text-6xl drop-shadow-2xl">{reaction}</span>
+          </div>
+       )}
        {isVideoOff ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md">
-             <Avatar className={`w-24 h-24 border-4 transition-colors ${active ? 'border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]' : 'border-white/10'}`}>
+             <Avatar className={`w-24 h-24 border-4 transition-colors ${active ? 'border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]' : (isHandRaised ? 'border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-white/10')}`}>
                <AvatarImage src={profileImage} />
                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-3xl text-white font-bold">
                  {name?.charAt(0) || 'U'}
@@ -108,18 +129,16 @@ const VideoPlayer = ({ stream, isLocal, name, isMuted, isVideoOff, profileImage,
          </div>
        </div>
 
-       <div className="absolute top-3 right-3 z-20 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+       <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
           {onPin && (
-             <Button variant="ghost" size="icon" className="h-8 w-8 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10" onClick={onPin}>
+             <Button variant="ghost" size="icon" className="h-8 w-8 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/20 shadow-lg" onClick={onPin}>
                 {isPinned ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
              </Button>
           )}
           {isAdmin && !isLocal && onAdminAction && (
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                   <Button variant="ghost" size="icon" className="h-8 w-8 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-md border border-white/10">
-                      <Settings className="w-4 h-4" />
-                   </Button>
+                   <Button variant="secondary" size="icon" className="h-8 w-8 bg-purple-500/80 hover:bg-purple-600 text-white rounded-full backdrop-blur-md border border-purple-400/50 shadow-lg" title="Admin Controls"><Settings className="w-4 h-4" /></Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-zinc-900 border-white/10 text-white">
                    <DropdownMenuItem onClick={() => onAdminAction('mute')} className="hover:bg-white/10 cursor-pointer">Mute Microphone</DropdownMenuItem>
@@ -142,36 +161,53 @@ const MeetingRoom = () => {
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [remoteStreams, setRemoteStreams] = useState<Record<string, { stream: MediaStream, profile: any, isVideoOff?: boolean, isMuted?: boolean }>>({});
+  const [remoteStreams, setRemoteStreams] = useState<Record<string, { stream: MediaStream, profile: any, isVideoOff?: boolean, isMuted?: boolean, isHandRaised?: boolean, reaction?: string | null }>>({});
   
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isVideoOff, setIsVideoOff] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isHandRaised, setIsHandRaised] = useState(false);
+  const [localReaction, setLocalReaction] = useState<string | null>(null);
+  const [meetingAdminId, setMeetingAdminId] = useState<string | null>(null);
+  const [invitedUsers, setInvitedUsers] = useState<string[]>([]);
   
   const peersRef = useRef<Record<string, RTCPeerConnection>>({});
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
-  const [upcomingMeetings, setUpcomingMeetings] = useState<any[]>(() => {
-    const stored = localStorage.getItem('vaw_scheduled_meetings');
-    if (stored) return JSON.parse(stored);
-    return [
-      {
-        title: "Daily Standup",
-        time: "10:00 AM",
-        duration: "15 min",
-        attendees: 6,
-        status: "Starting Soon",
-        type: "Team Meeting"
+  const [upcomingMeetings, setUpcomingMeetings] = useState<any[]>([]);
+  
+  useEffect(() => {
+    fetchScheduledMeetings();
+  }, []);
+
+  const fetchScheduledMeetings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('scheduled_meetings' as any)
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error && error.code !== '42P01') {
+         console.error("Error fetching meetings", error);
+      } else if (data) {
+         setUpcomingMeetings(data);
+      } else {
+         // Fallback if table doesn't exist yet
+         const stored = localStorage.getItem('vaw_scheduled_meetings');
+         if (stored) setUpcomingMeetings(JSON.parse(stored));
       }
-    ];
-  });
+    } catch (e) {
+      console.error(e);
+    }
+  };
   const [newMeetingTitle, setNewMeetingTitle] = useState("");
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
   const [scheduleRecurring, setScheduleRecurring] = useState("none");
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
-  const isAdmin = profile?.role === 'admin' || profile?.is_department_head === true;
+  const isGlobalAdmin = profile?.role === 'admin' || profile?.is_department_head === true;
+  const isAdmin = isGlobalAdmin || meetingAdminId === profile?.user_id;
 
   // Auto-join from URL
   useEffect(() => {
@@ -188,12 +224,13 @@ const MeetingRoom = () => {
   useEffect(() => {
     if (inRoom && roomId) {
       const url = new URL(window.location.href);
-      url.searchParams.set('room', 'meeting');
+      url.searchParams.delete('room');
       url.searchParams.set('ID', roomId);
       window.history.pushState({}, '', url.toString());
     } else if (!inRoom) {
       const url = new URL(window.location.href);
       url.searchParams.delete('ID');
+      url.searchParams.delete('room');
       window.history.pushState({}, '', url.toString());
     }
   }, [inRoom, roomId]);
@@ -211,31 +248,58 @@ const MeetingRoom = () => {
     const newRoomId = Math.random().toString(36).substring(2, 9);
     setRoomIdInput(newRoomId);
     setRoomId(newRoomId);
+    setMeetingAdminId(profile?.user_id || null);
     setInRoom(true);
   };
 
-  const handleScheduleMeeting = () => {
+  const handleScheduleMeeting = async () => {
     if (!newMeetingTitle.trim()) return;
     const meetingId = Math.random().toString(36).substring(2, 9);
-    const meetingLink = `${window.location.origin}${window.location.pathname}?room=meeting&ID=${meetingId}`;
+    const meetingLink = `${window.location.origin}${window.location.pathname}?ID=${meetingId}`;
+    
     const newMeeting = {
       title: newMeetingTitle,
       time: scheduleTime || new Date(Date.now() + 3600000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-      date: scheduleDate || new Date().toLocaleDateString(),
+      date: scheduleDate || new Date().toISOString().split('T')[0],
       duration: "30 min",
       status: "Scheduled",
       type: scheduleRecurring !== 'none' ? `Recurring (${scheduleRecurring})` : "Custom Meeting",
-      link: meetingLink
+      link: meetingLink,
+      created_by: profile?.user_id,
+      invited_users: invitedUsers
     };
-    const updated = [newMeeting, ...upcomingMeetings];
-    setUpcomingMeetings(updated);
-    localStorage.setItem('vaw_scheduled_meetings', JSON.stringify(updated));
-    setNewMeetingTitle("");
-    setScheduleDate("");
-    setScheduleTime("");
-    setScheduleRecurring("none");
-    setIsScheduleOpen(false);
-    toast.success("Meeting Scheduled!");
+    
+    try {
+        const { error } = await supabase.from('scheduled_meetings' as any).insert(newMeeting);
+        if (error && error.code !== '42P01') {
+            console.error("Failed to insert meeting", error);
+            throw error;
+        }
+        
+        // Optimistic update
+        setUpcomingMeetings([newMeeting, ...upcomingMeetings]);
+        
+        setNewMeetingTitle("");
+        setScheduleDate("");
+        setScheduleTime("");
+        setScheduleRecurring("none");
+        setInvitedUsers([]);
+        setIsScheduleOpen(false);
+        toast.success("Meeting Scheduled!");
+    } catch (e) {
+        // Fallback to local storage if table doesn't exist
+        const updated = [newMeeting, ...upcomingMeetings];
+        setUpcomingMeetings(updated);
+        localStorage.setItem('vaw_scheduled_meetings', JSON.stringify(updated));
+        
+        setNewMeetingTitle("");
+        setScheduleDate("");
+        setScheduleTime("");
+        setScheduleRecurring("none");
+        setInvitedUsers([]);
+        setIsScheduleOpen(false);
+        toast.success("Meeting Scheduled (Local)");
+    }
   };
 
   const handleInvite = async (memberId: string) => {
@@ -345,12 +409,58 @@ const MeetingRoom = () => {
         setLocalStream(stream);
         localStreamRef.current = stream;
         
+        // Clean up any lingering strict-mode channels first to avoid the "already subscribed" error
+        supabase.getChannels().forEach((c) => {
+          if (c.topic === `realtime:room:${roomId}`) {
+            supabase.removeChannel(c);
+          }
+        });
+
+        let currentAdmin = meetingAdminId;
+        if (!currentAdmin) {
+            const scheduledMeeting = upcomingMeetings.find(m => m.link.includes(roomId));
+            if (scheduledMeeting && scheduledMeeting.created_by) {
+                currentAdmin = scheduledMeeting.created_by;
+                setMeetingAdminId(currentAdmin);
+            }
+        }
+
         const channel = supabase.channel(`room:${roomId}`, {
           config: {
             presence: { key: profile.user_id }
           }
         });
         channelRef.current = channel;
+        
+        channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
+          if (!active) return;
+          newPresences.forEach(peerPresence => {
+             const peerId = peerPresence.user_id;
+             if (peerId && peerId !== profile.user_id && !peersRef.current[peerId]) {
+                 if (profile.user_id < peerId) {
+                    setTimeout(() => {
+                       if (active && peersRef.current[peerId] === undefined) {
+                          createPeerConnection(peerId, peerPresence.profile, true, stream!);
+                       }
+                    }, 500); // Small delay to ensure the new peer is fully listening
+                 }
+             }
+             // Sync video/audio states from presence payload
+             if (peerId && peerId !== profile.user_id) {
+               setRemoteStreams(prev => {
+                 if (!prev[peerId]) return prev;
+                 return {
+                   ...prev,
+                   [peerId]: {
+                     ...prev[peerId],
+                     isVideoOff: peerPresence.isVideoOff,
+                     isMuted: peerPresence.isMuted
+                   }
+                 }
+               });
+             }
+          });
+        });
         
         channel.on('presence', { event: 'sync' }, () => {
           if (!active) return;
@@ -467,6 +577,50 @@ const MeetingRoom = () => {
           }
         });
         
+        channel.on('broadcast', { event: 'interaction' }, (payload) => {
+          if (!active) return;
+          const { type, targetId, reaction } = payload.payload;
+          
+          if (type === 'hand_raise') {
+             setRemoteStreams(prev => {
+                if (!prev[targetId]) return prev;
+                return {
+                   ...prev,
+                   [targetId]: {
+                      ...prev[targetId],
+                      isHandRaised: !prev[targetId].isHandRaised
+                   }
+                };
+             });
+          } else if (type === 'reaction') {
+             setRemoteStreams(prev => {
+                if (!prev[targetId]) return prev;
+                return {
+                   ...prev,
+                   [targetId]: {
+                      ...prev[targetId],
+                      reaction: reaction
+                   }
+                };
+             });
+             // Clear reaction after 3 seconds
+             setTimeout(() => {
+                if (active) {
+                   setRemoteStreams(prev => {
+                      if (!prev[targetId]) return prev;
+                      return {
+                         ...prev,
+                         [targetId]: {
+                            ...prev[targetId],
+                            reaction: null
+                         }
+                      };
+                   });
+                }
+             }, 3000);
+          }
+        });
+        
         channel.subscribe(async (status) => {
           if (status === 'SUBSCRIBED' && active) {
             await channel.track({
@@ -474,7 +628,8 @@ const MeetingRoom = () => {
               profile: profile,
               online_at: new Date().toISOString(),
               isVideoOff: false,
-              isMuted: false
+              isMuted: false,
+              isAdmin: currentAdmin === profile.user_id
             });
           }
         });
@@ -590,6 +745,29 @@ const MeetingRoom = () => {
     setIsScreenSharing(false);
   };
 
+  const handleRaiseHand = () => {
+     setIsHandRaised(!isHandRaised);
+     if (channelRef.current) {
+         channelRef.current.send({
+             type: 'broadcast',
+             event: 'interaction',
+             payload: { type: 'hand_raise', targetId: profile?.user_id }
+         });
+     }
+  };
+
+  const handleReaction = (reaction: string) => {
+     setLocalReaction(reaction);
+     setTimeout(() => setLocalReaction(null), 3000);
+     if (channelRef.current) {
+         channelRef.current.send({
+             type: 'broadcast',
+             event: 'interaction',
+             payload: { type: 'reaction', targetId: profile?.user_id, reaction }
+         });
+     }
+  };
+
   const handleAdminAction = (peerId: string, action: string) => {
     if (channelRef.current) {
         channelRef.current.send({
@@ -680,15 +858,44 @@ const MeetingRoom = () => {
                              </div>
                           </div>
                           <div className="space-y-2">
-                             <label className="text-sm font-medium text-white/70">Recurring Options</label>
-                             <select value={scheduleRecurring} onChange={e => setScheduleRecurring(e.target.value)} className="w-full h-10 px-3 bg-zinc-900 border border-white/10 rounded-md text-white text-sm outline-none focus:border-white/30 transition-colors">
-                                <option value="none">Does not repeat</option>
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                             </select>
-                          </div>
-                          <Button onClick={handleScheduleMeeting} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold h-12 mt-2 rounded-xl border-none">
+                              <label className="text-sm font-medium text-white/70">Recurring Options</label>
+                              <select value={scheduleRecurring} onChange={e => setScheduleRecurring(e.target.value)} className="w-full h-10 px-3 bg-zinc-900 border border-white/10 rounded-md text-white text-sm outline-none focus:border-white/30 transition-colors">
+                                 <option value="none">Does not repeat</option>
+                                 <option value="daily">Daily</option>
+                                 <option value="weekly">Weekly</option>
+                                 <option value="monthly">Monthly</option>
+                              </select>
+                           </div>
+                           <div className="space-y-2">
+                              <label className="text-sm font-medium text-white/70">Invite Staff</label>
+                              <div className="max-h-32 overflow-y-auto space-y-2 custom-scrollbar bg-white/5 border border-white/10 rounded-md p-2">
+                                 {teamMembers?.map((member) => (
+                                    <label key={member.id} className="flex items-center gap-2 text-sm text-white/80 cursor-pointer p-1 hover:bg-white/5 rounded">
+                                       <input 
+                                          type="checkbox" 
+                                          className="rounded bg-black/40 border-white/20 text-purple-500 focus:ring-purple-500"
+                                          checked={invitedUsers.includes(member.user_id)}
+                                          onChange={(e) => {
+                                             if (e.target.checked) {
+                                                setInvitedUsers([...invitedUsers, member.user_id]);
+                                             } else {
+                                                setInvitedUsers(invitedUsers.filter(id => id !== member.user_id));
+                                             }
+                                          }}
+                                       />
+                                       <Avatar className="w-6 h-6">
+                                          <AvatarImage src={member.profile_photo_url || member.avatar_url} />
+                                          <AvatarFallback className="text-[10px] bg-blue-500">{member.full_name?.charAt(0)}</AvatarFallback>
+                                      </Avatar>
+                                       {member.full_name}
+                                    </label>
+                                 ))}
+                                 {(!teamMembers || teamMembers.length === 0) && (
+                                    <span className="text-xs text-white/50 px-2">No other staff members available.</span>
+                                 )}
+                              </div>
+                           </div>
+                           <Button onClick={handleScheduleMeeting} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold h-12 mt-2 rounded-xl border-none">
                              Schedule Meeting
                           </Button>
                        </div>
@@ -720,9 +927,34 @@ const MeetingRoom = () => {
                       {meeting.status}
                     </Badge>
                   </div>
+                  {meeting.invited_users && meeting.invited_users.length > 0 && (
+                     <div className="mt-3 flex items-center gap-1 -space-x-2 overflow-hidden">
+                        {meeting.invited_users.map((uid: string, i: number) => {
+                           const member = teamMembers?.find(m => m.user_id === uid);
+                           if (!member) return null;
+                           return (
+                              <Avatar key={i} className="inline-block border-2 border-zinc-900 w-6 h-6">
+                                 <AvatarImage src={member.profile_photo_url || member.avatar_url} />
+                                 <AvatarFallback className="text-[8px] bg-blue-500">{member.full_name?.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                           );
+                        })}
+                     </div>
+                  )}
                   {meeting.link && (
                     <div className="mt-3 flex items-center gap-2">
-                      <Input value={meeting.link} readOnly className="h-8 bg-black/40 border-white/10 text-xs text-white/50 px-2" />
+                      <Button size="sm" className="w-full h-8 text-xs font-bold bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30" onClick={() => {
+                          const url = new URL(meeting.link);
+                          const id = url.searchParams.get('ID');
+                          if (id) {
+                             setRoomIdInput(id);
+                             setRoomId(id);
+                             setMeetingAdminId(meeting.created_by || null);
+                             setInRoom(true);
+                          }
+                      }}>
+                         Join Meeting
+                      </Button>
                       <Button size="sm" variant="secondary" className="h-8 shrink-0 text-xs px-3" onClick={() => { navigator.clipboard.writeText(meeting.link); toast.success("Meeting link copied!"); }}>
                          Copy Link
                       </Button>
@@ -760,17 +992,19 @@ const MeetingRoom = () => {
                       onPin={() => setPinnedId(null)}
                       isAdmin={isAdmin}
                       onAdminAction={(action) => handleAdminAction(pinnedId, action)}
+                      isHandRaised={pinnedId === 'local' ? isHandRaised : remoteStreams[pinnedId]?.isHandRaised}
+                      reaction={pinnedId === 'local' ? localReaction : remoteStreams[pinnedId]?.reaction}
                    />
                 </div>
                 <div className="flex lg:flex-col gap-4 overflow-x-auto lg:overflow-x-hidden lg:overflow-y-auto lg:w-1/4 h-32 lg:h-full p-1 custom-scrollbar">
                    {pinnedId !== 'local' && (
                        <div className="w-48 lg:w-full shrink-0">
-                          <VideoPlayer stream={localStream} isLocal={!isScreenSharing} name={`${profile?.full_name || 'You'} (Me)`} isMuted={isMuted} isVideoOff={isVideoOff} profileImage={profile?.profile_photo_url || profile?.avatar_url} onPin={() => setPinnedId('local')} />
+                          <VideoPlayer stream={localStream} isLocal={!isScreenSharing} name={`${profile?.full_name || 'You'} (Me)`} isMuted={isMuted} isVideoOff={isVideoOff} profileImage={profile?.profile_photo_url || profile?.avatar_url} onPin={() => setPinnedId('local')} isHandRaised={isHandRaised} reaction={localReaction} />
                        </div>
                    )}
                    {Object.entries(remoteStreams).filter(([id]) => id !== pinnedId).map(([peerId, data]) => (
                        <div key={peerId} className="w-48 lg:w-full shrink-0">
-                          <VideoPlayer stream={data.stream} name={data.profile?.full_name} isMuted={data.isMuted} isVideoOff={data.isVideoOff} profileImage={data.profile?.profile_photo_url || data.profile?.avatar_url} onPin={() => setPinnedId(peerId)} isAdmin={isAdmin} onAdminAction={(action) => handleAdminAction(peerId, action)} />
+                          <VideoPlayer stream={data.stream} name={data.profile?.full_name} isMuted={data.isMuted} isVideoOff={data.isVideoOff} profileImage={data.profile?.profile_photo_url || data.profile?.avatar_url} onPin={() => setPinnedId(peerId)} isAdmin={isAdmin} onAdminAction={(action) => handleAdminAction(peerId, action)} isHandRaised={data.isHandRaised} reaction={data.reaction} />
                        </div>
                    ))}
                 </div>
@@ -785,6 +1019,8 @@ const MeetingRoom = () => {
                   isVideoOff={isVideoOff}
                   profileImage={profile?.profile_photo_url || profile?.avatar_url}
                   onPin={() => setPinnedId('local')}
+                  isHandRaised={isHandRaised}
+                  reaction={localReaction}
                 />
                 {Object.entries(remoteStreams).map(([peerId, data]) => (
                   <VideoPlayer 
@@ -797,6 +1033,8 @@ const MeetingRoom = () => {
                     onPin={() => setPinnedId(peerId)}
                     isAdmin={isAdmin}
                     onAdminAction={(action) => handleAdminAction(peerId, action)}
+                    isHandRaised={data.isHandRaised}
+                    reaction={data.reaction}
                   />
                 ))}
              </div>
@@ -811,6 +1049,9 @@ const MeetingRoom = () => {
             <Badge variant="outline" className="bg-black/40 backdrop-blur-md text-white border-white/10 px-4 py-2 text-sm font-medium shadow-inner flex items-center gap-2">
                <span className="text-white/50 uppercase text-[10px] tracking-widest">Room ID</span>
                <span className="text-green-400 font-mono tracking-wider font-bold">{roomId}</span>
+               <button onClick={() => { navigator.clipboard.writeText(roomId); toast.success("Room ID copied!"); }} className="ml-1 text-white/50 hover:text-white/80 transition-colors" title="Copy Room ID">
+                  <Copy className="w-3 h-3" />
+               </button>
             </Badge>
           </div>
           
@@ -833,14 +1074,99 @@ const MeetingRoom = () => {
             <Button 
               onClick={toggleScreenShare}
               variant="outline" 
-              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center border-none transition-all shadow-lg ${isScreenSharing ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+              className={`hidden sm:flex w-12 h-12 sm:w-14 sm:h-14 rounded-full items-center justify-center border-none transition-all shadow-lg ${isScreenSharing ? 'bg-purple-500 hover:bg-purple-600 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+              title="Share Screen"
             >
               {isScreenSharing ? <MonitorOff className="w-5 h-5 sm:w-6 sm:h-6" /> : <ScreenShare className="w-5 h-5 sm:w-6 sm:h-6" />}
             </Button>
+
+            <div className="w-px h-8 bg-white/10 mx-1 hidden sm:block"></div>
+
+            <Button 
+              onClick={handleRaiseHand}
+              variant="outline" 
+              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center border-none transition-all shadow-lg ${isHandRaised ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+              title="Raise Hand"
+            >
+              <Hand className="w-5 h-5 sm:w-6 sm:h-6" />
+            </Button>
+
+            <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center border-none transition-all shadow-lg bg-white/10 text-white hover:bg-white/20" title="Reactions">
+                     <Smile className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
+                  </Button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent side="top" align="center" className="bg-zinc-900/90 backdrop-blur-xl border-white/10 text-white flex gap-2 p-2 rounded-full min-w-0">
+                  <DropdownMenuItem onClick={() => handleReaction('👍')} className="text-2xl hover:bg-white/10 cursor-pointer rounded-full p-2 h-12 w-12 flex items-center justify-center">👍</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleReaction('👎')} className="text-2xl hover:bg-white/10 cursor-pointer rounded-full p-2 h-12 w-12 flex items-center justify-center">👎</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleReaction('😄')} className="text-2xl hover:bg-white/10 cursor-pointer rounded-full p-2 h-12 w-12 flex items-center justify-center">😄</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleReaction('😢')} className="text-2xl hover:bg-white/10 cursor-pointer rounded-full p-2 h-12 w-12 flex items-center justify-center">😢</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleReaction('❤️')} className="text-2xl hover:bg-white/10 cursor-pointer rounded-full p-2 h-12 w-12 flex items-center justify-center">❤️</DropdownMenuItem>
+               </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           
-          {/* Right: Invite & Leave */}
+          {/* Right: Manage, Invite & Leave */}
           <div className="flex items-center gap-2 sm:gap-3">
+             {isAdmin && (
+                <Dialog>
+                   <DialogTrigger asChild>
+                      <Button variant="secondary" size="icon" className="w-10 h-10 sm:w-auto sm:h-12 sm:px-4 bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border-purple-500/30 rounded-xl" title="Manage Meeting">
+                         <Settings className="w-4 h-4 sm:mr-2" />
+                         <span className="hidden sm:inline font-semibold">Manage</span>
+                      </Button>
+                   </DialogTrigger>
+                   <DialogContent className="bg-zinc-950 border-white/10 text-white max-h-[80vh] overflow-y-auto rounded-2xl">
+                      <DialogHeader>
+                         <DialogTitle>Manage Participants</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                         {/* Invite Snippet */}
+                         <div className="bg-white/5 p-3 rounded-xl border border-white/10">
+                            <div className="flex items-center justify-between mb-2">
+                               <span className="text-sm font-semibold text-white/70">Meeting Invite</span>
+                               <Button size="sm" variant="secondary" className="h-7 text-xs bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/30" onClick={() => {
+                                  const time = new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening';
+                                  const url = `${window.location.origin}/team-head/meeting?ID=${roomId}`;
+                                  const text = `Good ${time},\n\nJoin the meeting using the link below:\n${url}\n\nOr paste this room id: ${roomId}`;
+                                  navigator.clipboard.writeText(text);
+                                  toast.success("Invite copied to clipboard!");
+                               }}>
+                                  <Copy className="w-3 h-3 mr-1" /> Copy Invite
+                               </Button>
+                            </div>
+                            <p className="text-xs text-white/50 bg-black/40 p-2 rounded border border-white/5 whitespace-pre-wrap font-mono">
+                               {`Good ${new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'},\n\nJoin the meeting using the link below:\n${window.location.origin}/team-head/meeting?ID=${roomId}\n\nOr paste this room id: ${roomId}`}
+                            </p>
+                         </div>
+                         
+                         {/* Participant List */}
+                         <div className="space-y-2">
+                            <span className="text-sm font-semibold text-white/70">Active Participants</span>
+                            {Object.entries(remoteStreams).length > 0 ? Object.entries(remoteStreams).map(([peerId, data]) => (
+                               <div key={peerId} className="flex flex-col gap-2 bg-white/5 p-3 rounded-xl border border-white/5">
+                               <div className="flex items-center gap-3">
+                                  <Avatar className="w-8 h-8">
+                                     <AvatarImage src={data.profile?.profile_photo_url || data.profile?.avatar_url} />
+                                     <AvatarFallback className="bg-blue-500">{data.profile?.full_name?.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-sm font-medium">{data.profile?.full_name}</span>
+                               </div>
+                               <div className="flex items-center gap-2 mt-2">
+                                  <Button size="sm" variant="secondary" className="flex-1 bg-white/10 hover:bg-white/20" onClick={() => handleAdminAction(peerId, 'mute')}><MicOff className="w-3 h-3 mr-1" /> Mute</Button>
+                                  <Button size="sm" variant="secondary" className="flex-1 bg-white/10 hover:bg-white/20" onClick={() => handleAdminAction(peerId, 'disable_video')}><VideoOff className="w-3 h-3 mr-1" /> Video Off</Button>
+                                  <Button size="sm" variant="destructive" className="flex-1" onClick={() => handleAdminAction(peerId, 'kick')}>Remove</Button>
+                               </div>
+                            </div>
+                         )) : (
+                            <p className="text-center text-white/50 text-sm py-4">No other participants in the room.</p>
+                         )}
+                         </div>
+                      </div>
+                   </DialogContent>
+                </Dialog>
+             )}
              <Dialog>
                 <DialogTrigger asChild>
                    <Button variant="secondary" size="icon" className="w-10 h-10 sm:w-auto sm:h-12 sm:px-4 bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 border-blue-500/30 rounded-xl">

@@ -26,23 +26,24 @@ interface Transaction {
 }
 
 interface CoinPopupProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
   userId: string;
   userProfile?: any;
+  isInline?: boolean;
 }
 
-const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile }: CoinPopupProps) => {
+const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile, isInline }: CoinPopupProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalPoints, setTotalPoints] = useState(userProfile?.total_points || 0);
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isOpen && userId) {
+    if ((isOpen || isInline) && userId) {
       fetchData();
     }
-  }, [isOpen, userId]);
+  }, [isOpen, isInline, userId]);
 
   const fetchData = async () => {
     try {
@@ -90,17 +91,16 @@ const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile }: CoinPopupProps
     );
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md h-[600px] p-0 flex flex-col overflow-hidden bg-zinc-950 border-white/10 backdrop-blur-2xl shadow-2xl">
-        <DialogHeader className="p-6 bg-gradient-to-br from-primary/10 via-transparent to-transparent border-b border-white/5 shrink-0">
-          <DialogTitle className="text-2xl font-black text-white flex items-center gap-3 italic tracking-tighter">
-            <div className="p-2 bg-primary/20 rounded-xl border border-primary/30">
-              <Coins className="w-6 h-6 text-primary" />
-            </div>
-            VAW COINS
-          </DialogTitle>
-        </DialogHeader>
+  const Content = (
+    <div className={cn("flex flex-col overflow-hidden bg-zinc-950/80 border-white/10 shadow-2xl backdrop-blur-2xl w-full", isInline ? "h-full rounded-2xl border" : "max-w-md h-[600px] border")}>
+      <div className="p-6 bg-gradient-to-br from-primary/10 via-transparent to-transparent border-b border-white/5 shrink-0 flex items-center justify-between">
+        <h2 className="text-2xl font-black text-white flex items-center gap-3 italic tracking-tighter">
+          <div className="p-2 bg-primary/20 rounded-xl border border-primary/30">
+            <Coins className="w-6 h-6 text-primary" />
+          </div>
+          VAW COINS
+        </h2>
+      </div>
 
         <div className="p-6 space-y-6 flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Total Balance Card */}
@@ -180,14 +180,25 @@ const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile }: CoinPopupProps
           <Button 
             onClick={() => {
               navigate('/mycoins');
-              onOpenChange(false);
+              if (onOpenChange) onOpenChange(false);
             }}
-            className="w-full shrink-0 bg-white/5 hover:bg-white/10 text-white border border-white/10 h-11 font-black italic uppercase tracking-tighter group group mb-2"
+            className="w-full shrink-0 bg-white/5 hover:bg-white/10 text-white border border-white/10 h-11 font-black italic uppercase tracking-tighter group mb-2"
           >
             Open Transaction Vault
             <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>
+    </div>
+  );
+
+  if (isInline) {
+    return Content;
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md h-[600px] p-0 bg-transparent border-none shadow-none">
+        {Content}
       </DialogContent>
     </Dialog>
   );

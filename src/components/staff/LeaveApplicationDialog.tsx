@@ -16,9 +16,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface LeaveApplicationDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   userId: string;
+  isInline?: boolean;
 }
 
 interface LeaveRequest {
@@ -31,7 +32,7 @@ interface LeaveRequest {
   created_at: string;
 }
 
-const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplicationDialogProps) => {
+const LeaveApplicationDialog = ({ open, onOpenChange, userId, isInline }: LeaveApplicationDialogProps) => {
   const [view, setView] = useState<'list' | 'form'>('list');
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -112,18 +113,23 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px] bg-zinc-900 border-zinc-800 text-white overflow-hidden flex flex-col max-h-[85vh]">
-        <DialogHeader className="flex-shrink-0">
+  const Content = (
+    <>
+      <div className="flex-shrink-0 mb-6">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <div className="p-2 bg-orange-500/20 rounded-lg">
                 {view === 'list' ? <History className="w-5 h-5 text-orange-500" /> : <PlaneTakeoff className="w-5 h-5 text-orange-500" />}
               </div>
-              <DialogTitle className="text-xl font-bold">
-                {view === 'list' ? "My Leave Requests" : "New Leave Application"}
-              </DialogTitle>
+              {isInline ? (
+                <h2 className="text-xl font-bold">
+                  {view === 'list' ? "My Leave Requests" : "New Leave Application"}
+                </h2>
+              ) : (
+                <DialogTitle className="text-xl font-bold">
+                  {view === 'list' ? "My Leave Requests" : "New Leave Application"}
+                </DialogTitle>
+              )}
             </div>
             
             {view === 'list' ? (
@@ -147,12 +153,12 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
               </Button>
             )}
           </div>
-          <DialogDescription className="text-zinc-400">
+          <p className="text-zinc-400 text-sm mt-1">
             {view === 'list' 
               ? "Track the status of your submitted leave applications." 
               : "Fill in the details below to apply for leave."}
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+      </div>
 
         <div className="flex-1 overflow-hidden py-4">
           {view === 'list' ? (
@@ -292,7 +298,7 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
         </div>
 
         {view === 'form' && (
-          <DialogFooter className="flex-shrink-0 pt-2 border-t border-zinc-800">
+          <div className="flex-shrink-0 pt-6 border-t border-zinc-800/50 mt-6 flex justify-end gap-3">
             <Button
               variant="ghost"
               onClick={() => setView('list')}
@@ -314,8 +320,23 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
                 "Apply Now"
               )}
             </Button>
-          </DialogFooter>
+          </div>
         )}
+    </>
+  );
+
+  if (isInline) {
+    return (
+      <div className="w-full h-full flex flex-col">
+        {Content}
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[550px] bg-zinc-900 border-zinc-800 text-white overflow-hidden flex flex-col max-h-[85vh]">
+        {Content}
       </DialogContent>
     </Dialog>
   );

@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Coins, History, Gift, Award, ArrowLeft, Loader2, Package, TrendingUp, Filter } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ interface Reward {
   terms_conditions: string | null;
 }
 
-const MyCoins = () => {
+const MyCoins = ({ isInline = false }: { isInline?: boolean }) => {
   const navigate = useNavigate();
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [userCoins, setUserCoins] = useState(0);
@@ -154,19 +155,21 @@ const MyCoins = () => {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 p-4 md:p-8 selection:bg-primary/30">
+    <div className={cn("bg-zinc-950 p-4 md:p-8 selection:bg-primary/30", isInline ? "h-full overflow-y-auto" : "min-h-screen")}>
       <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
         {/* Navigation & Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-white/5 relative overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1 min-w-0">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigate(-1)}
-              className="rounded-xl border-white/10 hover:bg-white/5 h-10 w-10 sm:h-12 sm:w-12 shrink-0"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
+            {!isInline && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate(-1)}
+                className="rounded-xl border-white/10 hover:bg-white/5 h-10 w-10 sm:h-12 sm:w-12 shrink-0"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            )}
             <div className="min-w-0 flex-1">
               <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black italic tracking-tighter text-white uppercase flex flex-wrap items-center gap-x-3 gap-y-1 sm:gap-3 leading-none">
                 <div className="p-1.5 sm:p-2 bg-primary/20 rounded-xl sm:rounded-2xl border border-primary/30 shrink-0">

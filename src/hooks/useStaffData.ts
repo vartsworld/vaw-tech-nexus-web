@@ -195,26 +195,35 @@ export const useStaffData = () => {
       }
 
       // 5. Fetch Team Members
-      if (staffProfile.department_id) {
-        const { data: team, error: teamError } = await supabase
-          .from('staff_profiles')
-          .select('*')
-          .eq('department_id', staffProfile.department_id)
-          .neq('user_id', user.id);
+      const { data: team, error: teamError } = await supabase
+        .from('staff_profiles')
+        .select('*')
+        .neq('user_id', user.id);
 
-        if (!teamError) {
-          setTeamMembers(team.map(t => ({
-            id: t.id,
-            user_id: t.user_id,
-            full_name: t.full_name,
-            username: t.username,
-            avatar_url: t.avatar_url,
-            profile_photo_url: t.profile_photo_url,
-            earnings: Number(t.earnings) || 0,
-            total_points: t.total_points || 0,
-            department_id: t.department_id
-          })));
-        }
+      if (!teamError && team) {
+        // Sort: same department first, then alphabetically
+        const sortedTeam = team.sort((a, b) => {
+          const aIsSameDept = a.department_id === staffProfile.department_id;
+          const bIsSameDept = b.department_id === staffProfile.department_id;
+          
+          if (aIsSameDept && !bIsSameDept) return -1;
+          if (!aIsSameDept && bIsSameDept) return 1;
+          return (a.full_name || '').localeCompare(b.full_name || '');
+        });
+
+        setTeamMembers(sortedTeam.map(t => ({
+          id: t.id,
+          user_id: t.user_id,
+          full_name: t.full_name,
+          username: t.username,
+          avatar_url: t.avatar_url,
+          profile_photo_url: t.profile_photo_url,
+          earnings: Number(t.earnings) || 0,
+          total_points: t.total_points || 0,
+          department_id: t.department_id,
+          role: t.role,
+          is_department_head: t.is_department_head
+        })));
       }
 
     } catch (error) {

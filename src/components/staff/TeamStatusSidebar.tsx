@@ -49,8 +49,9 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
     fetchTeamMembers();
 
     // Subscribe to real-time status changes with immediate updates
+    const channelName = `team_status_realtime_${Math.random().toString(36).substring(7)}`;
     const statusChannel = supabase
-      .channel('team_status_realtime')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -73,6 +74,13 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
       .subscribe();
 
     // Also track Supabase Presence for instant online/offline detection
+    // Clean up any lingering strict-mode channels first to avoid the "already subscribed" error
+    supabase.getChannels().forEach((c) => {
+      if (c.topic === 'realtime:online_users_presence') {
+        supabase.removeChannel(c);
+      }
+    });
+
     const presenceChannel = supabase
       .channel('online_users_presence')
       .on('presence', { event: 'sync' }, () => {

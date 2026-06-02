@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 
 import Index from "./pages/Index";
@@ -126,11 +126,13 @@ const AppContent = () => {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/hr/*" element={<HRDashboard />} />
           <Route path="/staff/login" element={<StaffLogin />} />
-          <Route path="/staff/dashboard" element={<StaffDashboard />} />
+          <Route path="/staff" element={<Navigate to="/staff/dashboard" replace />} />
+          <Route path="/staff/:room" element={<StaffDashboard />} />
           <Route path="/staff/tools-nexus" element={<ToolsNexus />} />
           <Route path="/staff/task/:taskId" element={<StaffTaskDetail />} />
           <Route path="/staff/work" element={<StaffWork />} />
-          <Route path="/team-head/dashboard" element={<TeamHeadDashboard />} />
+          <Route path="/team-head" element={<Navigate to="/team-head/dashboard" replace />} />
+          <Route path="/team-head/:room" element={<TeamHeadDashboard />} />
           <Route path="/mycoins" element={<MyCoins />} />
           <Route path="/account" element={<AccountDashboard />} />
           <Route path="/client-portal" element={<ClientPortal />} />

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,24 +47,33 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import AnnouncementBanner from "@/components/staff/AnnouncementBanner";
-import CoinPopup from "@/components/staff/CoinPopup";
 import OfficeZenHome from "@/components/staff/OfficeZenHome";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import EmmaAssistant from "@/components/ai/EmmaAssistant";
-
-type RoomType = 'home' | 'workspace' | 'meeting' | 'breakroom';
+import MiniChess from "@/components/staff/MiniChess";
+import TeamChat from "@/components/staff/TeamChat";
+import LeaveApplicationDialog from "@/components/staff/LeaveApplicationDialog";
+import DepartmentStaffList from "@/components/staff/DepartmentStaffList";
+import MyCoins from "@/pages/MyCoins";
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [currentRoom, setCurrentRoom] = useState<RoomType>('home');
+  const { room } = useParams();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  // Resolve current room from URL or default to 'workspace' if on 'dashboard'
+  const currentRoom = (room === 'dashboard' ? 'workspace' : (room || 'home')) as any;
+  
+  const setCurrentRoom = (newRoom: string) => {
+    navigate(`/staff/${newRoom === 'workspace' ? 'dashboard' : newRoom}`);
+  };
   const [showMobileHome, setShowMobileHome] = useState(true);
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({});
   const [departmentName, setDepartmentName] = useState<string>("");
-  const [showCoinPopup, setShowCoinPopup] = useState(false);
   const [showBiometricDialog, setShowBiometricDialog] = useState(false);
   const [showEmma, setShowEmma] = useState(false);
 
@@ -100,14 +109,6 @@ const StaffDashboard = () => {
   };
 
   const location = useLocation();
-
-  useEffect(() => {
-    if (location.state?.openCoins) {
-      setShowCoinPopup(true);
-      // Clean up state to prevent re-opening on reload
-      window.history.replaceState({}, document.title);
-    }
-  }, [location.state]);
 
   // Check authentication
   useEffect(() => {
@@ -315,7 +316,50 @@ const StaffDashboard = () => {
     ),
     workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} />,
     meeting: <MeetingRoom />,
-    breakroom: null
+    breakroom: null,
+    game: (
+      <div className="w-full p-2 sm:p-6">
+         <h2 className="text-3xl font-bold text-white mb-4">Games Arena</h2>
+         <div className="w-full max-w-4xl bg-black/40 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-2xl">
+           <MiniChess userId={profile.user_id} userProfile={profile} />
+         </div>
+      </div>
+    ),
+    chat: (
+       <div className="w-full h-[calc(100vh-100px)] flex flex-col p-4 bg-zinc-950/80 rounded-xl overflow-hidden border border-white/10">
+         <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
+       </div>
+    ),
+    leave: (
+       <div className="w-full h-[calc(100vh-100px)] p-6 flex justify-center text-white">
+          <div className="bg-black/40 backdrop-blur-md p-8 rounded-2xl w-full max-w-4xl border border-white/10 h-fit">
+             <h2 className="text-2xl font-bold mb-4">Leave Management</h2>
+             <p className="opacity-70 mb-8">View leave requests and apply for a new leave here.</p>
+             <LeaveApplicationDialog isInline={true} userId={profile?.user_id || ''} />
+          </div>
+       </div>
+    ),
+    staff: (
+       <div className="w-full p-2 sm:p-6">
+          <div className="bg-black/40 backdrop-blur-md p-6 sm:p-8 rounded-2xl w-full max-w-7xl mx-auto border border-white/10 text-white">
+             <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Staff & Department Management</h2>
+             <p className="opacity-70 mb-6 sm:mb-8 text-sm sm:text-base">View all staff in your department, their stats, and assigned work.</p>
+             <DepartmentStaffList 
+               departmentId={profile?.department_id} 
+               currentUserId={profile?.user_id || ''} 
+               onlineUsers={onlineUsers}
+               onChatClick={() => setCurrentRoom('chat')}
+             />
+          </div>
+       </div>
+    ),
+    coin: (
+       <div className="w-full p-2 sm:p-4">
+          <div className="w-full h-full rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+            <MyCoins isInline={true} />
+          </div>
+       </div>
+    )
   };
 
   // Show mobile home on small screens
@@ -326,7 +370,7 @@ const StaffDashboard = () => {
         currentRoom={currentRoom}
         onRoomChange={setCurrentRoom}
         onOpenChat={() => {}}
-        onOpenCoins={() => navigate("/mycoins")}
+        onOpenCoins={() => setCurrentRoom('coin')}
         onEnterWorkspace={() => setShowMobileHome(false)}
       />
     );
@@ -366,11 +410,20 @@ const StaffDashboard = () => {
                   />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-base sm:text-lg font-bold text-white truncate">VAW Technologies</h1>
+                  <h1 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    VAW Technologies
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                      className="h-6 w-6 rounded-full bg-white/5 hover:bg-white/20 text-white/70 hover:text-white"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`}>
+                        <path d="M15 18l-6-6 6-6"/>
+                      </svg>
+                    </Button>
+                  </h1>
                   <p className="text-blue-300 text-xs sm:text-sm truncate">Welcome, {profile?.full_name || profile?.username || 'Staff'}!</p>
-                  {departmentName && (
-                    <p className="text-purple-300 text-xs truncate">{departmentName} Department</p>
-                  )}
                 </div>
               </div>
 
@@ -438,8 +491,8 @@ const StaffDashboard = () => {
                 </div>
 
                 <div 
-                  className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-amber-500/10 cursor-pointer hover:from-amber-500/30 hover:to-yellow-500/30 transition-all hover:scale-105 active:scale-95"
-                  onClick={() => setShowCoinPopup(true)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 hover:from-amber-500/20 hover:to-yellow-500/20 border border-amber-500/20 rounded-full px-3 py-1.5 cursor-pointer transition-all shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:shadow-[0_0_15px_rgba(245,158,11,0.2)] active:scale-95"
+                  onClick={() => setCurrentRoom('coin')}
                 >
                   <Coins className="w-3.5 h-3.5 text-amber-400" />
                   <span className="text-amber-200 text-xs font-bold tracking-tight">{(profile?.total_points || 0).toLocaleString()} Coins</span>
@@ -470,9 +523,9 @@ const StaffDashboard = () => {
           onlineUsers={onlineUsers}
           userId={profile.user_id}
           userProfile={profile}
-          onOpenCoins={() => setShowCoinPopup(true)}
+          onOpenCoins={() => setCurrentRoom('coin')}
         >
-          {roomComponents[currentRoom]}
+          {roomComponents[currentRoom] || roomComponents['workspace']}
         </VirtualOfficeLayout>
       </div>
 
@@ -485,16 +538,6 @@ const StaffDashboard = () => {
           reactivationCode={reactivationCode}
           status={status}
           onReactivate={handleReactivate}
-        />
-      )}
-
-      {/* Coin Popup */}
-      {profile?.user_id && (
-        <CoinPopup
-          isOpen={showCoinPopup}
-          onOpenChange={setShowCoinPopup}
-          userId={profile.user_id}
-          userProfile={profile}
         />
       )}
 

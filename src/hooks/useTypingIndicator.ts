@@ -140,11 +140,28 @@ export const useTypingIndicator = ({ userId, channelId, recipientId }: UseTyping
         upsertData.recipient_id = recipientId;
       }
 
-      const { error } = await supabase
+      let query = supabase
         .from('chat_typing_indicators')
-        .upsert(upsertData, {
-          onConflict: channelId ? 'user_id,channel_id' : 'user_id,recipient_id'
-        });
+        .update({ is_typing: isTyping, updated_at: upsertData.updated_at })
+        .eq('user_id', userId);
+
+      if (channelId) {
+        query = query.eq('channel_id', channelId);
+      } else if (recipientId) {
+        query = query.eq('recipient_id', recipientId);
+      }
+
+      const { data, error: updateError } = await query.select();
+
+      let error = updateError;
+
+      // If no rows updated, insert new
+      if (!updateError && (!data || data.length === 0)) {
+        const { error: insertError } = await supabase
+          .from('chat_typing_indicators')
+          .insert([upsertData]);
+        error = insertError;
+      }
 
       if (error) {
         console.error('[TypingIndicator] Error setting typing status:', error);
