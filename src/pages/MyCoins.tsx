@@ -59,14 +59,15 @@ const MyCoins = () => {
       if (profile) {
         setUserCoins(profile.total_points || 0);
       } else {
-        // Fallback to transaction calculation only if profile fails
-        const { data: txData } = await supabase
-          .from("user_coin_transactions")
-          .select("coins")
-          .eq("user_id", user.id);
+        // Fallback to transaction calculation from multiple sources only if profile fails
+        const [txRes, pointsRes] = await Promise.all([
+          supabase.from("user_coin_transactions").select("*").eq("user_id", user.id),
+          supabase.from("user_points_log").select("*").eq("user_id", user.id)
+        ]);
         
-        const calculatedBalance = txData?.reduce((sum, tx) => sum + tx.coins, 0) || 0;
-        setUserCoins(calculatedBalance);
+        const txSum = txRes.data?.reduce((sum, tx) => sum + (tx.coins ?? (tx as any).amount ?? 0), 0) || 0;
+        const pointsSum = pointsRes.data?.reduce((sum, p) => sum + p.points, 0) || 0;
+        setUserCoins(txSum + pointsSum);
       }
 
     } catch (error) {
@@ -128,12 +129,21 @@ const MyCoins = () => {
         .insert({
           user_id: userId,
           coins: -coinsCost,
-          transaction_type: "earning",
+          transaction_type: "reward_spent",
           reason: `Redeemed reward: ${rewards.find(r => r.id === rewardId)?.name || 'Reward'}`,
+          category: "reward_redemption",
           source_type: "redemption"
         } as any);
 
       if (transactionError) throw transactionError;
+
+      // Log to user_activity_log
+      await supabase.from('user_activity_log').insert({
+        user_id: userId,
+        activity_type: 'coin_spent',
+        points_earned: -coinsCost,
+        metadata: { reward_id: rewardId, reward_name: rewards.find(r => r.id === rewardId)?.name }
+      });
 
       // Trigger will update profile points automatically
       setUserCoins(prev => prev - coinsCost);

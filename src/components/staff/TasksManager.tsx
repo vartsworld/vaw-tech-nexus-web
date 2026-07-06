@@ -184,10 +184,20 @@ const TasksManager = ({
           await supabase.from('user_coin_transactions').insert({
             user_id: userId,
             coins: rewardPoints,
-            transaction_type: 'earning',
+            transaction_type: 'task_earned',
             reason: `Task Completed: ${task.title}${bonusReason}`,
+            category: 'task_completion',
             source_type: 'task',
+            related_task_id: taskId
           } as any);
+
+          // Log to user_activity_log for ActivityLogPanel
+          await supabase.from('user_activity_log').insert({
+            user_id: userId,
+            activity_type: 'task_completed',
+            points_earned: rewardPoints,
+            metadata: { task_id: taskId, task_title: task.title, bonus_reason: bonusReason }
+          });
 
           // Log to user_points_log (for HR PointsMonitoring visibility)
           await supabase.from('user_points_log').insert({
