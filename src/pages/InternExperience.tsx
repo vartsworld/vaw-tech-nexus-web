@@ -8,7 +8,6 @@ import { Star, Award, Users, ArrowRight } from "lucide-react";
 import SEO from "@/components/SEO";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ParticleBackground from "@/components/ParticleBackground";
 import { useUser } from "@/context/UserContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -187,7 +186,6 @@ const InternExperience = () => {
   if (experienceSubmitted) {
     return (
       <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
-        <ParticleBackground />
         <Navbar />
         
         <section className="py-24">
@@ -413,7 +411,6 @@ const InternExperience = () => {
         title="Share Your Intern Experience"
         description="Provide your feedback and share your journey as a VAW Technologies intern. Your insights help us improve and allow us to issue your completion certificate."
       />
-      <ParticleBackground />
       <Navbar />
       
       <section className="py-16 md:py-24">

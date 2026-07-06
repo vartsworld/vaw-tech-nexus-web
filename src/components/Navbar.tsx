@@ -83,13 +83,15 @@ const Navbar = () => {
 
         {/* Center Navigation */}
         <div className="flex items-center gap-6 flex-1 justify-center">
-          {navigationItems.map((item, index) => <a
-            key={index}
-            href={item.href}
-            className="text-foreground/80 hover:text-accent transition-colors font-medium px-2"
-          >
-            {item.name}
-          </a>)}
+          {navigationItems.map((item, index) => (
+            <Link
+              key={index}
+              to={item.href}
+              className="text-foreground/80 hover:text-accent transition-colors font-medium px-2"
+            >
+              {item.name}
+            </Link>
+          ))}
 
           {/* Services Dropdown */}
           <div className="relative" onMouseEnter={() => setIsServicesOpen(true)} onMouseLeave={() => setIsServicesOpen(false)}>

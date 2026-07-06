@@ -1,7 +1,6 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ParticleBackground from "@/components/ParticleBackground";
 import { useUser } from "@/context/UserContext";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
@@ -150,7 +149,6 @@ const Internship = () => {
       keywords="internship, tech internship, design internship, web development internship, Kerala internship, india dev, VAW, Varts, student programs"
       ogImage="/og/internship.png"
     />
-    <ParticleBackground />
     <Navbar />
 
     <section className="py-16 md:py-24">

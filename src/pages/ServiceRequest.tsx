@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ConversationalForm from "@/components/ConversationalForm";
-import ParticleBackground from "@/components/ParticleBackground";
 import { useUser } from "@/context/UserContext";
 import SEO from "@/components/SEO";
 
@@ -28,7 +27,6 @@ const ServiceRequest = () => {
         keywords="service request, quote, web development quote, AI consultation, digital marketing help, VAW, Varts"
         ogImage="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
       />
-      <ParticleBackground />
       <Navbar />
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">

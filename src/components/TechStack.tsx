@@ -97,7 +97,7 @@ const TechStack = () => {
     },
     {
       name: "Laravel",
-      logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/laravel/laravel-plain.svg"
+      logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/laravel/laravel-original.svg"
     },
     {
       name: "Java",
@@ -113,11 +113,11 @@ const TechStack = () => {
     },
     {
       name: "SharePoint",
-      logo: "https://img.icons8.com/color/96/sharepoint-2013.png"
+      logo: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg"
     },
     {
       name: "Shopify",
-      logo: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/shopify/shopify-original.svg"
+      logo: "https://upload.wikimedia.org/wikipedia/commons/0/0e/Shopify_logo_2018.svg"
     },
     {
       name: "Magento",

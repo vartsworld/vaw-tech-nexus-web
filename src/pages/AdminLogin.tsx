@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import ParticleBackground from "@/components/ParticleBackground";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { Eye, EyeOff, ShieldAlert, Smartphone } from "lucide-react";
 
@@ -146,7 +145,6 @@ const AdminLogin = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-tech-purple/10 via-background to-tech-blue/10 z-0"></div>
-      <ParticleBackground />
       <PWAInstallPrompt />
 
       <Card className="w-full max-w-md bg-card/80 backdrop-blur-sm border border-muted/30 shadow-xl z-10 overflow-hidden">
@@ -292,9 +290,9 @@ const AdminLogin = () => {
             </Button>
 
             <div className="text-center text-sm mt-6">
-              <a href="/" className="text-muted-foreground hover:text-white transition-colors">
+              <Link to="/" className="text-muted-foreground hover:text-white transition-colors">
                 Return to Surface Web
-              </a>
+              </Link>
             </div>
           </form>
         </CardContent>

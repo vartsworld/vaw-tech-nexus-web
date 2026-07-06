@@ -116,9 +116,16 @@ const MobileHeader = () => {
           {/* Navigation Links */}
           <div className="flex-1 overflow-y-auto py-4">
             <nav className="space-y-2 px-4">
-              {navigationItems.map((item, index) => <a key={index} href={item.href} className="block py-3 px-3 text-foreground/80 hover:text-accent hover:bg-muted/50 rounded-lg transition-colors" onClick={() => setIsMenuOpen(false)}>
+              {navigationItems.map((item, index) => (
+                <Link
+                  key={index}
+                  to={item.href}
+                  className="block py-3 px-3 text-foreground/80 hover:text-accent hover:bg-muted/50 rounded-lg transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
                   {item.name}
-                </a>)}
+                </Link>
+              ))}
 
               {/* Services Dropdown */}
               <div className="py-2">
@@ -128,12 +135,19 @@ const MobileHeader = () => {
                 </button>
                 
                 {isServicesOpen && <div className="ml-4 mt-2 space-y-1">
-                    {servicesItems.map((service, index) => <a key={index} href={service.href} className="block py-2 px-3 text-sm text-foreground/70 hover:text-accent hover:bg-muted/30 rounded-lg transition-colors" onClick={() => {
-                  setIsMenuOpen(false);
-                  setIsServicesOpen(false);
-                }}>
+                    {servicesItems.map((service, index) => (
+                      <Link
+                        key={index}
+                        to={service.href}
+                        className="block py-2 px-3 text-sm text-foreground/70 hover:text-accent hover:bg-muted/30 rounded-lg transition-colors"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          setIsServicesOpen(false);
+                        }}
+                      >
                         {service.name}
-                      </a>)}
+                      </Link>
+                    ))}
                   </div>}
               </div>
             </nav>

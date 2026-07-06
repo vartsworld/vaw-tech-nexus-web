@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Check, Clock, Star, Shield, Zap, Globe, TrendingUp, Bot, Package, Sparkles, Plus } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ParticleBackground from "@/components/ParticleBackground";
 import PricingInquiryForm from "@/components/PricingInquiryForm";
 import SEO from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
@@ -143,7 +142,6 @@ const Pricing = () => {
         keywords="web development pricing, app development cost, SEO pricing, digital marketing packages, VAW, Varts, Kerala tech agency pricing"
         ogImage="/og/pricing.png"
       />
-      <ParticleBackground />
       <Navbar />
 
       <section className="pt-24 pb-16">
