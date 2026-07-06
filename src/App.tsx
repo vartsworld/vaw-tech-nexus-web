@@ -24,6 +24,7 @@ import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UserProvider } from "./context/UserContext";
 import IntroScreen from "./components/IntroScreen";
+import ScrollToTop from "./components/ScrollToTop";
 import { useUser } from "./context/UserContext";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffTaskDetail from "./pages/StaffTaskDetail";
@@ -107,6 +108,7 @@ const AppContent = () => {
     <>
       {!hasCompletedIntro && !shouldSkipIntro && <IntroScreen />}
       <BrowserRouter>
+        <ScrollToTop />
         <ManifestSwitcher />
         <Routes>
           <Route path="/" element={<Index />} />

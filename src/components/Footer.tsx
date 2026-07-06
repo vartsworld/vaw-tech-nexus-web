@@ -42,22 +42,22 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold text-lg mb-4">Services</h3>
             <ul className="space-y-3">
-              <li><a href="#" className="text-muted-foreground hover:text-accent transition-colors">Website Development</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-accent transition-colors">WebApp Development</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-accent transition-colors">AI Solutions</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-accent transition-colors">VR/AR Projects</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-accent transition-colors">Digital Marketing</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-accent transition-colors">Digital Design</a></li>
+              <li><Link to="/website-development" className="text-muted-foreground hover:text-accent transition-colors">Website Development</Link></li>
+              <li><Link to="/webapp-development" className="text-muted-foreground hover:text-accent transition-colors">WebApp Development</Link></li>
+              <li><Link to="/ai-solutions" className="text-muted-foreground hover:text-accent transition-colors">AI Solutions</Link></li>
+              <li><Link to="/vr-ar-development" className="text-muted-foreground hover:text-accent transition-colors">VR/AR Projects</Link></li>
+              <li><Link to="/digital-marketing" className="text-muted-foreground hover:text-accent transition-colors">Digital Marketing</Link></li>
+              <li><Link to="/digital-design" className="text-muted-foreground hover:text-accent transition-colors">Digital Design</Link></li>
             </ul>
           </div>
           
           <div>
             <h3 className="font-semibold text-lg mb-4">Company</h3>
             <ul className="space-y-3">
-              <li><a href="#about" className="text-muted-foreground hover:text-accent transition-colors">About Us</a></li>
-              <li><a href="#portfolio" className="text-muted-foreground hover:text-accent transition-colors">Portfolio</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-accent transition-colors">Testimonials</a></li>
-              <li><a href="#" className="text-muted-foreground hover:text-accent transition-colors">Careers</a></li>
+              <li><Link to="/#about" className="text-muted-foreground hover:text-accent transition-colors">About Us</Link></li>
+              <li><Link to="/#portfolio" className="text-muted-foreground hover:text-accent transition-colors">Portfolio</Link></li>
+              <li><Link to="/#testimonials" className="text-muted-foreground hover:text-accent transition-colors">Testimonials</Link></li>
+              <li><Link to="/internship" className="text-muted-foreground hover:text-accent transition-colors">Careers</Link></li>
               <li><Link to="/terms-of-service" className="text-muted-foreground hover:text-accent transition-colors">Terms of Service</Link></li>
               <li><Link to="/privacy-policy" className="text-muted-foreground hover:text-accent transition-colors">Privacy Policy</Link></li>
               <li><Link to="/data-deletion" className="text-muted-foreground hover:text-accent transition-colors">Data Deletion</Link></li>
@@ -67,7 +67,7 @@ const Footer = () => {
           <div className="hidden md:block">
             <h3 className="font-semibold text-lg mb-4">Connect</h3>
             <ul className="space-y-3">
-              <li><a href="#contact" className="text-muted-foreground hover:text-accent transition-colors">Contact Us</a></li>
+              <li><Link to="/#contact" className="text-muted-foreground hover:text-accent transition-colors">Contact Us</Link></li>
               <li><a href="#" className="text-muted-foreground hover:text-accent transition-colors">Twitter</a></li>
               <li><a href="#" className="text-muted-foreground hover:text-accent transition-colors">LinkedIn</a></li>
               <li><a href="#" className="text-muted-foreground hover:text-accent transition-colors">Facebook</a></li>

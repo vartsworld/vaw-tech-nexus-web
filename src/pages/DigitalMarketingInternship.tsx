@@ -1,7 +1,6 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ParticleBackground from "@/components/ParticleBackground";
 import { useUser } from "@/context/UserContext";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
@@ -131,7 +130,6 @@ const DigitalMarketingInternship = () => {
   }
   return <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <SEO title="Digital Marketing Internship | VAW Technologies" description="Boost your Digital Marketing I.Q. with our internship program. Learn Content Marketing, Social Media, Ads, and Analytics at VAW Technologies." keywords="digital marketing internship, social media internship, content marketing, SEO internship, Kerala, India, VAW Technologies" />
-      <ParticleBackground />
       <Navbar />
 
       <section className="relative py-16 md:py-24">

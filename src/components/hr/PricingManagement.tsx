@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link } from "react-router-dom";
 import {
     Plus, Edit, Trash2, Star, Tag, Globe, Zap, Shield, TrendingUp, Bot,
     Loader2, Eye, EyeOff, GripVertical, ChevronUp, ChevronDown, Package,
@@ -272,15 +273,15 @@ export default function PricingManagement() {
                         Manage service packages &amp; addons · Changes sync live to the public pricing page
                     </p>
                 </div>
-                <a
-                    href="/pricing"
+                <Link
+                    to="/pricing"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 transition-colors border border-indigo-500/20 bg-indigo-500/5 rounded-lg px-3 py-1.5"
                 >
                     <ExternalLink className="h-3 w-3" />
                     View Public Page
-                </a>
+                </Link>
             </div>
 
             {loading ? (

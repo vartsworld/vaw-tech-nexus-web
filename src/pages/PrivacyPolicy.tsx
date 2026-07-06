@@ -2,6 +2,7 @@ import SEO from "@/components/SEO";
 import Navbar from "@/components/Navbar";
 import MobileHeader from "@/components/MobileHeader";
 import Footer from "@/components/Footer";
+import { Link } from "react-router-dom";
 
 const PrivacyPolicy = () => {
   return (
@@ -71,7 +72,7 @@ const PrivacyPolicy = () => {
             <ul className="list-disc list-inside text-muted-foreground space-y-1 ml-4">
               <li>Access and receive a copy of your personal data</li>
               <li>Request correction of inaccurate data</li>
-              <li>Request deletion of your data (see our <a href="/data-deletion" className="text-accent hover:underline">Data Deletion</a> page)</li>
+              <li>Request deletion of your data (see our <Link to="/data-deletion" className="text-accent hover:underline">Data Deletion</Link> page)</li>
               <li>Object to or restrict processing of your data</li>
               <li>Withdraw consent for marketing communications</li>
             </ul>
