@@ -63,8 +63,9 @@ import CoinPopup from "@/components/staff/CoinPopup";
 import EmmaAssistant from "@/components/ai/EmmaAssistant";
 import { Sparkles } from "lucide-react";
 import OfficeZenHome from "@/components/staff/OfficeZenHome";
+import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
 
-type RoomType = 'home' | 'workspace' | 'meeting' | 'breakroom';
+type RoomType = 'home' | 'workspace' | 'meeting' | 'breakroom' | 'planner';
 
 const EMOJI_OPTIONS = [
   "😀", "😃", "😄", "😁", "😊", "🙂", "😎", "🤩", "🥳", "😇",
@@ -83,7 +84,7 @@ const TeamHeadDashboard = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [showMobileHome, setShowMobileHome] = useState(true);
-  const [currentRoom, setCurrentRoom] = useState<RoomType>('home');
+  const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -158,6 +159,11 @@ const TeamHeadDashboard = () => {
   useEffect(() => {
     if (location.state?.openCoins) {
       setShowCoinPopup(true);
+    }
+    if (location.state?.currentRoom) {
+      setCurrentRoom(location.state.currentRoom as RoomType);
+    }
+    if (location.state) {
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -515,6 +521,7 @@ const TeamHeadDashboard = () => {
       </div>
     ),
     meeting: <MeetingRoom />,
+    planner: <MonthlyPlanner userId={profile?.user_id || ''} userProfile={profile} />,
     breakroom: null
   };
 

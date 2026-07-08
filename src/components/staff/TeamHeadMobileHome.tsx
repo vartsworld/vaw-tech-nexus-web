@@ -20,7 +20,8 @@ import {
   Flame,
   Sparkles,
   LogOut,
-  Fingerprint
+  Fingerprint,
+  Calendar
 } from "lucide-react";
 import BiometricSettingsDialog from "@/components/staff/BiometricSettingsDialog";
 import { Badge } from "@/components/ui/badge";
@@ -783,8 +784,8 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
 
   // ──────────────────────── BOTTOM NAV ────────────────────────
   const navItems = [
-    { id: 'home' as MobileTab, label: 'Home', icon: Home },
     { id: 'projects' as MobileTab, label: 'Projects', icon: FolderKanban },
+    { id: 'planner' as any, label: 'Plan', icon: Calendar, action: onEnterDesktop },
     { id: 'tasks' as MobileTab, label: 'Tasks', icon: ListChecks },
     { id: 'profile' as MobileTab, label: 'Profile', icon: User },
   ];
@@ -825,7 +826,11 @@ const TeamHeadMobileHome = ({ profile, onEnterDesktop }: TeamHeadMobileHomeProps
                 <motion.button
                   key={item.id}
                   onClick={() => {
-                    setActiveTab(item.id);
+                    if ((item as any).action) {
+                      (item as any).action();
+                      return;
+                    }
+                    setActiveTab(item.id as MobileTab);
                     if (item.id === 'projects') setSelectedProject(null);
                   }}
                   className="flex flex-col items-center gap-1 py-1.5 px-4 relative"

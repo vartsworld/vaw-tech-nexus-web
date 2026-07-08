@@ -71,6 +71,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
   const [isCreateGameOpen, setIsCreateGameOpen] = useState(false);
   const [availableGames, setAvailableGames] = useState<any[]>([]);
   const [currentGameId, setCurrentGameId] = useState<string | null>(null);
+  const [isPlayerWhite, setIsPlayerWhite] = useState(true);
   const [gameTimer, setGameTimer] = useState({ white: 600, black: 600 });
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isLive, setIsLive] = useState(false);
@@ -281,6 +282,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
       }]).select().single();
       if (error) throw error;
       setCurrentGameId(data.id);
+      setIsPlayerWhite(true); // Creator is always white (Player 1)
       setGameState(prev => ({ ...prev, gameMode: opponent ? 'multiplayer' : 'ai' }));
       setIsTimerRunning(true);
       if (opponent) subscribeToGame(data.id);
@@ -302,6 +304,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
       setGameHistory(gs?.history || []);
       setGameState({ turn: chess.turn(), inCheck: chess.inCheck(), isGameOver: chess.isGameOver(), winner: null, gameMode: 'multiplayer' });
       setCurrentGameId(gameId);
+      setIsPlayerWhite(data.player1_id === userId);
       subscribeToGame(gameId);
       setIsTimerRunning(!chess.isGameOver());
       toast({ title: "Game Joined", description: "You're in — connected live!" });
@@ -438,37 +441,77 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
                   ))}
                 </div>
                 <div className="grid grid-cols-8 border border-[#5a2d0c] rounded overflow-hidden flex-1">
-                  {board.map((row, rowIndex) =>
-                    row.map((piece, colIndex) => {
-                      const { isSelected, isPossible, isLastMoved } = squareInfo(rowIndex, colIndex);
-                      const bgClass = getSquareBg(rowIndex, colIndex, isSelected, isPossible, isLastMoved);
+                  {isPlayerWhite ? (
+                    board.map((row, rowIndex) =>
+                      row.map((piece, colIndex) => {
+                        const { isSelected, isPossible, isLastMoved } = squareInfo(rowIndex, colIndex);
+                        const bgClass = getSquareBg(rowIndex, colIndex, isSelected, isPossible, isLastMoved);
 
-                      return (
-                        <div
-                          key={`${rowIndex}-${colIndex}`}
-                          className={`
-                            h-10 w-full flex items-center justify-center cursor-pointer
-                            relative transition-all duration-100
-                            ${bgClass}
-                            ${isSelected ? 'ring-2 ring-yellow-300 ring-inset z-10' : ''}
-                            hover:brightness-110
-                          `}
-                          onClick={() => handleSquareClick(rowIndex, colIndex)}
-                        >
-                          {/* Possible move dot */}
-                          {isPossible && !piece && (
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                              <div className="w-3 h-3 rounded-full bg-black/25"></div>
-                            </div>
-                          )}
-                          {/* Capture ring */}
-                          {isPossible && piece && (
-                            <div className="absolute inset-0 ring-4 ring-black/30 ring-inset rounded-sm pointer-events-none z-10"></div>
-                          )}
-                          <PieceIcon piece={piece} />
-                        </div>
-                      );
-                    })
+                        return (
+                          <div
+                            key={`${rowIndex}-${colIndex}`}
+                            className={`
+                              h-10 w-full flex items-center justify-center cursor-pointer
+                              relative transition-all duration-100
+                              ${bgClass}
+                              ${isSelected ? 'ring-2 ring-yellow-300 ring-inset z-10' : ''}
+                              hover:brightness-110
+                            `}
+                            onClick={() => handleSquareClick(rowIndex, colIndex)}
+                          >
+                            {/* Possible move dot */}
+                            {isPossible && !piece && (
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="w-3 h-3 rounded-full bg-black/25"></div>
+                              </div>
+                            )}
+                            {/* Capture ring */}
+                            {isPossible && piece && (
+                              <div className="absolute inset-0 ring-4 ring-black/30 ring-inset rounded-sm pointer-events-none z-10"></div>
+                            )}
+                            <PieceIcon piece={piece} />
+                          </div>
+                        );
+                      })
+                    )
+                  ) : (
+                    [...board].reverse().map((row, rowIndex) =>
+                      [...row].reverse().map((piece, colIndex) => {
+                        // When flipped:
+                        // rowIndex 0 (Black top) is now rowIndex 7 (White bottom)
+                        // colIndex 0 (a) is now colIndex 7 (h)
+                        const actualRow = 7 - rowIndex;
+                        const actualCol = 7 - colIndex;
+                        const { isSelected, isPossible, isLastMoved } = squareInfo(actualRow, actualCol);
+                        const bgClass = getSquareBg(actualRow, actualCol, isSelected, isPossible, isLastMoved);
+
+                        return (
+                          <div
+                            key={`${actualRow}-${actualCol}`}
+                            className={`
+                              h-10 w-full flex items-center justify-center cursor-pointer
+                              relative transition-all duration-100
+                              ${bgClass}
+                              ${isSelected ? 'ring-2 ring-yellow-300 ring-inset z-10' : ''}
+                              hover:brightness-110
+                            `}
+                            onClick={() => handleSquareClick(actualRow, actualCol)}
+                          >
+                            {/* Possible move dot */}
+                            {isPossible && !piece && (
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="w-3 h-3 rounded-full bg-black/25"></div>
+                              </div>
+                            )}
+                            {/* Capture ring */}
+                            {isPossible && piece && (
+                              <div className="absolute inset-0 ring-4 ring-black/30 ring-inset rounded-sm pointer-events-none z-10"></div>
+                            )}
+                            <PieceIcon piece={piece} />
+                          </div>
+                        );
+                      })
+                    )
                   )}
                 </div>
               </div>

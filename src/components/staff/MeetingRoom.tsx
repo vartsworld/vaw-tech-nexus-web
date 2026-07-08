@@ -149,6 +149,7 @@ const MeetingRoom = () => {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   
   const peersRef = useRef<Record<string, RTCPeerConnection>>({});
+  const pendingCandidates = useRef<Record<string, RTCIceCandidateInit[]>>({});
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const [upcomingMeetings, setUpcomingMeetings] = useState<any[]>(() => {
@@ -257,10 +258,14 @@ const MeetingRoom = () => {
   };
   
   const createPeerConnection = (peerId: string, peerProfile: any, isInitiator: boolean, currentStream: MediaStream) => {
+    console.log(`Creating PeerConnection for ${peerId}, initiator: ${isInitiator}`);
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' }
       ]
     });
 
@@ -285,6 +290,7 @@ const MeetingRoom = () => {
     };
 
     pc.ontrack = (event) => {
+      console.log(`Received track from ${peerId}:`, event.streams[0]);
       setRemoteStreams(prev => ({
         ...prev,
         [peerId]: {
@@ -355,6 +361,7 @@ const MeetingRoom = () => {
         channel.on('presence', { event: 'sync' }, () => {
           if (!active) return;
           const state = channel.presenceState();
+          console.log('Meeting presence sync:', state);
           Object.keys(state).forEach(presId => {
             const presences = state[presId] as any[];
             if (presences && presences.length > 0) {
@@ -362,6 +369,8 @@ const MeetingRoom = () => {
               const peerId = peerPresence.user_id;
               
               if (peerId && peerId !== profile.user_id && !peersRef.current[peerId]) {
+                console.log(`Initiating WebRTC with ${peerId}`);
+                // Simple tie-breaker: user with lower ID initiates the offer
                 if (profile.user_id < peerId) {
                   createPeerConnection(peerId, peerPresence.profile, true, stream!);
                 }
@@ -428,10 +437,20 @@ const MeetingRoom = () => {
           } else if (type === 'answer') {
             if (pc) {
               await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+              // Add any pending candidates
+              if (pendingCandidates.current[senderId]) {
+                for (const cand of pendingCandidates.current[senderId]) {
+                  await pc.addIceCandidate(new RTCIceCandidate(cand)).catch(e => console.error(e));
+                }
+                delete pendingCandidates.current[senderId];
+              }
             }
           } else if (type === 'ice-candidate') {
-            if (pc) {
+            if (pc && pc.remoteDescription) {
               await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.error(e));
+            } else {
+              if (!pendingCandidates.current[senderId]) pendingCandidates.current[senderId] = [];
+              pendingCandidates.current[senderId].push(candidate);
             }
           }
         });

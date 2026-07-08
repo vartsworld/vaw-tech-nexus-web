@@ -18,7 +18,8 @@ import {
   LogOut,
   Home,
   Flame,
-  CheckCircle
+  CheckCircle,
+  Calendar
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -261,8 +262,7 @@ const StaffMobileHome = ({
 
   const navItems = [
     { id: "workspace", label: "Work", icon: Briefcase, action: () => navigate("/staff/work") },
-    { id: "chat", label: "Chat", icon: MessageCircle, action: onOpenChat },
-    { id: "home", label: "Home", icon: Home },
+    { id: "planner", label: "Plan", icon: Calendar, action: () => { onRoomChange('planner'); onEnterWorkspace(); } },
     { id: "coins", label: "Coins", icon: Coins, action: () => navigate("/mycoins") },
     { id: "profile", label: "Profile", icon: User, action: () => navigate("/account") },
   ];

@@ -40,8 +40,8 @@ import { Badge } from "@/components/ui/badge";
 
 interface VirtualOfficeLayoutProps {
   children: ReactNode;
-  currentRoom: 'home' | 'workspace' | 'breakroom' | 'meeting';
-  onRoomChange: (room: 'home' | 'workspace' | 'breakroom' | 'meeting') => void;
+  currentRoom: 'home' | 'workspace' | 'breakroom' | 'meeting' | 'planner';
+  onRoomChange: (room: 'home' | 'workspace' | 'breakroom' | 'meeting' | 'planner') => void;
   onlineUsers?: Record<string, any>;
   userId?: string;
   userProfile?: any;
@@ -274,8 +274,8 @@ const VirtualOfficeLayout = ({
   }, [currentRoom]);
 
   const rooms = [
-    { id: 'home' as const, name: 'Office', icon: Compass, color: 'from-emerald-500 to-teal-600' },
     { id: 'workspace' as const, name: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
+    { id: 'planner' as const, name: 'Monthly Planner', icon: Calendar, color: 'from-purple-500 to-purple-600' },
     { id: 'meeting' as const, name: 'Meeting Room', icon: Users, color: 'from-yellow-500 to-yellow-600' }
   ];
 

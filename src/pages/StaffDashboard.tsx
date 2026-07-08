@@ -51,13 +51,14 @@ import CoinPopup from "@/components/staff/CoinPopup";
 import OfficeZenHome from "@/components/staff/OfficeZenHome";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import EmmaAssistant from "@/components/ai/EmmaAssistant";
+import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
 
-type RoomType = 'home' | 'workspace' | 'meeting' | 'breakroom';
+type RoomType = 'home' | 'workspace' | 'meeting' | 'breakroom' | 'planner';
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [currentRoom, setCurrentRoom] = useState<RoomType>('home');
+  const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
   const [showMobileHome, setShowMobileHome] = useState(true);
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
@@ -104,7 +105,12 @@ const StaffDashboard = () => {
   useEffect(() => {
     if (location.state?.openCoins) {
       setShowCoinPopup(true);
-      // Clean up state to prevent re-opening on reload
+    }
+    if (location.state?.currentRoom) {
+      setCurrentRoom(location.state.currentRoom as RoomType);
+    }
+    // Clean up state to prevent re-opening on reload
+    if (location.state) {
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -315,6 +321,7 @@ const StaffDashboard = () => {
     ),
     workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} />,
     meeting: <MeetingRoom />,
+    planner: <MonthlyPlanner userId={profile.user_id} userProfile={profile} />,
     breakroom: null
   };
 
