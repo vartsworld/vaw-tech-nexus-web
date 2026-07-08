@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import {
@@ -1111,53 +1112,37 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       // Award points for subtask completion
       if (data.points > 0) {
-        // 1. Update total_points on staff profile
-        const { data: staffProfile } = await supabase
-          .from('staff_profiles')
-          .select('total_points')
-          .eq('user_id', data.assigned_to)
-          .single();
-
-        if (staffProfile) {
-          await supabase
-            .from('staff_profiles')
-            .update({
-              total_points: (staffProfile.total_points || 0) + data.points,
-            })
-            .eq('user_id', data.assigned_to);
-
-          // 2. Log to user_points_log (for HR PointsMonitoring)
-          await supabase
-            .from('user_points_log')
-            .insert({
-              user_id: data.assigned_to,
-              points: data.points,
-              reason: `Subtask approved: ${data.title}`,
-              category: 'task'
-            });
-
-          // 3. Log to user_coin_transactions (for PointsBalance / MyCoins)
-          await supabase
-            .from('user_coin_transactions')
-            .insert({
-              user_id: data.assigned_to,
-              coins: data.points,
-              transaction_type: 'task_earned',
-              category: 'task_completion',
-              reason: `Subtask Completed: ${data.title}`,
-              source_type: 'subtask',
-              related_task_id: data.task_id,
-              metadata: { subtask_id: data.id }
-            } as any);
-
-          // 4. Log to user_activity_log
-          await supabase.from('user_activity_log').insert({
+        // 1. Log to user_coin_transactions (DB trigger 'sync_user_total_points_trigger' handles staff_profiles.total_points)
+        await supabase
+          .from('user_coin_transactions')
+          .insert({
             user_id: data.assigned_to,
-            activity_type: 'task_completed',
-            points_earned: data.points,
-            metadata: { task_id: data.task_id, subtask_id: data.id, subtask_title: data.title, approved_by: user.id }
+            coins: data.points,
+            transaction_type: 'task_earned',
+            category: 'task_completion',
+            reason: `Subtask Completed: ${data.title}`,
+            source_type: 'subtask',
+            related_task_id: data.task_id,
+            metadata: { subtask_id: data.id }
+          } as any);
+
+        // 2. Log to user_points_log (for HR PointsMonitoring visibility)
+        await supabase
+          .from('user_points_log')
+          .insert({
+            user_id: data.assigned_to,
+            points: data.points,
+            reason: `Subtask approved: ${data.title}`,
+            category: 'task'
           });
-        }
+
+        // 3. Log to user_activity_log
+        await supabase.from('user_activity_log').insert({
+          user_id: data.assigned_to,
+          activity_type: 'task_completed',
+          points_earned: data.points,
+          metadata: { task_id: data.task_id, subtask_id: data.id, subtask_title: data.title, approved_by: user.id }
+        });
       }
 
       const updatedSubtasks = subtasks.map(st => st.id === subtaskId ? data : st);
@@ -2308,15 +2293,27 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           {/* Pending Subtasks for Review */}
           {pendingSubtasks.length > 0 && (
             <Card className="bg-gradient-to-br from-purple-500/20 via-blue-500/10 to-indigo-500/20 backdrop-blur-lg border-purple-500/30 text-white relative z-10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ListChecks className="h-5 w-5 text-purple-300" />
-                  Subtasks Pending Review ({pendingSubtasks.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {pendingSubtasks.map((subtask) => {
+              <Collapsible defaultOpen={false}>
+                <CardHeader className="p-0">
+                  <CollapsibleTrigger className="w-full">
+                    <div className="flex items-center justify-between p-6 w-full group">
+                      <CardTitle className="flex items-center gap-2">
+                        <ListChecks className="h-5 w-5 text-purple-300" />
+                        Subtasks Pending Review ({pendingSubtasks.length})
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-white/40 group-hover:text-white/60 transition-colors">
+                          Latest {Math.min(pendingSubtasks.length, 3)} reviews
+                        </span>
+                        <ChevronDown className="h-5 w-5 text-white/40 group-hover:text-white/60 transition-colors transform group-data-[state=open]:rotate-180" />
+                      </div>
+                    </div>
+                  </CollapsibleTrigger>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent className="pt-0">
+                    <div className="space-y-3">
+                      {pendingSubtasks.slice(0, 3).map((subtask) => {
                     const parentTask = tasks.find((t) => t.id === subtask.task_id);
                     const assigneeProfile = (subtask as any).staff_profiles as any | null;
                     return (
@@ -2382,10 +2379,24 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                           </Badge>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
+                        );
+                      })}
+                      {pendingSubtasks.length > 3 && (
+                        <Button
+                          variant="ghost"
+                          className="w-full text-xs text-purple-300 hover:text-purple-200 hover:bg-purple-500/10"
+                          onClick={() => {
+                            setReviewDialogSubtask(pendingSubtasks[3]);
+                            setReviewDialogOpen(true);
+                          }}
+                        >
+                          View all {pendingSubtasks.length} pending reviews
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
             </Card>
           )}
 

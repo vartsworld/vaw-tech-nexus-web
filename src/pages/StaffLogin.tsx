@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, UserCheck, Smartphone, Fingerprint, User as UserIcon, Loader2 } from "lucide-react";
+import { Eye, EyeOff, UserCheck, Smartphone, Fingerprint, User as UserIcon, Loader2, Eraser } from "lucide-react";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { useBiometricAuth } from "@/hooks/useBiometricAuth";
 import vawLogo from "@/assets/vaw-logo.png";
@@ -199,11 +199,12 @@ const StaffLogin = () => {
         if (authUser) {
           const hasMarkedAttendance = await checkTodayAttendance(authUser.id);
           const dashboardRoute = getDashboardRoute(data);
-          if (!hasMarkedAttendance) {
-            navigate(dashboardRoute, { state: { requireAttendance: true } });
-          } else {
-            navigate(dashboardRoute);
-          }
+          // Set currentRoom to workspace when navigating
+          const navigationState = !hasMarkedAttendance
+            ? { requireAttendance: true, currentRoom: 'workspace' }
+            : { currentRoom: 'workspace' };
+
+          navigate(dashboardRoute, { state: navigationState });
         }
       }
     } catch (error) {
@@ -272,11 +273,12 @@ const StaffLogin = () => {
         // Check if attendance is marked for today
         const hasMarkedAttendance = await checkTodayAttendance(authUser.id);
         const dashboardRoute = getDashboardRoute(data);
-        if (!hasMarkedAttendance) {
-          navigate(dashboardRoute, { state: { requireAttendance: true } });
-        } else {
-          navigate(dashboardRoute);
-        }
+        // Set currentRoom to workspace when navigating
+        const navigationState = !hasMarkedAttendance
+          ? { requireAttendance: true, currentRoom: 'workspace' }
+          : { currentRoom: 'workspace' };
+
+        navigate(dashboardRoute, { state: navigationState });
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -487,65 +489,51 @@ const StaffLogin = () => {
           <CardContent className="space-y-4">
             <div>
               <Label>New Emoji Password</Label>
-              <div className="min-h-[60px] p-3 border rounded-lg bg-gray-50 flex flex-wrap gap-2 items-center">
-                {newEmojiPassword.map((emoji, index) => (
-                  <span key={index} className="text-2xl">{emoji}</span>
-                ))}
-                {newEmojiPassword.length === 0 && (
-                  <span className="text-gray-400">Select emojis below...</span>
-                )}
-              </div>
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 items-center">
+                <div className="flex-1 min-h-[60px] p-3 border rounded-lg bg-gray-50 flex flex-wrap gap-2 items-center">
+                  {newEmojiPassword.map((emoji, index) => (
+                    <span key={index} className="text-2xl">{emoji}</span>
+                  ))}
+                  {newEmojiPassword.length === 0 && (
+                    <span className="text-gray-400 text-sm">Select emojis below...</span>
+                  )}
+                </div>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
+                  className="h-[60px] w-[60px] shrink-0"
                   onClick={() => removeLastEmoji()}
                   disabled={newEmojiPassword.length === 0}
                 >
-                  Remove Last
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => clearPassword()}
-                  disabled={newEmojiPassword.length === 0}
-                >
-                  Clear All
+                  <Eraser className="h-6 w-6" />
                 </Button>
               </div>
             </div>
 
             <div>
               <Label>Confirm Emoji Password</Label>
-              <div className="min-h-[60px] p-3 border rounded-lg bg-gray-50 flex flex-wrap gap-2 items-center">
-                {confirmEmojiPassword.map((emoji, index) => (
-                  <span key={index} className="text-2xl">{emoji}</span>
-                ))}
-                {confirmEmojiPassword.length === 0 && (
-                  <span className="text-gray-400">Confirm your password...</span>
-                )}
-              </div>
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 items-center">
+                <div className="flex-1 min-h-[60px] p-3 border rounded-lg bg-gray-50 flex flex-wrap gap-2 items-center">
+                  {confirmEmojiPassword.map((emoji, index) => (
+                    <span key={index} className="text-2xl">{emoji}</span>
+                  ))}
+                  {confirmEmojiPassword.length === 0 && (
+                    <span className="text-gray-400 text-sm">Confirm your password...</span>
+                  )}
+                </div>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
+                  className="h-[60px] w-[60px] shrink-0"
                   onClick={() => removeLastEmoji(true)}
                   disabled={confirmEmojiPassword.length === 0}
                 >
-                  Remove Last
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => clearPassword(true)}
-                  disabled={confirmEmojiPassword.length === 0}
-                >
-                  Clear All
+                  <Eraser className="h-6 w-6" />
                 </Button>
               </div>
             </div>
 
-            <div className="grid grid-cols-10 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg">
+            <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg">
               {EMOJI_OPTIONS.map((emoji, index) => (
                 <Button
                   key={index}
@@ -772,34 +760,27 @@ const StaffLogin = () => {
                   ) : (
                     <div>
                       <Label>Emoji Password</Label>
-                      <div className="min-h-[60px] p-3 border rounded-lg bg-gray-50 flex flex-wrap gap-2 items-center">
-                        {emojiPassword.map((emoji, index) => (
-                          <span key={index} className="text-2xl">{emoji}</span>
-                        ))}
-                        {emojiPassword.length === 0 && (
-                          <span className="text-gray-400">Select your emoji password...</span>
-                        )}
-                      </div>
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex gap-2 items-center mb-2">
+                        <div className="flex-1 min-h-[60px] p-3 border rounded-lg bg-gray-50 flex flex-wrap gap-2 items-center">
+                          {emojiPassword.map((emoji, index) => (
+                            <span key={index} className="text-2xl">{emoji}</span>
+                          ))}
+                          {emojiPassword.length === 0 && (
+                            <span className="text-gray-400 text-sm">Select your emoji password...</span>
+                          )}
+                        </div>
                         <Button
                           variant="outline"
-                          size="sm"
+                          size="icon"
+                          className="h-[60px] w-[60px] shrink-0"
                           onClick={() => removeLastEmoji()}
                           disabled={emojiPassword.length === 0}
                         >
-                          Remove Last
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => clearPassword()}
-                          disabled={emojiPassword.length === 0}
-                        >
-                          Clear All
+                          <Eraser className="h-6 w-6" />
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-10 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg mt-2">
+                      <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-2 border rounded-lg mt-2">
                         {EMOJI_OPTIONS.map((emoji, index) => (
                           <Button
                             key={index}
