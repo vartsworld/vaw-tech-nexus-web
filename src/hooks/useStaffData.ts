@@ -66,7 +66,7 @@ export const useStaffData = () => {
       if (!isMounted || !user) return;
 
       channel = supabase
-        .channel(`profile-updates-${user.id}`)
+        .channel(`profile-updates-${user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`)
         .on('postgres_changes', {
           event: 'UPDATE',
           schema: 'public',

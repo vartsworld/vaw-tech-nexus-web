@@ -67,6 +67,15 @@ import GPSProposal from "./pages/GPSProposal";
 import GPSAIProposal from "./pages/GPSAIProposal";
 import VAWAcademy from "./pages/VAWAcademy";
 import ToolsNexus from "./pages/ToolsNexus";
+import InboxPage from "./pages/InboxPage";
+import ChessPage from "./pages/ChessPage";
+import NotesPage from "./pages/NotesPage";
+import OnboardingPage from "./pages/OnboardingPage";
+import LeavePage from "./pages/LeavePage";
+import ActivityPage from "./pages/ActivityPage";
+import DocsPage from "./pages/DocsPage";
+import OperationsPage from "./pages/OperationsPage";
+import ChannelsPage from "./pages/ChannelsPage";
 
 
 
@@ -137,6 +146,15 @@ const AppContent = () => {
           <Route path="/staff/tools-nexus" element={<ToolsNexus />} />
           <Route path="/staff/task/:taskId" element={<StaffTaskDetail />} />
           <Route path="/staff/work" element={<StaffWork />} />
+          <Route path="/staff/inbox" element={<InboxPage />} />
+          <Route path="/staff/chess" element={<ChessPage />} />
+          <Route path="/staff/notes" element={<NotesPage />} />
+          <Route path="/staff/onboarding" element={<OnboardingPage />} />
+          <Route path="/staff/leave" element={<LeavePage />} />
+          <Route path="/staff/activity" element={<ActivityPage />} />
+          <Route path="/staff/docs" element={<DocsPage />} />
+          <Route path="/staff/operations" element={<OperationsPage />} />
+          <Route path="/staff/channels" element={<ChannelsPage />} />
           <Route path="/team-head/dashboard" element={<TeamHeadDashboard />} />
           <Route path="/mycoins" element={<MyCoins />} />
           <Route path="/account" element={<AccountDashboard />} />

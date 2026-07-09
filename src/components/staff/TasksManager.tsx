@@ -357,7 +357,7 @@ const TasksManager = ({
 
         {/* Filter and Stats Row */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
+          <div className="flex flex-wrap gap-1.5 pb-1 sm:pb-0">
             {[{
               key: 'overdue',
               label: 'Overdue',
@@ -504,17 +504,10 @@ const TasksManager = ({
                   onClick={() => setSelectedTask(task)}
                 >
                   <div className="flex justify-between items-start">
-                    <div className="space-y-1 pr-8">
-                      <h4 className="font-bold text-white text-base leading-tight line-clamp-2">
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-white text-base leading-tight line-clamp-2 group-hover:text-blue-400 transition-colors">
                         {task.title}
                       </h4>
-                      <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest flex items-center gap-1">
-                        <Target className="w-3 h-3" />
-                        {task.trial_period ? "TRIAL MISSION" : `${task.points} COINS REWARD`}
-                      </p>
-                    </div>
-                    <div className="absolute top-4 right-4">
-                      {getPriorityBadge(task.priority)}
                     </div>
                   </div>
 
@@ -524,15 +517,27 @@ const TasksManager = ({
                     </p>
                   )}
 
-                  <div className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between text-xs py-2 border-y border-white/5">
-                      <div className="flex items-center gap-2 text-white/50">
+                  <div className="space-y-2.5 pt-2">
+                    {/* Row 1: Date and Points in the same row */}
+                    <div className="flex items-center justify-between text-xs py-1 border-t border-white/5">
+                      <div className="flex items-center gap-2 text-white/60">
                         <Calendar className="h-3.5 w-3.5 text-blue-400" />
-                        <span>{task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No due date'}</span>
+                        <span>{task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'Ongoing'}</span>
                       </div>
+                      <div className="flex items-center gap-1.5 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/10 text-emerald-400 font-bold text-[10px]">
+                        <Coins className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>{task.trial_period ? "TRIAL" : `${task.points || 0} PTS`}</span>
+                      </div>
+                    </div>
+
+                    {/* Row 2: Status Chip, Priority, and Stage in the same row below */}
+                    <div className="flex items-center justify-between text-xs py-1 border-b border-white/5">
                       <div className="flex items-center gap-1.5">
-                        {getStageBadge(task)}
                         {getStatusBadge(task.status)}
+                        {getStageBadge(task)}
+                      </div>
+                      <div>
+                        {getPriorityBadge(task.priority)}
                       </div>
                     </div>
 

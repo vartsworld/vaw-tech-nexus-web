@@ -340,10 +340,10 @@ const SalesDashboard = () => {
       </header>
 
       {/* ── MAIN ── */}
-      <main className="px-4 sm:px-6 pt-20 sm:pt-24 pb-12 max-w-7xl mx-auto">
+      <main className="px-4 sm:px-6 pt-20 sm:pt-24 pb-24 md:pb-12 max-w-7xl mx-auto">
 
         {/* Sub-navigation Tabs */}
-        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/5 mb-8 w-fit overflow-x-auto no-scrollbar">
+        <div className="hidden md:flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/5 mb-8 w-fit overflow-x-auto no-scrollbar">
           {[
             { name: 'Vault', path: '/sales/dashboard', icon: Briefcase },
             { name: 'Agenda', path: '/sales/dashboard/agenda', icon: Edit },
@@ -888,6 +888,39 @@ const SalesDashboard = () => {
         userId={profile?.user_id || ""}
         userProfile={profile}
       />
+      {/* Mobile Bottom Navigation for Sales Dashboard */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/95 backdrop-blur-xl border-t border-white/10 pb-safe">
+        <div className="flex items-center justify-around py-2 px-1">
+          {[
+            { name: 'Vault', path: '/sales/dashboard', icon: Briefcase },
+            { name: 'Agenda', path: '/sales/dashboard/agenda', icon: Edit },
+            { name: 'Pricing', path: '/sales/dashboard/pricing', icon: Coins },
+            { name: 'Plans', path: '/sales/dashboard/plans', icon: LayoutGrid },
+            { name: 'Onboarding', path: '/sales/dashboard/onboarding', icon: Briefcase },
+          ].map((tab) => {
+            const isActive = location.pathname === tab.path;
+            return (
+              <Link
+                key={tab.path}
+                to={tab.path}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 px-3 py-1 rounded-xl transition-all duration-200 min-w-[64px] relative",
+                  isActive
+                    ? "text-blue-500"
+                    : "text-zinc-400 hover:text-zinc-200"
+                )}
+              >
+                <tab.icon className={cn("w-5 h-5", isActive ? "text-blue-500" : "text-zinc-400")} />
+                <span className="text-[10px] font-black uppercase tracking-wider">{tab.name}</span>
+                {isActive && (
+                  <div className="absolute -bottom-1 w-5 h-0.5 bg-blue-500 rounded-full" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
       {/* ── Market Insight Dialog ── */}
       <Dialog open={showMarketInsight} onOpenChange={setShowMarketInsight}>
         <DialogContent className="w-[90vw] max-w-sm bg-zinc-950 border-white/10 rounded-2xl p-5 sm:p-6 overflow-hidden flex flex-col m-auto">
