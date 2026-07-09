@@ -240,7 +240,7 @@ const MeetingRoom = () => {
   };
 
   const handleInvite = async (memberId: string) => {
-    const channel = supabase.channel(`profile-updates-${memberId}`);
+    const channel = supabase.channel(`profile-updates-${memberId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
     await channel.subscribe(async (status) => {
        if (status === 'SUBSCRIBED') {
            await channel.send({

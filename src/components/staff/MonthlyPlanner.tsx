@@ -77,6 +77,13 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDayDetailOpen, setIsDayDetailOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [customTagNames, setCustomTagNames] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('vaw_planner_custom_tags') || '{}');
+    } catch {
+      return {};
+    }
+  });
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<MonthlyPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -618,7 +625,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                           newPlan.color === c.value ? "border-white scale-110" : "border-transparent"
                         )}
                         style={{ backgroundColor: c.value }}
-                        title={c.name}
+                        title={customTagNames[c.value] || c.name}
                       />
                     ))}
                   </div>
@@ -668,18 +675,33 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           </DialogHeader>
           <div className="py-6 space-y-4">
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
-              <h4 className="text-xs font-black uppercase tracking-widest text-white/80">Tag Legend</h4>
-              <div className="grid grid-cols-2 gap-3">
-                {colors.map(c => (
-                  <div key={c.value} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.value }} />
-                    <span className="text-[10px] font-bold text-white/40 uppercase">{c.name}</span>
-                  </div>
-                ))}
+              <h4 className="text-xs font-black uppercase tracking-widest text-white/80">Tag Legend & Renaming</h4>
+              <p className="text-[9px] text-white/40 uppercase font-bold tracking-wider leading-none">
+                Click text to customize names
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {colors.map(c => {
+                  const displayName = customTagNames[c.value] || c.name;
+                  return (
+                    <div key={c.value} className="flex items-center gap-2 bg-white/5 p-2 rounded-xl border border-white/5">
+                      <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: c.value }} />
+                      <input
+                        type="text"
+                        className="bg-transparent border-none focus:ring-0 focus:outline-none text-[10px] font-black text-white uppercase p-0 w-full"
+                        value={displayName}
+                        onChange={(e) => {
+                          const next = { ...customTagNames, [c.value]: e.target.value };
+                          setCustomTagNames(next);
+                          localStorage.setItem('vaw_planner_custom_tags', JSON.stringify(next));
+                        }}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
             <p className="text-[10px] text-white/20 italic text-center">
-              Settings are synchronized across your department for unified visibility.
+              Planner tag legend settings are persistent and synchronized locally.
             </p>
           </div>
           <Button onClick={() => setIsSettingsOpen(false)} className="w-full rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 font-bold uppercase text-xs h-11">

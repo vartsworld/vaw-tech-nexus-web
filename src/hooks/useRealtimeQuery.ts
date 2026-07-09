@@ -130,7 +130,10 @@ export function useRealtimeQuery<TData = any>({
                     filter: filter,
                 },
                 (payload) => {
-                    console.log(`[Realtime] INSERT on ${table}:`, payload);
+                    if (typeof window !== 'undefined') {
+                        (window as any).realtimeUpdationCount = ((window as any).realtimeUpdationCount || 0) + 1;
+                        console.log(`Realtime updation [${(window as any).realtimeUpdationCount}]`);
+                    }
                     // Invalidate and refetch the query
                     queryClient.invalidateQueries({ queryKey });
                 }
@@ -146,7 +149,10 @@ export function useRealtimeQuery<TData = any>({
                     filter: filter,
                 },
                 (payload) => {
-                    console.log(`[Realtime] UPDATE on ${table}:`, payload);
+                    if (typeof window !== 'undefined') {
+                        (window as any).realtimeUpdationCount = ((window as any).realtimeUpdationCount || 0) + 1;
+                        console.log(`Realtime updation [${(window as any).realtimeUpdationCount}]`);
+                    }
                     // Invalidate and refetch the query
                     queryClient.invalidateQueries({ queryKey });
                 }
@@ -162,7 +168,10 @@ export function useRealtimeQuery<TData = any>({
                     filter: filter,
                 },
                 (payload) => {
-                    console.log(`[Realtime] DELETE on ${table}:`, payload);
+                    if (typeof window !== 'undefined') {
+                        (window as any).realtimeUpdationCount = ((window as any).realtimeUpdationCount || 0) + 1;
+                        console.log(`Realtime updation [${(window as any).realtimeUpdationCount}]`);
+                    }
                     // Invalidate and refetch the query
                     queryClient.invalidateQueries({ queryKey });
                 }
@@ -171,7 +180,7 @@ export function useRealtimeQuery<TData = any>({
             // Subscribe to the channel
             channel.subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
-                    console.log(`[Realtime] Subscribed to ${table} changes`);
+                    // Muted verbose subscribe logs
                 } else if (status === 'CHANNEL_ERROR') {
                     console.error(`[Realtime] Error subscribing to ${table}`);
                 } else if (status === 'TIMED_OUT') {
@@ -186,7 +195,7 @@ export function useRealtimeQuery<TData = any>({
         return () => {
             if (channel) {
                 supabase.removeChannel(channel);
-                console.log(`[Realtime] Unsubscribed from ${table} changes`);
+                // Muted verbose unsubscribed logs
             }
         };
     }, [table, filter, queryKey, queryClient]);
