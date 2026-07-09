@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 // ─── Piece rendering ────────────────────────────────────────────────────────
 
 const WHITE_PIECES: Record<string, string> = {
-  k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙'
+  k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'
 };
 const BLACK_PIECES: Record<string, string> = {
   k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'

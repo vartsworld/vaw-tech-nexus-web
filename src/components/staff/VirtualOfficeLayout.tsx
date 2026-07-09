@@ -390,10 +390,7 @@ const VirtualOfficeLayout = ({
         { id: 'notes', name: 'Personal Notes', icon: ClipboardList, path: '/staff/notes' },
         { id: 'meeting' as const, name: 'Meeting Room', icon: Users, path: '#' },
         { id: 'notepad', name: 'Quick Notepad', icon: ClipboardList, path: '#' },
-        { id: 'operations', name: 'Operations', icon: LayoutDashboard, path: '/staff/operations' },
-        { id: 'docs', name: 'Docs', icon: FileText, path: '/staff/docs' },
         { id: 'activity', name: 'Activity', icon: Activity, path: '/staff/activity' },
-        { id: 'channels', name: 'Channels', icon: MessageSquare, path: '/staff/channels' },
       ]
     }
   ];
@@ -474,7 +471,7 @@ const VirtualOfficeLayout = ({
       {currentRoom !== 'home' && (
         <aside
           className={cn(
-            "hidden lg:flex lg:flex-col bg-zinc-950/90 backdrop-blur-xl border-r border-white/5 transition-all duration-300 ease-in-out relative z-30 group",
+            "hidden lg:flex lg:flex-col bg-black/30 backdrop-blur-xl border-r border-white/10 transition-all duration-300 ease-in-out relative z-30 group",
             isSidebarCollapsed ? "w-20" : "w-72"
           )}
         >

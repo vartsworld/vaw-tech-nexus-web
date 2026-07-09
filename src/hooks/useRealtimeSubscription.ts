@@ -14,18 +14,6 @@ interface UseRealtimeSubscriptionOptions {
 /**
  * Lightweight hook for Supabase Realtime subscriptions without React Query
  * Useful for simple real-time updates with custom callbacks
- * 
- * @example
- * useRealtimeSubscription({
- *   table: 'staff_tasks',
- *   filter: `assigned_to=eq.${userId}`,
- *   onInsert: (payload) => {
- *     toast({ title: 'New task assigned!', description: payload.new.title });
- *   },
- *   onUpdate: (payload) => {
- *     // Handle task update
- *   },
- * });
  */
 export function useRealtimeSubscription({
     table,
@@ -37,11 +25,29 @@ export function useRealtimeSubscription({
 }: UseRealtimeSubscriptionOptions) {
     const channelRef = useRef<RealtimeChannel | null>(null);
 
+    // Keep callbacks in refs to avoid re-subscription cycles when callback references change
+    const onInsertRef = useRef(onInsert);
+    const onUpdateRef = useRef(onUpdate);
+    const onDeleteRef = useRef(onDelete);
+
+    useEffect(() => {
+        onInsertRef.current = onInsert;
+    }, [onInsert]);
+
+    useEffect(() => {
+        onUpdateRef.current = onUpdate;
+    }, [onUpdate]);
+
+    useEffect(() => {
+        onDeleteRef.current = onDelete;
+    }, [onDelete]);
+
     useEffect(() => {
         if (!enabled) return;
 
-        // Create unique channel name
-        const channelName = `subscription-${table}-${filter || 'all'}-${Date.now()}`;
+        // Create unique channel name with timestamp and random suffix to avoid any cached channel reuse collisions
+        const randomSuffix = Math.random().toString(36).substring(2, 9);
+        const channelName = `subscription-${table}-${filter || 'all'}-${Date.now()}-${randomSuffix}`;
 
         const channel = supabase.channel(channelName);
         channelRef.current = channel;
@@ -61,7 +67,9 @@ export function useRealtimeSubscription({
                         (window as any).realtimeUpdationCount = ((window as any).realtimeUpdationCount || 0) + 1;
                         console.log(`Realtime updation [${(window as any).realtimeUpdationCount}]`);
                     }
-                    onInsert(payload);
+                    if (onInsertRef.current) {
+                        onInsertRef.current(payload);
+                    }
                 }
             );
         }
@@ -81,7 +89,9 @@ export function useRealtimeSubscription({
                         (window as any).realtimeUpdationCount = ((window as any).realtimeUpdationCount || 0) + 1;
                         console.log(`Realtime updation [${(window as any).realtimeUpdationCount}]`);
                     }
-                    onUpdate(payload);
+                    if (onUpdateRef.current) {
+                        onUpdateRef.current(payload);
+                    }
                 }
             );
         }
@@ -101,7 +111,9 @@ export function useRealtimeSubscription({
                         (window as any).realtimeUpdationCount = ((window as any).realtimeUpdationCount || 0) + 1;
                         console.log(`Realtime updation [${(window as any).realtimeUpdationCount}]`);
                     }
-                    onDelete(payload);
+                    if (onDeleteRef.current) {
+                        onDeleteRef.current(payload);
+                    }
                 }
             );
         }
@@ -121,11 +133,10 @@ export function useRealtimeSubscription({
         return () => {
             if (channelRef.current) {
                 supabase.removeChannel(channelRef.current);
-                // Muted verbose unsubscribed logs
                 channelRef.current = null;
             }
         };
-    }, [table, filter, onInsert, onUpdate, onDelete, enabled]);
+    }, [table, filter, enabled]); // Exclude callback functions to avoid subscription churn
 
     return {
         channel: channelRef.current,

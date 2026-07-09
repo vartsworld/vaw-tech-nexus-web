@@ -64,6 +64,14 @@ import OfficeZenHome from "@/components/staff/OfficeZenHome";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import EmmaAssistant from "@/components/ai/EmmaAssistant";
 import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Sidebar sub-views / dynamic tabs imports
 import LeaveView from "@/components/staff/LeaveView";
@@ -634,55 +642,43 @@ const StaffDashboard = () => {
                 </div>
               </div>
 
-              {/* Actions: Profile & Logout */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 h-9 px-2 sm:px-3"
-                  onClick={() => navigate("/staff/profile")}
-                >
-                  <Avatar className="w-6 h-6 sm:mr-2">
-                    <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
-                    <AvatarFallback className="text-xs">
-                      {profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="hidden sm:inline">Profile</span>
-                </Button>
-                
+              {/* Actions: Profile & Logout Dropdown */}
+              <div className="flex items-center gap-2 sm:gap-4 flex-wrap flex-shrink-0">
                 <UpdateButton variant="dark" />
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-green-500/10 hover:bg-green-500/20 text-green-300 border border-green-500/20 h-9 px-2 sm:px-3"
-                  onClick={() => setShowBiometricDialog(true)}
-                  title="Fingerprint Login Settings"
-                >
-                  <Fingerprint className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Fingerprint</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 h-9 px-2 sm:px-3"
-                  onClick={() => navigate("/sales/dashboard")}
-                >
-                  <Briefcase className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Sales Hub</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 h-9 px-2 sm:px-3"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Logout</span>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full h-9 w-9 bg-white/10 hover:bg-white/20 border border-white/20 p-0 flex items-center justify-center">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
+                        <AvatarFallback className="text-xs">
+                          {profile?.full_name?.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56 bg-zinc-950/95 backdrop-blur-md border border-white/10 text-white rounded-xl">
+                    <DropdownMenuLabel className="text-white/40 uppercase text-[10px] font-black tracking-widest">My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuItem onClick={() => navigate("/staff/profile")} className="text-xs font-bold hover:bg-white/5 cursor-pointer rounded-lg p-2 flex items-center gap-2">
+                      <User className="h-4 w-4 text-blue-400" />
+                      View/Edit Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/sales/dashboard")} className="text-xs font-bold hover:bg-white/5 cursor-pointer rounded-lg p-2 flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-blue-400" />
+                      Sales Hub
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="text-xs font-bold hover:bg-white/5 text-green-400 hover:text-green-300 cursor-pointer rounded-lg p-2 flex items-center gap-2">
+                      <Fingerprint className="h-4 w-4 text-green-400" />
+                      Fingerprint Login
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-white/10" />
+                    <DropdownMenuItem onClick={handleLogout} className="text-xs font-bold text-red-400 hover:bg-white/5 hover:text-red-300 cursor-pointer rounded-lg p-2 flex items-center gap-2">
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
