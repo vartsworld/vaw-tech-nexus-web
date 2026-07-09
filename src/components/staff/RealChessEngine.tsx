@@ -24,29 +24,30 @@ import { useToast } from "@/hooks/use-toast";
 // ─── Piece rendering ────────────────────────────────────────────────────────
 
 const WHITE_PIECES: Record<string, string> = {
-  k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙'
+  k: 'chess_king_2', q: 'chess_queen', r: 'chess_rook', b: 'chess_bishop_2', n: 'chess_knight', p: 'chess_pawn'
 };
 const BLACK_PIECES: Record<string, string> = {
-  k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟'
+  k: 'chess_king_2', q: 'chess_queen', r: 'chess_rook', b: 'chess_bishop_2', n: 'chess_knight', p: 'chess_pawn'
 };
 
 const PieceIcon = ({ piece }: { piece: any }) => {
   if (!piece) return null;
   const isWhite = piece.color === 'w';
-  const symbol = isWhite ? WHITE_PIECES[piece.type] : BLACK_PIECES[piece.type];
+  const iconName = isWhite ? WHITE_PIECES[piece.type] : BLACK_PIECES[piece.type];
 
   return (
     <span
-      className={`
-        select-none pointer-events-none leading-none
-        ${isWhite
-          ? 'text-amber-50 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] [text-shadow:0_0_6px_rgba(255,220,100,0.8),0_1px_2px_rgba(0,0,0,1)]'
-          : 'text-slate-900 drop-shadow-[0_1px_3px_rgba(255,255,255,0.4)] [text-shadow:0_0_4px_rgba(80,0,200,0.5),0_1px_2px_rgba(0,0,0,0.9)]'
-        }
+      className={`material-symbols-outlined select-none pointer-events-none leading-none drop-shadow-md
+        ${isWhite ? 'text-white' : 'text-[#1a1a1a]'}
       `}
-      style={{ fontSize: '1.7rem', lineHeight: 1 }}
+      style={{
+        fontSize: 'clamp(20px, 4vw, 48px)',
+        fontVariationSettings: `'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 48`,
+        WebkitTextStroke: isWhite ? '1.5px #1a1a1a' : '0.5px #ffffff',
+        lineHeight: 1
+      }}
     >
-      {symbol}
+      {iconName}
     </span>
   );
 };
@@ -336,7 +337,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
     if (isSelected) return 'bg-yellow-400';
     if (isPossible) return (row + col) % 2 === 0 ? 'bg-emerald-300' : 'bg-emerald-400';
     if (isLastMoved) return (row + col) % 2 === 0 ? 'bg-sky-200' : 'bg-sky-400';
-    return (row + col) % 2 === 0 ? 'bg-[#f0d9b5]' : 'bg-[#b58863]';
+    return (row + col) % 2 === 0 ? 'bg-[#efebe9]' : 'bg-[#a1887f]';
   };
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -423,10 +424,10 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
           </div>
 
           {/* Chess Board */}
-          <div className="relative">
+          <div className="relative flex justify-center items-center w-full">
             {/* Board shadow/glow frame */}
             <div className={`absolute -inset-1 rounded-lg blur transition-all duration-700 ${gameState.turn === 'w' ? 'bg-amber-400/30' : 'bg-purple-600/30'}`}></div>
-            <div className="relative bg-[#8B4513] p-1.5 rounded-lg shadow-2xl">
+            <div className="relative bg-[#5d4037] p-1.5 rounded-lg shadow-2xl w-full max-w-[450px]">
               {/* File labels top */}
               <div className="grid grid-cols-8 mb-0.5">
                 {['a','b','c','d','e','f','g','h'].map(f => (
@@ -440,7 +441,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
                     <div key={r} className="h-10 flex items-center text-[9px] font-bold text-amber-200/70 leading-none w-2">{r}</div>
                   ))}
                 </div>
-                <div className="grid grid-cols-8 border border-[#5a2d0c] rounded overflow-hidden flex-1">
+                <div className="grid grid-cols-8 border border-[#5d4037] rounded overflow-hidden flex-1">
                   {isPlayerWhite ? (
                     board.map((row, rowIndex) =>
                       row.map((piece, colIndex) => {

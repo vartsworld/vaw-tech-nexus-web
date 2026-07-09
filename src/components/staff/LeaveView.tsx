@@ -120,7 +120,7 @@ export default function LeaveView({ profile }: { profile: any }) {
       </div>
 
       {view === 'form' ? (
-        <Card className="bg-black/30 border-white/10 text-white rounded-[2.5rem]">
+        <Card className="bg-black/60 backdrop-blur-2xl border-white/15 text-white rounded-[2.5rem]">
           <CardContent className="p-6 space-y-6">
             <button
               onClick={() => setView('list')}
@@ -234,7 +234,7 @@ export default function LeaveView({ profile }: { profile: any }) {
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-black/30 border-white/10 text-white rounded-[2.5rem]">
+        <Card className="bg-black/60 backdrop-blur-2xl border-white/15 text-white rounded-[2.5rem]">
           <CardContent className="p-6">
             {isLoadingRequests ? (
               <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div>
