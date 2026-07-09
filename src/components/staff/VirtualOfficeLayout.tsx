@@ -377,7 +377,6 @@ const VirtualOfficeLayout = ({
         { id: 'workspace' as const, name: 'Dashboard', icon: LayoutDashboard, path: '/staff/dashboard' },
         { id: 'planner' as const, name: 'Calendar', icon: Calendar, path: '/monthlyplanner' },
         { id: 'inbox', name: 'Inbox', icon: Inbox, path: '/staff/inbox' },
-        { id: 'tasks', name: 'My Tasks', icon: CheckSquare, path: '/staff/work' },
       ]
     },
     {
@@ -408,16 +407,19 @@ const VirtualOfficeLayout = ({
   };
 
   const handleLinkClick = (item: any) => {
-    if (item.id === 'workspace' || item.id === 'planner' || item.id === 'meeting') {
-      onRoomChange(item.id);
-    }
     if (item.id === 'notepad') {
       setIsNotepadOpen(true);
       fetchNotepadNotes();
       return;
     }
-    if (item.path !== '#') {
-      navigate(item.path);
+
+    const isDashboardPath = location.pathname === '/staff/dashboard' || location.pathname === '/team-head/dashboard';
+    if (isDashboardPath) {
+      onRoomChange(item.id);
+    } else {
+      const isTeamHead = location.pathname.startsWith('/team-head') || (userProfile?.role === 'team_head');
+      const targetDashboard = isTeamHead ? '/team-head/dashboard' : '/staff/dashboard';
+      navigate(targetDashboard, { state: { currentRoom: item.id } });
     }
   };
 
@@ -479,7 +481,13 @@ const VirtualOfficeLayout = ({
           {/* Top Header Logo (VAW Technologies) */}
           <div className={cn("p-6 flex items-center", isSidebarCollapsed ? "justify-center" : "justify-between border-b border-white/5")}>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white text-xs shrink-0 shadow-lg shadow-blue-500/20">V</div>
+              <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 shadow-lg">
+                <img
+                  src="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png"
+                  alt="VAW Logo"
+                  className="w-full h-full object-contain"
+                />
+              </div>
               {!isSidebarCollapsed && (
                 <span className="font-black text-white uppercase italic tracking-tighter text-sm">VAW Technologies</span>
               )}
@@ -584,7 +592,7 @@ const VirtualOfficeLayout = ({
       )}
 
       {/* Main Content Area */}
-      <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6 relative bg-zinc-950/80 backdrop-blur-md">
+      <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6 relative bg-transparent">
         {isSidebarCollapsed && currentRoom !== 'home' && (
           <Button
             variant="outline"
@@ -673,7 +681,19 @@ const VirtualOfficeLayout = ({
                     <DropdownMenuItem
                       key={note.id}
                       className="text-xs hover:bg-amber-100 cursor-pointer p-2 rounded-lg truncate text-amber-900"
-                      onClick={() => setNotepadContent(note.content)}
+                      onClick={() => {
+                        setNotepadContent(note.content);
+                        const isDashboardPath = location.pathname === '/staff/dashboard' || location.pathname === '/team-head/dashboard';
+                        if (isDashboardPath) {
+                          onRoomChange('notes');
+                        } else {
+                          const isTeamHead = location.pathname.startsWith('/team-head') || (userProfile?.role === 'team_head');
+                          const targetDashboard = isTeamHead ? '/team-head/dashboard' : '/staff/dashboard';
+                          navigate(targetDashboard, { state: { currentRoom: 'notes' } });
+                        }
+                        setIsNotepadOpen(false);
+                        setIsNotepadPinned(false);
+                      }}
                     >
                       {note.content}
                     </DropdownMenuItem>
