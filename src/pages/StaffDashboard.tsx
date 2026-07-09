@@ -136,17 +136,15 @@ const StaffDashboard = () => {
     }
   };
 
-  // Subscribe to real-time presence for online users
+  // Set up presence tracking for online users
   useEffect(() => {
-    if (!profile?.user_id) return;
+    if (!profile?.user_id || !profile?.full_name) return;
 
-    const presenceChannel = supabase.channel('online-users', {
-      config: { presence: { key: profile.user_id } }
-    });
+    const channel = supabase.channel('team-presence');
 
-    presenceChannel
+    channel
       .on('presence', { event: 'sync' }, () => {
-        const state = presenceChannel.presenceState();
+        const state = channel.presenceState();
         setOnlineUsers(state);
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
@@ -161,16 +159,17 @@ const StaffDashboard = () => {
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await presenceChannel.track({
+          await channel.track({
             user_id: profile.user_id,
             full_name: profile.full_name,
+            username: profile.username || 'user',
             online_at: new Date().toISOString(),
           });
         }
       });
 
     return () => {
-      supabase.removeChannel(presenceChannel);
+      supabase.removeChannel(channel);
     };
   }, [profile?.user_id, profile?.full_name]);
 
@@ -360,7 +359,7 @@ const StaffDashboard = () => {
       {/* Office Header */}
       {currentRoom !== 'home' && (
         <header className="relative z-30 bg-black/20 backdrop-blur-lg border-b border-white/10 flex-shrink-0">
-        <div className="container mx-auto px-4 py-3">
+        <div className="container mx-auto px-4 py-2">
           <div className="flex flex-col gap-3">
             {/* Top Row: Logo and Main Info */}
             <div className="flex items-center justify-between gap-3">
@@ -513,7 +512,7 @@ const StaffDashboard = () => {
       {/* EMMA AI floating button + dialog */}
       <Button
         onClick={() => setShowEmma(true)}
-        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-br from-primary to-purple-500 hover:scale-105 transition-transform"
+        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-br from-primary to-purple-500 hover:scale-105 transition-transform hidden md:flex"
         size="icon"
         title="Ask EMMA"
       >

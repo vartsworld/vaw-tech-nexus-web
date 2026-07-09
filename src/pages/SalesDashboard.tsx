@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Outlet, Link } from "react-router-dom";
 import {
   Users,
   Coins,
@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 import { useStaffData } from "@/hooks/useStaffData";
 import { useSalesData } from "@/hooks/useSalesData";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,6 +63,8 @@ const notesKey = (clientId: string) => `vaw_sales_notes_${clientId}`;
 ───────────────────────────────────────────────────────── */
 const SalesDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isSubRoute = location.pathname.includes('/sales/dashboard/') && location.pathname !== '/sales/dashboard';
   const { profile, loading: profileLoading } = useStaffData();
   const { clients, stats, isLoading: salesLoading, refetchClients } = useSalesData(profile?.user_id);
 
@@ -339,6 +342,40 @@ const SalesDashboard = () => {
       {/* ── MAIN ── */}
       <main className="px-4 sm:px-6 pt-20 sm:pt-24 pb-12 max-w-7xl mx-auto">
 
+        {/* Sub-navigation Tabs */}
+        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/5 mb-8 w-fit overflow-x-auto no-scrollbar">
+          {[
+            { name: 'Vault', path: '/sales/dashboard', icon: Briefcase },
+            { name: 'Agenda', path: '/sales/dashboard/agenda', icon: Edit },
+            { name: 'Pricing', path: '/sales/dashboard/pricing', icon: Coins },
+            { name: 'Plans', path: '/sales/dashboard/plans', icon: LayoutGrid },
+            { name: 'Onboarding', path: '/sales/dashboard/onboarding', icon: Briefcase },
+          ].map((tab) => {
+            const isActive = location.pathname === tab.path;
+            return (
+              <Link
+                key={tab.path}
+                to={tab.path}
+                className={cn(
+                  "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                  isActive
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                    : "text-white/40 hover:text-white hover:bg-white/5"
+                )}
+              >
+                <tab.icon className={cn("w-4 h-4", isActive ? "text-white" : "text-white/20")} />
+                {tab.name}
+              </Link>
+            );
+          })}
+        </div>
+
+        {isSubRoute ? (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <Outlet />
+          </div>
+        ) : (
+        <>
         {/* DAILY PROTOCOL banner */}
         <AnimatePresence mode="wait">
           {(showAttendanceCheck || showMoodCheck) && (
@@ -461,6 +498,8 @@ const SalesDashboard = () => {
 
           </div>
         </div>
+        </>
+        )}
       </main>
 
       {/* ═══════════════════════════════════════════════════

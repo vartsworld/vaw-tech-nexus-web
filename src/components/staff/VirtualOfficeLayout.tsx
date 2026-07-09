@@ -24,7 +24,19 @@ import {
   PlaneTakeoff,
   Trophy,
   Compass,
-  Laptop
+  Laptop,
+  Folder,
+  Brain,
+  Tag,
+  LayoutDashboard,
+  Inbox,
+  CheckSquare,
+  FileText,
+  Activity,
+  MessageSquare,
+  Menu,
+  ChevronLeft,
+  Circle
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import TeamChat from "./TeamChat";
@@ -36,6 +48,8 @@ import { CompletedTasksDialog } from "./CompletedTasksDialog";
 import { supabase } from "@/integrations/supabase/client";
 import confetti from "canvas-confetti";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 interface VirtualOfficeLayoutProps {
@@ -65,8 +79,7 @@ const VirtualOfficeLayout = ({
   const [mobileSidebarTab, setMobileSidebarTab] = useState<'status' | 'chat'>('status');
   const [chessArenaMode, setChessArenaMode] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(currentRoom === 'meeting');
-  const [roomsCollapsed, setRoomsCollapsed] = useState(false);
-  const [actionsCollapsed, setActionsCollapsed] = useState(false);
+  const [openSections, setOpenSections] = useState<string[]>(['Folders', 'Neuralink Space', 'Tags']);
   const [popoutChat, setPopoutChat] = useState(false);
   const [popoutDM, setPopoutDM] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
@@ -273,14 +286,58 @@ const VirtualOfficeLayout = ({
     }
   }, [currentRoom]);
 
-  const rooms = [
-    { id: 'workspace' as const, name: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
-    { id: 'planner' as const, name: 'Monthly Planner', icon: Calendar, color: 'from-purple-500 to-purple-600' },
-    { id: 'meeting' as const, name: 'Meeting Room', icon: Users, color: 'from-yellow-500 to-yellow-600' }
+  const sidebarLinks = [
+    {
+      title: "Folders",
+      icon: Folder,
+      items: [
+        { id: 'workspace' as const, name: 'Dashboard', icon: LayoutDashboard, path: '/staff/dashboard' },
+        { id: 'planner' as const, name: 'Calendar', icon: Calendar, path: '/monthlyplanner' },
+        { id: 'inbox', name: 'Inbox', icon: Inbox, path: '#' },
+        { id: 'tasks', name: 'My Tasks', icon: CheckSquare, path: '#' },
+      ]
+    },
+    {
+      title: "Neuralink Space",
+      icon: Brain,
+      items: [
+        { id: 'operations', name: 'Operations', icon: LayoutDashboard, path: '#' },
+        { id: 'docs', name: 'Docs', icon: FileText, path: '#' },
+        { id: 'meeting' as const, name: 'Meeting Room', icon: Users, path: '#' },
+        { id: 'activity', name: 'Activity', icon: Activity, path: '#' },
+        { id: 'channels', name: 'Channels', icon: MessageSquare, path: '#' },
+      ]
+    },
+    {
+      title: "Tags",
+      icon: Tag,
+      items: [
+        { id: 'important', name: 'Important', icon: Circle, color: 'text-red-500', path: '#' },
+        { id: 'normal', name: 'Normal', icon: Circle, color: 'text-blue-500', path: '#' },
+        { id: 'minor', name: 'Minor', icon: Circle, color: 'text-gray-500', path: '#' },
+      ]
+    }
   ];
 
+  const toggleSection = (section: string) => {
+    setOpenSections(prev =>
+      prev.includes(section)
+        ? prev.filter(s => s !== section)
+        : [...prev, section]
+    );
+  };
+
+  const handleLinkClick = (item: any) => {
+    if (item.id === 'workspace' || item.id === 'planner' || item.id === 'meeting') {
+      onRoomChange(item.id);
+    }
+    if (item.path !== '#') {
+      navigate(item.path);
+    }
+  };
+
   return (
-    <div className={`flex flex-col lg:flex-row h-full w-full overflow-hidden ${className || ""}`}>
+    <div className={`flex flex-col lg:flex-row h-full w-full overflow-hidden bg-zinc-950 ${className || ""}`}>
       {/* Mobile Chat Sheet */}
       <Sheet open={showMobileChat} onOpenChange={setShowMobileChat}>
         <SheetContent side="right" className="w-full sm:w-[400px] p-0 bg-background/95 backdrop-blur-xl">
@@ -327,191 +384,91 @@ const VirtualOfficeLayout = ({
       </Sheet>
 
       {/* Desktop Sidebar */}
-      {currentRoom !== 'home' && !isSidebarCollapsed && (
-        <aside className="hidden lg:flex lg:flex-col w-80 bg-black/20 backdrop-blur-lg border-r border-white/10 overflow-hidden flex-shrink-0 z-20 transition-all duration-300">
-        <div className="p-6 pb-4 space-y-4 flex-shrink-0 overflow-y-auto">
-          {/* Room Navigation - Collapsible */}
-          <div>
-            <button
-              onClick={() => setRoomsCollapsed(!roomsCollapsed)}
-              className="w-full flex items-center justify-between text-white font-semibold mb-2 hover:opacity-80 transition-opacity"
-            >
-              <span className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-green-500 rounded"></div>
-                Office Rooms
-              </span>
-              {roomsCollapsed ? (
-                <ChevronRight className="w-4 h-4 text-white/50" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-white/50" />
+      {currentRoom !== 'home' && (
+        <aside
+          className={cn(
+            "hidden lg:flex lg:flex-col bg-zinc-950 border-r border-white/5 transition-all duration-300 ease-in-out relative z-30 group",
+            isSidebarCollapsed ? "w-20" : "w-72"
+          )}
+        >
+          {/* Header/Logo Section */}
+          <div className="p-6 flex items-center justify-between">
+            {!isSidebarCollapsed && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white text-xs">V</div>
+                <span className="font-black text-white uppercase italic tracking-tighter text-sm">VAW PRO</span>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "text-white/20 hover:text-white hover:bg-white/5 transition-all",
+                isSidebarCollapsed && "mx-auto"
               )}
-            </button>
-            {!roomsCollapsed && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                {rooms.map((room) => {
-                  const Icon = room.icon;
-                  const isActive = currentRoom === room.id;
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            >
+              {isSidebarCollapsed ? <Menu className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+            </Button>
+          </div>
 
-                  return (
-                    <Button
-                      key={room.id}
-                      variant="ghost"
-                      className={`w-full justify-start p-4 h-auto transition-all duration-300 ${isActive
-                        ? `bg-gradient-to-r ${room.color} text-white shadow-lg shadow-blue-500/25`
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                        }`}
-                      onClick={() => onRoomChange(room.id)}
+          <ScrollArea className="flex-1 px-4">
+            <div className="space-y-6 py-4">
+              {sidebarLinks.map((section) => (
+                <div key={section.title} className="space-y-2">
+                  {!isSidebarCollapsed && (
+                    <button
+                      onClick={() => toggleSection(section.title)}
+                      className="flex items-center justify-between w-full text-[10px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-white/60 transition-colors px-2 mb-2"
                     >
-                      <Icon className="w-5 h-5 mr-3" />
-                      <span className="font-medium">{room.name}</span>
-                      {isActive && (
-                        <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                      )}
-                    </Button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                      <span className="flex items-center gap-2">
+                        <section.icon className="w-3 h-3" />
+                        {section.title}
+                      </span>
+                      {openSections.includes(section.title) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                    </button>
+                  )}
 
-          {/* Quick Actions / Chess Arena Toggle */}
-          <div className="relative">
-            {chessArenaMode ? (
-              /* ── Chess Arena Mode ── */
-              <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-white font-semibold flex items-center gap-2">
-                    <Swords className="w-4 h-4 text-amber-400" />
-                    Chess Arena
-                  </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="relative z-10 h-8 px-3 text-white/60 hover:text-white hover:bg-white/10"
-                    onClick={(e) => { e.stopPropagation(); setChessArenaMode(false); }}
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-                    Back
-                  </Button>
-                </div>
-                <div className="rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 via-black/20 to-orange-500/5 overflow-hidden">
-                  {userId && (
-                    <MiniChess userId={userId} userProfile={userProfile} compact />
+                  {(isSidebarCollapsed || openSections.includes(section.title)) && (
+                    <div className="space-y-1">
+                      {section.items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = currentRoom === item.id;
+
+                        return (
+                          <Button
+                            key={item.id}
+                            variant="ghost"
+                            className={cn(
+                              "w-full transition-all duration-200 group/btn relative",
+                              isSidebarCollapsed ? "justify-center px-0 h-12" : "justify-start px-3 h-10",
+                              isActive
+                                ? "bg-white/5 text-white"
+                                : "text-white/40 hover:text-white hover:bg-white/[0.02]"
+                            )}
+                            onClick={() => handleLinkClick(item)}
+                            title={isSidebarCollapsed ? item.name : undefined}
+                          >
+                            <Icon className={cn(
+                              "w-5 h-5 transition-transform group-hover/btn:scale-110",
+                              !isSidebarCollapsed && "mr-3",
+                              (item as any).color
+                            )} />
+                            {!isSidebarCollapsed && (
+                              <span className="text-xs font-bold uppercase tracking-tight">{item.name}</span>
+                            )}
+                            {isActive && (
+                              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-500 rounded-r-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                            )}
+                          </Button>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
-              </div>
-            ) : (
-              /* ── Normal Quick Actions ── */
-              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                <button
-                  onClick={() => setActionsCollapsed(!actionsCollapsed)}
-                  className="w-full flex items-center justify-between text-white font-semibold mb-2 hover:opacity-80 transition-opacity"
-                >
-                  <span>Quick Actions</span>
-                  {actionsCollapsed ? (
-                    <ChevronRight className="w-4 h-4 text-white/50" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-white/50" />
-                  )}
-                </button>
-                {!actionsCollapsed && (
-                <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                  {/* Chess Arena Button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="col-span-2 relative overflow-hidden bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-red-500/20 border-amber-500/30 text-amber-200 hover:from-amber-500/30 hover:via-orange-500/25 hover:to-red-500/30 group"
-                    onClick={() => setChessArenaMode(true)}
-                  >
-                    <Swords className="w-4 h-4 mr-2 group-hover:rotate-45 transition-transform duration-300" />
-                    Chess Arena
-                    <span className="ml-auto text-[10px] bg-amber-500/30 px-1.5 py-0.5 rounded-full text-amber-200">
-                      ♟
-                    </span>
-                  </Button>
-
-                  <Button variant="outline" size="sm" className="bg-red-500/20 border-red-500/30 text-white hover:bg-red-500/30">
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Chat
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-orange-500/20 border-orange-500/30 text-white hover:bg-orange-500/30"
-                    onClick={() => setShowLeaveDialog(true)}
-                  >
-                    <PlaneTakeoff className="w-4 h-4 mr-2" />
-                    Leave
-                  </Button>
-                  <Button variant="outline" size="sm" className="bg-green-500/20 border-green-500/30 text-white hover:bg-green-500/30">
-                    <Bell className="w-4 h-4 mr-2" />
-                    Alerts
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="col-span-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/30 text-white hover:from-amber-500/30 hover:to-yellow-500/30"
-                    onClick={() => onOpenCoins ? onOpenCoins() : navigate('/mycoins')}
-                  >
-                    <Coins className="w-4 h-4 mr-2" />
-                    My Coins
-                  </Button>
-
-                  {/* Completed Tasks Button */}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="col-span-2 bg-emerald-500/20 border-emerald-500/30 text-emerald-200 hover:from-emerald-500/30 hover:to-teal-500/30 hover:bg-emerald-500/30"
-                    onClick={() => setShowCompletedTasksDialog(true)}
-                  >
-                    <Trophy className="w-4 h-4 mr-2 text-amber-300 animate-pulse" />
-                    Completed Tasks
-                  </Button>
-
-                  {/* VAW Tools Nexus Button */}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="col-span-2 bg-gradient-to-r from-blue-600/35 to-cyan-500/35 border-blue-500/40 text-blue-200 hover:from-blue-600/45 hover:to-cyan-500/45 hover:text-white hover:scale-[1.02] active:scale-[0.98] transition-all"
-                    onClick={() => navigate('/staff/tools-nexus')}
-                  >
-                    <Laptop className="w-4 h-4 mr-2 text-cyan-300 animate-pulse" />
-                    Tools Nexus
-                  </Button>
-
-                  {/* Activity Log Dialog */}
-                  {userId && (
-                    <Dialog open={showActivityLog} onOpenChange={setShowActivityLog}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="col-span-2 bg-purple-500/20 border-purple-500/30 text-white hover:bg-purple-500/30">
-                          <ClipboardList className="w-4 h-4 mr-2" />
-                          Today's Activity
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[500px] max-h-[600px]">
-                        <DialogHeader>
-                          <div className="flex items-center justify-between">
-                            <DialogTitle>Today's Activity Log</DialogTitle>
-                            <DialogClose asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </DialogClose>
-                          </div>
-                        </DialogHeader>
-                        <div className="overflow-y-auto max-h-[500px]">
-                          <ActivityLogPanel userId={userId} />
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+              ))}
+            </div>
+          </ScrollArea>
 
         {/* Team Status / Chat Toggle Section */}
         <div className="flex-1 flex flex-col min-h-0 border-t border-white/10">

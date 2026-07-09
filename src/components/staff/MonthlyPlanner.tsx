@@ -10,7 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogTrigger
+  DialogTrigger,
+  DialogDescription
 } from "@/components/ui/dialog";
 import {
   ChevronLeft,
@@ -21,7 +22,11 @@ import {
   User,
   X,
   Edit,
-  Trash2
+  Trash2,
+  Settings,
+  Briefcase,
+  Layers,
+  Circle
 } from "lucide-react";
 import {
   format,
@@ -43,6 +48,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MonthlyPlan {
   id: string;
@@ -52,32 +59,52 @@ interface MonthlyPlan {
   created_by: string;
   department_id: string;
   assigned_staff: string[];
+  client_id: string | null;
+  color: string;
   created_at: string;
 }
 
 interface MonthlyPlannerProps {
   userId: string;
   userProfile: any;
+  filterClientId?: string | null;
 }
 
-const MonthlyPlanner = ({ userId, userProfile }: MonthlyPlannerProps) => {
+const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyPlannerProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [plans, setPlans] = useState<MonthlyPlan[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isDayDetailOpen, setIsDayDetailOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<MonthlyPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const isMobile = useIsMobile();
   const [newPlan, setNewPlan] = useState({
     title: '',
     description: '',
-    assigned_staff: [] as string[]
+    assigned_staff: [] as string[],
+    client_id: 'common',
+    color: '#3b82f6'
   });
   const { toast } = useToast();
 
+  const colors = [
+    { name: 'Blue', value: '#3b82f6' },
+    { name: 'Emerald', value: '#10b981' },
+    { name: 'Amber', value: '#f59e0b' },
+    { name: 'Rose', value: '#f43f5e' },
+    { name: 'Violet', value: '#8b5cf6' },
+    { name: 'Orange', value: '#f97316' },
+    { name: 'Teal', value: '#14b8a6' },
+    { name: 'Slate', value: '#64748b' }
+  ];
+
   useEffect(() => {
     fetchPlans();
-  }, [currentMonth]);
+    fetchClients();
+  }, [currentMonth, filterClientId]);
 
   const fetchPlans = async () => {
     setIsLoading(true);
@@ -85,11 +112,17 @@ const MonthlyPlanner = ({ userId, userProfile }: MonthlyPlannerProps) => {
       const start = startOfMonth(currentMonth);
       const end = endOfMonth(currentMonth);
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('monthly_plans')
         .select('*')
         .gte('date', format(start, 'yyyy-MM-dd'))
         .lte('date', format(end, 'yyyy-MM-dd'));
+
+      if (filterClientId) {
+        query = query.eq('client_id', filterClientId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setPlans(data || []);
@@ -105,6 +138,11 @@ const MonthlyPlanner = ({ userId, userProfile }: MonthlyPlannerProps) => {
     }
   };
 
+  const fetchClients = async () => {
+    const { data } = await supabase.from('clients').select('id, company_name');
+    setClients(data || []);
+  };
+
   const handleAddPlan = async () => {
     if (!selectedDate || !newPlan.title) return;
 
@@ -117,7 +155,9 @@ const MonthlyPlanner = ({ userId, userProfile }: MonthlyPlannerProps) => {
           description: newPlan.description,
           created_by: userId,
           department_id: userProfile?.department_id,
-          assigned_staff: newPlan.assigned_staff
+          assigned_staff: newPlan.assigned_staff,
+          client_id: newPlan.client_id === 'common' ? null : newPlan.client_id,
+          color: newPlan.color
         })
         .select()
         .single();
@@ -131,7 +171,7 @@ const MonthlyPlanner = ({ userId, userProfile }: MonthlyPlannerProps) => {
 
       setPlans([...plans, data]);
       setIsAddDialogOpen(false);
-      setNewPlan({ title: '', description: '', assigned_staff: [] });
+      resetNewPlan();
     } catch (error) {
       console.error('Error adding plan:', error);
       toast({
@@ -151,7 +191,9 @@ const MonthlyPlanner = ({ userId, userProfile }: MonthlyPlannerProps) => {
         .update({
           title: newPlan.title,
           description: newPlan.description,
-          assigned_staff: newPlan.assigned_staff
+          assigned_staff: newPlan.assigned_staff,
+          client_id: newPlan.client_id === 'common' ? null : newPlan.client_id,
+          color: newPlan.color
         })
         .eq('id', selectedPlan.id)
         .select()
@@ -167,7 +209,7 @@ const MonthlyPlanner = ({ userId, userProfile }: MonthlyPlannerProps) => {
       setPlans(plans.map(p => p.id === selectedPlan.id ? data : p));
       setIsAddDialogOpen(false);
       setSelectedPlan(null);
-      setNewPlan({ title: '', description: '', assigned_staff: [] });
+      resetNewPlan();
     } catch (error) {
       console.error('Error updating plan:', error);
       toast({
@@ -193,7 +235,7 @@ const MonthlyPlanner = ({ userId, userProfile }: MonthlyPlannerProps) => {
       });
 
       setPlans(plans.filter(p => p.id !== id));
-      setIsViewDialogOpen(false);
+      // If we deleted from Day Detail, we stay there, if it was the last plan it might need handling
     } catch (error) {
       console.error('Error deleting plan:', error);
       toast({
@@ -204,24 +246,70 @@ const MonthlyPlanner = ({ userId, userProfile }: MonthlyPlannerProps) => {
     }
   };
 
+  const resetNewPlan = () => {
+    setNewPlan({
+      title: '',
+      description: '',
+      assigned_staff: [],
+      client_id: 'common',
+      color: '#3b82f6'
+    });
+    setSelectedPlan(null);
+  };
+
   const renderHeader = () => {
     return (
-      <div className="flex items-center justify-between px-4 py-2 bg-background border-b">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold">
+      <div className="flex items-center justify-between px-4 py-3 bg-zinc-950/50 border-b border-white/5">
+        <div className="flex items-center gap-6">
+          <h2 className="text-xl font-black uppercase italic tracking-tighter text-white">
             {format(currentMonth, 'MMMM yyyy')}
           </h2>
-          <div className="flex gap-1">
-            <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-lg border-white/10 bg-white/5 hover:bg-white/10"
+              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-lg border-white/10 bg-white/5 hover:bg-white/10"
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button variant="outline" onClick={() => setCurrentMonth(new Date())}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 rounded-lg border-white/10 bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase"
+              onClick={() => setCurrentMonth(new Date())}
+            >
               Today
             </Button>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-xl border border-white/5 text-white/40 hover:text-white hover:bg-white/10"
+            onClick={() => setIsSettingsOpen(true)}
+          >
+            <Settings className="w-4 h-4" />
+          </Button>
+          <Button
+            className="h-9 rounded-xl bg-primary hover:bg-primary/90 text-black font-black text-xs uppercase tracking-wider"
+            onClick={() => {
+              setSelectedDate(new Date());
+              resetNewPlan();
+              setIsAddDialogOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4 mr-1" /> New Plan
+          </Button>
         </div>
       </div>
     );
@@ -230,9 +318,9 @@ const MonthlyPlanner = ({ userId, userProfile }: MonthlyPlannerProps) => {
   const renderDays = () => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return (
-      <div className="grid grid-cols-7 border-b bg-muted/50">
+      <div className="grid grid-cols-7 border-b border-white/5 bg-white/[0.02]">
         {days.map((day, i) => (
-          <div key={i} className="py-2 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          <div key={i} className="py-3 text-center text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
             {day}
           </div>
         ))}
@@ -259,48 +347,65 @@ const MonthlyPlanner = ({ userId, userProfile }: MonthlyPlannerProps) => {
           <div
             key={day.toString()}
             className={cn(
-              "min-h-[100px] border-r border-b p-1 transition-colors hover:bg-muted/30 cursor-pointer flex flex-col",
-              !isSameMonth(currentDay, monthStart) && "bg-muted/20 text-muted-foreground",
-              isToday(currentDay) && "bg-blue-500/5"
+              "min-h-[100px] border-r border-b border-white/5 p-2 transition-all hover:bg-white/[0.03] cursor-pointer flex flex-col group",
+              !isSameMonth(currentDay, monthStart) && "bg-white/[0.01] text-white/10",
+              isToday(currentDay) && "bg-primary/5"
             )}
             onClick={() => {
               setSelectedDate(currentDay);
-              if (dayPlans.length > 0) {
-                setSelectedPlan(dayPlans[0]);
-                setIsViewDialogOpen(true);
-              } else {
-                setNewPlan({ title: '', description: '', assigned_staff: [] });
-                setIsAddDialogOpen(true);
-              }
+              setIsDayDetailOpen(true);
             }}
           >
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start mb-2">
               <span className={cn(
-                "text-xs font-semibold px-1.5 py-0.5 rounded-full",
-                isToday(currentDay) && "bg-blue-500 text-white"
+                "text-xs font-black px-2 py-0.5 rounded-md transition-colors",
+                isToday(currentDay) ? "bg-primary text-black" : "text-white/40 group-hover:text-white"
               )}>
                 {format(currentDay, 'd')}
               </span>
-              {dayPlans.length > 0 && (
-                <Badge variant="secondary" className="text-[10px] h-4 px-1">
+              {dayPlans.length > 0 && !isMobile && (
+                <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-white/10 bg-white/5 text-white/50">
                   {dayPlans.length}
                 </Badge>
               )}
             </div>
-            <div className="mt-1 space-y-1 flex-1 overflow-hidden">
-              {dayPlans.slice(0, 3).map((plan, idx) => (
-                <div
-                  key={idx}
-                  className="text-[10px] bg-blue-500/10 border border-blue-500/20 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded truncate"
-                  title={plan.title}
-                >
-                  {plan.title}
+
+            {/* Content Area */}
+            <div className="flex-1 space-y-1 overflow-hidden">
+              {isMobile ? (
+                /* Mobile Dots View */
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {dayPlans.map((plan, idx) => (
+                    <div
+                      key={idx}
+                      className="w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: plan.color || '#3b82f6' }}
+                    />
+                  ))}
                 </div>
-              ))}
-              {dayPlans.length > 3 && (
-                <div className="text-[9px] text-muted-foreground pl-1">
-                  + {dayPlans.length - 3} more
-                </div>
+              ) : (
+                /* Desktop Plan Blocks */
+                <>
+                  {dayPlans.slice(0, 3).map((plan, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        backgroundColor: `${plan.color || '#3b82f6'}20`,
+                        borderColor: `${plan.color || '#3b82f6'}40`,
+                        color: plan.color || '#3b82f6'
+                      }}
+                      className="text-[10px] border px-2 py-1 rounded-md truncate font-bold uppercase tracking-tight"
+                      title={plan.title}
+                    >
+                      {plan.title}
+                    </div>
+                  ))}
+                  {dayPlans.length > 3 && (
+                    <div className="text-[9px] text-white/20 font-black uppercase tracking-widest pl-1 pt-1">
+                      + {dayPlans.length - 3} more
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -317,121 +422,323 @@ const MonthlyPlanner = ({ userId, userProfile }: MonthlyPlannerProps) => {
     return <div>{rows}</div>;
   };
 
+  // Group plans for the detailed view
+  const getGroupedPlans = (datePlans: MonthlyPlan[]) => {
+    const common = datePlans.filter(p => !p.client_id);
+    const clientGrouped: Record<string, { name: string, plans: MonthlyPlan[] }> = {};
+
+    datePlans.filter(p => p.client_id).forEach(p => {
+      const client = clients.find(c => c.id === p.client_id);
+      const name = client?.company_name || 'Unknown Client';
+      if (!clientGrouped[p.client_id!]) {
+        clientGrouped[p.client_id!] = { name, plans: [] };
+      }
+      clientGrouped[p.client_id!].plans.push(p);
+    });
+
+    return { common, clientGrouped };
+  };
+
+  const selectedDayPlans = selectedDate ? plans.filter(p => isSameDay(parseISO(p.date), selectedDate)) : [];
+  const { common: commonPlans, clientGrouped } = getGroupedPlans(selectedDayPlans);
+
   return (
-    <Card className="w-full shadow-xl border-white/10 bg-black/40 backdrop-blur-md overflow-hidden">
+    <Card className="w-full shadow-2xl border-white/5 bg-zinc-950/40 backdrop-blur-xl overflow-hidden rounded-3xl">
       <CardHeader className="p-0">
         {renderHeader()}
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-full">
-          <div className="min-w-[600px]">
+          <div className="min-w-[700px] lg:min-w-0">
             {renderDays()}
             {renderCells()}
           </div>
         </ScrollArea>
       </CardContent>
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>{selectedPlan ? 'Edit Daily Plan' : 'Add Daily Plan'}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                value={selectedDate ? format(selectedDate, 'PPP') : ''}
-                disabled
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="title">Plan Title</Label>
-              <Input
-                id="title"
-                placeholder="Marketing Strategy, Dev Sprint, etc."
-                value={newPlan.title}
-                onChange={(e) => setNewPlan({ ...newPlan, title: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Details</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe the plan for today..."
-                value={newPlan.description}
-                onChange={(e) => setNewPlan({ ...newPlan, description: e.target.value })}
-              />
+      {/* ═══════════════════════════════════════════════════
+          DAY DETAIL DIALOG
+      ═══════════════════════════════════════════════════ */}
+      <Dialog open={isDayDetailOpen} onOpenChange={setIsDayDetailOpen}>
+        <DialogContent className="sm:max-w-2xl bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="p-6 border-b border-white/5 bg-gradient-to-br from-primary/10 via-transparent to-transparent shrink-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-2xl font-black uppercase italic text-white tracking-tighter">
+                  {selectedDate ? format(selectedDate, 'EEEE, MMMM do') : 'Day Details'}
+                </DialogTitle>
+                <p className="text-[10px] text-white/40 uppercase font-black tracking-widest mt-1">
+                  Daily Strategic Objectives & Task Groups
+                </p>
+              </div>
+              <Button
+                onClick={() => {
+                  setIsDayDetailOpen(false);
+                  resetNewPlan();
+                  setIsAddDialogOpen(true);
+                }}
+                className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs uppercase h-10 px-4"
+              >
+                <Plus className="w-4 h-4 mr-2" /> Add Plan
+              </Button>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-            <Button onClick={selectedPlan ? handleUpdatePlan : handleAddPlan}>
-              {selectedPlan ? 'Update Plan' : 'Save Plan'}
-            </Button>
-          </DialogFooter>
+
+          <ScrollArea className="flex-1 p-6">
+            <div className="space-y-8">
+              {/* Common Tasks */}
+              {commonPlans.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-primary" />
+                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/60">Common Plans</h4>
+                  </div>
+                  <div className="grid gap-3">
+                    {commonPlans.map(plan => (
+                      <PlanItem
+                        key={plan.id}
+                        plan={plan}
+                        onEdit={(p) => {
+                          setSelectedPlan(p);
+                          setNewPlan({
+                            title: p.title,
+                            description: p.description,
+                            assigned_staff: p.assigned_staff,
+                            client_id: 'common',
+                            color: p.color
+                          });
+                          setIsAddDialogOpen(true);
+                        }}
+                        onDelete={handleDeletePlan}
+                        isCreator={plan.created_by === userId}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Client Tasks Grouped */}
+              {Object.entries(clientGrouped).map(([clientId, group]) => (
+                <div key={clientId} className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-blue-400" />
+                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/60">{group.name}</h4>
+                  </div>
+                  <div className="grid gap-3">
+                    {group.plans.map(plan => (
+                      <PlanItem
+                        key={plan.id}
+                        plan={plan}
+                        onEdit={(p) => {
+                          setSelectedPlan(p);
+                          setNewPlan({
+                            title: p.title,
+                            description: p.description,
+                            assigned_staff: p.assigned_staff,
+                            client_id: p.client_id || 'common',
+                            color: p.color
+                          });
+                          setIsAddDialogOpen(true);
+                        }}
+                        onDelete={handleDeletePlan}
+                        isCreator={plan.created_by === userId}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {selectedDayPlans.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-white/5 rounded-3xl">
+                  <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                    <CalendarIcon className="w-8 h-8 text-white/20" />
+                  </div>
+                  <h3 className="text-white font-bold uppercase text-sm tracking-widest">No Plans for today</h3>
+                  <p className="text-white/30 text-[10px] uppercase font-black mt-2">Initialize your daily targets to stay on track</p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
-      {/* View Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          {selectedPlan && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5 text-blue-500" />
-                  {selectedPlan.title}
-                </DialogTitle>
-                <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                  <Clock className="h-3 w-3" />
-                  {format(parseISO(selectedPlan.date), 'EEEE, MMMM do')}
-                </div>
-              </DialogHeader>
-              <div className="py-4 space-y-4">
-                <div>
-                  <h4 className="text-sm font-semibold mb-1">Description</h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {selectedPlan.description || "No description provided."}
-                  </p>
-                </div>
-                {selectedPlan.created_by === userId && (
-                  <div className="flex gap-2 pt-4 border-t">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => {
-                        setNewPlan({
-                          title: selectedPlan.title,
-                          description: selectedPlan.description,
-                          assigned_staff: selectedPlan.assigned_staff
-                        });
-                        setIsViewDialogOpen(false);
-                        setIsAddDialogOpen(true);
-                      }}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleDeletePlan(selectedPlan.id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </Button>
-                  </div>
-                )}
+      {/* ═══════════════════════════════════════════════════
+          ADD / EDIT PLAN DIALOG
+      ═══════════════════════════════════════════════════ */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[480px] bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden">
+          <div className="p-6 border-b border-white/5 bg-white/[0.02]">
+            <DialogTitle className="text-xl font-black uppercase italic text-white tracking-tighter">
+              {selectedPlan ? 'Edit Strategic Plan' : 'Define New Strategy'}
+            </DialogTitle>
+            <DialogDescription className="text-[10px] text-white/40 uppercase font-black tracking-widest mt-1">
+              {selectedDate ? format(selectedDate, 'PPP') : ''}
+            </DialogDescription>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div className="space-y-4">
+              <div className="grid gap-2">
+                <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Plan Title</Label>
+                <Input
+                  placeholder="e.g., Q4 Marketing Review"
+                  value={newPlan.title}
+                  onChange={(e) => setNewPlan({ ...newPlan, title: e.target.value })}
+                  className="h-12 bg-white/5 border-white/10 rounded-xl focus:ring-primary/20 transition-all font-bold"
+                />
               </div>
-            </>
-          )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Category / Client</Label>
+                  <Select
+                    value={newPlan.client_id}
+                    onValueChange={(val) => setNewPlan({ ...newPlan, client_id: val })}
+                  >
+                    <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl font-bold">
+                      <SelectValue placeholder="Select Client" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-900 border-white/10">
+                      <SelectItem value="common">Common Plan</SelectItem>
+                      {clients.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Color Tag</Label>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {colors.map(c => (
+                      <button
+                        key={c.value}
+                        onClick={() => setNewPlan({ ...newPlan, color: c.value })}
+                        className={cn(
+                          "w-6 h-6 rounded-full transition-all hover:scale-125 border-2",
+                          newPlan.color === c.value ? "border-white scale-110" : "border-transparent"
+                        )}
+                        style={{ backgroundColor: c.value }}
+                        title={c.name}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Description & Directives</Label>
+                <Textarea
+                  placeholder="Detail the core objectives and expected outcomes..."
+                  value={newPlan.description}
+                  onChange={(e) => setNewPlan({ ...newPlan, description: e.target.value })}
+                  className="min-h-[120px] bg-white/5 border-white/10 rounded-xl focus:ring-primary/20 transition-all font-medium leading-relaxed"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 border-t border-white/5 bg-white/[0.02] flex gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => setIsAddDialogOpen(false)}
+              className="flex-1 h-12 rounded-xl font-bold text-xs uppercase text-white/40 hover:text-white hover:bg-white/5"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={selectedPlan ? handleUpdatePlan : handleAddPlan}
+              className="flex-1 h-12 bg-primary hover:bg-primary/90 text-black rounded-xl font-black text-xs uppercase tracking-wider"
+            >
+              {selectedPlan ? 'Update Strategy' : 'Save Strategy'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══════════════════════════════════════════════════
+          PLANNER SETTINGS DIALOG
+      ═══════════════════════════════════════════════════ */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black uppercase italic tracking-tighter">Planner Settings</DialogTitle>
+            <DialogDescription className="text-white/40 uppercase text-[10px] font-bold tracking-widest">
+              Customize your planning environment
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6 space-y-4">
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+              <h4 className="text-xs font-black uppercase tracking-widest text-white/80">Tag Legend</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {colors.map(c => (
+                  <div key={c.value} className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c.value }} />
+                    <span className="text-[10px] font-bold text-white/40 uppercase">{c.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="text-[10px] text-white/20 italic text-center">
+              Settings are synchronized across your department for unified visibility.
+            </p>
+          </div>
+          <Button onClick={() => setIsSettingsOpen(false)} className="w-full rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 font-bold uppercase text-xs h-11">
+            Done
+          </Button>
         </DialogContent>
       </Dialog>
     </Card>
+  );
+};
+
+interface PlanItemProps {
+  plan: MonthlyPlan;
+  onEdit: (p: MonthlyPlan) => void;
+  onDelete: (id: string) => void;
+  isCreator: boolean;
+}
+
+const PlanItem = ({ plan, onEdit, onDelete, isCreator }: PlanItemProps) => {
+  return (
+    <div
+      className="p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all group relative overflow-hidden"
+      style={{ borderLeft: `4px solid ${plan.color}` }}
+    >
+      <div className="flex justify-between items-start mb-2">
+        <h5 className="font-black text-sm text-white uppercase italic tracking-tight">{plan.title}</h5>
+        {isCreator && (
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-lg text-white/40 hover:text-white"
+              onClick={() => onEdit(plan)}
+            >
+              <Edit className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-lg text-red-500/40 hover:text-red-500"
+              onClick={() => onDelete(plan.id)}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        )}
+      </div>
+      <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed font-medium">
+        {plan.description || 'No directives provided.'}
+      </p>
+      {plan.assigned_staff.length > 0 && (
+        <div className="mt-3 flex items-center gap-1.5">
+          <User className="w-3 h-3 text-white/20" />
+          <span className="text-[9px] font-black uppercase tracking-widest text-white/20">
+            {plan.assigned_staff.length} Members Assigned
+          </span>
+        </div>
+      )}
+    </div>
   );
 };
 
