@@ -41,6 +41,56 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_plans: {
+        Row: {
+          id: string
+          date: string
+          title: string
+          description: string | null
+          created_by: string | null
+          department_id: string | null
+          assigned_staff: Json | null
+          client_id: string | null
+          color: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          date: string
+          title: string
+          description?: string | null
+          created_by?: string | null
+          department_id?: string | null
+          assigned_staff?: Json | null
+          client_id?: string | null
+          color?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          date?: string
+          title?: string
+          description?: string | null
+          created_by?: string | null
+          department_id?: string | null
+          assigned_staff?: Json | null
+          client_id?: string | null
+          color?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_plans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       ai_tools: {
         Row: {
           category: string | null

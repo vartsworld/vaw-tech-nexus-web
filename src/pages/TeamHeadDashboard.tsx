@@ -31,9 +31,9 @@ import {
   Lock as LockIcon,
   LogOut,
   Coins,
-  Loader2
+  Loader2,
+  Eraser
 } from "lucide-react";
-import { CoinConfigDialog } from "@/components/staff/CoinConfigDialog";
 import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
 import UpdateButton from "@/components/staff/UpdateButton";
 import { Fingerprint } from "lucide-react";
@@ -59,6 +59,7 @@ import { useActivityTracker } from "@/hooks/useActivityTracker";
 import { useUserStatus } from "@/hooks/useUserStatus";
 import { supabase } from "@/integrations/supabase/client";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import { motion } from "framer-motion";
 import CoinPopup from "@/components/staff/CoinPopup";
 import EmmaAssistant from "@/components/ai/EmmaAssistant";
 import { Sparkles } from "lucide-react";
@@ -68,14 +69,14 @@ import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
 type RoomType = 'home' | 'workspace' | 'meeting' | 'breakroom' | 'planner';
 
 const EMOJI_OPTIONS = [
-  "😀", "😃", "😄", "😁", "😊", "🙂", "😎", "🤩", "🥳", "😇",
-  "🤗", "🤔", "🤫", "🤭", "🧐", "🤓", "😏", "😌", "😴", "🤤",
-  "🥰", "😍", "🤩", "😘", "😗", "😚", "😙", "🥲", "😋", "😛",
-  "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🫢", "🫣", "🤫", "🤥",
-  "🦊", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🐔",
-  "🍎", "🍌", "🍇", "🍉", "🍓", "🍒", "🍑", "🥝", "🍍", "🥥",
-  "⚽", "🏀", "🎾", "🏐", "🏈", "⚾", "🥎", "🎱", "🏓", "🏸",
-  "🎮", "🎯", "🎲", "🎭", "🎨", "🎬", "🎪", "🎡", "🎢", "🎰",
+  "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
+  "😴", "🤤", "😋", "🧐", "🤓", "😏", "🥺", "😢", "😭", "😤",
+  "🤯", "🥴", "🤠", "🥶", "🥵", "😱", "🤗", "🤫", "🤭", "🙄",
+  "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯",
+  "🦁", "🐮", "🐷", "🐸", "🐵", "🐔", "🐧", "🐦", "🐤", "🦆",
+  "❤️", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "💕",
+  "🍎", "🍌", "🍊", "🍋", "🍉", "🍇", "🍓", "🥝", "🍒", "🥥",
+  "⚽", "🏀", "🏈", "⚾", "🎾", "🏐", "🏉", "🎱", "🏓", "🏸",
   "🎵", "🎶", "🎤", "🎧", "🎸", "🎹", "🎺", "🎻", "🥁", "📱",
   "💻", "⌨️", "🖥️", "🖨️", "📷", "📺", "🕹️", "💡", "🔔", "🔕"
 ];
@@ -95,7 +96,6 @@ const TeamHeadDashboard = () => {
   const [newEmojiPassword, setNewEmojiPassword] = useState<string[]>([]);
   const [confirmEmojiPassword, setConfirmEmojiPassword] = useState<string[]>([]);
   const [profileForm, setProfileForm] = useState({ full_name: "", about_me: "" });
-  const [showCoinConfigDialog, setShowCoinConfigDialog] = useState(false);
   const [showCoinPopup, setShowCoinPopup] = useState(false);
   const [showBiometricDialog, setShowBiometricDialog] = useState(false);
   const [showEmma, setShowEmma] = useState(false);
@@ -329,6 +329,14 @@ const TeamHeadDashboard = () => {
     }
   };
 
+  const removeLastEmoji = () => {
+    if (confirmEmojiPassword.length > 0) {
+      setConfirmEmojiPassword(prev => prev.slice(0, -1));
+    } else if (newEmojiPassword.length > 0) {
+      setNewEmojiPassword(prev => prev.slice(0, -1));
+    }
+  };
+
   const handleSetEmojiPassword = async () => {
     if (newEmojiPassword.length !== 6) {
       toast.error("Please select exactly 6 emojis");
@@ -542,7 +550,7 @@ const TeamHeadDashboard = () => {
       {/* Office Header */}
       {currentRoom !== 'home' && (
         <header className="relative z-30 bg-black/80 backdrop-blur-xl border-b border-white/20 shadow-2xl">
-        <div className="container mx-auto px-4 py-3 sm:py-4">
+        <div className="container mx-auto px-4 py-2 sm:py-2">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3 sm:gap-4">
               <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center p-1.5 border border-white/20">
@@ -591,9 +599,6 @@ const TeamHeadDashboard = () => {
                 <span className="text-amber-200 text-xs font-bold">{(profile?.total_points || 0).toLocaleString()} Coins</span>
               </div>
 
-              <Badge className="bg-purple-500/20 border-purple-500/30 text-purple-300">
-                Team Head
-              </Badge>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -622,10 +627,6 @@ const TeamHeadDashboard = () => {
                   <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="text-green-600 hover:text-green-700">
                     <Fingerprint className="mr-2 h-4 w-4" />
                     Fingerprint Login
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowCoinConfigDialog(true)} className="text-amber-500 hover:text-amber-600">
-                    <Settings2 className="mr-2 h-4 w-4" />
-                    Coin Rewards Config
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive">
@@ -704,53 +705,43 @@ const TeamHeadDashboard = () => {
 
       {/* Emoji Password Dialog */}
       <Dialog open={showEmojiDialog} onOpenChange={setShowEmojiDialog}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[100vh] overflow-y-auto bg-zinc-950 border-white/10 rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Update Emoji Password</DialogTitle>
-            <DialogDescription>Select 6 emojis for your new password</DialogDescription>
+            <DialogTitle className="text-xl font-black uppercase italic tracking-tight text-white">Update Emoji Password</DialogTitle>
+            <DialogDescription className="text-white/40 uppercase text-[10px] font-bold tracking-widest">Select 6 emojis for your new high-security passcode</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>New Emoji Password (6 emojis)</Label>
-              <div className="flex gap-2 p-4 bg-muted rounded-lg min-h-[60px] items-center justify-center">
-                {newEmojiPassword.map((emoji, idx) => (
-                  <span key={idx} className="text-3xl">{emoji}</span>
-                ))}
-                {newEmojiPassword.length < 6 && (
-                  <span className="text-muted-foreground">Select {6 - newEmojiPassword.length} more</span>
-                )}
+          <div className="space-y-6 py-4">
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Sequence Input</Label>
+
+              <div className="flex gap-2">
+                <div className="flex-1 grid grid-cols-6 gap-2 p-4 bg-white/5 border border-white/10 rounded-xl min-h-[80px] items-center justify-items-center">
+                  {(newEmojiPassword.length < 6 ? newEmojiPassword : confirmEmojiPassword).map((emoji, idx) => (
+                    <motion.span initial={{ scale: 0.5 }} animate={{ scale: 1 }} key={idx} className="text-3xl">{emoji}</motion.span>
+                  ))}
+                  {(newEmojiPassword.length < 6 ? newEmojiPassword : confirmEmojiPassword).length === 0 && (
+                    <div className="col-span-6 text-[10px] font-black uppercase tracking-widest text-white/10">
+                      Start selecting...
+                    </div>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-auto w-16 bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10 shrink-0 rounded-xl"
+                  onClick={removeLastEmoji}
+                  disabled={newEmojiPassword.length === 0 && confirmEmojiPassword.length === 0}
+                >
+                  <Eraser className="h-5 w-5" />
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setNewEmojiPassword([])}
-                disabled={newEmojiPassword.length === 0}
-              >
-                Clear
-              </Button>
+
+              <p className="text-[9px] font-bold text-center uppercase tracking-widest text-white/20">
+                {newEmojiPassword.length < 6 ? "Enter your new 6-emoji pattern" : "Re-enter pattern to confirm"}
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <Label>Confirm Emoji Password</Label>
-              <div className="flex gap-2 p-4 bg-muted rounded-lg min-h-[60px] items-center justify-center">
-                {confirmEmojiPassword.map((emoji, idx) => (
-                  <span key={idx} className="text-3xl">{emoji}</span>
-                ))}
-                {confirmEmojiPassword.length < 6 && newEmojiPassword.length === 6 && (
-                  <span className="text-muted-foreground">Confirm {6 - confirmEmojiPassword.length} more</span>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setConfirmEmojiPassword([])}
-                disabled={confirmEmojiPassword.length === 0}
-              >
-                Clear
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-10 gap-2 max-h-[200px] overflow-y-auto p-2 border rounded-lg">
+            <div className="grid grid-cols-6 gap-3 p-4 bg-white/5 border border-white/10 rounded-2xl">
               {EMOJI_OPTIONS.map((emoji, idx) => (
                 <button
                   key={idx}
@@ -761,7 +752,7 @@ const TeamHeadDashboard = () => {
                       addEmojiToPassword(emoji, true);
                     }
                   }}
-                  className="text-2xl hover:bg-accent p-2 rounded transition-colors"
+                  className="text-2xl hover:bg-white/10 hover:scale-110 active:scale-95 p-2 rounded-xl transition-all duration-200"
                   disabled={newEmojiPassword.length >= 6 && confirmEmojiPassword.length >= 6}
                 >
                   {emoji}
@@ -771,10 +762,10 @@ const TeamHeadDashboard = () => {
 
             <Button
               onClick={handleSetEmojiPassword}
-              className="w-full"
+              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 disabled:opacity-20"
               disabled={newEmojiPassword.length !== 6 || confirmEmojiPassword.length !== 6}
             >
-              Update Emoji Password
+              Update Security Pattern
             </Button>
           </div>
         </DialogContent>
@@ -791,11 +782,6 @@ const TeamHeadDashboard = () => {
           onReactivate={handleReactivate}
         />
       )}
-
-      <CoinConfigDialog
-        open={showCoinConfigDialog}
-        onOpenChange={setShowCoinConfigDialog}
-      />
 
       <BiometricSettingsDialog
         open={showBiometricDialog}
@@ -814,7 +800,7 @@ const TeamHeadDashboard = () => {
       {/* EMMA AI floating button + dialog */}
       <Button
         onClick={() => setShowEmma(true)}
-        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-br from-primary to-purple-500 hover:scale-105 transition-transform"
+        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-br from-primary to-purple-500 hover:scale-105 transition-transform hidden md:flex"
         size="icon"
         title="Ask EMMA"
       >

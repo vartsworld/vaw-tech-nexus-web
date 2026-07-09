@@ -55,6 +55,11 @@ import ReferralFormPage from "./pages/ReferralFormPage";
 import Team from "./pages/Team";
 import QRRedirection from "./pages/QRRedirection";
 import SalesDashboard from "./pages/SalesDashboard";
+import SalesAgenda from "./components/sales/SalesAgenda";
+import SalesPricing from "./components/sales/SalesPricing";
+import SalesPlans from "./components/sales/SalesPlans";
+import SalesOnboarding from "./components/sales/SalesOnboarding";
+import MonthlyPlannerPage from "./pages/MonthlyPlannerPage";
 import AddClient from "./pages/AddClient";
 import Portal from "./pages/Portal";
 import ClientFeedback from "./pages/ClientFeedback";
@@ -162,7 +167,13 @@ const AppContent = () => {
           <Route path="/:id" element={<StaffIDCard />} />
           <Route path="/team" element={<Team />} />
           <Route path="/qr" element={<QRRedirection />} />
-          <Route path="/sales/dashboard" element={<SalesDashboard />} />
+          <Route path="/sales/dashboard" element={<SalesDashboard />}>
+            <Route path="agenda" element={<SalesAgenda />} />
+            <Route path="pricing" element={<SalesPricing />} />
+            <Route path="plans" element={<SalesPlans />} />
+            <Route path="onboarding" element={<SalesOnboarding />} />
+          </Route>
+          <Route path="/monthlyplanner" element={<MonthlyPlannerPage />} />
           <Route path="/sales/add-client" element={<AddClient />} />
           <Route path="/portal" element={<Portal />} />
           <Route path="/feedback/:token" element={<ClientFeedback />} />
