@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import {
     Card,
     CardContent,
@@ -177,10 +178,6 @@ const SuperAdminWorkflow = () => {
             </div>
         </div>
     );
-};
-
-const cn = (...inputs: any[]) => {
-    return inputs.filter(Boolean).join(" ");
 };
 
 export default SuperAdminWorkflow;
