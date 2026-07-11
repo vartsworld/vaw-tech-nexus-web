@@ -390,10 +390,7 @@ const VirtualOfficeLayout = ({
         { id: 'notes', name: 'Personal Notes', icon: ClipboardList, path: '/staff/notes' },
         { id: 'meeting' as const, name: 'Meeting Room', icon: Users, path: '#' },
         { id: 'notepad', name: 'Quick Notepad', icon: ClipboardList, path: '#' },
-        { id: 'operations', name: 'Operations', icon: LayoutDashboard, path: '/staff/operations' },
-        { id: 'docs', name: 'Docs', icon: FileText, path: '/staff/docs' },
         { id: 'activity', name: 'Activity', icon: Activity, path: '/staff/activity' },
-        { id: 'channels', name: 'Channels', icon: MessageSquare, path: '/staff/channels' },
       ]
     }
   ];
@@ -474,10 +471,14 @@ const VirtualOfficeLayout = ({
       {currentRoom !== 'home' && (
         <aside
           className={cn(
-            "hidden lg:flex lg:flex-col bg-zinc-950/90 backdrop-blur-xl border-r border-white/5 transition-all duration-300 ease-in-out relative z-30 group",
+            "hidden lg:flex lg:flex-col border-r border-white/5 transition-all duration-300 ease-in-out relative z-30 group overflow-hidden bg-cover bg-center bg-no-repeat",
             isSidebarCollapsed ? "w-20" : "w-72"
           )}
+          style={{ backgroundImage: "url('/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png')" }}
         >
+          {/* Transparent masking color and blur overlay */}
+          <div className="absolute inset-0 bg-black/75 backdrop-blur-xl z-0 pointer-events-none" />
+          <div className="relative z-10 flex flex-col h-full w-full">
           {/* Top Header Logo (VAW Technologies) */}
           <div className={cn("p-6 flex items-center", isSidebarCollapsed ? "justify-center" : "justify-between border-b border-white/5")}>
             <div className="flex items-center gap-3">
@@ -587,6 +588,7 @@ const VirtualOfficeLayout = ({
                 <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
               </div>
             )}
+          </div>
           </div>
         </aside>
       )}
