@@ -116,7 +116,7 @@ export function useRealtimeQuery<TData = any>({
 
         const setupRealtimeSubscription = () => {
             // Create unique channel name based on table and filter
-            const channelName = `realtime-${table}-${JSON.stringify(queryKey)}`;
+            const channelName = `realtime-${table}-${JSON.stringify(queryKey)}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
             channel = supabase.channel(channelName);
 

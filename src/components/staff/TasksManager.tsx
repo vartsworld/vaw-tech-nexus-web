@@ -356,8 +356,8 @@ const TasksManager = ({
         </div>
 
         {/* Filter and Stats Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex flex-wrap gap-1.5 pb-1 sm:pb-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full overflow-hidden">
+          <div className="flex flex-row flex-nowrap overflow-x-auto no-scrollbar gap-1.5 pb-2 sm:pb-0 max-w-full shrink-0">
             {[{
               key: 'overdue',
               label: 'Overdue',
@@ -387,7 +387,7 @@ const TasksManager = ({
                 key={filterOption.key}
                 variant={filter === filterOption.key ? "default" : "ghost"}
                 size="sm"
-                className={`flex items-center gap-2 px-3 h-8 rounded-full transition-all ${filter === filterOption.key
+                className={`flex items-center gap-2 px-3 h-8 rounded-full transition-all shrink-0 ${filter === filterOption.key
                   ? filterOption.key === 'overdue' ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20" : "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
                   : "text-white/60 hover:text-white hover:bg-white/10"
                   }`}

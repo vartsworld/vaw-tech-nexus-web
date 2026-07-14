@@ -572,12 +572,36 @@ const TeamHeadMobileHome = ({
       </div>
 
       {/* Shadcn Calendar Component */}
-      <div className="flex justify-center bg-zinc-900/40 border border-white/5 rounded-3xl p-3 backdrop-blur-md">
+      <div className="flex justify-center bg-zinc-900/40 border border-white/5 rounded-3xl p-3 backdrop-blur-md w-full overflow-hidden">
         <CalendarComponent
           mode="single"
           selected={selectedDate}
           onSelect={setSelectedDate}
-          className="p-3 bg-transparent"
+          className="p-3 bg-transparent w-full"
+          components={{
+            DayContent: ({ date }) => {
+              const dayPlans = plans.filter(p => isSameDay(parseISO(p.date), date));
+              return (
+                <div className="relative flex flex-col items-center justify-center w-full h-full p-1">
+                  <span className="text-xs">{date.getDate()}</span>
+                  {dayPlans.length > 0 && (
+                    <div className="absolute bottom-1 flex gap-0.5 justify-center w-full px-0.5 overflow-hidden">
+                      {dayPlans.slice(0, 3).map((plan, idx) => (
+                        <span
+                          key={idx}
+                          className="w-1 h-1 rounded-full"
+                          style={{ backgroundColor: plan.color || '#8b5cf6' }}
+                        />
+                      ))}
+                      {dayPlans.length > 3 && (
+                        <span className="w-1 h-1 rounded-full bg-white opacity-50" />
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+          }}
         />
       </div>
 
@@ -597,20 +621,30 @@ const TeamHeadMobileHome = ({
               {selectedDatePlans.map(plan => (
                 <div
                   key={plan.id}
-                  className="flex items-center justify-between p-3.5 rounded-xl bg-zinc-900/50 border border-white/5"
+                  style={{
+                    borderLeft: `4px solid ${plan.color || '#8b5cf6'}`,
+                    backgroundColor: `${plan.color || '#8b5cf6'}15`
+                  }}
+                  className="flex items-center justify-between p-3.5 rounded-xl border-r border-t border-b border-white/5 transition-all"
                 >
                   <div className="flex-1 min-w-0 pr-3">
-                    <h4 className={cn(
-                      "text-sm font-bold text-white",
-                      plan.is_completed && "line-through text-zinc-600"
-                    )}>
+                    <h4
+                      className={cn(
+                        "text-sm font-bold text-white",
+                        plan.is_completed && "line-through text-zinc-600"
+                      )}
+                      style={plan.is_completed ? {} : { color: plan.color || '#ffffff' }}
+                    >
                       {plan.title}
                     </h4>
+                    {plan.description && (
+                      <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{plan.description}</p>
+                    )}
                   </div>
                   <button
                     onClick={() => handleTogglePlanCompletion(plan.id, plan.is_completed)}
                     className={cn(
-                      "w-7 h-7 rounded-full border flex items-center justify-center transition-all",
+                      "w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0",
                       plan.is_completed
                         ? "bg-violet-500/20 border-violet-500 text-violet-400"
                         : "border-white/10 text-zinc-500 hover:border-white/20"
