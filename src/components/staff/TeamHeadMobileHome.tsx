@@ -325,22 +325,22 @@ const TeamHeadMobileHome = ({
 
       {/* Stats row */}
       <motion.div variants={fadeUp} className="grid grid-cols-2 gap-4">
-        <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
+        <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl">
+          <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center border border-violet-500/20">
             <ClipboardList className="w-5 h-5 text-violet-400" />
           </div>
           <div>
-            <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Total Tasks</p>
-            <p className="text-base font-bold text-white">{totalTasks}</p>
+            <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Total Tasks</p>
+            <p className="text-base font-extrabold text-white">{totalTasks}</p>
           </div>
         </div>
-        <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+        <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20">
             <CheckCircle className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Completed</p>
-            <p className="text-base font-bold text-white">{completedTasks.length}</p>
+            <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Completed</p>
+            <p className="text-base font-extrabold text-white">{completedTasks.length}</p>
           </div>
         </div>
       </motion.div>
@@ -348,25 +348,25 @@ const TeamHeadMobileHome = ({
       {/* Progress Card */}
       <motion.div
         variants={fadeUp}
-        className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-white/10 rounded-3xl p-5 relative overflow-hidden shadow-2xl"
+        className="bg-black/40 backdrop-blur-2xl border border-white/15 rounded-3xl p-5 relative overflow-hidden shadow-2xl"
       >
-        <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-violet-500/5 blur-2xl" />
+        <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-violet-500/10 blur-3xl" />
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-1">Team Performance</p>
+            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">Team Performance</p>
             <h2 className="text-2xl font-black text-white">
               {completedTasks.length} / {totalTasks} Done
             </h2>
-            <p className="text-zinc-400 text-xs mt-1">
+            <p className="text-white/60 text-xs mt-1">
               {inProgressTasks.length} active · {todoTasks.length} pending
             </p>
           </div>
-          <div className="w-14 h-14 rounded-2xl bg-zinc-850 border border-white/5 flex items-center justify-center text-violet-400">
+          <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-violet-400 shadow-inner">
             <Target className="w-6 h-6" />
           </div>
         </div>
         {totalTasks > 0 && (
-          <div className="mt-4 h-2 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="mt-4 h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
             <div
               style={{ width: `${(completedTasks.length / totalTasks) * 100}%` }}
               className="h-full bg-gradient-to-r from-violet-500 to-purple-400 rounded-full"
@@ -384,7 +384,7 @@ const TeamHeadMobileHome = ({
           </button>
         </div>
         {projectGroups.length === 0 ? (
-          <div className="p-6 bg-zinc-900/20 border border-dashed border-white/5 rounded-2xl text-center">
+          <div className="p-6 bg-black/20 border border-dashed border-white/10 rounded-2xl text-center">
             <p className="text-xs text-zinc-500">No projects currently linked.</p>
           </div>
         ) : (
@@ -396,13 +396,13 @@ const TeamHeadMobileHome = ({
                   setSelectedProject(project);
                   setActiveTab('projects');
                 }}
-                className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 hover:border-white/10 active:scale-[0.98] transition-all cursor-pointer"
+                className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 hover:border-white/15 active:scale-[0.98] transition-all cursor-pointer shadow-lg"
               >
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-sm font-bold text-white truncate max-w-[70%]">{project.title}</h4>
                   <span className="text-xs font-black text-violet-400">{project.progress}%</span>
                 </div>
-                <Progress value={project.progress} className="h-1 bg-zinc-800" />
+                <Progress value={project.progress} className="h-1 bg-white/5" />
               </div>
             ))}
           </div>
@@ -433,15 +433,15 @@ const TeamHeadMobileHome = ({
           </div>
           <div className="space-y-3">
             {selectedProject.tasks.map(task => (
-              <div key={task.id} className="bg-zinc-900/40 border border-white/5 rounded-2xl p-4 space-y-2">
+              <div key={task.id} className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 space-y-2 shadow-lg">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-bold text-white">{task.title}</h4>
-                  <Badge className={cn("text-[8px] uppercase tracking-wider", getStatusColor(task.status))}>
+                  <Badge className={cn("text-[8px] uppercase tracking-wider font-bold", getStatusColor(task.status))}>
                     {task.status.replace('_', ' ')}
                   </Badge>
                 </div>
-                {task.description && <p className="text-xs text-zinc-400 line-clamp-2">{task.description}</p>}
-                <div className="flex justify-between items-center text-[10px] text-zinc-500 pt-1 border-t border-white/5 mt-2">
+                {task.description && <p className="text-xs text-white/50 line-clamp-2">{task.description}</p>}
+                <div className="flex justify-between items-center text-[10px] text-white/40 pt-1 border-t border-white/5 mt-2">
                   <span>Due: {task.due_date ? format(new Date(task.due_date), "MMM d") : "Ongoing"}</span>
                   <Badge variant="outline" className={cn("text-[8px] uppercase font-black", getPriorityColor(task.priority))}>
                     {task.priority}
@@ -458,7 +458,7 @@ const TeamHeadMobileHome = ({
             <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mt-1">Simple view of active department campaigns</p>
           </div>
           {projectGroups.length === 0 ? (
-            <div className="p-8 text-center bg-zinc-900/10 border border-dashed border-white/5 rounded-3xl">
+            <div className="p-8 text-center bg-black/20 border border-dashed border-white/10 rounded-3xl">
               <FolderKanban className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
               <p className="text-xs text-zinc-500">No projects found.</p>
             </div>
@@ -468,14 +468,14 @@ const TeamHeadMobileHome = ({
                 <div
                   key={project.id}
                   onClick={() => setSelectedProject(project)}
-                  className="bg-zinc-900/50 border border-white/5 rounded-2xl p-5 hover:border-white/10 active:scale-[0.98] transition-all cursor-pointer space-y-3"
+                  className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-5 hover:border-white/15 active:scale-[0.98] transition-all cursor-pointer space-y-3 shadow-xl"
                 >
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-bold text-white truncate">{project.title}</h4>
                     <span className="text-xs font-black text-violet-400">{project.progress}%</span>
                   </div>
-                  <Progress value={project.progress} className="h-1.5 bg-zinc-800" />
-                  <div className="flex justify-between text-[10px] text-zinc-500">
+                  <Progress value={project.progress} className="h-1.5 bg-white/5" />
+                  <div className="flex justify-between text-[10px] text-white/40">
                     <span>{project.completedTasks} / {project.totalTasks} Tasks Completed</span>
                     <span className="font-bold text-violet-400 flex items-center gap-0.5">Manage →</span>
                   </div>
@@ -528,24 +528,24 @@ const TeamHeadMobileHome = ({
           <div className="h-16 bg-zinc-900 rounded-xl animate-pulse" />
         </div>
       ) : filteredTasks.length === 0 ? (
-        <div className="p-8 text-center bg-zinc-900/10 border border-dashed border-white/5 rounded-3xl">
+        <div className="p-8 text-center bg-black/20 border border-dashed border-white/10 rounded-3xl">
           <AlertCircle className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
           <p className="text-xs text-zinc-500">No tasks found.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filteredTasks.map(task => (
-            <div key={task.id} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 space-y-2">
+            <div key={task.id} className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 space-y-2 shadow-lg">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-violet-400 font-bold uppercase tracking-tight">
+                <span className="text-[10px] text-violet-400 font-black uppercase tracking-tight">
                   {task.project_title || "General"}
                 </span>
-                <Badge className={cn("text-[8px] uppercase tracking-wider", getStatusColor(task.status))}>
+                <Badge className={cn("text-[8px] uppercase tracking-wider font-bold", getStatusColor(task.status))}>
                   {task.status.replace('_', ' ')}
                 </Badge>
               </div>
               <h4 className="text-sm font-bold text-white">{task.title}</h4>
-              <div className="flex justify-between items-center text-[10px] text-zinc-500 pt-1 border-t border-white/5">
+              <div className="flex justify-between items-center text-[10px] text-white/40 pt-1 border-t border-white/5">
                 <span>Due: {task.due_date ? format(new Date(task.due_date), "MMM d") : "Ongoing"}</span>
                 <Badge variant="outline" className={cn("text-[8px] uppercase font-black", getPriorityColor(task.priority))}>
                   {task.priority}
@@ -572,7 +572,7 @@ const TeamHeadMobileHome = ({
       </div>
 
       {/* Shadcn Calendar Component */}
-      <div className="flex justify-center bg-zinc-900/40 border border-white/5 rounded-3xl p-3 backdrop-blur-md w-full overflow-hidden">
+      <div className="flex justify-center bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-3 shadow-2xl w-full overflow-hidden">
         <CalendarComponent
           mode="single"
           selected={selectedDate}
@@ -686,10 +686,10 @@ const TeamHeadMobileHome = ({
       animate="visible"
       variants={staggerContainer}
     >
-      <div className="flex flex-col items-center text-center pt-4">
+      <div className="flex flex-col items-center text-center pt-4 bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 shadow-2xl">
         <Avatar className="w-20 h-20 mb-3 border-4 border-violet-500/20 shadow-2xl">
           <AvatarImage src={profile?.profile_photo_url} />
-          <AvatarFallback className="text-2xl bg-violet-500/10 text-violet-400 font-bold">
+          <AvatarFallback className="text-2xl bg-violet-500/15 text-violet-400 font-bold">
             {profile?.full_name?.charAt(0) || 'U'}
           </AvatarFallback>
         </Avatar>
@@ -697,10 +697,10 @@ const TeamHeadMobileHome = ({
         <Badge className="bg-violet-500/20 text-violet-300 border border-violet-500/30 text-xs mt-2 uppercase tracking-wider font-bold">
           Team Head
         </Badge>
-        <p className="text-xs text-zinc-500 mt-1">{profile?.email}</p>
+        <p className="text-xs text-white/40 mt-1">{profile?.email}</p>
       </div>
 
-      <div className="bg-zinc-900/50 border border-white/5 rounded-2xl divide-y divide-white/5 overflow-hidden">
+      <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl divide-y divide-white/10 overflow-hidden shadow-xl mt-6">
         <button
           onClick={onEditProfile}
           className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.02] transition-colors"

@@ -69,7 +69,7 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import AnnouncementBanner from "@/components/staff/AnnouncementBanner";
 import CoinPopup from "@/components/staff/CoinPopup";
 import OfficeZenHome from "@/components/staff/OfficeZenHome";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import EmmaAssistant from "@/components/ai/EmmaAssistant";
 import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
 

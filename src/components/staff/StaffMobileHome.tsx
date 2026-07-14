@@ -340,45 +340,45 @@ const StaffMobileHome = ({
 
               {/* Status Counters */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                    <Coins className="w-5 h-5 text-emerald-400" />
+                <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20">
+                    <Coins className="w-5 h-5 text-emerald-400 animate-pulse" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Coins</p>
-                    <p className="text-base font-bold text-white">{coinsBalance.toLocaleString()}</p>
+                    <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Coins</p>
+                    <p className="text-base font-extrabold text-white">{coinsBalance.toLocaleString()}</p>
                   </div>
                 </div>
-                <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center border border-amber-500/20">
                     <Flame className="w-5 h-5 text-amber-400" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Streak</p>
-                    <p className="text-base font-bold text-white">{streak} Days</p>
+                    <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Streak</p>
+                    <p className="text-base font-extrabold text-white">{streak} Days</p>
                   </div>
                 </div>
               </div>
 
               {/* Progress Summary Card */}
-              <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-white/10 rounded-3xl p-5 relative overflow-hidden shadow-2xl">
-                <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-emerald-500/5 blur-2xl" />
+              <div className="bg-black/40 backdrop-blur-2xl border border-white/15 rounded-3xl p-5 relative overflow-hidden shadow-2xl">
+                <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-emerald-500/10 blur-3xl" />
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-1">Task Progress</p>
+                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">Task Progress</p>
                     <h2 className="text-2xl font-black text-white">
                       {completedTasks.length} / {totalTasks} Done
                     </h2>
-                    <p className="text-zinc-400 text-xs mt-1">
+                    <p className="text-white/60 text-xs mt-1">
                       {currentTasks.length} active · {overdueTasks.length} overdue
                     </p>
                   </div>
-                  <div className="w-14 h-14 rounded-2xl bg-zinc-850 border border-white/5 flex items-center justify-center text-emerald-400">
-                    <CheckCircle className="w-6 h-6 animate-pulse" />
+                  <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-450 shadow-inner">
+                    <CheckCircle className="w-6 h-6 text-emerald-400 animate-pulse" />
                   </div>
                 </div>
                 {totalTasks > 0 && (
-                  <div className="mt-4 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="mt-4 h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
                     <div
                       style={{ width: `${(completedTasks.length / totalTasks) * 100}%` }}
                       className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
@@ -396,7 +396,7 @@ const StaffMobileHome = ({
                   </button>
                 </div>
                 {currentTasks.length === 0 ? (
-                  <div className="p-6 bg-zinc-900/20 border border-dashed border-white/5 rounded-2xl text-center">
+                  <div className="p-6 bg-black/20 border border-dashed border-white/10 rounded-2xl text-center">
                     <p className="text-xs text-zinc-500">No active tasks. Tap 'Tasks' below to view all.</p>
                   </div>
                 ) : (
@@ -405,15 +405,15 @@ const StaffMobileHome = ({
                       <div
                         key={task.id}
                         onClick={() => navigate(`/staff/task/${task.id}`)}
-                        className="bg-zinc-900/60 border border-white/5 rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:border-white/10 active:scale-95 transition-all"
+                        className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:border-white/15 active:scale-95 transition-all shadow-lg"
                       >
                         <div>
-                          <p className="text-xs text-emerald-400 font-bold uppercase tracking-tight">
+                          <p className="text-xs text-emerald-400 font-black uppercase tracking-tight">
                             {task.project_title || "Task"}
                           </p>
                           <h4 className="text-sm font-bold text-white mt-1">{task.title}</h4>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-zinc-500" />
+                        <ChevronRight className="w-4 h-4 text-white/50" />
                       </div>
                     ))}
                   </div>
@@ -463,26 +463,26 @@ const StaffMobileHome = ({
                     <div
                       key={task.id}
                       onClick={() => navigate(`/staff/task/${task.id}`)}
-                      className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 flex justify-between items-center hover:border-white/10 active:scale-95 transition-all"
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex justify-between items-center hover:border-white/15 active:scale-95 transition-all shadow-lg"
                     >
                       <div className="flex-1 pr-3">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] text-emerald-400 font-bold uppercase">
+                          <span className="text-[10px] text-emerald-450 font-black uppercase tracking-wide">
                             {task.project_title || "General"}
                           </span>
                           {task.status === "overdue" && (
-                            <Badge variant="destructive" className="text-[8px] uppercase tracking-tight py-0">Overdue</Badge>
+                            <Badge variant="destructive" className="text-[8px] uppercase tracking-tight py-0 font-bold">Overdue</Badge>
                           )}
                           {task.status === "completed" && (
-                            <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] uppercase tracking-tight py-0">Completed</Badge>
+                            <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] uppercase tracking-tight py-0 font-bold">Completed</Badge>
                           )}
                         </div>
                         <h4 className={cn("text-sm font-bold text-white", task.status === "completed" && "line-through text-zinc-500")}>
                           {task.title}
                         </h4>
-                        <div className="flex items-center gap-3 mt-2 text-zinc-500 text-[10px]">
+                        <div className="flex items-center gap-3 mt-2 text-white/40 text-[10px]">
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
+                            <Clock className="w-3 h-3 text-white/30" />
                             {task.due_date ? format(new Date(task.due_date), "MMM d") : "Ongoing"}
                           </span>
                           <span className="flex items-center gap-1">
@@ -491,7 +491,7 @@ const StaffMobileHome = ({
                           </span>
                         </div>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-zinc-500" />
+                      <ChevronRight className="w-4 h-4 text-white/50" />
                     </div>
                   ))}
                 </div>
@@ -508,7 +508,7 @@ const StaffMobileHome = ({
               </div>
 
               {/* Shadcn Calendar Component */}
-              <div className="flex justify-center bg-zinc-900/40 border border-white/5 rounded-3xl p-3 backdrop-blur-md w-full overflow-hidden">
+              <div className="flex justify-center bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-3 shadow-2xl w-full overflow-hidden">
                 <CalendarComponent
                   mode="single"
                   selected={selectedDate}
@@ -628,40 +628,40 @@ const StaffMobileHome = ({
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       onClick={() => setActiveTool("leave")}
-                      className="bg-zinc-900/50 border border-white/5 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/10 active:scale-95 transition-all"
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
                     >
-                      <div className="w-12 h-12 rounded-2xl bg-sky-500/10 flex items-center justify-center text-sky-400">
+                      <div className="w-12 h-12 rounded-2xl bg-sky-500/15 flex items-center justify-center text-sky-400 border border-sky-500/20">
                         <UserCheck className="w-6 h-6" />
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-white">Leave</h4>
-                        <p className="text-[10px] text-zinc-500 mt-1">Request Time Off</p>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Request Time Off</p>
                       </div>
                     </button>
 
                     <button
                       onClick={() => setActiveTool("notes")}
-                      className="bg-zinc-900/50 border border-white/5 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/10 active:scale-95 transition-all"
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
                     >
-                      <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-400 border border-amber-500/20">
                         <ClipboardList className="w-6 h-6" />
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-white">My Notes</h4>
-                        <p className="text-[10px] text-zinc-500 mt-1">Quick Scribbles</p>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Quick Scribbles</p>
                       </div>
                     </button>
 
                     <button
                       onClick={() => setActiveTool("chess")}
-                      className="bg-zinc-900/50 border border-white/5 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/10 active:scale-95 transition-all col-span-2"
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all col-span-2 shadow-xl"
                     >
-                      <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400">
-                        <Smile className="w-6 h-6" />
+                      <div className="w-12 h-12 rounded-2xl bg-purple-500/15 flex items-center justify-center text-purple-400 border border-purple-500/20">
+                        <Smile className="w-6 h-6 animate-bounce" />
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-white">Games</h4>
-                        <p className="text-[10px] text-zinc-500 mt-1">Play Chess Match</p>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Play Chess Match</p>
                       </div>
                     </button>
                   </div>
@@ -680,8 +680,8 @@ const StaffMobileHome = ({
                   {activeTool === "leave" && <LeaveView profile={profile} />}
                   {activeTool === "notes" && <QuickNotes userId={profile?.user_id} />}
                   {activeTool === "chess" && (
-                    <div className="bg-zinc-900/40 p-4 rounded-3xl border border-white/5">
-                      <RealChessEngine />
+                    <div className="bg-black/40 backdrop-blur-2xl p-4 rounded-3xl border border-white/10 shadow-2xl">
+                      <RealChessEngine userId={profile?.user_id} userProfile={profile} />
                     </div>
                   )}
                 </div>
@@ -698,20 +698,20 @@ const StaffMobileHome = ({
               </div>
 
               {/* Profile Card */}
-              <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-white/5 rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl">
+              <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl">
                 <Avatar className="w-20 h-20 border-4 border-emerald-500/20 mb-3">
                   <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
-                  <AvatarFallback className="bg-emerald-500/10 text-emerald-400 text-2xl font-black">
+                  <AvatarFallback className="bg-emerald-500/15 text-emerald-400 text-2xl font-black">
                     {profile?.full_name?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <h3 className="text-lg font-bold text-white">{profile?.full_name || "Staff Member"}</h3>
                 <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider mt-1">{profile?.role} Role</p>
-                <p className="text-xs text-zinc-500 mt-0.5">{profile?.email}</p>
+                <p className="text-xs text-white/40 mt-0.5">{profile?.email}</p>
               </div>
 
               {/* Settings actions list */}
-              <div className="bg-zinc-900/50 border border-white/5 rounded-2xl divide-y divide-white/5 overflow-hidden">
+              <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl divide-y divide-white/10 overflow-hidden shadow-xl">
                 <button
                   onClick={onEditProfile}
                   className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.02] transition-colors"
