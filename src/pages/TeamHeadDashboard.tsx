@@ -473,6 +473,9 @@ const TeamHeadDashboard = () => {
       <TeamHeadMobileHome
         profile={profile}
         onEnterDesktop={() => setShowMobileHome(false)}
+        onEditProfile={() => setShowProfileDialog(true)}
+        onUpdateEmojiPassword={() => setShowEmojiDialog(true)}
+        onManageBiometrics={() => setShowBiometricDialog(true)}
       />
     );
   }

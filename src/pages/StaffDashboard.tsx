@@ -713,6 +713,9 @@ const StaffDashboard = () => {
         onOpenChat={() => {}}
         onOpenCoins={() => navigate("/mycoins")}
         onEnterWorkspace={() => setShowMobileHome(false)}
+        onEditProfile={() => setShowProfileDialog(true)}
+        onUpdateEmojiPassword={() => setShowEmojiDialog(true)}
+        onManageBiometrics={() => setShowBiometricDialog(true)}
       />
     );
   }
