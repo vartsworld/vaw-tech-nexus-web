@@ -41,7 +41,7 @@ export function useRealtimeSubscription({
         if (!enabled) return;
 
         // Create unique channel name
-        const channelName = `subscription-${table}-${filter || 'all'}-${Date.now()}`;
+        const channelName = `subscription-${table}-${filter || 'all'}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
         const channel = supabase.channel(channelName);
         channelRef.current = channel;

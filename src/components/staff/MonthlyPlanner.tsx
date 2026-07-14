@@ -48,6 +48,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { Calendar as ShadcnCalendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -454,13 +455,60 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       <CardHeader className="p-0">
         {renderHeader()}
       </CardHeader>
-      <CardContent className="p-0">
-        <ScrollArea className="h-full">
-          <div className="min-w-[700px] lg:min-w-0">
-            {renderDays()}
-            {renderCells()}
-          </div>
-        </ScrollArea>
+      <CardContent className="p-4 sm:p-6 flex justify-center">
+        <div className="w-full max-w-4xl bg-zinc-900/40 border border-white/5 rounded-3xl p-3 sm:p-6 backdrop-blur-md">
+          <ShadcnCalendar
+            mode="single"
+            month={currentMonth}
+            onMonthChange={setCurrentMonth}
+            selected={selectedDate || undefined}
+            onSelect={(date) => {
+              if (date) {
+                setSelectedDate(date);
+                setIsDayDetailOpen(true);
+              }
+            }}
+            className="w-full p-0 bg-transparent text-white"
+            classNames={{
+              months: "w-full space-y-4",
+              month: "space-y-4 w-full",
+              caption: "hidden",
+              table: "w-full border-collapse space-y-1",
+              head_row: "grid grid-cols-7 w-full border-b border-white/5 pb-2",
+              head_cell: "text-zinc-500 rounded-md font-bold text-center text-xs uppercase tracking-wider py-2",
+              row: "grid grid-cols-7 w-full mt-2",
+              cell: "aspect-square w-full text-center text-sm p-0 relative [&:has([aria-selected])]:bg-transparent focus-within:relative focus-within:z-20",
+              day: "h-full w-full p-0 font-bold text-white hover:bg-white/10 rounded-2xl flex flex-col items-center justify-center transition-all border border-transparent aria-selected:bg-primary aria-selected:text-black",
+              day_today: "border-primary/50 text-primary bg-primary/5 hover:bg-primary/20",
+              day_selected: "bg-primary text-black hover:bg-primary hover:text-black focus:bg-primary focus:text-black",
+              day_outside: "text-zinc-600 opacity-30",
+            }}
+            components={{
+              DayContent: ({ date }) => {
+                const dayPlans = plans.filter(p => isSameDay(parseISO(p.date), date));
+                return (
+                  <div className="relative flex flex-col items-center justify-center w-full h-full p-2">
+                    <span className="text-sm sm:text-base">{date.getDate()}</span>
+                    {dayPlans.length > 0 && (
+                      <div className="absolute bottom-2 flex gap-1 justify-center w-full px-1 overflow-hidden">
+                        {dayPlans.slice(0, 3).map((plan, idx) => (
+                          <span
+                            key={idx}
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: plan.color || '#3b82f6' }}
+                          />
+                        ))}
+                        {dayPlans.length > 3 && (
+                          <span className="w-1 h-1 rounded-full bg-white opacity-50" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+            }}
+          />
+        </div>
       </CardContent>
 
       {/* ═══════════════════════════════════════════════════

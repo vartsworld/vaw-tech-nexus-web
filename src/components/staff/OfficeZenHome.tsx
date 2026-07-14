@@ -90,8 +90,10 @@ export default function OfficeZenHome({ userId, userProfile, onEnterWorkspace }:
 
   useEffect(() => {
     fetchData();
-    const ch1 = supabase.channel("home_tasks_new").on("postgres_changes", { event: "*", schema: "public", table: "staff_tasks" }, fetchData).subscribe();
-    const ch2 = supabase.channel("home_notifs_new").on("postgres_changes", { event: "*", schema: "public", table: "staff_notifications" }, fetchData).subscribe();
+    const uniqueSuffix1 = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const uniqueSuffix2 = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const ch1 = supabase.channel(`home_tasks_new-${uniqueSuffix1}`).on("postgres_changes", { event: "*", schema: "public", table: "staff_tasks" }, fetchData).subscribe();
+    const ch2 = supabase.channel(`home_notifs_new-${uniqueSuffix2}`).on("postgres_changes", { event: "*", schema: "public", table: "staff_notifications" }, fetchData).subscribe();
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
   }, [userId]);
 

@@ -467,19 +467,6 @@ const TeamHeadDashboard = () => {
     );
   }
 
-  // Show mobile home on small screens
-  if (isMobile && showMobileHome && profile?.user_id) {
-    return (
-      <TeamHeadMobileHome
-        profile={profile}
-        onEnterDesktop={() => setShowMobileHome(false)}
-        onEditProfile={() => setShowProfileDialog(true)}
-        onUpdateEmojiPassword={() => setShowEmojiDialog(true)}
-        onManageBiometrics={() => setShowBiometricDialog(true)}
-      />
-    );
-  }
-
   const toggleWidget = (widgetId: string) => {
     setWidgets(prev => prev.map(w =>
       w.id === widgetId ? { ...w, isVisible: !w.isVisible } : w
@@ -803,23 +790,33 @@ const TeamHeadDashboard = () => {
 
   return (
     <div className="min-h-screen h-screen flex flex-col relative overflow-hidden bg-zinc-950">
-      {/* Background Layer - Fixed to viewport */}
-      {currentRoom !== 'home' && (
-        <div className="fixed inset-0 z-0 pointer-events-none">
-          <div className="absolute inset-0 bg-black/35 z-10"></div>
-          <img
-            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
-            alt="Modern office background"
-            className="w-full h-full object-cover scale-100 opacity-100"
-          />
-        </div>
-      )}
+      {isMobile && showMobileHome && profile?.user_id ? (
+        <TeamHeadMobileHome
+          profile={profile}
+          onEnterDesktop={() => setShowMobileHome(false)}
+          onEditProfile={() => setShowProfileDialog(true)}
+          onUpdateEmojiPassword={() => setShowEmojiDialog(true)}
+          onManageBiometrics={() => setShowBiometricDialog(true)}
+        />
+      ) : (
+        <>
+          {/* Background Layer - Fixed to viewport */}
+          {currentRoom !== 'home' && (
+            <div className="fixed inset-0 z-0 pointer-events-none">
+              <div className="absolute inset-0 bg-black/35 z-10"></div>
+              <img
+                src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
+                alt="Modern office background"
+                className="w-full h-full object-cover scale-100 opacity-100"
+              />
+            </div>
+          )}
 
       {/* Office Header */}
       {currentRoom !== 'home' && (
         <header className="relative z-30 bg-black/80 backdrop-blur-xl border-b border-white/20 shadow-2xl">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
@@ -834,31 +831,10 @@ const TeamHeadDashboard = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-              <div className="order-3 sm:order-1">
+            <div className="flex items-center gap-3">
+              <div>
                 <NotificationsBar userId={profile?.user_id || ''} />
               </div>
-
-              <div className="order-2 sm:order-1">
-                <UpdateButton variant="dark" />
-              </div>
-
-              <div className="flex items-center gap-1 sm:gap-2 bg-green-500/20 border border-green-500/30 rounded-lg px-2 sm:px-3 py-1">
-                <UserStatusBadge
-                  status={status}
-                  isBreakActive={false}
-                  breakTimeRemaining={0}
-                />
-              </div>
-
-              <div
-                onClick={() => setShowCoinPopup(true)}
-                className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-lg px-2.5 py-1.5 cursor-pointer hover:from-amber-500/30 hover:to-yellow-500/30 transition-all shadow-lg shadow-amber-500/10 group hover:scale-105 active:scale-95"
-              >
-                <Coins className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
-                <span className="text-amber-200 text-xs font-bold">{(profile?.total_points || 0).toLocaleString()} Coins</span>
-              </div>
-
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -869,27 +845,55 @@ const TeamHeadDashboard = () => {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/sales/dashboard")} className="text-blue-500 hover:text-blue-600">
+                <DropdownMenuContent align="end" className="w-64 bg-zinc-950 text-white border-white/10 shadow-2xl">
+                  <DropdownMenuLabel className="text-white/60 text-[10px] font-bold uppercase tracking-wider">My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-white/10" />
+
+                  {/* Status Indicator inside Dropdown */}
+                  <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
+                    <span>Status</span>
+                    <UserStatusBadge
+                      status={status}
+                      isBreakActive={false}
+                      breakTimeRemaining={0}
+                    />
+                  </div>
+
+                  {/* Coins Display inside Dropdown */}
+                  <DropdownMenuItem onClick={() => setShowCoinPopup(true)} className="flex items-center justify-between cursor-pointer py-1.5 focus:bg-white/5">
+                    <div className="flex items-center">
+                      <Coins className="mr-2 h-4 w-4 text-amber-400" />
+                      <span>My Balance</span>
+                    </div>
+                    <span className="text-amber-200 font-bold text-xs">{(profile?.total_points || 0).toLocaleString()} Coins</span>
+                  </DropdownMenuItem>
+
+                  {/* App Update inside Dropdown */}
+                  <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
+                    <span>System Version</span>
+                    <UpdateButton variant="dark" compact={true} />
+                  </div>
+
+                  <DropdownMenuSeparator className="bg-white/10" />
+
+                  <DropdownMenuItem onClick={() => navigate("/sales/dashboard")} className="text-blue-400 hover:text-blue-300 py-1.5 focus:bg-white/5">
                     <Briefcase className="mr-2 h-4 w-4" />
                     Sales Hub (Client Entry)
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowProfileDialog(true)}>
-                    <User className="mr-2 h-4 w-4" />
+                  <DropdownMenuItem onClick={() => setShowProfileDialog(true)} className="py-1.5 focus:bg-white/5">
+                    <User className="mr-2 h-4 w-4 text-zinc-400" />
                     View/Edit Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowEmojiDialog(true)}>
-                    <LockIcon className="mr-2 h-4 w-4" />
+                  <DropdownMenuItem onClick={() => setShowEmojiDialog(true)} className="py-1.5 focus:bg-white/5">
+                    <LockIcon className="mr-2 h-4 w-4 text-zinc-400" />
                     Update Emoji Password
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="text-green-600 hover:text-green-700">
+                  <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="text-green-400 hover:text-green-300 py-1.5 focus:bg-white/5">
                     <Fingerprint className="mr-2 h-4 w-4" />
                     Fingerprint Login
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-400 hover:text-red-300 py-1.5 focus:bg-white/5">
                     <LogOut className="mr-2 h-4 w-4" />
                     Logout
                   </DropdownMenuItem>
@@ -919,6 +923,8 @@ const TeamHeadDashboard = () => {
           {roomComponents[currentRoom]}
         </VirtualOfficeLayout>
       </div>
+        </>
+      )}
 
       {/* Profile Edit Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
