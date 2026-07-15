@@ -26,7 +26,8 @@ import {
   Settings,
   Briefcase,
   Layers,
-  Circle
+  Circle,
+  Check
 } from "lucide-react";
 import {
   format,

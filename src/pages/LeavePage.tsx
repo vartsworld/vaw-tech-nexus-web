@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useStaffData } from "@/hooks/useStaffData";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
