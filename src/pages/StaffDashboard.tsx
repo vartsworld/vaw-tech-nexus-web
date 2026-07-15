@@ -76,7 +76,7 @@ import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
 // Sidebar sub-views / dynamic tabs imports
 import LeaveView from "@/components/staff/LeaveView";
 import ToolsNexusView from "@/components/staff/ToolsNexusView";
-import RealChessEngine from "@/components/staff/RealChessEngine";
+import MiniChess from "@/components/staff/MiniChess";
 import ClientOnboardingCreator from "@/components/staff/ClientOnboardingCreator";
 import { QuickNotes } from "@/components/staff/QuickNotes";
 import TeamChat from "@/components/staff/TeamChat";
@@ -117,6 +117,7 @@ const StaffDashboard = () => {
   const isMobile = useIsMobile();
   const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
   const [showMobileHome, setShowMobileHome] = useState(true);
+  const [workspaceControls, setWorkspaceControls] = useState<React.ReactNode>(null);
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -163,6 +164,45 @@ const StaffDashboard = () => {
   };
 
   const location = useLocation();
+
+  // Synchronize URL query parameter with currentRoom
+  useEffect(() => {
+    const searchStr = location.search.replace('?', '');
+    let roomFromUrl: RoomType | null = null;
+
+    if (searchStr) {
+      if (searchStr === 'calendar' || searchStr === 'planner') {
+        roomFromUrl = 'planner';
+      } else if (searchStr === 'meetingroom') {
+        roomFromUrl = 'meeting';
+      } else if (['workspace', 'meeting', 'leave', 'tools', 'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox'].includes(searchStr)) {
+        roomFromUrl = searchStr as RoomType;
+      }
+    }
+
+    if (roomFromUrl && roomFromUrl !== currentRoom) {
+      setCurrentRoom(roomFromUrl);
+    }
+  }, [location.search]);
+
+  // Update URL search params when currentRoom changes
+  useEffect(() => {
+    let suffix = '';
+    if (currentRoom === 'planner') {
+      suffix = 'calendar';
+    } else if (currentRoom !== 'workspace') {
+      suffix = currentRoom;
+    }
+
+    const searchStr = location.search.replace('?', '');
+    const expected = suffix;
+    if (searchStr !== expected) {
+      navigate({
+        pathname: location.pathname,
+        search: suffix ? `?${suffix}` : '',
+      }, { replace: true });
+    }
+  }, [currentRoom, navigate, location.pathname]);
 
   useEffect(() => {
     if (location.state?.openCoins) {
@@ -466,7 +506,7 @@ const StaffDashboard = () => {
         onEnterWorkspace={() => setCurrentRoom('workspace')}
       />
     ),
-    workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} />,
+    workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} onWidgetControlsChange={setWorkspaceControls} />,
     meeting: <MeetingRoom />,
     planner: <MonthlyPlanner userId={profile.user_id} userProfile={profile} />,
     breakroom: null,
@@ -485,7 +525,7 @@ const StaffDashboard = () => {
         </div>
 
         <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[600px] backdrop-blur-md">
-          <RealChessEngine userId={profile?.user_id || ''} userProfile={profile} />
+          <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
         </div>
       </div>
     ),
@@ -753,6 +793,11 @@ const StaffDashboard = () => {
             </div>
 
             <div className="flex items-center gap-3">
+              {currentRoom === 'workspace' && workspaceControls && (
+                <div className="mr-2">
+                  {workspaceControls}
+                </div>
+              )}
               <div>
                 <NotificationsBar userId={profile?.user_id || ''} />
               </div>

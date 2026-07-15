@@ -35,8 +35,26 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format, isSameDay, parseISO } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { TaskDetailDialog } from "./TaskDetailDialog";
+import LeaveView from "@/components/staff/LeaveView";
+import { QuickNotes } from "@/components/staff/QuickNotes";
+import MiniChess from "@/components/staff/MiniChess";
+import MeetingRoom from "./MeetingRoom";
+import ClientOnboardingCreator from "./ClientOnboardingCreator";
+import ToolsNexusView from "./ToolsNexusView";
+import { ActivityLogPanel } from "./ActivityLogPanel";
+import {
+  Video,
+  Activity,
+  Compass,
+  UserCheck
+} from "lucide-react";
 
-type MobileTab = 'home' | 'projects' | 'tasks' | 'planner' | 'profile';
+type MobileTab = 'home' | 'tasks' | 'planner' | 'tools' | 'profile';
 
 interface TeamHeadMobileHomeProps {
   profile: any;
@@ -121,6 +139,25 @@ const TeamHeadMobileHome = ({
   const [showBiometricDialog, setShowBiometricDialog] = useState(false);
   const [tasksFilter, setTasksFilter] = useState<string>('all');
 
+  // Task detailed look state
+  const [selectedDetailedTask, setSelectedDetailedTask] = useState<any | null>(null);
+
+  // Tools sub-view: null | 'leave' | 'notes' | 'chess' | 'onboarding' | 'meeting' | 'tools_nexus' | 'activity' | 'coin' | 'projects'
+  const [activeTool, setActiveTool] = useState<string | null>(null);
+
+  // Department Staff for task assignment
+  const [departmentStaff, setDepartmentStaff] = useState<any[]>([]);
+
+  // Task creation states
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDesc, setNewTaskDesc] = useState("");
+  const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>("medium");
+  const [newTaskPoints, setNewTaskPoints] = useState(50);
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
+  const [newTaskAssignee, setNewTaskAssignee] = useState("");
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
+
   // Planner states
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [plans, setPlans] = useState<any[]>([]);
@@ -128,6 +165,95 @@ const TeamHeadMobileHome = ({
   const [plansLoading, setPlansLoading] = useState(false);
 
   const firstName = profile?.full_name?.split(' ')[0] || 'Leader';
+
+  const fetchDepartmentStaff = useCallback(async () => {
+    if (!profile?.department_id) return;
+    try {
+      const { data, error } = await supabase
+        .from('staff_profiles')
+        .select('user_id, full_name, role')
+        .eq('department_id', profile.department_id);
+      if (data && !error) {
+        setDepartmentStaff(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [profile?.department_id]);
+
+  useEffect(() => {
+    fetchDepartmentStaff();
+  }, [fetchDepartmentStaff]);
+
+  const handleStatusUpdate = async (taskId: string, newStatus: any) => {
+    try {
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({ status: newStatus })
+        .eq('id', taskId);
+      if (error) throw error;
+      toast.success("Task status updated successfully");
+      fetchTasks();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update task status");
+    }
+  };
+
+  const handleCreateTask = async () => {
+    if (!newTaskTitle.trim()) {
+      toast.error("Please enter a task title");
+      return;
+    }
+    setIsCreatingTask(true);
+    try {
+      const { data: taskData, error: taskError } = await supabase
+        .from('staff_tasks')
+        .insert({
+          title: newTaskTitle.trim(),
+          description: newTaskDesc.trim() || null,
+          priority: newTaskPriority,
+          points: newTaskPoints,
+          due_date: newTaskDueDate ? newTaskDueDate : null,
+          department_id: profile?.department_id,
+          assigned_by: profile?.user_id,
+          status: 'pending'
+        })
+        .select('*')
+        .single();
+
+      if (taskError) throw taskError;
+
+      if (newTaskAssignee && taskData) {
+        // Create subtask for assignee
+        const { error: subtaskError } = await supabase
+          .from('staff_subtasks')
+          .insert({
+            task_id: taskData.id,
+            title: newTaskTitle.trim(),
+            assigned_to: newTaskAssignee,
+            status: 'pending'
+          });
+        if (subtaskError) throw subtaskError;
+      }
+
+      toast.success("Task created successfully!");
+      setIsCreateDialogOpen(false);
+      // Reset form
+      setNewTaskTitle("");
+      setNewTaskDesc("");
+      setNewTaskPriority("medium");
+      setNewTaskPoints(50);
+      setNewTaskDueDate("");
+      setNewTaskAssignee("");
+      fetchTasks();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create task");
+    } finally {
+      setIsCreatingTask(false);
+    }
+  };
 
   // Fetch department tasks
   const fetchTasks = useCallback(async () => {
@@ -411,14 +537,9 @@ const TeamHeadMobileHome = ({
     </motion.div>
   );
 
-  // ──────────────────────── PROJECTS TAB ────────────────────────
-  const ProjectsView = () => (
-    <motion.div
-      className="px-5 pt-6 pb-28 space-y-6 overflow-y-auto"
-      initial="hidden"
-      animate="visible"
-      variants={staggerContainer}
-    >
+  // ──────────────────────── PROJECTS SUB-VIEW FOR TOOLS ────────────────────────
+  const SubProjectsView = () => (
+    <div className="space-y-5 pb-12">
       {selectedProject ? (
         <div className="space-y-5">
           <button
@@ -454,13 +575,13 @@ const TeamHeadMobileHome = ({
       ) : (
         <>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Team Projects</h1>
+            <h1 className="text-xl font-bold tracking-tight">Team Campaigns</h1>
             <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mt-1">Simple view of active department campaigns</p>
           </div>
           {projectGroups.length === 0 ? (
             <div className="p-8 text-center bg-black/20 border border-dashed border-white/10 rounded-3xl">
               <FolderKanban className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-              <p className="text-xs text-zinc-500">No projects found.</p>
+              <p className="text-xs text-zinc-500">No campaigns found.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -485,6 +606,183 @@ const TeamHeadMobileHome = ({
           )}
         </>
       )}
+    </div>
+  );
+
+  // ──────────────────────── TOOLS TAB ────────────────────────
+  const ToolsView = () => (
+    <motion.div
+      className="px-5 pt-6 pb-28 space-y-6 overflow-y-auto"
+      initial="hidden"
+      animate="visible"
+      variants={staggerContainer}
+    >
+      {!activeTool ? (
+        <>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Team Tools</h1>
+            <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mt-1">Daily leader & department utilities</p>
+          </div>
+
+          {/* Grid of Tools */}
+          <div className="grid grid-cols-2 gap-4 pb-12">
+            <button
+              onClick={() => setActiveTool("projects")}
+              className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-violet-500/15 flex items-center justify-center text-violet-400 border border-violet-500/20">
+                <FolderKanban className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Campaigns</h4>
+                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Projects list</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTool("leave")}
+              className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-sky-500/15 flex items-center justify-center text-sky-400 border border-sky-500/20">
+                <UserCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Leave</h4>
+                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Apply for Leave</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTool("notes")}
+              className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-400 border border-amber-500/20">
+                <ClipboardList className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">My Notes</h4>
+                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Quick Scribbles</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTool("chess")}
+              className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-purple-500/15 flex items-center justify-center text-purple-400 border border-purple-500/20">
+                <Smile className="w-6 h-6 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Games</h4>
+                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Play Chess Arena</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTool("onboarding")}
+              className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/15 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                <Compass className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Onboarding</h4>
+                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Client Portal</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTool("meeting")}
+              className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-pink-500/15 flex items-center justify-center text-pink-400 border border-pink-500/20">
+                <Video className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Meeting Room</h4>
+                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Video Conference</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTool("tools_nexus")}
+              className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                <Compass className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Tools</h4>
+                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Tools Nexus</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTool("activity")}
+              className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                <Activity className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Activity Log</h4>
+                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Ledger & History</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTool("coin")}
+              className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl col-span-2"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-400 border border-amber-500/20">
+                <Coins className="w-6 h-6 animate-bounce" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">My Coins</h4>
+                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Points Balance</p>
+              </div>
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="space-y-4 pb-12">
+          {/* Back button */}
+          <button
+            onClick={() => { setActiveTool(null); setSelectedProject(null); }}
+            className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-white"
+          >
+            ← Back to Tools
+          </button>
+
+          {/* Render active tool */}
+          {activeTool === "projects" && <SubProjectsView />}
+          {activeTool === "leave" && <LeaveView profile={profile} />}
+          {activeTool === "notes" && <QuickNotes userId={profile?.user_id} />}
+          {activeTool === "chess" && (
+            <div className="bg-black/40 backdrop-blur-2xl p-4 rounded-3xl border border-white/10 shadow-2xl">
+              <MiniChess userId={profile?.user_id} userProfile={profile} />
+            </div>
+          )}
+          {activeTool === "onboarding" && (
+            <div className="bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-3xl p-4 min-h-[400px]">
+              <ClientOnboardingCreator userId={profile?.user_id || ''} />
+            </div>
+          )}
+          {activeTool === "meeting" && <MeetingRoom />}
+          {activeTool === "tools_nexus" && <ToolsNexusView profile={profile} />}
+          {activeTool === "activity" && <ActivityLogPanel userId={profile?.user_id || ''} className="border-none bg-transparent" />}
+          {activeTool === "coin" && (
+            <div className="space-y-4">
+              <div className="bg-black/40 backdrop-blur-2xl p-5 rounded-3xl border border-white/10 text-center">
+                <Coins className="w-10 h-10 text-amber-400 mx-auto mb-2 animate-bounce" />
+                <h3 className="text-lg font-black text-white">{(profile?.total_points || 0).toLocaleString()} Coins</h3>
+                <p className="text-xs text-white/40 uppercase font-bold mt-1 tracking-widest">Your VAW Coins Balance</p>
+              </div>
+              <ActivityLogPanel userId={profile?.user_id || ''} className="border-none bg-transparent" />
+            </div>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 
@@ -496,9 +794,17 @@ const TeamHeadMobileHome = ({
       animate="visible"
       variants={staggerContainer}
     >
-      <div>
-        <h1 className="text-xl font-bold tracking-tight">Department Tasks</h1>
-        <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mt-1">Review team assignments and progress</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight">Department Tasks</h1>
+          <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mt-1">Review team assignments and progress</p>
+        </div>
+        <button
+          onClick={() => setIsCreateDialogOpen(true)}
+          className="bg-violet-500 hover:bg-violet-600 text-white rounded-xl text-xs font-black uppercase px-3 py-2 shadow-lg flex items-center gap-1 shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" /> New Task
+        </button>
       </div>
 
       {/* Simple filters */}
@@ -535,7 +841,11 @@ const TeamHeadMobileHome = ({
       ) : (
         <div className="space-y-3">
           {filteredTasks.map(task => (
-            <div key={task.id} className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 space-y-2 shadow-lg">
+            <div
+              key={task.id}
+              onClick={() => setSelectedDetailedTask(task)}
+              className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 space-y-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer"
+            >
               <div className="flex items-center justify-between">
                 <span className="text-[10px] text-violet-400 font-black uppercase tracking-tight">
                   {task.project_title || "General"}
@@ -758,9 +1068,9 @@ const TeamHeadMobileHome = ({
   // ──────────────────────── BOTTOM NAV ────────────────────────
   const navItems = [
     { id: 'home' as MobileTab, label: 'Home', icon: Home },
-    { id: 'projects' as MobileTab, label: 'Projects', icon: FolderKanban },
     { id: 'tasks' as MobileTab, label: 'Tasks', icon: ListChecks },
     { id: 'planner' as MobileTab, label: 'Planner', icon: Calendar },
+    { id: 'tools' as MobileTab, label: 'Tools', icon: Compass },
     { id: 'profile' as MobileTab, label: 'Profile', icon: User },
   ];
 
@@ -773,12 +1083,119 @@ const TeamHeadMobileHome = ({
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           {activeTab === 'home' && <HomeView key="home" />}
-          {activeTab === 'projects' && <ProjectsView key="projects" />}
           {activeTab === 'tasks' && <TasksView key="tasks" />}
           {activeTab === 'planner' && <PlannerView key="planner" />}
+          {activeTab === 'tools' && <ToolsView key="tools" />}
           {activeTab === 'profile' && <ProfileView key="profile" />}
         </AnimatePresence>
       </div>
+
+      {/* Task Creation Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="bg-zinc-950 text-white border-white/10 max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black uppercase text-violet-400">Create New Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-white/50">Task Title</Label>
+              <Input
+                value={newTaskTitle}
+                onChange={e => setNewTaskTitle(e.target.value)}
+                placeholder="E.g., Design Campaign Assets"
+                className="bg-white/5 border-white/10 text-white"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-bold text-white/50">Description</Label>
+              <Textarea
+                value={newTaskDesc}
+                onChange={e => setNewTaskDesc(e.target.value)}
+                placeholder="Describe the tasks expectations..."
+                rows={3}
+                className="bg-white/5 border-white/10 text-white"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-white/50">Priority</Label>
+                <select
+                  value={newTaskPriority}
+                  onChange={e => setNewTaskPriority(e.target.value as any)}
+                  className="w-full h-10 bg-white/5 border border-white/10 rounded-lg text-xs px-2 text-white"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-white/50">Reward Coins</Label>
+                <Input
+                  type="number"
+                  value={newTaskPoints}
+                  onChange={e => setNewTaskPoints(Number(e.target.value))}
+                  className="bg-white/5 border-white/10 text-white h-10"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-white/50">Due Date</Label>
+                <Input
+                  type="date"
+                  value={newTaskDueDate}
+                  onChange={e => setNewTaskDueDate(e.target.value)}
+                  className="bg-white/5 border-white/10 text-white h-10 text-xs"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-bold text-white/50">Assign To</Label>
+                <select
+                  value={newTaskAssignee}
+                  onChange={e => setNewTaskAssignee(e.target.value)}
+                  className="w-full h-10 bg-white/5 border border-white/10 rounded-lg text-xs px-2 text-white"
+                >
+                  <option value="">Unassigned</option>
+                  {departmentStaff.map(staff => (
+                    <option key={staff.user_id} value={staff.user_id}>
+                      {staff.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <button
+                onClick={() => setIsCreateDialogOpen(false)}
+                className="px-4 py-2 border border-white/10 rounded-xl text-xs font-bold uppercase hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateTask}
+                disabled={isCreatingTask}
+                className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-bold uppercase disabled:opacity-50"
+              >
+                {isCreatingTask ? "Creating..." : "Create Task"}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Task Details Inline / Dialog View */}
+      {selectedDetailedTask && (
+        <TaskDetailDialog
+          task={selectedDetailedTask}
+          open={!!selectedDetailedTask}
+          onOpenChange={open => !open && setSelectedDetailedTask(null)}
+          onStatusUpdate={handleStatusUpdate}
+          userId={profile?.user_id || ''}
+          isTeamHead={true}
+        />
+      )}
 
       {/* Unified Curved Bottom Navigation */}
       <nav className="fixed bottom-4 left-4 right-4 z-50">
@@ -793,7 +1210,10 @@ const TeamHeadMobileHome = ({
                   key={item.id}
                   onClick={() => {
                     setActiveTab(item.id);
-                    if (item.id === 'projects') setSelectedProject(null);
+                    if (item.id === 'tools') {
+                      setActiveTool(null);
+                      setSelectedProject(null);
+                    }
                   }}
                   className="relative flex flex-col items-center gap-1 py-1 px-2.5 min-w-[56px] group"
                 >

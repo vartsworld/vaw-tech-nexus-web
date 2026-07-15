@@ -81,7 +81,6 @@ import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
 // Sidebar sub-views / dynamic tabs imports
 import LeaveView from "@/components/staff/LeaveView";
 import ToolsNexusView from "@/components/staff/ToolsNexusView";
-import RealChessEngine from "@/components/staff/RealChessEngine";
 import TeamChat from "@/components/staff/TeamChat";
 import TeamStatusSidebar from "@/components/staff/TeamStatusSidebar";
 
@@ -189,6 +188,45 @@ const TeamHeadDashboard = () => {
   const isShowingMobileHome = isMobile && showMobileHome;
 
   const location = useLocation();
+
+  // Synchronize URL query parameter with currentRoom
+  useEffect(() => {
+    const searchStr = location.search.replace('?', '');
+    let roomFromUrl: RoomType | null = null;
+
+    if (searchStr) {
+      if (searchStr === 'calendar' || searchStr === 'planner') {
+        roomFromUrl = 'planner';
+      } else if (searchStr === 'meetingroom') {
+        roomFromUrl = 'meeting';
+      } else if (['workspace', 'meeting', 'leave', 'tools', 'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox'].includes(searchStr)) {
+        roomFromUrl = searchStr as RoomType;
+      }
+    }
+
+    if (roomFromUrl && roomFromUrl !== currentRoom) {
+      setCurrentRoom(roomFromUrl);
+    }
+  }, [location.search]);
+
+  // Update URL search params when currentRoom changes
+  useEffect(() => {
+    let suffix = '';
+    if (currentRoom === 'planner') {
+      suffix = 'calendar';
+    } else if (currentRoom !== 'workspace') {
+      suffix = currentRoom;
+    }
+
+    const searchStr = location.search.replace('?', '');
+    const expected = suffix;
+    if (searchStr !== expected) {
+      navigate({
+        pathname: location.pathname,
+        search: suffix ? `?${suffix}` : '',
+      }, { replace: true });
+    }
+  }, [currentRoom, navigate, location.pathname]);
 
   useEffect(() => {
     if (location.state?.openCoins) {
@@ -570,7 +608,7 @@ const TeamHeadDashboard = () => {
         </div>
 
         <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[600px] backdrop-blur-md">
-          <RealChessEngine userId={profile?.user_id || ''} userProfile={profile} />
+          <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
         </div>
       </div>
     ),

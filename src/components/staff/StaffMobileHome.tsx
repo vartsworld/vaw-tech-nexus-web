@@ -24,7 +24,10 @@ import {
   ChevronRight,
   ClipboardList,
   AlertCircle,
-  UserCheck
+  UserCheck,
+  Video,
+  Activity,
+  Compass
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +38,11 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 // Reusable Sub-views
 import LeaveView from "@/components/staff/LeaveView";
 import { QuickNotes } from "@/components/staff/QuickNotes";
-import RealChessEngine from "@/components/staff/RealChessEngine";
+import MiniChess from "@/components/staff/MiniChess";
+import MeetingRoom from "./MeetingRoom";
+import ClientOnboardingCreator from "./ClientOnboardingCreator";
+import ToolsNexusView from "./ToolsNexusView";
+import { ActivityLogPanel } from "./ActivityLogPanel";
 
 type RoomType = 'home' | 'workspace' | 'breakroom' | 'meeting';
 
@@ -625,7 +632,7 @@ const StaffMobileHome = ({
                   </div>
 
                   {/* Grid of Tools */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4 pb-12">
                     <button
                       onClick={() => setActiveTool("leave")}
                       className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
@@ -654,20 +661,85 @@ const StaffMobileHome = ({
 
                     <button
                       onClick={() => setActiveTool("chess")}
-                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all col-span-2 shadow-xl"
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
                     >
                       <div className="w-12 h-12 rounded-2xl bg-purple-500/15 flex items-center justify-center text-purple-400 border border-purple-500/20">
-                        <Smile className="w-6 h-6 animate-bounce" />
+                        <Smile className="w-6 h-6 animate-pulse" />
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-white">Games</h4>
-                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Play Chess Match</p>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Play Chess Arena</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTool("onboarding")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-blue-500/15 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                        <Compass className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Onboarding</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Client Portal</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTool("meeting")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-pink-500/15 flex items-center justify-center text-pink-400 border border-pink-500/20">
+                        <Video className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Meeting Room</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Video Conference</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTool("tools_nexus")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                        <Compass className="w-6 h-6 animate-spin-slow" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Tools</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Tools Nexus</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTool("activity")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                        <Activity className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Activity Log</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">History & Ledger</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTool("coin")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-400 border border-amber-500/20">
+                        <Coins className="w-6 h-6 animate-bounce" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">My Coins</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Points Balance</p>
                       </div>
                     </button>
                   </div>
                 </>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 pb-12">
                   {/* Back button */}
                   <button
                     onClick={() => setActiveTool(null)}
@@ -681,7 +753,25 @@ const StaffMobileHome = ({
                   {activeTool === "notes" && <QuickNotes userId={profile?.user_id} />}
                   {activeTool === "chess" && (
                     <div className="bg-black/40 backdrop-blur-2xl p-4 rounded-3xl border border-white/10 shadow-2xl">
-                      <RealChessEngine userId={profile?.user_id} userProfile={profile} />
+                      <MiniChess userId={profile?.user_id} userProfile={profile} />
+                    </div>
+                  )}
+                  {activeTool === "onboarding" && (
+                    <div className="bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-3xl p-4 min-h-[400px]">
+                      <ClientOnboardingCreator userId={profile?.user_id || ''} />
+                    </div>
+                  )}
+                  {activeTool === "meeting" && <MeetingRoom />}
+                  {activeTool === "tools_nexus" && <ToolsNexusView profile={profile} />}
+                  {activeTool === "activity" && <ActivityLogPanel userId={profile?.user_id || ''} className="border-none bg-transparent" />}
+                  {activeTool === "coin" && (
+                    <div className="space-y-4">
+                      <div className="bg-black/40 backdrop-blur-2xl p-5 rounded-3xl border border-white/10 text-center">
+                        <Coins className="w-10 h-10 text-amber-400 mx-auto mb-2 animate-bounce" />
+                        <h3 className="text-lg font-black text-white">{(profile?.total_points || 0).toLocaleString()} Coins</h3>
+                        <p className="text-xs text-white/40 uppercase font-bold mt-1 tracking-widest">Your VAW Coins Balance</p>
+                      </div>
+                      <ActivityLogPanel userId={profile?.user_id || ''} className="border-none bg-transparent" />
                     </div>
                   )}
                 </div>

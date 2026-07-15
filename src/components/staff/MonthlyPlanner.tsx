@@ -63,6 +63,7 @@ interface MonthlyPlan {
   client_id: string | null;
   color: string;
   created_at: string;
+  is_completed?: boolean | null;
 }
 
 interface MonthlyPlannerProps {
@@ -224,6 +225,32 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         title: "Error",
         description: "Failed to update plan",
         variant: "destructive",
+      });
+    }
+  };
+
+  const handleTogglePlanCompletion = async (planId: string, currentCompleted: boolean | null) => {
+    try {
+      const { error } = await supabase
+        .from('monthly_plans')
+        .update({ is_completed: !currentCompleted })
+        .eq('id', planId);
+
+      if (error) throw error;
+
+      setPlans(prev =>
+        prev.map(p => p.id === planId ? { ...p, is_completed: !currentCompleted } : p)
+      );
+      toast({
+        title: "Success",
+        description: "Plan completion updated successfully",
+      });
+    } catch (err) {
+      console.error('Error updating plan:', err);
+      toast({
+        title: "Error",
+        description: "Failed to update plan status",
+        variant: "destructive"
       });
     }
   };
@@ -565,7 +592,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                           setIsAddDialogOpen(true);
                         }}
                         onDelete={handleDeletePlan}
-                        isCreator={plan.created_by === userId}
+                        onToggleComplete={handleTogglePlanCompletion}
                       />
                     ))}
                   </div>
@@ -596,7 +623,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                           setIsAddDialogOpen(true);
                         }}
                         onDelete={handleDeletePlan}
-                        isCreator={plan.created_by === userId}
+                        onToggleComplete={handleTogglePlanCompletion}
                       />
                     ))}
                   </div>
@@ -765,18 +792,29 @@ interface PlanItemProps {
   plan: MonthlyPlan;
   onEdit: (p: MonthlyPlan) => void;
   onDelete: (id: string) => void;
-  isCreator: boolean;
+  onToggleComplete: (id: string, currentCompleted: boolean | null) => void;
 }
 
-const PlanItem = ({ plan, onEdit, onDelete, isCreator }: PlanItemProps) => {
+const PlanItem = ({ plan, onEdit, onDelete, onToggleComplete }: PlanItemProps) => {
   return (
     <div
-      className="p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all group relative overflow-hidden"
+      className={cn(
+        "p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all group relative overflow-hidden flex justify-between items-center gap-4",
+        plan.is_completed && "opacity-50"
+      )}
       style={{ borderLeft: `4px solid ${plan.color}` }}
     >
-      <div className="flex justify-between items-start mb-2">
-        <h5 className="font-black text-sm text-white uppercase italic tracking-tight">{plan.title}</h5>
-        {isCreator && (
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-start mb-2">
+          <h5
+            className={cn(
+              "font-black text-sm uppercase italic tracking-tight text-white",
+              plan.is_completed && "line-through text-zinc-500"
+            )}
+            style={plan.is_completed ? {} : { color: plan.color || '#ffffff' }}
+          >
+            {plan.title}
+          </h5>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button
               variant="ghost"
@@ -795,19 +833,31 @@ const PlanItem = ({ plan, onEdit, onDelete, isCreator }: PlanItemProps) => {
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
           </div>
+        </div>
+        <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed font-medium">
+          {plan.description || 'No directives provided.'}
+        </p>
+        {plan.assigned_staff.length > 0 && (
+          <div className="mt-3 flex items-center gap-1.5">
+            <User className="w-3 h-3 text-white/20" />
+            <span className="text-[9px] font-black uppercase tracking-widest text-white/20">
+              {plan.assigned_staff.length} Members Assigned
+            </span>
+          </div>
         )}
       </div>
-      <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed font-medium">
-        {plan.description || 'No directives provided.'}
-      </p>
-      {plan.assigned_staff.length > 0 && (
-        <div className="mt-3 flex items-center gap-1.5">
-          <User className="w-3 h-3 text-white/20" />
-          <span className="text-[9px] font-black uppercase tracking-widest text-white/20">
-            {plan.assigned_staff.length} Members Assigned
-          </span>
-        </div>
-      )}
+
+      <button
+        onClick={() => onToggleComplete(plan.id, plan.is_completed || false)}
+        className={cn(
+          "w-8 h-8 rounded-full border flex items-center justify-center transition-all shrink-0",
+          plan.is_completed
+            ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+            : "border-white/10 text-zinc-500 hover:border-white/20"
+        )}
+      >
+        <Check className="w-4 h-4" />
+      </button>
     </div>
   );
 };
