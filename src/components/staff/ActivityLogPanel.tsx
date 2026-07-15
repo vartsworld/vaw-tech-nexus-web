@@ -77,6 +77,7 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
         if (results[2].status === 'fulfilled' && !results[2].value.error) {
           combinedLogs.push(...(results[2].value.data || []).map(p => ({
             ...p,
+            coins: p.points,
             logType: 'coin',
             activity_type: 'coin_transaction',
             metadata: {

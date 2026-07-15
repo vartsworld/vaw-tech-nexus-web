@@ -142,7 +142,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [projects, setProjects] = useState<any[]>([]);
   const [folderSubtasks, setFolderSubtasks] = useState<any[]>([]);
   const [folderSearchQuery, setFolderSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'table' | 'kanban'>('card');
   const [staff, setStaff] = useState<Staff[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [clients, setClients] = useState<any[]>([]);
@@ -2573,6 +2573,15 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   >
                     <List className="h-4 w-4" />
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-7 w-7 p-0 ${viewMode === 'kanban' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
+                    onClick={() => setViewMode('kanban')}
+                    title="Kanban View"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                  </Button>
                 </div>
               )}
             </CardHeader>
@@ -3159,6 +3168,92 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                           ))}
                         </TableBody>
                       </Table>
+                    </div>
+                  ) : viewMode === 'kanban' ? (
+                    <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                      {[
+                        { id: 'pending', title: 'Pending / Todo', color: 'border-yellow-500/20 bg-yellow-500/5' },
+                        { id: 'in_progress', title: 'In Progress', color: 'border-blue-500/20 bg-blue-500/5' },
+                        { id: 'pending_approval', title: 'Handover / Review', color: 'border-purple-500/20 bg-purple-500/5' },
+                        { id: 'completed', title: 'Completed', color: 'border-emerald-500/20 bg-emerald-500/5' }
+                      ].map(column => {
+                        const columnTasks = filteredTasksForToggle.filter(t => t.status === column.id);
+                        return (
+                          <div key={column.id} className={cn("flex-1 min-w-[280px] rounded-2xl border p-4 space-y-4", column.color)}>
+                            <div className="flex justify-between items-center mb-2">
+                              <h4 className="text-xs font-black uppercase tracking-wider text-white">{column.title}</h4>
+                              <Badge className="bg-white/10 text-white hover:bg-white/10 text-[10px] font-bold">{columnTasks.length}</Badge>
+                            </div>
+                            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                              {columnTasks.map(task => (
+                                <div
+                                  key={task.id}
+                                  onClick={async () => {
+                                    try {
+                                      setSelectedTask(task);
+                                      await fetchSubtasks(task.id);
+                                      setCurrentView('detail');
+                                    } catch (e) {
+                                      console.error('Error opening task view:', e);
+                                    }
+                                  }}
+                                  className={cn(
+                                    "bg-black/35 border border-white/10 rounded-xl p-3.5 space-y-3 cursor-pointer hover:border-white/20 transition-all hover:translate-y-[-1px]",
+                                    task.status === 'completed' && "opacity-60"
+                                  )}
+                                >
+                                  <h5 className={cn("text-sm font-bold text-white leading-snug", task.status === 'completed' && "line-through text-white/50")}>
+                                    {task.title}
+                                  </h5>
+                                  {task.description && (
+                                    <p className="text-[11px] text-white/50 line-clamp-2 leading-relaxed">
+                                      {task.description}
+                                    </p>
+                                  )}
+                                  <div className="flex justify-between items-center pt-2 border-t border-white/5 text-[10px] text-white/40">
+                                    <span>Due: {task.due_date ? format(new Date(task.due_date), "MMM d") : "Ongoing"}</span>
+                                    <div className="flex gap-1">
+                                      {column.id !== 'pending' && (
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-5 w-5 rounded bg-white/5 hover:bg-white/10 p-0"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const prevStatus = column.id === 'in_progress' ? 'pending' : column.id === 'pending_approval' ? 'in_progress' : 'pending_approval';
+                                            handleTaskStatusUpdate(task.id, prevStatus as any);
+                                          }}
+                                          title="Move Left"
+                                        >
+                                          ←
+                                        </Button>
+                                      )}
+                                      {column.id !== 'completed' && (
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-5 w-5 rounded bg-white/5 hover:bg-white/10 p-0"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const nextStatus = column.id === 'pending' ? 'in_progress' : column.id === 'in_progress' ? 'pending_approval' : 'completed';
+                                            handleTaskStatusUpdate(task.id, nextStatus as any);
+                                          }}
+                                          title="Move Right"
+                                        >
+                                          →
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                              {columnTasks.length === 0 && (
+                                <p className="text-[11px] text-white/30 text-center py-6">No tasks in this stage</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">

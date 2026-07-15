@@ -19,6 +19,7 @@ import ClientOnboardingCreator from './ClientOnboardingCreator';
 interface DraggableWorkspaceProps {
   userId: string;
   userProfile: any;
+  onWidgetControlsChange?: (controls: React.ReactNode) => void;
 }
 
 interface WorkspaceItem {
@@ -37,7 +38,7 @@ const availableWidgets = [
   { component: 'ClientOnboardingCreator', title: 'Onboarding Links', span: 'half' as const, removable: true },
 ];
 
-const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) => {
+const DraggableWorkspace = ({ userId, userProfile, onWidgetControlsChange }: DraggableWorkspaceProps) => {
   const isMobile = useIsMobile();
   // Default: Only Tasks Manager visible, other widgets hidden
   const defaultItems: WorkspaceItem[] = [
@@ -49,6 +50,53 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
   const [isLoading, setIsLoading] = useState(true);
   const [showControls, setShowControls] = useState(!isMobile);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (onWidgetControlsChange) {
+      onWidgetControlsChange(
+        <div className="flex flex-row items-center gap-2">
+          <Select value={selectedWidget} onValueChange={setSelectedWidget}>
+            <SelectTrigger className="w-28 sm:w-40 bg-white/10 border-white/10 text-white h-8 text-[11px] focus:ring-0">
+              <SelectValue placeholder="Add widget..." />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-950 border-white/10 text-white">
+              {getAvailableWidgets().map((widget) => (
+                <SelectItem
+                  key={widget.component}
+                  value={widget.component}
+                  className="text-xs focus:bg-white/5 focus:text-white"
+                >
+                  {widget.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-1">
+            <Button
+              onClick={addWidget}
+              disabled={!selectedWidget}
+              className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 h-8 text-xs px-2 sm:px-3"
+              size="sm"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              Add
+            </Button>
+            <WidgetManager
+              widgets={items.map(item => ({
+                id: item.id,
+                name: item.title,
+                description: `${item.component} widget`,
+                isVisible: item.isVisible ?? true,
+              }))}
+              onToggleWidget={toggleWidgetVisibility}
+              onShowAll={showAllWidgets}
+              onHideAll={hideAllWidgets}
+            />
+          </div>
+        </div>
+      );
+    }
+  }, [items, selectedWidget, getAvailableWidgets, addWidget, toggleWidgetVisibility, showAllWidgets, hideAllWidgets, onWidgetControlsChange]);
 
   // Load saved layout on mount
   useEffect(() => {
@@ -210,64 +258,66 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      {/* Widget Controls - Collapsible on mobile */}
-      <Card className="bg-black/10 backdrop-blur-lg border-white/10">
-        <button
-          className="w-full flex items-center justify-between p-3 sm:p-4 sm:cursor-default"
-          onClick={() => isMobile && setShowControls(!showControls)}
-        >
-          <span className="text-sm font-medium text-foreground/80">Widget Controls</span>
-          {isMobile && (
-            showControls
-              ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
-              : <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          )}
-        </button>
+      {/* Widget Controls - Collapsible on mobile - Only shown if not handled by header */}
+      {!onWidgetControlsChange && (
+        <Card className="bg-black/10 backdrop-blur-lg border-white/10">
+          <button
+            className="w-full flex items-center justify-between p-3 sm:p-4 sm:cursor-default"
+            onClick={() => isMobile && setShowControls(!showControls)}
+          >
+            <span className="text-sm font-medium text-foreground/80">Widget Controls</span>
+            {isMobile && (
+              showControls
+                ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                : <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </button>
 
-        {(showControls || !isMobile) && (
-          <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-0">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
-              <Select value={selectedWidget} onValueChange={setSelectedWidget}>
-                <SelectTrigger className="w-full sm:w-48 bg-black/20 border-white/20 text-foreground">
-                  <SelectValue placeholder="Add a widget..." />
-                </SelectTrigger>
-                <SelectContent className="bg-background/95 backdrop-blur-lg border-border">
-                  {getAvailableWidgets().map((widget) => (
-                    <SelectItem
-                      key={widget.component}
-                      value={widget.component}
-                    >
-                      {widget.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={addWidget}
-                  disabled={!selectedWidget}
-                  className="flex-1 sm:flex-none bg-primary/20 hover:bg-primary/30 text-foreground border-primary/30"
-                  size="sm"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Widget
-                </Button>
-                <WidgetManager
-                  widgets={items.map(item => ({
-                    id: item.id,
-                    name: item.title,
-                    description: `${item.component} widget`,
-                    isVisible: item.isVisible ?? true,
-                  }))}
-                  onToggleWidget={toggleWidgetVisibility}
-                  onShowAll={showAllWidgets}
-                  onHideAll={hideAllWidgets}
-                />
+          {(showControls || !isMobile) && (
+            <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-0">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
+                <Select value={selectedWidget} onValueChange={setSelectedWidget}>
+                  <SelectTrigger className="w-full sm:w-48 bg-black/20 border-white/20 text-foreground">
+                    <SelectValue placeholder="Add a widget..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background/95 backdrop-blur-lg border-border">
+                    {getAvailableWidgets().map((widget) => (
+                      <SelectItem
+                        key={widget.component}
+                        value={widget.component}
+                      >
+                        {widget.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={addWidget}
+                    disabled={!selectedWidget}
+                    className="flex-1 sm:flex-none bg-primary/20 hover:bg-primary/30 text-foreground border-primary/30"
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Widget
+                  </Button>
+                  <WidgetManager
+                    widgets={items.map(item => ({
+                      id: item.id,
+                      name: item.title,
+                      description: `${item.component} widget`,
+                      isVisible: item.isVisible ?? true,
+                    }))}
+                    onToggleWidget={toggleWidgetVisibility}
+                    onShowAll={showAllWidgets}
+                    onHideAll={hideAllWidgets}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </Card>
+          )}
+        </Card>
+      )}
 
       <DragDropContext onDragEnd={onDragEnd}>
         <StrictModeDroppable droppableId="workspace">
