@@ -315,7 +315,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
         {/* Left Column - Main Form */}
         <div className="lg:col-span-2 space-y-6">
           {/* Title & Description Card */}
-          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-5">
+          <div className="rounded-[2.5rem] border border-white/15 bg-black/60 dark:bg-black/60 backdrop-blur-2xl p-6 lg:p-8 space-y-5">
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Task Title</Label>
               <Input
@@ -338,7 +338,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
           </div>
 
           {/* Assignment Card */}
-          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-5">
+          <div className="rounded-[2.5rem] border border-white/15 bg-black/60 dark:bg-black/60 backdrop-blur-2xl p-6 lg:p-8 space-y-5">
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
               <User className="h-4 w-4 text-primary" />
               Assignment
@@ -605,7 +605,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
           )}
 
           {/* Attachments Card */}
-          <div className="rounded-2xl border border-white/15 bg-white/[0.06] dark:bg-white/[0.06] backdrop-blur-xl p-6 space-y-4">
+          <div className="rounded-[2.5rem] border border-white/15 bg-black/60 dark:bg-black/60 backdrop-blur-2xl p-6 lg:p-8 space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
               {taskToEdit ? "Add New Attachments" : "Attachments"}

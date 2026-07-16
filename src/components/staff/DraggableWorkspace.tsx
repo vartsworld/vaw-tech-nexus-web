@@ -33,9 +33,7 @@ interface WorkspaceItem {
 
 const availableWidgets = [
   { component: 'TeamChat', title: 'Team Chat', span: 'half' as const, removable: true },
-  { component: 'MiniChess', title: 'Mini Chess', span: 'half' as const, removable: true },
   { component: 'ActivityLogPanel', title: 'Activity Logger', span: 'half' as const, removable: true },
-  { component: 'ClientOnboardingCreator', title: 'Onboarding Links', span: 'half' as const, removable: true },
 ];
 
 const DraggableWorkspace = ({ userId, userProfile, onWidgetControlsChange }: DraggableWorkspaceProps) => {

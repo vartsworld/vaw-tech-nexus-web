@@ -2198,7 +2198,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   </Badge>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] max-h-[80vh] bg-gray-900/95 backdrop-blur-xl border-emerald-500/30 text-white">
+              <DialogContent className="sm:max-w-[600px] max-h-[80vh] bg-black/60 backdrop-blur-2xl border-white/15 text-white rounded-[2.5rem]">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2 text-emerald-300">
                     <CheckCircle className="h-5 w-5" />
@@ -3002,7 +3002,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   )}
                 </div>
               ) : (
-                <ScrollArea className="h-[500px] sm:h-[600px] w-full">
+                <div className="w-full h-auto">
                   {viewMode === 'table' ? (
                     <div className="overflow-x-auto">
                       <Table className="min-w-[800px]">
@@ -3405,7 +3405,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                       ))}
                     </div>
                   )}
-                </ScrollArea>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -3433,7 +3433,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       {/* Handover Task Dialog */}
       <Dialog open={isHandoverOpen} onOpenChange={setIsHandoverOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-black/60 backdrop-blur-2xl border-white/15 text-white rounded-[2.5rem]">
           <DialogHeader>
             <DialogTitle>Handover Task</DialogTitle>
           </DialogHeader>
@@ -3485,7 +3485,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       {/* Add Client Dialog */}
       <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-black/60 backdrop-blur-2xl border-white/15 text-white rounded-[2.5rem]">
           <DialogHeader>
             <DialogTitle>Add New Client</DialogTitle>
           </DialogHeader>
@@ -3579,7 +3579,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       />
       {/* Add Project Dialog */}
       <Dialog open={isAddProjectDialogOpen} onOpenChange={setIsAddProjectDialogOpen}>
-        <DialogContent className="max-w-md bg-[#0f0f0f] border-white/5 text-white">
+        <DialogContent className="max-w-md bg-black/60 backdrop-blur-2xl border-white/15 text-white rounded-[2.5rem]">
           <DialogHeader>
             <DialogTitle>Initialize New Project</DialogTitle>
           </DialogHeader>

@@ -41,6 +41,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { TaskDetailDialog } from "./TaskDetailDialog";
 import LeaveView from "@/components/staff/LeaveView";
+import TeamHeadWorkspace from "./TeamHeadWorkspace";
 import { QuickNotes } from "@/components/staff/QuickNotes";
 import MiniChess from "@/components/staff/MiniChess";
 import MeetingRoom from "./MeetingRoom";
@@ -1083,7 +1084,17 @@ const TeamHeadMobileHome = ({
       <div className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           {activeTab === 'home' && <HomeView key="home" />}
-          {activeTab === 'tasks' && <TasksView key="tasks" />}
+          {activeTab === 'tasks' && (
+            <motion.div
+              key="tasks"
+              className="px-1 pt-6 pb-28 space-y-6 overflow-y-auto"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <TeamHeadWorkspace userId={profile.user_id} userProfile={profile} />
+            </motion.div>
+          )}
           {activeTab === 'planner' && <PlannerView key="planner" />}
           {activeTab === 'tools' && <ToolsView key="tools" />}
           {activeTab === 'profile' && <ProfileView key="profile" />}
