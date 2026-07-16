@@ -118,7 +118,7 @@ const TeamHeadDashboard = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [showMobileHome, setShowMobileHome] = useState(true);
-  const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
+  const [currentRoom, setCurrentRoom] = useState<RoomType>('planner');
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -144,7 +144,6 @@ const TeamHeadDashboard = () => {
       }
     }
     return [
-      { id: 'chess', name: 'Mini Chess', description: 'Play chess with colleagues', isVisible: true },
       { id: 'activity', name: 'Activity Log', description: 'Track your daily activities', isVisible: false },
     ];
   });
@@ -558,34 +557,10 @@ const TeamHeadDashboard = () => {
           />
         </div>
 
-        {/* Row 2: Quick Tools (Notes, Timer, Onboarding) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start relative z-10">
-          {/* Quick Notes */}
-          <div className="h-full">
-            <QuickNotes userId={profile?.user_id || ''} />
-          </div>
-
-          {/* Onboarding Links */}
-          <div className="h-full bg-black/40 backdrop-blur-md rounded-xl border border-white/10 p-4">
-            <ClientOnboardingCreator userId={profile?.user_id || ''} />
-          </div>
-
-          {/* Quick Notes */}
-        </div>
-
-        {/* Row 3: Activity Log */}
+        {/* Row 2: Activity Log */}
         {widgets.find(w => w.id === 'activity')?.isVisible && (
           <div className="w-full relative z-10">
             <ActivityLogPanel userId={profile?.user_id || ''} className="bg-black/40 backdrop-blur-lg border-white/10 h-[600px]" />
-          </div>
-        )}
-
-        {/* Row 4: Chess (Bottom Center) */}
-        {widgets.find(w => w.id === 'chess')?.isVisible && (
-          <div className="w-full flex justify-center py-4 relative z-10">
-            <div className="w-full max-w-2xl">
-              <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
-            </div>
           </div>
         )}
       </div>

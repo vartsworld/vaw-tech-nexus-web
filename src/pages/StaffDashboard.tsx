@@ -115,7 +115,7 @@ const EMOJI_OPTIONS = [
 const StaffDashboard = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [currentRoom, setCurrentRoom] = useState<RoomType>('workspace');
+  const [currentRoom, setCurrentRoom] = useState<RoomType>('planner');
   const [showMobileHome, setShowMobileHome] = useState(true);
   const [workspaceControls, setWorkspaceControls] = useState<React.ReactNode>(null);
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);

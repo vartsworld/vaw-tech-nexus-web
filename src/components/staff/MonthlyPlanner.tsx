@@ -27,7 +27,8 @@ import {
   Briefcase,
   Layers,
   Circle,
-  Check
+  Check,
+  Target
 } from "lucide-react";
 import {
   format,
@@ -91,6 +92,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   const [selectedPlan, setSelectedPlan] = useState<MonthlyPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const isMobile = useIsMobile();
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [subtasks, setSubtasks] = useState<any[]>([]);
   const [newPlan, setNewPlan] = useState({
     title: '',
     description: '',
@@ -114,7 +117,144 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   useEffect(() => {
     fetchPlans();
     fetchClients();
+    fetchTasksAndSubtasks();
   }, [currentMonth, filterClientId]);
+
+  const fetchTasksAndSubtasks = async () => {
+    try {
+      // 1. Fetch staff tasks
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('staff_tasks')
+        .select('*');
+
+      if (tasksError) throw tasksError;
+
+      // 2. Fetch staff subtasks
+      const { data: subtasksData, error: subtasksError } = await supabase
+        .from('staff_subtasks')
+        .select('*, staff_tasks(*)');
+
+      if (subtasksError) throw subtasksError;
+
+      // Filter tasks according to user assignments and role
+      const filteredTasks = (tasksData || []).filter(task => {
+        // Common tasks: no client_id (shown to everyone)
+        if (!task.client_id) return true;
+
+        // If user is a team head or has elevated permissions, they can see all
+        if (userProfile?.role === 'team_head' || userProfile?.role === 'admin' || userProfile?.is_department_head) {
+          return true;
+        }
+
+        // Otherwise (client task), show only if assigned
+        let isAssignedToTask = false;
+        if (task.assigned_to) {
+          try {
+            const parsed = typeof task.assigned_to === 'string' ? JSON.parse(task.assigned_to) : task.assigned_to;
+            isAssignedToTask = Array.isArray(parsed) ? parsed.includes(userId) : parsed === userId;
+          } catch {
+            isAssignedToTask = String(task.assigned_to).includes(userId);
+          }
+        }
+
+        // Or assigned to any subtask under this task
+        const subtasksOfThisTask = (subtasksData || []).filter((s: any) => s.task_id === task.id);
+        const isAssignedToSubtask = subtasksOfThisTask.some((st: any) => st.assigned_to === userId);
+
+        return isAssignedToTask || isAssignedToSubtask;
+      });
+
+      // Filter subtasks
+      const filteredSubtasks = (subtasksData || []).filter(subtask => {
+        const parentTask = subtask.staff_tasks;
+        if (!parentTask) return false;
+
+        // Common parent task: show to everyone
+        if (!parentTask.client_id) return true;
+
+        // Elevated permissions
+        if (userProfile?.role === 'team_head' || userProfile?.role === 'admin' || userProfile?.is_department_head) {
+          return true;
+        }
+
+        // Assigned directly to subtask or to parent task
+        let isAssignedToParent = false;
+        if (parentTask.assigned_to) {
+          try {
+            const parsed = typeof parentTask.assigned_to === 'string' ? JSON.parse(parentTask.assigned_to) : parentTask.assigned_to;
+            isAssignedToParent = Array.isArray(parsed) ? parsed.includes(userId) : parsed === userId;
+          } catch {
+            isAssignedToParent = String(parentTask.assigned_to).includes(userId);
+          }
+        }
+
+        const isAssignedToSubtask = subtask.assigned_to === userId;
+
+        return isAssignedToParent || isAssignedToSubtask;
+      });
+
+      setTasks(filteredTasks);
+      setSubtasks(filteredSubtasks);
+    } catch (err) {
+      console.error('Error fetching tasks/subtasks in planner:', err);
+    }
+  };
+
+  const handleToggleTaskCompletion = async (taskId: string, currentStatus: string) => {
+    try {
+      const isCompleted = currentStatus === 'completed';
+      const nextStatus = isCompleted ? 'in_progress' : 'completed';
+
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({ status: nextStatus, updated_at: new Date().toISOString() })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Task marked as ${nextStatus === 'completed' ? 'completed' : 'in progress'}.`,
+      });
+
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: nextStatus } : t));
+    } catch (err: any) {
+      console.error('Error toggling task completion:', err);
+      toast({
+        title: "Error",
+        description: "Failed to update task status.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleToggleSubtaskCompletion = async (subtaskId: string, currentStatus: string) => {
+    try {
+      const isCompleted = currentStatus === 'completed';
+      const nextStatus = isCompleted ? 'in_progress' : 'completed';
+
+      const { error } = await supabase
+        .from('staff_subtasks')
+        .update({ status: nextStatus, updated_at: new Date().toISOString() })
+        .eq('id', subtaskId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Subtask marked as ${nextStatus === 'completed' ? 'completed' : 'in progress'}.`,
+      });
+
+      setSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, status: nextStatus } : s));
+    } catch (err: any) {
+      console.error('Error toggling subtask completion:', err);
+      toast({
+        title: "Error",
+        description: "Failed to update subtask status.",
+        variant: "destructive"
+      });
+    }
+  };
 
   const fetchPlans = async () => {
     setIsLoading(true);
@@ -378,6 +518,17 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       for (let i = 0; i < 7; i++) {
         const currentDay = day;
         const dayPlans = plans.filter(p => isSameDay(parseISO(p.date), currentDay));
+        const dayTasks = tasks.filter(t => t.due_date && isSameDay(parseISO(t.due_date), currentDay));
+        const daySubtasks = subtasks.filter(s => s.due_date && isSameDay(parseISO(s.due_date), currentDay));
+
+        // Combine all items to display
+        const cellItems = [
+          ...dayPlans.map(p => ({ type: 'plan', title: p.title, color: p.color || '#3b82f6', is_completed: p.is_completed })),
+          ...dayTasks.map(t => ({ type: 'task', title: `Task: ${t.title}`, color: '#8b5cf6', is_completed: t.status === 'completed' })),
+          ...daySubtasks.map(s => ({ type: 'subtask', title: `Sub: ${s.title}`, color: '#ec4899', is_completed: s.status === 'completed' }))
+        ];
+
+        const totalItemsCount = cellItems.length;
 
         days.push(
           <div
@@ -399,9 +550,9 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
               )}>
                 {format(currentDay, 'd')}
               </span>
-              {dayPlans.length > 0 && !isMobile && (
+              {totalItemsCount > 0 && !isMobile && (
                 <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-white/10 bg-white/5 text-white/50">
-                  {dayPlans.length}
+                  {totalItemsCount}
                 </Badge>
               )}
             </div>
@@ -411,34 +562,37 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
               {isMobile ? (
                 /* Mobile Dots View */
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {dayPlans.map((plan, idx) => (
+                  {cellItems.map((item, idx) => (
                     <div
                       key={idx}
-                      className="w-1.5 h-1.5 rounded-full"
-                      style={{ backgroundColor: plan.color || '#3b82f6' }}
+                      className={cn("w-1.5 h-1.5 rounded-full", item.is_completed && "opacity-40")}
+                      style={{ backgroundColor: item.color }}
                     />
                   ))}
                 </div>
               ) : (
-                /* Desktop Plan Blocks */
+                /* Desktop Blocks */
                 <>
-                  {dayPlans.slice(0, 3).map((plan, idx) => (
+                  {cellItems.slice(0, 3).map((item, idx) => (
                     <div
                       key={idx}
                       style={{
-                        backgroundColor: `${plan.color || '#3b82f6'}20`,
-                        borderColor: `${plan.color || '#3b82f6'}40`,
-                        color: plan.color || '#3b82f6'
+                        backgroundColor: `${item.color}20`,
+                        borderColor: `${item.color}40`,
+                        color: item.color
                       }}
-                      className="text-[10px] border px-2 py-1 rounded-md truncate font-bold uppercase tracking-tight"
-                      title={plan.title}
+                      className={cn(
+                        "text-[10px] border px-2 py-1 rounded-md truncate font-bold uppercase tracking-tight",
+                        item.is_completed && "line-through opacity-40"
+                      )}
+                      title={item.title}
                     >
-                      {plan.title}
+                      {item.title}
                     </div>
                   ))}
-                  {dayPlans.length > 3 && (
+                  {totalItemsCount > 3 && (
                     <div className="text-[9px] text-white/20 font-black uppercase tracking-widest pl-1 pt-1">
-                      + {dayPlans.length - 3} more
+                      + {totalItemsCount - 3} more
                     </div>
                   )}
                 </>
@@ -476,6 +630,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   };
 
   const selectedDayPlans = selectedDate ? plans.filter(p => isSameDay(parseISO(p.date), selectedDate)) : [];
+  const selectedDayTasks = selectedDate ? tasks.filter(t => t.due_date && isSameDay(parseISO(t.due_date), selectedDate)) : [];
+  const selectedDaySubtasks = selectedDate ? subtasks.filter(s => s.due_date && isSameDay(parseISO(s.due_date), selectedDate)) : [];
   const { common: commonPlans, clientGrouped } = getGroupedPlans(selectedDayPlans);
 
   return (
@@ -514,19 +670,27 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
             components={{
               DayContent: ({ date }) => {
                 const dayPlans = plans.filter(p => isSameDay(parseISO(p.date), date));
+                const dayTasks = tasks.filter(t => t.due_date && isSameDay(parseISO(t.due_date), date));
+                const daySubtasks = subtasks.filter(s => s.due_date && isSameDay(parseISO(s.due_date), date));
+
+                const totalCount = dayPlans.length + dayTasks.length + daySubtasks.length;
                 return (
                   <div className="relative flex flex-col items-center justify-center w-full h-full p-2">
                     <span className="text-sm sm:text-base">{date.getDate()}</span>
-                    {dayPlans.length > 0 && (
+                    {totalCount > 0 && (
                       <div className="absolute bottom-2 flex gap-1 justify-center w-full px-1 overflow-hidden">
-                        {dayPlans.slice(0, 3).map((plan, idx) => (
+                        {[
+                          ...dayPlans.map(p => p.color || '#3b82f6'),
+                          ...dayTasks.map(() => '#8b5cf6'),
+                          ...daySubtasks.map(() => '#ec4899')
+                        ].slice(0, 3).map((color, idx) => (
                           <span
                             key={idx}
                             className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: plan.color || '#3b82f6' }}
+                            style={{ backgroundColor: color }}
                           />
                         ))}
-                        {dayPlans.length > 3 && (
+                        {totalCount > 3 && (
                           <span className="w-1 h-1 rounded-full bg-white opacity-50" />
                         )}
                       </div>
@@ -631,12 +795,120 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                 </div>
               ))}
 
-              {selectedDayPlans.length === 0 && (
+              {/* Tasks Due Today */}
+              {selectedDayTasks.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Target className="w-4 h-4 text-purple-400" />
+                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/60">Tasks Due</h4>
+                  </div>
+                  <div className="grid gap-3">
+                    {selectedDayTasks.map(task => (
+                      <div
+                        key={task.id}
+                        className={cn(
+                          "p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all group relative overflow-hidden flex justify-between items-center gap-4",
+                          task.status === 'completed' && "opacity-50"
+                        )}
+                        style={{ borderLeft: `4px solid #8b5cf6` }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <h5
+                            className={cn(
+                              "font-black text-sm uppercase italic tracking-tight text-white",
+                              task.status === 'completed' && "line-through text-zinc-500"
+                            )}
+                            style={task.status === 'completed' ? {} : { color: '#8b5cf6' }}
+                          >
+                            {task.title}
+                          </h5>
+                          <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed font-medium mt-1">
+                            {task.description || 'No directives or descriptions provided.'}
+                          </p>
+                          <div className="mt-3 flex items-center gap-3 text-[9px] text-white/25 font-bold uppercase tracking-wider">
+                            <span>Points: {task.points}</span>
+                            {task.client_id && <span className="text-blue-400">Client Task</span>}
+                            <span>Status: {task.status}</span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => handleToggleTaskCompletion(task.id, task.status)}
+                          className={cn(
+                            "w-8 h-8 rounded-full border flex items-center justify-center transition-all shrink-0",
+                            task.status === 'completed'
+                              ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                              : "border-white/10 text-zinc-500 hover:border-white/20"
+                          )}
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Subtasks Due Today */}
+              {selectedDaySubtasks.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-pink-400" />
+                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/60">Subtasks Due</h4>
+                  </div>
+                  <div className="grid gap-3">
+                    {selectedDaySubtasks.map(sub => (
+                      <div
+                        key={sub.id}
+                        className={cn(
+                          "p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all group relative overflow-hidden flex justify-between items-center gap-4",
+                          sub.status === 'completed' && "opacity-50"
+                        )}
+                        style={{ borderLeft: `4px solid #ec4899` }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <h5
+                            className={cn(
+                              "font-black text-sm uppercase italic tracking-tight text-white",
+                              sub.status === 'completed' && "line-through text-zinc-500"
+                            )}
+                            style={sub.status === 'completed' ? {} : { color: '#ec4899' }}
+                          >
+                            {sub.title}
+                          </h5>
+                          <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed font-medium mt-1">
+                            {sub.description || 'No directives or descriptions provided.'}
+                          </p>
+                          <div className="mt-3 flex items-center gap-3 text-[9px] text-white/25 font-bold uppercase tracking-wider">
+                            <span>Points: {sub.points}</span>
+                            {sub.staff_tasks?.title && <span className="text-zinc-400">Parent: {sub.staff_tasks.title}</span>}
+                            <span>Status: {sub.status}</span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => handleToggleSubtaskCompletion(sub.id, sub.status)}
+                          className={cn(
+                            "w-8 h-8 rounded-full border flex items-center justify-center transition-all shrink-0",
+                            sub.status === 'completed'
+                              ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                              : "border-white/10 text-zinc-500 hover:border-white/20"
+                          )}
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedDayPlans.length === 0 && selectedDayTasks.length === 0 && selectedDaySubtasks.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-white/5 rounded-3xl">
                   <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
                     <CalendarIcon className="w-8 h-8 text-white/20" />
                   </div>
-                  <h3 className="text-white font-bold uppercase text-sm tracking-widest">No Plans for today</h3>
+                  <h3 className="text-white font-bold uppercase text-sm tracking-widest">No plans or tasks for today</h3>
                   <p className="text-white/30 text-[10px] uppercase font-black mt-2">Initialize your daily targets to stay on track</p>
                 </div>
               )}

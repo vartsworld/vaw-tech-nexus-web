@@ -37,6 +37,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 // Reusable Sub-views
 import LeaveView from "@/components/staff/LeaveView";
+import TasksManager from "./TasksManager";
 import { QuickNotes } from "@/components/staff/QuickNotes";
 import MiniChess from "@/components/staff/MiniChess";
 import MeetingRoom from "./MeetingRoom";
@@ -432,77 +433,7 @@ const StaffMobileHome = ({
           {/* TASKS TAB */}
           {activeTab === "tasks" && (
             <motion.div key="tasks" {...fadeUp} className="space-y-6">
-              <div>
-                <h1 className="text-xl font-bold tracking-tight">Your Tasks</h1>
-                <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mt-1">Simple task view with no technical terms</p>
-              </div>
-
-              {/* Task Filter Tabs */}
-              <div className="flex bg-zinc-900 p-1 rounded-xl border border-white/5 gap-1">
-                {(['all', 'active', 'overdue', 'completed'] as const).map(f => (
-                  <button
-                    key={f}
-                    onClick={() => setTaskFilter(f)}
-                    className={cn(
-                      "flex-1 py-2 text-xs font-black uppercase rounded-lg transition-all",
-                      taskFilter === f ? "bg-emerald-500 text-black shadow-lg" : "text-zinc-400 hover:text-white"
-                    )}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
-
-              {/* Tasks List */}
-              {loading ? (
-                <div className="space-y-3">
-                  <div className="h-20 bg-zinc-900 rounded-2xl animate-pulse" />
-                  <div className="h-20 bg-zinc-900 rounded-2xl animate-pulse" />
-                </div>
-              ) : filteredTasks.length === 0 ? (
-                <div className="p-8 text-center bg-zinc-900/10 border border-dashed border-white/5 rounded-3xl">
-                  <AlertCircle className="w-8 h-8 text-zinc-600 mx-auto mb-2" />
-                  <p className="text-xs text-zinc-500">No tasks found matching filter.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredTasks.map(task => (
-                    <div
-                      key={task.id}
-                      onClick={() => navigate(`/staff/task/${task.id}`)}
-                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex justify-between items-center hover:border-white/15 active:scale-95 transition-all shadow-lg"
-                    >
-                      <div className="flex-1 pr-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[10px] text-emerald-450 font-black uppercase tracking-wide">
-                            {task.project_title || "General"}
-                          </span>
-                          {task.status === "overdue" && (
-                            <Badge variant="destructive" className="text-[8px] uppercase tracking-tight py-0 font-bold">Overdue</Badge>
-                          )}
-                          {task.status === "completed" && (
-                            <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[8px] uppercase tracking-tight py-0 font-bold">Completed</Badge>
-                          )}
-                        </div>
-                        <h4 className={cn("text-sm font-bold text-white", task.status === "completed" && "line-through text-zinc-500")}>
-                          {task.title}
-                        </h4>
-                        <div className="flex items-center gap-3 mt-2 text-white/40 text-[10px]">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-white/30" />
-                            {task.due_date ? format(new Date(task.due_date), "MMM d") : "Ongoing"}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Coins className="w-3 h-3 text-amber-500/70" />
-                            {task.points} Coins
-                          </span>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-white/50" />
-                    </div>
-                  ))}
-                </div>
-              )}
+              <TasksManager userId={profile.user_id} userProfile={profile} />
             </motion.div>
           )}
 

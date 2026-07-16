@@ -148,8 +148,8 @@ const VirtualOfficeLayout = ({
         schema: 'public',
         table: 'chat_messages'
       }, () => {
-        // If the user is currently on the Inbox page, reset and don't count
-        if (window.location.pathname === '/staff/inbox') {
+        // If the user is currently on the Inbox page or currentRoom is inbox, reset and don't count
+        if (window.location.pathname === '/staff/inbox' || currentRoom === 'inbox') {
           setUnreadCount(0);
           localStorage.setItem(`vaw_unread_inbox_count_${userId}`, "0");
           return;
@@ -169,13 +169,13 @@ const VirtualOfficeLayout = ({
     };
   }, [userId]);
 
-  // Reset unread count if route matches InboxPage
+  // Reset unread count if route matches InboxPage or currentRoom is inbox
   useEffect(() => {
-    if (window.location.pathname === '/staff/inbox' && userId) {
+    if ((window.location.pathname === '/staff/inbox' || currentRoom === 'inbox') && userId) {
       setUnreadCount(0);
       localStorage.setItem(`vaw_unread_inbox_count_${userId}`, "0");
     }
-  }, [location.pathname, userId]);
+  }, [location.pathname, currentRoom, userId]);
 
   // Check for completed tasks to trigger celebration (Triple Confetti!)
   useEffect(() => {
