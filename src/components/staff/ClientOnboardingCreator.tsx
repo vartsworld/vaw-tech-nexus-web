@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Check, Plus, Link as LinkIcon, Copy, Trash2, Globe, Zap, Shield, Star, TrendingUp, Bot, Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -71,6 +72,13 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [newFieldLabel, setNewFieldLabel] = useState("");
   const [newFieldType, setNewFieldType] = useState<"text" | "textarea">("text");
+  const [defaultFieldsConfig, setDefaultFieldsConfig] = useState<Record<string, boolean>>({
+    phone: true,
+    company_address: true,
+    website_url: true,
+    desired_domain: true,
+    notes: true,
+  });
 
   useEffect(() => {
     fetchPackages();
@@ -119,7 +127,19 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
     setClientName(link.client_name || "");
     setAdditionalInfo(link.additional_info || "");
     setInvoiceId(link.invoice_id || "");
-    setCustomFields(link.custom_fields || []);
+
+    const isObject = link.custom_fields && typeof link.custom_fields === 'object' && !Array.isArray(link.custom_fields);
+    const parsedCustom = isObject ? (link.custom_fields as any).custom_fields : (link.custom_fields || []);
+    const parsedDefaultConfig = isObject ? (link.custom_fields as any).default_fields_config : {
+      phone: true,
+      company_address: true,
+      website_url: true,
+      desired_domain: true,
+      notes: true,
+    };
+
+    setCustomFields(parsedCustom || []);
+    setDefaultFieldsConfig(parsedDefaultConfig);
     setOpen(true);
   };
 
@@ -141,7 +161,10 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
         client_name: clientName || null,
         additional_info: additionalInfo || null,
         invoice_id: invoiceId || null,
-        custom_fields: customFields.length > 0 ? customFields : [],
+        custom_fields: {
+          default_fields_config: defaultFieldsConfig,
+          custom_fields: customFields,
+        },
       };
 
       let error;
@@ -180,6 +203,13 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
     setAdditionalInfo("");
     setInvoiceId("");
     setCustomFields([]);
+    setDefaultFieldsConfig({
+      phone: true,
+      company_address: true,
+      website_url: true,
+      desired_domain: true,
+      notes: true,
+    });
   };
 
   const getFormUrl = (token: string) => {
@@ -291,10 +321,57 @@ const ClientOnboardingCreator = ({ userId }: ClientOnboardingCreatorProps) => {
                 <Textarea value={additionalInfo} onChange={(e) => setAdditionalInfo(e.target.value)} placeholder="Any notes the client should see..." rows={2} maxLength={1000} />
               </div>
 
+              {/* Client Form Fields Preview & Visibility */}
+              <div className="p-4 rounded-xl border border-white/10 bg-white/5 space-y-3">
+                <Label className="text-xs font-black uppercase tracking-wider text-primary">Client Form Fields Preview & Visibility</Label>
+                <p className="text-[10px] text-muted-foreground">The client form includes these default fields. You can toggle optional fields off if not needed (e.g. for marketing-only clients who don't require domains).</p>
+
+                <div className="space-y-2 pt-1.5 divide-y divide-white/5">
+                  <div className="flex items-center justify-between py-1.5 text-xs text-muted-foreground">
+                    <span className="font-semibold">Full Name</span>
+                    <Badge variant="outline" className="text-[9px] uppercase font-bold text-emerald-400 border-emerald-400/20 bg-emerald-400/5">Default & Required</Badge>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 text-xs text-muted-foreground">
+                    <span className="font-semibold">Email Address</span>
+                    <Badge variant="outline" className="text-[9px] uppercase font-bold text-emerald-400 border-emerald-400/20 bg-emerald-400/5">Default & Required</Badge>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 text-xs text-muted-foreground">
+                    <span className="font-semibold">Company Name</span>
+                    <Badge variant="outline" className="text-[9px] uppercase font-bold text-emerald-400 border-emerald-400/20 bg-emerald-400/5">Default & Required</Badge>
+                  </div>
+
+                  {[
+                    { key: 'phone', label: 'Phone Number' },
+                    { key: 'company_address', label: 'Company Address' },
+                    { key: 'website_url', label: 'Existing Website URL' },
+                    { key: 'desired_domain', label: 'Desired Domain Name' },
+                    { key: 'notes', label: 'Additional Notes' }
+                  ].map((field) => (
+                    <div key={field.key} className="flex items-center justify-between py-1.5 text-xs">
+                      <span className="font-semibold text-white/80">{field.label}</span>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={defaultFieldsConfig[field.key] !== false}
+                          onCheckedChange={(checked) => {
+                            setDefaultFieldsConfig({
+                              ...defaultFieldsConfig,
+                              [field.key]: checked === true
+                            });
+                          }}
+                        />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          {defaultFieldsConfig[field.key] !== false ? "Visible" : "Hidden"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Custom Fields */}
               <div>
                 <Label>Custom Form Fields</Label>
-                <p className="text-xs text-muted-foreground mb-2">Add extra fields the client should fill in</p>
+                <p className="text-xs text-muted-foreground mb-2">Add extra fields the client should fill in (do not add name, email, phone etc above!)</p>
                 {customFields.map((field, idx) => (
                   <div key={idx} className="flex items-center gap-2 mb-2">
                     <Badge variant="secondary" className="text-xs">{field.type}</Badge>

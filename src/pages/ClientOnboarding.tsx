@@ -11,6 +11,7 @@ import { Check, Globe, Zap, Shield, Star, TrendingUp, Bot, Loader2, CheckCircle 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import SEO from "@/components/SEO";
+import { cn } from "@/lib/utils";
 
 const iconMap: Record<string, React.ReactNode> = {
   Globe: <Globe className="h-6 w-6 text-primary" />,
@@ -64,6 +65,13 @@ const ClientOnboarding = () => {
   });
 
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+  const [defaultFieldsConfig, setDefaultFieldsConfig] = useState<Record<string, boolean>>({
+    phone: true,
+    company_address: true,
+    website_url: true,
+    desired_domain: true,
+    notes: true,
+  });
 
   useEffect(() => {
     if (token) fetchLink();
@@ -88,8 +96,22 @@ const ClientOnboarding = () => {
         setForm(prev => ({ ...prev, contact_person: linkData.client_name || "" }));
       }
 
-      // Parse custom fields
-      const fields = linkData.custom_fields as any;
+      // Parse custom fields and default fields config
+      const rawFields = linkData.custom_fields as any;
+      const isObject = rawFields && typeof rawFields === 'object' && !Array.isArray(rawFields);
+      const fields = isObject ? (rawFields.custom_fields || []) : (rawFields || []);
+      const config = isObject ? (rawFields.default_fields_config || {}) : {};
+
+      const mergedConfig = {
+        phone: config.phone !== false,
+        company_address: config.company_address !== false,
+        website_url: config.website_url !== false,
+        desired_domain: config.desired_domain !== false,
+        notes: config.notes !== false,
+      };
+
+      setDefaultFieldsConfig(mergedConfig);
+
       if (Array.isArray(fields)) {
         const initial: Record<string, string> = {};
         fields.forEach((f: any) => { initial[f.label] = ""; });
@@ -285,7 +307,11 @@ const ClientOnboarding = () => {
     );
   }
 
-  const customFields = Array.isArray(link?.custom_fields) ? link.custom_fields : [];
+  const customFields = Array.isArray(link?.custom_fields)
+    ? link.custom_fields
+    : (link?.custom_fields && typeof link.custom_fields === 'object' && 'custom_fields' in link.custom_fields)
+      ? (link.custom_fields as any).custom_fields
+      : [];
 
   return (
     <div className="min-h-screen bg-background py-8 px-4">
@@ -357,33 +383,45 @@ const ClientOnboarding = () => {
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+91 XXXXX XXXXX" maxLength={20} />
-              </div>
-              <div>
+              {defaultFieldsConfig.phone && (
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input id="phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+91 XXXXX XXXXX" maxLength={20} />
+                </div>
+              )}
+              <div className={cn(defaultFieldsConfig.phone === false && "col-span-2")}>
                 <Label htmlFor="company_name">Company Name *</Label>
                 <Input id="company_name" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} placeholder="Your company name" maxLength={200} />
               </div>
             </div>
-            <div>
-              <Label htmlFor="company_address">Company Address</Label>
-              <Textarea id="company_address" value={form.company_address} onChange={(e) => setForm({ ...form, company_address: e.target.value })} placeholder="Enter company address" rows={2} maxLength={500} />
-            </div>
-
-            <Separator />
-            <p className="text-sm font-medium text-muted-foreground">Website Details</p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {defaultFieldsConfig.company_address && (
               <div>
-                <Label htmlFor="website_url">Existing Website URL</Label>
-                <Input id="website_url" value={form.website_url} onChange={(e) => setForm({ ...form, website_url: e.target.value })} placeholder="https://yourwebsite.com" maxLength={500} />
+                <Label htmlFor="company_address">Company Address</Label>
+                <Textarea id="company_address" value={form.company_address} onChange={(e) => setForm({ ...form, company_address: e.target.value })} placeholder="Enter company address" rows={2} maxLength={500} />
               </div>
-              <div>
-                <Label htmlFor="desired_domain">Desired Domain Name</Label>
-                <Input id="desired_domain" value={form.desired_domain} onChange={(e) => setForm({ ...form, desired_domain: e.target.value })} placeholder="yourcompany.com" maxLength={200} />
-              </div>
-            </div>
+            )}
+
+            {(defaultFieldsConfig.website_url || defaultFieldsConfig.desired_domain) && (
+              <>
+                <Separator />
+                <p className="text-sm font-medium text-muted-foreground">Website Details</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {defaultFieldsConfig.website_url && (
+                    <div className={cn(defaultFieldsConfig.desired_domain === false && "col-span-2")}>
+                      <Label htmlFor="website_url">Existing Website URL</Label>
+                      <Input id="website_url" value={form.website_url} onChange={(e) => setForm({ ...form, website_url: e.target.value })} placeholder="https://yourwebsite.com" maxLength={500} />
+                    </div>
+                  )}
+                  {defaultFieldsConfig.desired_domain && (
+                    <div className={cn(defaultFieldsConfig.website_url === false && "col-span-2")}>
+                      <Label htmlFor="desired_domain">Desired Domain Name</Label>
+                      <Input id="desired_domain" value={form.desired_domain} onChange={(e) => setForm({ ...form, desired_domain: e.target.value })} placeholder="yourcompany.com" maxLength={200} />
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Custom Fields from Head */}
             {customFields.length > 0 && (
@@ -413,10 +451,12 @@ const ClientOnboarding = () => {
               </>
             )}
 
-            <div>
-              <Label htmlFor="notes">Additional Notes</Label>
-              <Textarea id="notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Any other details you'd like to share..." rows={3} maxLength={2000} />
-            </div>
+            {defaultFieldsConfig.notes && (
+              <div>
+                <Label htmlFor="notes">Additional Notes</Label>
+                <Textarea id="notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Any other details you'd like to share..." rows={3} maxLength={2000} />
+              </div>
+            )}
 
             <Button className="w-full" size="lg" onClick={handleSubmit} disabled={submitting}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
