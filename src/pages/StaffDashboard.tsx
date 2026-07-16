@@ -50,7 +50,6 @@ import UpdateButton from "@/components/staff/UpdateButton";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import StaffMobileHome from "@/components/staff/StaffMobileHome";
 import { useIsMobile } from "@/hooks/use-mobile";
-import WorkspaceRoom from "@/components/staff/WorkspaceRoom";
 
 import MeetingRoom from "@/components/staff/MeetingRoom";
 import AttendanceChecker from "@/components/staff/AttendanceChecker";

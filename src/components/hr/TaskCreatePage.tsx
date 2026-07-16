@@ -50,6 +50,13 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
     project_id: taskToEdit?.client_project_id || "",
     client_id: taskToEdit?.client_id || "",
     department_id: taskToEdit?.department_id || "",
+    target_departments: (() => {
+      if (!taskToEdit?.stage_config) return [] as string[];
+      const config = typeof taskToEdit.stage_config === 'string'
+        ? JSON.parse(taskToEdit.stage_config)
+        : taskToEdit.stage_config;
+      return (config as any)?.target_departments || [] as string[];
+    })(),
     status: taskToEdit?.status || "pending",
     priority: taskToEdit?.priority || "auto",
     due_date: taskToEdit?.due_date || "",
@@ -149,6 +156,17 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
       setUploadingFiles(true);
       const { data: { user } } = await supabase.auth.getUser();
 
+      const existingConfig = taskToEdit?.stage_config
+        ? (typeof taskToEdit.stage_config === 'string'
+          ? JSON.parse(taskToEdit.stage_config)
+          : taskToEdit.stage_config)
+        : {};
+
+      const updatedStageConfig = {
+        ...existingConfig,
+        target_departments: newTask.target_departments
+      };
+
       const taskData: any = {
         title: newTask.title,
         description: newTask.description,
@@ -170,6 +188,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
         recurrence_end_date: newTask.is_recurring && newTask.recurrence_end_date ? newTask.recurrence_end_date : null,
         next_recurrence_date: newTask.is_recurring && newTask.due_date ? calculateNextRecurrence(newTask.due_date, newTask.recurrence_type, newTask.recurrence_interval) : null,
         current_stage: newTask.current_stage || 1,
+        stage_config: updatedStageConfig,
         // When editing, DON'T overwrite attachments — we merge below after upload
         ...(taskToEdit ? {} : { attachments: [] }),
       };
@@ -458,6 +477,57 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
                     {departments.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Target Departments */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Target Departments (Select other departments to share view)</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between h-auto min-h-[44px] py-2 bg-transparent border-white/10 hover:bg-white/5 text-left">
+                      <div className="flex flex-wrap gap-1.5">
+                        {newTask.target_departments && newTask.target_departments.length > 0 ? (
+                          newTask.target_departments.map((id) => {
+                            const dept = departments.find(d => d.id === id);
+                            return (
+                              <Badge key={id} className="bg-primary/10 text-primary border-primary/20 text-[10px]">
+                                {dept?.name || id}
+                              </Badge>
+                            );
+                          })
+                        ) : (
+                          <span className="text-muted-foreground text-sm font-normal">Select departments...</span>
+                        )}
+                      </div>
+                      <ChevronDown className="h-4 w-4 shrink-0 opacity-50 ml-2" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0" align="start">
+                    <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto">
+                      {departments.map((dept) => (
+                        <div
+                          key={dept.id}
+                          className="flex items-center space-x-2 p-2 hover:bg-muted rounded-lg cursor-pointer transition-colors"
+                          onClick={() => {
+                            const isSelected = newTask.target_departments.includes(dept.id);
+                            setNewTask({
+                              ...newTask,
+                              target_departments: isSelected
+                                ? newTask.target_departments.filter(id => id !== dept.id)
+                                : [...newTask.target_departments, dept.id]
+                            });
+                          }}
+                        >
+                          <Checkbox checked={newTask.target_departments.includes(dept.id)} onCheckedChange={() => {}} />
+                          <div className="flex flex-col flex-1">
+                            <span className="text-sm font-medium">{dept.name}</span>
+                          </div>
+                          {newTask.target_departments.includes(dept.id) && <Check className="h-4 w-4 text-primary" />}
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Client */}

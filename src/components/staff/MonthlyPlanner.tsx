@@ -138,6 +138,20 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
       // Filter tasks according to user assignments and role
       const filteredTasks = (tasksData || []).filter(task => {
+        // --- DEPARTMENT SHARING LOGIC ---
+        // If the task creator's department is the user's department, show it.
+        if (task.department_id && userProfile?.department_id && task.department_id === userProfile.department_id) {
+          return true;
+        }
+
+        // If the user's department is in the targeted departments of the task
+        const stageConfig = task.stage_config ? (typeof task.stage_config === 'string' ? JSON.parse(task.stage_config) : task.stage_config) : {};
+        const targetDepts = (stageConfig as any)?.target_departments;
+        if (Array.isArray(targetDepts) && userProfile?.department_id && targetDepts.includes(userProfile.department_id)) {
+          return true;
+        }
+        // ---------------------------------
+
         // Common tasks: no client_id (shown to everyone)
         if (!task.client_id) return true;
 
@@ -168,6 +182,20 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       const filteredSubtasks = (subtasksData || []).filter(subtask => {
         const parentTask = subtask.staff_tasks;
         if (!parentTask) return false;
+
+        // --- DEPARTMENT SHARING LOGIC ---
+        // If parent task is visible due to creator's department matching user's department
+        if (parentTask.department_id && userProfile?.department_id && parentTask.department_id === userProfile.department_id) {
+          return true;
+        }
+
+        // If parent task is visible due to targeted departments including user's department
+        const stageConfig = parentTask.stage_config ? (typeof parentTask.stage_config === 'string' ? JSON.parse(parentTask.stage_config) : parentTask.stage_config) : {};
+        const targetDepts = (stageConfig as any)?.target_departments;
+        if (Array.isArray(targetDepts) && userProfile?.department_id && targetDepts.includes(userProfile.department_id)) {
+          return true;
+        }
+        // ---------------------------------
 
         // Common parent task: show to everyone
         if (!parentTask.client_id) return true;
