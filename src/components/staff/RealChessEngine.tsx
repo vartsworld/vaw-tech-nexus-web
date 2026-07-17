@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +30,7 @@ const BLACK_PIECES: Record<string, string> = {
   k: 'chess_king_2', q: 'chess_queen', r: 'chess_rook', b: 'chess_bishop_2', n: 'chess_knight', p: 'chess_pawn'
 };
 
-const PieceIcon = ({ piece }: { piece: any }) => {
+const PieceIcon = memo(({ piece }: { piece: any }) => {
   if (!piece) return null;
   const isWhite = piece.color === 'w';
   const iconName = isWhite ? WHITE_PIECES[piece.type] : BLACK_PIECES[piece.type];
@@ -50,7 +50,16 @@ const PieceIcon = ({ piece }: { piece: any }) => {
       {iconName}
     </span>
   );
-};
+}, (prev, next) => {
+  // If both are falsy/null, they are equal (no piece rendering)
+  if (!prev.piece && !next.piece) return true;
+  // If one is falsy and the other isn't, they are not equal
+  if (!prev.piece || !next.piece) return false;
+  // Compare properties
+  return prev.piece.type === next.piece.type && prev.piece.color === next.piece.color;
+});
+
+PieceIcon.displayName = "PieceIcon";
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 

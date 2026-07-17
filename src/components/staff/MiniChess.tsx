@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +52,7 @@ interface ChessInvite {
 
 type GameMode = 'menu' | 'playing' | 'finding';
 
-const ChessPiece = ({ piece, color, compact }: { piece: string, color: 'w' | 'b', compact?: boolean }) => {
+const ChessPiece = memo(({ piece, color, compact }: { piece: string, color: 'w' | 'b', compact?: boolean }) => {
   const isWhite = color === 'w';
 
   const getIconName = () => {
@@ -81,7 +81,9 @@ const ChessPiece = ({ piece, color, compact }: { piece: string, color: 'w' | 'b'
       {getIconName()}
     </span>
   );
-};
+});
+
+ChessPiece.displayName = "ChessPiece";
 
 const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => {
 
