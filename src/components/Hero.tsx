@@ -11,6 +11,13 @@ const Hero = () => {
     userName
   } = useUser();
   useEffect(() => {
+    if (!heroRef.current) return;
+
+    // Optimization: query parallax elements once on mount. If none exist,
+    // we skip registering the high-frequency 'mousemove' event listener entirely.
+    const elements = heroRef.current.querySelectorAll(".parallax-element");
+    if (elements.length === 0) return;
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!heroRef.current) return;
       const rect = heroRef.current.getBoundingClientRect();
@@ -21,8 +28,7 @@ const Hero = () => {
       const xPercent = x / rect.width;
       const yPercent = y / rect.height;
 
-      // Use this to create a subtle parallax effect
-      const elements = heroRef.current.querySelectorAll(".parallax-element");
+      // Reuse the pre-queried elements to avoid layout recalculation & DOM lookups
       elements.forEach(el => {
         const speed = parseFloat((el as HTMLElement).dataset.speed || "0.05");
         const xOffset = (xPercent - 0.5) * speed * 100;
@@ -30,7 +36,8 @@ const Hero = () => {
         (el as HTMLElement).style.transform = `translate(${xOffset}px, ${yOffset}px)`;
       });
     };
-    window.addEventListener("mousemove", handleMouseMove);
+
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
     };
