@@ -172,7 +172,134 @@ const MeetingRoom = () => {
   const [scheduleRecurring, setScheduleRecurring] = useState("none");
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
+  // New states for Google Meet & Staff Invites
+  const [meetingType, setMeetingType] = useState<'inbuilt' | 'google_meet'>('inbuilt');
+  const [googleMeetLink, setGoogleMeetLink] = useState("");
+  const [invitedStaff, setInvitedStaff] = useState<string[]>([]);
+  const [staffSearchQuery, setStaffSearchQuery] = useState("");
+  const [allStaff, setAllStaff] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchAllStaff = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('staff_profiles')
+          .select('id, user_id, full_name, profile_photo_url, avatar_url, role')
+          .order('full_name');
+        if (!error && data) {
+          setAllStaff(data);
+        }
+      } catch (e) {
+        console.error("Error fetching all staff:", e);
+      }
+    };
+    fetchAllStaff();
+  }, []);
+
   const isAdmin = profile?.role === 'admin' || profile?.is_department_head === true;
+
+  const [meetingInvites, setMeetingInvites] = useState<any[]>([]);
+
+  const fetchMeetingInvites = async () => {
+    if (!profile?.user_id) return;
+    try {
+      const { data, error } = await supabase
+        .from('staff_notifications')
+        .select('*')
+        .eq('title', 'Meeting Invite')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Filter locally: show if current user is the host OR is one of the invited target users
+      const filtered = (data || []).filter(n => {
+        try {
+          const isHost = n.created_by === profile.user_id;
+          const isInvited = n.target_users?.includes(profile.user_id);
+          return isHost || isInvited;
+        } catch (e) {
+          return n.target_users?.includes(profile.user_id) || n.created_by === profile.user_id;
+        }
+      });
+
+      setMeetingInvites(filtered);
+    } catch (e) {
+      console.error("Error fetching meeting invites:", e);
+    }
+  };
+
+  useEffect(() => {
+    if (!profile?.user_id) return;
+    fetchMeetingInvites();
+
+    // Subscribe to changes in staff_notifications table
+    const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const channelName = `meeting-room-notifs-${profile.user_id}-${uniqueSuffix}`;
+    const channel = supabase.channel(channelName)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'staff_notifications',
+        filter: `title=eq.Meeting Invite`
+      }, () => {
+        fetchMeetingInvites();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.user_id]);
+
+  const [activeLobbyTab, setActiveLobbyTab] = useState<'invites' | 'upcoming'>('invites');
+
+  const handleDismissInvite = async (inviteId: string, readBy: string[] | null) => {
+    if (!profile?.user_id) return;
+    try {
+      const updatedReadBy = [...(readBy || []), profile.user_id];
+      const { error } = await supabase
+        .from('staff_notifications')
+        .update({ read_by: updatedReadBy })
+        .eq('id', inviteId);
+
+      if (error) throw error;
+
+      setMeetingInvites(prev => prev.filter(inv => inv.id !== inviteId));
+      toast.success("Invitation dismissed");
+    } catch (e) {
+      console.error("Error dismissing invitation:", e);
+      toast.error("Failed to dismiss invitation");
+    }
+  };
+
+  const handleJoinInvite = async (invite: any) => {
+    if (!profile?.user_id) return;
+    try {
+      const meta = typeof invite.content === 'string' ? JSON.parse(invite.content) : invite.content;
+      const isGoogleMeet = meta.type === 'google_meet';
+
+      // Mark as read so it's acknowledged
+      const updatedReadBy = [...(invite.read_by || []), profile.user_id];
+      await supabase
+        .from('staff_notifications')
+        .update({ read_by: updatedReadBy })
+        .eq('id', invite.id);
+
+      if (isGoogleMeet) {
+        window.open(meta.googleMeetLink, '_blank');
+        toast.success("Opening Google Meet in a new tab!");
+      } else {
+        setRoomIdInput(meta.roomId);
+        setRoomId(meta.roomId);
+        setInRoom(true);
+      }
+
+      fetchMeetingInvites();
+    } catch (e) {
+      console.error("Error joining meeting invitation:", e);
+      toast.error("Failed to parse and join meeting.");
+    }
+  };
 
   // Auto-join from URL
   useEffect(() => {
@@ -215,28 +342,91 @@ const MeetingRoom = () => {
     setInRoom(true);
   };
 
-  const handleScheduleMeeting = () => {
-    if (!newMeetingTitle.trim()) return;
+  const handleScheduleMeeting = async (startNow = false) => {
+    if (!newMeetingTitle.trim()) {
+      toast.error("Please enter a Meeting Title");
+      return;
+    }
+
+    if (meetingType === 'google_meet' && !googleMeetLink.trim()) {
+      toast.error("Please enter a Google Meet Link");
+      return;
+    }
+
     const meetingId = Math.random().toString(36).substring(2, 9);
-    const meetingLink = `${window.location.origin}${window.location.pathname}?room=meeting&ID=${meetingId}`;
+    const meetingLink = meetingType === 'google_meet'
+      ? googleMeetLink.trim()
+      : `${window.location.origin}${window.location.pathname}?room=meeting&ID=${meetingId}`;
+
     const newMeeting = {
       title: newMeetingTitle,
       time: scheduleTime || new Date(Date.now() + 3600000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
       date: scheduleDate || new Date().toLocaleDateString(),
       duration: "30 min",
-      status: "Scheduled",
-      type: scheduleRecurring !== 'none' ? `Recurring (${scheduleRecurring})` : "Custom Meeting",
+      status: startNow ? "Active" : "Scheduled",
+      type: meetingType === 'google_meet' ? "Google Meet" : "Inbuilt Room",
       link: meetingLink
     };
+
+    // Save to local schedule
     const updated = [newMeeting, ...upcomingMeetings];
     setUpcomingMeetings(updated);
     localStorage.setItem('vaw_scheduled_meetings', JSON.stringify(updated));
+
+    // Send invitations via staff_notifications table
+    if (invitedStaff.length > 0) {
+      try {
+        const metadata = {
+          type: meetingType,
+          roomId: meetingType === 'inbuilt' ? meetingId : null,
+          googleMeetLink: meetingType === 'google_meet' ? googleMeetLink.trim() : null,
+          title: newMeetingTitle,
+          hostName: profile?.full_name || "A Team Member",
+          hostAvatar: profile?.profile_photo_url || profile?.avatar_url || "",
+          expires_at: new Date(Date.now() + 12 * 3600000).toISOString() // Valid for 12 hours
+        };
+
+        const { error } = await supabase
+          .from('staff_notifications')
+          .insert({
+            title: 'Meeting Invite',
+            content: JSON.stringify(metadata),
+            type: 'announcement',
+            target_type: 'specific',
+            target_users: invitedStaff,
+            created_by: profile?.user_id,
+            expires_at: new Date(Date.now() + 12 * 3600000).toISOString()
+          } as any);
+
+        if (error) throw error;
+        toast.success(`Invitations sent to ${invitedStaff.length} staff member(s)!`);
+      } catch (e) {
+        console.error("Error creating meeting notifications:", e);
+        toast.error("Meeting scheduled, but failed to send notifications.");
+      }
+    }
+
+    // Reset fields
     setNewMeetingTitle("");
     setScheduleDate("");
     setScheduleTime("");
     setScheduleRecurring("none");
+    setGoogleMeetLink("");
+    setInvitedStaff([]);
     setIsScheduleOpen(false);
-    toast.success("Meeting Scheduled!");
+
+    if (startNow) {
+      if (meetingType === 'google_meet') {
+        window.open(meetingLink, '_blank');
+        toast.success("Google Meet opened in a new tab!");
+      } else {
+        setRoomIdInput(meetingId);
+        setRoomId(meetingId);
+        setInRoom(true);
+      }
+    } else {
+      toast.success("Meeting Scheduled!");
+    }
   };
 
   const handleInvite = async (memberId: string) => {
@@ -434,6 +624,14 @@ const MeetingRoom = () => {
                 senderProfile: profile
               }
             });
+
+            // Process any pending ICE candidates that arrived before the offer was set
+            if (pendingCandidates.current[senderId]) {
+              for (const cand of pendingCandidates.current[senderId]) {
+                await pc.addIceCandidate(new RTCIceCandidate(cand)).catch(e => console.error(e));
+              }
+              delete pendingCandidates.current[senderId];
+            }
           } else if (type === 'answer') {
             if (pc) {
               await pc.setRemoteDescription(new RTCSessionDescription(sdp));
@@ -631,6 +829,8 @@ const MeetingRoom = () => {
   };
 
   if (!inRoom) {
+    const unacknowledgedInvites = meetingInvites.filter(inv => !inv.read_by?.includes(profile?.user_id || ''));
+
     return (
       <div className="p-4 sm:p-6 space-y-8 relative z-10 max-w-6xl mx-auto animate-in fade-in zoom-in-95 duration-500">
         <div className="text-center space-y-2">
@@ -671,45 +871,144 @@ const MeetingRoom = () => {
                  <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
                     <DialogTrigger asChild>
                        <Button variant="secondary" className="w-full bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 border border-purple-500/30 h-12 rounded-xl">
-                          <Calendar className="w-5 h-5 mr-2" /> Schedule a Meeting
+                          <Calendar className="w-5 h-5 mr-2" /> Start or Schedule Meeting
                        </Button>
                     </DialogTrigger>
-                    <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-[425px] rounded-2xl">
+                    <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-[500px] rounded-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
                        <DialogHeader>
-                          <DialogTitle>Schedule a Meeting</DialogTitle>
+                          <DialogTitle className="text-xl font-bold text-center">Start or Schedule a Meeting 📹</DialogTitle>
                        </DialogHeader>
                        <div className="space-y-4 mt-4">
                           <div className="space-y-2">
                              <label className="text-sm font-medium text-white/70">Meeting Title</label>
                              <Input 
-                                placeholder="E.g., Weekly Sync" 
+                                placeholder="E.g., Design Review / Weekly Standup"
                                 value={newMeetingTitle} 
                                 onChange={e => setNewMeetingTitle(e.target.value)}
                                 className="bg-white/5 border-white/10 text-white"
                              />
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
-                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-white/70">Date</label>
-                                <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="bg-white/5 border-white/10 text-white [color-scheme:dark]" />
-                             </div>
-                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-white/70">Time</label>
-                                <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="bg-white/5 border-white/10 text-white [color-scheme:dark]" />
-                             </div>
-                          </div>
+
                           <div className="space-y-2">
-                             <label className="text-sm font-medium text-white/70">Recurring Options</label>
-                             <select value={scheduleRecurring} onChange={e => setScheduleRecurring(e.target.value)} className="w-full h-10 px-3 bg-zinc-900 border border-white/10 rounded-md text-white text-sm outline-none focus:border-white/30 transition-colors">
-                                <option value="none">Does not repeat</option>
-                                <option value="daily">Daily</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                             </select>
+                             <label className="text-sm font-medium text-white/70">Meeting Platform</label>
+                             <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
+                               <Button
+                                 type="button"
+                                 variant="ghost"
+                                 onClick={() => setMeetingType('inbuilt')}
+                                 className={`h-10 rounded-lg text-sm font-bold transition-all ${meetingType === 'inbuilt' ? 'bg-green-600 text-white shadow' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                               >
+                                 Inbuilt Video
+                               </Button>
+                               <Button
+                                 type="button"
+                                 variant="ghost"
+                                 onClick={() => setMeetingType('google_meet')}
+                                 className={`h-10 rounded-lg text-sm font-bold transition-all ${meetingType === 'google_meet' ? 'bg-blue-600 text-white shadow' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                               >
+                                 Google Meet
+                               </Button>
+                             </div>
                           </div>
-                          <Button onClick={handleScheduleMeeting} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold h-12 mt-2 rounded-xl border-none">
-                             Schedule Meeting
-                          </Button>
+
+                          {meetingType === 'google_meet' && (
+                             <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                <label className="text-sm font-medium text-blue-300">Google Meet Link</label>
+                                <Input
+                                   placeholder="https://meet.google.com/abc-defg-hij"
+                                   value={googleMeetLink}
+                                   onChange={e => setGoogleMeetLink(e.target.value)}
+                                   className="bg-white/5 border-blue-500/30 text-white focus:border-blue-500 placeholder:text-white/30 font-mono text-sm"
+                                />
+                             </div>
+                          )}
+
+                          <div className="space-y-2">
+                             <label className="text-sm font-medium text-white/70">Invite Staff Members</label>
+                             <Input
+                                placeholder="Search staff by name..."
+                                value={staffSearchQuery}
+                                onChange={e => setStaffSearchQuery(e.target.value)}
+                                className="bg-white/5 border-white/10 text-white h-9 text-xs mb-2"
+                             />
+                             <div className="max-h-36 overflow-y-auto border border-white/10 rounded-xl bg-black/40 p-2 space-y-1 custom-scrollbar">
+                                {allStaff
+                                   .filter(s => s.user_id !== profile?.user_id)
+                                   .filter(s => s.full_name?.toLowerCase().includes(staffSearchQuery.toLowerCase()))
+                                   .map(staffMember => {
+                                      const isInvited = invitedStaff.includes(staffMember.user_id);
+                                      return (
+                                         <div
+                                            key={staffMember.id}
+                                            onClick={() => {
+                                               if (isInvited) {
+                                                  setInvitedStaff(prev => prev.filter(id => id !== staffMember.user_id));
+                                               } else {
+                                                  setInvitedStaff(prev => [...prev, staffMember.user_id]);
+                                               }
+                                            }}
+                                            className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
+                                         >
+                                            <div className="flex items-center gap-2">
+                                               <Avatar className="w-6 h-6 border border-white/10">
+                                                  <AvatarImage src={staffMember.profile_photo_url || staffMember.avatar_url} />
+                                                  <AvatarFallback className="text-[10px] bg-indigo-600">{staffMember.full_name?.charAt(0)}</AvatarFallback>
+                                               </Avatar>
+                                               <span className="text-xs font-semibold text-white/90">{staffMember.full_name}</span>
+                                            </div>
+                                            <input
+                                               type="checkbox"
+                                               checked={isInvited}
+                                               readOnly
+                                               className="rounded border-white/20 bg-black text-indigo-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5"
+                                            />
+                                         </div>
+                                      );
+                                   })}
+                             </div>
+                          </div>
+
+                          {invitedStaff.length > 0 && (
+                             <div className="flex flex-wrap gap-1.5 p-2 bg-white/5 rounded-xl border border-white/5">
+                                {invitedStaff.map(userId => {
+                                   const member = allStaff.find(s => s.user_id === userId);
+                                   return (
+                                      <Badge key={userId} variant="secondary" className="bg-indigo-500/20 text-indigo-200 border-indigo-500/30 text-[10px] py-0.5 px-2 flex items-center gap-1">
+                                         {member?.full_name || "Staff"}
+                                         <X className="w-2.5 h-2.5 cursor-pointer hover:text-white" onClick={(e) => { e.stopPropagation(); setInvitedStaff(prev => prev.filter(id => id !== userId)); }} />
+                                      </Badge>
+                                   );
+                                })}
+                             </div>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
+                             <div className="space-y-2">
+                                <label className="text-sm font-medium text-white/70">Date (Optional)</label>
+                                <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="bg-white/5 border-white/10 text-white [color-scheme:dark] h-10 text-xs" />
+                             </div>
+                             <div className="space-y-2">
+                                <label className="text-sm font-medium text-white/70">Time (Optional)</label>
+                                <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="bg-white/5 border-white/10 text-white [color-scheme:dark] h-10 text-xs" />
+                             </div>
+                          </div>
+
+                          <div className="flex flex-col gap-2 pt-4 border-t border-white/10">
+                             <Button
+                                type="button"
+                                onClick={() => handleScheduleMeeting(true)}
+                                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold h-11 rounded-xl border-none shadow-lg shadow-green-500/10"
+                             >
+                                Start & Join Now
+                             </Button>
+                             <Button
+                                type="button"
+                                onClick={() => handleScheduleMeeting(false)}
+                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-11 rounded-xl border-none shadow-lg shadow-indigo-600/10"
+                             >
+                                Schedule Meeting
+                             </Button>
+                          </div>
                        </div>
                     </DialogContent>
                  </Dialog>
@@ -718,39 +1017,128 @@ const MeetingRoom = () => {
           </Card>
 
           <Card className="bg-black/40 backdrop-blur-xl border-white/10 shadow-2xl h-full flex flex-col">
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="text-white flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-purple-400" />
-                Upcoming Meetings
+                Meetings Center
               </CardTitle>
+              <div className="flex bg-white/5 rounded-lg p-1 border border-white/10 shrink-0">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setActiveLobbyTab('invites')}
+                  className={`h-7 px-3 text-xs font-bold rounded-md transition-all ${activeLobbyTab === 'invites' ? 'bg-indigo-600 text-white shadow' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                >
+                  Invites
+                  {unacknowledgedInvites.length > 0 && (
+                     <Badge className="ml-1.5 px-1 py-0 bg-red-500 text-white text-[9px] font-bold h-4 min-w-4 flex items-center justify-center rounded-full shrink-0">
+                        {unacknowledgedInvites.length}
+                     </Badge>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setActiveLobbyTab('upcoming')}
+                  className={`h-7 px-3 text-xs font-bold rounded-md transition-all ${activeLobbyTab === 'upcoming' ? 'bg-indigo-600 text-white shadow' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                >
+                  Upcoming
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3 flex-1 overflow-y-auto max-h-[300px] custom-scrollbar">
-              {upcomingMeetings.map((meeting, index) => (
-                <div key={index} className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col transition-all hover:bg-white/10 group">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h4 className="text-white font-medium text-sm mb-1">{meeting.title}</h4>
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <Clock className="w-3 h-3 text-purple-400/70 shrink-0" />
-                        {meeting.date && <span>{meeting.date} • </span>}{meeting.time} • {meeting.type || meeting.duration}
+              {activeLobbyTab === 'invites' ? (
+                <>
+                  {unacknowledgedInvites.map((invite) => {
+                    let meta: any = {};
+                    try {
+                      meta = typeof invite.content === 'string' ? JSON.parse(invite.content) : invite.content;
+                    } catch (e) {
+                      meta = { title: invite.content, type: 'inbuilt' };
+                    }
+                    const isGoogleMeet = meta.type === 'google_meet';
+                    const isHost = invite.created_by === profile?.user_id;
+
+                    return (
+                      <div key={invite.id} className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col transition-all hover:bg-white/10 group animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                             <Avatar className="w-7 h-7 border border-white/15">
+                                <AvatarImage src={meta.hostAvatar} />
+                                <AvatarFallback className="text-[10px] bg-purple-600">{meta.hostName?.charAt(0) || "H"}</AvatarFallback>
+                             </Avatar>
+                             <div>
+                                <h4 className="text-white font-semibold text-sm line-clamp-1">{meta.title || "Meeting"}</h4>
+                                <p className="text-[10px] text-white/50">Host: {isHost ? "You" : (meta.hostName || "Team Member")}</p>
+                             </div>
+                          </div>
+                          <Badge variant={isGoogleMeet ? "default" : "secondary"} className={`text-[9px] font-bold uppercase tracking-wider shrink-0 ${isGoogleMeet ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'}`}>
+                            {isGoogleMeet ? 'Google Meet' : 'Inbuilt Room'}
+                          </Badge>
+                        </div>
+
+                        <div className="mt-3 flex items-center justify-end gap-2 border-t border-white/5 pt-2">
+                           <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleDismissInvite(invite.id, invite.read_by)}
+                              className="h-8 text-xs text-white/60 hover:text-red-400 hover:bg-red-500/10 font-medium px-3 rounded-lg"
+                           >
+                              Dismiss
+                           </Button>
+                           <Button
+                              size="sm"
+                              onClick={() => handleJoinInvite(invite)}
+                              className={`h-8 text-xs font-bold px-4 rounded-lg shadow-md border-none ${isGoogleMeet ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/10' : 'bg-green-600 hover:bg-green-500 text-white shadow-green-500/10'}`}
+                           >
+                              {isGoogleMeet ? 'Join Meet 🔗' : 'Join Room 📹'}
+                           </Button>
+                        </div>
                       </div>
-                    </div>
-                    <Badge variant={meeting.status === 'Starting Soon' ? 'destructive' : 'secondary'} className={`text-[10px] font-bold uppercase tracking-wider shrink-0 ml-2 ${meeting.status === 'Scheduled' ? 'bg-blue-500/20 text-blue-300' : ''}`}>
-                      {meeting.status}
-                    </Badge>
-                  </div>
-                  {meeting.link && (
-                    <div className="mt-3 flex items-center gap-2">
-                      <Input value={meeting.link} readOnly className="h-8 bg-black/40 border-white/10 text-xs text-white/50 px-2" />
-                      <Button size="sm" variant="secondary" className="h-8 shrink-0 text-xs px-3" onClick={() => { navigator.clipboard.writeText(meeting.link); toast.success("Meeting link copied!"); }}>
-                         Copy Link
-                      </Button>
-                    </div>
+                    );
+                  })}
+                  {unacknowledgedInvites.length === 0 && (
+                     <div className="text-center text-white/50 text-xs py-10">No active invitations.</div>
                   )}
-                </div>
-              ))}
-              {upcomingMeetings.length === 0 && (
-                 <div className="text-center text-white/50 text-sm py-8">No upcoming meetings.</div>
+                </>
+              ) : (
+                <>
+                  {upcomingMeetings.map((meeting, index) => (
+                    <div key={index} className="bg-white/5 rounded-xl p-4 border border-white/10 flex flex-col transition-all hover:bg-white/10 group">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="text-white font-medium text-sm mb-1">{meeting.title}</h4>
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <Clock className="w-3 h-3 text-purple-400/70 shrink-0" />
+                            {meeting.date && <span>{meeting.date} • </span>}{meeting.time} • {meeting.type || meeting.duration}
+                          </div>
+                        </div>
+                        <Badge variant={meeting.status === 'Starting Soon' ? 'destructive' : 'secondary'} className={`text-[10px] font-bold uppercase tracking-wider shrink-0 ml-2 ${meeting.status === 'Scheduled' ? 'bg-blue-500/20 text-blue-300' : ''}`}>
+                          {meeting.status}
+                        </Badge>
+                      </div>
+                      {meeting.link && (
+                        <div className="mt-3 flex items-center gap-2">
+                          <Input value={meeting.link} readOnly className="h-8 bg-black/40 border-white/10 text-xs text-white/50 px-2 font-mono" />
+                          <Button size="sm" variant="secondary" className="h-8 shrink-0 text-xs px-3" onClick={() => {
+                             if (meeting.type === 'Google Meet' || meeting.link.startsWith('http://meet.google.com') || meeting.link.startsWith('https://meet.google.com')) {
+                                window.open(meeting.link, '_blank');
+                                toast.success("Opening Google Meet!");
+                             } else {
+                                navigator.clipboard.writeText(meeting.link);
+                                toast.success("Meeting link copied!");
+                             }
+                          }}>
+                             {meeting.type === 'Google Meet' ? "Join" : "Copy"}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {upcomingMeetings.length === 0 && (
+                     <div className="text-center text-white/50 text-sm py-8">No upcoming meetings.</div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
