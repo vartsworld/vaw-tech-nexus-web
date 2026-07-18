@@ -190,23 +190,29 @@ const TeamHeadDashboard = () => {
 
   // Synchronize URL query parameter with currentRoom
   useEffect(() => {
-    const searchStr = location.search.replace('?', '');
+    const params = new URLSearchParams(location.search);
     let roomFromUrl: RoomType | null = null;
 
-    if (searchStr) {
-      if (searchStr === 'calendar' || searchStr === 'planner') {
+    // Check if the parameter is specified via ?room=XYZ
+    const roomParam = params.get('room');
+    if (roomParam && ['workspace', 'meeting', 'leave', 'tools', 'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox', 'planner'].includes(roomParam)) {
+      roomFromUrl = (roomParam === 'planner' ? 'planner' : roomParam) as RoomType;
+    } else {
+      // For legacy links like ?meeting or ?calendar or ?meeting&ID=xyz
+      const firstParam = location.search.replace('?', '').split('&')[0];
+      if (firstParam === 'calendar' || firstParam === 'planner') {
         roomFromUrl = 'planner';
-      } else if (searchStr === 'meetingroom') {
+      } else if (firstParam === 'meetingroom') {
         roomFromUrl = 'meeting';
-      } else if (['workspace', 'meeting', 'leave', 'tools', 'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox'].includes(searchStr)) {
-        roomFromUrl = searchStr as RoomType;
+      } else if (['workspace', 'meeting', 'leave', 'tools', 'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox'].includes(firstParam)) {
+        roomFromUrl = firstParam as RoomType;
       }
     }
 
     if (roomFromUrl && roomFromUrl !== currentRoom) {
       setCurrentRoom(roomFromUrl);
     }
-  }, [location.search]);
+  }, [location.search, currentRoom]);
 
   // Update URL search params when currentRoom changes
   useEffect(() => {
@@ -217,15 +223,23 @@ const TeamHeadDashboard = () => {
       suffix = currentRoom;
     }
 
-    const searchStr = location.search.replace('?', '');
-    const expected = suffix;
-    if (searchStr !== expected) {
+    const params = new URLSearchParams(location.search);
+    const roomParam = params.get('room');
+    const firstParam = location.search.replace('?', '').split('&')[0];
+
+    // Check if current room matches URL
+    const isMatched = (currentRoom === 'workspace' && !location.search) ||
+                      (currentRoom === 'planner' && (firstParam === 'calendar' || roomParam === 'planner')) ||
+                      (currentRoom !== 'workspace' && currentRoom !== 'planner' && (firstParam === currentRoom || roomParam === currentRoom));
+
+    if (!isMatched) {
+      // If we are transitioning to a room, clear current search params or set basic suffix
       navigate({
         pathname: location.pathname,
         search: suffix ? `?${suffix}` : '',
       }, { replace: true });
     }
-  }, [currentRoom, navigate, location.pathname]);
+  }, [currentRoom, navigate, location.pathname, location.search]);
 
   useEffect(() => {
     if (location.state?.openCoins) {
