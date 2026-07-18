@@ -132,7 +132,9 @@ export const QuickNotes = ({ userId }: QuickNotesProps) => {
                 <Button
                     size="icon"
                     variant="ghost"
-                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-white/50 hover:text-white bg-black/20 hover:bg-black/40"
+                    aria-label="Delete note"
+                    title="Delete note"
+                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-red-500 transition-opacity text-white/50 hover:text-white bg-black/20 hover:bg-black/40"
                     onClick={() => handleDeleteNote(note.id)}
                 >
                     <X className="h-3 w-3" />
