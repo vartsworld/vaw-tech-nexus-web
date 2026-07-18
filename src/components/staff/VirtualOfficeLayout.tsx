@@ -497,7 +497,9 @@ const VirtualOfficeLayout = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-white/20 hover:text-white hover:bg-white/5 transition-all"
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+                className="text-white/20 hover:text-white hover:bg-white/5 transition-all focus-visible:ring-2 focus-visible:ring-white/20"
                 onClick={() => setIsSidebarCollapsed(true)}
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -512,7 +514,8 @@ const VirtualOfficeLayout = ({
                   {!isSidebarCollapsed && (
                     <button
                       onClick={() => toggleSection(section.title)}
-                      className="flex items-center justify-between w-full text-[10px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-white/60 transition-colors px-2 mb-2"
+                      aria-expanded={openSections.includes(section.title)}
+                      className="flex items-center justify-between w-full text-[10px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-white/60 transition-colors px-2 mb-2 focus-visible:ring-1 focus-visible:ring-white/20 rounded"
                     >
                       <span className="flex items-center gap-2">
                         <section.icon className="w-3 h-3" />
@@ -575,7 +578,8 @@ const VirtualOfficeLayout = ({
           <div className="border-t border-white/5 p-4 flex flex-col min-h-0">
             <button
               onClick={() => setIsTeamStatusExpanded(!isTeamStatusExpanded)}
-              className="flex items-center justify-between w-full text-[10px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-white/60 transition-colors px-2 mb-2"
+              aria-expanded={isTeamStatusExpanded}
+              className="flex items-center justify-between w-full text-[10px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-white/60 transition-colors px-2 mb-2 focus-visible:ring-1 focus-visible:ring-white/20 rounded"
             >
               <span className="flex items-center gap-2">
                 <Users className="w-3.5 h-3.5" />
@@ -600,7 +604,8 @@ const VirtualOfficeLayout = ({
             variant="outline"
             size="icon"
             title="Expand Sidebar"
-            className="absolute top-4 left-4 z-50 bg-black/40 border-white/10 text-white hover:bg-white/10 backdrop-blur-md hidden lg:flex"
+            aria-label="Expand Sidebar"
+            className="absolute top-4 left-4 z-50 bg-black/40 border-white/10 text-white hover:bg-white/10 backdrop-blur-md hidden lg:flex focus-visible:ring-2 focus-visible:ring-white/40"
             onClick={() => setIsSidebarCollapsed(false)}
           >
             <ChevronRight className="w-5 h-5" />
@@ -634,6 +639,7 @@ const VirtualOfficeLayout = ({
                 )}
                 onClick={() => setIsNotepadPinned(!isNotepadPinned)}
                 title={isNotepadPinned ? "Unpin from screen" : "Pin to screen"}
+                aria-label={isNotepadPinned ? "Unpin scratchpad from screen" : "Pin scratchpad to screen"}
               >
                 <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                   <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2z" />
@@ -644,6 +650,8 @@ const VirtualOfficeLayout = ({
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 text-amber-900/60 hover:text-amber-900 hover:bg-amber-950/5 rounded-lg"
+                title="Close scratchpad"
+                aria-label="Close scratchpad"
                 onClick={() => {
                   setIsNotepadOpen(false);
                   setIsNotepadPinned(false);
@@ -657,9 +665,15 @@ const VirtualOfficeLayout = ({
           {/* Content Area */}
           <textarea
             className="w-full h-32 bg-transparent border-none resize-none focus:ring-0 focus:outline-none text-xs font-bold leading-relaxed text-amber-950 placeholder-amber-950/40"
-            placeholder="Jot down quick thoughts... click Save Note below!"
+            placeholder="Jot down quick thoughts... (Ctrl+Enter to Save)"
             value={notepadContent}
             onChange={(e) => setNotepadContent(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                e.preventDefault();
+                handleSaveNotepad();
+              }
+            }}
           />
 
           {/* Footer & Actions */}
