@@ -125,9 +125,9 @@ const StaffLogin = () => {
     if (staffProfile.role === 'manager' ||
       staffProfile.role === 'lead' ||
       staffProfile.is_department_head) {
-      return '/team-head/dashboard';
+      return '/team-head?dashboard';
     }
-    return '/staff/dashboard';
+    return '/staff?dashboard';
   };
 
   const handleFirstTimeLogin = async () => {

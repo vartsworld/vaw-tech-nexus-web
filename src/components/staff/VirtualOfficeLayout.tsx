@@ -374,9 +374,9 @@ const VirtualOfficeLayout = ({
       title: "Folders",
       icon: Folder,
       items: [
-        { id: 'workspace' as const, name: 'Dashboard', icon: LayoutDashboard, path: '/staff/dashboard' },
-        { id: 'planner' as const, name: 'Calendar', icon: Calendar, path: '/monthlyplanner' },
-        { id: 'inbox', name: 'Inbox', icon: Inbox, path: '/staff/inbox' },
+        { id: 'workspace' as const, name: 'Dashboard', icon: LayoutDashboard, path: '/staff?dashboard' },
+        { id: 'planner' as const, name: 'Calendar', icon: Calendar, path: '/staff?calendar' },
+        { id: 'inbox', name: 'Inbox', icon: Inbox, path: '/staff?inbox' },
       ]
     },
     {
@@ -410,13 +410,23 @@ const VirtualOfficeLayout = ({
       return;
     }
 
-    const isDashboardPath = location.pathname === '/staff/dashboard' || location.pathname === '/team-head/dashboard';
+    const isDashboardPath = location.pathname === '/staff' || location.pathname === '/team-head';
     if (isDashboardPath) {
       onRoomChange(item.id);
     } else {
-      const isTeamHead = location.pathname.startsWith('/team-head') || (userProfile?.role === 'team_head');
-      const targetDashboard = isTeamHead ? '/team-head/dashboard' : '/staff/dashboard';
-      navigate(targetDashboard, { state: { currentRoom: item.id } });
+      const isTeamHead = location.pathname.startsWith('/team-head') ||
+        (userProfile?.role === 'manager' || userProfile?.role === 'lead' || userProfile?.is_department_head);
+      const targetDashboard = isTeamHead ? '/team-head' : '/staff';
+
+      let suffix = '';
+      if (item.id === 'planner') {
+        suffix = 'calendar';
+      } else if (item.id === 'workspace') {
+        suffix = 'dashboard';
+      } else {
+        suffix = item.id;
+      }
+      navigate(`${targetDashboard}?${suffix}`, { state: { currentRoom: item.id } });
     }
   };
 
@@ -699,13 +709,14 @@ const VirtualOfficeLayout = ({
                       className="text-xs hover:bg-amber-100 cursor-pointer p-2 rounded-lg truncate text-amber-900"
                       onClick={() => {
                         setNotepadContent(note.content);
-                        const isDashboardPath = location.pathname === '/staff/dashboard' || location.pathname === '/team-head/dashboard';
+                        const isDashboardPath = location.pathname === '/staff' || location.pathname === '/team-head';
                         if (isDashboardPath) {
                           onRoomChange('notes');
                         } else {
-                          const isTeamHead = location.pathname.startsWith('/team-head') || (userProfile?.role === 'team_head');
-                          const targetDashboard = isTeamHead ? '/team-head/dashboard' : '/staff/dashboard';
-                          navigate(targetDashboard, { state: { currentRoom: 'notes' } });
+                          const isTeamHead = location.pathname.startsWith('/team-head') ||
+                            (userProfile?.role === 'manager' || userProfile?.role === 'lead' || userProfile?.is_department_head);
+                          const targetDashboard = isTeamHead ? '/team-head' : '/staff';
+                          navigate(`${targetDashboard}?notes`, { state: { currentRoom: 'notes' } });
                         }
                         setIsNotepadOpen(false);
                         setIsNotepadPinned(false);
