@@ -23,7 +23,6 @@ import DigitalDesign from "./pages/DigitalDesign";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UserProvider } from "./context/UserContext";
-import IntroScreen from "./components/IntroScreen";
 import ScrollToTop from "./components/ScrollToTop";
 import { useUser } from "./context/UserContext";
 import StaffDashboard from "./pages/StaffDashboard";
@@ -113,14 +112,9 @@ const ManifestSwitcher = () => {
 };
 
 const AppContent = () => {
-  const { hasCompletedIntro } = useUser();
-  const skipIntroPaths = ['/privacy-policy', '/data-deletion', '/terms-of-service', '/proposal/gps', '/proposal/gps-ai', '/gps-ai'];
-  const shouldSkipIntro = skipIntroPaths.includes(window.location.pathname);
-
   return (
 
     <>
-      {!hasCompletedIntro && !shouldSkipIntro && <IntroScreen />}
       <BrowserRouter>
         <ScrollToTop />
         <ManifestSwitcher />

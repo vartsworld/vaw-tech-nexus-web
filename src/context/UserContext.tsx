@@ -25,8 +25,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
   });
   
   const [hasCompletedIntro, setHasCompletedIntroState] = useState(() => {
-    const savedState = localStorage.getItem("vaw_hasCompletedIntro");
-    return savedState === "true";
+    localStorage.setItem("vaw_hasCompletedIntro", "true");
+    return true;
   });
 
   // Persist to localStorage whenever values change
