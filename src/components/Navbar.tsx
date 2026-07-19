@@ -86,6 +86,7 @@ const Navbar = () => {
               key={index}
               to={item.href}
               className="text-foreground/80 hover:text-accent transition-colors font-medium px-2"
+              data-cuelume-hover="tick"
             >
               {item.name}
             </Link>
@@ -93,7 +94,10 @@ const Navbar = () => {
 
           {/* Services Dropdown */}
           <div className="relative" onMouseEnter={() => setIsServicesOpen(true)} onMouseLeave={() => setIsServicesOpen(false)}>
-            <button className="text-foreground/80 hover:text-accent transition-colors flex items-center gap-1 font-medium px-2">
+            <button
+              className="text-foreground/80 hover:text-accent transition-colors flex items-center gap-1 font-medium px-2"
+              data-cuelume-hover="tick"
+            >
               Services
               <ChevronDown size={16} className={`transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -103,6 +107,7 @@ const Navbar = () => {
                 key={index}
                 to={service.href}
                 className="block px-4 py-2 text-foreground/80 hover:text-accent hover:bg-muted/50 transition-colors"
+                data-cuelume-hover="tick"
               >
                 {service.name}
               </Link>)}

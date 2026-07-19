@@ -42,9 +42,12 @@ import {
   Activity,
   Settings,
   Lock as LockIcon,
-  Eraser
+  Eraser,
+  Volume2,
+  VolumeX
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useUser } from "@/context/UserContext";
 import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
 import UpdateButton from "@/components/staff/UpdateButton";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
@@ -114,6 +117,7 @@ const EMOJI_OPTIONS = [
 const StaffDashboard = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { interactionSoundsEnabled, setInteractionSoundsEnabled } = useUser();
   const [currentRoom, setCurrentRoom] = useState<RoomType>('planner');
   const [showMobileHome, setShowMobileHome] = useState(true);
   const [workspaceControls, setWorkspaceControls] = useState<React.ReactNode>(null);
@@ -861,6 +865,29 @@ const StaffDashboard = () => {
                     <span>System Version</span>
                     <UpdateButton variant="dark" compact={true} />
                   </div>
+
+                  {/* Sound Toggle inside Dropdown */}
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setInteractionSoundsEnabled(!interactionSoundsEnabled);
+                    }}
+                    className="py-1.5 focus:bg-white/5 flex items-center justify-between cursor-pointer text-xs"
+                  >
+                    <div className="flex items-center">
+                      {interactionSoundsEnabled ? (
+                        <Volume2 className="mr-2 h-4 w-4 text-green-400" />
+                      ) : (
+                        <VolumeX className="mr-2 h-4 w-4 text-zinc-400" />
+                      )}
+                      <span>Interaction Sounds</span>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                      interactionSoundsEnabled ? "bg-green-500/10 text-green-400" : "bg-zinc-800 text-zinc-400"
+                    }`}>
+                      {interactionSoundsEnabled ? "ON" : "OFF"}
+                    </span>
+                  </DropdownMenuItem>
 
                   <DropdownMenuSeparator className="bg-white/10" />
 
