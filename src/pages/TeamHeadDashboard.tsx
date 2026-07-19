@@ -192,12 +192,34 @@ const TeamHeadDashboard = () => {
 
   const location = useLocation();
 
-  // Synchronize URL query parameter with currentRoom
+  // Custom callback to transition between workspace rooms cleanly by changing the URL
+  const handleRoomChange = useCallback((room: RoomType) => {
+    let suffix = '';
+    if (room === 'planner') {
+      suffix = 'calendar';
+    } else if (room !== 'workspace') {
+      suffix = room;
+    }
+
+    // Preserve any extra URL search parameters (like ID) during active workspace state changes
+    const params = new URLSearchParams(location.search);
+    let finalSearch = suffix ? `?${suffix}` : '';
+    if (params.has('ID')) {
+      finalSearch += (finalSearch ? '&' : '?') + `ID=${params.get('ID')}`;
+    }
+
+    navigate({
+      pathname: location.pathname,
+      search: finalSearch,
+    }, { replace: true });
+  }, [navigate, location.pathname, location.search]);
+
+  // Unified loop-free synchronization of URL query params and currentRoom
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     let roomFromUrl: RoomType | null = null;
 
-    // Check if the parameter is specified via ?room=XYZ
+    // Parse the room from the URL query params
     const roomParam = params.get('room');
     if (roomParam && ['workspace', 'meeting', 'leave', 'tools', 'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox', 'planner'].includes(roomParam)) {
       roomFromUrl = (roomParam === 'planner' ? 'planner' : roomParam) as RoomType;
@@ -213,37 +235,28 @@ const TeamHeadDashboard = () => {
       }
     }
 
-    if (roomFromUrl && roomFromUrl !== currentRoom) {
-      setCurrentRoom(roomFromUrl);
+    if (roomFromUrl) {
+      if (roomFromUrl !== currentRoom) {
+        setCurrentRoom(roomFromUrl);
+      }
+    } else {
+      // If URL has no room parameter (e.g. empty search), match state to URL or URL to state
+      if (currentRoom === 'planner') {
+        // Default on login/mount: redirect to calendar suffix
+        navigate({
+          pathname: location.pathname,
+          search: '?calendar',
+        }, { replace: true });
+      } else if (currentRoom !== 'workspace') {
+        // If state is not workspace, make sure the URL has the correct suffix
+        const suffix = currentRoom === 'planner' ? 'calendar' : currentRoom;
+        navigate({
+          pathname: location.pathname,
+          search: `?${suffix}`,
+        }, { replace: true });
+      }
     }
-  }, [location.search, currentRoom]);
-
-  // Update URL search params when currentRoom changes
-  useEffect(() => {
-    let suffix = '';
-    if (currentRoom === 'planner') {
-      suffix = 'calendar';
-    } else if (currentRoom !== 'workspace') {
-      suffix = currentRoom;
-    }
-
-    const params = new URLSearchParams(location.search);
-    const roomParam = params.get('room');
-    const firstParam = location.search.replace('?', '').split('&')[0];
-
-    // Check if current room matches URL
-    const isMatched = (currentRoom === 'workspace' && !location.search) ||
-                      (currentRoom === 'planner' && (firstParam === 'calendar' || roomParam === 'planner')) ||
-                      (currentRoom !== 'workspace' && currentRoom !== 'planner' && (firstParam === currentRoom || roomParam === currentRoom));
-
-    if (!isMatched) {
-      // If we are transitioning to a room, clear current search params or set basic suffix
-      navigate({
-        pathname: location.pathname,
-        search: suffix ? `?${suffix}` : '',
-      }, { replace: true });
-    }
-  }, [currentRoom, navigate, location.pathname, location.search]);
+  }, [location.search, currentRoom, navigate, location.pathname]);
 
   useEffect(() => {
     if (location.state?.openCoins) {
@@ -554,7 +567,7 @@ const TeamHeadDashboard = () => {
       <OfficeZenHome 
         userId={profile?.user_id || ''}
         userProfile={profile}
-        onEnterWorkspace={() => setCurrentRoom('workspace')}
+        onEnterWorkspace={() => handleRoomChange('workspace')}
       />
     ),
     workspace: (
@@ -976,7 +989,7 @@ const TeamHeadDashboard = () => {
       <div className="flex-1 overflow-hidden relative z-10">
         <VirtualOfficeLayout
           currentRoom={currentRoom}
-          onRoomChange={setCurrentRoom}
+          onRoomChange={handleRoomChange}
           onlineUsers={onlineUsers}
           userId={profile?.user_id}
           userProfile={profile}
