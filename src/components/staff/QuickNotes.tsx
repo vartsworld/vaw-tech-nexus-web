@@ -6,6 +6,7 @@ import { Loader2, Plus, StickyNote, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface QuickNotesProps {
   userId: string;
@@ -95,11 +96,14 @@ export const QuickNotes = ({ userId }: QuickNotesProps) => {
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Textarea
+            id="quick-note-input"
+            aria-label="Quick note content"
             placeholder="Add a quick note..."
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             rows={3}
-            className="bg-white/5 border-white/10 text-white placeholder:text-white/50"
+            maxLength={500}
+            className="bg-white/5 border-white/10 text-white placeholder:text-white/50 focus-visible:ring-1 focus-visible:ring-yellow-400"
             onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -107,9 +111,15 @@ export const QuickNotes = ({ userId }: QuickNotesProps) => {
                 }
             }}
           />
+          <div className="flex justify-between items-center text-[10px] text-white/40 px-1">
+            <span>Press Enter to save, Shift+Enter for new line</span>
+            <span className={cn(newNote.length >= 400 ? "text-amber-400 font-bold" : "")}>
+              {newNote.length}/500
+            </span>
+          </div>
           <Button
             onClick={handleAddNote}
-            disabled={!newNote.trim() || addingNote}
+            disabled={!newNote.trim() || addingNote || newNote.length > 500}
             size="sm"
             className="w-full"
           >
