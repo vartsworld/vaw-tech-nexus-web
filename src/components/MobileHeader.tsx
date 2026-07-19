@@ -120,6 +120,7 @@ const MobileHeader = () => {
                   to={item.href}
                   className="block py-3 px-3 text-foreground/80 hover:text-accent hover:bg-muted/50 rounded-lg transition-colors"
                   onClick={() => setIsMenuOpen(false)}
+                  data-cuelume-hover="tick"
                 >
                   {item.name}
                 </Link>
@@ -127,7 +128,11 @@ const MobileHeader = () => {
 
               {/* Services Dropdown */}
               <div className="py-2">
-                <button className="flex items-center justify-between w-full py-3 px-3 text-foreground/80 hover:text-accent hover:bg-muted/50 rounded-lg transition-colors" onClick={() => setIsServicesOpen(!isServicesOpen)}>
+                <button
+                  className="flex items-center justify-between w-full py-3 px-3 text-foreground/80 hover:text-accent hover:bg-muted/50 rounded-lg transition-colors"
+                  onClick={() => setIsServicesOpen(!isServicesOpen)}
+                  data-cuelume-hover="tick"
+                >
                   <span>Services</span>
                   <ChevronDown size={16} className={`transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -142,6 +147,7 @@ const MobileHeader = () => {
                           setIsMenuOpen(false);
                           setIsServicesOpen(false);
                         }}
+                        data-cuelume-hover="tick"
                       >
                         {service.name}
                       </Link>

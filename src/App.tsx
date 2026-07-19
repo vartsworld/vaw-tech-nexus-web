@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { bind } from "cuelume";
 
 import Index from "./pages/Index";
 import ServiceRequest from "./pages/ServiceRequest";
@@ -112,6 +113,10 @@ const ManifestSwitcher = () => {
 };
 
 const AppContent = () => {
+  useEffect(() => {
+    bind();
+  }, []);
+
   return (
 
     <>
