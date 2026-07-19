@@ -127,7 +127,7 @@ const StaffLogin = () => {
       staffProfile.is_department_head) {
       return '/team-head?dashboard';
     }
-    return '/staff?dashboard';
+    return '/staff?calendar';
   };
 
   const handleFirstTimeLogin = async () => {
@@ -201,8 +201,8 @@ const StaffLogin = () => {
           const dashboardRoute = getDashboardRoute(data);
           // Set currentRoom to workspace when navigating
           const navigationState = !hasMarkedAttendance
-            ? { requireAttendance: true, currentRoom: 'workspace' }
-            : { currentRoom: 'workspace' };
+            ? { requireAttendance: true, currentRoom: 'planner' }
+            : { currentRoom: 'planner' };
 
           navigate(dashboardRoute, { state: navigationState });
         }
@@ -275,8 +275,8 @@ const StaffLogin = () => {
         const dashboardRoute = getDashboardRoute(data);
         // Set currentRoom to workspace when navigating
         const navigationState = !hasMarkedAttendance
-          ? { requireAttendance: true, currentRoom: 'workspace' }
-          : { currentRoom: 'workspace' };
+          ? { requireAttendance: true, currentRoom: 'planner' }
+          : { currentRoom: 'planner' };
 
         navigate(dashboardRoute, { state: navigationState });
       }

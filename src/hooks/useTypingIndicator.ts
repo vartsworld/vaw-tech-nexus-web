@@ -12,55 +12,18 @@ interface UseTypingIndicatorProps {
   recipientId?: string;
 }
 
+const isValidUUID = (id: string | undefined): boolean => {
+  if (!id) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
+
 export const useTypingIndicator = ({ userId, channelId, recipientId }: UseTypingIndicatorProps) => {
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTypingUpdateRef = useRef<number>(0);
 
-  // Subscribe to typing indicators
-  useEffect(() => {
-    if (!channelId && !recipientId) return;
-
-    const filterColumn = channelId ? 'channel_id' : 'recipient_id';
-    const filterValue = channelId || recipientId;
-
-    console.log('[TypingIndicator] Setting up subscription:', { filterColumn, filterValue, userId });
-
-    const channel = supabase
-      .channel(`typing-${filterValue}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'chat_typing_indicators',
-        filter: `${filterColumn}=eq.${filterValue}`
-      }, async (payload) => {
-        console.log('[TypingIndicator] Received typing event:', payload);
-        // Refetch typing users on any change
-        await fetchTypingUsers();
-      })
-      .subscribe((status) => {
-        console.log('[TypingIndicator] Subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('[TypingIndicator] Successfully subscribed to typing indicators');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('[TypingIndicator] Failed to subscribe to typing indicators');
-        }
-      });
-
-    // Initial fetch
-    fetchTypingUsers();
-
-    // Cleanup stale indicators every 5 seconds
-    const cleanupInterval = setInterval(fetchTypingUsers, 5000);
-
-    return () => {
-      console.log('[TypingIndicator] Cleaning up subscription');
-      supabase.removeChannel(channel);
-      clearInterval(cleanupInterval);
-    };
-  }, [channelId, recipientId, userId]);
-
-  const fetchTypingUsers = async () => {
+  // Fetch typing users callback
+  const fetchTypingUsers = useCallback(async () => {
     if (!channelId && !recipientId) return;
 
     try {
@@ -111,22 +74,31 @@ export const useTypingIndicator = ({ userId, channelId, recipientId }: UseTyping
     } catch (error) {
       console.error('Error in fetchTypingUsers:', error);
     }
-  };
+  }, [userId, channelId, recipientId]);
 
-  // Set typing status
+  // Set typing status callback
   const setTyping = useCallback(async (isTyping: boolean) => {
-    if (!userId || (!channelId && !recipientId)) return;
+    if (!isValidUUID(userId)) return;
+    if (channelId && !isValidUUID(channelId)) return;
+    if (recipientId && !isValidUUID(recipientId)) return;
+    if (!channelId && !recipientId) return;
 
-    // Throttle updates to max once per second
+    // Throttle updates to max once per second (unless we are stopping typing)
     const now = Date.now();
     if (isTyping && now - lastTypingUpdateRef.current < 1000) {
       return;
     }
-    lastTypingUpdateRef.current = now;
+    if (isTyping) {
+      lastTypingUpdateRef.current = now;
+    }
 
     console.log('[TypingIndicator] Setting typing status:', { userId, isTyping, channelId, recipientId });
 
     try {
+      // Validate that active auth session exists before writing to DB
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
       const upsertData: any = {
         user_id: userId,
         is_typing: isTyping,
@@ -179,6 +151,49 @@ export const useTypingIndicator = ({ userId, channelId, recipientId }: UseTyping
     }
     setTyping(false);
   }, [setTyping]);
+
+  // Subscribe to typing indicators
+  useEffect(() => {
+    if (!channelId && !recipientId) return;
+
+    const filterColumn = channelId ? 'channel_id' : 'recipient_id';
+    const filterValue = channelId || recipientId;
+
+    console.log('[TypingIndicator] Setting up subscription:', { filterColumn, filterValue, userId });
+
+    const channel = supabase
+      .channel(`typing-${filterValue}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'chat_typing_indicators',
+        filter: `${filterColumn}=eq.${filterValue}`
+      }, async (payload) => {
+        console.log('[TypingIndicator] Received typing event:', payload);
+        // Refetch typing users on any change
+        await fetchTypingUsers();
+      })
+      .subscribe((status) => {
+        console.log('[TypingIndicator] Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('[TypingIndicator] Successfully subscribed to typing indicators');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[TypingIndicator] Failed to subscribe to typing indicators');
+        }
+      });
+
+    // Initial fetch
+    fetchTypingUsers();
+
+    // Cleanup stale indicators every 5 seconds
+    const cleanupInterval = setInterval(fetchTypingUsers, 5000);
+
+    return () => {
+      console.log('[TypingIndicator] Cleaning up subscription');
+      supabase.removeChannel(channel);
+      clearInterval(cleanupInterval);
+    };
+  }, [channelId, recipientId, userId, fetchTypingUsers]);
 
   // Cleanup on unmount
   useEffect(() => {
