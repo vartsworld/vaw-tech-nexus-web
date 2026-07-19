@@ -119,36 +119,56 @@ export const TaskApprovalDialog = ({
 
       // Award points to staff member if not trial period
       if (!task.trial_period && task.points > 0) {
-        // 1. Log to user_coin_transactions (DB trigger 'sync_user_total_points_trigger' handles staff_profiles.total_points)
-        await supabase
-          .from('user_coin_transactions')
-          .insert({
-            user_id: task.assigned_to,
-            coins: task.points,
-            transaction_type: 'task_earned',
-            category: 'task_completion',
-            reason: `Task Completed: ${task.title}`,
-            source_type: 'task',
-            related_task_id: task.id
-          } as any);
+        const parseAssignedTo = (val: string | null | undefined): string[] => {
+          if (!val) return [];
+          const trimmed = val.trim();
+          if (trimmed.startsWith("[")) {
+            try {
+              const parsed = JSON.parse(trimmed);
+              return Array.isArray(parsed) ? parsed : [val];
+            } catch {
+              return [val];
+            }
+          }
+          return [val];
+        };
 
-        // 2. Log to user_points_log (for HR PointsMonitoring visibility)
-        await supabase
-          .from('user_points_log')
-          .insert({
-            user_id: task.assigned_to,
-            points: task.points,
-            reason: `Task approved: ${task.title}`,
-            category: 'task'
+        const assignedUserIds = parseAssignedTo(task.assigned_to);
+
+        for (const assigneeId of assignedUserIds) {
+          if (!assigneeId) continue;
+
+          // 1. Log to user_coin_transactions (DB trigger 'sync_user_total_points_trigger' handles staff_profiles.total_points)
+          await supabase
+            .from('user_coin_transactions')
+            .insert({
+              user_id: assigneeId,
+              coins: task.points,
+              transaction_type: 'task_earned',
+              category: 'task_completion',
+              reason: `Task Completed: ${task.title}`,
+              source_type: 'task',
+              related_task_id: task.id
+            } as any);
+
+          // 2. Log to user_points_log (for HR PointsMonitoring visibility)
+          await supabase
+            .from('user_points_log')
+            .insert({
+              user_id: assigneeId,
+              points: task.points,
+              reason: `Task approved: ${task.title}`,
+              category: 'task'
+            });
+
+          // 3. Log to user_activity_log
+          await supabase.from('user_activity_log').insert({
+            user_id: assigneeId,
+            activity_type: 'task_completed',
+            points_earned: task.points,
+            metadata: { task_id: task.id, task_title: task.title, approved_by: user.id }
           });
-
-        // 3. Log to user_activity_log
-        await supabase.from('user_activity_log').insert({
-          user_id: task.assigned_to,
-          activity_type: 'task_completed',
-          points_earned: task.points,
-          metadata: { task_id: task.id, task_title: task.title, approved_by: user.id }
-        });
+        }
       }
 
       toast({

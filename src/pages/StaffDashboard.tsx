@@ -811,6 +811,15 @@ const StaffDashboard = () => {
                   {workspaceControls}
                 </div>
               )}
+              {/* Desktop Only Coins Display in Header */}
+              <div
+                className="hidden md:flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full text-amber-400 font-bold text-xs cursor-pointer hover:bg-amber-500/20 transition-all shadow-md shadow-amber-500/5 select-none"
+                onClick={() => navigate("/mycoins")}
+                title="View Coins Ledger"
+              >
+                <Coins className="w-4 h-4 text-amber-400 animate-pulse" />
+                <span>{(profile?.total_points || 0).toLocaleString()} Coins</span>
+              </div>
               <div>
                 <NotificationsBar userId={profile?.user_id || ''} />
               </div>
