@@ -141,7 +141,7 @@ const AppContent = () => {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/hr/*" element={<HRDashboard />} />
           <Route path="/staff/login" element={<StaffLogin />} />
-          <Route path="/staff/dashboard" element={<StaffDashboard />} />
+          <Route path="/staff" element={<StaffDashboard />} />
           <Route path="/staff/tools-nexus" element={<ToolsNexus />} />
           <Route path="/staff/task/:taskId" element={<StaffTaskDetail />} />
           <Route path="/staff/work" element={<StaffWork />} />
@@ -154,7 +154,7 @@ const AppContent = () => {
           <Route path="/staff/docs" element={<DocsPage />} />
           <Route path="/staff/operations" element={<OperationsPage />} />
           <Route path="/staff/channels" element={<ChannelsPage />} />
-          <Route path="/team-head/dashboard" element={<TeamHeadDashboard />} />
+          <Route path="/team-head" element={<TeamHeadDashboard />} />
           <Route path="/mycoins" element={<MyCoins />} />
           <Route path="/account" element={<AccountDashboard />} />
           <Route path="/client-portal" element={<ClientPortal />} />

@@ -408,12 +408,12 @@ const StaffWork = () => {
              <Briefcase className="w-5 h-5" />
              <span className="text-[7px] font-black uppercase">Work</span>
           </Button>
-          <Button variant="ghost" onClick={() => navigate("/staff/dashboard")} className="flex flex-col gap-1 items-center h-14 w-12 text-white/40">
+          <Button variant="ghost" onClick={() => navigate("/staff?inbox")} className="flex flex-col gap-1 items-center h-14 w-12 text-white/40">
              <MessageSquare className="w-5 h-5" />
              <span className="text-[7px] font-black uppercase">Chat</span>
           </Button>
           
-          <div onClick={() => navigate("/staff/dashboard")} className="w-16 h-16 -mt-10 rounded-full bg-slate-800 flex items-center justify-center shadow-xl border-4 border-slate-950 active:scale-90 transition-transform">
+          <div onClick={() => navigate("/staff?dashboard")} className="w-16 h-16 -mt-10 rounded-full bg-slate-800 flex items-center justify-center shadow-xl border-4 border-slate-950 active:scale-90 transition-transform">
              <LayoutGrid className="w-8 h-8 text-white/40" />
           </div>
 

@@ -494,7 +494,7 @@ const SalesDashboard = () => {
                 <DropdownMenuContent align="end" className="w-64 bg-zinc-950 text-white border-white/10 shadow-2xl">
                   <DropdownMenuLabel className="text-white/60 text-[10px] font-bold uppercase tracking-wider">Sales Account</DropdownMenuLabel>
                   <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem onClick={() => navigate("/staff/dashboard")} className="p-3 hover:bg-white/5 cursor-pointer gap-3 text-blue-400">
+                  <DropdownMenuItem onClick={() => navigate("/staff?dashboard")} className="p-3 hover:bg-white/5 cursor-pointer gap-3 text-blue-400">
                     <Compass className="w-4 h-4 shrink-0" /> Staff Dashboard
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowMarketInsight(true)} className="p-3 hover:bg-white/5 cursor-pointer gap-3">

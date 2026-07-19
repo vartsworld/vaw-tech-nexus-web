@@ -114,11 +114,40 @@ const EMOJI_OPTIONS = [
   "💻", "⌨️", "🖥️", "🖨️", "📷", "📺", "🕹️", "💡", "🔔", "🔕"
 ];
 
+const paramToRoom = (param: string): RoomType | null => {
+  if (param === 'dashboard' || param === 'workspace') return 'workspace';
+  if (param === 'calendar' || param === 'planner') return 'planner';
+  if (param === 'meetingroom') return 'meeting';
+
+  const validRooms: RoomType[] = [
+    'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
+    'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox'
+  ];
+  if (validRooms.includes(param as RoomType)) return param as RoomType;
+  return null;
+};
+
 const StaffDashboard = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { interactionSoundsEnabled, setInteractionSoundsEnabled } = useUser();
-  const [currentRoom, setCurrentRoom] = useState<RoomType>('planner');
+
+  const getInitialRoom = (): RoomType => {
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get('room');
+    if (roomParam) {
+      const r = paramToRoom(roomParam);
+      if (r) return r;
+    }
+    const firstParam = window.location.search.replace('?', '').split('&')[0];
+    if (firstParam) {
+      const r = paramToRoom(firstParam);
+      if (r) return r;
+    }
+    return 'planner'; // Default fallback
+  };
+
+  const [currentRoom, setCurrentRoom] = useState<RoomType>(getInitialRoom);
   const [showMobileHome, setShowMobileHome] = useState(true);
   const [workspaceControls, setWorkspaceControls] = useState<React.ReactNode>(null);
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
@@ -173,7 +202,9 @@ const StaffDashboard = () => {
     let suffix = '';
     if (room === 'planner') {
       suffix = 'calendar';
-    } else if (room !== 'workspace') {
+    } else if (room === 'workspace') {
+      suffix = 'dashboard';
+    } else {
       suffix = room;
     }
 
@@ -197,17 +228,13 @@ const StaffDashboard = () => {
 
     // Parse the room from the URL query params
     const roomParam = params.get('room');
-    if (roomParam && ['workspace', 'meeting', 'leave', 'tools', 'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox', 'planner'].includes(roomParam)) {
-      roomFromUrl = (roomParam === 'planner' ? 'planner' : roomParam) as RoomType;
+    if (roomParam) {
+      roomFromUrl = paramToRoom(roomParam);
     } else {
-      // For legacy links like ?meeting or ?calendar or ?meeting&ID=xyz
+      // For legacy/query-only links like ?meeting or ?calendar or ?dashboard
       const firstParam = location.search.replace('?', '').split('&')[0];
-      if (firstParam === 'calendar' || firstParam === 'planner') {
-        roomFromUrl = 'planner';
-      } else if (firstParam === 'meetingroom') {
-        roomFromUrl = 'meeting';
-      } else if (['workspace', 'meeting', 'leave', 'tools', 'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox'].includes(firstParam)) {
-        roomFromUrl = firstParam as RoomType;
+      if (firstParam) {
+        roomFromUrl = paramToRoom(firstParam);
       }
     }
 
@@ -223,9 +250,8 @@ const StaffDashboard = () => {
           pathname: location.pathname,
           search: '?calendar',
         }, { replace: true });
-      } else if (currentRoom !== 'workspace') {
-        // If state is not workspace, make sure the URL has the correct suffix
-        const suffix = currentRoom === 'planner' ? 'calendar' : currentRoom;
+      } else {
+        const suffix = currentRoom === 'planner' ? 'calendar' : (currentRoom === 'workspace' ? 'dashboard' : currentRoom);
         navigate({
           pathname: location.pathname,
           search: `?${suffix}`,
@@ -466,6 +492,29 @@ const StaffDashboard = () => {
     setShowMoodCheck(true);
   };
 
+
+  useEffect(() => {
+    const roomTitleMap: Record<RoomType, string> = {
+      home: "Home",
+      workspace: "Dashboard",
+      meeting: "Meeting Room",
+      breakroom: "Break Room",
+      planner: "Calendar",
+      leave: "Leave",
+      tools: "Tools",
+      chess: "Chess",
+      onboarding: "Onboarding",
+      notes: "Notes",
+      operations: "Operations",
+      docs: "Documents",
+      activity: "Activity",
+      channels: "Channels",
+      inbox: "Inbox"
+    };
+
+    const roomTitle = roomTitleMap[currentRoom] || currentRoom.charAt(0).toUpperCase() + currentRoom.slice(1);
+    document.title = `${roomTitle} | Staff`;
+  }, [currentRoom]);
 
   const handleMoodSubmitted = () => {
     console.log('Mood submitted, going to dashboard');
