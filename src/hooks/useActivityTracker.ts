@@ -13,6 +13,11 @@ export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOp
   const activityUpdateIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingUpdateRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const onStatusChangeRef = useRef(onStatusChange);
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange;
+  });
+
   // Debounced DB write — at most once every 30 seconds
   const updateActivity = useCallback(async () => {
     if (!userId) return;
@@ -71,14 +76,14 @@ export const useActivityTracker = ({ userId, onStatusChange }: ActivityTrackerOp
 
       if (newStatus !== presenceData.current_status) {
         await updateUserStatus(newStatus);
-        if (onStatusChange) {
-          onStatusChange(newStatus);
+        if (onStatusChangeRef.current) {
+          onStatusChangeRef.current(newStatus);
         }
       }
     } catch (error) {
       console.error('Error checking status:', error);
     }
-  }, [userId, onStatusChange]);
+  }, [userId]);
 
   const updateUserStatus = async (status: string) => {
     try {
