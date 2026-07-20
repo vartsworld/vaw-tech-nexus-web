@@ -53,6 +53,8 @@ import { cn } from "@/lib/utils";
 import { Calendar as ShadcnCalendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface MonthlyPlan {
   id: string;
@@ -103,16 +105,109 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   });
   const { toast } = useToast();
 
-  const colors = [
-    { name: 'Blue', value: '#3b82f6' },
-    { name: 'Emerald', value: '#10b981' },
-    { name: 'Amber', value: '#f59e0b' },
-    { name: 'Rose', value: '#f43f5e' },
-    { name: 'Violet', value: '#8b5cf6' },
-    { name: 'Orange', value: '#f97316' },
-    { name: 'Teal', value: '#14b8a6' },
-    { name: 'Slate', value: '#64748b' }
-  ];
+  // Dynamic color tags with localStorage persistence and backward compatibility migration
+  const [colorTags, setColorTags] = useState<{ name: string; value: string }[]>(() => {
+    try {
+      const saved = localStorage.getItem('vaw_planner_custom_colors');
+      if (saved) return JSON.parse(saved);
+
+      const customTags = JSON.parse(localStorage.getItem('vaw_planner_custom_tags') || '{}');
+      const defaults = [
+        { name: 'Blue', value: '#3b82f6' },
+        { name: 'Emerald', value: '#10b981' },
+        { name: 'Amber', value: '#f59e0b' },
+        { name: 'Rose', value: '#f43f5e' },
+        { name: 'Violet', value: '#8b5cf6' },
+        { name: 'Orange', value: '#f97316' },
+        { name: 'Teal', value: '#14b8a6' },
+        { name: 'Slate', value: '#64748b' }
+      ];
+      return defaults.map(d => ({
+        name: customTags[d.value] || d.name,
+        value: d.value
+      }));
+    } catch {
+      return [
+        { name: 'Blue', value: '#3b82f6' },
+        { name: 'Emerald', value: '#10b981' },
+        { name: 'Amber', value: '#f59e0b' },
+        { name: 'Rose', value: '#f43f5e' },
+        { name: 'Violet', value: '#8b5cf6' },
+        { name: 'Orange', value: '#f97316' },
+        { name: 'Teal', value: '#14b8a6' },
+        { name: 'Slate', value: '#64748b' }
+      ];
+    }
+  });
+
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>(['all']);
+  const [newTagName, setNewTagName] = useState('');
+  const [newTagColor, setNewTagColor] = useState('#3b82f6');
+
+  const handleToggleClientFilter = (clientId: string) => {
+    if (clientId === 'all') {
+      setSelectedClientIds(['all']);
+      return;
+    }
+
+    let nextSelected = selectedClientIds.filter(id => id !== 'all');
+
+    if (nextSelected.includes(clientId)) {
+      nextSelected = nextSelected.filter(id => id !== clientId);
+    } else {
+      nextSelected.push(clientId);
+    }
+
+    if (nextSelected.length === 0) {
+      nextSelected = ['all'];
+    }
+
+    setSelectedClientIds(nextSelected);
+  };
+
+  const handleAddColorTag = () => {
+    if (!newTagName.trim() || !newTagColor.trim()) return;
+    if (colorTags.some(t => t.value.toLowerCase() === newTagColor.toLowerCase())) {
+      toast({
+        title: "Error",
+        description: "A tag with this color already exists.",
+        variant: "destructive"
+      });
+      return;
+    }
+    const updated = [...colorTags, { name: newTagName.trim(), value: newTagColor.trim() }];
+    setColorTags(updated);
+    localStorage.setItem('vaw_planner_custom_colors', JSON.stringify(updated));
+    setNewTagName('');
+    toast({
+      title: "Success",
+      description: "New color tag added successfully",
+    });
+  };
+
+  const handleDeleteColorTag = (colorValue: string) => {
+    if (colorTags.length <= 1) {
+      toast({
+        title: "Error",
+        description: "You must keep at least one color tag.",
+        variant: "destructive"
+      });
+      return;
+    }
+    const updated = colorTags.filter(t => t.value !== colorValue);
+    setColorTags(updated);
+    localStorage.setItem('vaw_planner_custom_colors', JSON.stringify(updated));
+    toast({
+      title: "Success",
+      description: "Color tag deleted successfully",
+    });
+  };
+
+  const handleUpdateColorTagName = (colorValue: string, newName: string) => {
+    const updated = colorTags.map(t => t.value === colorValue ? { ...t, name: newName } : t);
+    setColorTags(updated);
+    localStorage.setItem('vaw_planner_custom_colors', JSON.stringify(updated));
+  };
 
   useEffect(() => {
     fetchPlans();
@@ -545,9 +640,9 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
         const currentDay = day;
-        const dayPlans = plans.filter(p => isSameDay(parseISO(p.date), currentDay));
-        const dayTasks = tasks.filter(t => t.due_date && isSameDay(parseISO(t.due_date), currentDay));
-        const daySubtasks = subtasks.filter(s => s.due_date && isSameDay(parseISO(s.due_date), currentDay));
+        const dayPlans = filteredPlans.filter(p => isSameDay(parseISO(p.date), currentDay));
+        const dayTasks = filteredTasks.filter(t => t.due_date && isSameDay(parseISO(t.due_date), currentDay));
+        const daySubtasks = filteredSubtasks.filter(s => s.due_date && isSameDay(parseISO(s.due_date), currentDay));
 
         // Combine all items to display
         const cellItems = [
@@ -640,6 +735,37 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     return <div>{rows}</div>;
   };
 
+  const getFilteredItems = () => {
+    if (selectedClientIds.includes('all')) {
+      return {
+        filteredPlans: plans,
+        filteredTasks: tasks,
+        filteredSubtasks: subtasks
+      };
+    }
+
+    const filteredPlans = plans.filter(p => {
+      if (!p.client_id) return selectedClientIds.includes('common');
+      return selectedClientIds.includes(p.client_id);
+    });
+
+    const filteredTasks = tasks.filter(t => {
+      if (!t.client_id) return selectedClientIds.includes('common');
+      return selectedClientIds.includes(t.client_id);
+    });
+
+    const filteredSubtasks = subtasks.filter(s => {
+      const parentTask = s.staff_tasks;
+      if (!parentTask) return false;
+      if (!parentTask.client_id) return selectedClientIds.includes('common');
+      return selectedClientIds.includes(parentTask.client_id);
+    });
+
+    return { filteredPlans, filteredTasks, filteredSubtasks };
+  };
+
+  const { filteredPlans, filteredTasks, filteredSubtasks } = getFilteredItems();
+
   // Group plans for the detailed view
   const getGroupedPlans = (datePlans: MonthlyPlan[]) => {
     const common = datePlans.filter(p => !p.client_id);
@@ -657,9 +783,9 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     return { common, clientGrouped };
   };
 
-  const selectedDayPlans = selectedDate ? plans.filter(p => isSameDay(parseISO(p.date), selectedDate)) : [];
-  const selectedDayTasks = selectedDate ? tasks.filter(t => t.due_date && isSameDay(parseISO(t.due_date), selectedDate)) : [];
-  const selectedDaySubtasks = selectedDate ? subtasks.filter(s => s.due_date && isSameDay(parseISO(s.due_date), selectedDate)) : [];
+  const selectedDayPlans = selectedDate ? filteredPlans.filter(p => isSameDay(parseISO(p.date), selectedDate)) : [];
+  const selectedDayTasks = selectedDate ? filteredTasks.filter(t => t.due_date && isSameDay(parseISO(t.due_date), selectedDate)) : [];
+  const selectedDaySubtasks = selectedDate ? filteredSubtasks.filter(s => s.due_date && isSameDay(parseISO(s.due_date), selectedDate)) : [];
   const { common: commonPlans, clientGrouped } = getGroupedPlans(selectedDayPlans);
 
   return (
@@ -667,6 +793,80 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       <CardHeader className="p-0">
         {renderHeader()}
       </CardHeader>
+
+      {/* Dynamic Sorter/Filter Toolbar Row */}
+      <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3 bg-white/[0.02] border-b border-white/5">
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-9 px-3 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-white flex items-center gap-2 text-xs font-bold uppercase"
+              >
+                <Briefcase className="w-3.5 h-3.5 text-blue-400" />
+                <span>Filter Clients ({selectedClientIds.includes('all') ? 'All' : selectedClientIds.length})</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 bg-zinc-950 border border-white/10 rounded-2xl p-3 shadow-2xl space-y-2 z-50">
+              <h4 className="text-[10px] font-black uppercase tracking-wider text-white/40 px-2 pb-1 border-b border-white/5">
+                Filter by Client
+              </h4>
+              <ScrollArea className="h-48 pr-1">
+                <div className="space-y-1">
+                  {/* All Option */}
+                  <button
+                    onClick={() => handleToggleClientFilter('all')}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
+                  >
+                    <Checkbox
+                      checked={selectedClientIds.includes('all')}
+                      onCheckedChange={() => handleToggleClientFilter('all')}
+                      className="border-white/20 data-[state=checked]:bg-primary data-[state=checked]:text-black"
+                    />
+                    <span className="text-xs font-bold text-white uppercase">All Clients</span>
+                  </button>
+
+                  {/* Common / No Client Option */}
+                  <button
+                    onClick={() => handleToggleClientFilter('common')}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
+                  >
+                    <Checkbox
+                      checked={selectedClientIds.includes('common')}
+                      onCheckedChange={() => handleToggleClientFilter('common')}
+                      className="border-white/20 data-[state=checked]:bg-primary data-[state=checked]:text-black"
+                    />
+                    <span className="text-xs font-bold text-white/70 uppercase">Common (No Client)</span>
+                  </button>
+
+                  {/* Client Options */}
+                  {clients.map(client => (
+                    <button
+                      key={client.id}
+                      onClick={() => handleToggleClientFilter(client.id)}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
+                    >
+                      <Checkbox
+                        checked={selectedClientIds.includes(client.id)}
+                        onCheckedChange={() => handleToggleClientFilter(client.id)}
+                        className="border-white/20 data-[state=checked]:bg-primary data-[state=checked]:text-black"
+                      />
+                      <span className="text-xs font-medium text-white/90 truncate">{client.company_name}</span>
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="text-[10px] uppercase font-black tracking-widest text-white/35 flex items-center gap-2">
+          <span>Active Filter:</span>
+          <span className="text-primary">
+            {selectedClientIds.includes('all') ? 'All Clients' : `${selectedClientIds.length} Selected`}
+          </span>
+        </div>
+      </div>
+
       <CardContent className="p-4 sm:p-6 flex justify-center">
         <div className="w-full max-w-4xl bg-zinc-900/40 border border-white/5 rounded-3xl p-3 sm:p-6 backdrop-blur-md">
           <ShadcnCalendar
@@ -674,11 +874,10 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
             month={currentMonth}
             onMonthChange={setCurrentMonth}
             selected={selectedDate || undefined}
-            onSelect={(date) => {
-              if (date) {
-                setSelectedDate(date);
-                setIsDayDetailOpen(true);
-              }
+            onSelect={setSelectedDate}
+            onDayClick={(date) => {
+              setSelectedDate(date);
+              setIsDayDetailOpen(true);
             }}
             className="w-full p-0 bg-transparent text-white"
             classNames={{
@@ -690,21 +889,40 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
               head_cell: "text-zinc-500 rounded-md font-bold text-center text-xs uppercase tracking-wider py-2",
               row: "grid grid-cols-7 w-full mt-2",
               cell: "aspect-square w-full text-center text-sm p-0 relative [&:has([aria-selected])]:bg-transparent focus-within:relative focus-within:z-20",
-              day: "h-full w-full p-0 font-bold text-white hover:bg-white/10 rounded-2xl flex flex-col items-center justify-center transition-all border border-transparent aria-selected:bg-primary aria-selected:text-black",
+              day: "h-full w-full p-0 font-bold text-white hover:bg-white/10 rounded-2xl flex flex-col items-center justify-center transition-all border border-transparent aria-selected:border-2 aria-selected:border-primary aria-selected:bg-transparent aria-selected:text-primary",
               day_today: "border-primary/50 text-primary bg-primary/5 hover:bg-primary/20",
-              day_selected: "bg-primary text-black hover:bg-primary hover:text-black focus:bg-primary focus:text-black",
+              day_selected: "border-2 border-primary text-primary hover:bg-white/10 hover:text-primary focus:bg-transparent focus:text-primary rounded-2xl bg-transparent font-black",
               day_outside: "text-zinc-600 opacity-30",
             }}
             components={{
               DayContent: ({ date }) => {
-                const dayPlans = plans.filter(p => isSameDay(parseISO(p.date), date));
-                const dayTasks = tasks.filter(t => t.due_date && isSameDay(parseISO(t.due_date), date));
-                const daySubtasks = subtasks.filter(s => s.due_date && isSameDay(parseISO(s.due_date), date));
+                const dayPlans = filteredPlans.filter(p => isSameDay(parseISO(p.date), date));
+                const dayTasks = filteredTasks.filter(t => t.due_date && isSameDay(parseISO(t.due_date), date));
+                const daySubtasks = filteredSubtasks.filter(s => s.due_date && isSameDay(parseISO(s.due_date), date));
 
                 const totalCount = dayPlans.length + dayTasks.length + daySubtasks.length;
+                const hasItems = totalCount > 0;
+                const allCompleted = hasItems &&
+                  dayPlans.every(p => p.is_completed) &&
+                  dayTasks.every(t => t.status === 'completed') &&
+                  daySubtasks.every(s => s.status === 'completed');
+
                 return (
-                  <div className="relative flex flex-col items-center justify-center w-full h-full p-2">
-                    <span className="text-sm sm:text-base">{date.getDate()}</span>
+                  <div className={cn(
+                    "relative flex flex-col items-center justify-center w-full h-full p-2 rounded-2xl transition-all",
+                    allCompleted && "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
+                  )}>
+                    <span className={cn(
+                      "text-sm sm:text-base",
+                      allCompleted && "font-black"
+                    )}>{date.getDate()}</span>
+
+                    {allCompleted && (
+                      <div className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 bg-emerald-500 text-black rounded-full p-0.5 shadow-md flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
+                      </div>
+                    )}
+
                     {totalCount > 0 && (
                       <div className="absolute bottom-2 flex gap-1 justify-center w-full px-1 overflow-hidden">
                         {[
@@ -992,7 +1210,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                 <div className="grid gap-2">
                   <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Color Tag</Label>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    {colors.map(c => (
+                    {colorTags.map(c => (
                       <button
                         key={c.value}
                         onClick={() => setNewPlan({ ...newPlan, color: c.value })}
@@ -1001,7 +1219,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                           newPlan.color === c.value ? "border-white scale-110" : "border-transparent"
                         )}
                         style={{ backgroundColor: c.value }}
-                        title={customTagNames[c.value] || c.name}
+                        title={c.name}
                       />
                     ))}
                   </div>
@@ -1042,47 +1260,93 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           PLANNER SETTINGS DIALOG
       ═══════════════════════════════════════════════════ */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 rounded-3xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-black uppercase italic tracking-tighter">Planner Settings</DialogTitle>
-            <DialogDescription className="text-white/40 uppercase text-[10px] font-bold tracking-widest">
-              Customize your planning environment
+        <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="p-6 border-b border-white/5 bg-white/[0.02] shrink-0">
+            <DialogTitle className="text-xl font-black uppercase italic tracking-tighter text-white">Planner Settings</DialogTitle>
+            <DialogDescription className="text-white/40 uppercase text-[10px] font-bold tracking-widest mt-1">
+              Manage color tags & customize environment
             </DialogDescription>
-          </DialogHeader>
-          <div className="py-6 space-y-4">
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
-              <h4 className="text-xs font-black uppercase tracking-widest text-white/80">Tag Legend & Renaming</h4>
-              <p className="text-[9px] text-white/40 uppercase font-bold tracking-wider leading-none">
-                Click text to customize names
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {colors.map(c => {
-                  const displayName = customTagNames[c.value] || c.name;
-                  return (
-                    <div key={c.value} className="flex items-center gap-2 bg-white/5 p-2 rounded-xl border border-white/5">
-                      <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: c.value }} />
-                      <input
+          </div>
+          <ScrollArea className="flex-1 p-6">
+            <div className="space-y-6">
+              {/* Existing Tags */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase tracking-widest text-white/80">Tag Legend & Renaming</h4>
+                <p className="text-[9px] text-white/40 uppercase font-bold tracking-wider leading-none">
+                  Click text to rename or trash icon to delete tags
+                </p>
+                <div className="grid gap-2">
+                  {colorTags.map(c => (
+                    <div key={c.value} className="flex items-center justify-between bg-white/5 p-2 rounded-xl border border-white/5 gap-2">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c.value }} />
+                        <input
+                          type="text"
+                          className="bg-transparent border-none focus:ring-0 focus:outline-none text-xs font-bold text-white uppercase p-0 w-full"
+                          value={c.name}
+                          onChange={(e) => handleUpdateColorTagName(c.value, e.target.value)}
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-white/5 shrink-0"
+                        onClick={() => handleDeleteColorTag(c.value)}
+                        title="Delete tag"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Add New Tag */}
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+                <h4 className="text-xs font-black uppercase tracking-widest text-white/80">Add New Tag</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-1">
+                    <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Tag Name</Label>
+                    <Input
+                      placeholder="e.g., Critical"
+                      value={newTagName}
+                      onChange={(e) => setNewTagName(e.target.value)}
+                      className="h-9 bg-white/5 border-white/10 rounded-lg text-xs font-bold"
+                    />
+                  </div>
+                  <div className="grid gap-1">
+                    <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Tag Color</Label>
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="color"
+                        value={newTagColor}
+                        onChange={(e) => setNewTagColor(e.target.value)}
+                        className="w-12 h-9 p-1 bg-white/5 border-white/10 rounded-lg cursor-pointer shrink-0"
+                      />
+                      <Input
                         type="text"
-                        className="bg-transparent border-none focus:ring-0 focus:outline-none text-[10px] font-black text-white uppercase p-0 w-full"
-                        value={displayName}
-                        onChange={(e) => {
-                          const next = { ...customTagNames, [c.value]: e.target.value };
-                          setCustomTagNames(next);
-                          localStorage.setItem('vaw_planner_custom_tags', JSON.stringify(next));
-                        }}
+                        value={newTagColor}
+                        onChange={(e) => setNewTagColor(e.target.value)}
+                        placeholder="#ffffff"
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs font-mono uppercase"
                       />
                     </div>
-                  );
-                })}
+                  </div>
+                </div>
+                <Button
+                  onClick={handleAddColorTag}
+                  className="w-full h-9 bg-primary hover:bg-primary/90 text-black font-bold text-xs uppercase rounded-lg"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Add Color Tag
+                </Button>
               </div>
             </div>
-            <p className="text-[10px] text-white/20 italic text-center">
-              Planner tag legend settings are persistent and synchronized locally.
-            </p>
+          </ScrollArea>
+          <div className="p-6 border-t border-white/5 bg-white/[0.02]">
+            <Button onClick={() => setIsSettingsOpen(false)} className="w-full rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 font-bold uppercase text-xs h-11 text-white">
+              Done
+            </Button>
           </div>
-          <Button onClick={() => setIsSettingsOpen(false)} className="w-full rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 font-bold uppercase text-xs h-11">
-            Done
-          </Button>
         </DialogContent>
       </Dialog>
     </Card>
