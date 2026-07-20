@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQuery, useQueryClient, UseQueryOptions } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
@@ -41,6 +41,14 @@ export function useRealtimeQuery<TData = any>({
     ...queryOptions
 }: UseRealtimeQueryOptions<TData>) {
     const queryClient = useQueryClient();
+
+    // Use a ref to hold the latest queryKey reference to avoid sub recreation loop
+    const queryKeyRef = useRef(queryKey);
+    useEffect(() => {
+        queryKeyRef.current = queryKey;
+    });
+
+    const serializedQueryKey = JSON.stringify(queryKey);
 
     // Fetch function for React Query
     const fetchData = async (): Promise<TData> => {
@@ -116,7 +124,7 @@ export function useRealtimeQuery<TData = any>({
 
         const setupRealtimeSubscription = () => {
             // Create unique channel name based on table and filter
-            const channelName = `realtime-${table}-${JSON.stringify(queryKey)}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+            const channelName = `realtime-${table}-${serializedQueryKey}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
             channel = supabase.channel(channelName);
 
@@ -134,8 +142,8 @@ export function useRealtimeQuery<TData = any>({
                         (window as any).realtimeUpdationCount = ((window as any).realtimeUpdationCount || 0) + 1;
                         console.log(`Realtime updation [${(window as any).realtimeUpdationCount}]`);
                     }
-                    // Invalidate and refetch the query
-                    queryClient.invalidateQueries({ queryKey });
+                    // Invalidate and refetch the query using latest ref
+                    queryClient.invalidateQueries({ queryKey: queryKeyRef.current });
                 }
             );
 
@@ -153,8 +161,8 @@ export function useRealtimeQuery<TData = any>({
                         (window as any).realtimeUpdationCount = ((window as any).realtimeUpdationCount || 0) + 1;
                         console.log(`Realtime updation [${(window as any).realtimeUpdationCount}]`);
                     }
-                    // Invalidate and refetch the query
-                    queryClient.invalidateQueries({ queryKey });
+                    // Invalidate and refetch the query using latest ref
+                    queryClient.invalidateQueries({ queryKey: queryKeyRef.current });
                 }
             );
 
@@ -172,8 +180,8 @@ export function useRealtimeQuery<TData = any>({
                         (window as any).realtimeUpdationCount = ((window as any).realtimeUpdationCount || 0) + 1;
                         console.log(`Realtime updation [${(window as any).realtimeUpdationCount}]`);
                     }
-                    // Invalidate and refetch the query
-                    queryClient.invalidateQueries({ queryKey });
+                    // Invalidate and refetch the query using latest ref
+                    queryClient.invalidateQueries({ queryKey: queryKeyRef.current });
                 }
             );
 
@@ -198,7 +206,7 @@ export function useRealtimeQuery<TData = any>({
                 // Muted verbose unsubscribed logs
             }
         };
-    }, [table, filter, queryKey, queryClient]);
+    }, [table, filter, serializedQueryKey, queryClient]);
 
     return query;
 }
