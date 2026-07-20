@@ -216,7 +216,12 @@ export default function OfficeZenHome({ userId, userProfile, onEnterWorkspace }:
               {personalNotes.map((note, i) => (
                 <div key={i} className="p-2.5 bg-yellow-500/10 border border-yellow-400/20 rounded-xl flex items-start justify-between gap-2 group hover:bg-yellow-500/15 transition-all">
                   <p className="text-yellow-100 text-xs font-semibold leading-relaxed break-words flex-1 pr-1">{note}</p>
-                  <button onClick={() => removeNote(i)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => removeNote(i)}
+                    aria-label="Delete reminder"
+                    title="Delete reminder"
+                    className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-red-500 rounded p-0.5 transition-all shrink-0"
+                  >
                     <Trash2 className="w-3.5 h-3.5 text-zinc-400 hover:text-red-400 transition-colors" />
                   </button>
                 </div>
