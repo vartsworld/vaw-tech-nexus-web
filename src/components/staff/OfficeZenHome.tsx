@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface OfficeZenHomeProps {
   userId: string;
@@ -199,17 +200,36 @@ export default function OfficeZenHome({ userId, userProfile, onEnterWorkspace }:
               <Bookmark className="w-3.5 h-3.5" /> Sticky Reminders
             </h2>
 
-            <div className="flex gap-2">
-              <Input
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addNote()}
-                placeholder="Quick reminder..."
-                className="h-9 text-xs bg-white/5 border-2 border-white/10 text-white placeholder:text-zinc-400 rounded-xl focus-visible:ring-1 focus-visible:ring-cyan-500"
-              />
-              <Button onClick={addNote} size="sm" className="h-9 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-zinc-950 font-bold shadow-md">
-                <Plus className="w-4 h-4" />
-              </Button>
+            <div className="space-y-1.5">
+              <div className="flex gap-2">
+                <Input
+                  id="sticky-reminder-input"
+                  aria-label="New sticky reminder"
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addNote()}
+                  placeholder="Quick reminder..."
+                  maxLength={100}
+                  className="h-9 text-xs bg-white/5 border-2 border-white/10 text-white placeholder:text-zinc-400 rounded-xl focus-visible:ring-1 focus-visible:ring-cyan-500"
+                />
+                <Button
+                  onClick={addNote}
+                  disabled={!newNote.trim() || newNote.length > 100}
+                  aria-label="Add sticky reminder"
+                  size="sm"
+                  className="h-9 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-zinc-950 font-bold shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {newNote.length > 0 && (
+                <div className="flex justify-end text-[10px] text-zinc-400 tracking-wider animate-in fade-in slide-in-from-top-1 duration-200">
+                  <span className={cn(newNote.length >= 80 ? "text-amber-400 font-bold" : "")}>
+                    {newNote.length}/100
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
