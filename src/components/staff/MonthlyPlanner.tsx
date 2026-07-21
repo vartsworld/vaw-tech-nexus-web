@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,6 +75,24 @@ interface MonthlyPlannerProps {
   userProfile: any;
   filterClientId?: string | null;
 }
+
+// Helper to format a Date as YYYY-MM-DD in local time
+const getLocalDateKey = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper to format an ISO string date as YYYY-MM-DD in local time
+const getIsoDateKey = (isoStr: string) => {
+  try {
+    const d = parseISO(isoStr);
+    return getLocalDateKey(d);
+  } catch {
+    return '';
+  }
+};
 
 const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyPlannerProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -614,128 +632,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     );
   };
 
-  const renderDays = () => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return (
-      <div className="grid grid-cols-7 border-b border-white/5 bg-white/[0.02]">
-        {days.map((day, i) => (
-          <div key={i} className="py-3 text-center text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
-            {day}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  const renderCells = () => {
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(monthStart);
-    const startDate = startOfWeek(monthStart);
-    const endDate = endOfWeek(monthEnd);
-
-    const rows = [];
-    let days = [];
-    let day = startDate;
-
-    while (day <= endDate) {
-      for (let i = 0; i < 7; i++) {
-        const currentDay = day;
-        const dayPlans = filteredPlans.filter(p => isSameDay(parseISO(p.date), currentDay));
-        const dayTasks = filteredTasks.filter(t => t.due_date && isSameDay(parseISO(t.due_date), currentDay));
-        const daySubtasks = filteredSubtasks.filter(s => s.due_date && isSameDay(parseISO(s.due_date), currentDay));
-
-        // Combine all items to display
-        const cellItems = [
-          ...dayPlans.map(p => ({ type: 'plan', title: p.title, color: p.color || '#3b82f6', is_completed: p.is_completed })),
-          ...dayTasks.map(t => ({ type: 'task', title: `Task: ${t.title}`, color: '#8b5cf6', is_completed: t.status === 'completed' })),
-          ...daySubtasks.map(s => ({ type: 'subtask', title: `Sub: ${s.title}`, color: '#ec4899', is_completed: s.status === 'completed' }))
-        ];
-
-        const totalItemsCount = cellItems.length;
-
-        days.push(
-          <div
-            key={day.toString()}
-            className={cn(
-              "min-h-[100px] border-r border-b border-white/5 p-2 transition-all hover:bg-white/[0.03] cursor-pointer flex flex-col group",
-              !isSameMonth(currentDay, monthStart) && "bg-white/[0.01] text-white/10",
-              isToday(currentDay) && "bg-primary/5"
-            )}
-            onClick={() => {
-              setSelectedDate(currentDay);
-              setIsDayDetailOpen(true);
-            }}
-          >
-            <div className="flex justify-between items-start mb-2">
-              <span className={cn(
-                "text-xs font-black px-2 py-0.5 rounded-md transition-colors",
-                isToday(currentDay) ? "bg-primary text-black" : "text-white/40 group-hover:text-white"
-              )}>
-                {format(currentDay, 'd')}
-              </span>
-              {totalItemsCount > 0 && !isMobile && (
-                <Badge variant="outline" className="text-[9px] h-4 px-1.5 border-white/10 bg-white/5 text-white/50">
-                  {totalItemsCount}
-                </Badge>
-              )}
-            </div>
-
-            {/* Content Area */}
-            <div className="flex-1 space-y-1 overflow-hidden">
-              {isMobile ? (
-                /* Mobile Dots View */
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {cellItems.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className={cn("w-1.5 h-1.5 rounded-full", item.is_completed && "opacity-40")}
-                      style={{ backgroundColor: item.color }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                /* Desktop Blocks */
-                <>
-                  {cellItems.slice(0, 3).map((item, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        backgroundColor: `${item.color}20`,
-                        borderColor: `${item.color}40`,
-                        color: item.color
-                      }}
-                      className={cn(
-                        "text-[10px] border px-2 py-1 rounded-md truncate font-bold uppercase tracking-tight",
-                        item.is_completed && "line-through opacity-40"
-                      )}
-                      title={item.title}
-                    >
-                      {item.title}
-                    </div>
-                  ))}
-                  {totalItemsCount > 3 && (
-                    <div className="text-[9px] text-white/20 font-black uppercase tracking-widest pl-1 pt-1">
-                      + {totalItemsCount - 3} more
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        );
-        day = addDays(day, 1);
-      }
-      rows.push(
-        <div className="grid grid-cols-7" key={day.toString()}>
-          {days}
-        </div>
-      );
-      days = [];
-    }
-    return <div>{rows}</div>;
-  };
-
-  const getFilteredItems = () => {
+  // Memoize filtered lists based on active filters to avoid array filtering on every render
+  const { filteredPlans, filteredTasks, filteredSubtasks } = useMemo(() => {
     if (selectedClientIds.includes('all')) {
       return {
         filteredPlans: plans,
@@ -744,27 +642,70 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       };
     }
 
-    const filteredPlans = plans.filter(p => {
+    const filteredPlansList = plans.filter(p => {
       if (!p.client_id) return selectedClientIds.includes('common');
       return selectedClientIds.includes(p.client_id);
     });
 
-    const filteredTasks = tasks.filter(t => {
+    const filteredTasksList = tasks.filter(t => {
       if (!t.client_id) return selectedClientIds.includes('common');
       return selectedClientIds.includes(t.client_id);
     });
 
-    const filteredSubtasks = subtasks.filter(s => {
+    const filteredSubtasksList = subtasks.filter(s => {
       const parentTask = s.staff_tasks;
       if (!parentTask) return false;
       if (!parentTask.client_id) return selectedClientIds.includes('common');
       return selectedClientIds.includes(parentTask.client_id);
     });
 
-    return { filteredPlans, filteredTasks, filteredSubtasks };
-  };
+    return {
+      filteredPlans: filteredPlansList,
+      filteredTasks: filteredTasksList,
+      filteredSubtasks: filteredSubtasksList
+    };
+  }, [plans, tasks, subtasks, selectedClientIds]);
 
-  const { filteredPlans, filteredTasks, filteredSubtasks } = getFilteredItems();
+
+  // Precompute grouped items by local date key YYYY-MM-DD for O(1) rendering lookup
+  const { plansByDate, tasksByDate, subtasksByDate } = useMemo(() => {
+    const plansMap: Record<string, MonthlyPlan[]> = {};
+    const tasksMap: Record<string, any[]> = {};
+    const subtasksMap: Record<string, any[]> = {};
+
+    filteredPlans.forEach(p => {
+      if (!p.date) return;
+      const key = getIsoDateKey(p.date);
+      if (key) {
+        if (!plansMap[key]) plansMap[key] = [];
+        plansMap[key].push(p);
+      }
+    });
+
+    filteredTasks.forEach(t => {
+      if (!t.due_date) return;
+      const key = getIsoDateKey(t.due_date);
+      if (key) {
+        if (!tasksMap[key]) tasksMap[key] = [];
+        tasksMap[key].push(t);
+      }
+    });
+
+    filteredSubtasks.forEach(s => {
+      if (!s.due_date) return;
+      const key = getIsoDateKey(s.due_date);
+      if (key) {
+        if (!subtasksMap[key]) subtasksMap[key] = [];
+        subtasksMap[key].push(s);
+      }
+    });
+
+    return {
+      plansByDate: plansMap,
+      tasksByDate: tasksMap,
+      subtasksByDate: subtasksMap,
+    };
+  }, [filteredPlans, filteredTasks, filteredSubtasks]);
 
   // Group plans for the detailed view
   const getGroupedPlans = (datePlans: MonthlyPlan[]) => {
@@ -783,9 +724,10 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     return { common, clientGrouped };
   };
 
-  const selectedDayPlans = selectedDate ? filteredPlans.filter(p => isSameDay(parseISO(p.date), selectedDate)) : [];
-  const selectedDayTasks = selectedDate ? filteredTasks.filter(t => t.due_date && isSameDay(parseISO(t.due_date), selectedDate)) : [];
-  const selectedDaySubtasks = selectedDate ? filteredSubtasks.filter(s => s.due_date && isSameDay(parseISO(s.due_date), selectedDate)) : [];
+  const selectedDateKey = selectedDate ? getLocalDateKey(selectedDate) : '';
+  const selectedDayPlans = selectedDateKey ? plansByDate[selectedDateKey] || [] : [];
+  const selectedDayTasks = selectedDateKey ? tasksByDate[selectedDateKey] || [] : [];
+  const selectedDaySubtasks = selectedDateKey ? subtasksByDate[selectedDateKey] || [] : [];
   const { common: commonPlans, clientGrouped } = getGroupedPlans(selectedDayPlans);
 
   return (
@@ -896,9 +838,10 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
             }}
             components={{
               DayContent: ({ date }) => {
-                const dayPlans = filteredPlans.filter(p => isSameDay(parseISO(p.date), date));
-                const dayTasks = filteredTasks.filter(t => t.due_date && isSameDay(parseISO(t.due_date), date));
-                const daySubtasks = filteredSubtasks.filter(s => s.due_date && isSameDay(parseISO(s.due_date), date));
+                const dateKey = getLocalDateKey(date);
+                const dayPlans = plansByDate[dateKey] || [];
+                const dayTasks = tasksByDate[dateKey] || [];
+                const daySubtasks = subtasksByDate[dateKey] || [];
 
                 const totalCount = dayPlans.length + dayTasks.length + daySubtasks.length;
                 const hasItems = totalCount > 0;
