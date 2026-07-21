@@ -76,6 +76,7 @@ import ActivityPage from "./pages/ActivityPage";
 import DocsPage from "./pages/DocsPage";
 import OperationsPage from "./pages/OperationsPage";
 import ChannelsPage from "./pages/ChannelsPage";
+import SketchItMakeIt from "./pages/SketchItMakeIt";
 
 
 
@@ -194,6 +195,7 @@ const AppContent = () => {
           <Route path="/sales/add-client" element={<AddClient />} />
           <Route path="/portal" element={<Portal />} />
           <Route path="/feedback/:token" element={<ClientFeedback />} />
+          <Route path="/sketchit-makeit" element={<SketchItMakeIt />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
