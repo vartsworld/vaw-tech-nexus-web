@@ -10,7 +10,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
+import { format, differenceInCalendarDays } from "date-fns";
 import { Calendar as CalendarIcon, Loader2, PlaneTakeoff, Plus, ArrowLeft, History, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -43,6 +43,25 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handleStartDateSelect = (date: Date | undefined) => {
+    setStartDate(date);
+    if (date && endDate && date > endDate) {
+      setEndDate(undefined);
+    }
+  };
+
+  const handleEndDateSelect = (date: Date | undefined) => {
+    if (date && startDate && date < startDate) {
+      toast.error("End date cannot be before start date");
+      return;
+    }
+    setEndDate(date);
+  };
+
+  const duration = startDate && endDate
+    ? Math.max(1, differenceInCalendarDays(endDate, startDate) + 1)
+    : 0;
+
   useEffect(() => {
     if (open && userId) {
       fetchRequests();
@@ -71,6 +90,11 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
   const handleSubmit = async () => {
     if (!startDate || !endDate || !leaveType) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (endDate < startDate) {
+      toast.error("End date cannot be before start date");
       return;
     }
 
@@ -215,10 +239,12 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
             <div className="grid gap-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-zinc-300">Start Date</Label>
+                  <Label htmlFor="start-date-trigger" className="text-zinc-300">Start Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
+                        id="start-date-trigger"
+                        aria-label="Select start date"
                         variant={"outline"}
                         className={`w-full justify-start text-left font-normal bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 ${!startDate && "text-muted-foreground"}`}
                       >
@@ -230,7 +256,7 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
                       <Calendar
                         mode="single"
                         selected={startDate}
-                        onSelect={setStartDate}
+                        onSelect={handleStartDateSelect}
                         initialFocus
                         className="bg-zinc-900 text-white"
                       />
@@ -238,10 +264,12 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
                   </Popover>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-zinc-300">End Date</Label>
+                  <Label htmlFor="end-date-trigger" className="text-zinc-300">End Date</Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
+                        id="end-date-trigger"
+                        aria-label="Select end date"
                         variant={"outline"}
                         className={`w-full justify-start text-left font-normal bg-zinc-800/50 border-zinc-700 hover:bg-zinc-800 ${!endDate && "text-muted-foreground"}`}
                       >
@@ -253,7 +281,8 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
                       <Calendar
                         mode="single"
                         selected={endDate}
-                        onSelect={setEndDate}
+                        onSelect={handleEndDateSelect}
+                        disabled={(date) => !!startDate && date < startDate}
                         initialFocus
                         className="bg-zinc-900 text-white"
                       />
@@ -261,6 +290,13 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
                   </Popover>
                 </div>
               </div>
+
+              {startDate && endDate && (
+                <div className="text-xs text-orange-400 font-medium flex items-center gap-1.5 bg-orange-500/10 px-3 py-1.5 rounded-lg border border-orange-500/20 w-fit animate-in fade-in duration-200">
+                  <Clock className="w-3.5 h-3.5 text-orange-500" />
+                  <span>Requested duration: <strong>{duration} {duration === 1 ? 'day' : 'days'}</strong></span>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label className="text-zinc-300">Leave Type</Label>
@@ -279,12 +315,19 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
               </div>
 
               <div className="space-y-2">
-                <Label className="text-zinc-300">Reason (Optional)</Label>
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="leave-reason" className="text-zinc-300">Reason (Optional)</Label>
+                  <span className={`text-[10px] text-zinc-500 ${reason.length >= 240 ? "text-amber-500 font-bold" : ""}`}>
+                    {reason.length}/300
+                  </span>
+                </div>
                 <Textarea
+                  id="leave-reason"
                   placeholder="Provide a brief reason for your leave..."
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  className="bg-zinc-800/50 border-zinc-700 text-white min-h-[100px] resize-none"
+                  maxLength={300}
+                  className="bg-zinc-800/50 border-zinc-700 text-white min-h-[100px] resize-none focus-visible:ring-1 focus-visible:ring-orange-500"
                 />
               </div>
             </div>
