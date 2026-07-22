@@ -171,14 +171,32 @@ export const useStaffData = () => {
           .limit(20);
 
         if (!messagesError && messages) {
-          // Format for ChatMessage interface
-          const formattedMessages = await Promise.all(messages.map(async m => {
-            const { data: sender } = await supabase
+          // BOLT OPTIMIZATION: Avoid N+1 queries on staff_profiles.
+          // Instead of up to 20 individual asynchronous DB hits inside Promise.all(map),
+          // we batch-fetch the profiles of all message senders in a single query.
+          const senderIds = Array.from(new Set(messages.map(m => m.sender_id)));
+          let profileMap: Record<string, { full_name: string; username: string }> = {};
+
+          if (senderIds.length > 0) {
+            const { data: senders, error: sendersError } = await supabase
               .from('staff_profiles')
-              .select('full_name, username')
-              .eq('user_id', m.sender_id)
-              .single();
-              
+              .select('user_id, full_name, username')
+              .in('user_id', senderIds);
+
+            if (!sendersError && senders) {
+              profileMap = senders.reduce((acc, p) => {
+                acc[p.user_id] = {
+                  full_name: p.full_name || 'Staff Member',
+                  username: p.username || 'staff'
+                };
+                return acc;
+              }, {} as Record<string, { full_name: string; username: string }>);
+            }
+          }
+
+          // Format for ChatMessage interface using O(1) in-memory profile lookup
+          const formattedMessages = messages.map(m => {
+            const sender = profileMap[m.sender_id];
             return {
               id: m.id,
               message: m.content,
@@ -189,7 +207,7 @@ export const useStaffData = () => {
                 username: sender.username
               } : undefined
             };
-          }));
+          });
           setChatMessages(formattedMessages);
         }
       }
