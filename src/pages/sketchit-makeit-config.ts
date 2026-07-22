@@ -118,7 +118,7 @@ export const CAMPAIGN_CONFIG: CampaignConfig = {
     filename: "rose.jpeg",
     filepath: "/drawing/rose.jpeg",
   },
-]
+
   ],
   steps: [
     {
