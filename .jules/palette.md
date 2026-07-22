@@ -9,3 +9,7 @@ This journal contains CRITICAL UX and accessibility learnings specific to this a
 ## 2025-07-21 - Restrictive Form Validation & Cognitive Feedback
 **Learning:** Date-range pickers inside overlay modal views (like leave application forms) often lack client-side range boundaries and feedback indicators, permitting invalid submissions (e.g. end-date before start-date). Disabling invalid dates directly on the Calendar calendar picker prevents layout and database state errors. Additionally, calculating and rendering the requested duration in real-time provides immediate validation and cognitive confirmation of the user's intent.
 **Action:** When implementing any dual date-picker forms, always disable invalid date selections reactively and display a computed duration indicator to prevent submitting invalid date ranges and reduce cognitive load.
+
+## 2025-07-22 - Graceful Constraints & Real-time Length Feedback in Quick Note Fields
+**Learning:** Text input areas like "Sticky Reminders" often let users enter unlimited text, causing sudden visual overflow, broken cards, or layout shifts on small dashboards. Implementing a solid HTML `maxLength` constraint alongside an automated character counter that alerts the user visually (e.g., transitions to bold amber when reaching an 80% threshold) keeps the user informed and prevents broken interfaces without intrusive alert screens.
+**Action:** Provide explicit visual indicators and disabled validation buttons alongside max length properties in text field widgets to ensure elegant layout safety.
