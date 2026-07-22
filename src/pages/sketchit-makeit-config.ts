@@ -39,8 +39,8 @@ export interface CampaignConfig {
 }
 
 export const CAMPAIGN_CONFIG: CampaignConfig = {
-  instagramArtFlair: "@artflair",
-  instagramSmartSupermarket: "@smartsupermarket",
+  instagramArtFlair: "@artflairofficial",
+  instagramSmartSupermarket: "@s_mart__supermarket",
   startDate: "23 July, 11:59 PM",
   endDate: "28 July, 11:59 PM",
   submissionDeadline: "28 July midnight (11:59 PM)",
@@ -149,7 +149,7 @@ export const CAMPAIGN_CONFIG: CampaignConfig = {
     {
       number: 6,
       title: "Tag both profiles",
-      description: "Make sure to tag @artflair and @smartsupermarket in your caption or post.",
+      description: "Make sure to tag @artflairofficial and @s_mart__supermarket in your caption or post.",
     },
     {
       number: 7,
@@ -230,7 +230,7 @@ export const CAMPAIGN_CONFIG: CampaignConfig = {
     },
     {
       question: "Is the Bootcamp really free?",
-      answer: "Yes! Every eligible participant who colors, uploads, and tags both @artflair and @smartsupermarket on Instagram receives a fully sponsored 3-Day Art Bootcamp voucher to learn directly from master mentors at Art Flair.",
+      answer: "Yes! Every eligible participant who colors, uploads, and tags both @artflairofficial and @s_mart__supermarket on Instagram receives a fully sponsored 3-Day Art Bootcamp voucher to learn directly from master mentors at Art Flair.",
     },
     {
       question: "When will winners be announced?",
