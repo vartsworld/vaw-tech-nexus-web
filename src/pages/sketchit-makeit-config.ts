@@ -46,42 +46,79 @@ export const CAMPAIGN_CONFIG: CampaignConfig = {
   submissionDeadline: "28 July midnight (11:59 PM)",
   bootcampText: "FREE 3-Day Art Bootcamp",
   drawings: [
-    {
-      id: "cute-dinosaur",
-      title: "Cute Dinosaur",
-      filename: "cute_dinosaur.jpg",
-      filepath: "/drawing/cute_dinosaur.jpg",
-    },
-    {
-      id: "space-rocket",
-      title: "Space Rocket",
-      filename: "space_rocket.jpg",
-      filepath: "/drawing/space_rocket.jpg",
-    },
-    {
-      id: "fairy-tale-castle",
-      title: "Fairy Tale Castle",
-      filename: "fairy_tale_castle.jpg",
-      filepath: "/drawing/fairy_tale_castle.jpg",
-    },
-    {
-      id: "happy-lion",
-      title: "Happy Lion",
-      filename: "happy_lion.jpg",
-      filepath: "/drawing/happy_lion.jpg",
-    },
-    {
-      id: "cute-teddy",
-      title: "Cute Teddy",
-      filename: "cute_teddy.jpg",
-      filepath: "/drawing/cute_teddy.jpg",
-    },
-    {
-      id: "ocean-adventure",
-      title: "Ocean Adventure",
-      filename: "ocean_adventure.jpg",
-      filepath: "/drawing/ocean_adventure.jpg",
-    },
+  {
+    id: "bee",
+    title: "Bee",
+    filename: "bee.jpeg",
+    filepath: "/drawing/bee.jpeg",
+  },
+  {
+    id: "hen",
+    title: "Hen",
+    filename: "hen.jpeg",
+    filepath: "/drawing/hen.jpeg",
+  },
+  {
+    id: "butterfly",
+    title: "Butterfly",
+    filename: "butterfly.jpeg",
+    filepath: "/drawing/butterfly.jpeg",
+  },
+  {
+    id: "cat",
+    title: "Cat",
+    filename: "cat.jpeg",
+    filepath: "/drawing/cat.jpeg",
+  },
+  {
+    id: "dragonfly",
+    title: "Dragonfly",
+    filename: "dragonfly.jpeg",
+    filepath: "/drawing/dragonfly.jpeg",
+  },
+  {
+    id: "dragon-frog",
+    title: "Dragon Frog",
+    filename: "dragonfrog.jpeg",
+    filepath: "/drawing/dragonfrog.jpeg",
+  },
+  {
+    id: "flower",
+    title: "Flower",
+    filename: "flower.jpeg",
+    filepath: "/drawing/flower.jpeg",
+  },
+  {
+    id: "frog",
+    title: "Frog",
+    filename: "frog.jpeg",
+    filepath: "/drawing/frog.jpeg",
+  },
+  {
+    id: "ice-cream",
+    title: "Ice Cream",
+    filename: "icecream.jpeg",
+    filepath: "/drawing/icecream.jpeg",
+  },
+  {
+    id: "mushroom",
+    title: "Mushroom",
+    filename: "mushroom.jpeg",
+    filepath: "/drawing/mushroom.jpeg",
+  },
+  {
+    id: "parrot",
+    title: "Parrot",
+    filename: "parrot.jpeg",
+    filepath: "/drawing/parrot.jpeg",
+  },
+  {
+    id: "rose",
+    title: "Rose",
+    filename: "rose.jpeg",
+    filepath: "/drawing/rose.jpeg",
+  },
+]
   ],
   steps: [
     {
