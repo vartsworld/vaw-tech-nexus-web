@@ -1053,7 +1053,7 @@ const TeamHeadDashboard = () => {
 
       {/* Profile Edit Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-[90vw] max-h-[90vh] w-full rounded-2xl overflow-y-auto sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
             <DialogDescription>Update your profile information</DialogDescription>
@@ -1096,7 +1096,7 @@ const TeamHeadDashboard = () => {
 
       {/* Emoji Password Dialog */}
       <Dialog open={showEmojiDialog} onOpenChange={setShowEmojiDialog}>
-        <DialogContent className="sm:max-w-[500px] max-h-[100vh] overflow-y-auto bg-zinc-950 border-white/10 rounded-2xl">
+        <DialogContent className="max-w-[90vw] max-h-[90vh] w-full overflow-y-auto sm:max-w-[500px] bg-zinc-950 border-white/10 rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase italic tracking-tight text-white">Update Emoji Password</DialogTitle>
             <DialogDescription className="text-white/40 uppercase text-[10px] font-bold tracking-widest">Select 6 emojis for your new high-security passcode</DialogDescription>
@@ -1132,7 +1132,7 @@ const TeamHeadDashboard = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-6 gap-3 p-4 bg-white/5 border border-white/10 rounded-2xl">
+            <div className="grid grid-cols-6 gap-3 max-h-48 overflow-y-auto p-4 bg-white/5 border border-white/10 rounded-2xl">
               {EMOJI_OPTIONS.map((emoji, idx) => (
                 <button
                   key={idx}
@@ -1143,7 +1143,7 @@ const TeamHeadDashboard = () => {
                       addEmojiToPassword(emoji, true);
                     }
                   }}
-                  className="text-2xl hover:bg-white/10 hover:scale-110 active:scale-95 p-2 rounded-xl transition-all duration-200"
+                  className="text-2xl hover:bg-white/10 hover:scale-110 active:scale-95 p-2 rounded-xl transition-all duration-200 flex items-center justify-center h-10 w-10 mx-auto"
                   disabled={newEmojiPassword.length >= 6 && confirmEmojiPassword.length >= 6}
                 >
                   {emoji}

@@ -32,6 +32,9 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { format, isSameDay, parseISO } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
@@ -116,6 +119,9 @@ const StaffMobileHome = ({
   const [plans, setPlans] = useState<any[]>([]);
   const [newPlanTitle, setNewPlanTitle] = useState("");
   const [plansLoading, setPlansLoading] = useState(false);
+  const [clients, setClients] = useState<any[]>([]);
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>(['all']);
+  const [newPlanClientId, setNewPlanClientId] = useState<string>("common");
 
   // Tools sub-view: null | 'leave' | 'notes' | 'chess'
   const [activeTool, setActiveTool] = useState<string | null>(null);
@@ -213,6 +219,12 @@ const StaffMobileHome = ({
         .select('*');
       if (error) throw error;
       setPlans(data || []);
+
+      // Fetch clients
+      const { data: clientsData } = await supabase
+        .from('clients')
+        .select('id, company_name');
+      setClients(clientsData || []);
     } catch (err) {
       console.error('Error fetching plans:', err);
     } finally {
@@ -257,6 +269,27 @@ const StaffMobileHome = ({
     }
   };
 
+  const handleToggleClientFilter = (clientId: string) => {
+    if (clientId === 'all') {
+      setSelectedClientIds(['all']);
+      return;
+    }
+
+    let nextSelected = selectedClientIds.filter(id => id !== 'all');
+
+    if (nextSelected.includes(clientId)) {
+      nextSelected = nextSelected.filter(id => id !== clientId);
+    } else {
+      nextSelected.push(clientId);
+    }
+
+    if (nextSelected.length === 0) {
+      nextSelected = ['all'];
+    }
+
+    setSelectedClientIds(nextSelected);
+  };
+
   // Add a plan
   const handleAddPlan = async () => {
     if (!selectedDate || !newPlanTitle.trim()) return;
@@ -270,7 +303,8 @@ const StaffMobileHome = ({
           created_by: profile?.user_id,
           department_id: profile?.department_id,
           assigned_staff: [],
-          color: '#10b981'
+          color: '#10b981',
+          client_id: newPlanClientId === 'common' ? null : newPlanClientId
         })
         .select()
         .single();
@@ -279,6 +313,7 @@ const StaffMobileHome = ({
 
       setPlans(prev => [...prev, data]);
       setNewPlanTitle("");
+      setNewPlanClientId("common");
       toast.success("Plan added");
     } catch (err) {
       console.error('Error adding plan:', err);
@@ -286,11 +321,37 @@ const StaffMobileHome = ({
     }
   };
 
+  // Filter plans based on selected client filter
+  const filteredPlans = useMemo(() => {
+    return plans.filter(p => {
+      if (selectedClientIds.includes('all')) return true;
+      if (!p.client_id) return selectedClientIds.includes('common');
+      return selectedClientIds.includes(p.client_id);
+    });
+  }, [plans, selectedClientIds]);
+
   // Filter plans for selected date
   const selectedDatePlans = useMemo(() => {
     if (!selectedDate) return [];
-    return plans.filter(p => isSameDay(parseISO(p.date), selectedDate));
-  }, [plans, selectedDate]);
+    return filteredPlans.filter(p => isSameDay(parseISO(p.date), selectedDate));
+  }, [filteredPlans, selectedDate]);
+
+  // Group plans for grouping in UI list
+  const { commonPlans, clientGrouped } = useMemo(() => {
+    const common = selectedDatePlans.filter(p => !p.client_id);
+    const clientGroupedMap: Record<string, { name: string, plans: any[] }> = {};
+
+    selectedDatePlans.filter(p => p.client_id).forEach(p => {
+      const client = clients.find(c => c.id === p.client_id);
+      const name = client?.company_name || 'Unknown Client';
+      if (!clientGroupedMap[p.client_id!]) {
+        clientGroupedMap[p.client_id!] = { name, plans: [] };
+      }
+      clientGroupedMap[p.client_id!].plans.push(p);
+    });
+
+    return { commonPlans: common, clientGrouped: clientGroupedMap };
+  }, [selectedDatePlans, clients]);
 
   // Task filtering
   const [taskFilter, setTaskFilter] = useState<'all' | 'active' | 'overdue' | 'completed'>('all');
@@ -454,7 +515,7 @@ const StaffMobileHome = ({
                   className="p-3 bg-transparent w-full"
                   components={{
                     DayContent: ({ date }) => {
-                      const dayPlans = plans.filter(p => isSameDay(parseISO(p.date), date));
+                      const dayPlans = filteredPlans.filter(p => isSameDay(parseISO(p.date), date));
                       return (
                         <div className="relative flex flex-col items-center justify-center w-full h-full p-1">
                           <span className="text-xs">{date.getDate()}</span>
@@ -481,51 +542,174 @@ const StaffMobileHome = ({
 
               {/* Day's plans */}
               <div className="space-y-4">
-                <div className="border-t border-white/5 pt-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-2">
-                    Plans for {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Selected Date"}
-                  </h3>
+                <div className="border-t border-white/5 pt-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                      Plans for {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Selected Date"}
+                    </h3>
+
+                    {/* Client Filter Popover */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          className="h-8 px-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white flex items-center gap-1 text-[10px] font-black uppercase tracking-wider"
+                        >
+                          <Briefcase className="w-3 h-3 text-blue-400" />
+                          <span>Filter ({selectedClientIds.includes('all') ? 'All' : selectedClientIds.length})</span>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 bg-zinc-950 border border-white/10 rounded-2xl p-3 shadow-2xl space-y-2 z-50">
+                        <h4 className="text-[10px] font-black uppercase tracking-wider text-white/40 px-2 pb-1 border-b border-white/5">
+                          Filter by Client
+                        </h4>
+                        <ScrollArea className="h-48 pr-1">
+                          <div className="space-y-1">
+                            {/* All Option */}
+                            <button
+                              onClick={() => handleToggleClientFilter('all')}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
+                            >
+                              <Checkbox
+                                checked={selectedClientIds.includes('all')}
+                                onCheckedChange={() => handleToggleClientFilter('all')}
+                                className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-black"
+                              />
+                              <span className="text-xs font-bold text-white uppercase">All Clients</span>
+                            </button>
+
+                            {/* Common / No Client Option */}
+                            <button
+                              onClick={() => handleToggleClientFilter('common')}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
+                            >
+                              <Checkbox
+                                checked={selectedClientIds.includes('common')}
+                                onCheckedChange={() => handleToggleClientFilter('common')}
+                                className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-black"
+                              />
+                              <span className="text-xs font-bold text-white/70 uppercase">Common (No Client)</span>
+                            </button>
+
+                            {/* Client Options */}
+                            {clients.map(client => (
+                              <button
+                                key={client.id}
+                                onClick={() => handleToggleClientFilter(client.id)}
+                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
+                              >
+                                <Checkbox
+                                  checked={selectedClientIds.includes(client.id)}
+                                  onCheckedChange={() => handleToggleClientFilter(client.id)}
+                                  className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-black"
+                                />
+                                <span className="text-xs font-medium text-white/90 truncate">{client.company_name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
 
                   {plansLoading ? (
                     <div className="h-10 bg-zinc-900 rounded-xl animate-pulse" />
                   ) : selectedDatePlans.length === 0 ? (
                     <p className="text-xs text-zinc-500 py-3 text-center">No plans scheduled for this day.</p>
                   ) : (
-                    <div className="space-y-2">
-                      {selectedDatePlans.map(plan => (
-                        <div
-                          key={plan.id}
-                          style={{
-                            borderLeft: `4px solid ${plan.color || '#10b981'}`,
-                            backgroundColor: `${plan.color || '#10b981'}15`
-                          }}
-                          className="flex items-center justify-between p-3.5 rounded-xl border-r border-t border-b border-white/5 transition-all"
-                        >
-                          <div className="flex-1 min-w-0 pr-3">
-                            <h4
-                              className={cn(
-                                "text-sm font-bold text-white",
-                                plan.is_completed && "line-through text-zinc-600"
-                              )}
-                              style={plan.is_completed ? {} : { color: plan.color || '#ffffff' }}
-                            >
-                              {plan.title}
-                            </h4>
-                            {plan.description && (
-                              <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{plan.description}</p>
-                            )}
+                    <div className="space-y-4">
+                      {/* Common Plans Section */}
+                      {commonPlans.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 px-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            Common Plans
+                          </h4>
+                          <div className="space-y-2">
+                            {commonPlans.map(plan => (
+                              <div
+                                key={plan.id}
+                                style={{
+                                  borderLeft: `4px solid ${plan.color || '#10b981'}`,
+                                  backgroundColor: `${plan.color || '#10b981'}15`
+                                }}
+                                className="flex items-center justify-between p-3.5 rounded-xl border-r border-t border-b border-white/5 transition-all"
+                              >
+                                <div className="flex-1 min-w-0 pr-3">
+                                  <h4
+                                    className={cn(
+                                      "text-sm font-bold text-white",
+                                      plan.is_completed && "line-through text-zinc-600"
+                                    )}
+                                    style={plan.is_completed ? {} : { color: plan.color || '#ffffff' }}
+                                  >
+                                    {plan.title}
+                                  </h4>
+                                  {plan.description && (
+                                    <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{plan.description}</p>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => handleTogglePlanCompletion(plan.id, plan.is_completed)}
+                                  className={cn(
+                                    "w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0",
+                                    plan.is_completed
+                                      ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                                      : "border-white/10 text-zinc-500 hover:border-white/20"
+                                  )}
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
                           </div>
-                          <button
-                            onClick={() => handleTogglePlanCompletion(plan.id, plan.is_completed)}
-                            className={cn(
-                              "w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0",
-                              plan.is_completed
-                                ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
-                                : "border-white/10 text-zinc-500 hover:border-white/20"
-                            )}
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                          </button>
+                        </div>
+                      )}
+
+                      {/* Client-specific Groups */}
+                      {Object.entries(clientGrouped).map(([clientId, group]) => (
+                        <div key={clientId} className="space-y-2">
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 px-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                            {group.name}
+                          </h4>
+                          <div className="space-y-2">
+                            {group.plans.map(plan => (
+                              <div
+                                key={plan.id}
+                                style={{
+                                  borderLeft: `4px solid ${plan.color || '#10b981'}`,
+                                  backgroundColor: `${plan.color || '#10b981'}15`
+                                }}
+                                className="flex items-center justify-between p-3.5 rounded-xl border-r border-t border-b border-white/5 transition-all"
+                              >
+                                <div className="flex-1 min-w-0 pr-3">
+                                  <h4
+                                    className={cn(
+                                      "text-sm font-bold text-white",
+                                      plan.is_completed && "line-through text-zinc-600"
+                                    )}
+                                    style={plan.is_completed ? {} : { color: plan.color || '#ffffff' }}
+                                  >
+                                    {plan.title}
+                                  </h4>
+                                  {plan.description && (
+                                    <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{plan.description}</p>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => handleTogglePlanCompletion(plan.id, plan.is_completed)}
+                                  className={cn(
+                                    "w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0",
+                                    plan.is_completed
+                                      ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                                      : "border-white/10 text-zinc-500 hover:border-white/20"
+                                  )}
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -533,20 +717,35 @@ const StaffMobileHome = ({
                 </div>
 
                 {/* Inline Quick Add Plan */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newPlanTitle}
-                    onChange={e => setNewPlanTitle(e.target.value)}
-                    placeholder="Enter short plan..."
-                    className="flex-1 bg-zinc-900 border border-white/5 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-emerald-500"
-                  />
-                  <button
-                    onClick={handleAddPlan}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-black px-4 rounded-xl text-xs font-black uppercase flex items-center gap-1"
-                  >
-                    <Plus className="w-4 h-4" /> Add
-                  </button>
+                <div className="flex flex-col gap-2 bg-white/[0.02] border border-white/5 rounded-2xl p-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newPlanTitle}
+                      onChange={e => setNewPlanTitle(e.target.value)}
+                      placeholder="Enter short plan..."
+                      className="flex-1 bg-zinc-900 border border-white/5 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-emerald-500"
+                    />
+                    <button
+                      onClick={handleAddPlan}
+                      className="bg-emerald-500 hover:bg-emerald-600 text-black px-4 rounded-xl text-xs font-black uppercase flex items-center gap-1 shrink-0"
+                    >
+                      <Plus className="w-4 h-4" /> Add
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 justify-between">
+                    <span className="text-[10px] uppercase font-black tracking-widest text-white/40">Associate with Client:</span>
+                    <select
+                      value={newPlanClientId}
+                      onChange={e => setNewPlanClientId(e.target.value)}
+                      className="bg-zinc-900 border border-white/5 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 min-w-[150px] max-w-[200px]"
+                    >
+                      <option value="common">Common (No Client)</option>
+                      {clients.map(c => (
+                        <option key={c.id} value={c.id}>{c.company_name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </motion.div>
