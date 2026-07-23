@@ -13,3 +13,7 @@ This journal contains CRITICAL UX and accessibility learnings specific to this a
 ## 2025-07-22 - Graceful Constraints & Real-time Length Feedback in Quick Note Fields
 **Learning:** Text input areas like "Sticky Reminders" often let users enter unlimited text, causing sudden visual overflow, broken cards, or layout shifts on small dashboards. Implementing a solid HTML `maxLength` constraint alongside an automated character counter that alerts the user visually (e.g., transitions to bold amber when reaching an 80% threshold) keeps the user informed and prevents broken interfaces without intrusive alert screens.
 **Action:** Provide explicit visual indicators and disabled validation buttons alongside max length properties in text field widgets to ensure elegant layout safety.
+
+## 2025-07-23 - Interactive Controls without Text Representation
+**Learning:** Icon-only interactive control elements (e.g. view switchers, stage transition buttons, detail actions) lack clear textual representations for screen readers. Using Lucide SVG components instead of raw text characters (like plain arrows `←`/`→`) provides consistent and polished visuals, but leaves screen readers completely in the dark without explicit `aria-label` or `title` properties.
+**Action:** Always wrap raw-text arrows in modern SVG icon components, and systematically declare `aria-label` and `title` attributes on all icon-only control buttons to satisfy screen reader navigation and accessibility guidelines.

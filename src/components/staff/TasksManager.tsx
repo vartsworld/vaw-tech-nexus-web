@@ -17,6 +17,7 @@ import {
   LayoutGrid,
   List,
   LayoutDashboard,
+  ArrowLeft,
   ArrowRight,
   HandMetal,
   Layers,
@@ -341,6 +342,7 @@ const TasksManager = ({
               className={`h-8 w-8 p-0 ${viewMode === 'card' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
               onClick={() => setViewMode('card')}
               title="Card View"
+              aria-label="Switch to Card view"
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -350,6 +352,7 @@ const TasksManager = ({
               className={`h-8 w-8 p-0 ${viewMode === 'table' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
               onClick={() => setViewMode('table')}
               title="Table View"
+              aria-label="Switch to Table view"
             >
               <List className="h-4 w-4" />
             </Button>
@@ -359,6 +362,7 @@ const TasksManager = ({
               className={`h-8 w-8 p-0 ${viewMode === 'kanban' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
               onClick={() => setViewMode('kanban')}
               title="Kanban View"
+              aria-label="Switch to Kanban view"
             >
               <LayoutDashboard className="h-4 w-4" />
             </Button>
@@ -496,6 +500,8 @@ const TasksManager = ({
                             e.stopPropagation();
                             setSelectedTask(task);
                           }}
+                          title="View task details"
+                          aria-label="View task details"
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -552,8 +558,9 @@ const TasksManager = ({
                                     updateTaskStatus(task.id, prevStatus as any);
                                   }}
                                   title="Move Left"
+                                  aria-label="Move task to previous stage"
                                 >
-                                  ←
+                                  <ArrowLeft className="h-3 w-3 text-white/70 hover:text-white" />
                                 </Button>
                               )}
                               {column.id !== 'completed' && (
@@ -567,8 +574,9 @@ const TasksManager = ({
                                     updateTaskStatus(task.id, nextStatus as any);
                                   }}
                                   title="Move Right"
+                                  aria-label="Move task to next stage"
                                 >
-                                  →
+                                  <ArrowRight className="h-3 w-3 text-white/70 hover:text-white" />
                                 </Button>
                               )}
                             </div>
