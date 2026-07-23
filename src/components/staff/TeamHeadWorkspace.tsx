@@ -509,50 +509,70 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         attachments: task.attachments ? (task.attachments as any) : []
       }));
 
-      // Enrich each task with subtask stage summary (lightweight parallel fetch)
-      const enrichedTasks = await Promise.all(
-        tasksWithAttachments.map(async (task) => {
-          try {
-            const { data: subs } = await supabase
-              .from('staff_subtasks')
-              .select('stage, status, title')
-              .eq('task_id', task.id);
-            if (!subs || subs.length === 0) return { ...task, _stageInfo: null };
+      // BOLT OPTIMIZATION: Avoid N+1 queries on staff_subtasks.
+      // Instead of querying subtasks for each task in parallel inside Promise.all (causing up to N database roundtrips),
+      // we batch-fetch the subtasks for all fetched tasks in a single query using the `.in()` filter.
+      let subtasksMap: Record<string, any[]> = {};
+      const taskIds = tasksWithAttachments.map(t => t.id).filter(Boolean);
 
-            const stageMap: Record<number, { total: number; completed: number; titles: string[] }> = {};
-            subs.forEach((s: any) => {
-              const stg = s.stage || 1;
-              if (!stageMap[stg]) stageMap[stg] = { total: 0, completed: 0, titles: [] };
-              stageMap[stg].total++;
-              stageMap[stg].titles.push(s.title);
-              if (s.status === 'completed') stageMap[stg].completed++;
-            });
+      if (taskIds.length > 0) {
+        try {
+          const { data: allSubs, error: subsFetchError } = await supabase
+            .from('staff_subtasks')
+            .select('task_id, stage, status, title')
+            .in('task_id', taskIds);
 
-            const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
-            const totalStages = stageNums.length;
-            const completedStages = stageNums.filter(s => stageMap[s].completed === stageMap[s].total).length;
-            // Current stage = first stage with incomplete subtasks, or last+1 if all done
-            const currentStage = task.current_stage || stageNums.find(s => stageMap[s].completed < stageMap[s].total) || (stageNums[stageNums.length - 1] + 1);
-            // Stage title = first subtask title in the current stage
-            const currentStageTitles = stageMap[currentStage]?.titles || [];
-            const stageTitle = currentStageTitles.length > 0 ? currentStageTitles[0] : null;
-
-            return {
-              ...task,
-              current_stage: currentStage,
-              _stageInfo: {
-                totalStages,
-                completedStages,
-                stageTitle,
-                stageNums,
-                stageMap
-              }
-            };
-          } catch {
-            return { ...task, _stageInfo: null };
+          if (!subsFetchError && allSubs) {
+            subtasksMap = allSubs.reduce((acc, s) => {
+              if (!acc[s.task_id]) acc[s.task_id] = [];
+              acc[s.task_id].push(s);
+              return acc;
+            }, {} as Record<string, any[]>);
           }
-        })
-      );
+        } catch (err) {
+          console.error('Error batch fetching subtasks:', err);
+        }
+      }
+
+      // Enrich each task with subtask stage summary using O(1) local hash map lookup
+      const enrichedTasks = tasksWithAttachments.map((task) => {
+        try {
+          const subs = subtasksMap[task.id];
+          if (!subs || subs.length === 0) return { ...task, _stageInfo: null };
+
+          const stageMap: Record<number, { total: number; completed: number; titles: string[] }> = {};
+          subs.forEach((s: any) => {
+            const stg = s.stage || 1;
+            if (!stageMap[stg]) stageMap[stg] = { total: 0, completed: 0, titles: [] };
+            stageMap[stg].total++;
+            stageMap[stg].titles.push(s.title);
+            if (s.status === 'completed') stageMap[stg].completed++;
+          });
+
+          const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
+          const totalStages = stageNums.length;
+          const completedStages = stageNums.filter(s => stageMap[s].completed === stageMap[s].total).length;
+          // Current stage = first stage with incomplete subtasks, or last+1 if all done
+          const currentStage = task.current_stage || stageNums.find(s => stageMap[s].completed < stageMap[s].total) || (stageNums[stageNums.length - 1] + 1);
+          // Stage title = first subtask title in the current stage
+          const currentStageTitles = stageMap[currentStage]?.titles || [];
+          const stageTitle = currentStageTitles.length > 0 ? currentStageTitles[0] : null;
+
+          return {
+            ...task,
+            current_stage: currentStage,
+            _stageInfo: {
+              totalStages,
+              completedStages,
+              stageTitle,
+              stageNums,
+              stageMap
+            }
+          };
+        } catch {
+          return { ...task, _stageInfo: null };
+        }
+      });
 
       setTasks(enrichedTasks as Task[]);
 
