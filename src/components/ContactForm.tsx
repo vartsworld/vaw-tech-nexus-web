@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface FormData {
@@ -207,16 +207,29 @@ const ContactForm = () => {
           onChange={handleChange}
           placeholder="Tell us about your project or inquiry..."
           required
+          maxLength={1000}
           className="bg-muted/20 border-muted h-32"
         />
+        <div className="flex justify-end text-xs text-muted-foreground">
+          <span className={formData.message.length >= 800 ? "text-amber-500 font-bold" : ""}>
+            {formData.message.length}/1000 characters
+          </span>
+        </div>
       </div>
       
       <Button
         type="submit"
-        className="bg-primary hover:bg-primary/80 text-primary-foreground w-full"
+        className="bg-primary hover:bg-primary/80 text-primary-foreground w-full flex items-center justify-center"
         disabled={isSubmitting}
       >
-        {isSubmitting ? "Sending..." : "Send Message"}
+        {isSubmitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Sending...
+          </>
+        ) : (
+          "Send Message"
+        )}
       </Button>
     </form>
   );
