@@ -67,7 +67,23 @@ export default function OfficeZenHome({ userId, userProfile, onEnterWorkspace }:
   const fetchData = async () => {
     if (!userId) return;
     try {
-      const { data: tasks } = await supabase.from("staff_tasks").select("*, staff_subtasks(*)").order("created_at", { ascending: false });
+      // BOLT OPTIMIZATION: Retrieve only the user's assigned subtasks first to collect parent task IDs.
+      // This allows targeted SQL querying instead of loading the entire company's task database.
+      const { data: userSubtasks } = await supabase
+        .from("staff_subtasks")
+        .select("task_id")
+        .eq("assigned_to", userId);
+      const userTaskIdsFromSubtasks = Array.from(new Set((userSubtasks || []).map(s => s.task_id).filter(Boolean)));
+
+      let query = supabase.from("staff_tasks").select("*, staff_subtasks(*)");
+      if (userTaskIdsFromSubtasks.length > 0) {
+        query = query.or(`assigned_to.eq.${userId},assigned_to.ilike.%${userId}%,assigned_by.eq.${userId},id.in.(${userTaskIdsFromSubtasks.join(',')})`);
+      } else {
+        query = query.or(`assigned_to.eq.${userId},assigned_to.ilike.%${userId}%,assigned_by.eq.${userId}`);
+      }
+
+      const { data: tasks } = await query.order("created_at", { ascending: false });
+
       if (tasks) {
         const mine = tasks.filter((t: any) => {
           let assigned = false;
