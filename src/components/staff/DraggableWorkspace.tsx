@@ -256,67 +256,6 @@ const DraggableWorkspace = ({ userId, userProfile, onWidgetControlsChange }: Dra
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      {/* Widget Controls - Collapsible on mobile - Only shown if not handled by header */}
-      {!onWidgetControlsChange && (
-        <Card className="bg-black/10 backdrop-blur-lg border-white/10">
-          <button
-            className="w-full flex items-center justify-between p-3 sm:p-4 sm:cursor-default"
-            onClick={() => isMobile && setShowControls(!showControls)}
-          >
-            <span className="text-sm font-medium text-foreground/80">Widget Controls</span>
-            {isMobile && (
-              showControls
-                ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                : <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            )}
-          </button>
-
-          {(showControls || !isMobile) && (
-            <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-0">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
-                <Select value={selectedWidget} onValueChange={setSelectedWidget}>
-                  <SelectTrigger className="w-full sm:w-48 bg-black/20 border-white/20 text-foreground">
-                    <SelectValue placeholder="Add a widget..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background/95 backdrop-blur-lg border-border">
-                    {getAvailableWidgets().map((widget) => (
-                      <SelectItem
-                        key={widget.component}
-                        value={widget.component}
-                      >
-                        {widget.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={addWidget}
-                    disabled={!selectedWidget}
-                    className="flex-1 sm:flex-none bg-primary/20 hover:bg-primary/30 text-foreground border-primary/30"
-                    size="sm"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Widget
-                  </Button>
-                  <WidgetManager
-                    widgets={items.map(item => ({
-                      id: item.id,
-                      name: item.title,
-                      description: `${item.component} widget`,
-                      isVisible: item.isVisible ?? true,
-                    }))}
-                    onToggleWidget={toggleWidgetVisibility}
-                    onShowAll={showAllWidgets}
-                    onHideAll={hideAllWidgets}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </Card>
-      )}
-
       <DragDropContext onDragEnd={onDragEnd}>
         <StrictModeDroppable droppableId="workspace">
           {(provided) => (
@@ -343,35 +282,37 @@ const DraggableWorkspace = ({ userId, userProfile, onWidgetControlsChange }: Dra
                           : 'h-[350px] sm:h-[500px]'
                       }`}>
                         {/* Controls - always visible on mobile, hover on desktop */}
-                        <div className={`absolute top-2 right-2 flex gap-1 z-10 transition-opacity duration-200 ${
-                          isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                        }`}>
-                          <Button
-                            onClick={() => toggleWidgetVisibility(item.id)}
-                            className="p-1 h-6 w-6 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 hover:text-blue-300 border-blue-500/30"
-                            size="sm"
-                            title={item.isVisible ? 'Hide widget' : 'Show widget'}
-                          >
-                            {item.isVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                          </Button>
-                          {item.removable && (
+                        {item.component !== 'TasksManager' && (
+                          <div className={`absolute top-2 right-2 flex gap-1 z-10 transition-opacity duration-200 ${
+                            isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                          }`}>
                             <Button
-                              onClick={() => removeWidget(item.id)}
-                              className="p-1 h-6 w-6 bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 border-red-500/30"
+                              onClick={() => toggleWidgetVisibility(item.id)}
+                              className="p-1 h-6 w-6 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 hover:text-blue-300 border-blue-500/30"
                               size="sm"
+                              title={item.isVisible ? 'Hide widget' : 'Show widget'}
                             >
-                              <X className="w-3 h-3" />
+                              {item.isVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                             </Button>
-                          )}
-                          {!isMobile && (
-                            <div
-                              {...provided.dragHandleProps}
-                              className="p-1 h-6 w-6 cursor-grab active:cursor-grabbing bg-white/10 hover:bg-white/20 rounded flex items-center justify-center"
-                            >
-                              <GripVertical className="w-3 h-3 text-white/60 hover:text-white/80" />
-                            </div>
-                          )}
-                        </div>
+                            {item.removable && (
+                              <Button
+                                onClick={() => removeWidget(item.id)}
+                                className="p-1 h-6 w-6 bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 border-red-500/30"
+                                size="sm"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                            {!isMobile && (
+                              <div
+                                {...provided.dragHandleProps}
+                                className="p-1 h-6 w-6 cursor-grab active:cursor-grabbing bg-white/10 hover:bg-white/20 rounded flex items-center justify-center"
+                              >
+                                <GripVertical className="w-3 h-3 text-white/60 hover:text-white/80" />
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {/* Drag handle for mobile - hidden since drag doesn't work well on touch */}
                         {isMobile && (

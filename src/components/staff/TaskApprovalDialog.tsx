@@ -372,7 +372,7 @@ export const TaskApprovalDialog = ({
             <div>
               <h3 className="text-xl font-semibold mb-2">{task.title}</h3>
               {task.description && (
-                <p className="text-white/70">{task.description}</p>
+                <p className="text-white/70 whitespace-pre-wrap break-words">{task.description}</p>
               )}
             </div>
 

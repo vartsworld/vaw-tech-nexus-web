@@ -136,6 +136,7 @@ const TeamHeadMobileHome = ({
   onEditProfile,
   onUpdateEmojiPassword,
   onManageBiometrics,
+  onOpenStreakCalendar,
 }: TeamHeadMobileHomeProps) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<MobileTab>('home');
