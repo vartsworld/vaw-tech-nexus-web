@@ -73,16 +73,16 @@ export default function EnrollDialog({ open, onOpenChange, courseTitle, courseFe
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="full_name">Full Name *</Label>
+            <Label htmlFor="full_name">Full Name <span className="text-red-500">*</span></Label>
             <Input id="full_name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
               <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone *</Label>
+              <Label htmlFor="phone">Phone <span className="text-red-500">*</span></Label>
               <Input id="phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
             </div>
           </div>

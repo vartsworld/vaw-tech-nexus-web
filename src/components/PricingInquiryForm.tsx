@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, Mail } from "lucide-react";
+import { Phone, Mail, Loader2 } from "lucide-react";
 interface PricingInquiryFormProps {
   packageName: string;
   packagePrice: number;
@@ -154,19 +154,19 @@ const PricingInquiryForm = ({
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name *</Label>
+              <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>
               <Input id="name" placeholder="John Doe" value={formData.name} onChange={e => handleInputChange("name", e.target.value)} required />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="email">Email Address *</Label>
+              <Label htmlFor="email">Email Address <span className="text-red-500">*</span></Label>
               <Input id="email" type="email" placeholder="john@example.com" value={formData.email} onChange={e => handleInputChange("email", e.target.value)} required />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number *</Label>
+              <Label htmlFor="phone">Phone Number <span className="text-red-500">*</span></Label>
               <Input id="phone" type="tel" placeholder="+91 9876543210" value={formData.phone} onChange={e => handleInputChange("phone", e.target.value)} required />
             </div>
             
@@ -177,12 +177,12 @@ const PricingInquiryForm = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="domain">Preferred Domain Name *</Label>
+            <Label htmlFor="domain">Preferred Domain Name <span className="text-red-500">*</span></Label>
             <Input id="domain" placeholder="www.yourwebsite.com" value={formData.preferredDomain} onChange={e => handleInputChange("preferredDomain", e.target.value)} required />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="websiteType">Website Type *</Label>
+            <Label htmlFor="websiteType">Website Type <span className="text-red-500">*</span></Label>
             <Select onValueChange={value => handleInputChange("websiteType", value)} required>
               <SelectTrigger>
                 <SelectValue placeholder="Select website type" />
@@ -199,7 +199,7 @@ const PricingInquiryForm = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="requirements">Website Requirements *</Label>
+            <Label htmlFor="requirements">Website Requirements <span className="text-red-500">*</span></Label>
             <Textarea id="requirements" placeholder="Describe your website needs, features, design preferences, target audience, etc." value={formData.requirements} onChange={e => handleInputChange("requirements", e.target.value)} rows={4} required />
           </div>
 
@@ -230,7 +230,14 @@ const PricingInquiryForm = ({
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting} className="flex-1">
-              {isSubmitting ? "Submitting..." : "Submit Inquiry"}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit Inquiry"
+              )}
             </Button>
           </div>
         </form>
