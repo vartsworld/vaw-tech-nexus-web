@@ -588,7 +588,7 @@ const StaffDashboard = () => {
         onEnterWorkspace={() => handleRoomChange('workspace')}
       />
     ),
-    workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} onWidgetControlsChange={setWorkspaceControls} />,
+    workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} />,
     meeting: <MeetingRoom />,
     planner: <MonthlyPlanner userId={profile.user_id} userProfile={profile} />,
     breakroom: null,
@@ -876,11 +876,6 @@ const StaffDashboard = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              {currentRoom === 'workspace' && workspaceControls && (
-                <div className="mr-2">
-                  {workspaceControls}
-                </div>
-              )}
               {/* Desktop Only Coins Display in Header (Disabled - Coming Soon) */}
               <div
                 className="hidden md:flex items-center gap-1.5 bg-amber-500/5 border border-amber-500/10 px-3 py-1.5 rounded-full text-amber-500/60 font-bold text-xs select-none"

@@ -503,7 +503,7 @@ export const CompletedTasksDialog = ({
                               </Badge>
                             </div>
                             {task.description && (
-                              <p className="text-white/50 text-xs mt-2 line-clamp-2 leading-relaxed">
+                              <p className="text-white/50 text-xs mt-2 line-clamp-2 leading-relaxed whitespace-pre-wrap break-words">
                                 {task.description}
                               </p>
                             )}

@@ -102,6 +102,12 @@ const fadeUp = {
 
 const StaffMobileHome = ({
   profile,
+  currentRoom,
+  onRoomChange,
+  onOpenChat,
+  onOpenCoins,
+  onOpenStreakCalendar,
+  onEnterWorkspace,
   onEditProfile,
   onUpdateEmojiPassword,
   onManageBiometrics,
