@@ -151,9 +151,7 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
 
       toast({
         title: "Mood Submitted!",
-        description: moodEnabled
-          ? `Thanks for sharing! You earned ${moodPoints} coins.`
-          : "Mood recorded. Points are currently disabled by HR.",
+        description: "Thanks for sharing how you feel today!",
       });
 
       onMoodSubmitted();

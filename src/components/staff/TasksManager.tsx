@@ -213,12 +213,12 @@ const TasksManager = ({
 
           toast({
             title: rewardPoints > task.points ? "Task Completed Early! 🚀" : rewardPoints < task.points ? "Task Completed Late" : "Task Completed! 🎉",
-            description: `You earned ${rewardPoints} coins for completing "${task.title}"${bonusReason}`
+            description: `Great work on completing "${task.title}"!`
           });
         } else if (task?.trial_period) {
           toast({
             title: "Task Completed! 🎉",
-            description: `Trial task "${task.title}" completed! (No coins for trial period)`
+            description: `Trial task "${task.title}" completed!`
           });
         }
       }

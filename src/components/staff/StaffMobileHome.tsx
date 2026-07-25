@@ -56,6 +56,7 @@ interface StaffMobileHomeProps {
   onRoomChange: (room: RoomType) => void;
   onOpenChat?: () => void;
   onOpenCoins?: () => void;
+  onOpenStreakCalendar?: () => void;
   onEnterWorkspace: () => void;
   onEditProfile?: () => void;
   onUpdateEmojiPassword?: () => void;
@@ -410,17 +411,20 @@ const StaffMobileHome = ({
               {/* Status Counters */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/20">
-                    <Coins className="w-5 h-5 text-emerald-400 animate-pulse" />
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                    <Coins className="w-5 h-5 text-emerald-500/50 animate-pulse" />
                   </div>
                   <div>
                     <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Coins</p>
-                    <p className="text-base font-extrabold text-white">{coinsBalance.toLocaleString()}</p>
+                    <p className="text-xs font-bold text-amber-500/50 uppercase leading-none mt-1">Coming Soon</p>
                   </div>
                 </div>
-                <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center border border-amber-500/20">
-                    <Flame className="w-5 h-5 text-amber-400" />
+                <div
+                  onClick={onOpenStreakCalendar}
+                  className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl cursor-pointer active:scale-95 transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center border border-orange-500/20">
+                    <Flame className="w-5 h-5 text-orange-400 animate-pulse" />
                   </div>
                   <div>
                     <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Streak</p>
@@ -928,6 +932,31 @@ const StaffMobileHome = ({
                 <h3 className="text-lg font-bold text-white">{profile?.full_name || "Staff Member"}</h3>
                 <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider mt-1">{profile?.role} Role</p>
                 <p className="text-xs text-white/40 mt-0.5">{profile?.email}</p>
+              </div>
+
+              {/* Coins & Streak Display in Mobile Profile */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                    <Coins className="w-5 h-5 text-amber-500/60" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Coins</p>
+                    <p className="text-xs font-bold text-amber-500/60 uppercase">Coming Soon</p>
+                  </div>
+                </div>
+                <div
+                  onClick={onOpenStreakCalendar}
+                  className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl cursor-pointer active:scale-95 transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center border border-orange-500/20">
+                    <Flame className="w-5 h-5 text-orange-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Streak</p>
+                    <p className="text-base font-extrabold text-white">{streak} Days</p>
+                  </div>
+                </div>
               </div>
 
               {/* Settings actions list */}

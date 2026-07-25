@@ -178,6 +178,86 @@ const MeetingRoom = () => {
   const [invitedStaff, setInvitedStaff] = useState<string[]>([]);
   const [staffSearchQuery, setStaffSearchQuery] = useState("");
   const [allStaff, setAllStaff] = useState<any[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingInviteId, setEditingInviteId] = useState<string | null>(null);
+
+  const handleOpenEdit = (invite: any) => {
+    let meta: any = {};
+    try {
+      meta = typeof invite.content === 'string' ? JSON.parse(invite.content) : invite.content;
+    } catch (e) {
+      meta = { title: invite.content, type: 'inbuilt' };
+    }
+
+    setEditingInviteId(invite.id);
+    setNewMeetingTitle(meta.title || "");
+    setMeetingType(meta.type || 'inbuilt');
+    setGoogleMeetLink(meta.googleMeetLink || "");
+    setInvitedStaff(invite.target_users || []);
+    setIsEditing(true);
+  };
+
+  const handleDeleteInvite = async (inviteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('staff_notifications')
+        .delete()
+        .eq('id', inviteId);
+      if (error) throw error;
+      toast.success("Meeting deleted successfully!");
+      fetchMeetingInvites();
+    } catch (e) {
+      console.error("Error deleting meeting invite:", e);
+      toast.error("Failed to delete meeting.");
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!newMeetingTitle.trim()) {
+      toast.error("Please enter a Meeting Title");
+      return;
+    }
+    if (meetingType === 'google_meet' && !googleMeetLink.trim()) {
+      toast.error("Please enter a Google Meet Link");
+      return;
+    }
+
+    try {
+      const metadata = {
+        type: meetingType,
+        roomId: meetingType === 'inbuilt' ? (editingInviteId || Math.random().toString(36).substring(2, 9)) : null,
+        googleMeetLink: meetingType === 'google_meet' ? googleMeetLink.trim() : null,
+        title: newMeetingTitle,
+        hostName: profile?.full_name || "A Team Member",
+        hostAvatar: profile?.profile_photo_url || profile?.avatar_url || "",
+        expires_at: new Date(Date.now() + 12 * 3600000).toISOString()
+      };
+
+      const { error } = await supabase
+        .from('staff_notifications')
+        .update({
+          content: JSON.stringify(metadata),
+          target_users: invitedStaff,
+          target_type: invitedStaff.length > 0 ? 'specific' : 'all',
+        })
+        .eq('id', editingInviteId);
+
+      if (error) throw error;
+      toast.success("Meeting updated successfully!");
+      setIsEditing(false);
+      setEditingInviteId(null);
+
+      // Reset fields
+      setNewMeetingTitle("");
+      setGoogleMeetLink("");
+      setInvitedStaff([]);
+
+      fetchMeetingInvites();
+    } catch (e) {
+      console.error("Error editing meeting invite:", e);
+      toast.error("Failed to update meeting.");
+    }
+  };
 
   useEffect(() => {
     const fetchAllStaff = async () => {
@@ -211,14 +291,16 @@ const MeetingRoom = () => {
 
       if (error) throw error;
 
-      // Filter locally: show if current user is the host OR is one of the invited target users
+      // Filter locally: show if current user is the host OR is one of the invited target users OR if anyone is invited (broadcast)
       const filtered = (data || []).filter(n => {
         try {
           const isHost = n.created_by === profile.user_id;
-          const isInvited = n.target_users?.includes(profile.user_id);
+          const isInvited = !n.target_users || n.target_users.length === 0 || n.target_users?.includes(profile.user_id);
           return isHost || isInvited;
         } catch (e) {
-          return n.target_users?.includes(profile.user_id) || n.created_by === profile.user_id;
+          const isHost = n.created_by === profile.user_id;
+          const isInvited = !n.target_users || n.target_users.length === 0 || n.target_users?.includes(profile?.user_id);
+          return isHost || isInvited;
         }
       });
 
@@ -327,12 +409,23 @@ const MeetingRoom = () => {
   }, [inRoom, roomId]);
 
   const handleJoin = () => {
-    if (!roomIdInput.trim()) {
+    const input = roomIdInput.trim();
+    if (!input) {
       toast.error("Please enter a Meeting ID");
       return;
     }
-    setRoomId(roomIdInput.trim().toLowerCase());
-    setInRoom(true);
+
+    const cleanCode = input.replace(/[-\s]/g, "");
+    const isGoogleMeetCode = /^[a-zA-Z]{10}$/.test(cleanCode);
+
+    if (isGoogleMeetCode) {
+      const formatted = `${cleanCode.substring(0, 3)}-${cleanCode.substring(3, 7)}-${cleanCode.substring(7, 10)}`;
+      window.open(`https://meet.google.com/${formatted}`, '_blank');
+      toast.success("Redirecting to Google Meet!");
+    } else {
+      setRoomId(input.toLowerCase());
+      setInRoom(true);
+    }
   };
   
   const handleStartNew = () => {
@@ -374,36 +467,38 @@ const MeetingRoom = () => {
     localStorage.setItem('vaw_scheduled_meetings', JSON.stringify(updated));
 
     // Send invitations via staff_notifications table
-    if (invitedStaff.length > 0) {
-      try {
-        const metadata = {
-          type: meetingType,
-          roomId: meetingType === 'inbuilt' ? meetingId : null,
-          googleMeetLink: meetingType === 'google_meet' ? googleMeetLink.trim() : null,
-          title: newMeetingTitle,
-          hostName: profile?.full_name || "A Team Member",
-          hostAvatar: profile?.profile_photo_url || profile?.avatar_url || "",
-          expires_at: new Date(Date.now() + 12 * 3600000).toISOString() // Valid for 12 hours
-        };
+    try {
+      const metadata = {
+        type: meetingType,
+        roomId: meetingType === 'inbuilt' ? meetingId : null,
+        googleMeetLink: meetingType === 'google_meet' ? googleMeetLink.trim() : null,
+        title: newMeetingTitle,
+        hostName: profile?.full_name || "A Team Member",
+        hostAvatar: profile?.profile_photo_url || profile?.avatar_url || "",
+        expires_at: new Date(Date.now() + 12 * 3600000).toISOString() // Valid for 12 hours
+      };
 
-        const { error } = await supabase
-          .from('staff_notifications')
-          .insert({
-            title: 'Meeting Invite',
-            content: JSON.stringify(metadata),
-            type: 'announcement',
-            target_type: 'specific',
-            target_users: invitedStaff,
-            created_by: profile?.user_id,
-            expires_at: new Date(Date.now() + 12 * 3600000).toISOString()
-          } as any);
+      const { error } = await supabase
+        .from('staff_notifications')
+        .insert({
+          title: 'Meeting Invite',
+          content: JSON.stringify(metadata),
+          type: 'announcement',
+          target_type: invitedStaff.length > 0 ? 'specific' : 'all',
+          target_users: invitedStaff.length > 0 ? invitedStaff : [],
+          created_by: profile?.user_id,
+          expires_at: new Date(Date.now() + 12 * 3600000).toISOString()
+        } as any);
 
-        if (error) throw error;
+      if (error) throw error;
+      if (invitedStaff.length > 0) {
         toast.success(`Invitations sent to ${invitedStaff.length} staff member(s)!`);
-      } catch (e) {
-        console.error("Error creating meeting notifications:", e);
-        toast.error("Meeting scheduled, but failed to send notifications.");
+      } else {
+        toast.success(`Broadcasting invitation to all staff members!`);
       }
+    } catch (e) {
+      console.error("Error creating meeting notifications:", e);
+      toast.error("Meeting scheduled, but failed to send notifications.");
     }
 
     // Reset fields
@@ -835,8 +930,8 @@ const MeetingRoom = () => {
       <div className="p-4 sm:p-6 space-y-8 relative z-10 max-w-6xl mx-auto animate-in fade-in zoom-in-95 duration-500">
         <div className="text-center space-y-2">
           <h2 className="text-4xl sm:text-5xl font-black text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] tracking-tight uppercase">MEETING <span className="text-green-500">ROOM</span></h2>
-          <p className="text-white/90 font-semibold bg-green-600/30 backdrop-blur-md inline-block px-4 py-1 rounded-full border border-green-500/30 shadow-lg">
-            Collaborate and connect with your team! 📹
+          <p className="text-white/90 text-xs sm:text-sm font-semibold bg-green-600/30 backdrop-blur-md inline-block px-4 py-1 rounded-full border border-green-500/30 shadow-lg">
+            Collaborate and connect with your team!
           </p>
         </div>
 
@@ -1017,12 +1112,12 @@ const MeetingRoom = () => {
           </Card>
 
           <Card className="bg-black/40 backdrop-blur-xl border-white/10 shadow-2xl h-full flex flex-col">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-3">
               <CardTitle className="text-white flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-purple-400" />
                 Meetings Center
               </CardTitle>
-              <div className="flex bg-white/5 rounded-lg p-1 border border-white/10 shrink-0">
+              <div className="flex bg-white/5 rounded-lg p-1 border border-white/10 shrink-0 w-full sm:w-auto justify-center sm:justify-start">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -1077,19 +1172,39 @@ const MeetingRoom = () => {
                           </Badge>
                         </div>
 
-                        <div className="mt-3 flex items-center justify-end gap-2 border-t border-white/5 pt-2">
+                        <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-white/5 pt-2">
+                           {isHost && (
+                             <>
+                               <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleOpenEdit(invite)}
+                                  className="h-8 text-xs text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 font-medium px-2 rounded-lg"
+                               >
+                                  Edit
+                               </Button>
+                               <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeleteInvite(invite.id)}
+                                  className="h-8 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/15 font-medium px-2 rounded-lg"
+                               >
+                                  Delete
+                               </Button>
+                             </>
+                           )}
                            <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => handleDismissInvite(invite.id, invite.read_by)}
-                              className="h-8 text-xs text-white/60 hover:text-red-400 hover:bg-red-500/10 font-medium px-3 rounded-lg"
+                              className="h-8 text-xs text-white/60 hover:text-red-400 hover:bg-red-500/10 font-medium px-2 rounded-lg"
                            >
                               Dismiss
                            </Button>
                            <Button
                               size="sm"
                               onClick={() => handleJoinInvite(invite)}
-                              className={`h-8 text-xs font-bold px-4 rounded-lg shadow-md border-none ${isGoogleMeet ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/10' : 'bg-green-600 hover:bg-green-500 text-white shadow-green-500/10'}`}
+                              className={`h-8 text-xs font-bold px-3 rounded-lg shadow-md border-none ${isGoogleMeet ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/10' : 'bg-green-600 hover:bg-green-500 text-white shadow-green-500/10'}`}
                            >
                               {isGoogleMeet ? 'Join Meet 🔗' : 'Join Room 📹'}
                            </Button>
@@ -1143,6 +1258,129 @@ const MeetingRoom = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Edit Scheduled Meeting Dialog */}
+        <Dialog open={isEditing} onOpenChange={setIsEditing}>
+           <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-[500px] rounded-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+              <DialogHeader>
+                 <DialogTitle className="text-xl font-bold text-center">Edit Scheduled Meeting 📹</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-4">
+                 <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/70">Meeting Title</label>
+                    <Input
+                       placeholder="E.g., Design Review / Weekly Standup"
+                       value={newMeetingTitle}
+                       onChange={e => setNewMeetingTitle(e.target.value)}
+                       className="bg-white/5 border-white/10 text-white"
+                    />
+                 </div>
+
+                 <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/70">Meeting Platform</label>
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setMeetingType('inbuilt')}
+                        className={`h-10 rounded-lg text-sm font-bold transition-all ${meetingType === 'inbuilt' ? 'bg-green-600 text-white shadow' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                      >
+                        Inbuilt Video
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setMeetingType('google_meet')}
+                        className={`h-10 rounded-lg text-sm font-bold transition-all ${meetingType === 'google_meet' ? 'bg-blue-600 text-white shadow' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                      >
+                        Google Meet
+                      </Button>
+                    </div>
+                 </div>
+
+                 {meetingType === 'google_meet' && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                       <label className="text-sm font-medium text-blue-300">Google Meet Link</label>
+                       <Input
+                          placeholder="https://meet.google.com/abc-defg-hij"
+                          value={googleMeetLink}
+                          onChange={e => setGoogleMeetLink(e.target.value)}
+                          className="bg-white/5 border-blue-500/30 text-white focus:border-blue-500 placeholder:text-white/30 font-mono text-sm"
+                       />
+                    </div>
+                 )}
+
+                 <div className="space-y-2">
+                    <label className="text-sm font-medium text-white/70">Invite Staff Members</label>
+                    <Input
+                       placeholder="Search staff by name..."
+                       value={staffSearchQuery}
+                       onChange={e => setStaffSearchQuery(e.target.value)}
+                       className="bg-white/5 border-white/10 text-white h-9 text-xs mb-2"
+                    />
+                    <div className="max-h-36 overflow-y-auto border border-white/10 rounded-xl bg-black/40 p-2 space-y-1 custom-scrollbar">
+                       {allStaff
+                          .filter(s => s.user_id !== profile?.user_id)
+                          .filter(s => s.full_name?.toLowerCase().includes(staffSearchQuery.toLowerCase()))
+                          .map(staffMember => {
+                             const isInvited = invitedStaff.includes(staffMember.user_id);
+                             return (
+                                <div
+                                   key={staffMember.id}
+                                   onClick={() => {
+                                      if (isInvited) {
+                                         setInvitedStaff(prev => prev.filter(id => id !== staffMember.user_id));
+                                      } else {
+                                         setInvitedStaff(prev => [...prev, staffMember.user_id]);
+                                      }
+                                   }}
+                                   className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
+                                >
+                                   <div className="flex items-center gap-2">
+                                      <Avatar className="w-6 h-6 border border-white/10">
+                                         <AvatarImage src={staffMember.profile_photo_url || staffMember.avatar_url} />
+                                         <AvatarFallback className="text-[10px] bg-indigo-600">{staffMember.full_name?.charAt(0)}</AvatarFallback>
+                                      </Avatar>
+                                      <span className="text-xs font-semibold text-white/90">{staffMember.full_name}</span>
+                                   </div>
+                                   <input
+                                      type="checkbox"
+                                      checked={isInvited}
+                                      readOnly
+                                      className="rounded border-white/20 bg-black text-indigo-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5"
+                                   />
+                                </div>
+                             );
+                          })}
+                    </div>
+                 </div>
+
+                 {invitedStaff.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 p-2 bg-white/5 rounded-xl border border-white/5">
+                       {invitedStaff.map(userId => {
+                          const member = allStaff.find(s => s.user_id === userId);
+                          return (
+                             <Badge key={userId} variant="secondary" className="bg-indigo-500/20 text-indigo-200 border-indigo-500/30 text-[10px] py-0.5 px-2 flex items-center gap-1">
+                                {member?.full_name || "Staff"}
+                                <X className="w-2.5 h-2.5 cursor-pointer hover:text-white" onClick={(e) => { e.stopPropagation(); setInvitedStaff(prev => prev.filter(id => id !== userId)); }} />
+                             </Badge>
+                          );
+                       })}
+                    </div>
+                 )}
+
+                 <div className="flex flex-col gap-2 pt-4 border-t border-white/10">
+                    <Button
+                       type="button"
+                       onClick={handleSaveEdit}
+                       className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-11 rounded-xl border-none shadow-lg shadow-indigo-600/10"
+                    >
+                       Save Changes
+                    </Button>
+                 </div>
+              </div>
+           </DialogContent>
+        </Dialog>
       </div>
     );
   }

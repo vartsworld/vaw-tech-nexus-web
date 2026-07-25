@@ -150,11 +150,9 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
 
       toast({
         title: "Attendance Marked!",
-        description: attendanceEnabled && points > 0
-          ? isLate
-            ? `Marked outside standard hours. Earned ${points} points.`
-            : `On time! Earned ${points} points!`
-          : "Attendance recorded. Points are currently disabled by HR.",
+        description: isLate
+          ? "Checked in outside standard hours."
+          : "Checked in on time!",
       });
 
       onAttendanceMarked();

@@ -31,6 +31,7 @@ import {
   Lock as LockIcon,
   LogOut,
   Coins,
+  Flame,
   Loader2,
   Eraser,
   Cpu,
@@ -76,6 +77,7 @@ import { supabase } from "@/integrations/supabase/client";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { motion } from "framer-motion";
 import CoinPopup from "@/components/staff/CoinPopup";
+import StreakCalendarDialog from "@/components/staff/StreakCalendarDialog";
 import EmmaAssistant from "@/components/ai/EmmaAssistant";
 import { Sparkles } from "lucide-react";
 import OfficeZenHome from "@/components/staff/OfficeZenHome";
@@ -163,6 +165,7 @@ const TeamHeadDashboard = () => {
   const [confirmEmojiPassword, setConfirmEmojiPassword] = useState<string[]>([]);
   const [profileForm, setProfileForm] = useState({ full_name: "", about_me: "" });
   const [showCoinPopup, setShowCoinPopup] = useState(false);
+  const [showStreakCalendar, setShowStreakCalendar] = useState(false);
   const [showBiometricDialog, setShowBiometricDialog] = useState(false);
   const [showEmma, setShowEmma] = useState(false);
 
@@ -890,6 +893,7 @@ const TeamHeadDashboard = () => {
           onEditProfile={() => setShowProfileDialog(true)}
           onUpdateEmojiPassword={() => setShowEmojiDialog(true)}
           onManageBiometrics={() => setShowBiometricDialog(true)}
+          onOpenStreakCalendar={() => setShowStreakCalendar(true)}
         />
       ) : (
         <>
@@ -925,15 +929,25 @@ const TeamHeadDashboard = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Desktop Only Coins Display in Header */}
+              {/* Desktop Only Coins Display in Header (Disabled - Coming Soon) */}
               <div
-                className="hidden md:flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full text-amber-400 font-bold text-xs cursor-pointer hover:bg-amber-500/20 transition-all shadow-md shadow-amber-500/5 select-none"
-                onClick={() => navigate("/mycoins")}
-                title="View Coins Ledger"
+                className="hidden md:flex items-center gap-1.5 bg-amber-500/5 border border-amber-500/10 px-3 py-1.5 rounded-full text-amber-500/60 font-bold text-xs select-none"
+                title="Coins system is Coming Soon"
               >
-                <Coins className="w-4 h-4 text-amber-400 animate-pulse" />
-                <span>{(profile?.total_points || 0).toLocaleString()} Coins</span>
+                <Coins className="w-4 h-4 text-amber-500/40" />
+                <span>Coming Soon</span>
               </div>
+
+              {/* Desktop Only Streak Display in Header */}
+              <div
+                className="hidden md:flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full text-orange-400 font-bold text-xs cursor-pointer hover:bg-orange-500/20 transition-all shadow-md shadow-orange-500/5 select-none"
+                onClick={() => setShowStreakCalendar(true)}
+                title="View Streak Calendar"
+              >
+                <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
+                <span>{profile?.attendance_streak || 0}d Streak</span>
+              </div>
+
               <div>
                 <NotificationsBar userId={profile?.user_id || ''} />
               </div>
@@ -962,12 +976,21 @@ const TeamHeadDashboard = () => {
                   </div>
 
                   {/* Coins Display inside Dropdown */}
-                  <DropdownMenuItem onClick={() => setShowCoinPopup(true)} className="flex items-center justify-between cursor-pointer py-1.5 focus:bg-white/5">
+                  <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
                     <div className="flex items-center">
-                      <Coins className="mr-2 h-4 w-4 text-amber-400" />
-                      <span>My Balance</span>
+                      <Coins className="mr-2 h-4 w-4 text-amber-500/50" />
+                      <span>Coins Balance</span>
                     </div>
-                    <span className="text-amber-200 font-bold text-xs">{(profile?.total_points || 0).toLocaleString()} Coins</span>
+                    <span className="text-amber-500/50 font-bold text-xs">Coming Soon</span>
+                  </div>
+
+                  {/* Streak Display inside Dropdown */}
+                  <DropdownMenuItem onClick={() => setShowStreakCalendar(true)} className="flex items-center justify-between cursor-pointer py-1.5 focus:bg-white/5">
+                    <div className="flex items-center">
+                      <Flame className="mr-2 h-4 w-4 text-orange-500" />
+                      <span>My Streak</span>
+                    </div>
+                    <span className="text-orange-400 font-bold text-xs">{profile?.attendance_streak || 0}d</span>
                   </DropdownMenuItem>
 
                   {/* App Update inside Dropdown */}
@@ -1185,6 +1208,14 @@ const TeamHeadDashboard = () => {
           onOpenChange={setShowCoinPopup}
           userId={profile.user_id}
           userProfile={profile}
+        />
+      )}
+
+      {profile?.user_id && (
+        <StreakCalendarDialog
+          isOpen={showStreakCalendar}
+          onOpenChange={setShowStreakCalendar}
+          userId={profile.user_id}
         />
       )}
 
