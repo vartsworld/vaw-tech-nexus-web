@@ -59,7 +59,7 @@ export function calculateStreaks(dates: string[]): { current: number; longest: n
   const hasYesterday = sortedDesc.includes(yesterdayStr);
 
   if (hasToday || hasYesterday) {
-    let checkDate = hasToday ? new Date() : yesterday;
+    const checkDate = hasToday ? new Date() : yesterday;
     // Cap backward search to August 1, 2026
     while (true) {
       const checkStr = checkDate.toISOString().split('T')[0];
@@ -153,7 +153,7 @@ const StreakCalendarDialog = ({ isOpen, onOpenChange, userId }: StreakCalendarDi
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-zinc-950/95 border-white/10 text-white sm:max-w-[460px] rounded-[2rem] shadow-2xl backdrop-blur-3xl overflow-hidden p-0">
+      <DialogContent className="bg-zinc-950/95 border-white/10 text-white max-w-[90vw] max-h-[90vh] overflow-y-auto sm:max-w-[460px] rounded-[2rem] shadow-2xl backdrop-blur-3xl p-0">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 via-transparent to-purple-500/10 pointer-events-none" />
 
         <div className="p-6 space-y-6 relative z-10">

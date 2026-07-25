@@ -49,6 +49,70 @@ const DraggableWorkspace = ({ userId, userProfile, onWidgetControlsChange }: Dra
   const [showControls, setShowControls] = useState(!isMobile);
   const { toast } = useToast();
 
+  const toggleWidgetVisibility = useCallback((id: string) => {
+    setItems(prev => prev.map(item =>
+      item.id === id ? { ...item, isVisible: !item.isVisible } : item
+    ));
+  }, []);
+
+  const showAllWidgets = useCallback(() => {
+    setItems(prev => prev.map(item => ({ ...item, isVisible: true })));
+    toast({
+      title: "All Widgets Shown",
+      description: "All widgets are now visible.",
+    });
+  }, [toast]);
+
+  const hideAllWidgets = useCallback(() => {
+    setItems(prev => prev.map(item => ({ ...item, isVisible: false })));
+    toast({
+      title: "All Widgets Hidden",
+      description: "All widgets are now collapsed.",
+    });
+  }, [toast]);
+
+  const getAvailableWidgets = useCallback(() => {
+    const currentComponents = items.map(item => item.component);
+    return availableWidgets.filter(widget => !currentComponents.includes(widget.component));
+  }, [items]);
+
+  const addWidget = useCallback(() => {
+    if (!selectedWidget) return;
+
+    const widget = availableWidgets.find(w => w.component === selectedWidget);
+    if (!widget) return;
+
+    const newId = `${widget.component.toLowerCase()}-${Date.now()}`;
+    const newItem: WorkspaceItem = {
+      id: newId,
+      component: widget.component,
+      title: widget.title,
+      span: widget.span,
+      removable: widget.removable,
+      isVisible: true,
+    };
+
+    setItems(prev => [...prev, newItem]);
+    setSelectedWidget('');
+
+    toast({
+      title: "Widget Added",
+      description: `${widget.title} has been added to your workspace.`,
+    });
+  }, [selectedWidget, toast]);
+
+  const removeWidget = useCallback((id: string) => {
+    const removedWidget = items.find(item => item.id === id);
+    setItems(prev => prev.filter(item => item.id !== id));
+
+    if (removedWidget) {
+      toast({
+        title: "Widget Removed",
+        description: `${removedWidget.title} has been removed from your workspace.`,
+      });
+    }
+  }, [items, toast]);
+
   useEffect(() => {
     if (onWidgetControlsChange) {
       onWidgetControlsChange(
@@ -156,70 +220,6 @@ const DraggableWorkspace = ({ userId, userProfile, onWidgetControlsChange }: Dra
     newItems.splice(result.destination.index, 0, reorderedItem);
 
     setItems(newItems);
-  }, [items]);
-
-  const addWidget = useCallback(() => {
-    if (!selectedWidget) return;
-
-    const widget = availableWidgets.find(w => w.component === selectedWidget);
-    if (!widget) return;
-
-    const newId = `${widget.component.toLowerCase()}-${Date.now()}`;
-    const newItem: WorkspaceItem = {
-      id: newId,
-      component: widget.component,
-      title: widget.title,
-      span: widget.span,
-      removable: widget.removable,
-      isVisible: true,
-    };
-
-    setItems(prev => [...prev, newItem]);
-    setSelectedWidget('');
-
-    toast({
-      title: "Widget Added",
-      description: `${widget.title} has been added to your workspace.`,
-    });
-  }, [selectedWidget, toast]);
-
-  const toggleWidgetVisibility = useCallback((id: string) => {
-    setItems(prev => prev.map(item =>
-      item.id === id ? { ...item, isVisible: !item.isVisible } : item
-    ));
-  }, []);
-
-  const showAllWidgets = useCallback(() => {
-    setItems(prev => prev.map(item => ({ ...item, isVisible: true })));
-    toast({
-      title: "All Widgets Shown",
-      description: "All widgets are now visible.",
-    });
-  }, [toast]);
-
-  const hideAllWidgets = useCallback(() => {
-    setItems(prev => prev.map(item => ({ ...item, isVisible: false })));
-    toast({
-      title: "All Widgets Hidden",
-      description: "All widgets are now collapsed.",
-    });
-  }, [toast]);
-
-  const removeWidget = useCallback((id: string) => {
-    const removedWidget = items.find(item => item.id === id);
-    setItems(prev => prev.filter(item => item.id !== id));
-
-    if (removedWidget) {
-      toast({
-        title: "Widget Removed",
-        description: `${removedWidget.title} has been removed from your workspace.`,
-      });
-    }
-  }, [items, toast]);
-
-  const getAvailableWidgets = useCallback(() => {
-    const currentComponents = items.map(item => item.component);
-    return availableWidgets.filter(widget => !currentComponents.includes(widget.component));
   }, [items]);
 
   const renderComponent = (item: WorkspaceItem) => {
