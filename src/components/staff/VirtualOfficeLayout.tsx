@@ -674,7 +674,11 @@ const VirtualOfficeLayout = ({
 
           {/* Content Area */}
           <textarea
-            className="w-full h-32 bg-transparent border-none resize-none focus:ring-0 focus:outline-none text-xs font-bold leading-relaxed text-amber-950 placeholder-amber-950/40"
+            id="scratchpad-textarea"
+            aria-label="Scratchpad note content"
+            aria-describedby="scratchpad-char-count"
+            maxLength={500}
+            className="w-full h-28 bg-transparent border-none resize-none focus:ring-0 focus:outline-none text-xs font-bold leading-relaxed text-amber-950 placeholder-amber-950/40"
             placeholder="Jot down quick thoughts... (Ctrl+Enter to Save)"
             value={notepadContent}
             onChange={(e) => setNotepadContent(e.target.value)}
@@ -686,8 +690,16 @@ const VirtualOfficeLayout = ({
             }}
           />
 
+          {/* Character counter & Helper */}
+          <div className="flex justify-between items-center text-[9px] text-amber-950/40 px-1 border-t border-amber-950/10 pt-1.5 shrink-0 select-none">
+            <span>Press Ctrl+Enter to save</span>
+            <span id="scratchpad-char-count" className={cn(notepadContent.length >= 400 ? "text-red-700 font-black" : "font-mono")}>
+              {notepadContent.length}/500
+            </span>
+          </div>
+
           {/* Footer & Actions */}
-          <div className="flex items-center justify-between pt-2 border-t border-amber-950/15">
+          <div className="flex items-center justify-between pt-1 border-t border-amber-950/15">
             {/* View saved notes dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -733,7 +745,7 @@ const VirtualOfficeLayout = ({
               size="sm"
               className="bg-amber-950 hover:bg-amber-900 text-yellow-100 font-bold text-[10px] h-7 px-3 rounded-lg border-none"
               onClick={handleSaveNotepad}
-              disabled={isSavingNotepad || !notepadContent.trim()}
+              disabled={isSavingNotepad || !notepadContent.trim() || notepadContent.length > 500}
             >
               {isSavingNotepad ? "Saving..." : "Save Note"}
             </Button>
