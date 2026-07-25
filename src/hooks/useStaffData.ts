@@ -263,7 +263,7 @@ export const useStaffData = () => {
       if (status === 'Completed') {
         toast({
           title: "Task Completed! 🎉",
-          description: "Great work! Coins will be awarded upon head approval.",
+          description: "Great work! Your task has been submitted.",
         });
       } else {
         toast({

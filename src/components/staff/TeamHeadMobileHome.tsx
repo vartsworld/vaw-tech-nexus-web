@@ -67,6 +67,7 @@ interface TeamHeadMobileHomeProps {
   onEditProfile?: () => void;
   onUpdateEmojiPassword?: () => void;
   onManageBiometrics?: () => void;
+  onOpenStreakCalendar?: () => void;
 }
 
 interface TaskItem {
@@ -1209,6 +1210,31 @@ const TeamHeadMobileHome = ({
           Team Head
         </Badge>
         <p className="text-xs text-white/40 mt-1">{profile?.email}</p>
+      </div>
+
+      {/* Coins & Streak Display in Mobile Profile */}
+      <div className="grid grid-cols-2 gap-4 mt-4 w-full">
+        <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl justify-center sm:justify-start">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shrink-0">
+            <Coins className="w-5 h-5 text-amber-500/60" />
+          </div>
+          <div className="text-left">
+            <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Coins</p>
+            <p className="text-xs font-bold text-amber-500/60 uppercase">Coming Soon</p>
+          </div>
+        </div>
+        <div
+          onClick={onOpenStreakCalendar}
+          className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl cursor-pointer active:scale-95 transition-all justify-center sm:justify-start"
+        >
+          <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center border border-orange-500/20 shrink-0">
+            <Flame className="w-5 h-5 text-orange-400 animate-pulse" />
+          </div>
+          <div className="text-left">
+            <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Streak</p>
+            <p className="text-base font-extrabold text-white">{profile?.attendance_streak || 0} Days</p>
+          </div>
+        </div>
       </div>
 
       <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl divide-y divide-white/10 overflow-hidden shadow-xl mt-6">
