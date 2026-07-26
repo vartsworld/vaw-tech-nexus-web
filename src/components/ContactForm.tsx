@@ -127,7 +127,7 @@ const ContactForm = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <label htmlFor="name" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
-            Your Name
+            Your Name <span className="text-red-500">*</span>
           </label>
           <Input
             id="name"
@@ -142,7 +142,7 @@ const ContactForm = () => {
         
         <div className="space-y-2">
           <label htmlFor="email" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
-            Email Address
+            Email Address <span className="text-red-500">*</span>
           </label>
           <Input
             id="email"
@@ -198,7 +198,7 @@ const ContactForm = () => {
       
       <div className="space-y-2">
         <label htmlFor="message" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
-          Your Message
+          Your Message <span className="text-red-500">*</span>
         </label>
         <Textarea
           id="message"

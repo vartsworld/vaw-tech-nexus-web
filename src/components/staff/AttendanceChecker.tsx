@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Clock, MapPin } from "lucide-react";
+import { CheckCircle, Clock, MapPin, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -231,10 +231,17 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
           <Button
             onClick={markAttendance}
             disabled={isMarking}
-            className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white"
+            className="w-full bg-gradient-to-r from-blue-500 to-green-500 hover:from-blue-600 hover:to-green-600 text-white flex items-center justify-center"
             size="lg"
           >
-            {isMarking ? "Marking Attendance..." : "✅ Mark Attendance & Enter Office"}
+            {isMarking ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Marking Attendance...
+              </>
+            ) : (
+              "✅ Mark Attendance & Enter Office"
+            )}
           </Button>
 
           <div className="text-xs text-white/60 text-center">

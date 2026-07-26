@@ -239,7 +239,9 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
             <div className="grid gap-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="start-date-trigger" className="text-zinc-300">Start Date</Label>
+                  <Label htmlFor="start-date-trigger" className="text-zinc-300">
+                    Start Date <span className="text-red-500">*</span>
+                  </Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -264,7 +266,9 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
                   </Popover>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="end-date-trigger" className="text-zinc-300">End Date</Label>
+                  <Label htmlFor="end-date-trigger" className="text-zinc-300">
+                    End Date <span className="text-red-500">*</span>
+                  </Label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -299,9 +303,11 @@ const LeaveApplicationDialog = ({ open, onOpenChange, userId }: LeaveApplication
               )}
 
               <div className="space-y-2">
-                <Label className="text-zinc-300">Leave Type</Label>
+                <Label htmlFor="leave-type-select" className="text-zinc-300">
+                  Leave Type <span className="text-red-500">*</span>
+                </Label>
                 <Select value={leaveType} onValueChange={setLeaveType}>
-                  <SelectTrigger className="bg-zinc-800/50 border-zinc-700 text-white">
+                  <SelectTrigger id="leave-type-select" className="bg-zinc-800/50 border-zinc-700 text-white">
                     <SelectValue placeholder="Select leave type" />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
