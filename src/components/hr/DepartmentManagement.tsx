@@ -50,17 +50,27 @@ const DepartmentManagement = () => {
 
       if (error) throw error;
 
-      // Get staff count for each department
-      const departmentsWithCounts = await Promise.all(
-        (data || []).map(async (dept) => {
-          const { count } = await supabase
-            .from('staff_profiles')
-            .select('*', { count: 'exact', head: true })
-            .eq('department_id', dept.id);
-          
-          return { ...dept, staff_count: count || 0 };
-        })
-      );
+      // BOLT OPTIMIZATION: Get staff count for each department in a single batch query to avoid N+1 database queries.
+      const { data: staffCounts, error: staffCountsError } = await supabase
+        .from('staff_profiles')
+        .select('department_id')
+        .not('department_id', 'is', null);
+
+      if (staffCountsError) throw staffCountsError;
+
+      const countsMap: Record<string, number> = {};
+      if (staffCounts) {
+        for (const profile of staffCounts) {
+          if (profile.department_id) {
+            countsMap[profile.department_id] = (countsMap[profile.department_id] || 0) + 1;
+          }
+        }
+      }
+
+      const departmentsWithCounts = (data || []).map((dept) => ({
+        ...dept,
+        staff_count: countsMap[dept.id] || 0
+      }));
 
       setDepartments(departmentsWithCounts);
     } catch (error) {
@@ -95,24 +105,43 @@ const DepartmentManagement = () => {
         .from('departments')
         .select('id');
 
-      if (!deptData) return;
+      if (!deptData || deptData.length === 0) return;
+
+      // BOLT OPTIMIZATION: Retrieve all tasks matching relevant department IDs in a single batch query
+      // instead of performing sequential blocked database selects inside a serial loop.
+      const deptIds = deptData.map(d => d.id);
+      const { data: allTasks, error: tasksError } = await supabase
+        .from('staff_tasks')
+        .select('department_id, status')
+        .in('department_id', deptIds);
+
+      if (tasksError) throw tasksError;
+
+      // Group tasks by department_id in-memory in O(1) time
+      const tasksByDept: Record<string, { department_id: string | null; status: string }[]> = {};
+      if (allTasks) {
+        for (const task of allTasks) {
+          if (task.department_id) {
+            if (!tasksByDept[task.department_id]) {
+              tasksByDept[task.department_id] = [];
+            }
+            tasksByDept[task.department_id].push(task);
+          }
+        }
+      }
 
       // Calculate metrics for each department
       const metrics = {};
       
       for (const dept of deptData) {
-        // Get active tasks count (pending, in_progress)
-        const { data: tasks } = await supabase
-          .from('staff_tasks')
-          .select('status')
-          .eq('department_id', dept.id);
+        const deptTasks = tasksByDept[dept.id] || [];
 
-        const activeTasks = tasks?.filter(t => 
+        const activeTasks = deptTasks.filter(t =>
           t.status === 'pending' || t.status === 'in_progress'
-        ).length || 0;
+        ).length;
 
-        const completedTasks = tasks?.filter(t => t.status === 'completed').length || 0;
-        const totalTasks = tasks?.length || 0;
+        const completedTasks = deptTasks.filter(t => t.status === 'completed').length;
+        const totalTasks = deptTasks.length;
 
         // Calculate performance percentage (completed tasks / total tasks)
         const performance = totalTasks > 0 
