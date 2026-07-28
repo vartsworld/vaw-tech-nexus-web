@@ -71,8 +71,14 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const isMounted = useRef(true);
+
     useEffect(() => {
+        isMounted.current = true;
         fetchProjects();
+        return () => {
+            isMounted.current = false;
+        };
     }, [profile]);
 
     // Auto-select project from URL param
@@ -127,14 +133,20 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
                         };
                     })
                 );
-                setProjects(enriched);
+                if (isMounted.current) {
+                    setProjects(enriched);
+                }
             } else if (data) {
-                setProjects(data);
+                if (isMounted.current) {
+                    setProjects(data);
+                }
             }
         } catch (err) {
             console.error("Project fetch error:", err);
         } finally {
-            setLoading(false);
+            if (isMounted.current) {
+                setLoading(false);
+            }
         }
     };
 
@@ -196,7 +208,9 @@ const ProjectExplorer = ({ profile }: { profile: any }) => {
             console.error(error);
             toast.error(`Sync failure: ${error.message}`);
         } finally {
-            setIsUploading(false);
+            if (isMounted.current) {
+                setIsUploading(false);
+            }
         }
     };
 
@@ -375,8 +389,14 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
     const [timelineLoading, setTimelineLoading] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const isMounted = useRef(true);
+
     useEffect(() => {
+        isMounted.current = true;
         fetchTaskTimeline();
+        return () => {
+            isMounted.current = false;
+        };
     }, [project?.id]);
 
     const fetchTaskTimeline = async () => {
@@ -423,8 +443,9 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                     staff_subtasks: subtasksByTask[task.id] || []
                 }));
 
-
-                setTaskTimeline(enriched);
+                if (isMounted.current) {
+                    setTaskTimeline(enriched);
+                }
             } else {
                 // Fallback to client_task_timeline if no staff tasks linked yet
                 const { data: timeline } = await supabase
@@ -433,12 +454,16 @@ const ProjectDetails = ({ project, onBack, onUpload, isUploading }: any) => {
                     .eq("client_project_id", project.id)
                     .order("created_at", { ascending: true });
 
-                if (timeline) setTaskTimeline(timeline);
+                if (timeline && isMounted.current) {
+                    setTaskTimeline(timeline);
+                }
             }
         } catch (err) {
             console.error("Timeline Sync Error:", err);
         } finally {
-            setTimelineLoading(false);
+            if (isMounted.current) {
+                setTimelineLoading(false);
+            }
         }
     };
 
