@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -79,8 +79,14 @@ const ProjectMonitorPage = ({ standalone = false }: { standalone?: boolean }) =>
     update_facebook: false
   });
 
+  const isMounted = useRef(true);
+
   useEffect(() => {
+    isMounted.current = true;
     fetchData();
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
   const fetchData = async () => {
@@ -100,48 +106,70 @@ const ProjectMonitorPage = ({ standalone = false }: { standalone?: boolean }) =>
       if (projectsRes.error) throw projectsRes.error;
       if (clientsRes.error) throw clientsRes.error;
 
+      if (!isMounted.current) return;
+
       setProjects(projectsRes.data || []);
       setClients(clientsRes.data || []);
 
-      // Check status for each project
-      (projectsRes.data || []).forEach(project => {
-        checkWebsiteStatus(project.id, project.website_url);
+      // BOLT OPTIMIZATION: Bulk initialize status mapping to prevent N sequential re-renders
+      const initialStatuses: Record<string, 'checking' | 'online' | 'offline' | 'error'> = {};
+      const activeProjects = projectsRes.data || [];
+      activeProjects.forEach(project => {
+        initialStatuses[project.id] = 'checking';
+      });
+      setWebsiteStatuses(initialStatuses);
+
+      // Check status for each project with showCheckingState = false (as it is already bulk-initialized)
+      activeProjects.forEach(project => {
+        checkWebsiteStatus(project.id, project.website_url, false);
       });
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load projects');
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setLoading(false);
+      }
     }
   };
 
-  const checkWebsiteStatus = async (projectId: string, url: string) => {
-    setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'checking' }));
+  const checkWebsiteStatus = async (projectId: string, url: string, showCheckingState = true) => {
+    if (showCheckingState && isMounted.current) {
+      setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'checking' }));
+    }
 
     try {
       // We'll use a simple approach - try to load an image from the domain
       // This is a workaround since we can't make direct fetch requests due to CORS
       const img = new Image();
       const timeoutId = setTimeout(() => {
-        setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'error' }));
+        if (isMounted.current) {
+          setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'error' }));
+        }
       }, 10000);
 
       img.onload = () => {
         clearTimeout(timeoutId);
-        setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'online' }));
+        if (isMounted.current) {
+          setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'online' }));
+        }
       };
 
       img.onerror = () => {
         clearTimeout(timeoutId);
         // Even if image fails, domain might be up - mark as online with caveat
-        setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'online' }));
+        if (isMounted.current) {
+          setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'online' }));
+        }
       };
 
       // Try to load favicon as a proxy for site availability
       const domain = new URL(url).origin;
       img.src = `${domain}/favicon.ico?t=${Date.now()}`;
     } catch {
-      setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'error' }));
+      if (isMounted.current) {
+        setWebsiteStatuses(prev => ({ ...prev, [projectId]: 'error' }));
+      }
     }
   };
 
