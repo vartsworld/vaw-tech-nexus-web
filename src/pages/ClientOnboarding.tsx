@@ -374,11 +374,11 @@ const ClientOnboarding = () => {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="contact_person">Full Name *</Label>
+                <Label htmlFor="contact_person">Full Name <span className="text-red-500">*</span></Label>
                 <Input id="contact_person" value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })} placeholder="Your full name" maxLength={200} />
               </div>
               <div>
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
                 <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="your@email.com" maxLength={255} />
               </div>
             </div>
@@ -390,7 +390,7 @@ const ClientOnboarding = () => {
                 </div>
               )}
               <div className={cn(defaultFieldsConfig.phone === false && "col-span-2")}>
-                <Label htmlFor="company_name">Company Name *</Label>
+                <Label htmlFor="company_name">Company Name <span className="text-red-500">*</span></Label>
                 <Input id="company_name" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} placeholder="Your company name" maxLength={200} />
               </div>
             </div>
@@ -430,7 +430,7 @@ const ClientOnboarding = () => {
                 <p className="text-sm font-medium text-muted-foreground">Additional Information</p>
                 {customFields.map((field: any, idx: number) => (
                   <div key={idx}>
-                    <Label>{field.label} {field.required && "*"}</Label>
+                    <Label>{field.label} {field.required && <span className="text-red-500">*</span>}</Label>
                     {field.type === "textarea" ? (
                       <Textarea
                         value={customFieldValues[field.label] || ""}
