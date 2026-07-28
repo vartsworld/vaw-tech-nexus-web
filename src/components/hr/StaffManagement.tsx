@@ -58,6 +58,8 @@ const StaffManagement = () => {
   const [isCreatingCard, setIsCreatingCard] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState<any>(null);
+  const [selectedStaffDetail, setSelectedStaffDetail] = useState<any>(null);
+  const [isViewStaffDialogOpen, setIsViewStaffDialogOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [patraResult, setPatraResult] = useState<{cardUrl: string, staffId: string, email: string, passcode?: string} | null>(null);
   const [newStaff, setNewStaff] = useState({
@@ -944,10 +946,22 @@ const StaffManagement = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1 min-w-[120px]">
+                    <div className="flex items-center gap-1 min-w-[140px]">
                       <Button
                         variant="ghost"
                         size="sm"
+                        title="View Full Profile Details"
+                        onClick={() => {
+                          setSelectedStaffDetail(member);
+                          setIsViewStaffDialogOpen(true);
+                        }}
+                      >
+                        <Eye className="h-4 w-4 text-blue-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Edit Staff Member"
                         onClick={() => {
                           setEditingStaff(member);
                           setNewStaff({
@@ -1053,6 +1067,131 @@ const StaffManagement = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View Staff Profile Details Dialog */}
+      <Dialog open={isViewStaffDialogOpen} onOpenChange={setIsViewStaffDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <Avatar className="h-10 w-10 border border-primary/30">
+                <AvatarImage src={selectedStaffDetail?.profile_photo_url || selectedStaffDetail?.avatar_url} />
+                <AvatarFallback>{selectedStaffDetail?.full_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div>
+                <span>{selectedStaffDetail?.full_name}</span>
+                <span className="block text-xs font-mono text-muted-foreground">@{selectedStaffDetail?.username}</span>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedStaffDetail && (
+            <div className="space-y-6 pt-2">
+              {/* Basic & Personal */}
+              <div className="grid grid-cols-2 gap-4 pb-4 border-b">
+                <div>
+                  <h4 className="font-semibold text-sm text-primary mb-2">Basic & Contact Info</h4>
+                  <div className="space-y-1.5 text-xs">
+                    <p><strong>Email:</strong> {selectedStaffDetail.email}</p>
+                    <p><strong>Role:</strong> <span className="capitalize">{selectedStaffDetail.role?.replace('_', ' ')}</span></p>
+                    <p><strong>Department:</strong> {selectedStaffDetail.departments?.name || 'Unassigned'}</p>
+                    <p><strong>Gender:</strong> {selectedStaffDetail.gender || 'Not specified'}</p>
+                    <p><strong>Date of Birth:</strong> {selectedStaffDetail.date_of_birth || 'Not provided'}</p>
+                    <p><strong>Hire Date:</strong> {selectedStaffDetail.hire_date || 'Not specified'}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-sm text-primary mb-2">Physical Address & Health</h4>
+                  <div className="space-y-1.5 text-xs">
+                    <p><strong>Address:</strong> {selectedStaffDetail.physical_address || 'Not provided'}</p>
+                    <p><strong>Blood Group:</strong> {selectedStaffDetail.blood_group || 'Not specified'}</p>
+                    <p><strong>Health Issues:</strong> {selectedStaffDetail.has_health_issues ? (Array.isArray(selectedStaffDetail.health_issues) ? selectedStaffDetail.health_issues.join(', ') : 'Yes') : 'None declared'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Family & Identity */}
+              <div className="grid grid-cols-2 gap-4 pb-4 border-b">
+                <div>
+                  <h4 className="font-semibold text-sm text-primary mb-2">Family Information</h4>
+                  <div className="space-y-1.5 text-xs">
+                    <p><strong>Father's Name:</strong> {selectedStaffDetail.father_name || 'Not provided'}</p>
+                    <p><strong>Mother's Name:</strong> {selectedStaffDetail.mother_name || 'Not provided'}</p>
+                    <p><strong>Siblings:</strong> {selectedStaffDetail.siblings || 'Not provided'}</p>
+                    {Array.isArray(selectedStaffDetail.sibling_names) && selectedStaffDetail.sibling_names.length > 0 && (
+                      <p><strong>Sibling Names:</strong> {selectedStaffDetail.sibling_names.join(', ')}</p>
+                    )}
+                    <p><strong>Relationship Status:</strong> {selectedStaffDetail.relationship_status || 'Not specified'}</p>
+                    <p><strong>Marriage Preference:</strong> {selectedStaffDetail.marriage_preference || 'Not specified'}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-sm text-primary mb-2">Govt Identity & Emergency</h4>
+                  <div className="space-y-1.5 text-xs">
+                    <p><strong>Govt ID Type:</strong> {selectedStaffDetail.govt_id_type?.toUpperCase() || 'Aadhaar / Passport'}</p>
+                    <p><strong>Govt ID Number:</strong> {selectedStaffDetail.govt_id_number || 'Not provided'}</p>
+                    {selectedStaffDetail.emergency_contact_name && (
+                      <p><strong>Emergency Contact:</strong> {selectedStaffDetail.emergency_contact_name} ({selectedStaffDetail.emergency_contact_phone})</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional & Work Confidence */}
+              <div className="space-y-2 pb-4 border-b">
+                <h4 className="font-semibold text-sm text-primary">Work Field Confidence</h4>
+                <p className="text-xs"><strong>Confidence Level:</strong> {selectedStaffDetail.work_confidence_level || 'Not specified'}</p>
+                {selectedStaffDetail.reference_person_name && (
+                  <p className="text-xs"><strong>Reference Person:</strong> {selectedStaffDetail.reference_person_name} ({selectedStaffDetail.reference_person_number})</p>
+                )}
+                {selectedStaffDetail.about_me && (
+                  <div className="mt-2">
+                    <p className="text-xs font-semibold mb-1">About Me / Bio:</p>
+                    <p className="text-xs p-3 bg-muted rounded-lg whitespace-pre-wrap">{selectedStaffDetail.about_me}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Documents & KYC Photo Verification */}
+              <div>
+                <h4 className="font-semibold text-sm text-primary mb-3">Documents & Verification Photos</h4>
+                <div className="flex flex-wrap items-center gap-4">
+                  {selectedStaffDetail.cv_url && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => viewOrDownloadFile(selectedStaffDetail.cv_url, `${selectedStaffDetail.full_name}_CV.pdf`)}
+                    >
+                      <Download className="h-4 w-4 mr-2" /> View / Download CV
+                    </Button>
+                  )}
+                  {(selectedStaffDetail.profile_photo_url || selectedStaffDetail.avatar_url) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => viewOrDownloadFile(selectedStaffDetail.profile_photo_url || selectedStaffDetail.avatar_url, `${selectedStaffDetail.full_name}_Photo.jpg`)}
+                    >
+                      <Eye className="h-4 w-4 mr-2" /> View Profile Photo
+                    </Button>
+                  )}
+                  {selectedStaffDetail.kyc_selfie_url && (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={selectedStaffDetail.kyc_selfie_url}
+                        alt="KYC Selfie"
+                        className="w-12 h-12 rounded-lg object-cover border border-emerald-500 cursor-pointer"
+                        onClick={() => viewOrDownloadFile(selectedStaffDetail.kyc_selfie_url, `${selectedStaffDetail.full_name}_Selfie.jpg`)}
+                      />
+                      <span className="text-xs text-emerald-600 font-semibold">✓ Live KYC Selfie Verified</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

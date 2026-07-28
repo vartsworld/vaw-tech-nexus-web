@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { viewOrDownloadFile } from "@/pages/TeamApplication";
 
 const TeamApplicationsList = () => {
   const [applications, setApplications] = useState([]);
@@ -364,25 +365,28 @@ const TeamApplicationsList = () => {
               {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h3 className="font-semibold mb-3">Basic Information</h3>
+                  <h3 className="font-semibold mb-3 text-blue-600">Basic & Personal Information</h3>
                   <div className="space-y-2 text-sm">
                     <p><strong>Name:</strong> {selectedApplication.full_name}</p>
                     <p><strong>Email:</strong> {selectedApplication.email}</p>
                     <p><strong>Phone:</strong> {selectedApplication.phone || 'Not provided'}</p>
-                    <p><strong>Username:</strong> {selectedApplication.username}</p>
+                    <p><strong>Username:</strong> @{selectedApplication.username}</p>
                     <p><strong>Gender:</strong> {selectedApplication.gender || 'Not specified'}</p>
                     <p><strong>Date of Birth:</strong> {selectedApplication.date_of_birth || 'Not provided'}</p>
+                    <p><strong>Physical Address:</strong> {selectedApplication.physical_address || 'Not provided'}</p>
+                    <p><strong>Blood Group:</strong> {selectedApplication.blood_group || 'Not specified'}</p>
+                    <p><strong>Health Issues:</strong> {selectedApplication.has_health_issues ? (Array.isArray(selectedApplication.health_issues) ? selectedApplication.health_issues.join(', ') : 'Yes') : 'None declared'}</p>
                   </div>
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-3">Professional Information</h3>
+                  <h3 className="font-semibold mb-3 text-blue-600">Professional Information</h3>
                   <div className="space-y-2 text-sm">
                     <p><strong>Preferred Role:</strong> {selectedApplication.preferred_role}</p>
                     <p><strong>Department:</strong> {getDepartmentName(selectedApplication.preferred_department_id)}</p>
                     <p><strong>Work Confidence:</strong> {selectedApplication.work_confidence_level || 'Not specified'}</p>
                     {selectedApplication.reference_person_name && (
                       <>
-                        <p><strong>Reference:</strong> {selectedApplication.reference_person_name}</p>
+                        <p><strong>Reference Name:</strong> {selectedApplication.reference_person_name}</p>
                         <p><strong>Reference Contact:</strong> {selectedApplication.reference_person_number}</p>
                       </>
                     )}
@@ -390,52 +394,77 @@ const TeamApplicationsList = () => {
                 </div>
               </div>
 
-              {/* Family & Personal Info */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Family & Identity Info */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                 <div>
-                  <h3 className="font-semibold mb-3">Family Information</h3>
+                  <h3 className="font-semibold mb-3 text-blue-600">Family Details</h3>
                   <div className="space-y-2 text-sm">
                     <p><strong>Father's Name:</strong> {selectedApplication.father_name || 'Not provided'}</p>
                     <p><strong>Mother's Name:</strong> {selectedApplication.mother_name || 'Not provided'}</p>
                     <p><strong>Siblings:</strong> {selectedApplication.siblings || 'Not provided'}</p>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-3">Personal Information</h3>
-                  <div className="space-y-2 text-sm">
+                    {Array.isArray(selectedApplication.sibling_names) && selectedApplication.sibling_names.length > 0 && (
+                      <p><strong>Sibling Names:</strong> {selectedApplication.sibling_names.join(', ')}</p>
+                    )}
                     <p><strong>Relationship Status:</strong> {selectedApplication.relationship_status || 'Not specified'}</p>
                     <p><strong>Marriage Preference:</strong> {selectedApplication.marriage_preference || 'Not specified'}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-3 text-blue-600">Government Identity & KYC</h3>
+                  <div className="space-y-2 text-sm">
+                    <p><strong>Govt ID Type:</strong> {selectedApplication.govt_id_type?.toUpperCase() || 'Aadhaar / Passport'}</p>
+                    <p><strong>Govt ID Number:</strong> {selectedApplication.govt_id_number || 'Not provided'}</p>
+                    <p><strong>Legal Terms Agreed:</strong> {selectedApplication.legal_accepted ? '✓ Yes (Verified)' : 'Yes'}</p>
+                    {selectedApplication.emergency_contact_name && (
+                      <p><strong>Emergency Contact:</strong> {selectedApplication.emergency_contact_name} ({selectedApplication.emergency_contact_phone})</p>
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* About Me */}
               {selectedApplication.about_me && (
-                <div>
-                  <h3 className="font-semibold mb-3">About</h3>
-                  <p className="text-sm bg-gray-50 p-3 rounded">{selectedApplication.about_me}</p>
+                <div className="pt-2">
+                  <h3 className="font-semibold mb-2 text-blue-600">About / Notes</h3>
+                  <p className="text-xs bg-slate-50 border p-3 rounded-lg whitespace-pre-wrap">{selectedApplication.about_me}</p>
                 </div>
               )}
 
-              {/* Documents */}
-              <div>
-                <h3 className="font-semibold mb-3">Documents</h3>
-                <div className="flex gap-4">
+              {/* Documents & KYC Photos */}
+              <div className="pt-4 border-t">
+                <h3 className="font-semibold mb-3 text-zinc-100">Documents & KYC Photo Verification</h3>
+                <div className="flex flex-wrap items-center gap-4">
                   {selectedApplication.cv_url && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={selectedApplication.cv_url} target="_blank" rel="noopener noreferrer">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download CV
-                      </a>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => viewOrDownloadFile(selectedApplication.cv_url, `${selectedApplication.full_name}_CV.pdf`)}
+                    >
+                      <Download className="h-4 w-4 mr-2 text-zinc-400" />
+                      View / Download CV
                     </Button>
                   )}
                   {selectedApplication.profile_photo_url && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={selectedApplication.profile_photo_url} target="_blank" rel="noopener noreferrer">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Photo
-                      </a>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => viewOrDownloadFile(selectedApplication.profile_photo_url, `${selectedApplication.full_name}_Photo.jpg`)}
+                    >
+                      <Eye className="h-4 w-4 mr-2 text-zinc-400" />
+                      View Profile Photo
                     </Button>
+                  )}
+                  {selectedApplication.kyc_selfie_url && (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={selectedApplication.kyc_selfie_url}
+                        alt="KYC Selfie"
+                        className="w-12 h-12 rounded-lg object-cover border border-emerald-500"
+                        onClick={() => viewOrDownloadFile(selectedApplication.kyc_selfie_url, `${selectedApplication.full_name}_Selfie.jpg`)}
+                      />
+                      <span className="text-xs text-emerald-600 font-semibold">✓ Live KYC Selfie Verified</span>
+                    </div>
                   )}
                 </div>
               </div>

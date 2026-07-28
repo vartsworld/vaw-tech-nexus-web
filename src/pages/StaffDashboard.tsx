@@ -433,7 +433,7 @@ const StaffDashboard = () => {
                   variant="ghost"
                   size="sm"
                   className="bg-white/10 hover:bg-white/20 text-white border border-white/20 h-9 px-2 sm:px-3"
-                  onClick={() => navigate("/staff/profile")}
+                  onClick={() => navigate("/account")}
                 >
                   <Avatar className="w-6 h-6 sm:mr-2">
                     <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />

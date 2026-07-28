@@ -42,7 +42,7 @@ const EnhancedStaffForm = ({
     const [teamRes, internRes] = await Promise.all([
       supabase
         .from('team_applications_staff')
-        .select('id, full_name, email, phone, username, gender, date_of_birth, about_me, cv_url, profile_photo_url, father_name, mother_name, siblings, relationship_status, marriage_preference, work_confidence_level, reference_person_name, reference_person_number, preferred_department_id, preferred_role')
+        .select('*')
         .order('created_at', { ascending: false }),
       supabase
         .from('internship_applications')
@@ -69,6 +69,7 @@ const EnhancedStaffForm = ({
       father_name: app.father_name || '',
       mother_name: app.mother_name || '',
       siblings: app.siblings || '',
+      sibling_names: app.sibling_names || [],
       relationship_status: app.relationship_status || '',
       marriage_preference: app.marriage_preference || '',
       work_confidence_level: app.work_confidence_level || '',
@@ -76,6 +77,15 @@ const EnhancedStaffForm = ({
       reference_person_number: app.reference_person_number || '',
       department_id: app.preferred_department_id || '',
       role: app.preferred_role || 'staff',
+      physical_address: app.physical_address || '',
+      govt_id_type: app.govt_id_type || 'aadhaar',
+      govt_id_number: app.govt_id_number || '',
+      blood_group: app.blood_group || '',
+      has_health_issues: app.has_health_issues || false,
+      health_issues: app.health_issues || [],
+      kyc_selfie_url: app.kyc_selfie_url || '',
+      emergency_contact_name: app.emergency_contact_name || '',
+      emergency_contact_phone: app.emergency_contact_phone || '',
     });
     toast({ title: "Imported", description: `Loaded all details from ${app.full_name}'s team application.` });
   };
@@ -463,8 +473,25 @@ const EnhancedStaffForm = ({
               rows={2}
             />
           </div>
+
           <div>
-            <Label htmlFor="govt_id_number">Govt ID Number (Aadhaar / Passport)</Label>
+            <Label htmlFor="govt_id_type">Government ID Type</Label>
+            <Select value={newStaff.govt_id_type || 'aadhaar'} onValueChange={(value) => setNewStaff({ ...newStaff, govt_id_type: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select ID Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="aadhaar">Aadhaar Card</SelectItem>
+                <SelectItem value="pancard">PAN Card</SelectItem>
+                <SelectItem value="passport">Passport</SelectItem>
+                <SelectItem value="voter_id">Voter ID</SelectItem>
+                <SelectItem value="driving_license">Driving License</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="govt_id_number">Govt ID Number</Label>
             <Input
               id="govt_id_number"
               value={newStaff.govt_id_number}
@@ -472,6 +499,7 @@ const EnhancedStaffForm = ({
               placeholder="Enter ID number"
             />
           </div>
+
           <div>
             <Label htmlFor="blood_group">Blood Group</Label>
             <Select value={newStaff.blood_group} onValueChange={(value) => setNewStaff({ ...newStaff, blood_group: value })}>
@@ -484,6 +512,26 @@ const EnhancedStaffForm = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="emergency_contact_name">Emergency Contact Name</Label>
+            <Input
+              id="emergency_contact_name"
+              value={newStaff.emergency_contact_name}
+              onChange={(e) => setNewStaff({ ...newStaff, emergency_contact_name: e.target.value })}
+              placeholder="Emergency Contact Name"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="emergency_contact_phone">Emergency Contact Phone</Label>
+            <Input
+              id="emergency_contact_phone"
+              value={newStaff.emergency_contact_phone}
+              onChange={(e) => setNewStaff({ ...newStaff, emergency_contact_phone: e.target.value })}
+              placeholder="Emergency Contact Phone"
+            />
           </div>
         </div>
       </div>
