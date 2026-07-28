@@ -5,17 +5,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Send, CheckCircle } from "lucide-react";
+import { Users, Send, CheckCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
+interface Department {
+  id: string;
+  name: string;
+}
+
 const TeamApplication = () => {
-  const [departments, setDepartments] = useState([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showReference, setShowReference] = useState(false);
   const [formData, setFormData] = useState({
     full_name: "",
@@ -114,6 +120,8 @@ const TeamApplication = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
     try {
       const { error } = await supabase
@@ -154,6 +162,8 @@ const TeamApplication = () => {
         description: "Failed to submit application. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -200,7 +210,7 @@ const TeamApplication = () => {
                 <h3 className="font-semibold text-lg border-b pb-2">Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="full_name">Full Name *</Label>
+                    <Label htmlFor="full_name">Full Name <span className="text-red-500">*</span></Label>
                     <Input
                       id="full_name"
                       required
@@ -210,7 +220,7 @@ const TeamApplication = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
                     <Input
                       id="email"
                       type="email"
@@ -230,7 +240,7 @@ const TeamApplication = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="username">Preferred Username *</Label>
+                    <Label htmlFor="username">Preferred Username <span className="text-red-500">*</span></Label>
                     <Input
                       id="username"
                       required
@@ -289,7 +299,7 @@ const TeamApplication = () => {
                         <SelectValue placeholder="Select department" />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map((dept: any) => (
+                        {departments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -403,7 +413,7 @@ const TeamApplication = () => {
               </div>
 
               {/* About Me */}
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="about_me">Tell About Yourself</Label>
                 <Textarea
                   id="about_me"
@@ -411,7 +421,13 @@ const TeamApplication = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, about_me: e.target.value }))}
                   placeholder="Tell us about yourself, your interests, goals, experience, etc."
                   rows={4}
+                  maxLength={1000}
                 />
+                <div className="flex justify-end text-xs text-muted-foreground">
+                  <span className={formData.about_me.length >= 800 ? "text-amber-500 font-bold" : ""}>
+                    {formData.about_me.length}/1000 characters
+                  </span>
+                </div>
               </div>
 
               {/* File Uploads */}
@@ -454,9 +470,23 @@ const TeamApplication = () => {
               </div>
 
               <div className="pt-6 border-t">
-                <Button type="submit" className="w-full" disabled={uploading}>
-                  <Send className="h-4 w-4 mr-2" />
-                  {uploading ? "Uploading..." : "Submit Application"}
+                <Button type="submit" className="w-full" disabled={uploading || isSubmitting}>
+                  {uploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Submitting Application...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Submit Application
+                    </>
+                  )}
                 </Button>
               </div>
             </form>
