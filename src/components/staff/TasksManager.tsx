@@ -17,10 +17,12 @@ import {
   LayoutGrid,
   List,
   LayoutDashboard,
+  ArrowLeft,
   ArrowRight,
   HandMetal,
   Layers,
-  Flame
+  Flame,
+  Coins
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +38,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Task {
   id: string;
@@ -184,10 +188,20 @@ const TasksManager = ({
           await supabase.from('user_coin_transactions').insert({
             user_id: userId,
             coins: rewardPoints,
-            transaction_type: 'earning',
+            transaction_type: 'task_earned',
             reason: `Task Completed: ${task.title}${bonusReason}`,
+            category: 'task_completion',
             source_type: 'task',
+            related_task_id: taskId
           } as any);
+
+          // Log to user_activity_log for ActivityLogPanel
+          await supabase.from('user_activity_log').insert({
+            user_id: userId,
+            activity_type: 'task_completed',
+            points_earned: rewardPoints,
+            metadata: { task_id: taskId, task_title: task.title, bonus_reason: bonusReason }
+          });
 
           // Log to user_points_log (for HR PointsMonitoring visibility)
           await supabase.from('user_points_log').insert({
@@ -201,12 +215,12 @@ const TasksManager = ({
 
           toast({
             title: rewardPoints > task.points ? "Task Completed Early! 🚀" : rewardPoints < task.points ? "Task Completed Late" : "Task Completed! 🎉",
-            description: `You earned ${rewardPoints} coins for completing "${task.title}"${bonusReason}`
+            description: `Great work on completing "${task.title}"!`
           });
         } else if (task?.trial_period) {
           toast({
             title: "Task Completed! 🎉",
-            description: `Trial task "${task.title}" completed! (No coins for trial period)`
+            description: `Trial task "${task.title}" completed!`
           });
         }
       }
@@ -330,6 +344,7 @@ const TasksManager = ({
               className={`h-8 w-8 p-0 ${viewMode === 'card' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
               onClick={() => setViewMode('card')}
               title="Card View"
+              aria-label="Switch to Card view"
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -339,6 +354,7 @@ const TasksManager = ({
               className={`h-8 w-8 p-0 ${viewMode === 'table' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
               onClick={() => setViewMode('table')}
               title="Table View"
+              aria-label="Switch to Table view"
             >
               <List className="h-4 w-4" />
             </Button>
@@ -346,8 +362,8 @@ const TasksManager = ({
         </div>
 
         {/* Filter and Stats Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full overflow-hidden">
+          <div className="flex flex-row flex-nowrap overflow-x-auto no-scrollbar gap-1.5 pb-2 sm:pb-0 max-w-full shrink-0">
             {[{
               key: 'overdue',
               label: 'Overdue',
@@ -377,7 +393,7 @@ const TasksManager = ({
                 key={filterOption.key}
                 variant={filter === filterOption.key ? "default" : "ghost"}
                 size="sm"
-                className={`flex items-center gap-2 px-3 h-8 rounded-full transition-all ${filter === filterOption.key
+                className={`flex items-center gap-2 px-3 h-8 rounded-full transition-all shrink-0 ${filter === filterOption.key
                   ? filterOption.key === 'overdue' ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20" : "bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/20"
                   : "text-white/60 hover:text-white hover:bg-white/10"
                   }`}
@@ -476,6 +492,8 @@ const TasksManager = ({
                             e.stopPropagation();
                             setSelectedTask(task);
                           }}
+                          title="View task details"
+                          aria-label="View task details"
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -490,65 +508,120 @@ const TasksManager = ({
               {filteredTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-4 flex flex-col hover:bg-white/[0.08] hover:border-white/20 hover:translate-y-[-2px] transition-all duration-300 relative group cursor-pointer"
+                  className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3 flex flex-col h-full hover:bg-white/10 transition-colors relative group cursor-pointer"
                   onClick={() => setSelectedTask(task)}
                 >
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1 pr-8">
-                      <h4 className="font-bold text-white text-base leading-tight line-clamp-2">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-medium text-white text-base truncate" title={task.title}>
                         {task.title}
                       </h4>
-                      <p className="text-white/40 text-[10px] uppercase font-bold tracking-widest flex items-center gap-1">
-                        <Target className="w-3 h-3" />
-                        {task.trial_period ? "TRIAL MISSION" : `${task.points} COINS REWARD`}
-                      </p>
+                      {task.description && (
+                        <p className="text-white/60 text-sm line-clamp-2 mt-1 whitespace-pre-wrap break-words" title={task.description}>
+                          {task.description}
+                        </p>
+                      )}
                     </div>
-                    <div className="absolute top-4 right-4">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       {getPriorityBadge(task.priority)}
                     </div>
                   </div>
 
-                  {task.description && (
-                    <p className="text-white/60 text-sm line-clamp-3 bg-black/20 p-2 rounded-lg border border-white/5 flex-1">
-                      {task.description}
-                    </p>
-                  )}
-
-                  <div className="space-y-3 pt-2">
-                    <div className="flex items-center justify-between text-xs py-2 border-y border-white/5">
-                      <div className="flex items-center gap-2 text-white/50">
-                        <Calendar className="h-3.5 w-3.5 text-blue-400" />
-                        <span>{task.due_date ? format(new Date(task.due_date), 'MMM dd') : 'No due date'}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {getStageBadge(task)}
-                        {getStatusBadge(task.status)}
+                  <div className="grid grid-cols-2 gap-2 text-sm flex-1">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-7 w-7 border border-white/10 bg-white/5">
+                        <AvatarFallback className="text-[10px]">
+                          {(task.assignedBy?.full_name || 'Team Lead')
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase() || "TL"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <div className="text-[10px] text-white/40 truncate">
+                          Assigned By
+                        </div>
+                        <div className="font-medium text-white/90 truncate text-xs sm:text-sm">
+                          {task.assignedBy?.full_name || 'Team Lead'}
+                        </div>
                       </div>
                     </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant="outline" className="text-white/70 border-white/20 w-fit">
+                        {task.trial_period ? "TRIAL" : `${task.points || 0} PTS`}
+                      </Badge>
+                    </div>
 
-                    <div className="flex items-center gap-2 pt-1">
+                    {(task.due_date || task.due_time) && (
+                      <div className="flex items-center gap-2 col-span-2 text-white/50 pt-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>
+                          {task.due_date && task.due_date.trim() !== '' && (() => {
+                            try {
+                              const date = new Date(task.due_date);
+                              if (isNaN(date.getTime())) return 'Invalid date';
+                              return format(date, 'MMM dd, yyyy');
+                            } catch {
+                              return 'Invalid date';
+                            }
+                          })()}
+                          {task.due_time && ` ${task.due_time}`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 pt-3 border-t border-white/10 mt-auto">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-white/60">Status:</span>
+                      {getStatusBadge(task.status)}
+                    </div>
+
+                    <Select
+                      value={task.status}
+                      onValueChange={(value) => updateTaskStatus(task.id, value as any)}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger className="w-full bg-white/5 border-white/10 text-white h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-950 border-white/10 text-white">
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed / Submitted</SelectItem>
+                        <SelectItem value="handover">Handover</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <div className="flex gap-2 justify-end">
                       <Button
-                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white h-9 font-bold text-xs rounded-lg shadow-lg shadow-blue-500/20 transition-all border-none"
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 bg-white/5 border-white/10 text-white hover:bg-white/10 h-8 text-xs"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedTask(task);
                         }}
                       >
-                        <Eye className="h-3.5 w-3.5 mr-2" />
-                        VIEW DETAILS
+                        <Eye className="h-3.5 w-3.5 mr-1.5" />
+                        View
                       </Button>
 
                       {task.status === 'completed' && (
                         <Button
-                          className="flex-1 bg-purple-500 hover:bg-purple-600 text-white h-9 font-bold text-xs rounded-lg shadow-lg shadow-purple-500/20 transition-all border-none"
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 bg-purple-500/10 border-purple-500/20 text-purple-400 hover:bg-purple-500/20 hover:text-purple-300 h-8 text-xs"
                           onClick={(e) => {
                             e.stopPropagation();
                             updateTaskStatus(task.id, 'handover');
                           }}
                           disabled={isLoading}
                         >
-                          <ArrowRight className="h-3.5 w-3.5 mr-2" />
-                          HANDOVER
+                          <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
+                          Handover
                         </Button>
                       )}
                     </div>

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 
-type RoomType = 'home' | 'workspace' | 'breakroom' | 'meeting';
+type RoomType = 'home' | 'workspace' | 'breakroom' | 'meeting' | 'planner';
 
 interface MobileBottomNavProps {
   currentRoom: RoomType;
@@ -24,14 +24,14 @@ const MobileBottomNav = ({
   const [showMenu, setShowMenu] = useState(false);
 
   const rooms = [
-    { id: 'home' as const, label: 'Office', icon: Compass, color: 'from-emerald-500 to-teal-600' },
     { id: 'workspace' as const, label: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
+    { id: 'planner' as const, label: 'Planner', icon: Calendar, color: 'from-purple-500 to-purple-600' },
     { id: 'meeting' as const, label: 'Meeting Room', icon: Users, color: 'from-yellow-500 to-yellow-600' },
   ];
 
   const navItems = [
-    { id: 'home' as const, label: 'Office', icon: Compass, isRoom: true },
     { id: 'workspace' as const, label: 'Work', icon: Monitor, isRoom: true },
+    { id: 'planner' as const, label: 'Plan', icon: Calendar, isRoom: true },
     { id: 'meeting' as const, label: 'Meet', icon: Users, isRoom: true },
     { id: 'chat', label: 'Chat', icon: MessageCircle, isRoom: false, action: onOpenChat },
     { id: 'menu', label: 'More', icon: Menu, isRoom: false, action: () => setShowMenu(true) },

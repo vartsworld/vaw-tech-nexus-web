@@ -83,23 +83,12 @@ const CodePuzzle = ({ onClose, userId }: { onClose: () => void, userId: string }
         await supabase.from('user_coin_transactions').insert({
           user_id: userId,
           coins: coinsEarned,
-          transaction_type: 'bonus',
+          transaction_type: 'hr_grant',
+          category: 'other',
           reason: `Won ${coinsEarned} coins playing Code Puzzle (Score: ${score})`
         } as any);
 
-        // Update staff_profiles.total_points
-        const { data: profileData } = await supabase
-          .from('staff_profiles')
-          .select('total_points')
-          .eq('user_id', userId)
-          .single();
-
-        if (profileData) {
-          await supabase
-            .from('staff_profiles')
-            .update({ total_points: (profileData.total_points || 0) + coinsEarned })
-            .eq('user_id', userId);
-        }
+        // staff_profiles.total_points is updated automatically via DB trigger
       }
 
       await supabase.from('user_activity_log').insert({

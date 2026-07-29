@@ -19,6 +19,7 @@ import ClientOnboardingCreator from './ClientOnboardingCreator';
 interface DraggableWorkspaceProps {
   userId: string;
   userProfile: any;
+  onWidgetControlsChange?: (controls: React.ReactNode) => void;
 }
 
 interface WorkspaceItem {
@@ -32,12 +33,10 @@ interface WorkspaceItem {
 
 const availableWidgets = [
   { component: 'TeamChat', title: 'Team Chat', span: 'half' as const, removable: true },
-  { component: 'MiniChess', title: 'Mini Chess', span: 'half' as const, removable: true },
   { component: 'ActivityLogPanel', title: 'Activity Logger', span: 'half' as const, removable: true },
-  { component: 'ClientOnboardingCreator', title: 'Onboarding Links', span: 'half' as const, removable: true },
 ];
 
-const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) => {
+const DraggableWorkspace = ({ userId, userProfile, onWidgetControlsChange }: DraggableWorkspaceProps) => {
   const isMobile = useIsMobile();
   // Default: Only Tasks Manager visible, other widgets hidden
   const defaultItems: WorkspaceItem[] = [
@@ -49,6 +48,117 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
   const [isLoading, setIsLoading] = useState(true);
   const [showControls, setShowControls] = useState(!isMobile);
   const { toast } = useToast();
+
+  const toggleWidgetVisibility = useCallback((id: string) => {
+    setItems(prev => prev.map(item =>
+      item.id === id ? { ...item, isVisible: !item.isVisible } : item
+    ));
+  }, []);
+
+  const showAllWidgets = useCallback(() => {
+    setItems(prev => prev.map(item => ({ ...item, isVisible: true })));
+    toast({
+      title: "All Widgets Shown",
+      description: "All widgets are now visible.",
+    });
+  }, [toast]);
+
+  const hideAllWidgets = useCallback(() => {
+    setItems(prev => prev.map(item => ({ ...item, isVisible: false })));
+    toast({
+      title: "All Widgets Hidden",
+      description: "All widgets are now collapsed.",
+    });
+  }, [toast]);
+
+  const getAvailableWidgets = useCallback(() => {
+    const currentComponents = items.map(item => item.component);
+    return availableWidgets.filter(widget => !currentComponents.includes(widget.component));
+  }, [items]);
+
+  const addWidget = useCallback(() => {
+    if (!selectedWidget) return;
+
+    const widget = availableWidgets.find(w => w.component === selectedWidget);
+    if (!widget) return;
+
+    const newId = `${widget.component.toLowerCase()}-${Date.now()}`;
+    const newItem: WorkspaceItem = {
+      id: newId,
+      component: widget.component,
+      title: widget.title,
+      span: widget.span,
+      removable: widget.removable,
+      isVisible: true,
+    };
+
+    setItems(prev => [...prev, newItem]);
+    setSelectedWidget('');
+
+    toast({
+      title: "Widget Added",
+      description: `${widget.title} has been added to your workspace.`,
+    });
+  }, [selectedWidget, toast]);
+
+  const removeWidget = useCallback((id: string) => {
+    const removedWidget = items.find(item => item.id === id);
+    setItems(prev => prev.filter(item => item.id !== id));
+
+    if (removedWidget) {
+      toast({
+        title: "Widget Removed",
+        description: `${removedWidget.title} has been removed from your workspace.`,
+      });
+    }
+  }, [items, toast]);
+
+  useEffect(() => {
+    if (onWidgetControlsChange) {
+      onWidgetControlsChange(
+        <div className="flex flex-row items-center gap-2">
+          <Select value={selectedWidget} onValueChange={setSelectedWidget}>
+            <SelectTrigger className="w-28 sm:w-40 bg-white/10 border-white/10 text-white h-8 text-[11px] focus:ring-0">
+              <SelectValue placeholder="Add widget..." />
+            </SelectTrigger>
+            <SelectContent className="bg-zinc-950 border-white/10 text-white">
+              {getAvailableWidgets().map((widget) => (
+                <SelectItem
+                  key={widget.component}
+                  value={widget.component}
+                  className="text-xs focus:bg-white/5 focus:text-white"
+                >
+                  {widget.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-1">
+            <Button
+              onClick={addWidget}
+              disabled={!selectedWidget}
+              className="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 h-8 text-xs px-2 sm:px-3"
+              size="sm"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1" />
+              Add
+            </Button>
+            <WidgetManager
+              widgets={items.map(item => ({
+                id: item.id,
+                name: item.title,
+                description: `${item.component} widget`,
+                isVisible: item.isVisible ?? true,
+              }))}
+              onToggleWidget={toggleWidgetVisibility}
+              onShowAll={showAllWidgets}
+              onHideAll={hideAllWidgets}
+            />
+          </div>
+        </div>
+      );
+    }
+  }, [items, selectedWidget, getAvailableWidgets, addWidget, toggleWidgetVisibility, showAllWidgets, hideAllWidgets, onWidgetControlsChange]);
 
   // Load saved layout on mount
   useEffect(() => {
@@ -112,70 +222,6 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
     setItems(newItems);
   }, [items]);
 
-  const addWidget = useCallback(() => {
-    if (!selectedWidget) return;
-
-    const widget = availableWidgets.find(w => w.component === selectedWidget);
-    if (!widget) return;
-
-    const newId = `${widget.component.toLowerCase()}-${Date.now()}`;
-    const newItem: WorkspaceItem = {
-      id: newId,
-      component: widget.component,
-      title: widget.title,
-      span: widget.span,
-      removable: widget.removable,
-      isVisible: true,
-    };
-
-    setItems(prev => [...prev, newItem]);
-    setSelectedWidget('');
-
-    toast({
-      title: "Widget Added",
-      description: `${widget.title} has been added to your workspace.`,
-    });
-  }, [selectedWidget, toast]);
-
-  const toggleWidgetVisibility = useCallback((id: string) => {
-    setItems(prev => prev.map(item =>
-      item.id === id ? { ...item, isVisible: !item.isVisible } : item
-    ));
-  }, []);
-
-  const showAllWidgets = useCallback(() => {
-    setItems(prev => prev.map(item => ({ ...item, isVisible: true })));
-    toast({
-      title: "All Widgets Shown",
-      description: "All widgets are now visible.",
-    });
-  }, [toast]);
-
-  const hideAllWidgets = useCallback(() => {
-    setItems(prev => prev.map(item => ({ ...item, isVisible: false })));
-    toast({
-      title: "All Widgets Hidden",
-      description: "All widgets are now collapsed.",
-    });
-  }, [toast]);
-
-  const removeWidget = useCallback((id: string) => {
-    const removedWidget = items.find(item => item.id === id);
-    setItems(prev => prev.filter(item => item.id !== id));
-
-    if (removedWidget) {
-      toast({
-        title: "Widget Removed",
-        description: `${removedWidget.title} has been removed from your workspace.`,
-      });
-    }
-  }, [items, toast]);
-
-  const getAvailableWidgets = useCallback(() => {
-    const currentComponents = items.map(item => item.component);
-    return availableWidgets.filter(widget => !currentComponents.includes(widget.component));
-  }, [items]);
-
   const renderComponent = (item: WorkspaceItem) => {
     switch (item.component) {
       case 'TasksManager':
@@ -210,65 +256,6 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-      {/* Widget Controls - Collapsible on mobile */}
-      <Card className="bg-black/10 backdrop-blur-lg border-white/10">
-        <button
-          className="w-full flex items-center justify-between p-3 sm:p-4 sm:cursor-default"
-          onClick={() => isMobile && setShowControls(!showControls)}
-        >
-          <span className="text-sm font-medium text-foreground/80">Widget Controls</span>
-          {isMobile && (
-            showControls
-              ? <ChevronUp className="w-4 h-4 text-muted-foreground" />
-              : <ChevronDown className="w-4 h-4 text-muted-foreground" />
-          )}
-        </button>
-
-        {(showControls || !isMobile) && (
-          <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-0">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
-              <Select value={selectedWidget} onValueChange={setSelectedWidget}>
-                <SelectTrigger className="w-full sm:w-48 bg-black/20 border-white/20 text-foreground">
-                  <SelectValue placeholder="Add a widget..." />
-                </SelectTrigger>
-                <SelectContent className="bg-background/95 backdrop-blur-lg border-border">
-                  {getAvailableWidgets().map((widget) => (
-                    <SelectItem
-                      key={widget.component}
-                      value={widget.component}
-                    >
-                      {widget.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={addWidget}
-                  disabled={!selectedWidget}
-                  className="flex-1 sm:flex-none bg-primary/20 hover:bg-primary/30 text-foreground border-primary/30"
-                  size="sm"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Widget
-                </Button>
-                <WidgetManager
-                  widgets={items.map(item => ({
-                    id: item.id,
-                    name: item.title,
-                    description: `${item.component} widget`,
-                    isVisible: item.isVisible ?? true,
-                  }))}
-                  onToggleWidget={toggleWidgetVisibility}
-                  onShowAll={showAllWidgets}
-                  onHideAll={hideAllWidgets}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-      </Card>
-
       <DragDropContext onDragEnd={onDragEnd}>
         <StrictModeDroppable droppableId="workspace">
           {(provided) => (
@@ -295,35 +282,37 @@ const DraggableWorkspace = ({ userId, userProfile }: DraggableWorkspaceProps) =>
                           : 'h-[350px] sm:h-[500px]'
                       }`}>
                         {/* Controls - always visible on mobile, hover on desktop */}
-                        <div className={`absolute top-2 right-2 flex gap-1 z-10 transition-opacity duration-200 ${
-                          isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                        }`}>
-                          <Button
-                            onClick={() => toggleWidgetVisibility(item.id)}
-                            className="p-1 h-6 w-6 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 hover:text-blue-300 border-blue-500/30"
-                            size="sm"
-                            title={item.isVisible ? 'Hide widget' : 'Show widget'}
-                          >
-                            {item.isVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                          </Button>
-                          {item.removable && (
+                        {item.component !== 'TasksManager' && (
+                          <div className={`absolute top-2 right-2 flex gap-1 z-10 transition-opacity duration-200 ${
+                            isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                          }`}>
                             <Button
-                              onClick={() => removeWidget(item.id)}
-                              className="p-1 h-6 w-6 bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 border-red-500/30"
+                              onClick={() => toggleWidgetVisibility(item.id)}
+                              className="p-1 h-6 w-6 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 hover:text-blue-300 border-blue-500/30"
                               size="sm"
+                              title={item.isVisible ? 'Hide widget' : 'Show widget'}
                             >
-                              <X className="w-3 h-3" />
+                              {item.isVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                             </Button>
-                          )}
-                          {!isMobile && (
-                            <div
-                              {...provided.dragHandleProps}
-                              className="p-1 h-6 w-6 cursor-grab active:cursor-grabbing bg-white/10 hover:bg-white/20 rounded flex items-center justify-center"
-                            >
-                              <GripVertical className="w-3 h-3 text-white/60 hover:text-white/80" />
-                            </div>
-                          )}
-                        </div>
+                            {item.removable && (
+                              <Button
+                                onClick={() => removeWidget(item.id)}
+                                className="p-1 h-6 w-6 bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 border-red-500/30"
+                                size="sm"
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            )}
+                            {!isMobile && (
+                              <div
+                                {...provided.dragHandleProps}
+                                className="p-1 h-6 w-6 cursor-grab active:cursor-grabbing bg-white/10 hover:bg-white/20 rounded flex items-center justify-center"
+                              >
+                                <GripVertical className="w-3 h-3 text-white/60 hover:text-white/80" />
+                              </div>
+                            )}
+                          </div>
+                        )}
 
                         {/* Drag handle for mobile - hidden since drag doesn't work well on touch */}
                         {isMobile && (

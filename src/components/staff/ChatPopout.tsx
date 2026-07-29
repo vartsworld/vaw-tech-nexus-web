@@ -17,22 +17,12 @@ const ChatPopout = ({ title, icon, children, onClose }: ChatPopoutProps) => {
   const isDragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging.current) return;
-      setPosition({
-        x: Math.max(0, Math.min(e.clientX - dragOffset.current.x, window.innerWidth - size.width)),
-        y: Math.max(0, Math.min(e.clientY - dragOffset.current.y, window.innerHeight - 60)),
-      });
-    };
-    const handleMouseUp = () => { isDragging.current = false; };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [size.width]);
+  // BOLT OPTIMIZATION: Keep track of active listener references for dynamic registration.
+  // Instead of a global window-wide mousemove/mouseup listener registered on mount
+  // (which fires continuously on every pixel movement across the site even when NOT dragging),
+  // we dynamically register global listeners only during an active drag operation and clean them up immediately after.
+  const mouseMoveHandlerRef = useRef<((e: MouseEvent) => void) | null>(null);
+  const mouseUpHandlerRef = useRef<(() => void) | null>(null);
 
   const handleDragStart = (e: React.MouseEvent) => {
     if (isMaximized) return;
@@ -41,7 +31,48 @@ const ChatPopout = ({ title, icon, children, onClose }: ChatPopoutProps) => {
       x: e.clientX - position.x,
       y: e.clientY - position.y,
     };
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      setPosition({
+        x: Math.max(0, Math.min(moveEvent.clientX - dragOffset.current.x, window.innerWidth - size.width)),
+        y: Math.max(0, Math.min(moveEvent.clientY - dragOffset.current.y, window.innerHeight - 60)),
+      });
+    };
+
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      mouseMoveHandlerRef.current = null;
+      mouseUpHandlerRef.current = null;
+    };
+
+    // Clean up any existing listeners just in case
+    if (mouseMoveHandlerRef.current) {
+      window.removeEventListener("mousemove", mouseMoveHandlerRef.current);
+    }
+    if (mouseUpHandlerRef.current) {
+      window.removeEventListener("mouseup", mouseUpHandlerRef.current);
+    }
+
+    mouseMoveHandlerRef.current = handleMouseMove;
+    mouseUpHandlerRef.current = handleMouseUp;
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
   };
+
+  useEffect(() => {
+    // Cleanup any active event listeners when the component unmounts to prevent memory leaks or state-update errors
+    return () => {
+      if (mouseMoveHandlerRef.current) {
+        window.removeEventListener("mousemove", mouseMoveHandlerRef.current);
+      }
+      if (mouseUpHandlerRef.current) {
+        window.removeEventListener("mouseup", mouseUpHandlerRef.current);
+      }
+    };
+  }, []);
 
   const maximizedStyles = isMaximized
     ? "fixed inset-4 z-[60]"

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +52,7 @@ interface ChessInvite {
 
 type GameMode = 'menu' | 'playing' | 'finding';
 
-const ChessPiece = ({ piece, color, compact }: { piece: string, color: 'w' | 'b', compact?: boolean }) => {
+const ChessPiece = memo(({ piece, color, compact }: { piece: string, color: 'w' | 'b', compact?: boolean }) => {
   const isWhite = color === 'w';
 
   const getIconName = () => {
@@ -81,7 +81,9 @@ const ChessPiece = ({ piece, color, compact }: { piece: string, color: 'w' | 'b'
       {getIconName()}
     </span>
   );
-};
+});
+
+ChessPiece.displayName = "ChessPiece";
 
 const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => {
 
@@ -286,9 +288,18 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
         await supabase.from("user_coin_transactions").insert({
           user_id: userId,
           coins: coins,
-          transaction_type: 'earning',
+          transaction_type: 'chess_reward',
           reason: `Chess Game: ${isDraw ? 'Draw' : 'Victory'} vs ${opponentName}`,
+          category: 'chess',
           source_type: 'bonus'
+        } as any);
+
+        // Log to user_activity_log
+        await supabase.from('user_activity_log').insert({
+          user_id: userId,
+          activity_type: 'chess_game_played',
+          points_earned: coins,
+          metadata: { opponent_name: opponentName, result: isDraw ? 'draw' : (winnerId === userId ? 'win' : 'loss') }
         });
       }
 

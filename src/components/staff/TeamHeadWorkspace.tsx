@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import {
@@ -141,7 +142,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
   const [projects, setProjects] = useState<any[]>([]);
   const [folderSubtasks, setFolderSubtasks] = useState<any[]>([]);
   const [folderSearchQuery, setFolderSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'table' | 'kanban'>('card');
   const [staff, setStaff] = useState<Staff[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [clients, setClients] = useState<any[]>([]);
@@ -508,50 +509,70 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         attachments: task.attachments ? (task.attachments as any) : []
       }));
 
-      // Enrich each task with subtask stage summary (lightweight parallel fetch)
-      const enrichedTasks = await Promise.all(
-        tasksWithAttachments.map(async (task) => {
-          try {
-            const { data: subs } = await supabase
-              .from('staff_subtasks')
-              .select('stage, status, title')
-              .eq('task_id', task.id);
-            if (!subs || subs.length === 0) return { ...task, _stageInfo: null };
+      // BOLT OPTIMIZATION: Avoid N+1 queries on staff_subtasks.
+      // Instead of querying subtasks for each task in parallel inside Promise.all (causing up to N database roundtrips),
+      // we batch-fetch the subtasks for all fetched tasks in a single query using the `.in()` filter.
+      let subtasksMap: Record<string, any[]> = {};
+      const taskIds = tasksWithAttachments.map(t => t.id).filter(Boolean);
 
-            const stageMap: Record<number, { total: number; completed: number; titles: string[] }> = {};
-            subs.forEach((s: any) => {
-              const stg = s.stage || 1;
-              if (!stageMap[stg]) stageMap[stg] = { total: 0, completed: 0, titles: [] };
-              stageMap[stg].total++;
-              stageMap[stg].titles.push(s.title);
-              if (s.status === 'completed') stageMap[stg].completed++;
-            });
+      if (taskIds.length > 0) {
+        try {
+          const { data: allSubs, error: subsFetchError } = await supabase
+            .from('staff_subtasks')
+            .select('task_id, stage, status, title')
+            .in('task_id', taskIds);
 
-            const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
-            const totalStages = stageNums.length;
-            const completedStages = stageNums.filter(s => stageMap[s].completed === stageMap[s].total).length;
-            // Current stage = first stage with incomplete subtasks, or last+1 if all done
-            const currentStage = task.current_stage || stageNums.find(s => stageMap[s].completed < stageMap[s].total) || (stageNums[stageNums.length - 1] + 1);
-            // Stage title = first subtask title in the current stage
-            const currentStageTitles = stageMap[currentStage]?.titles || [];
-            const stageTitle = currentStageTitles.length > 0 ? currentStageTitles[0] : null;
-
-            return {
-              ...task,
-              current_stage: currentStage,
-              _stageInfo: {
-                totalStages,
-                completedStages,
-                stageTitle,
-                stageNums,
-                stageMap
-              }
-            };
-          } catch {
-            return { ...task, _stageInfo: null };
+          if (!subsFetchError && allSubs) {
+            subtasksMap = allSubs.reduce((acc, s) => {
+              if (!acc[s.task_id]) acc[s.task_id] = [];
+              acc[s.task_id].push(s);
+              return acc;
+            }, {} as Record<string, any[]>);
           }
-        })
-      );
+        } catch (err) {
+          console.error('Error batch fetching subtasks:', err);
+        }
+      }
+
+      // Enrich each task with subtask stage summary using O(1) local hash map lookup
+      const enrichedTasks = tasksWithAttachments.map((task) => {
+        try {
+          const subs = subtasksMap[task.id];
+          if (!subs || subs.length === 0) return { ...task, _stageInfo: null };
+
+          const stageMap: Record<number, { total: number; completed: number; titles: string[] }> = {};
+          subs.forEach((s: any) => {
+            const stg = s.stage || 1;
+            if (!stageMap[stg]) stageMap[stg] = { total: 0, completed: 0, titles: [] };
+            stageMap[stg].total++;
+            stageMap[stg].titles.push(s.title);
+            if (s.status === 'completed') stageMap[stg].completed++;
+          });
+
+          const stageNums = Object.keys(stageMap).map(Number).sort((a, b) => a - b);
+          const totalStages = stageNums.length;
+          const completedStages = stageNums.filter(s => stageMap[s].completed === stageMap[s].total).length;
+          // Current stage = first stage with incomplete subtasks, or last+1 if all done
+          const currentStage = task.current_stage || stageNums.find(s => stageMap[s].completed < stageMap[s].total) || (stageNums[stageNums.length - 1] + 1);
+          // Stage title = first subtask title in the current stage
+          const currentStageTitles = stageMap[currentStage]?.titles || [];
+          const stageTitle = currentStageTitles.length > 0 ? currentStageTitles[0] : null;
+
+          return {
+            ...task,
+            current_stage: currentStage,
+            _stageInfo: {
+              totalStages,
+              completedStages,
+              stageTitle,
+              stageNums,
+              stageMap
+            }
+          };
+        } catch {
+          return { ...task, _stageInfo: null };
+        }
+      });
 
       setTasks(enrichedTasks as Task[]);
 
@@ -1111,42 +1132,37 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       // Award points for subtask completion
       if (data.points > 0) {
-        // 1. Update total_points on staff profile
-        const { data: staffProfile } = await supabase
-          .from('staff_profiles')
-          .select('total_points')
-          .eq('user_id', data.assigned_to)
-          .single();
+        // 1. Log to user_coin_transactions (DB trigger 'sync_user_total_points_trigger' handles staff_profiles.total_points)
+        await supabase
+          .from('user_coin_transactions')
+          .insert({
+            user_id: data.assigned_to,
+            coins: data.points,
+            transaction_type: 'task_earned',
+            category: 'task_completion',
+            reason: `Subtask Completed: ${data.title}`,
+            source_type: 'subtask',
+            related_task_id: data.task_id,
+            metadata: { subtask_id: data.id }
+          } as any);
 
-        if (staffProfile) {
-          await supabase
-            .from('staff_profiles')
-            .update({
-              total_points: (staffProfile.total_points || 0) + data.points,
-            })
-            .eq('user_id', data.assigned_to);
+        // 2. Log to user_points_log (for HR PointsMonitoring visibility)
+        await supabase
+          .from('user_points_log')
+          .insert({
+            user_id: data.assigned_to,
+            points: data.points,
+            reason: `Subtask approved: ${data.title}`,
+            category: 'task'
+          });
 
-          // 2. Log to user_points_log (for HR PointsMonitoring)
-          await supabase
-            .from('user_points_log')
-            .insert({
-              user_id: data.assigned_to,
-              points: data.points,
-              reason: `Subtask approved: ${data.title}`,
-              category: 'task'
-            });
-
-          // 3. Log to user_coin_transactions (for PointsBalance / MyCoins)
-          await supabase
-            .from('user_coin_transactions')
-            .insert({
-              user_id: data.assigned_to,
-              coins: data.points,
-              transaction_type: 'earning',
-              reason: `Subtask Completed: ${data.title}`,
-              source_type: 'subtask',
-            } as any);
-        }
+        // 3. Log to user_activity_log
+        await supabase.from('user_activity_log').insert({
+          user_id: data.assigned_to,
+          activity_type: 'task_completed',
+          points_earned: data.points,
+          metadata: { task_id: data.task_id, subtask_id: data.id, subtask_title: data.title, approved_by: user.id }
+        });
       }
 
       const updatedSubtasks = subtasks.map(st => st.id === subtaskId ? data : st);
@@ -2202,7 +2218,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   </Badge>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] max-h-[80vh] bg-gray-900/95 backdrop-blur-xl border-emerald-500/30 text-white">
+              <DialogContent className="sm:max-w-[600px] max-h-[80vh] bg-black/60 backdrop-blur-2xl border-white/15 text-white rounded-[2.5rem]">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2 text-emerald-300">
                     <CheckCircle className="h-5 w-5" />
@@ -2297,15 +2313,27 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
           {/* Pending Subtasks for Review */}
           {pendingSubtasks.length > 0 && (
             <Card className="bg-gradient-to-br from-purple-500/20 via-blue-500/10 to-indigo-500/20 backdrop-blur-lg border-purple-500/30 text-white relative z-10">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ListChecks className="h-5 w-5 text-purple-300" />
-                  Subtasks Pending Review ({pendingSubtasks.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {pendingSubtasks.map((subtask) => {
+              <Collapsible defaultOpen={false}>
+                <CardHeader className="p-0">
+                  <CollapsibleTrigger className="w-full">
+                    <div className="flex items-center justify-between p-6 w-full group">
+                      <CardTitle className="flex items-center gap-2">
+                        <ListChecks className="h-5 w-5 text-purple-300" />
+                        Subtasks Pending Review ({pendingSubtasks.length})
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-white/40 group-hover:text-white/60 transition-colors">
+                          Latest {Math.min(pendingSubtasks.length, 3)} reviews
+                        </span>
+                        <ChevronDown className="h-5 w-5 text-white/40 group-hover:text-white/60 transition-colors transform group-data-[state=open]:rotate-180" />
+                      </div>
+                    </div>
+                  </CollapsibleTrigger>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent className="pt-0">
+                    <div className="space-y-3">
+                      {pendingSubtasks.slice(0, 3).map((subtask) => {
                     const parentTask = tasks.find((t) => t.id === subtask.task_id);
                     const assigneeProfile = (subtask as any).staff_profiles as any | null;
                     return (
@@ -2371,10 +2399,24 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                           </Badge>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
+                        );
+                      })}
+                      {pendingSubtasks.length > 3 && (
+                        <Button
+                          variant="ghost"
+                          className="w-full text-xs text-purple-300 hover:text-purple-200 hover:bg-purple-500/10"
+                          onClick={() => {
+                            setReviewDialogSubtask(pendingSubtasks[3]);
+                            setReviewDialogOpen(true);
+                          }}
+                        >
+                          View all {pendingSubtasks.length} pending reviews
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
             </Card>
           )}
 
@@ -2550,6 +2592,15 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                     title="Table View"
                   >
                     <List className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-7 w-7 p-0 ${viewMode === 'kanban' ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}
+                    onClick={() => setViewMode('kanban')}
+                    title="Kanban View"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
                   </Button>
                 </div>
               )}
@@ -2971,7 +3022,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                   )}
                 </div>
               ) : (
-                <ScrollArea className="h-[500px] sm:h-[600px] w-full">
+                <div className="w-full h-auto">
                   {viewMode === 'table' ? (
                     <div className="overflow-x-auto">
                       <Table className="min-w-[800px]">
@@ -3138,6 +3189,92 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                         </TableBody>
                       </Table>
                     </div>
+                  ) : viewMode === 'kanban' ? (
+                    <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                      {[
+                        { id: 'pending', title: 'Pending / Todo', color: 'border-yellow-500/20 bg-yellow-500/5' },
+                        { id: 'in_progress', title: 'In Progress', color: 'border-blue-500/20 bg-blue-500/5' },
+                        { id: 'pending_approval', title: 'Handover / Review', color: 'border-purple-500/20 bg-purple-500/5' },
+                        { id: 'completed', title: 'Completed', color: 'border-emerald-500/20 bg-emerald-500/5' }
+                      ].map(column => {
+                        const columnTasks = filteredTasksForToggle.filter(t => t.status === column.id);
+                        return (
+                          <div key={column.id} className={cn("flex-1 min-w-[280px] rounded-2xl border p-4 space-y-4", column.color)}>
+                            <div className="flex justify-between items-center mb-2">
+                              <h4 className="text-xs font-black uppercase tracking-wider text-white">{column.title}</h4>
+                              <Badge className="bg-white/10 text-white hover:bg-white/10 text-[10px] font-bold">{columnTasks.length}</Badge>
+                            </div>
+                            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                              {columnTasks.map(task => (
+                                <div
+                                  key={task.id}
+                                  onClick={async () => {
+                                    try {
+                                      setSelectedTask(task);
+                                      await fetchSubtasks(task.id);
+                                      setCurrentView('detail');
+                                    } catch (e) {
+                                      console.error('Error opening task view:', e);
+                                    }
+                                  }}
+                                  className={cn(
+                                    "bg-black/35 border border-white/10 rounded-xl p-3.5 space-y-3 cursor-pointer hover:border-white/20 transition-all hover:translate-y-[-1px]",
+                                    task.status === 'completed' && "opacity-60"
+                                  )}
+                                >
+                                  <h5 className={cn("text-sm font-bold text-white leading-snug", task.status === 'completed' && "line-through text-white/50")}>
+                                    {task.title}
+                                  </h5>
+                                  {task.description && (
+                                    <p className="text-[11px] text-white/50 line-clamp-2 leading-relaxed">
+                                      {task.description}
+                                    </p>
+                                  )}
+                                  <div className="flex justify-between items-center pt-2 border-t border-white/5 text-[10px] text-white/40">
+                                    <span>Due: {task.due_date ? format(new Date(task.due_date), "MMM d") : "Ongoing"}</span>
+                                    <div className="flex gap-1">
+                                      {column.id !== 'pending' && (
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-5 w-5 rounded bg-white/5 hover:bg-white/10 p-0"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const prevStatus = column.id === 'in_progress' ? 'pending' : column.id === 'pending_approval' ? 'in_progress' : 'pending_approval';
+                                            handleTaskStatusUpdate(task.id, prevStatus as any);
+                                          }}
+                                          title="Move Left"
+                                        >
+                                          ←
+                                        </Button>
+                                      )}
+                                      {column.id !== 'completed' && (
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-5 w-5 rounded bg-white/5 hover:bg-white/10 p-0"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const nextStatus = column.id === 'pending' ? 'in_progress' : column.id === 'in_progress' ? 'pending_approval' : 'completed';
+                                            handleTaskStatusUpdate(task.id, nextStatus as any);
+                                          }}
+                                          title="Move Right"
+                                        >
+                                          →
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                              {columnTasks.length === 0 && (
+                                <p className="text-[11px] text-white/30 text-center py-6">No tasks in this stage</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
                       {filteredTasksForToggle.map((task) => (
@@ -3288,7 +3425,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                       ))}
                     </div>
                   )}
-                </ScrollArea>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -3316,7 +3453,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       {/* Handover Task Dialog */}
       <Dialog open={isHandoverOpen} onOpenChange={setIsHandoverOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-black/60 backdrop-blur-2xl border-white/15 text-white rounded-[2.5rem]">
           <DialogHeader>
             <DialogTitle>Handover Task</DialogTitle>
           </DialogHeader>
@@ -3368,7 +3505,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
 
       {/* Add Client Dialog */}
       <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-black/60 backdrop-blur-2xl border-white/15 text-white rounded-[2.5rem]">
           <DialogHeader>
             <DialogTitle>Add New Client</DialogTitle>
           </DialogHeader>
@@ -3462,7 +3599,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       />
       {/* Add Project Dialog */}
       <Dialog open={isAddProjectDialogOpen} onOpenChange={setIsAddProjectDialogOpen}>
-        <DialogContent className="max-w-md bg-[#0f0f0f] border-white/5 text-white">
+        <DialogContent className="max-w-md bg-black/60 backdrop-blur-2xl border-white/15 text-white rounded-[2.5rem]">
           <DialogHeader>
             <DialogTitle>Initialize New Project</DialogTitle>
           </DialogHeader>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, X, AlertTriangle, Info, CheckCircle, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRealtimeQuery } from "@/hooks/useRealtimeQuery";
 import { useQueryClient } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNavigate } from "react-router-dom";
 
 interface Notification {
   id: string;
@@ -32,6 +33,7 @@ const NotificationsBar = ({ userId }: NotificationsBarProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const { data: notificationsData } = useRealtimeQuery<Notification[]>({
     queryKey: ['notifications', userId],
@@ -42,9 +44,66 @@ const NotificationsBar = ({ userId }: NotificationsBarProps) => {
     staleTime: 1 * 60 * 1000,
   });
 
+  // Filter out 'Meeting Invite' from the main list so they are handled by the lobby and push toasts exclusively
   const notifications = (notificationsData || []).filter(notification =>
-    !notification.expires_at || new Date(notification.expires_at) > new Date()
+    (!notification.expires_at || new Date(notification.expires_at) > new Date()) &&
+    notification.title !== 'Meeting Invite'
   );
+
+  // Keep track of processed invite notification IDs to avoid redundant toasts
+  const [processedInvites, setProcessedInvites] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!notificationsData || !userId) return;
+    notificationsData.forEach(notification => {
+      if (
+        notification.title === 'Meeting Invite' &&
+        !processedInvites.has(notification.id) &&
+        !notification.read_by?.includes(userId)
+      ) {
+        setProcessedInvites(prev => {
+          const next = new Set(prev);
+          next.add(notification.id);
+          return next;
+        });
+
+        // Trigger interactive toast
+        try {
+          const meta = typeof notification.content === 'string' ? JSON.parse(notification.content) : notification.content;
+          const isGoogleMeet = meta.type === 'google_meet';
+          const hostName = meta.hostName || "A team member";
+
+          toast({
+            title: "Meeting Invitation! 📹",
+            description: `${hostName} invited you to "${meta.title || 'a meeting'}".`,
+            action: (
+              <Button
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs"
+                onClick={() => {
+                  // Mark as read
+                  markAsRead(notification.id);
+                  if (isGoogleMeet) {
+                    window.open(meta.googleMeetLink, '_blank');
+                  } else {
+                    // Navigate to meeting room with room ID
+                    navigate({
+                      pathname: window.location.pathname,
+                      search: `?meeting&ID=${meta.roomId}`
+                    });
+                  }
+                }}
+              >
+                {isGoogleMeet ? "Open Meet" : "Join"}
+              </Button>
+            ),
+          });
+        } catch (e) {
+          console.error("Error parsing meeting invite notification content", e);
+        }
+      }
+    });
+  }, [notificationsData, userId, processedInvites, navigate]);
 
   const unreadCount = notifications.filter(n => !n.read_by?.includes(userId)).length;
 

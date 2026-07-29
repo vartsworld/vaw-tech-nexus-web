@@ -60,13 +60,11 @@ const Navbar = () => {
   } = useTheme();
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      const scrolled = window.scrollY > 50;
+      setIsScrolled(prev => prev !== scrolled ? scrolled : prev);
     };
-    window.addEventListener("scroll", handleScroll);
+    // Use passive event listener to optimize scrolling performance
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
   return <nav className={`hidden md:block fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-card/95 backdrop-blur-md shadow-lg py-3 rounded-b-[2rem] mx-4 border border-border/50" : "bg-transparent py-6"}`}>
@@ -83,17 +81,23 @@ const Navbar = () => {
 
         {/* Center Navigation */}
         <div className="flex items-center gap-6 flex-1 justify-center">
-          {navigationItems.map((item, index) => <a
-            key={index}
-            href={item.href}
-            className="text-foreground/80 hover:text-accent transition-colors font-medium px-2"
-          >
-            {item.name}
-          </a>)}
+          {navigationItems.map((item, index) => (
+            <Link
+              key={index}
+              to={item.href}
+              className="text-foreground/80 hover:text-accent transition-colors font-medium px-2"
+              data-cuelume-hover="tick"
+            >
+              {item.name}
+            </Link>
+          ))}
 
           {/* Services Dropdown */}
           <div className="relative" onMouseEnter={() => setIsServicesOpen(true)} onMouseLeave={() => setIsServicesOpen(false)}>
-            <button className="text-foreground/80 hover:text-accent transition-colors flex items-center gap-1 font-medium px-2">
+            <button
+              className="text-foreground/80 hover:text-accent transition-colors flex items-center gap-1 font-medium px-2"
+              data-cuelume-hover="tick"
+            >
               Services
               <ChevronDown size={16} className={`transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -103,6 +107,7 @@ const Navbar = () => {
                 key={index}
                 to={service.href}
                 className="block px-4 py-2 text-foreground/80 hover:text-accent hover:bg-muted/50 transition-colors"
+                data-cuelume-hover="tick"
               >
                 {service.name}
               </Link>)}

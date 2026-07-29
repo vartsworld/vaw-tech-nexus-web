@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
+import { bind } from "cuelume";
 
 import Index from "./pages/Index";
 import ServiceRequest from "./pages/ServiceRequest";
@@ -23,7 +24,7 @@ import DigitalDesign from "./pages/DigitalDesign";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UserProvider } from "./context/UserContext";
-import IntroScreen from "./components/IntroScreen";
+import ScrollToTop from "./components/ScrollToTop";
 import { useUser } from "./context/UserContext";
 import StaffDashboard from "./pages/StaffDashboard";
 import StaffTaskDetail from "./pages/StaffTaskDetail";
@@ -54,6 +55,11 @@ import ReferralFormPage from "./pages/ReferralFormPage";
 import Team from "./pages/Team";
 import QRRedirection from "./pages/QRRedirection";
 import SalesDashboard from "./pages/SalesDashboard";
+import SalesAgenda from "./components/sales/SalesAgenda";
+import SalesPricing from "./components/sales/SalesPricing";
+import SalesPlans from "./components/sales/SalesPlans";
+import SalesOnboarding from "./components/sales/SalesOnboarding";
+import MonthlyPlannerPage from "./pages/MonthlyPlannerPage";
 import AddClient from "./pages/AddClient";
 import Portal from "./pages/Portal";
 import ClientFeedback from "./pages/ClientFeedback";
@@ -61,6 +67,16 @@ import GPSProposal from "./pages/GPSProposal";
 import GPSAIProposal from "./pages/GPSAIProposal";
 import VAWAcademy from "./pages/VAWAcademy";
 import ToolsNexus from "./pages/ToolsNexus";
+import InboxPage from "./pages/InboxPage";
+import ChessPage from "./pages/ChessPage";
+import NotesPage from "./pages/NotesPage";
+import OnboardingPage from "./pages/OnboardingPage";
+import LeavePage from "./pages/LeavePage";
+import ActivityPage from "./pages/ActivityPage";
+import DocsPage from "./pages/DocsPage";
+import OperationsPage from "./pages/OperationsPage";
+import ChannelsPage from "./pages/ChannelsPage";
+import SketchItMakeIt from "./pages/SketchItMakeIt";
 
 
 
@@ -98,15 +114,15 @@ const ManifestSwitcher = () => {
 };
 
 const AppContent = () => {
-  const { hasCompletedIntro } = useUser();
-  const skipIntroPaths = ['/privacy-policy', '/data-deletion', '/terms-of-service', '/proposal/gps', '/proposal/gps-ai', '/gps-ai'];
-  const shouldSkipIntro = skipIntroPaths.includes(window.location.pathname);
+  useEffect(() => {
+    bind();
+  }, []);
 
   return (
 
     <>
-      {!hasCompletedIntro && !shouldSkipIntro && <IntroScreen />}
       <BrowserRouter>
+        <ScrollToTop />
         <ManifestSwitcher />
         <Routes>
           <Route path="/" element={<Index />} />
@@ -126,6 +142,7 @@ const AppContent = () => {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/hr/*" element={<HRDashboard />} />
           <Route path="/staff/login" element={<StaffLogin />} />
+<<<<<<< HEAD
           <Route path="/staff/profile" element={<Navigate to="/account" replace />} />
           <Route path="/staff" element={<Navigate to="/staff/dashboard" replace />} />
           <Route path="/staff/:room" element={<StaffDashboard />} />
@@ -134,6 +151,22 @@ const AppContent = () => {
           <Route path="/staff/work" element={<StaffWork />} />
           <Route path="/team-head" element={<Navigate to="/team-head/dashboard" replace />} />
           <Route path="/team-head/:room" element={<TeamHeadDashboard />} />
+=======
+          <Route path="/staff" element={<StaffDashboard />} />
+          <Route path="/staff/tools-nexus" element={<ToolsNexus />} />
+          <Route path="/staff/task/:taskId" element={<StaffTaskDetail />} />
+          <Route path="/staff/work" element={<StaffWork />} />
+          <Route path="/staff/inbox" element={<InboxPage />} />
+          <Route path="/staff/chess" element={<ChessPage />} />
+          <Route path="/staff/notes" element={<NotesPage />} />
+          <Route path="/staff/onboarding" element={<OnboardingPage />} />
+          <Route path="/staff/leave" element={<LeavePage />} />
+          <Route path="/staff/activity" element={<ActivityPage />} />
+          <Route path="/staff/docs" element={<DocsPage />} />
+          <Route path="/staff/operations" element={<OperationsPage />} />
+          <Route path="/staff/channels" element={<ChannelsPage />} />
+          <Route path="/team-head" element={<TeamHeadDashboard />} />
+>>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
           <Route path="/mycoins" element={<MyCoins />} />
           <Route path="/account" element={<AccountDashboard />} />
           <Route path="/client-portal" element={<ClientPortal />} />
@@ -163,10 +196,17 @@ const AppContent = () => {
           <Route path="/:id" element={<StaffIDCard />} />
           <Route path="/team" element={<Team />} />
           <Route path="/qr" element={<QRRedirection />} />
-          <Route path="/sales/dashboard" element={<SalesDashboard />} />
+          <Route path="/sales/dashboard" element={<SalesDashboard />}>
+            <Route path="agenda" element={<SalesAgenda />} />
+            <Route path="pricing" element={<SalesPricing />} />
+            <Route path="plans" element={<SalesPlans />} />
+            <Route path="onboarding" element={<SalesOnboarding />} />
+          </Route>
+          <Route path="/monthlyplanner" element={<MonthlyPlannerPage />} />
           <Route path="/sales/add-client" element={<AddClient />} />
           <Route path="/portal" element={<Portal />} />
           <Route path="/feedback/:token" element={<ClientFeedback />} />
+          <Route path="/sketchit-makeit" element={<SketchItMakeIt />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

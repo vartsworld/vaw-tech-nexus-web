@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Check, Clock, Star, Shield, Zap, Globe, TrendingUp, Bot, Package, Sparkles, Plus } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ParticleBackground from "@/components/ParticleBackground";
 import PricingInquiryForm from "@/components/PricingInquiryForm";
 import SEO from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
@@ -138,12 +137,11 @@ const Pricing = () => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <SEO
-        title="Predictable Pricing for Web & AI Tech Services"
+        title="Pricing | VAW Technologies"
         description="Transparent and affordable pricing for premium web development, AI integration, e-commerce platforms, and digital marketing services at VAW Technologies."
         keywords="web development pricing, app development cost, SEO pricing, digital marketing packages, VAW, Varts, Kerala tech agency pricing"
         ogImage="/og/pricing.png"
       />
-      <ParticleBackground />
       <Navbar />
 
       <section className="pt-24 pb-16">

@@ -8,7 +8,6 @@ import {
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ParticleBackground from "@/components/ParticleBackground";
 import ClientLogos from "@/components/ClientLogos";
 import { motion } from "framer-motion";
 import SEO from "@/components/SEO";
@@ -82,7 +81,6 @@ const DigitalMarketing = () => {
         keywords="digital marketing consulting, brand case study, marketing strategy Kerala, marketing audit, VAW Technologies, Varts"
         ogImage="/og/digital-marketing.png"
       />
-      <ParticleBackground />
       <Navbar />
 
       {/* Hero */}
@@ -122,7 +120,7 @@ const DigitalMarketing = () => {
                 </Link>
               </Button>
               <Button variant="ghost" size="lg" className="font-medium px-6 h-12 rounded-full text-muted-foreground hover:text-foreground" asChild>
-                <a href="#how-it-works">See How It Works →</a>
+                <Link to="#how-it-works">See How It Works →</Link>
               </Button>
             </div>
 

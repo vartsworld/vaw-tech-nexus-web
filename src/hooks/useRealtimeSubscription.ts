@@ -37,17 +37,34 @@ export function useRealtimeSubscription({
 }: UseRealtimeSubscriptionOptions) {
     const channelRef = useRef<RealtimeChannel | null>(null);
 
+    // Use mutable refs to hold the latest callbacks to avoid re-subscribing
+    // to Supabase on every render when inline/anonymous functions are used.
+    const onInsertRef = useRef(onInsert);
+    const onUpdateRef = useRef(onUpdate);
+    const onDeleteRef = useRef(onDelete);
+
+    // Keep the refs updated with the latest callbacks
+    useEffect(() => {
+        onInsertRef.current = onInsert;
+        onUpdateRef.current = onUpdate;
+        onDeleteRef.current = onDelete;
+    });
+
+    const hasInsert = !!onInsert;
+    const hasUpdate = !!onUpdate;
+    const hasDelete = !!onDelete;
+
     useEffect(() => {
         if (!enabled) return;
 
         // Create unique channel name
-        const channelName = `subscription-${table}-${filter || 'all'}-${Date.now()}`;
+        const channelName = `subscription-${table}-${filter || 'all'}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
         const channel = supabase.channel(channelName);
         channelRef.current = channel;
 
         // Subscribe to INSERT events
-        if (onInsert) {
+        if (hasInsert) {
             channel.on(
                 'postgres_changes',
                 {
@@ -57,14 +74,19 @@ export function useRealtimeSubscription({
                     filter: filter,
                 },
                 (payload) => {
-                    console.log(`[Realtime] INSERT on ${table}:`, payload);
-                    onInsert(payload);
+                    if (typeof window !== 'undefined') {
+                        (window as any).realtimeUpdationCount = ((window as any).realtimeUpdationCount || 0) + 1;
+                        console.log(`Realtime updation [${(window as any).realtimeUpdationCount}]`);
+                    }
+                    if (onInsertRef.current) {
+                        onInsertRef.current(payload);
+                    }
                 }
             );
         }
 
         // Subscribe to UPDATE events
-        if (onUpdate) {
+        if (hasUpdate) {
             channel.on(
                 'postgres_changes',
                 {
@@ -74,14 +96,19 @@ export function useRealtimeSubscription({
                     filter: filter,
                 },
                 (payload) => {
-                    console.log(`[Realtime] UPDATE on ${table}:`, payload);
-                    onUpdate(payload);
+                    if (typeof window !== 'undefined') {
+                        (window as any).realtimeUpdationCount = ((window as any).realtimeUpdationCount || 0) + 1;
+                        console.log(`Realtime updation [${(window as any).realtimeUpdationCount}]`);
+                    }
+                    if (onUpdateRef.current) {
+                        onUpdateRef.current(payload);
+                    }
                 }
             );
         }
 
         // Subscribe to DELETE events
-        if (onDelete) {
+        if (hasDelete) {
             channel.on(
                 'postgres_changes',
                 {
@@ -91,8 +118,13 @@ export function useRealtimeSubscription({
                     filter: filter,
                 },
                 (payload) => {
-                    console.log(`[Realtime] DELETE on ${table}:`, payload);
-                    onDelete(payload);
+                    if (typeof window !== 'undefined') {
+                        (window as any).realtimeUpdationCount = ((window as any).realtimeUpdationCount || 0) + 1;
+                        console.log(`Realtime updation [${(window as any).realtimeUpdationCount}]`);
+                    }
+                    if (onDeleteRef.current) {
+                        onDeleteRef.current(payload);
+                    }
                 }
             );
         }
@@ -100,7 +132,7 @@ export function useRealtimeSubscription({
         // Subscribe to the channel
         channel.subscribe((status) => {
             if (status === 'SUBSCRIBED') {
-                console.log(`[Realtime] Subscribed to ${table} changes`);
+                // Muted verbose subscribe logs
             } else if (status === 'CHANNEL_ERROR') {
                 console.error(`[Realtime] Error subscribing to ${table}`);
             } else if (status === 'TIMED_OUT') {
@@ -112,11 +144,11 @@ export function useRealtimeSubscription({
         return () => {
             if (channelRef.current) {
                 supabase.removeChannel(channelRef.current);
-                console.log(`[Realtime] Unsubscribed from ${table} changes`);
+                // Muted verbose unsubscribed logs
                 channelRef.current = null;
             }
         };
-    }, [table, filter, onInsert, onUpdate, onDelete, enabled]);
+    }, [table, filter, hasInsert, hasUpdate, hasDelete, enabled]);
 
     return {
         channel: channelRef.current,

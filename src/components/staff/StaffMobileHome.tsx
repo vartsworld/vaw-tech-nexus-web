@@ -4,26 +4,49 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
-  Monitor,
-  Coffee,
-  Users,
-  MessageCircle,
   Coins,
   Bell,
   Clock,
   Briefcase,
   User,
-  TrendingUp,
-  ChevronRight,
   LogOut,
   Home,
   Flame,
-  CheckCircle
+  CheckCircle,
+  Calendar,
+  Plus,
+  Play,
+  Settings,
+  Shield,
+  Fingerprint,
+  Smile,
+  Check,
+  ChevronRight,
+  ClipboardList,
+  AlertCircle,
+  UserCheck,
+  Video,
+  Activity,
+  Compass
 } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { format, isSameDay, parseISO } from "date-fns";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+
+// Reusable Sub-views
+import LeaveView from "@/components/staff/LeaveView";
+import TasksManager from "./TasksManager";
+import { QuickNotes } from "@/components/staff/QuickNotes";
+import MiniChess from "@/components/staff/MiniChess";
+import MeetingRoom from "./MeetingRoom";
+import ClientOnboardingCreator from "./ClientOnboardingCreator";
+import ToolsNexusView from "./ToolsNexusView";
+import { ActivityLogPanel } from "./ActivityLogPanel";
 
 type RoomType = 'home' | 'workspace' | 'breakroom' | 'meeting';
 
@@ -33,7 +56,11 @@ interface StaffMobileHomeProps {
   onRoomChange: (room: RoomType) => void;
   onOpenChat?: () => void;
   onOpenCoins?: () => void;
+  onOpenStreakCalendar?: () => void;
   onEnterWorkspace: () => void;
+  onEditProfile?: () => void;
+  onUpdateEmojiPassword?: () => void;
+  onManageBiometrics?: () => void;
 }
 
 interface TaskItem {
@@ -48,11 +75,8 @@ interface TaskItem {
   due_date?: string;
   due_time?: string;
   trial_period?: boolean;
-  comments?: any;
-  attachments?: any;
   client_project_id?: string;
   project_title?: string;
-  timer_started_at?: string;
   current_stage?: number;
 }
 
@@ -70,11 +94,11 @@ const getGreetingEmoji = () => {
   return "🌙";
 };
 
-const fadeUp = (delay: number) => ({
-  initial: { opacity: 0, y: 20 },
+const fadeUp = {
+  initial: { opacity: 0, y: 15 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.45, delay, ease: [0.22, 1, 0.36, 1] },
-});
+  transition: { duration: 0.4, ease: "easeOut" }
+};
 
 const StaffMobileHome = ({
   profile,
@@ -82,14 +106,33 @@ const StaffMobileHome = ({
   onRoomChange,
   onOpenChat,
   onOpenCoins,
+  onOpenStreakCalendar,
   onEnterWorkspace,
+  onEditProfile,
+  onUpdateEmojiPassword,
+  onManageBiometrics,
 }: StaffMobileHomeProps) => {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [completedToday, setCompletedToday] = useState(0);
   const [loading, setLoading] = useState(true);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const [activeNav, setActiveNav] = useState("home");
+
+  // Navigation tabs: 'home' | 'tasks' | 'planner' | 'tools' | 'profile'
+  const [activeTab, setActiveTab] = useState<string>("home");
+
+  // Planner states
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [plans, setPlans] = useState<any[]>([]);
+  const [newPlanTitle, setNewPlanTitle] = useState("");
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [clients, setClients] = useState<any[]>([]);
+  const [selectedClientIds, setSelectedClientIds] = useState<string[]>(['all']);
+  const [newPlanClientId, setNewPlanClientId] = useState<string>("common");
+
+  // Tools sub-view: null | 'leave' | 'notes' | 'chess'
+  const [activeTool, setActiveTool] = useState<string | null>(null);
+
   const firstName = profile?.full_name?.split(" ")[0] || "there";
   const coinsBalance = profile?.total_points || 0;
   const streak = profile?.attendance_streak || 0;
@@ -99,7 +142,6 @@ const StaffMobileHome = ({
     if (!profile?.user_id) return;
     setLoading(true);
     try {
-      // 1. Fetch all subtasks assigned to this user with their parent tasks
       const { data: subtasks, error } = await supabase
         .from("staff_subtasks")
         .select("*, staff_tasks(*)")
@@ -108,8 +150,6 @@ const StaffMobileHome = ({
       if (error) throw error;
 
       const subtaskItems = (subtasks as any[]) || [];
-      
-      // 2. Group by task_id to find unique parent tasks
       const taskGroups: Record<string, any[]> = {};
       subtaskItems.forEach(st => {
         if (!st.task_id || !st.staff_tasks) return;
@@ -117,12 +157,8 @@ const StaffMobileHome = ({
         taskGroups[st.task_id].push(st);
       });
 
-      // 3. Map to TaskItem interface, deriving status/dates from subtasks
       const taskItems: TaskItem[] = Object.entries(taskGroups).map(([taskId, subs]) => {
         const parent = subs[0].staff_tasks;
-        
-        // Determine "effective" status for this user's view
-        // Priority: in_progress > pending > completed
         let effectiveStatus = "pending";
         if (subs.some(s => s.status === 'in_progress')) {
           effectiveStatus = 'in_progress';
@@ -130,13 +166,11 @@ const StaffMobileHome = ({
           effectiveStatus = 'completed';
         }
 
-        // Use earliest due date from assigned subtasks
         const subtasksWithDates = subs.filter(s => s.due_date);
         const earliestDueDate = subtasksWithDates.length > 0 
           ? subtasksWithDates.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0].due_date 
           : parent.due_date;
 
-        // Check for overdue (if not completed and date passed)
         const isPastDue = earliestDueDate && new Date(earliestDueDate) < new Date(new Date().setHours(0,0,0,0));
         if (effectiveStatus !== 'completed' && isPastDue) {
           effectiveStatus = 'overdue';
@@ -155,12 +189,11 @@ const StaffMobileHome = ({
           due_time: parent.due_time,
           trial_period: parent.trial_period,
           client_project_id: parent.client_project_id,
-          project_title: parent.title, // Default to parent title
+          project_title: parent.title,
           current_stage: parent.current_stage,
         };
       });
 
-      // 4. Fetch project titles for context
       const projectIds = [...new Set(taskItems.filter(t => t.client_project_id).map(t => t.client_project_id!))];
       if (projectIds.length > 0) {
         const { data: projects } = await supabase
@@ -183,580 +216,842 @@ const StaffMobileHome = ({
     }
   }, [profile?.user_id]);
 
-  // Fetch completed today count
-  const fetchCompletedToday = useCallback(async () => {
+  // Fetch plans
+  const fetchPlans = useCallback(async () => {
     if (!profile?.user_id) return;
-    const today = new Date().toISOString().split("T")[0];
-    const { count } = await supabase
-      .from("staff_subtasks")
-      .select("id", { count: "exact", head: true })
-      .eq("assigned_to", profile.user_id)
-      .eq("status", "completed" as any)
-      .gte("completed_at", today + "T00:00:00");
-    setCompletedToday(count || 0);
-  }, [profile?.user_id]);
+    setPlansLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('monthly_plans')
+        .select('*');
+      if (error) throw error;
+      setPlans(data || []);
 
-  // Fetch unread notifications
-  const fetchNotifications = useCallback(async () => {
-    if (!profile?.user_id) return;
-    const { data } = await supabase
-      .from("staff_notifications")
-      .select("id, read_by, expires_at")
-      .order('created_at', { ascending: false })
-      .limit(20);
-    
-    if (data) {
-      const activeNotifications = data.filter(n => 
-        !n.expires_at || new Date(n.expires_at) > new Date()
-      );
-      const unreadCount = activeNotifications.filter(n => !n.read_by?.includes(profile.user_id)).length;
-      setUnreadNotifications(unreadCount);
+      // Fetch clients
+      const { data: clientsData } = await supabase
+        .from('clients')
+        .select('id, company_name');
+      setClients(clientsData || []);
+    } catch (err) {
+      console.error('Error fetching plans:', err);
+    } finally {
+      setPlansLoading(false);
     }
   }, [profile?.user_id]);
 
   useEffect(() => {
     fetchTasks();
-    fetchCompletedToday();
-    fetchNotifications();
-  }, [fetchTasks, fetchCompletedToday, fetchNotifications]);
+    fetchPlans();
+  }, [fetchTasks, fetchPlans]);
 
-  // Real-time subscription for task updates
-  useEffect(() => {
-    if (!profile?.user_id) return;
-    const channel = supabase
-      .channel("mobile-home-tasks")
-      .on("postgres_changes", { event: "*", schema: "public", table: "staff_tasks" }, () => {
-        fetchTasks();
-        fetchCompletedToday();
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "staff_notifications", filter: `user_id=eq.${profile.user_id}` }, () => {
-        fetchNotifications();
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [profile?.user_id, fetchTasks, fetchCompletedToday, fetchNotifications]);
-
-  const overdueTasks = useMemo(() => tasks.filter((t) => t.status === "overdue"), [tasks]);
-  const upcomingTasks = useMemo(() => tasks.filter((t) => t.status === "pending"), [tasks]);
-  const currentTasks = useMemo(() => tasks.filter((t) => t.status === "in_progress"), [tasks]);
-  const submittedTasks = useMemo(() => tasks.filter((t) => ["completed", "review_pending", "pending_approval", "handover"].includes(t.status)), [tasks]);
-  
-  const totalTasks = overdueTasks.length + upcomingTasks.length + currentTasks.length + completedToday;
-
-  const handleTaskClick = (task: TaskItem) => {
-    navigate(`/staff/task/${task.id}`);
-  };
-
-  const handleStatusUpdate = async (taskId: string, newStatus: string) => {
-    await supabase.from("staff_tasks").update({ status: newStatus as any, updated_at: new Date().toISOString() }).eq("id", taskId);
-    fetchTasks();
-    fetchCompletedToday();
-  };
+  // Task lists
+  const currentTasks = useMemo(() => tasks.filter(t => t.status === "in_progress"), [tasks]);
+  const overdueTasks = useMemo(() => tasks.filter(t => t.status === "overdue"), [tasks]);
+  const completedTasks = useMemo(() => tasks.filter(t => t.status === "completed"), [tasks]);
+  const totalTasks = tasks.length;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    toast.success("Logged out");
+    toast.success("Logged out successfully");
     navigate("/staff/login");
   };
 
-  const navItems = [
-    { id: "workspace", label: "Work", icon: Briefcase, action: () => navigate("/staff/work") },
-    { id: "chat", label: "Chat", icon: MessageCircle, action: onOpenChat },
-    { id: "home", label: "Home", icon: Home },
-    { id: "coins", label: "Coins", icon: Coins, action: () => navigate("/mycoins") },
-    { id: "profile", label: "Profile", icon: User, action: () => navigate("/account") },
-  ];
+  // Toggle plan completion
+  const handleTogglePlanCompletion = async (planId: string, currentCompleted: boolean | null) => {
+    try {
+      const { error } = await supabase
+        .from('monthly_plans')
+        .update({ is_completed: !currentCompleted })
+        .eq('id', planId);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "urgent": return "bg-destructive/15 text-destructive border-destructive/20";
-      case "high": return "bg-orange-500/15 text-orange-400 border-orange-500/20";
-      case "medium": return "bg-primary/15 text-primary border-primary/20";
-      default: return "bg-muted text-muted-foreground border-border";
+      if (error) throw error;
+
+      setPlans(prev =>
+        prev.map(p => p.id === planId ? { ...p, is_completed: !currentCompleted } : p)
+      );
+      toast.success("Plan updated successfully");
+    } catch (err) {
+      console.error('Error updating plan:', err);
+      toast.error("Failed to update status");
     }
   };
 
-  // Calculate subtask-based progress for in-progress tasks (only for subtasks assigned to me)
-  const [taskProgress, setTaskProgress] = useState<Record<string, number>>({});
-  useEffect(() => {
-    const fetchProgress = async () => {
-      const ipIds = currentTasks.map(t => t.id);
-      if (ipIds.length === 0 || !profile?.user_id) return;
-      const { data: subtasks } = await supabase
-        .from("staff_subtasks")
-        .select("task_id, status")
-        .eq("assigned_to", profile.user_id)
-        .in("task_id", ipIds);
-      if (!subtasks) return;
-      const map: Record<string, { total: number; done: number }> = {};
-      subtasks.forEach(st => {
-        if (!map[st.task_id]) map[st.task_id] = { total: 0, done: 0 };
-        map[st.task_id].total++;
-        if (["completed", "review_pending", "pending_approval", "handover"].includes(st.status)) map[st.task_id].done++;
-      });
-      const progress: Record<string, number> = {};
-      Object.entries(map).forEach(([id, { total, done }]) => {
-        progress[id] = total > 0 ? Math.round((done / total) * 100) : 0;
-      });
-      setTaskProgress(progress);
-    };
-    fetchProgress();
-  }, [currentTasks, profile?.user_id]);
+  const handleToggleClientFilter = (clientId: string) => {
+    if (clientId === 'all') {
+      setSelectedClientIds(['all']);
+      return;
+    }
+
+    let nextSelected = selectedClientIds.filter(id => id !== 'all');
+
+    if (nextSelected.includes(clientId)) {
+      nextSelected = nextSelected.filter(id => id !== clientId);
+    } else {
+      nextSelected.push(clientId);
+    }
+
+    if (nextSelected.length === 0) {
+      nextSelected = ['all'];
+    }
+
+    setSelectedClientIds(nextSelected);
+  };
+
+  // Add a plan
+  const handleAddPlan = async () => {
+    if (!selectedDate || !newPlanTitle.trim()) return;
+    try {
+      const { data, error } = await supabase
+        .from('monthly_plans')
+        .insert({
+          date: format(selectedDate, 'yyyy-MM-dd'),
+          title: newPlanTitle.trim(),
+          description: "",
+          created_by: profile?.user_id,
+          department_id: profile?.department_id,
+          assigned_staff: [],
+          color: '#10b981',
+          client_id: newPlanClientId === 'common' ? null : newPlanClientId
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setPlans(prev => [...prev, data]);
+      setNewPlanTitle("");
+      setNewPlanClientId("common");
+      toast.success("Plan added");
+    } catch (err) {
+      console.error('Error adding plan:', err);
+      toast.error("Failed to add plan");
+    }
+  };
+
+  // Filter plans based on selected client filter
+  const filteredPlans = useMemo(() => {
+    return plans.filter(p => {
+      if (selectedClientIds.includes('all')) return true;
+      if (!p.client_id) return selectedClientIds.includes('common');
+      return selectedClientIds.includes(p.client_id);
+    });
+  }, [plans, selectedClientIds]);
+
+  // Filter plans for selected date
+  const selectedDatePlans = useMemo(() => {
+    if (!selectedDate) return [];
+    return filteredPlans.filter(p => isSameDay(parseISO(p.date), selectedDate));
+  }, [filteredPlans, selectedDate]);
+
+  // Group plans for grouping in UI list
+  const { commonPlans, clientGrouped } = useMemo(() => {
+    const common = selectedDatePlans.filter(p => !p.client_id);
+    const clientGroupedMap: Record<string, { name: string, plans: any[] }> = {};
+
+    selectedDatePlans.filter(p => p.client_id).forEach(p => {
+      const client = clients.find(c => c.id === p.client_id);
+      const name = client?.company_name || 'Unknown Client';
+      if (!clientGroupedMap[p.client_id!]) {
+        clientGroupedMap[p.client_id!] = { name, plans: [] };
+      }
+      clientGroupedMap[p.client_id!].plans.push(p);
+    });
+
+    return { commonPlans: common, clientGrouped: clientGroupedMap };
+  }, [selectedDatePlans, clients]);
+
+  // Task filtering
+  const [taskFilter, setTaskFilter] = useState<'all' | 'active' | 'overdue' | 'completed'>('all');
+  const filteredTasks = useMemo(() => {
+    if (taskFilter === 'active') return currentTasks;
+    if (taskFilter === 'overdue') return overdueTasks;
+    if (taskFilter === 'completed') return completedTasks;
+    return tasks;
+  }, [tasks, currentTasks, overdueTasks, completedTasks, taskFilter]);
+
+  const navItems = [
+    { id: "home", label: "Home", icon: Home },
+    { id: "tasks", label: "Tasks", icon: ClipboardList },
+    { id: "planner", label: "Planner", icon: Calendar },
+    { id: "tools", label: "Tools", icon: Settings },
+    { id: "profile", label: "Profile", icon: User },
+  ];
 
   return (
-    <div className="lg:hidden min-h-screen bg-background flex flex-col relative">
-      {/* Top Header */}
-      <div className="px-5 pt-10 pb-2">
-        {/* Profile Row */}
-        <motion.div {...fadeUp(0.05)} className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-             <Avatar className="w-11 h-11 border-2 border-emerald-500/20">
-              <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
-              <AvatarFallback className="bg-emerald-500/10 text-emerald-400 text-sm font-bold">
-                {profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <motion.p {...fadeUp(0.1)} className="text-muted-foreground text-xs font-medium">
-                {getGreeting()} {getGreetingEmoji()}
-              </motion.p>
-              <motion.h1 {...fadeUp(0.15)} className="text-xl font-bold text-foreground tracking-tight leading-tight">
-                {firstName}
-              </motion.h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <motion.button
-              {...fadeUp(0.12)}
-              onClick={() => { /* could open notifications */ }}
-              className="relative w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center"
-            >
-              <Bell className="w-4 h-4 text-muted-foreground" />
-              {unreadNotifications > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-destructive rounded-full text-[9px] font-bold text-destructive-foreground flex items-center justify-center">
-                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
-                </span>
-              )}
-            </motion.button>
-            <motion.button
-              {...fadeUp(0.14)}
-              onClick={handleLogout}
-              className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center"
-            >
-              <LogOut className="w-4 h-4 text-muted-foreground" />
-            </motion.button>
-          </div>
-        </motion.div>
+    <div className="lg:hidden min-h-screen bg-zinc-950 text-white flex flex-col relative pb-28">
+      {/* Curved background lights */}
+      <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-emerald-500/10 to-transparent pointer-events-none" />
 
-        {/* Quick Stats Row */}
-        <motion.div {...fadeUp(0.2)} className="flex items-center gap-2 mt-4">
-          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1.5">
-            <Coins className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-xs font-bold text-emerald-400">{coinsBalance.toLocaleString()}</span>
-          </div>
-          <div className="flex items-center gap-1.5 bg-emerald-600/10 border border-emerald-600/20 rounded-full px-3 py-1.5">
-            <Flame className="w-3.5 h-3.5 text-emerald-300" />
-            <span className="text-xs font-bold text-emerald-300">{streak}d streak</span>
-          </div>
-        </motion.div>
-
-        {/* Task Summary Card */}
-        <motion.div
-          {...fadeUp(0.25)}
-          className="mt-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-700 p-5 relative overflow-hidden shadow-lg shadow-emerald-500/20"
-        >
-          <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/8 blur-2xl" />
-          <div className="absolute right-3 bottom-2 w-20 h-20 rounded-full bg-white/5" />
-
-          <div className="flex items-center justify-between relative z-10">
-            <div>
-              <p className="text-white/60 text-[10px] font-semibold uppercase tracking-widest mb-1.5">
-                Today's Tasks
-              </p>
-              <div className="flex items-end gap-1.5">
-                <span className="text-4xl font-black text-white leading-none">
-                  {completedToday}
-                </span>
-                <span className="text-white/50 text-lg font-semibold mb-0.5">
-                  /{totalTasks}
-                </span>
+      {/* Dynamic Tab Content */}
+      <div className="flex-1 overflow-y-auto px-5 pt-8">
+        <AnimatePresence mode="wait">
+          {/* HOME TAB */}
+          {activeTab === "home" && (
+            <motion.div key="home" {...fadeUp} className="space-y-6">
+              {/* Header Profile Row */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-12 h-12 border-2 border-emerald-500/20">
+                    <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
+                    <AvatarFallback className="bg-emerald-500/10 text-emerald-400 text-sm font-bold">
+                      {profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">
+                      {getGreeting()} {getGreetingEmoji()}
+                    </p>
+                    <h1 className="text-xl font-bold text-white tracking-tight leading-none">
+                      {firstName}
+                    </h1>
+                  </div>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
               </div>
-              <p className="text-white/40 text-[10px] mt-1.5 font-medium">
-                {currentTasks.length} current · {upcomingTasks.length} upcoming
-              </p>
-            </div>
-            <div className="w-16 h-16 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center">
-              <ClipboardIcon className="w-7 h-7 text-white/80" />
-            </div>
-          </div>
 
-          {totalTasks > 0 && (
-            <div className="mt-3 relative z-10">
-              <div className="h-1.5 bg-white/15 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${totalTasks > 0 ? (completedToday / totalTasks) * 100 : 0}%` }}
-                  transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-                  className="h-full bg-white/40 rounded-full"
+              {/* Status Counters */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                    <Coins className="w-5 h-5 text-emerald-500/50 animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Coins</p>
+                    <p className="text-xs font-bold text-amber-500/50 uppercase leading-none mt-1">Coming Soon</p>
+                  </div>
+                </div>
+                <div
+                  onClick={onOpenStreakCalendar}
+                  className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl cursor-pointer active:scale-95 transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center border border-orange-500/20">
+                    <Flame className="w-5 h-5 text-orange-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Streak</p>
+                    <p className="text-base font-extrabold text-white">{streak} Days</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress Summary Card */}
+              <div className="bg-black/40 backdrop-blur-2xl border border-white/15 rounded-3xl p-5 relative overflow-hidden shadow-2xl">
+                <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-emerald-500/10 blur-3xl" />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mb-1">Task Progress</p>
+                    <h2 className="text-2xl font-black text-white">
+                      {completedTasks.length} / {totalTasks} Done
+                    </h2>
+                    <p className="text-white/60 text-xs mt-1">
+                      {currentTasks.length} active · {overdueTasks.length} overdue
+                    </p>
+                  </div>
+                  <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-450 shadow-inner">
+                    <CheckCircle className="w-6 h-6 text-emerald-400 animate-pulse" />
+                  </div>
+                </div>
+                {totalTasks > 0 && (
+                  <div className="mt-4 h-2 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                    <div
+                      style={{ width: `${(completedTasks.length / totalTasks) * 100}%` }}
+                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Tasks Summary */}
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Current Work</h3>
+                  <button onClick={() => setActiveTab("tasks")} className="text-xs text-emerald-400 font-bold">
+                    View All
+                  </button>
+                </div>
+                {currentTasks.length === 0 ? (
+                  <div className="p-6 bg-black/20 border border-dashed border-white/10 rounded-2xl text-center">
+                    <p className="text-xs text-zinc-500">No active tasks. Tap 'Tasks' below to view all.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {currentTasks.slice(0, 2).map(task => (
+                      <div
+                        key={task.id}
+                        onClick={() => navigate(`/staff/task/${task.id}`)}
+                        className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex justify-between items-center cursor-pointer hover:border-white/15 active:scale-95 transition-all shadow-lg"
+                      >
+                        <div>
+                          <p className="text-xs text-emerald-400 font-black uppercase tracking-tight">
+                            {task.project_title || "Task"}
+                          </p>
+                          <h4 className="text-sm font-bold text-white mt-1">{task.title}</h4>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-white/50" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* TASKS TAB */}
+          {activeTab === "tasks" && (
+            <motion.div key="tasks" {...fadeUp} className="space-y-6">
+              <TasksManager userId={profile.user_id} userProfile={profile} />
+            </motion.div>
+          )}
+
+          {/* PLANNER TAB */}
+          {activeTab === "planner" && (
+            <motion.div key="planner" {...fadeUp} className="space-y-6">
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Your Schedule</h1>
+                <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mt-1">Tap a day to view or add daily planner items</p>
+              </div>
+
+              {/* Shadcn Calendar Component */}
+              <div className="flex justify-center bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-3 shadow-2xl w-full overflow-hidden">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  className="p-3 bg-transparent w-full"
+                  components={{
+                    DayContent: ({ date }) => {
+                      const dayPlans = filteredPlans.filter(p => isSameDay(parseISO(p.date), date));
+                      return (
+                        <div className="relative flex flex-col items-center justify-center w-full h-full p-1">
+                          <span className="text-xs">{date.getDate()}</span>
+                          {dayPlans.length > 0 && (
+                            <div className="absolute bottom-1 flex gap-0.5 justify-center w-full px-0.5 overflow-hidden">
+                              {dayPlans.slice(0, 3).map((plan, idx) => (
+                                <span
+                                  key={idx}
+                                  className="w-1 h-1 rounded-full"
+                                  style={{ backgroundColor: plan.color || '#10b981' }}
+                                />
+                              ))}
+                              {dayPlans.length > 3 && (
+                                <span className="w-1 h-1 rounded-full bg-white opacity-50" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                  }}
                 />
               </div>
-            </div>
-          )}
-        </motion.div>
-      </div>
 
-      {/* Scrollable Task Sections */}
-      <div className="flex-1 overflow-y-auto px-5 pb-28 mt-2">
-        {/* Overdue Section */}
-        {overdueTasks.length > 0 && (
-          <motion.div {...fadeUp(0.3)} className="mt-4 mb-8">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-red-400 flex items-center gap-1.5">
-                  <Flame className="w-4 h-4" /> Overdue
-                </h2>
-                <span className="text-[10px] bg-red-500/20 text-red-400 rounded-full px-2 py-0.5 font-bold border border-red-500/20">
-                  {overdueTasks.length}
-                </span>
-              </div>
-            </div>
-            <div className="space-y-4">
-              {overdueTasks.map((task, i) => (
-                <motion.button
-                  key={task.id}
-                  {...fadeUp(0.35 + i * 0.05)}
-                  onClick={() => handleTaskClick(task)}
-                  className="w-full bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/20 rounded-[2rem] p-5 shadow-lg shadow-red-500/5 text-left active:scale-[0.98] transition-all relative overflow-hidden group"
-                >
-                  <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                    <Flame className="w-12 h-12 text-red-500" />
-                  </div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-2.5 py-1 rounded-lg border border-red-500/20 uppercase tracking-tight">
-                        {task.project_title || "Overdue"}
-                      </span>
-                    </div>
-                    <Badge variant="destructive" className="text-[8px] font-black uppercase px-2 py-0.5 rounded-md animate-pulse">
-                      Urgent
-                    </Badge>
-                  </div>
-                  <p className="text-[15px] font-bold text-red-50/90 leading-snug line-clamp-1 tracking-tight mb-4">
-                    {task.title}
-                  </p>
-                  <div className="flex items-center justify-between pt-1 border-t border-red-500/10 mt-auto">
-                    <div className="flex items-center gap-1.5 text-red-400 bg-red-500/10 px-2.5 py-1.5 rounded-xl">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span className="text-[10px] font-bold">
-                        Expired {task.due_date ? new Date(task.due_date).toLocaleDateString("en-US", { day: "numeric", month: "short" }) : ""}
-                      </span>
-                    </div>
-                    {task.points > 0 && (
-                      <div className="flex items-center gap-1.5 bg-red-500/10 px-3 py-1.5 rounded-xl border border-red-500/10">
-                        <Coins className="w-3.5 h-3.5 text-red-400" />
-                        <span className="text-[10px] font-black text-red-400 tracking-tight">{task.points} COINS</span>
-                      </div>
-                    )}
-                  </div>
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
+              {/* Day's plans */}
+              <div className="space-y-4">
+                <div className="border-t border-white/5 pt-4 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                      Plans for {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Selected Date"}
+                    </h3>
 
-        {/* Current Section */}
-        <motion.div {...fadeUp(0.35)}>
-          <div className="flex items-center justify-between mb-3 mt-2">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-foreground">Current</h2>
-              <span className="text-[10px] bg-emerald-500/15 text-emerald-400 rounded-full px-2 py-0.5 font-bold">
-                {currentTasks.length}
-              </span>
-            </div>
-            {currentTasks.length > 5 && (
-              <button onClick={onEnterWorkspace} className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
-                See all <ChevronRight className="w-3 h-3" />
-              </button>
-            )}
-          </div>
+                    {/* Client Filter Popover */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          className="h-8 px-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white flex items-center gap-1 text-[10px] font-black uppercase tracking-wider"
+                        >
+                          <Briefcase className="w-3 h-3 text-blue-400" />
+                          <span>Filter ({selectedClientIds.includes('all') ? 'All' : selectedClientIds.length})</span>
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 bg-zinc-950 border border-white/10 rounded-2xl p-3 shadow-2xl space-y-2 z-50">
+                        <h4 className="text-[10px] font-black uppercase tracking-wider text-white/40 px-2 pb-1 border-b border-white/5">
+                          Filter by Client
+                        </h4>
+                        <ScrollArea className="h-48 pr-1">
+                          <div className="space-y-1">
+                            {/* All Option */}
+                            <button
+                              onClick={() => handleToggleClientFilter('all')}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
+                            >
+                              <Checkbox
+                                checked={selectedClientIds.includes('all')}
+                                onCheckedChange={() => handleToggleClientFilter('all')}
+                                className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-black"
+                              />
+                              <span className="text-xs font-bold text-white uppercase">All Clients</span>
+                            </button>
 
-          {currentTasks.length === 0 && !loading ? (
-            <div className="text-center py-10 bg-card/30 rounded-3xl border border-dashed border-border/50">
-              <div className="bg-emerald-500/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                <CheckCircle className="w-6 h-6 text-emerald-500" />
-              </div>
-              <p className="text-xs text-muted-foreground">All caught up! No active tasks.</p>
-            </div>
-          ) : loading ? (
-            <div className="space-y-4">
-              <div className="h-32 bg-card rounded-3xl animate-pulse" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {currentTasks.slice(0, 6).map((task, i) => {
-                const progress = taskProgress[task.id] || 0;
-                return (
-                  <motion.button
-                    key={task.id}
-                    {...fadeUp(0.4 + i * 0.05)}
-                    onClick={() => handleTaskClick(task)}
-                    className="w-full bg-gradient-to-br from-card to-card/50 border border-white/5 rounded-[2rem] p-5 shadow-lg shadow-black/5 text-left active:scale-[0.98] transition-all"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 uppercase tracking-tight">
-                          {task.project_title || "Project"}
-                        </span>
-                        {task.current_stage && (
-                          <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20 uppercase tracking-tight">
-                            Stage {task.current_stage}
-                          </span>
-                        )}
-                      </div>
-                      {task.priority && (
-                        <span className={cn("text-[8px] font-black uppercase px-2 py-0.5 rounded-md border shadow-sm", getPriorityColor(task.priority))}>
-                          {task.priority}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between gap-3 mb-2">
-                      <p className="text-[15px] font-bold text-foreground leading-snug flex-1 line-clamp-1 tracking-tight">
-                        {task.title}
-                      </p>
-                      <div className="text-right">
-                        <span className="text-sm font-black text-emerald-400 tracking-tighter">
-                          {progress}%
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${progress}%` }}
-                          transition={{ duration: 1, ease: "easeOut" }}
-                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between pt-1 border-t border-white/5 mt-auto">
-                      <div className="flex items-center gap-1.5 text-muted-foreground/80 bg-white/5 px-2.5 py-1.5 rounded-xl">
-                        <Clock className="w-3.5 h-3.5 text-orange-400" />
-                        <span className="text-[10px] font-medium">
-                          {task.due_date
-                            ? new Date(task.due_date).toLocaleDateString("en-US", { day: "numeric", month: "short" })
-                            : "Ongoing"}
-                        </span>
-                      </div>
-                      {task.points > 0 && (
-                        <div className="flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/10">
-                          <Coins className="w-3.5 h-3.5 text-emerald-400" />
-                          <span className="text-[10px] font-black text-emerald-400 tracking-tight">{task.points} COINS</span>
+                            {/* Common / No Client Option */}
+                            <button
+                              onClick={() => handleToggleClientFilter('common')}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
+                            >
+                              <Checkbox
+                                checked={selectedClientIds.includes('common')}
+                                onCheckedChange={() => handleToggleClientFilter('common')}
+                                className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-black"
+                              />
+                              <span className="text-xs font-bold text-white/70 uppercase">Common (No Client)</span>
+                            </button>
+
+                            {/* Client Options */}
+                            {clients.map(client => (
+                              <button
+                                key={client.id}
+                                onClick={() => handleToggleClientFilter(client.id)}
+                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
+                              >
+                                <Checkbox
+                                  checked={selectedClientIds.includes(client.id)}
+                                  onCheckedChange={() => handleToggleClientFilter(client.id)}
+                                  className="border-white/20 data-[state=checked]:bg-emerald-500 data-[state=checked]:text-black"
+                                />
+                                <span className="text-xs font-medium text-white/90 truncate">{client.company_name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {plansLoading ? (
+                    <div className="h-10 bg-zinc-900 rounded-xl animate-pulse" />
+                  ) : selectedDatePlans.length === 0 ? (
+                    <p className="text-xs text-zinc-500 py-3 text-center">No plans scheduled for this day.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Common Plans Section */}
+                      {commonPlans.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 px-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            Common Plans
+                          </h4>
+                          <div className="space-y-2">
+                            {commonPlans.map(plan => (
+                              <div
+                                key={plan.id}
+                                style={{
+                                  borderLeft: `4px solid ${plan.color || '#10b981'}`,
+                                  backgroundColor: `${plan.color || '#10b981'}15`
+                                }}
+                                className="flex items-center justify-between p-3.5 rounded-xl border-r border-t border-b border-white/5 transition-all"
+                              >
+                                <div className="flex-1 min-w-0 pr-3">
+                                  <h4
+                                    className={cn(
+                                      "text-sm font-bold text-white",
+                                      plan.is_completed && "line-through text-zinc-600"
+                                    )}
+                                    style={plan.is_completed ? {} : { color: plan.color || '#ffffff' }}
+                                  >
+                                    {plan.title}
+                                  </h4>
+                                  {plan.description && (
+                                    <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{plan.description}</p>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => handleTogglePlanCompletion(plan.id, plan.is_completed)}
+                                  className={cn(
+                                    "w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0",
+                                    plan.is_completed
+                                      ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                                      : "border-white/10 text-zinc-500 hover:border-white/20"
+                                  )}
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-          )}
-        </motion.div>
 
-        {/* Upcoming Section */}
-        <motion.div {...fadeUp(0.5)} className="mt-6">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-foreground">Upcoming</h2>
-              <span className="text-[10px] bg-muted text-muted-foreground rounded-full px-2 py-0.5 font-bold">
-                {upcomingTasks.length}
-              </span>
-            </div>
-            {upcomingTasks.length > 4 && (
-              <button onClick={onEnterWorkspace} className="text-[10px] text-emerald-400 font-semibold flex items-center gap-0.5">
-                See all <ChevronRight className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-
-          {upcomingTasks.length === 0 && !loading ? (
-            <div className="text-center py-8 text-muted-foreground text-xs bg-card/50 rounded-2xl border border-border/50">
-              No upcoming tasks 🎉
-            </div>
-          ) : loading ? (
-            <div className="grid grid-cols-2 gap-3">
-              {[1, 2].map(i => (
-                <div key={i} className="bg-card border border-border rounded-2xl p-3.5 h-28 animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {upcomingTasks.slice(0, 4).map((task, i) => (
-                <motion.button
-                  key={task.id}
-                  {...fadeUp(0.55 + i * 0.05)}
-                  onClick={() => handleTaskClick(task)}
-                  className="bg-card border border-border rounded-2xl p-3.5 space-y-2 shadow-sm text-left active:scale-[0.97] transition-transform"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider truncate block flex-1">
-                      {task.project_title || "Task"}
-                    </span>
-                    {task.priority && (
-                      <span className={cn("text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-full border", getPriorityColor(task.priority))}>
-                        {task.priority}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs font-semibold text-foreground leading-snug line-clamp-2">
-                    {task.title}
-                  </p>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Clock className="w-3 h-3" />
-                    <span className="text-[9px]">
-                      {task.due_date
-                        ? new Date(task.due_date).toLocaleDateString("en-US", { day: "numeric", month: "short" })
-                        : "No due date"}
-                    </span>
-                  </div>
-                  {task.points > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Coins className="w-3 h-3 text-emerald-400" />
-                      <span className="text-[9px] font-bold text-emerald-400">{task.points} pts</span>
+                      {/* Client-specific Groups */}
+                      {Object.entries(clientGrouped).map(([clientId, group]) => (
+                        <div key={clientId} className="space-y-2">
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 px-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                            {group.name}
+                          </h4>
+                          <div className="space-y-2">
+                            {group.plans.map(plan => (
+                              <div
+                                key={plan.id}
+                                style={{
+                                  borderLeft: `4px solid ${plan.color || '#10b981'}`,
+                                  backgroundColor: `${plan.color || '#10b981'}15`
+                                }}
+                                className="flex items-center justify-between p-3.5 rounded-xl border-r border-t border-b border-white/5 transition-all"
+                              >
+                                <div className="flex-1 min-w-0 pr-3">
+                                  <h4
+                                    className={cn(
+                                      "text-sm font-bold text-white",
+                                      plan.is_completed && "line-through text-zinc-600"
+                                    )}
+                                    style={plan.is_completed ? {} : { color: plan.color || '#ffffff' }}
+                                  >
+                                    {plan.title}
+                                  </h4>
+                                  {plan.description && (
+                                    <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{plan.description}</p>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={() => handleTogglePlanCompletion(plan.id, plan.is_completed)}
+                                  className={cn(
+                                    "w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0",
+                                    plan.is_completed
+                                      ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                                      : "border-white/10 text-zinc-500 hover:border-white/20"
+                                  )}
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
-                </motion.button>
-              ))}
-            </div>
-          )}
-        </motion.div>
-        {/* Submitted Section */}
-        <motion.div {...fadeUp(0.6)} className="mt-6">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-foreground">Submitted</h2>
-              <span className="text-[10px] bg-blue-500/15 text-blue-400 rounded-full px-2 py-0.5 font-bold">
-                {submittedTasks.length}
-              </span>
-            </div>
-            {submittedTasks.length > 5 && (
-              <button onClick={onEnterWorkspace} className="text-[10px] text-blue-400 font-semibold flex items-center gap-0.5">
-                See all <ChevronRight className="w-3 h-3" />
-              </button>
-            )}
-          </div>
+                </div>
 
-          {submittedTasks.length === 0 && !loading ? (
-            <div className="text-center py-8 text-muted-foreground text-xs bg-card/50 rounded-2xl border border-border/50">
-              No submitted tasks
-            </div>
-          ) : loading ? (
-            <div className="space-y-3">
-              {[1].map(i => (
-                <div key={i} className="bg-card border border-border rounded-2xl p-4 h-24 animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-3 opacity-80">
-              {submittedTasks.slice(0, 6).map((task, i) => (
-                <motion.button
-                  key={task.id}
-                  {...fadeUp(0.65 + i * 0.05)}
-                  onClick={() => handleTaskClick(task)}
-                  className="w-full bg-card/20 border border-white/5 rounded-2xl p-4 shadow-sm text-left active:scale-[0.98] transition-transform grayscale-[0.8]"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest truncate flex-1">
-                      {task.project_title || "Project"}
-                    </span>
-                    <Badge variant="outline" className="text-[7px] font-black uppercase px-2 py-0.5 rounded-md bg-blue-500/5 text-blue-400/60 border-blue-500/10">
-                      {task.status.replace('_', ' ')}
-                    </Badge>
+                {/* Inline Quick Add Plan */}
+                <div className="flex flex-col gap-2 bg-white/[0.02] border border-white/5 rounded-2xl p-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newPlanTitle}
+                      onChange={e => setNewPlanTitle(e.target.value)}
+                      placeholder="Enter short plan..."
+                      className="flex-1 bg-zinc-900 border border-white/5 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-emerald-500"
+                    />
+                    <button
+                      onClick={handleAddPlan}
+                      className="bg-emerald-500 hover:bg-emerald-600 text-black px-4 rounded-xl text-xs font-black uppercase flex items-center gap-1 shrink-0"
+                    >
+                      <Plus className="w-4 h-4" /> Add
+                    </button>
                   </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-bold text-foreground/40 leading-snug flex-1 line-clamp-1 line-through decoration-muted-foreground/20">
-                      {task.title}
-                    </p>
-                    <div className="flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg">
-                      <Coins className="w-2.5 h-2.5 text-emerald-400/40" />
-                      <span className="text-[9px] font-black text-emerald-400/40">+{task.points}</span>
-                    </div>
+                  <div className="flex items-center gap-2 justify-between">
+                    <span className="text-[10px] uppercase font-black tracking-widest text-white/40">Associate with Client:</span>
+                    <select
+                      value={newPlanClientId}
+                      onChange={e => setNewPlanClientId(e.target.value)}
+                      className="bg-zinc-900 border border-white/5 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500 min-w-[150px] max-w-[200px]"
+                    >
+                      <option value="common">Common (No Client)</option>
+                      {clients.map(c => (
+                        <option key={c.id} value={c.id}>{c.company_name}</option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/[0.03]">
-                    <div className="flex items-center gap-1 text-muted-foreground/40">
-                      <CheckCircle className="w-3 h-3" />
-                      <span className="text-[9px] font-medium tracking-tight">
-                        Archived
-                      </span>
-                    </div>
-                  </div>
-                </motion.button>
-              ))}
-            </div>
+                </div>
+              </div>
+            </motion.div>
           )}
-        </motion.div>
+
+          {/* TOOLS TAB */}
+          {activeTab === "tools" && (
+            <motion.div key="tools" {...fadeUp} className="space-y-6">
+              {!activeTool ? (
+                <>
+                  <div>
+                    <h1 className="text-xl font-bold tracking-tight">Staff Tools</h1>
+                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mt-1">Useful utilities for daily activities</p>
+                  </div>
+
+                  {/* Grid of Tools */}
+                  <div className="grid grid-cols-2 gap-4 pb-12">
+                    <button
+                      onClick={() => setActiveTool("leave")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-sky-500/15 flex items-center justify-center text-sky-400 border border-sky-500/20">
+                        <UserCheck className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Leave</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Request Time Off</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTool("notes")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-400 border border-amber-500/20">
+                        <ClipboardList className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">My Notes</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Quick Scribbles</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTool("chess")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-purple-500/15 flex items-center justify-center text-purple-400 border border-purple-500/20">
+                        <Smile className="w-6 h-6 animate-pulse" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Games</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Play Chess Arena</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTool("onboarding")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-blue-500/15 flex items-center justify-center text-blue-400 border border-blue-500/20">
+                        <Compass className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Onboarding</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Client Portal</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTool("meeting")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-pink-500/15 flex items-center justify-center text-pink-400 border border-pink-500/20">
+                        <Video className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Meeting Room</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Video Conference</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTool("tools_nexus")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                        <Compass className="w-6 h-6 animate-spin-slow" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Tools</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Tools Nexus</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTool("activity")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                        <Activity className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Activity Log</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">History & Ledger</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTool("coin")}
+                      className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-400 border border-amber-500/20">
+                        <Coins className="w-6 h-6 animate-bounce" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">My Coins</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Points Balance</p>
+                      </div>
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-4 pb-12">
+                  {/* Back button */}
+                  <button
+                    onClick={() => setActiveTool(null)}
+                    className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-white"
+                  >
+                    ← Back to Tools
+                  </button>
+
+                  {/* Render active tool */}
+                  {activeTool === "leave" && <LeaveView profile={profile} />}
+                  {activeTool === "notes" && <QuickNotes userId={profile?.user_id} />}
+                  {activeTool === "chess" && (
+                    <div className="bg-black/40 backdrop-blur-2xl p-4 rounded-3xl border border-white/10 shadow-2xl">
+                      <MiniChess userId={profile?.user_id} userProfile={profile} />
+                    </div>
+                  )}
+                  {activeTool === "onboarding" && (
+                    <div className="bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-3xl p-4 min-h-[400px]">
+                      <ClientOnboardingCreator userId={profile?.user_id || ''} />
+                    </div>
+                  )}
+                  {activeTool === "meeting" && <MeetingRoom />}
+                  {activeTool === "tools_nexus" && <ToolsNexusView profile={profile} />}
+                  {activeTool === "activity" && <ActivityLogPanel userId={profile?.user_id || ''} className="border-none bg-transparent" />}
+                  {activeTool === "coin" && (
+                    <div className="space-y-4">
+                      <div className="bg-black/40 backdrop-blur-2xl p-5 rounded-3xl border border-white/10 text-center">
+                        <Coins className="w-10 h-10 text-amber-400 mx-auto mb-2 animate-bounce" />
+                        <h3 className="text-lg font-black text-white">{(profile?.total_points || 0).toLocaleString()} Coins</h3>
+                        <p className="text-xs text-white/40 uppercase font-bold mt-1 tracking-widest">Your VAW Coins Balance</p>
+                      </div>
+                      <ActivityLogPanel userId={profile?.user_id || ''} className="border-none bg-transparent" />
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {/* PROFILE TAB */}
+          {activeTab === "profile" && (
+            <motion.div key="profile" {...fadeUp} className="space-y-6">
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Your Profile</h1>
+                <p className="text-xs text-zinc-500 uppercase tracking-widest font-bold mt-1">Manage settings and identity</p>
+              </div>
+
+              {/* Profile Card */}
+              <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 flex flex-col items-center text-center shadow-2xl">
+                <Avatar className="w-20 h-20 border-4 border-emerald-500/20 mb-3">
+                  <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
+                  <AvatarFallback className="bg-emerald-500/15 text-emerald-400 text-2xl font-black">
+                    {profile?.full_name?.charAt(0) || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <h3 className="text-lg font-bold text-white">{profile?.full_name || "Staff Member"}</h3>
+                <p className="text-xs text-emerald-400 font-bold uppercase tracking-wider mt-1">{profile?.role} Role</p>
+                <p className="text-xs text-white/40 mt-0.5">{profile?.email}</p>
+              </div>
+
+              {/* Coins & Streak Display in Mobile Profile */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
+                    <Coins className="w-5 h-5 text-amber-500/60" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Coins</p>
+                    <p className="text-xs font-bold text-amber-500/60 uppercase">Coming Soon</p>
+                  </div>
+                </div>
+                <div
+                  onClick={onOpenStreakCalendar}
+                  className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl cursor-pointer active:scale-95 transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/15 flex items-center justify-center border border-orange-500/20">
+                    <Flame className="w-5 h-5 text-orange-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Streak</p>
+                    <p className="text-base font-extrabold text-white">{streak} Days</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Settings actions list */}
+              <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl divide-y divide-white/10 overflow-hidden shadow-xl">
+                <button
+                  onClick={onEditProfile}
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <User className="w-4 h-4 text-zinc-400" />
+                    <span className="text-sm font-bold">Edit Profile</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-600" />
+                </button>
+
+                <button
+                  onClick={onUpdateEmojiPassword}
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Smile className="w-4 h-4 text-zinc-400" />
+                    <span className="text-sm font-bold">Passcode (Emoji)</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-600" />
+                </button>
+
+                <button
+                  onClick={onManageBiometrics}
+                  className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Fingerprint className="w-4 h-4 text-zinc-400" />
+                    <span className="text-sm font-bold">Biometrics</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-zinc-600" />
+                </button>
+              </div>
+
+              {/* Sign out button */}
+              <button
+                onClick={handleLogout}
+                className="w-full py-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-sm font-black uppercase tracking-wider hover:bg-red-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                <LogOut className="w-4 h-4" /> Log Out
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Curved Bottom Navigation */}
-      <nav className="fixed bottom-3 left-3 right-3 z-50">
-        <div className="bg-card/80 backdrop-blur-2xl border border-border/30 rounded-[1.75rem] overflow-hidden shadow-xl shadow-black/10">
-          <div className="flex items-center justify-around px-1 py-2 safe-area-inset-bottom">
+      {/* Unified Curved Bottom Navigation */}
+      <nav className="fixed bottom-4 left-4 right-4 z-50">
+        <div className="bg-zinc-900/80 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
+          <div className="flex items-center justify-around px-2 py-3 safe-area-inset-bottom">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const active = activeNav === item.id;
+              const isActive = activeTab === item.id;
 
               return (
                 <button
                   key={item.id}
                   onClick={() => {
-                    setActiveNav(item.id);
-                    if (item.action) item.action();
+                    setActiveTab(item.id);
+                    setActiveTool(null); // Reset tool detail if moving tab
                   }}
-                  className="relative flex flex-col items-center gap-0.5 py-1 px-1.5 min-w-[48px] group"
+                  className="relative flex flex-col items-center gap-1 py-1 px-2.5 min-w-[56px] group"
                 >
-                  {active && (
+                  {isActive && (
                     <motion.div
-                      layoutId="staffNavGlow"
-                      className="absolute -top-1 w-8 h-8 rounded-full bg-emerald-500/12 blur-xl"
-                      transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                      layoutId="staffActiveNavGlow"
+                      className="absolute inset-0 rounded-xl bg-emerald-500/10 border border-emerald-500/20"
+                      transition={{ type: "spring", stiffness: 350, damping: 25 }}
                     />
                   )}
 
-                  <motion.div
-                    animate={active ? { y: -3 } : { y: 0 }}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  <Icon
                     className={cn(
-                      "relative w-9 h-9 flex items-center justify-center rounded-xl transition-all duration-300",
-                      active ? "bg-emerald-500/12" : "group-hover:bg-muted/50"
+                      "w-5 h-5 transition-transform duration-200",
+                      isActive ? "text-emerald-400 scale-110" : "text-zinc-500 group-hover:text-zinc-300"
                     )}
-                  >
-                    <Icon
-                      className={cn(
-                        "w-[17px] h-[17px] transition-all duration-300",
-                        active
-                          ? "text-emerald-400"
-                          : "text-muted-foreground group-hover:text-foreground"
-                      )}
-                      strokeWidth={active ? 2.2 : 1.8}
-                    />
-
-                    {active && (
-                      <motion.div
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-emerald-400"
-                      />
-                    )}
-                  </motion.div>
-
-                  <motion.span
-                    animate={active ? { opacity: 1 } : { opacity: 0.4 }}
+                  />
+                  <span
                     className={cn(
-                      "text-[8px] font-semibold tracking-[0.06em] uppercase transition-colors duration-300",
-                      active ? "text-emerald-400" : "text-muted-foreground group-hover:text-foreground"
+                      "text-[9px] font-bold tracking-tight transition-all",
+                      isActive ? "text-emerald-400 font-black" : "text-zinc-500 group-hover:text-zinc-300"
                     )}
                   >
                     {item.label}
-                  </motion.span>
+                  </span>
                 </button>
               );
             })}
@@ -766,14 +1061,5 @@ const StaffMobileHome = ({
     </div>
   );
 };
-
-// Simple clipboard icon component
-const ClipboardIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-    <path d="M9 14l2 2 4-4" />
-  </svg>
-);
 
 export default StaffMobileHome;

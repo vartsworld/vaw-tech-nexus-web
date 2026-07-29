@@ -55,13 +55,6 @@ export const CompletedTasksDialog = ({
   const [showFullDetail, setShowFullDetail] = useState(false);
   const [previewAttachment, setPreviewAttachment] = useState<any | null>(null);
 
-  // Fetch all tasks from staff_tasks
-  const { data: tasksData, refetch: refetchTasks } = useRealtimeQuery<any[]>({
-    queryKey: ["completed-tasks-direct", userId],
-    table: "staff_tasks",
-    select: "*",
-    staleTime: 2 * 60 * 1000,
-  });
 
   // Fetch all subtasks assigned to the user
   const { data: subtasksData, refetch: refetchSubtasks } = useRealtimeQuery<any[]>({
@@ -69,6 +62,37 @@ export const CompletedTasksDialog = ({
     table: "staff_subtasks",
     filter: `assigned_to=eq.${userId}`,
     select: "*",
+    staleTime: 2 * 60 * 1000,
+  });
+
+  // Extract parent task IDs from the user's subtasks to target query filters
+  const parentTaskIds = useMemo(() => {
+    const ids = (subtasksData || [])
+      .map((s) => s.task_id)
+      .filter(Boolean);
+    return Array.from(new Set(ids));
+  }, [subtasksData]);
+
+  // Construct precise OR filters dynamically to prevent loading the entire company's task database
+  const taskOrFilters = useMemo(() => {
+    const baseFilters = [
+      `assigned_to.eq.${userId}`,
+      `assigned_to.ilike.%${userId}%`,
+      `assigned_by.eq.${userId}`
+    ];
+    if (parentTaskIds.length > 0) {
+      baseFilters.push(`id.in.(${parentTaskIds.join(",")})`);
+    }
+    return baseFilters.join(",");
+  }, [userId, parentTaskIds]);
+
+  // Fetch only user-relevant tasks from staff_tasks instead of loading the entire organization's task database.
+  // We include parentTaskIds in the queryKey to ensure proper reactivity when subtasks finish loading.
+  const { data: tasksData, refetch: refetchTasks } = useRealtimeQuery<any[]>({
+    queryKey: ["completed-tasks-direct", userId, parentTaskIds],
+    table: "staff_tasks",
+    select: "*",
+    orFilters: taskOrFilters,
     staleTime: 2 * 60 * 1000,
   });
 
@@ -479,7 +503,7 @@ export const CompletedTasksDialog = ({
                               </Badge>
                             </div>
                             {task.description && (
-                              <p className="text-white/50 text-xs mt-2 line-clamp-2 leading-relaxed">
+                              <p className="text-white/50 text-xs mt-2 line-clamp-2 leading-relaxed whitespace-pre-wrap break-words">
                                 {task.description}
                               </p>
                             )}

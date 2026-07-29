@@ -84,11 +84,26 @@ const StaffWork = () => {
         .single();
       setProfile(profileData);
 
-      const { data: tasksData } = await supabase
+      // BOLT OPTIMIZATION: Retrieve only the user's assigned subtasks first to collect parent task IDs.
+      // This allows targeted SQL querying instead of loading the entire company's task database.
+      const { data: userSubtasks } = await supabase
+        .from("staff_subtasks")
+        .select("task_id")
+        .eq("assigned_to", user.id);
+      const userTaskIdsFromSubtasks = Array.from(new Set((userSubtasks || []).map(s => s.task_id).filter(Boolean)));
+
+      let query = supabase
         .from('staff_tasks')
         .select('*, staff_subtasks(*)')
-        .in('status', ['pending', 'in_progress', 'overdue'])
-        .order('due_date', { ascending: true });
+        .in('status', ['pending', 'in_progress', 'overdue']);
+
+      if (userTaskIdsFromSubtasks.length > 0) {
+        query = query.or(`assigned_to.eq.${user.id},assigned_to.ilike.%${user.id}%,assigned_by.eq.${user.id},id.in.(${userTaskIdsFromSubtasks.join(',')})`);
+      } else {
+        query = query.or(`assigned_to.eq.${user.id},assigned_to.ilike.%${user.id}%,assigned_by.eq.${user.id}`);
+      }
+
+      const { data: tasksData } = await query.order('due_date', { ascending: true });
 
       // Sort tasks: Overdue first, then In Progress, then Pending
       const sortedTasks = (tasksData || []).sort((a, b) => {
@@ -408,12 +423,12 @@ const StaffWork = () => {
              <Briefcase className="w-5 h-5" />
              <span className="text-[7px] font-black uppercase">Work</span>
           </Button>
-          <Button variant="ghost" onClick={() => navigate("/staff/dashboard")} className="flex flex-col gap-1 items-center h-14 w-12 text-white/40">
+          <Button variant="ghost" onClick={() => navigate("/staff?inbox")} className="flex flex-col gap-1 items-center h-14 w-12 text-white/40">
              <MessageSquare className="w-5 h-5" />
              <span className="text-[7px] font-black uppercase">Chat</span>
           </Button>
           
-          <div onClick={() => navigate("/staff/dashboard")} className="w-16 h-16 -mt-10 rounded-full bg-slate-800 flex items-center justify-center shadow-xl border-4 border-slate-950 active:scale-90 transition-transform">
+          <div onClick={() => navigate("/staff?dashboard")} className="w-16 h-16 -mt-10 rounded-full bg-slate-800 flex items-center justify-center shadow-xl border-4 border-slate-950 active:scale-90 transition-transform">
              <LayoutGrid className="w-8 h-8 text-white/40" />
           </div>
 

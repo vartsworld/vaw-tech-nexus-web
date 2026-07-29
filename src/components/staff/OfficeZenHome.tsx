@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface OfficeZenHomeProps {
   userId: string;
@@ -66,7 +67,23 @@ export default function OfficeZenHome({ userId, userProfile, onEnterWorkspace }:
   const fetchData = async () => {
     if (!userId) return;
     try {
-      const { data: tasks } = await supabase.from("staff_tasks").select("*, staff_subtasks(*)").order("created_at", { ascending: false });
+      // BOLT OPTIMIZATION: Retrieve only the user's assigned subtasks first to collect parent task IDs.
+      // This allows targeted SQL querying instead of loading the entire company's task database.
+      const { data: userSubtasks } = await supabase
+        .from("staff_subtasks")
+        .select("task_id")
+        .eq("assigned_to", userId);
+      const userTaskIdsFromSubtasks = Array.from(new Set((userSubtasks || []).map(s => s.task_id).filter(Boolean)));
+
+      let query = supabase.from("staff_tasks").select("*, staff_subtasks(*)");
+      if (userTaskIdsFromSubtasks.length > 0) {
+        query = query.or(`assigned_to.eq.${userId},assigned_to.ilike.%${userId}%,assigned_by.eq.${userId},id.in.(${userTaskIdsFromSubtasks.join(',')})`);
+      } else {
+        query = query.or(`assigned_to.eq.${userId},assigned_to.ilike.%${userId}%,assigned_by.eq.${userId}`);
+      }
+
+      const { data: tasks } = await query.order("created_at", { ascending: false });
+
       if (tasks) {
         const mine = tasks.filter((t: any) => {
           let assigned = false;
@@ -90,8 +107,10 @@ export default function OfficeZenHome({ userId, userProfile, onEnterWorkspace }:
 
   useEffect(() => {
     fetchData();
-    const ch1 = supabase.channel("home_tasks_new").on("postgres_changes", { event: "*", schema: "public", table: "staff_tasks" }, fetchData).subscribe();
-    const ch2 = supabase.channel("home_notifs_new").on("postgres_changes", { event: "*", schema: "public", table: "staff_notifications" }, fetchData).subscribe();
+    const uniqueSuffix1 = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const uniqueSuffix2 = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const ch1 = supabase.channel(`home_tasks_new-${uniqueSuffix1}`).on("postgres_changes", { event: "*", schema: "public", table: "staff_tasks" }, fetchData).subscribe();
+    const ch2 = supabase.channel(`home_notifs_new-${uniqueSuffix2}`).on("postgres_changes", { event: "*", schema: "public", table: "staff_notifications" }, fetchData).subscribe();
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
   }, [userId]);
 
@@ -197,24 +216,48 @@ export default function OfficeZenHome({ userId, userProfile, onEnterWorkspace }:
               <Bookmark className="w-3.5 h-3.5" /> Sticky Reminders
             </h2>
 
-            <div className="flex gap-2">
-              <Input
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addNote()}
-                placeholder="Quick reminder..."
-                className="h-9 text-xs bg-white/5 border-2 border-white/10 text-white placeholder:text-zinc-400 rounded-xl focus-visible:ring-1 focus-visible:ring-cyan-500"
-              />
-              <Button onClick={addNote} size="sm" className="h-9 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-zinc-950 font-bold shadow-md">
-                <Plus className="w-4 h-4" />
-              </Button>
+            <div className="space-y-1.5">
+              <div className="flex gap-2">
+                <Input
+                  id="sticky-reminder-input"
+                  aria-label="New sticky reminder"
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addNote()}
+                  placeholder="Quick reminder..."
+                  maxLength={100}
+                  className="h-9 text-xs bg-white/5 border-2 border-white/10 text-white placeholder:text-zinc-400 rounded-xl focus-visible:ring-1 focus-visible:ring-cyan-500"
+                />
+                <Button
+                  onClick={addNote}
+                  disabled={!newNote.trim() || newNote.length > 100}
+                  aria-label="Add sticky reminder"
+                  size="sm"
+                  className="h-9 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-zinc-950 font-bold shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {newNote.length > 0 && (
+                <div className="flex justify-end text-[10px] text-zinc-400 tracking-wider animate-in fade-in slide-in-from-top-1 duration-200">
+                  <span className={cn(newNote.length >= 80 ? "text-amber-400 font-bold" : "")}>
+                    {newNote.length}/100
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
               {personalNotes.map((note, i) => (
                 <div key={i} className="p-2.5 bg-yellow-500/10 border border-yellow-400/20 rounded-xl flex items-start justify-between gap-2 group hover:bg-yellow-500/15 transition-all">
                   <p className="text-yellow-100 text-xs font-semibold leading-relaxed break-words flex-1 pr-1">{note}</p>
-                  <button onClick={() => removeNote(i)} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => removeNote(i)}
+                    aria-label="Delete reminder"
+                    title="Delete reminder"
+                    className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-red-500 rounded p-0.5 transition-all shrink-0"
+                  >
                     <Trash2 className="w-3.5 h-3.5 text-zinc-400 hover:text-red-400 transition-colors" />
                   </button>
                 </div>

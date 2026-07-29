@@ -31,10 +31,26 @@ import {
   Lock as LockIcon,
   LogOut,
   Coins,
-  Loader2
+  Flame,
+  Loader2,
+  Eraser,
+  Cpu,
+  ShieldAlert,
+  Hash,
+  Plus,
+  Search,
+  ThumbsUp,
+  ExternalLink,
+  Maximize2,
+  MessageSquare,
+  Compass,
+  Activity,
+  Trophy,
+  Volume2,
+  VolumeX
 } from "lucide-react";
-import { CoinConfigDialog } from "@/components/staff/CoinConfigDialog";
 import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
+import { useUser } from "@/context/UserContext";
 import UpdateButton from "@/components/staff/UpdateButton";
 import { Fingerprint } from "lucide-react";
 import { toast } from "sonner";
@@ -63,29 +79,72 @@ import { useActivityTracker } from "@/hooks/useActivityTracker";
 import { useUserStatus } from "@/hooks/useUserStatus";
 import { supabase } from "@/integrations/supabase/client";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+<<<<<<< HEAD
+=======
+import { motion } from "framer-motion";
+import CoinPopup from "@/components/staff/CoinPopup";
+import StreakCalendarDialog from "@/components/staff/StreakCalendarDialog";
+>>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
 import EmmaAssistant from "@/components/ai/EmmaAssistant";
 import { Sparkles } from "lucide-react";
 import OfficeZenHome from "@/components/staff/OfficeZenHome";
+import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
 
-type RoomType = 'home' | 'workspace' | 'meeting' | 'breakroom';
+// Sidebar sub-views / dynamic tabs imports
+import LeaveView from "@/components/staff/LeaveView";
+import ToolsNexusView from "@/components/staff/ToolsNexusView";
+import TeamChat from "@/components/staff/TeamChat";
+import TeamStatusSidebar from "@/components/staff/TeamStatusSidebar";
+
+type RoomType =
+  | 'home'
+  | 'workspace'
+  | 'meeting'
+  | 'breakroom'
+  | 'planner'
+  | 'leave'
+  | 'tools'
+  | 'chess'
+  | 'onboarding'
+  | 'notes'
+  | 'operations'
+  | 'docs'
+  | 'activity'
+  | 'channels'
+  | 'inbox';
 
 const EMOJI_OPTIONS = [
-  "😀", "😃", "😄", "😁", "😊", "🙂", "😎", "🤩", "🥳", "😇",
-  "🤗", "🤔", "🤫", "🤭", "🧐", "🤓", "😏", "😌", "😴", "🤤",
-  "🥰", "😍", "🤩", "😘", "😗", "😚", "😙", "🥲", "😋", "😛",
-  "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🫢", "🫣", "🤫", "🤥",
-  "🦊", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🐔",
-  "🍎", "🍌", "🍇", "🍉", "🍓", "🍒", "🍑", "🥝", "🍍", "🥥",
-  "⚽", "🏀", "🎾", "🏐", "🏈", "⚾", "🥎", "🎱", "🏓", "🏸",
-  "🎮", "🎯", "🎲", "🎭", "🎨", "🎬", "🎪", "🎡", "🎢", "🎰",
+  "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
+  "😴", "🤤", "😋", "🧐", "🤓", "😏", "🥺", "😢", "😭", "😤",
+  "🤯", "🥴", "🤠", "🥶", "🥵", "😱", "🤗", "🤫", "🤭", "🙄",
+  "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯",
+  "🦁", "🐮", "🐷", "🐸", "🐵", "🐔", "🐧", "🐦", "🐤", "🦆",
+  "❤️", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "💕",
+  "🍎", "🍌", "🍊", "🍋", "🍉", "🍇", "🍓", "🥝", "🍒", "🥥",
+  "⚽", "🏀", "🏈", "⚾", "🎾", "🏐", "🏉", "🎱", "🏓", "🏸",
   "🎵", "🎶", "🎤", "🎧", "🎸", "🎹", "🎺", "🎻", "🥁", "📱",
   "💻", "⌨️", "🖥️", "🖨️", "📷", "📺", "🕹️", "💡", "🔔", "🔕"
 ];
 
+const paramToRoom = (param: string): RoomType | null => {
+  if (param === 'dashboard' || param === 'workspace') return 'workspace';
+  if (param === 'calendar' || param === 'planner') return 'planner';
+  if (param === 'meetingroom') return 'meeting';
+
+  const validRooms: RoomType[] = [
+    'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
+    'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox'
+  ];
+  if (validRooms.includes(param as RoomType)) return param as RoomType;
+  return null;
+};
+
 const TeamHeadDashboard = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { interactionSoundsEnabled, setInteractionSoundsEnabled } = useUser();
   const [showMobileHome, setShowMobileHome] = useState(true);
+<<<<<<< HEAD
   const { room: urlRoom } = useParams();
   
   // Resolve current room from URL or default to 'workspace' if on 'dashboard'
@@ -94,6 +153,25 @@ const TeamHeadDashboard = () => {
   const setCurrentRoom = (newRoom: string) => {
     navigate(`/team-head/${newRoom === 'workspace' ? 'dashboard' : newRoom}`);
   };
+=======
+
+  const getInitialRoom = (): RoomType => {
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get('room');
+    if (roomParam) {
+      const r = paramToRoom(roomParam);
+      if (r) return r;
+    }
+    const firstParam = window.location.search.replace('?', '').split('&')[0];
+    if (firstParam) {
+      const r = paramToRoom(firstParam);
+      if (r) return r;
+    }
+    return 'planner'; // Default fallback
+  };
+
+  const [currentRoom, setCurrentRoom] = useState<RoomType>(getInitialRoom);
+>>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -104,9 +182,14 @@ const TeamHeadDashboard = () => {
   const [newEmojiPassword, setNewEmojiPassword] = useState<string[]>([]);
   const [confirmEmojiPassword, setConfirmEmojiPassword] = useState<string[]>([]);
   const [profileForm, setProfileForm] = useState({ full_name: "", about_me: "" });
+<<<<<<< HEAD
   const [showCoinConfigDialog, setShowCoinConfigDialog] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
+=======
+  const [showCoinPopup, setShowCoinPopup] = useState(false);
+  const [showStreakCalendar, setShowStreakCalendar] = useState(false);
+>>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
   const [showBiometricDialog, setShowBiometricDialog] = useState(false);
   const [showEmma, setShowEmma] = useState(false);
 
@@ -121,7 +204,6 @@ const TeamHeadDashboard = () => {
       }
     }
     return [
-      { id: 'chess', name: 'Mini Chess', description: 'Play chess with colleagues', isVisible: true },
       { id: 'activity', name: 'Activity Log', description: 'Track your daily activities', isVisible: false },
     ];
   });
@@ -166,9 +248,83 @@ const TeamHeadDashboard = () => {
 
   const location = useLocation();
 
+  // Custom callback to transition between workspace rooms cleanly by changing the URL
+  const handleRoomChange = useCallback((room: RoomType) => {
+    let suffix = '';
+    if (room === 'planner') {
+      suffix = 'calendar';
+    } else if (room === 'workspace') {
+      suffix = 'dashboard';
+    } else {
+      suffix = room;
+    }
+
+    // Preserve any extra URL search parameters (like ID) during active workspace state changes
+    const params = new URLSearchParams(location.search);
+    let finalSearch = suffix ? `?${suffix}` : '';
+    if (params.has('ID')) {
+      finalSearch += (finalSearch ? '&' : '?') + `ID=${params.get('ID')}`;
+    }
+
+    navigate({
+      pathname: location.pathname,
+      search: finalSearch,
+    }, { replace: true });
+  }, [navigate, location.pathname, location.search]);
+
+  // Unified loop-free synchronization of URL query params and currentRoom
   useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    let roomFromUrl: RoomType | null = null;
+
+    // Parse the room from the URL query params
+    const roomParam = params.get('room');
+    if (roomParam) {
+      roomFromUrl = paramToRoom(roomParam);
+    } else {
+      // For legacy/query-only links like ?meeting or ?calendar or ?dashboard
+      const firstParam = location.search.replace('?', '').split('&')[0];
+      if (firstParam) {
+        roomFromUrl = paramToRoom(firstParam);
+      }
+    }
+
+    if (roomFromUrl) {
+      if (roomFromUrl !== currentRoom) {
+        setCurrentRoom(roomFromUrl);
+      }
+    } else {
+      // If URL has no room parameter (e.g. empty search), match state to URL or URL to state
+      if (currentRoom === 'planner') {
+        // Default on login/mount: redirect to calendar suffix
+        navigate({
+          pathname: location.pathname,
+          search: '?calendar',
+        }, { replace: true });
+      } else {
+        const suffix = currentRoom === 'planner' ? 'calendar' : (currentRoom === 'workspace' ? 'dashboard' : currentRoom);
+        navigate({
+          pathname: location.pathname,
+          search: `?${suffix}`,
+        }, { replace: true });
+      }
+    }
+  }, [location.search, currentRoom, navigate, location.pathname]);
+
+  useEffect(() => {
+<<<<<<< HEAD
     if (urlRoom === 'mycoins' || urlRoom === 'coin') {
       setCurrentRoom('coin');
+=======
+    if (location.state?.openCoins) {
+      setShowCoinPopup(true);
+    }
+    if (location.state?.currentRoom) {
+      setCurrentRoom(location.state.currentRoom as RoomType);
+    }
+    if (location.state) {
+      window.history.replaceState({}, document.title);
+>>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
     }
   }, [urlRoom]);
 
@@ -274,6 +430,29 @@ const TeamHeadDashboard = () => {
   };
 
 
+  useEffect(() => {
+    const roomTitleMap: Record<RoomType, string> = {
+      home: "Home",
+      workspace: "Dashboard",
+      meeting: "Meeting Room",
+      breakroom: "Break Room",
+      planner: "Calendar",
+      leave: "Leave",
+      tools: "Tools",
+      chess: "Chess",
+      onboarding: "Onboarding",
+      notes: "Notes",
+      operations: "Operations",
+      docs: "Documents",
+      activity: "Activity",
+      channels: "Channels",
+      inbox: "Inbox"
+    };
+
+    const roomTitle = roomTitleMap[currentRoom] || currentRoom.charAt(0).toUpperCase() + currentRoom.slice(1);
+    document.title = `${roomTitle} | Team Head`;
+  }, [currentRoom]);
+
   const handleMoodSubmitted = () => {
     setShowMoodCheck(false);
   };
@@ -313,6 +492,14 @@ const TeamHeadDashboard = () => {
       if (newEmojiPassword.length < 6) {
         setNewEmojiPassword([...newEmojiPassword, emoji]);
       }
+    }
+  };
+
+  const removeLastEmoji = () => {
+    if (confirmEmojiPassword.length > 0) {
+      setConfirmEmojiPassword(prev => prev.slice(0, -1));
+    } else if (newEmojiPassword.length > 0) {
+      setNewEmojiPassword(prev => prev.slice(0, -1));
     }
   };
 
@@ -412,16 +599,6 @@ const TeamHeadDashboard = () => {
     );
   }
 
-  // Show mobile home on small screens
-  if (isMobile && showMobileHome && profile?.user_id) {
-    return (
-      <TeamHeadMobileHome
-        profile={profile}
-        onEnterDesktop={() => setShowMobileHome(false)}
-      />
-    );
-  }
-
   const toggleWidget = (widgetId: string) => {
     setWidgets(prev => prev.map(w =>
       w.id === widgetId ? { ...w, isVisible: !w.isVisible } : w
@@ -441,7 +618,7 @@ const TeamHeadDashboard = () => {
       <OfficeZenHome 
         userId={profile?.user_id || ''}
         userProfile={profile}
-        onEnterWorkspace={() => setCurrentRoom('workspace')}
+        onEnterWorkspace={() => handleRoomChange('workspace')}
       />
     ),
     workspace: (
@@ -461,6 +638,7 @@ const TeamHeadDashboard = () => {
           />
         </div>
 
+<<<<<<< HEAD
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start relative z-10">
           <div className="h-full">
             <QuickNotes userId={profile?.user_id || ''} />
@@ -471,11 +649,15 @@ const TeamHeadDashboard = () => {
           </div>
         </div>
 
+=======
+        {/* Row 2: Activity Log */}
+>>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
         {widgets.find(w => w.id === 'activity')?.isVisible && (
           <div className="w-full relative z-10">
             <ActivityLogPanel userId={profile?.user_id || ''} className="bg-black/40 backdrop-blur-lg border-white/10 h-[600px]" />
           </div>
         )}
+<<<<<<< HEAD
 
         {widgets.find(w => w.id === 'chess')?.isVisible && (
           <div className="w-full flex justify-center py-4 relative z-10">
@@ -530,25 +712,274 @@ const TeamHeadDashboard = () => {
             <MyCoins isInline={true} />
           </div>
        </div>
+=======
+      </div>
+    ),
+    meeting: <MeetingRoom />,
+    planner: <MonthlyPlanner userId={profile?.user_id || ''} userProfile={profile} />,
+    breakroom: null,
+    leave: <LeaveView profile={profile} />,
+    tools: <ToolsNexusView profile={profile} />,
+    chess: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <div className="flex flex-col space-y-1">
+          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+            <Trophy className="w-8 h-8 text-amber-500" />
+            Chess Arena
+          </h1>
+          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
+            Realtime multiplayer battles and strategic practice
+          </p>
+        </div>
+
+        <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[600px] backdrop-blur-md">
+          <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
+        </div>
+      </div>
+    ),
+    onboarding: (
+      <div className="space-y-6 max-w-4xl mx-auto py-2">
+        <div className="flex flex-col space-y-1">
+          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+            <Compass className="w-8 h-8 text-blue-400" />
+            Client Onboarding Portal
+          </h1>
+          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
+            Generate and manage direct client project initialization channels
+          </p>
+        </div>
+
+        <div className="bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-6 lg:p-8 min-h-[500px]">
+          <ClientOnboardingCreator userId={profile?.user_id || ''} />
+        </div>
+      </div>
+    ),
+    notes: (
+      <div className="space-y-6 max-w-4xl mx-auto py-2">
+        <div className="flex flex-col space-y-1">
+          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+            <StickyNote className="w-8 h-8 text-yellow-400" />
+            Personal Notes
+          </h1>
+          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
+            Organize thoughts, design parameters, and daily items securely
+          </p>
+        </div>
+
+        <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[500px] backdrop-blur-md">
+          <QuickNotes userId={profile?.user_id || ''} />
+        </div>
+      </div>
+    ),
+    operations: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <div className="flex flex-col space-y-1">
+          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+            <Layout className="w-8 h-8 text-blue-500" />
+            Operations Overview
+          </h1>
+          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
+            Real-time tracking of department metrics and performance standards
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {[
+            { label: "Pipeline Load", value: "84%", trend: "Optimal Capacity", icon: Cpu, color: "text-blue-400" },
+            { label: "Service Availability", value: "99.98%", trend: "Excellent SLA", icon: TrendingUp, color: "text-emerald-400" },
+            { label: "Active Escalations", value: "0 Cases", trend: "All Cleared", icon: ShieldAlert, color: "text-amber-400" },
+            { label: "Redemption Pool", value: "₹4,25,000", trend: "Fully Funded", icon: Trophy, color: "text-purple-400" },
+          ].map((metric, idx) => {
+            const Icon = metric.icon;
+            return (
+              <Card key={idx} className="bg-black/30 border-white/10 text-white rounded-[2rem] backdrop-blur-md">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-white/40">{metric.label}</span>
+                    <Icon className={`w-5 h-5 ${metric.color}`} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black text-white">{metric.value}</h3>
+                    <p className="text-[9px] font-bold text-white/30 uppercase mt-0.5">{metric.trend}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    ),
+    docs: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <div className="flex flex-col space-y-1">
+          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+            <StickyNote className="w-8 h-8 text-blue-500" />
+            Documents Nexus
+          </h1>
+          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
+            Central repository of manuals, specifications, and code policies
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[
+            {
+              title: "VAW Coin Economy Guidelines",
+              desc: "Comprehensive manual explaining the correlation between VAW Coin productivity, INR redemption, and reward standards.",
+              icon: Sparkles,
+              color: "text-amber-400 bg-amber-500/10 border-amber-500/20"
+            },
+            {
+              title: "Vite & React Development Best Practices",
+              desc: "Code standards, state-management policies, Supabase client subscription cleanup requirements, and design protocols.",
+              icon: Briefcase,
+              color: "text-blue-400 bg-blue-500/10 border-blue-500/20"
+            },
+            {
+              title: "Security & Credential Vault Access",
+              desc: "Protocols on environment variables, private access credentials, and user data privacy standards inside Bondify.",
+              icon: Target,
+              color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+            },
+            {
+              title: "Escalation Matrix & Core Directives",
+              desc: "Emergency contact protocols, departmental head reviews, and standard code review workflows.",
+              icon: Clock,
+              color: "text-red-400 bg-red-500/10 border-red-500/20"
+            }
+          ].map((doc, idx) => {
+            const Icon = doc.icon;
+            return (
+              <Card key={idx} className="bg-black/30 border-white/10 text-white rounded-[2.5rem] hover:bg-white/[0.04] transition-all cursor-pointer group backdrop-blur-md">
+                <CardContent className="p-6 space-y-4">
+                  <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${doc.color} group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors leading-snug">{doc.title}</h3>
+                    <p className="text-xs text-white/50 leading-relaxed">{doc.desc}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    ),
+    activity: (
+      <div className="space-y-6 max-w-4xl mx-auto py-2">
+        <div className="flex flex-col space-y-1">
+          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+            <Activity className="w-8 h-8 text-blue-500" />
+            Activity Log
+          </h1>
+          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
+            Real-time synchronization of system achievements, attendance, and transactions
+          </p>
+        </div>
+
+        <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[500px] backdrop-blur-md">
+          <ActivityLogPanel userId={profile?.user_id || ''} className="border-none bg-transparent" />
+        </div>
+      </div>
+    ),
+    channels: (
+      <div className="space-y-6 max-w-4xl mx-auto py-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+              <MessageSquare className="w-8 h-8 text-blue-500" />
+              Chat Channels
+            </h1>
+            <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
+              Explore open channels and synchronized team chat topics
+            </p>
+          </div>
+
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase h-11 px-5 gap-2 border-none">
+            <Plus className="w-4 h-4" />
+            Create Channel
+          </Button>
+        </div>
+
+        <div className="bg-black/35 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-6 lg:p-8 min-h-[500px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {[
+              { id: '1', name: 'general', description: 'General company-wide news, major accomplishments, and official announcements.', is_general: true },
+              { id: '2', name: 'tech', description: 'Tech stacks, system architectures, API updates, design patterns, and deployment reviews.', is_general: false },
+              { id: '3', name: 'random', description: 'Casual chitchat, memes, chess match schedules, break-time discussions, and zen logs.', is_general: false },
+              { id: '4', name: 'design', description: 'Client layouts, glassmorphism templates, Tailwind parameters, and feedback approvals.', is_general: false }
+            ].map((chan) => (
+              <Card key={chan.id} className="bg-black/30 border-white/10 text-white rounded-[2rem] hover:bg-white/[0.04] transition-all cursor-pointer group backdrop-blur-md">
+                <CardContent className="p-6 flex items-start gap-4">
+                  <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                    {chan.is_general ? <Sparkles className="w-6 h-6" /> : <Hash className="w-4 h-4" />}
+                  </div>
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate">#{chan.name}</h3>
+                    <p className="text-xs text-white/50 line-clamp-2 leading-relaxed">{chan.description}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    ),
+    inbox: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <div className="flex flex-col space-y-1">
+          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+            <MessageSquare className="w-8 h-8 text-blue-500" />
+            Inbox
+          </h1>
+          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
+            Professional Team Communications & Direct Messages
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 h-[600px] overflow-hidden backdrop-blur-md">
+            <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
+          </div>
+          <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 h-[600px] overflow-y-auto backdrop-blur-md">
+            <h3 className="text-xs font-black uppercase tracking-widest text-white/40 mb-4 px-2">Team Directory</h3>
+            <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={profile?.user_id || ''} />
+          </div>
+        </div>
+      </div>
+>>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
     )
   };
 
   return (
     <div className="min-h-screen h-screen flex flex-col relative overflow-hidden bg-zinc-950">
-      {/* Background Layer - Fixed to viewport */}
-      {currentRoom !== 'home' && (
-        <div className="fixed inset-0 z-0 pointer-events-none">
-          <div className="absolute inset-0 bg-black/60 z-10"></div>
-          <img
-            src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
-            alt="Modern office background"
-            className="w-full h-full object-cover scale-105 opacity-100"
-          />
-        </div>
-      )}
+      {isMobile && showMobileHome && profile?.user_id ? (
+        <TeamHeadMobileHome
+          profile={profile}
+          onEnterDesktop={() => setShowMobileHome(false)}
+          onEditProfile={() => setShowProfileDialog(true)}
+          onUpdateEmojiPassword={() => setShowEmojiDialog(true)}
+          onManageBiometrics={() => setShowBiometricDialog(true)}
+          onOpenStreakCalendar={() => setShowStreakCalendar(true)}
+        />
+      ) : (
+        <>
+          {/* Background Layer - Fixed to viewport */}
+          {currentRoom !== 'home' && (
+            <div className="fixed inset-0 z-0 pointer-events-none">
+              <div className="absolute inset-0 bg-black/35 z-10"></div>
+              <img
+                src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
+                alt="Modern office background"
+                className="w-full h-full object-cover scale-100 opacity-100"
+              />
+            </div>
+          )}
 
       {/* Office Header */}
       {currentRoom !== 'home' && (
+<<<<<<< HEAD
         <header className="relative z-30 bg-black/40 backdrop-blur-3xl border-b border-white/5 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
           <div className="container mx-auto px-4 py-3">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -666,6 +1097,145 @@ const TeamHeadDashboard = () => {
                 </div>
               </div>
             </div>
+=======
+        <header className="relative z-30 bg-black/80 backdrop-blur-xl border-b border-white/20 shadow-2xl">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white border-none text-[10px] uppercase font-bold px-2 py-0.5">
+                    Team Head
+                  </Badge>
+                  <p className="text-white text-sm sm:text-base font-bold flex items-center">
+                    <User className="inline w-4 h-4 mr-1.5 text-blue-400" />
+                    {profile?.full_name || profile?.username || 'Team Leader'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* Desktop Only Coins Display in Header (Disabled - Coming Soon) */}
+              <div
+                className="hidden md:flex items-center gap-1.5 bg-amber-500/5 border border-amber-500/10 px-3 py-1.5 rounded-full text-amber-500/60 font-bold text-xs select-none"
+                title="Coins system is Coming Soon"
+              >
+                <Coins className="w-4 h-4 text-amber-500/40" />
+                <span>Coming Soon</span>
+              </div>
+
+              {/* Desktop Only Streak Display in Header */}
+              <div
+                className="hidden md:flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full text-orange-400 font-bold text-xs cursor-pointer hover:bg-orange-500/20 transition-all shadow-md shadow-orange-500/5 select-none"
+                onClick={() => setShowStreakCalendar(true)}
+                title="View Streak Calendar"
+              >
+                <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
+                <span>{profile?.attendance_streak || 0}d Streak</span>
+              </div>
+
+              <div>
+                <NotificationsBar userId={profile?.user_id || ''} />
+              </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={profile?.profile_photo_url} />
+                      <AvatarFallback>{profile?.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 bg-zinc-950 text-white border-white/10 shadow-2xl">
+                  <DropdownMenuLabel className="text-white/60 text-[10px] font-bold uppercase tracking-wider">My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-white/10" />
+
+                  {/* Status Indicator inside Dropdown */}
+                  <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
+                    <span>Status</span>
+                    <UserStatusBadge
+                      status={status}
+                      isBreakActive={false}
+                      breakTimeRemaining={0}
+                    />
+                  </div>
+
+                  {/* Coins Display inside Dropdown */}
+                  <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
+                    <div className="flex items-center">
+                      <Coins className="mr-2 h-4 w-4 text-amber-500/50" />
+                      <span>Coins Balance</span>
+                    </div>
+                    <span className="text-amber-500/50 font-bold text-xs">Coming Soon</span>
+                  </div>
+
+                  {/* Streak Display inside Dropdown */}
+                  <DropdownMenuItem onClick={() => setShowStreakCalendar(true)} className="flex items-center justify-between cursor-pointer py-1.5 focus:bg-white/5">
+                    <div className="flex items-center">
+                      <Flame className="mr-2 h-4 w-4 text-orange-500" />
+                      <span>My Streak</span>
+                    </div>
+                    <span className="text-orange-400 font-bold text-xs">{profile?.attendance_streak || 0}d</span>
+                  </DropdownMenuItem>
+
+                  {/* App Update inside Dropdown */}
+                  <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
+                    <span>System Version</span>
+                    <UpdateButton variant="dark" compact={true} />
+                  </div>
+
+                  {/* Sound Toggle inside Dropdown */}
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setInteractionSoundsEnabled(!interactionSoundsEnabled);
+                    }}
+                    className="py-1.5 focus:bg-white/5 flex items-center justify-between cursor-pointer text-xs"
+                  >
+                    <div className="flex items-center">
+                      {interactionSoundsEnabled ? (
+                        <Volume2 className="mr-2 h-4 w-4 text-green-400" />
+                      ) : (
+                        <VolumeX className="mr-2 h-4 w-4 text-zinc-400" />
+                      )}
+                      <span>Interaction Sounds</span>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                      interactionSoundsEnabled ? "bg-green-500/10 text-green-400" : "bg-zinc-800 text-zinc-400"
+                    }`}>
+                      {interactionSoundsEnabled ? "ON" : "OFF"}
+                    </span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator className="bg-white/10" />
+
+                  <DropdownMenuItem onClick={() => navigate("/sales/dashboard")} className="text-blue-400 hover:text-blue-300 py-1.5 focus:bg-white/5">
+                    <Briefcase className="mr-2 h-4 w-4" />
+                    Sales Hub (Client Entry)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowProfileDialog(true)} className="py-1.5 focus:bg-white/5">
+                    <User className="mr-2 h-4 w-4 text-zinc-400" />
+                    View/Edit Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowEmojiDialog(true)} className="py-1.5 focus:bg-white/5">
+                    <LockIcon className="mr-2 h-4 w-4 text-zinc-400" />
+                    Update Emoji Password
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="text-green-400 hover:text-green-300 py-1.5 focus:bg-white/5">
+                    <Fingerprint className="mr-2 h-4 w-4" />
+                    Fingerprint Login
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-white/10" />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-400 hover:text-red-300 py-1.5 focus:bg-white/5">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+>>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
           </div>
         </header>
       )}
@@ -678,7 +1248,7 @@ const TeamHeadDashboard = () => {
       <div className="flex-1 overflow-hidden relative z-10">
         <VirtualOfficeLayout
           currentRoom={currentRoom}
-          onRoomChange={setCurrentRoom}
+          onRoomChange={handleRoomChange}
           onlineUsers={onlineUsers}
           userId={profile?.user_id}
           userProfile={profile}
@@ -690,10 +1260,12 @@ const TeamHeadDashboard = () => {
           {roomComponents[currentRoom]}
         </VirtualOfficeLayout>
       </div>
+        </>
+      )}
 
       {/* Profile Edit Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-[90vw] max-h-[90vh] w-full rounded-2xl overflow-y-auto sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
             <DialogDescription>Update your profile information</DialogDescription>
@@ -736,53 +1308,43 @@ const TeamHeadDashboard = () => {
 
       {/* Emoji Password Dialog */}
       <Dialog open={showEmojiDialog} onOpenChange={setShowEmojiDialog}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="max-w-[90vw] max-h-[90vh] w-full overflow-y-auto sm:max-w-[500px] bg-zinc-950 border-white/10 rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Update Emoji Password</DialogTitle>
-            <DialogDescription>Select 6 emojis for your new password</DialogDescription>
+            <DialogTitle className="text-xl font-black uppercase italic tracking-tight text-white">Update Emoji Password</DialogTitle>
+            <DialogDescription className="text-white/40 uppercase text-[10px] font-bold tracking-widest">Select 6 emojis for your new high-security passcode</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>New Emoji Password (6 emojis)</Label>
-              <div className="flex gap-2 p-4 bg-muted rounded-lg min-h-[60px] items-center justify-center">
-                {newEmojiPassword.map((emoji, idx) => (
-                  <span key={idx} className="text-3xl">{emoji}</span>
-                ))}
-                {newEmojiPassword.length < 6 && (
-                  <span className="text-muted-foreground">Select {6 - newEmojiPassword.length} more</span>
-                )}
+          <div className="space-y-6 py-4">
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Sequence Input</Label>
+
+              <div className="flex gap-2">
+                <div className="flex-1 grid grid-cols-6 gap-2 p-4 bg-white/5 border border-white/10 rounded-xl min-h-[80px] items-center justify-items-center">
+                  {(newEmojiPassword.length < 6 ? newEmojiPassword : confirmEmojiPassword).map((emoji, idx) => (
+                    <motion.span initial={{ scale: 0.5 }} animate={{ scale: 1 }} key={idx} className="text-3xl">{emoji}</motion.span>
+                  ))}
+                  {(newEmojiPassword.length < 6 ? newEmojiPassword : confirmEmojiPassword).length === 0 && (
+                    <div className="col-span-6 text-[10px] font-black uppercase tracking-widest text-white/10">
+                      Start selecting...
+                    </div>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-auto w-16 bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10 shrink-0 rounded-xl"
+                  onClick={removeLastEmoji}
+                  disabled={newEmojiPassword.length === 0 && confirmEmojiPassword.length === 0}
+                >
+                  <Eraser className="h-5 w-5" />
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setNewEmojiPassword([])}
-                disabled={newEmojiPassword.length === 0}
-              >
-                Clear
-              </Button>
+
+              <p className="text-[9px] font-bold text-center uppercase tracking-widest text-white/20">
+                {newEmojiPassword.length < 6 ? "Enter your new 6-emoji pattern" : "Re-enter pattern to confirm"}
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <Label>Confirm Emoji Password</Label>
-              <div className="flex gap-2 p-4 bg-muted rounded-lg min-h-[60px] items-center justify-center">
-                {confirmEmojiPassword.map((emoji, idx) => (
-                  <span key={idx} className="text-3xl">{emoji}</span>
-                ))}
-                {confirmEmojiPassword.length < 6 && newEmojiPassword.length === 6 && (
-                  <span className="text-muted-foreground">Confirm {6 - confirmEmojiPassword.length} more</span>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setConfirmEmojiPassword([])}
-                disabled={confirmEmojiPassword.length === 0}
-              >
-                Clear
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-10 gap-2 max-h-[200px] overflow-y-auto p-2 border rounded-lg">
+            <div className="grid grid-cols-6 gap-3 max-h-48 overflow-y-auto p-4 bg-white/5 border border-white/10 rounded-2xl">
               {EMOJI_OPTIONS.map((emoji, idx) => (
                 <button
                   key={idx}
@@ -793,7 +1355,7 @@ const TeamHeadDashboard = () => {
                       addEmojiToPassword(emoji, true);
                     }
                   }}
-                  className="text-2xl hover:bg-accent p-2 rounded transition-colors"
+                  className="text-2xl hover:bg-white/10 hover:scale-110 active:scale-95 p-2 rounded-xl transition-all duration-200 flex items-center justify-center h-10 w-10 mx-auto"
                   disabled={newEmojiPassword.length >= 6 && confirmEmojiPassword.length >= 6}
                 >
                   {emoji}
@@ -803,10 +1365,10 @@ const TeamHeadDashboard = () => {
 
             <Button
               onClick={handleSetEmojiPassword}
-              className="w-full"
+              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 disabled:opacity-20"
               disabled={newEmojiPassword.length !== 6 || confirmEmojiPassword.length !== 6}
             >
-              Update Emoji Password
+              Update Security Pattern
             </Button>
           </div>
         </DialogContent>
@@ -822,20 +1384,35 @@ const TeamHeadDashboard = () => {
         />
       )}
 
-      <CoinConfigDialog
-        open={showCoinConfigDialog}
-        onOpenChange={setShowCoinConfigDialog}
-      />
-
       <BiometricSettingsDialog
         open={showBiometricDialog}
         onOpenChange={setShowBiometricDialog}
       />
       
+<<<<<<< HEAD
+=======
+      {profile?.user_id && (
+        <CoinPopup
+          isOpen={showCoinPopup}
+          onOpenChange={setShowCoinPopup}
+          userId={profile.user_id}
+          userProfile={profile}
+        />
+      )}
+
+      {profile?.user_id && (
+        <StreakCalendarDialog
+          isOpen={showStreakCalendar}
+          onOpenChange={setShowStreakCalendar}
+          userId={profile.user_id}
+        />
+      )}
+
+>>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
       {/* EMMA AI floating button + dialog */}
       <Button
         onClick={() => setShowEmma(true)}
-        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-br from-primary to-purple-500 hover:scale-105 transition-transform"
+        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-br from-primary to-purple-500 hover:scale-105 transition-transform hidden md:flex"
         size="icon"
         title="Ask EMMA"
       >

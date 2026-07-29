@@ -59,13 +59,11 @@ const MobileHeader = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      const scrolled = window.scrollY > 50;
+      setIsScrolled(prev => prev !== scrolled ? scrolled : prev);
     };
-    window.addEventListener("scroll", handleScroll);
+    // Use passive event listener to optimize scrolling performance
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
   return <div className="md:hidden">
@@ -116,24 +114,44 @@ const MobileHeader = () => {
           {/* Navigation Links */}
           <div className="flex-1 overflow-y-auto py-4">
             <nav className="space-y-2 px-4">
-              {navigationItems.map((item, index) => <a key={index} href={item.href} className="block py-3 px-3 text-foreground/80 hover:text-accent hover:bg-muted/50 rounded-lg transition-colors" onClick={() => setIsMenuOpen(false)}>
+              {navigationItems.map((item, index) => (
+                <Link
+                  key={index}
+                  to={item.href}
+                  className="block py-3 px-3 text-foreground/80 hover:text-accent hover:bg-muted/50 rounded-lg transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                  data-cuelume-hover="tick"
+                >
                   {item.name}
-                </a>)}
+                </Link>
+              ))}
 
               {/* Services Dropdown */}
               <div className="py-2">
-                <button className="flex items-center justify-between w-full py-3 px-3 text-foreground/80 hover:text-accent hover:bg-muted/50 rounded-lg transition-colors" onClick={() => setIsServicesOpen(!isServicesOpen)}>
+                <button
+                  className="flex items-center justify-between w-full py-3 px-3 text-foreground/80 hover:text-accent hover:bg-muted/50 rounded-lg transition-colors"
+                  onClick={() => setIsServicesOpen(!isServicesOpen)}
+                  data-cuelume-hover="tick"
+                >
                   <span>Services</span>
                   <ChevronDown size={16} className={`transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {isServicesOpen && <div className="ml-4 mt-2 space-y-1">
-                    {servicesItems.map((service, index) => <a key={index} href={service.href} className="block py-2 px-3 text-sm text-foreground/70 hover:text-accent hover:bg-muted/30 rounded-lg transition-colors" onClick={() => {
-                  setIsMenuOpen(false);
-                  setIsServicesOpen(false);
-                }}>
+                    {servicesItems.map((service, index) => (
+                      <Link
+                        key={index}
+                        to={service.href}
+                        className="block py-2 px-3 text-sm text-foreground/70 hover:text-accent hover:bg-muted/30 rounded-lg transition-colors"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          setIsServicesOpen(false);
+                        }}
+                        data-cuelume-hover="tick"
+                      >
                         {service.name}
-                      </a>)}
+                      </Link>
+                    ))}
                   </div>}
               </div>
             </nav>

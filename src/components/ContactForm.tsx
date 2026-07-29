@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface FormData {
@@ -127,7 +127,7 @@ const ContactForm = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <label htmlFor="name" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
-            Your Name
+            Your Name <span className="text-red-500">*</span>
           </label>
           <Input
             id="name"
@@ -142,7 +142,7 @@ const ContactForm = () => {
         
         <div className="space-y-2">
           <label htmlFor="email" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
-            Email Address
+            Email Address <span className="text-red-500">*</span>
           </label>
           <Input
             id="email"
@@ -198,7 +198,7 @@ const ContactForm = () => {
       
       <div className="space-y-2">
         <label htmlFor="message" className={`text-sm font-medium ${isMobile ? 'text-center block' : ''}`}>
-          Your Message
+          Your Message <span className="text-red-500">*</span>
         </label>
         <Textarea
           id="message"
@@ -207,16 +207,29 @@ const ContactForm = () => {
           onChange={handleChange}
           placeholder="Tell us about your project or inquiry..."
           required
+          maxLength={1000}
           className="bg-muted/20 border-muted h-32"
         />
+        <div className="flex justify-end text-xs text-muted-foreground">
+          <span className={formData.message.length >= 800 ? "text-amber-500 font-bold" : ""}>
+            {formData.message.length}/1000 characters
+          </span>
+        </div>
       </div>
       
       <Button
         type="submit"
-        className="bg-primary hover:bg-primary/80 text-primary-foreground w-full"
+        className="bg-primary hover:bg-primary/80 text-primary-foreground w-full flex items-center justify-center"
         disabled={isSubmitting}
       >
-        {isSubmitting ? "Sending..." : "Send Message"}
+        {isSubmitting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Sending...
+          </>
+        ) : (
+          "Send Message"
+        )}
       </Button>
     </form>
   );

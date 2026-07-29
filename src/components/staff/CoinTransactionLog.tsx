@@ -33,19 +33,69 @@ const CoinTransactionLog = ({ userId }: CoinTransactionLogProps) => {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("user_coin_transactions")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(100);
+      const results = await Promise.allSettled([
+        supabase.from("user_coin_transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(100),
+        supabase.from("user_points_log").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(100),
+        supabase.from("user_activity_log").select("*").eq("user_id", userId).not("points_earned", "is", null).neq("points_earned", 0).order("created_at", { ascending: false }).limit(100)
+      ]);
 
-      if (error) {
-        console.error("Error fetching transactions:", error);
-        setTransactions([]);
-      } else {
-        setTransactions((data || []).map((d: any) => ({ ...d, description: d.reason || d.description || null })));
+      const allLogs: any[] = [];
+
+      // user_coin_transactions
+      if (results[0].status === 'fulfilled' && !results[0].value.error) {
+        const data = results[0].value.data || [];
+        allLogs.push(...data.map(tx => ({
+          id: tx.id,
+          coins: tx.coins ?? (tx as any).amount ?? 0,
+          transaction_type: tx.transaction_type || 'earning',
+          description: tx.reason || tx.description || 'Transaction',
+          source_type: tx.source_type || 'coin',
+          created_at: tx.created_at
+        })));
       }
+
+      // user_points_log
+      if (results[1].status === 'fulfilled' && !results[1].value.error) {
+        const data = results[1].value.data || [];
+        allLogs.push(...data.map(pl => ({
+          id: pl.id,
+          coins: pl.points,
+          transaction_type: 'earning',
+          description: pl.reason || 'Points Earned',
+          source_type: pl.category || 'points',
+          created_at: pl.created_at
+        })));
+      }
+
+      // user_activity_log
+      if (results[2].status === 'fulfilled' && !results[2].value.error) {
+        const data = results[2].value.data || [];
+        allLogs.push(...data.map(al => {
+          let metadata: any = {};
+          try {
+            metadata = typeof al.metadata === 'string' ? JSON.parse(al.metadata) : (al.metadata || {});
+          } catch (e) { metadata = {}; }
+
+          return {
+            id: al.id,
+            coins: al.points_earned,
+            transaction_type: al.activity_type,
+            description: metadata.reason || metadata.task_title || al.activity_type.replace(/_/g, ' '),
+            source_type: al.activity_type,
+            created_at: al.created_at || al.timestamp
+          };
+        }));
+      }
+
+      const combined = allLogs
+        .sort((a, b) => {
+          const dateA = new Date(a.created_at || 0).getTime();
+          const dateB = new Date(b.created_at || 0).getTime();
+          return dateB - dateA;
+        })
+        .slice(0, 100);
+
+      setTransactions(combined);
     } catch (error) {
       console.error("Error fetching transactions:", error);
       setTransactions([]);
@@ -57,16 +107,26 @@ const CoinTransactionLog = ({ userId }: CoinTransactionLogProps) => {
   const getTransactionBadge = (type: string) => {
     const badgeStyles: Record<string, string> = {
       earning: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+      task_earned: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+      half_time_bonus: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+      quest_reward: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+      hr_grant: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+      late_penalty: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+      reward_spent: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+      chess_reward: "bg-blue-500/10 text-blue-500 border-blue-500/20",
       redemption: "bg-rose-500/10 text-rose-500 border-rose-500/20",
       bonus: "bg-amber-500/10 text-amber-500 border-amber-500/20",
       task: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
       attendance: "bg-sky-500/10 text-sky-500 border-sky-500/20",
       game: "bg-fuchsia-500/10 text-fuchsia-500 border-fuchsia-500/20",
+      chat_engagement: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
+      mood_checkin: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+      sales: "bg-orange-500/10 text-orange-500 border-orange-500/20",
     };
 
     return (
-      <Badge variant="outline" className={cn("font-bold text-[10px] uppercase tracking-tighter", badgeStyles[type] || "bg-muted")}>
-        {type.replace("_", " ")}
+      <Badge variant="outline" className={cn("font-bold text-[10px] uppercase tracking-tighter whitespace-nowrap", badgeStyles[type] || "bg-muted")}>
+        {type.replace(/_/g, " ")}
       </Badge>
     );
   };
