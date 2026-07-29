@@ -141,18 +141,9 @@ const AppContent = () => {
           <Route path="/super-admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/hr/*" element={<HRDashboard />} />
-          <Route path="/staff/login" element={<StaffLogin />} />
-<<<<<<< HEAD
           <Route path="/staff/profile" element={<Navigate to="/account" replace />} />
-          <Route path="/staff" element={<Navigate to="/staff/dashboard" replace />} />
-          <Route path="/staff/:room" element={<StaffDashboard />} />
-          <Route path="/staff/tools-nexus" element={<ToolsNexus />} />
-          <Route path="/staff/task/:taskId" element={<StaffTaskDetail />} />
-          <Route path="/staff/work" element={<StaffWork />} />
-          <Route path="/team-head" element={<Navigate to="/team-head/dashboard" replace />} />
-          <Route path="/team-head/:room" element={<TeamHeadDashboard />} />
-=======
           <Route path="/staff" element={<StaffDashboard />} />
+          <Route path="/staff/:room" element={<StaffDashboard />} />
           <Route path="/staff/tools-nexus" element={<ToolsNexus />} />
           <Route path="/staff/task/:taskId" element={<StaffTaskDetail />} />
           <Route path="/staff/work" element={<StaffWork />} />
@@ -166,7 +157,7 @@ const AppContent = () => {
           <Route path="/staff/operations" element={<OperationsPage />} />
           <Route path="/staff/channels" element={<ChannelsPage />} />
           <Route path="/team-head" element={<TeamHeadDashboard />} />
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
+          <Route path="/team-head/:room" element={<TeamHeadDashboard />} />
           <Route path="/mycoins" element={<MyCoins />} />
           <Route path="/account" element={<AccountDashboard />} />
           <Route path="/client-portal" element={<ClientPortal />} />

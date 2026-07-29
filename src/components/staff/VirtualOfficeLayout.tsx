@@ -52,13 +52,8 @@ import {
 
 interface VirtualOfficeLayoutProps {
   children: ReactNode;
-<<<<<<< HEAD
   currentRoom: string;
-  onRoomChange: (room: string) => void;
-=======
-  currentRoom: 'home' | 'workspace' | 'breakroom' | 'meeting' | 'planner';
-  onRoomChange: (room: 'home' | 'workspace' | 'breakroom' | 'meeting' | 'planner') => void;
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
+  onRoomChange?: (room: string) => void;
   onlineUsers?: Record<string, any>;
   userId?: string;
   userProfile?: any;
@@ -82,16 +77,8 @@ const VirtualOfficeLayout = ({
 }: VirtualOfficeLayoutProps) => {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [mobileSidebarTab, setMobileSidebarTab] = useState<'status' | 'chat'>('status');
-<<<<<<< HEAD
-  const [chessArenaMode, setChessArenaMode] = useState(false);
-  const [roomsCollapsed, setRoomsCollapsed] = useState(false);
-  const [actionsCollapsed, setActionsCollapsed] = useState(false);
-  const [popoutChat, setPopoutChat] = useState(false);
-  const [popoutDM, setPopoutDM] = useState(false);
-=======
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(currentRoom === 'meeting' || currentRoom === 'planner');
   const [openSections, setOpenSections] = useState<string[]>(['Folders', 'Space']);
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showCompletedTasksDialog, setShowCompletedTasksDialog] = useState(false);
   const [celebrationTask, setCelebrationTask] = useState<any | null>(null);
@@ -385,17 +372,6 @@ const VirtualOfficeLayout = ({
     }
   }, [currentRoom]);
 
-<<<<<<< HEAD
-  const rooms = [
-    { id: 'home', name: 'Office', icon: Compass, color: 'from-emerald-500 to-teal-600' },
-    { id: 'workspace', name: 'Dashboard', icon: Monitor, color: 'from-blue-500 to-blue-600' },
-    { id: 'meeting', name: 'Meeting Room', icon: Users, color: 'from-yellow-500 to-yellow-600' },
-    { id: 'chat', name: 'Team Chat', icon: MessageCircle, color: 'from-purple-500 to-purple-600' },
-    { id: 'staff', name: 'Staff List', icon: Users, color: 'from-indigo-500 to-indigo-600' },
-    { id: 'leave', name: 'Leave Hub', icon: PlaneTakeoff, color: 'from-orange-500 to-orange-600' },
-    { id: 'coin', name: 'Coin Center', icon: Coins, color: 'from-amber-500 to-amber-600' },
-    { id: 'game', name: 'Games Arena', icon: Swords, color: 'from-red-500 to-rose-600' }
-=======
   // Restructured Sidebar Configuration (Removed Tags, Space contains chess, onboarding, notes, leave, tools)
   const sidebarLinks = [
     {
@@ -421,7 +397,6 @@ const VirtualOfficeLayout = ({
         { id: 'activity', name: 'Activity', icon: Activity, path: '/staff/activity' },
       ]
     }
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
   ];
 
   const toggleSection = (section: string) => {
@@ -625,231 +600,11 @@ const VirtualOfficeLayout = ({
                 Team Status
               </span>
               {isTeamStatusExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-            </button>
-<<<<<<< HEAD
-            {!roomsCollapsed && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                {rooms.map((room) => {
-                  const Icon = room.icon;
-                  const isActive = currentRoom === room.id;
-
-                  return (
-                    <Button
-                      key={room.id}
-                      variant="ghost"
-                      className={`w-full justify-start p-4 h-auto transition-all duration-300 ${isActive
-                        ? `bg-gradient-to-r ${room.color} text-white shadow-lg shadow-blue-500/25`
-                        : 'text-gray-300 hover:text-white hover:bg-white/10'
-                        }`}
-                      onClick={() => onRoomChange(room.id)}
-                    >
-                      <Icon className="w-5 h-5 mr-3" />
-                      <span className="font-medium">{room.name}</span>
-                      {isActive && (
-                        <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                      )}
-                    </Button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Quick Actions / Chess Arena Toggle */}
-          <div className="relative">
-            {chessArenaMode ? (
-              /* ── Chess Arena Mode ── */
-              <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-white font-semibold flex items-center gap-2">
-                    <Swords className="w-4 h-4 text-amber-400" />
-                    Chess Arena
-                  </h3>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="relative z-10 h-8 px-3 text-white/60 hover:text-white hover:bg-white/10"
-                    onClick={(e) => { e.stopPropagation(); setChessArenaMode(false); }}
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-                    Back
-                  </Button>
-                </div>
-                <div className="rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 via-black/20 to-orange-500/5 overflow-hidden">
-                  {userId && (
-                    <MiniChess userId={userId} userProfile={userProfile} compact />
-                  )}
-                </div>
-              </div>
-            ) : (
-              /* ── Normal Quick Actions ── */
-              <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                <button
-                  onClick={() => setActionsCollapsed(!actionsCollapsed)}
-                  className="w-full flex items-center justify-between text-white font-semibold mb-2 hover:opacity-80 transition-opacity"
-                >
-                  <span>Quick Actions</span>
-                  {actionsCollapsed ? (
-                    <ChevronRight className="w-4 h-4 text-white/50" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-white/50" />
-                  )}
-                </button>
-                {!actionsCollapsed && (
-                <div className="grid grid-cols-2 gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                  {/* Chess Arena Button */}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="col-span-2 relative overflow-hidden bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-red-500/20 border-amber-500/30 text-amber-200 hover:from-amber-500/30 hover:via-orange-500/25 hover:to-red-500/30 group"
-                    onClick={() => setChessArenaMode(true)}
-                  >
-                    <Swords className="w-4 h-4 mr-2 group-hover:rotate-45 transition-transform duration-300" />
-                    Chess Arena
-                    <span className="ml-auto text-[10px] bg-amber-500/30 px-1.5 py-0.5 rounded-full text-amber-200">
-                      ♟
-                    </span>
-                  </Button>
-
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-red-500/20 border-red-500/30 text-white hover:bg-red-500/30"
-                    onClick={() => onRoomChange('chat')}
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Chat
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-orange-500/20 border-orange-500/30 text-white hover:bg-orange-500/30"
-                    onClick={() => onRoomChange('leave')}
-                  >
-                    <PlaneTakeoff className="w-4 h-4 mr-2" />
-                    Leave
-                  </Button>
-                  <Button variant="outline" size="sm" className="bg-green-500/20 border-green-500/30 text-white hover:bg-green-500/30">
-                    <Bell className="w-4 h-4 mr-2" />
-                    Alerts
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="col-span-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/30 text-white hover:from-amber-500/30 hover:to-yellow-500/30"
-                    onClick={() => onOpenCoins ? onOpenCoins() : navigate('/mycoins')}
-                  >
-                    <Coins className="w-4 h-4 mr-2" />
-                    My Coins
-                  </Button>
-
-                  {/* Completed Tasks Button */}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="col-span-2 bg-emerald-500/20 border-emerald-500/30 text-emerald-200 hover:from-emerald-500/30 hover:to-teal-500/30 hover:bg-emerald-500/30"
-                    onClick={() => setShowCompletedTasksDialog(true)}
-                  >
-                    <Trophy className="w-4 h-4 mr-2 text-amber-300 animate-pulse" />
-                    Completed Tasks
-                  </Button>
-
-                  {/* VAW Tools Nexus Button */}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="col-span-2 bg-gradient-to-r from-blue-600/35 to-cyan-500/35 border-blue-500/40 text-blue-200 hover:from-blue-600/45 hover:to-cyan-500/45 hover:text-white hover:scale-[1.02] active:scale-[0.98] transition-all"
-                    onClick={() => navigate('/staff/tools-nexus')}
-                  >
-                    <Laptop className="w-4 h-4 mr-2 text-cyan-300 animate-pulse" />
-                    Tools Nexus
-                  </Button>
-
-                  {/* Activity Log Dialog */}
-                  {userId && (
-                    <Dialog open={showActivityLog} onOpenChange={setShowActivityLog}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="col-span-2 bg-purple-500/20 border-purple-500/30 text-white hover:bg-purple-500/30">
-                          <ClipboardList className="w-4 h-4 mr-2" />
-                          Today's Activity
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[500px] max-h-[600px]">
-                        <DialogHeader>
-                          <div className="flex items-center justify-between">
-                            <DialogTitle>Today's Activity Log</DialogTitle>
-                            <DialogClose asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </DialogClose>
-                          </div>
-                        </DialogHeader>
-                        <div className="overflow-y-auto max-h-[500px]">
-                          <ActivityLogPanel userId={userId} />
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Team Status / Chat Toggle Section */}
-        <div className="flex-1 flex flex-col min-h-0 border-t border-white/10">
-          <div className="flex flex-shrink-0 items-center">
-            <button
-              onClick={() => setSidebarTab('status')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${sidebarTab === 'status'
-                ? 'text-white border-b-2 border-blue-500 bg-white/5'
-                : 'text-white/50 hover:text-white/80 hover:bg-white/5'
-                }`}
-            >
-              <Users className="w-4 h-4" />
-              Team Status
-            </button>
-            <button
-              onClick={() => setSidebarTab('chat')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors ${sidebarTab === 'chat'
-                ? 'text-white border-b-2 border-blue-500 bg-white/5'
-                : 'text-white/50 hover:text-white/80 hover:bg-white/5'
-                }`}
-            >
-              <Hash className="w-4 h-4" />
-              Team Chat
-            </button>
-            {/* Pop-out button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 mx-1 text-white/40 hover:text-white hover:bg-white/10 flex-shrink-0"
-              title={sidebarTab === 'chat' ? 'Pop out Team Chat' : 'Pop out DM Chat'}
-              onClick={() => {
-                if (sidebarTab === 'chat') {
-                  setPopoutChat(true);
-                } else {
-                  setPopoutDM(true);
-                }
-              }}
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-            </Button>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            {sidebarTab === 'status' ? (
-              <div className="h-full overflow-y-auto p-4">
-=======
             {isTeamStatusExpanded && !isSidebarCollapsed && (
               <div className="max-h-48 overflow-y-auto mt-2 pr-1 custom-scrollbar">
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
                 <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
               </div>
             )}
-          </div>
           </div>
         </aside>
       )}
@@ -861,14 +616,12 @@ const VirtualOfficeLayout = ({
             variant="outline"
             size="icon"
             title="Expand Sidebar"
-<<<<<<< HEAD
-            className="absolute top-4 left-4 z-50 bg-black/40 border-white/10 text-white hover:bg-white/10 backdrop-blur-md hidden lg:flex"
-            onClick={() => onSidebarCollapse && onSidebarCollapse(false)}
-=======
             aria-label="Expand Sidebar"
             className="absolute top-4 left-4 z-50 bg-black/40 border-white/10 text-white hover:bg-white/10 backdrop-blur-md hidden lg:flex focus-visible:ring-2 focus-visible:ring-white/40"
-            onClick={() => setIsSidebarCollapsed(false)}
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
+            onClick={() => {
+              setIsSidebarCollapsed(false);
+              if (onSidebarCollapse) onSidebarCollapse(false);
+            }}
           >
             <ChevronRight className="w-5 h-5" />
           </Button>

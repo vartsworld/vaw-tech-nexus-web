@@ -70,21 +70,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import AnnouncementBanner from "@/components/staff/AnnouncementBanner";
-<<<<<<< HEAD
-=======
 import CoinPopup from "@/components/staff/CoinPopup";
 import StreakCalendarDialog from "@/components/staff/StreakCalendarDialog";
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
 import OfficeZenHome from "@/components/staff/OfficeZenHome";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import EmmaAssistant from "@/components/ai/EmmaAssistant";
-<<<<<<< HEAD
-import MiniChess from "@/components/staff/MiniChess";
-import TeamChat from "@/components/staff/TeamChat";
+
 import LeaveApplicationDialog from "@/components/staff/LeaveApplicationDialog";
 import DepartmentStaffList from "@/components/staff/DepartmentStaffList";
 import MyCoins from "@/pages/MyCoins";
-=======
 import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
 
 // Sidebar sub-views / dynamic tabs imports
@@ -111,7 +105,11 @@ type RoomType =
   | 'docs'
   | 'activity'
   | 'channels'
-  | 'inbox';
+  | 'inbox'
+  | 'chat'
+  | 'staff'
+  | 'coin'
+  | 'game';
 
 const EMOJI_OPTIONS = [
   "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
@@ -133,30 +131,25 @@ const paramToRoom = (param: string): RoomType | null => {
 
   const validRooms: RoomType[] = [
     'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
-    'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox'
+    'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox',
+    'chat', 'staff', 'coin', 'game'
   ];
   if (validRooms.includes(param as RoomType)) return param as RoomType;
   return null;
 };
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
 
 const StaffDashboard = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-<<<<<<< HEAD
   const { room } = useParams();
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  
-  // Resolve current room from URL or default to 'workspace' if on 'dashboard'
-  const currentRoom = (room === 'dashboard' ? 'workspace' : (room || 'home')) as any;
-  
-  const setCurrentRoom = (newRoom: string) => {
-    navigate(`/staff/${newRoom === 'workspace' ? 'dashboard' : newRoom}`);
-  };
-=======
   const { interactionSoundsEnabled, setInteractionSoundsEnabled } = useUser();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const getInitialRoom = (): RoomType => {
+    if (room) {
+      const r = paramToRoom(room);
+      if (r) return r;
+    }
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
     if (roomParam) {
@@ -172,7 +165,6 @@ const StaffDashboard = () => {
   };
 
   const [currentRoom, setCurrentRoom] = useState<RoomType>(getInitialRoom);
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
   const [showMobileHome, setShowMobileHome] = useState(true);
   const [workspaceControls, setWorkspaceControls] = useState<React.ReactNode>(null);
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
@@ -180,11 +172,8 @@ const StaffDashboard = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({});
   const [departmentName, setDepartmentName] = useState<string>("");
-<<<<<<< HEAD
-=======
   const [showCoinPopup, setShowCoinPopup] = useState(false);
   const [showStreakCalendar, setShowStreakCalendar] = useState(false);
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
   const [showBiometricDialog, setShowBiometricDialog] = useState(false);
   const [showEmma, setShowEmma] = useState(false);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
@@ -226,8 +215,6 @@ const StaffDashboard = () => {
 
   const location = useLocation();
 
-<<<<<<< HEAD
-=======
   // Custom callback to transition between workspace rooms cleanly by changing the URL
   const handleRoomChange = useCallback((room: RoomType) => {
     let suffix = '';
@@ -239,7 +226,6 @@ const StaffDashboard = () => {
       suffix = room;
     }
 
-    // Preserve any extra URL search parameters (like ID) during active workspace state changes
     const params = new URLSearchParams(location.search);
     let finalSearch = suffix ? `?${suffix}` : '';
     if (params.has('ID')) {
@@ -257,12 +243,10 @@ const StaffDashboard = () => {
     const params = new URLSearchParams(location.search);
     let roomFromUrl: RoomType | null = null;
 
-    // Parse the room from the URL query params
     const roomParam = params.get('room');
     if (roomParam) {
       roomFromUrl = paramToRoom(roomParam);
     } else {
-      // For legacy/query-only links like ?meeting or ?calendar or ?dashboard
       const firstParam = location.search.replace('?', '').split('&')[0];
       if (firstParam) {
         roomFromUrl = paramToRoom(firstParam);
@@ -272,21 +256,6 @@ const StaffDashboard = () => {
     if (roomFromUrl) {
       if (roomFromUrl !== currentRoom) {
         setCurrentRoom(roomFromUrl);
-      }
-    } else {
-      // If URL has no room parameter (e.g. empty search), match state to URL or URL to state
-      if (currentRoom === 'planner') {
-        // Default on login/mount: redirect to calendar suffix
-        navigate({
-          pathname: location.pathname,
-          search: '?calendar',
-        }, { replace: true });
-      } else {
-        const suffix = currentRoom === 'planner' ? 'calendar' : (currentRoom === 'workspace' ? 'dashboard' : currentRoom);
-        navigate({
-          pathname: location.pathname,
-          search: `?${suffix}`,
-        }, { replace: true });
       }
     }
   }, [location.search, currentRoom, navigate, location.pathname]);
@@ -298,13 +267,10 @@ const StaffDashboard = () => {
     if (location.state?.currentRoom) {
       setCurrentRoom(location.state.currentRoom as RoomType);
     }
-    // Clean up state to prevent re-opening on reload
     if (location.state) {
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
-
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
   // Check authentication
   useEffect(() => {
     const checkAuth = async () => {
@@ -619,8 +585,6 @@ const StaffDashboard = () => {
     ),
     workspace: <DraggableWorkspace userId={profile.user_id} userProfile={profile} />,
     meeting: <MeetingRoom />,
-<<<<<<< HEAD
-    breakroom: null,
     game: (
       <div className="w-full p-2 sm:p-6">
          <h2 className="text-3xl font-bold text-white mb-4">Games Arena</h2>
@@ -632,15 +596,6 @@ const StaffDashboard = () => {
     chat: (
        <div className="w-full h-[calc(100vh-100px)] flex flex-col p-4 bg-zinc-950/80 rounded-xl overflow-hidden border border-white/10">
          <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
-       </div>
-    ),
-    leave: (
-       <div className="w-full h-[calc(100vh-100px)] p-6 flex justify-center text-white">
-          <div className="bg-black/40 backdrop-blur-md p-8 rounded-2xl w-full max-w-4xl border border-white/10 h-fit">
-             <h2 className="text-2xl font-bold mb-4">Leave Management</h2>
-             <p className="opacity-70 mb-8">View leave requests and apply for a new leave here.</p>
-             <LeaveApplicationDialog isInline={true} userId={profile?.user_id || ''} />
-          </div>
        </div>
     ),
     staff: (
@@ -663,23 +618,7 @@ const StaffDashboard = () => {
             <MyCoins isInline={true} />
           </div>
        </div>
-    )
-  };
-
-  // Show mobile home on small screens
-  if (isMobile && showMobileHome) {
-    return (
-      <StaffMobileHome
-        profile={profile}
-        currentRoom={currentRoom}
-        onRoomChange={setCurrentRoom}
-        onOpenChat={() => {}}
-        onOpenCoins={() => setCurrentRoom('coin')}
-        onEnterWorkspace={() => setShowMobileHome(false)}
-      />
-    );
-  }
-=======
+    ),
     planner: <MonthlyPlanner userId={profile.user_id} userProfile={profile} />,
     breakroom: null,
     leave: <LeaveView profile={profile} />,
@@ -914,7 +853,6 @@ const StaffDashboard = () => {
       </div>
     )
   };
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
 
   return (
     <div className="min-h-screen h-screen flex flex-col relative overflow-hidden bg-zinc-950">
@@ -960,101 +898,6 @@ const StaffDashboard = () => {
                     {profile?.full_name || profile?.username || 'Staff'}
                   </p>
                 </div>
-<<<<<<< HEAD
-                <div className="min-w-0">
-                  <h1 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                    VAW Technologies
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                      className="h-6 w-6 rounded-full bg-white/5 hover:bg-white/20 text-white/70 hover:text-white"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`}>
-                        <path d="M15 18l-6-6 6-6"/>
-                      </svg>
-                    </Button>
-                  </h1>
-                  <p className="text-blue-300 text-xs sm:text-sm truncate">Welcome, {profile?.full_name || profile?.username || 'Staff'}!</p>
-                </div>
-              </div>
-
-              {/* Actions: Profile & Logout */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 h-9 px-2 sm:px-3"
-                  onClick={() => navigate("/account")}
-                >
-                  <Avatar className="w-6 h-6 sm:mr-2">
-                    <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
-                    <AvatarFallback className="text-xs">
-                      {profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="hidden sm:inline">Profile</span>
-                </Button>
-                
-                <UpdateButton variant="dark" />
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-green-500/10 hover:bg-green-500/20 text-green-300 border border-green-500/20 h-9 px-2 sm:px-3"
-                  onClick={() => setShowBiometricDialog(true)}
-                  title="Fingerprint Login Settings"
-                >
-                  <Fingerprint className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Fingerprint</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 border border-blue-500/20 h-9 px-2 sm:px-3"
-                  onClick={() => navigate("/sales/dashboard")}
-                >
-                  <Briefcase className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Sales Hub</span>
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 h-9 px-2 sm:px-3"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Logout</span>
-                </Button>
-              </div>
-            </div>
-
-            {/* Bottom Row: Stats & Notifications */}
-            <div className="flex items-center gap-2 flex-wrap justify-between">
-              <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-1.5 bg-green-500/20 border border-green-500/30 rounded-lg px-2.5 py-1.5">
-                  <UserStatusBadge
-                    status={status}
-                    isBreakActive={false}
-                    breakTimeRemaining={0}
-                  />
-                </div>
-
-                <div 
-                  className="flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 hover:from-amber-500/20 hover:to-yellow-500/20 border border-amber-500/20 rounded-full px-3 py-1.5 cursor-pointer transition-all shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:shadow-[0_0_15px_rgba(245,158,11,0.2)] active:scale-95"
-                  onClick={() => setCurrentRoom('coin')}
-                >
-                  <Coins className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="text-amber-200 text-xs font-bold tracking-tight">{(profile?.total_points || 0).toLocaleString()} Coins</span>
-                </div>
-
-                <div className="flex items-center gap-1.5 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-lg px-2.5 py-1.5 shadow-lg shadow-blue-500/10">
-                  <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="text-cyan-200 text-xs font-bold tracking-tight">Streak: {profile?.attendance_streak || 0}d</span>
-                </div>
-=======
                 {departmentName && (
                   <p className="text-purple-300 text-xs font-semibold mt-0.5">{departmentName} Department</p>
                 )}
@@ -1062,14 +905,13 @@ const StaffDashboard = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Desktop Only Coins Display in Header (Disabled - Coming Soon) */}
               <div
-                className="hidden md:flex items-center gap-1.5 bg-amber-500/5 border border-amber-500/10 px-3 py-1.5 rounded-full text-amber-500/60 font-bold text-xs select-none"
-                title="Coins system is Coming Soon"
+                className="hidden md:flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full text-amber-300 font-bold text-xs cursor-pointer hover:bg-amber-500/20 transition-all shadow-md shadow-amber-500/5 select-none"
+                onClick={() => setCurrentRoom('coin')}
               >
-                <Coins className="w-4 h-4 text-amber-500/40" />
-                <span>Coming Soon</span>
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
+                <Coins className="w-4 h-4 text-amber-400" />
+                <span>{(profile?.total_points || 0).toLocaleString()} Coins</span>
+              </div>
               </div>
 
               {/* Desktop Only Streak Display in Header */}
@@ -1219,8 +1061,6 @@ const StaffDashboard = () => {
         />
       )}
 
-<<<<<<< HEAD
-=======
       {/* Coin Popup */}
       {profile?.user_id && (
         <CoinPopup
@@ -1351,7 +1191,6 @@ const StaffDashboard = () => {
         </DialogContent>
       </Dialog>
 
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
       <BiometricSettingsDialog
         open={showBiometricDialog}
         onOpenChange={setShowBiometricDialog}

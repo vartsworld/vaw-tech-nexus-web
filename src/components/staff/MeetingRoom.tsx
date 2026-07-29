@@ -207,10 +207,8 @@ const MeetingRoom = () => {
   const [scheduleRecurring, setScheduleRecurring] = useState("none");
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
-<<<<<<< HEAD
   const isGlobalAdmin = profile?.role === 'admin' || profile?.is_department_head === true;
-  const isAdmin = isGlobalAdmin || meetingAdminId === profile?.user_id;
-=======
+
   // New states for Google Meet & Staff Invites
   const [meetingType, setMeetingType] = useState<'inbuilt' | 'google_meet'>('inbuilt');
   const [googleMeetLink, setGoogleMeetLink] = useState("");
@@ -315,8 +313,7 @@ const MeetingRoom = () => {
     fetchAllStaff();
   }, []);
 
-  const isAdmin = profile?.role === 'admin' || profile?.is_department_head === true;
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
+  const isAdmin = isGlobalAdmin || meetingAdminId === profile?.user_id;
 
   const [meetingInvites, setMeetingInvites] = useState<any[]>([]);
 
@@ -477,13 +474,6 @@ const MeetingRoom = () => {
     setInRoom(true);
   };
 
-<<<<<<< HEAD
-  const handleScheduleMeeting = async () => {
-    if (!newMeetingTitle.trim()) return;
-    const meetingId = Math.random().toString(36).substring(2, 9);
-    const meetingLink = `${window.location.origin}${window.location.pathname}?ID=${meetingId}`;
-    
-=======
   const handleScheduleMeeting = async (startNow = false) => {
     if (!newMeetingTitle.trim()) {
       toast.error("Please enter a Meeting Title");
@@ -500,54 +490,16 @@ const MeetingRoom = () => {
       ? googleMeetLink.trim()
       : `${window.location.origin}${window.location.pathname}?room=meeting&ID=${meetingId}`;
 
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
     const newMeeting = {
       title: newMeetingTitle,
       time: scheduleTime || new Date(Date.now() + 3600000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
       date: scheduleDate || new Date().toISOString().split('T')[0],
       duration: "30 min",
-<<<<<<< HEAD
-      status: "Scheduled",
-      type: scheduleRecurring !== 'none' ? `Recurring (${scheduleRecurring})` : "Custom Meeting",
+      status: startNow ? "Active" : "Scheduled",
+      type: meetingType === 'google_meet' ? "Google Meet" : (scheduleRecurring !== 'none' ? `Recurring (${scheduleRecurring})` : "Inbuilt Room"),
       link: meetingLink,
       created_by: profile?.user_id,
-      invited_users: invitedUsers
-    };
-    
-    try {
-        const { error } = await supabase.from('scheduled_meetings' as any).insert(newMeeting);
-        if (error && error.code !== '42P01') {
-            console.error("Failed to insert meeting", error);
-            throw error;
-        }
-        
-        // Optimistic update
-        setUpcomingMeetings([newMeeting, ...upcomingMeetings]);
-        
-        setNewMeetingTitle("");
-        setScheduleDate("");
-        setScheduleTime("");
-        setScheduleRecurring("none");
-        setInvitedUsers([]);
-        setIsScheduleOpen(false);
-        toast.success("Meeting Scheduled!");
-    } catch (e) {
-        // Fallback to local storage if table doesn't exist
-        const updated = [newMeeting, ...upcomingMeetings];
-        setUpcomingMeetings(updated);
-        localStorage.setItem('vaw_scheduled_meetings', JSON.stringify(updated));
-        
-        setNewMeetingTitle("");
-        setScheduleDate("");
-        setScheduleTime("");
-        setScheduleRecurring("none");
-        setInvitedUsers([]);
-        setIsScheduleOpen(false);
-        toast.success("Meeting Scheduled (Local)");
-=======
-      status: startNow ? "Active" : "Scheduled",
-      type: meetingType === 'google_meet' ? "Google Meet" : "Inbuilt Room",
-      link: meetingLink
+      invited_users: invitedStaff
     };
 
     // Save to local schedule
@@ -564,7 +516,7 @@ const MeetingRoom = () => {
         title: newMeetingTitle,
         hostName: profile?.full_name || "A Team Member",
         hostAvatar: profile?.profile_photo_url || profile?.avatar_url || "",
-        expires_at: new Date(Date.now() + 12 * 3600000).toISOString() // Valid for 12 hours
+        expires_at: new Date(Date.now() + 12 * 3600000).toISOString()
       };
 
       const { error } = await supabase
@@ -610,7 +562,6 @@ const MeetingRoom = () => {
       }
     } else {
       toast.success("Meeting Scheduled!");
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
     }
   };
 
@@ -1189,168 +1140,125 @@ const MeetingRoom = () => {
                           </div>
 
                           <div className="space-y-2">
-<<<<<<< HEAD
-                              <label className="text-sm font-medium text-white/70">Recurring Options</label>
-                              <select value={scheduleRecurring} onChange={e => setScheduleRecurring(e.target.value)} className="w-full h-10 px-3 bg-zinc-900 border border-white/10 rounded-md text-white text-sm outline-none focus:border-white/30 transition-colors">
-                                 <option value="none">Does not repeat</option>
-                                 <option value="daily">Daily</option>
-                                 <option value="weekly">Weekly</option>
-                                 <option value="monthly">Monthly</option>
-                              </select>
-                           </div>
-                           <div className="space-y-2">
-                              <label className="text-sm font-medium text-white/70">Invite Staff</label>
-                              <div className="max-h-32 overflow-y-auto space-y-2 custom-scrollbar bg-white/5 border border-white/10 rounded-md p-2">
-                                 {teamMembers?.map((member) => (
-                                    <label key={member.id} className="flex items-center gap-2 text-sm text-white/80 cursor-pointer p-1 hover:bg-white/5 rounded">
-                                       <input 
-                                          type="checkbox" 
-                                          className="rounded bg-black/40 border-white/20 text-purple-500 focus:ring-purple-500"
-                                          checked={invitedUsers.includes(member.user_id)}
-                                          onChange={(e) => {
-                                             if (e.target.checked) {
-                                                setInvitedUsers([...invitedUsers, member.user_id]);
-                                             } else {
-                                                setInvitedUsers(invitedUsers.filter(id => id !== member.user_id));
-                                             }
-                                          }}
-                                       />
-                                       <Avatar className="w-6 h-6">
-                                          <AvatarImage src={member.profile_photo_url || member.avatar_url} />
-                                          <AvatarFallback className="text-[10px] bg-blue-500">{member.full_name?.charAt(0)}</AvatarFallback>
-                                      </Avatar>
-                                       {member.full_name}
-                                    </label>
-                                 ))}
-                                 {(!teamMembers || teamMembers.length === 0) && (
-                                    <span className="text-xs text-white/50 px-2">No other staff members available.</span>
-                                 )}
+                              <label className="text-sm font-medium text-white/70">Meeting Platform</label>
+                              <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  onClick={() => setMeetingType('inbuilt')}
+                                  className={`h-10 rounded-lg text-sm font-bold transition-all ${meetingType === 'inbuilt' ? 'bg-green-600 text-white shadow' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                                >
+                                  Inbuilt Video
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  onClick={() => setMeetingType('google_meet')}
+                                  className={`h-10 rounded-lg text-sm font-bold transition-all ${meetingType === 'google_meet' ? 'bg-blue-600 text-white shadow' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                                >
+                                  Google Meet
+                                </Button>
                               </div>
                            </div>
-                           <Button onClick={handleScheduleMeeting} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold h-12 mt-2 rounded-xl border-none">
-                             Schedule Meeting
-                          </Button>
-=======
-                             <label className="text-sm font-medium text-white/70">Meeting Platform</label>
-                             <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
-                               <Button
+
+                           {meetingType === 'google_meet' && (
+                              <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                 <label className="text-sm font-medium text-blue-300">Google Meet Link</label>
+                                 <Input
+                                    placeholder="https://meet.google.com/abc-defg-hij"
+                                    value={googleMeetLink}
+                                    onChange={e => setGoogleMeetLink(e.target.value)}
+                                    className="bg-white/5 border-blue-500/30 text-white focus:border-blue-500 placeholder:text-white/30 font-mono text-sm"
+                                 />
+                              </div>
+                           )}
+
+                           <div className="space-y-2">
+                              <label className="text-sm font-medium text-white/70">Invite Staff Members</label>
+                              <Input
+                                 placeholder="Search staff by name..."
+                                 value={staffSearchQuery}
+                                 onChange={e => setStaffSearchQuery(e.target.value)}
+                                 className="bg-white/5 border-white/10 text-white h-9 text-xs mb-2"
+                              />
+                              <div className="max-h-36 overflow-y-auto border border-white/10 rounded-xl bg-black/40 p-2 space-y-1 custom-scrollbar">
+                                 {allStaff
+                                    .filter(s => s.user_id !== profile?.user_id)
+                                    .filter(s => s.full_name?.toLowerCase().includes(staffSearchQuery.toLowerCase()))
+                                    .map(staffMember => {
+                                       const isInvited = invitedStaff.includes(staffMember.user_id);
+                                       return (
+                                          <div
+                                             key={staffMember.id}
+                                             onClick={() => {
+                                                if (isInvited) {
+                                                   setInvitedStaff(prev => prev.filter(id => id !== staffMember.user_id));
+                                                } else {
+                                                   setInvitedStaff(prev => [...prev, staffMember.user_id]);
+                                                }
+                                             }}
+                                             className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
+                                          >
+                                             <div className="flex items-center gap-2">
+                                                <Avatar className="w-6 h-6 border border-white/10">
+                                                   <AvatarImage src={staffMember.profile_photo_url || staffMember.avatar_url} />
+                                                   <AvatarFallback className="text-[10px] bg-indigo-600">{staffMember.full_name?.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <span className="text-xs font-semibold text-white/90">{staffMember.full_name}</span>
+                                             </div>
+                                             <input
+                                                type="checkbox"
+                                                checked={isInvited}
+                                                readOnly
+                                                className="rounded border-white/20 bg-black text-indigo-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5"
+                                             />
+                                          </div>
+                                       );
+                                    })}
+                              </div>
+                           </div>
+
+                           {invitedStaff.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 p-2 bg-white/5 rounded-xl border border-white/5">
+                                 {invitedStaff.map(userId => {
+                                    const member = allStaff.find(s => s.user_id === userId);
+                                    return (
+                                       <Badge key={userId} variant="secondary" className="bg-indigo-500/20 text-indigo-200 border-indigo-500/30 text-[10px] py-0.5 px-2 flex items-center gap-1">
+                                          {member?.full_name || "Staff"}
+                                          <X className="w-2.5 h-2.5 cursor-pointer hover:text-white" onClick={(e) => { e.stopPropagation(); setInvitedStaff(prev => prev.filter(id => id !== userId)); }} />
+                                       </Badge>
+                                    );
+                                 })}
+                              </div>
+                           )}
+
+                           <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
+                              <div className="space-y-2">
+                                 <label className="text-sm font-medium text-white/70">Date (Optional)</label>
+                                 <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="bg-white/5 border-white/10 text-white [color-scheme:dark] h-10 text-xs" />
+                              </div>
+                              <div className="space-y-2">
+                                 <label className="text-sm font-medium text-white/70">Time (Optional)</label>
+                                 <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="bg-white/5 border-white/10 text-white [color-scheme:dark] h-10 text-xs" />
+                              </div>
+                           </div>
+
+                           <div className="flex flex-col gap-2 pt-4 border-t border-white/10">
+                              <Button
                                  type="button"
-                                 variant="ghost"
-                                 onClick={() => setMeetingType('inbuilt')}
-                                 className={`h-10 rounded-lg text-sm font-bold transition-all ${meetingType === 'inbuilt' ? 'bg-green-600 text-white shadow' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
-                               >
-                                 Inbuilt Video
-                               </Button>
-                               <Button
+                                 onClick={() => handleScheduleMeeting(true)}
+                                 className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold h-11 rounded-xl border-none shadow-lg shadow-green-500/10"
+                              >
+                                 Start & Join Now
+                              </Button>
+                              <Button
                                  type="button"
-                                 variant="ghost"
-                                 onClick={() => setMeetingType('google_meet')}
-                                 className={`h-10 rounded-lg text-sm font-bold transition-all ${meetingType === 'google_meet' ? 'bg-blue-600 text-white shadow' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
-                               >
-                                 Google Meet
-                               </Button>
-                             </div>
-                          </div>
-
-                          {meetingType === 'google_meet' && (
-                             <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                                <label className="text-sm font-medium text-blue-300">Google Meet Link</label>
-                                <Input
-                                   placeholder="https://meet.google.com/abc-defg-hij"
-                                   value={googleMeetLink}
-                                   onChange={e => setGoogleMeetLink(e.target.value)}
-                                   className="bg-white/5 border-blue-500/30 text-white focus:border-blue-500 placeholder:text-white/30 font-mono text-sm"
-                                />
-                             </div>
-                          )}
-
-                          <div className="space-y-2">
-                             <label className="text-sm font-medium text-white/70">Invite Staff Members</label>
-                             <Input
-                                placeholder="Search staff by name..."
-                                value={staffSearchQuery}
-                                onChange={e => setStaffSearchQuery(e.target.value)}
-                                className="bg-white/5 border-white/10 text-white h-9 text-xs mb-2"
-                             />
-                             <div className="max-h-36 overflow-y-auto border border-white/10 rounded-xl bg-black/40 p-2 space-y-1 custom-scrollbar">
-                                {allStaff
-                                   .filter(s => s.user_id !== profile?.user_id)
-                                   .filter(s => s.full_name?.toLowerCase().includes(staffSearchQuery.toLowerCase()))
-                                   .map(staffMember => {
-                                      const isInvited = invitedStaff.includes(staffMember.user_id);
-                                      return (
-                                         <div
-                                            key={staffMember.id}
-                                            onClick={() => {
-                                               if (isInvited) {
-                                                  setInvitedStaff(prev => prev.filter(id => id !== staffMember.user_id));
-                                               } else {
-                                                  setInvitedStaff(prev => [...prev, staffMember.user_id]);
-                                               }
-                                            }}
-                                            className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors"
-                                         >
-                                            <div className="flex items-center gap-2">
-                                               <Avatar className="w-6 h-6 border border-white/10">
-                                                  <AvatarImage src={staffMember.profile_photo_url || staffMember.avatar_url} />
-                                                  <AvatarFallback className="text-[10px] bg-indigo-600">{staffMember.full_name?.charAt(0)}</AvatarFallback>
-                                               </Avatar>
-                                               <span className="text-xs font-semibold text-white/90">{staffMember.full_name}</span>
-                                            </div>
-                                            <input
-                                               type="checkbox"
-                                               checked={isInvited}
-                                               readOnly
-                                               className="rounded border-white/20 bg-black text-indigo-600 focus:ring-0 focus:ring-offset-0 h-3.5 w-3.5"
-                                            />
-                                         </div>
-                                      );
-                                   })}
-                             </div>
-                          </div>
-
-                          {invitedStaff.length > 0 && (
-                             <div className="flex flex-wrap gap-1.5 p-2 bg-white/5 rounded-xl border border-white/5">
-                                {invitedStaff.map(userId => {
-                                   const member = allStaff.find(s => s.user_id === userId);
-                                   return (
-                                      <Badge key={userId} variant="secondary" className="bg-indigo-500/20 text-indigo-200 border-indigo-500/30 text-[10px] py-0.5 px-2 flex items-center gap-1">
-                                         {member?.full_name || "Staff"}
-                                         <X className="w-2.5 h-2.5 cursor-pointer hover:text-white" onClick={(e) => { e.stopPropagation(); setInvitedStaff(prev => prev.filter(id => id !== userId)); }} />
-                                      </Badge>
-                                   );
-                                })}
-                             </div>
-                          )}
-
-                          <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
-                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-white/70">Date (Optional)</label>
-                                <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="bg-white/5 border-white/10 text-white [color-scheme:dark] h-10 text-xs" />
-                             </div>
-                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-white/70">Time (Optional)</label>
-                                <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="bg-white/5 border-white/10 text-white [color-scheme:dark] h-10 text-xs" />
-                             </div>
-                          </div>
-
-                          <div className="flex flex-col gap-2 pt-4 border-t border-white/10">
-                             <Button
-                                type="button"
-                                onClick={() => handleScheduleMeeting(true)}
-                                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold h-11 rounded-xl border-none shadow-lg shadow-green-500/10"
-                             >
-                                Start & Join Now
-                             </Button>
-                             <Button
-                                type="button"
-                                onClick={() => handleScheduleMeeting(false)}
-                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-11 rounded-xl border-none shadow-lg shadow-indigo-600/10"
-                             >
-                                Schedule Meeting
-                             </Button>
-                          </div>
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
+                                 onClick={() => handleScheduleMeeting(false)}
+                                 className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-11 rounded-xl border-none shadow-lg shadow-indigo-600/10"
+                              >
+                                 Schedule Meeting
+                              </Button>
+                           </div>
                        </div>
                     </DialogContent>
                  </Dialog>
@@ -1457,50 +1365,10 @@ const MeetingRoom = () => {
                            </Button>
                         </div>
                       </div>
-<<<<<<< HEAD
-                    </div>
-                    <Badge variant={meeting.status === 'Starting Soon' ? 'destructive' : 'secondary'} className={`text-[10px] font-bold uppercase tracking-wider shrink-0 ml-2 ${meeting.status === 'Scheduled' ? 'bg-blue-500/20 text-blue-300' : ''}`}>
-                      {meeting.status}
-                    </Badge>
-                  </div>
-                  {meeting.invited_users && meeting.invited_users.length > 0 && (
-                     <div className="mt-3 flex items-center gap-1 -space-x-2 overflow-hidden">
-                        {meeting.invited_users.map((uid: string, i: number) => {
-                           const member = teamMembers?.find(m => m.user_id === uid);
-                           if (!member) return null;
-                           return (
-                              <Avatar key={i} className="inline-block border-2 border-zinc-900 w-6 h-6">
-                                 <AvatarImage src={member.profile_photo_url || member.avatar_url} />
-                                 <AvatarFallback className="text-[8px] bg-blue-500">{member.full_name?.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                           );
-                        })}
-                     </div>
-                  )}
-                  {meeting.link && (
-                    <div className="mt-3 flex items-center gap-2">
-                      <Button size="sm" className="w-full h-8 text-xs font-bold bg-green-500/20 hover:bg-green-500/30 text-green-300 border border-green-500/30" onClick={() => {
-                          const url = new URL(meeting.link);
-                          const id = url.searchParams.get('ID');
-                          if (id) {
-                             setRoomIdInput(id);
-                             setRoomId(id);
-                             setMeetingAdminId(meeting.created_by || null);
-                             setInRoom(true);
-                          }
-                      }}>
-                         Join Meeting
-                      </Button>
-                      <Button size="sm" variant="secondary" className="h-8 shrink-0 text-xs px-3" onClick={() => { navigator.clipboard.writeText(meeting.link); toast.success("Meeting link copied!"); }}>
-                         Copy Link
-                      </Button>
-                    </div>
-=======
                     );
                   })}
                   {unacknowledgedInvites.length === 0 && (
                      <div className="text-center text-white/50 text-xs py-10">No active invitations.</div>
->>>>>>> fea0e95a48ce5523f992a66b6c376c4b756c4e74
                   )}
                 </>
               ) : (
