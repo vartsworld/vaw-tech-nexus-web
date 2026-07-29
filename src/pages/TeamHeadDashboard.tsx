@@ -105,7 +105,11 @@ type RoomType =
   | 'docs'
   | 'activity'
   | 'channels'
-  | 'inbox';
+  | 'inbox'
+  | 'chat'
+  | 'staff'
+  | 'coin'
+  | 'game';
 
 const EMOJI_OPTIONS = [
   "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
@@ -127,7 +131,8 @@ const paramToRoom = (param: string): RoomType | null => {
 
   const validRooms: RoomType[] = [
     'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
-    'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox'
+    'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox',
+    'chat', 'staff', 'coin', 'game'
   ];
   if (validRooms.includes(param as RoomType)) return param as RoomType;
   return null;
@@ -286,7 +291,7 @@ const TeamHeadDashboard = () => {
           search: '?calendar',
         }, { replace: true });
       } else {
-        const suffix = currentRoom === 'planner' ? 'calendar' : (currentRoom === 'workspace' ? 'dashboard' : currentRoom);
+        const suffix = currentRoom === 'workspace' ? 'dashboard' : currentRoom;
         navigate({
           pathname: location.pathname,
           search: `?${suffix}`,
@@ -646,8 +651,6 @@ const TeamHeadDashboard = () => {
         )}
       </div>
     ),
-    meeting: <MeetingRoom />,
-    breakroom: null,
     game: (
       <div className="w-full p-2 sm:p-6">
          <h2 className="text-3xl font-bold text-white mb-4">Games Arena</h2>
@@ -659,15 +662,6 @@ const TeamHeadDashboard = () => {
     chat: (
        <div className="w-full h-[calc(100vh-100px)] flex flex-col p-4 bg-zinc-950/80 rounded-xl overflow-hidden border border-white/10">
          <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
-       </div>
-    ),
-    leave: (
-       <div className="w-full h-[calc(100vh-100px)] p-6 flex justify-center text-white">
-          <div className="bg-black/40 backdrop-blur-md p-8 rounded-2xl w-full max-w-4xl border border-white/10 h-fit">
-             <h2 className="text-2xl font-bold mb-4">Leave Management</h2>
-             <p className="opacity-70 mb-8">View leave requests and apply for a new leave here.</p>
-             <LeaveApplicationDialog isInline={true} userId={profile?.user_id || ''} />
-          </div>
        </div>
     ),
     staff: (

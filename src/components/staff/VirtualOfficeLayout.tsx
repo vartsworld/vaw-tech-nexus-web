@@ -72,12 +72,20 @@ const VirtualOfficeLayout = ({
   userProfile,
   className,
   onOpenCoins,
-  isSidebarCollapsed = false,
+  isSidebarCollapsed: isSidebarCollapsedProp,
   onSidebarCollapse
 }: VirtualOfficeLayoutProps) => {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [mobileSidebarTab, setMobileSidebarTab] = useState<'status' | 'chat'>('status');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(currentRoom === 'meeting' || currentRoom === 'planner');
+  const [internalSidebarCollapsed, setInternalSidebarCollapsed] = useState(currentRoom === 'meeting' || currentRoom === 'planner');
+
+  const isSidebarCollapsed = isSidebarCollapsedProp !== undefined ? isSidebarCollapsedProp : internalSidebarCollapsed;
+  const setIsSidebarCollapsed = (collapsed: boolean) => {
+    setInternalSidebarCollapsed(collapsed);
+    if (onSidebarCollapse) {
+      onSidebarCollapse(collapsed);
+    }
+  };
   const [openSections, setOpenSections] = useState<string[]>(['Folders', 'Space']);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showCompletedTasksDialog, setShowCompletedTasksDialog] = useState(false);
