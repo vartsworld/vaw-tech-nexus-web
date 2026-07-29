@@ -163,11 +163,13 @@ const BreakRoom = ({
     setSendingMessage(false);
   };
 
-  // Break timer logic
+  // BOLT OPTIMIZATION: Removed breakTimeRemaining from the dependencies of the effect.
+  // This prevents the interval from being torn down and re-registered on every single tick (1s),
+  // completely eliminating interval recreation churn and native thread API overhead.
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
 
-    if (isBreakActive && breakTimeRemaining > 0) {
+    if (isBreakActive) {
       interval = setInterval(() => {
         setBreakTimeRemaining(prev => {
           if (prev <= 1) {
@@ -185,7 +187,7 @@ const BreakRoom = ({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isBreakActive, breakTimeRemaining, breakDuration]);
+  }, [isBreakActive, breakDuration]);
 
   const startBreak = async () => {
     setIsBreakActive(true);
