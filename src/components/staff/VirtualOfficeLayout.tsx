@@ -600,12 +600,14 @@ const VirtualOfficeLayout = ({
                 Team Status
               </span>
               {isTeamStatusExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            </button>
             {isTeamStatusExpanded && !isSidebarCollapsed && (
               <div className="max-h-48 overflow-y-auto mt-2 pr-1 custom-scrollbar">
                 <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={userId} />
               </div>
             )}
           </div>
+        </div>
         </aside>
       )}
 
