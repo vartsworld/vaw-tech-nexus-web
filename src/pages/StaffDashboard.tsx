@@ -912,7 +912,6 @@ const StaffDashboard = () => {
                 <Coins className="w-4 h-4 text-amber-400" />
                 <span>{(profile?.total_points || 0).toLocaleString()} Coins</span>
               </div>
-              </div>
 
               {/* Desktop Only Streak Display in Header */}
               <div

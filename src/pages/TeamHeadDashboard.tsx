@@ -308,7 +308,6 @@ const TeamHeadDashboard = () => {
     if (location.state) {
       window.history.replaceState({}, document.title);
     }
-    }
   }, [urlRoom]);
 
   useEffect(() => {
@@ -691,8 +690,6 @@ const TeamHeadDashboard = () => {
             <MyCoins isInline={true} />
           </div>
        </div>
-=======
-      </div>
     ),
     meeting: <MeetingRoom />,
     planner: <MonthlyPlanner userId={profile?.user_id || ''} userProfile={profile} />,
