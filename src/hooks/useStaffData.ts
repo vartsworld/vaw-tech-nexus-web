@@ -100,7 +100,6 @@ export const useStaffData = () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        setLoading(false);
         return;
       }
 
