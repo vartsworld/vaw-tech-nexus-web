@@ -142,6 +142,7 @@ const AppContent = () => {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/hr/*" element={<HRDashboard />} />
           <Route path="/staff/profile" element={<Navigate to="/account" replace />} />
+          <Route path="/staff/login" element={<StaffLogin />} />
           <Route path="/staff" element={<StaffDashboard />} />
           <Route path="/staff/:room" element={<StaffDashboard />} />
           <Route path="/staff/tools-nexus" element={<ToolsNexus />} />

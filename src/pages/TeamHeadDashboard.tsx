@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import TeamHeadMobileHome from "@/components/staff/TeamHeadMobileHome";
 import { Card, CardContent } from "@/components/ui/card";
@@ -576,6 +576,9 @@ const TeamHeadDashboard = () => {
 
   // Don't render until profile is fully loaded to prevent 400 errors in sub-components
   if (!profile?.user_id) {
+    if (!loading) {
+      return <Navigate to="/staff/login" replace />;
+    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-950">
         <div className="flex flex-col items-center gap-4 text-white">

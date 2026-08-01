@@ -813,6 +813,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         <div className="w-full max-w-4xl bg-zinc-900/40 border border-white/5 rounded-3xl p-3 sm:p-6 backdrop-blur-md">
           <ShadcnCalendar
             mode="single"
+            required
             month={currentMonth}
             onMonthChange={setCurrentMonth}
             selected={selectedDate || undefined}
