@@ -28,11 +28,12 @@ const PointsBalance = ({ points, userId }: PointsBalanceProps) => {
     if (!userId) return;
 
     try {
-      // Get all transactions from multiple sources to calculate totals and breakdown
-      const [txRes, pointsRes, activityRes] = await Promise.all([
-        supabase.from("user_coin_transactions").select("*").eq("user_id", userId),
-        supabase.from("user_points_log").select("*").eq("user_id", userId),
-        supabase.from("user_activity_log").select("*").eq("user_id", userId).not("points_earned", "is", null).neq("points_earned", 0)
+      // Calculate from August 1, 2026 onwards to prevent negative balances from old data
+      const [txRes] = await Promise.all([
+        supabase.from("user_coin_transactions")
+          .select("*")
+          .eq("user_id", userId)
+          .gte("created_at", "2026-08-01")
       ]);
 
       let earned = 0;
@@ -71,9 +72,7 @@ const PointsBalance = ({ points, userId }: PointsBalanceProps) => {
         }
       };
 
-      txRes.data?.forEach(tx => processEntry(tx.coins ?? (tx as any).amount ?? 0, tx.source_type, tx.transaction_type));
-      pointsRes.data?.forEach(p => processEntry(p.points, p.category, 'earning'));
-      activityRes.data?.forEach(al => processEntry(al.points_earned, al.activity_type, al.activity_type));
+      txRes.data?.forEach(tx => processEntry(tx.coins ?? (tx as any).amount ?? 0, tx.source_type || 'coin', tx.transaction_type));
 
 
       setLifetimeEarned(earned);

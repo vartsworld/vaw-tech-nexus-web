@@ -34,9 +34,7 @@ const CoinTransactionLog = ({ userId }: CoinTransactionLogProps) => {
     try {
       setLoading(true);
       const results = await Promise.allSettled([
-        supabase.from("user_coin_transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(100),
-        supabase.from("user_points_log").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(100),
-        supabase.from("user_activity_log").select("*").eq("user_id", userId).not("points_earned", "is", null).neq("points_earned", 0).order("created_at", { ascending: false }).limit(100)
+        supabase.from("user_coin_transactions").select("*").eq("user_id", userId).gte("created_at", "2026-08-01").order("created_at", { ascending: false }).limit(100),
       ]);
 
       const allLogs: any[] = [];
@@ -52,39 +50,6 @@ const CoinTransactionLog = ({ userId }: CoinTransactionLogProps) => {
           source_type: tx.source_type || 'coin',
           created_at: tx.created_at
         })));
-      }
-
-      // user_points_log
-      if (results[1].status === 'fulfilled' && !results[1].value.error) {
-        const data = results[1].value.data || [];
-        allLogs.push(...data.map(pl => ({
-          id: pl.id,
-          coins: pl.points,
-          transaction_type: 'earning',
-          description: pl.reason || 'Points Earned',
-          source_type: pl.category || 'points',
-          created_at: pl.created_at
-        })));
-      }
-
-      // user_activity_log
-      if (results[2].status === 'fulfilled' && !results[2].value.error) {
-        const data = results[2].value.data || [];
-        allLogs.push(...data.map(al => {
-          let metadata: any = {};
-          try {
-            metadata = typeof al.metadata === 'string' ? JSON.parse(al.metadata) : (al.metadata || {});
-          } catch (e) { metadata = {}; }
-
-          return {
-            id: al.id,
-            coins: al.points_earned,
-            transaction_type: al.activity_type,
-            description: metadata.reason || metadata.task_title || al.activity_type.replace(/_/g, ' '),
-            source_type: al.activity_type,
-            created_at: al.created_at || al.timestamp
-          };
-        }));
       }
 
       const combined = allLogs

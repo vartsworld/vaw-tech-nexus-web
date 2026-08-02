@@ -67,8 +67,9 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8 MB limit
-        globPatterns: ['**/*.{js,css,ico,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,ico,svg,woff2,html}'],
         globIgnores: ['**/lovable-uploads/**'],
+        navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/lovable-uploads/],
         cleanupOutdatedCaches: true,
         clientsClaim: true,

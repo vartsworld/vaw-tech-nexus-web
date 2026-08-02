@@ -50,26 +50,15 @@ const MyCoins = ({ isInline = false }: { isInline?: boolean }) => {
 
       setUserId(user.id);
 
-      // Fetch user profile for latest total_points
-      const { data: profile } = await supabase
-        .from("staff_profiles")
-        .select("total_points")
+      // Calculate from August 1, 2026 onwards to prevent negative balances from old data
+      const { data: txRes } = await supabase
+        .from("user_coin_transactions")
+        .select("coins, amount")
         .eq("user_id", user.id)
-        .single();
-      
-      if (profile) {
-        setUserCoins(profile.total_points || 0);
-      } else {
-        // Fallback to transaction calculation from multiple sources only if profile fails
-        const [txRes, pointsRes] = await Promise.all([
-          supabase.from("user_coin_transactions").select("*").eq("user_id", user.id),
-          supabase.from("user_points_log").select("*").eq("user_id", user.id)
-        ]);
+        .gte("created_at", "2026-08-01");
         
-        const txSum = txRes.data?.reduce((sum, tx) => sum + (tx.coins ?? (tx as any).amount ?? 0), 0) || 0;
-        const pointsSum = pointsRes.data?.reduce((sum, p) => sum + p.points, 0) || 0;
-        setUserCoins(txSum + pointsSum);
-      }
+      const totalCoins = txRes?.reduce((sum, tx) => sum + ((tx as any).coins ?? (tx as any).amount ?? 0), 0) || 0;
+      setUserCoins(totalCoins);
 
     } catch (error) {
       console.error("Error fetching user data:", error);
