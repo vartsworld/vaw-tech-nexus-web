@@ -73,7 +73,7 @@ const MobileHeader = () => {
       }`}>
         <div className="flex items-center justify-between px-4 py-4">
           {/* Menu Button - Left */}
-          <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="h-10 w-10">
+          <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="h-10 w-10" aria-label="Toggle menu" title="Toggle menu">
             {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </Button>
 
@@ -87,7 +87,7 @@ const MobileHeader = () => {
           </Link>
 
           {/* Theme Toggle - Right */}
-          <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="h-10 w-10">
+          <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} className="h-10 w-10" aria-label="Toggle theme" title="Toggle theme">
             {theme === "dark" ? <Sun size={20} className="text-accent" /> : <Moon size={20} className="text-accent" />}
           </Button>
         </div>
@@ -106,7 +106,7 @@ const MobileHeader = () => {
               alt="VAW Technologies Logo" 
               className="h-10 w-auto" 
             />
-            <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(false)} className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(false)} className="h-8 w-8" aria-label="Close menu" title="Close menu">
               <X size={16} />
             </Button>
           </div>

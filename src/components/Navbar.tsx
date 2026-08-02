@@ -122,6 +122,8 @@ const Navbar = () => {
             size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="hover:bg-muted/50 hover:border hover:border-accent/30"
+            aria-label="Toggle theme"
+            title="Toggle theme"
           >
             {theme === "dark" ? <Sun size={20} className="text-accent" /> : <Moon size={20} className="text-accent" />}
           </Button>
