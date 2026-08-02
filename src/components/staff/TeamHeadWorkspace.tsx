@@ -1512,7 +1512,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       }
 
       const createdTasks = [];
-      let finalAttachments = [];
+      const finalAttachments = [];
       let firstTaskId = null;
 
       const taskData = {

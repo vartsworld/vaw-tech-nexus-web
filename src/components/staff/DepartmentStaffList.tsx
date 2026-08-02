@@ -51,7 +51,7 @@ const DepartmentStaffList = ({ departmentId, currentUserId, onChatClick, onlineU
         .from('staff_tasks')
         .select('assigned_to, status');
       
-      let taskStats: Record<string, number> = {};
+      const taskStats: Record<string, number> = {};
       if (taskData) {
         taskData.forEach(task => {
           if (task.status === 'completed' && task.assigned_to) {

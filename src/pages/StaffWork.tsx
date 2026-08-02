@@ -55,19 +55,28 @@ const StaffWork = () => {
     fetchInitialData();
   }, []);
 
+  // BOLT OPTIMIZATION: Removed breakTimeRemaining from the dependencies array.
+  // This prevents the interval from being torn down and re-registered on every single tick (1s),
+  // completely eliminating interval recreation churn and native thread API overhead.
   useEffect(() => {
     let interval: any;
     if (isTimerRunning && !isOnBreak) {
       interval = setInterval(() => {
         setElapsedSeconds(prev => prev + 1);
       }, 1000);
-    } else if (isOnBreak && breakTimeRemaining > 0) {
+    } else if (isOnBreak) {
       interval = setInterval(() => {
-        setBreakTimeRemaining(prev => prev - 1);
+        setBreakTimeRemaining(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isTimerRunning, isOnBreak, breakTimeRemaining]);
+  }, [isTimerRunning, isOnBreak]);
 
   const fetchInitialData = async () => {
     try {

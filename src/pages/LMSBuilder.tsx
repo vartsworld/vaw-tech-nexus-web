@@ -528,7 +528,7 @@ const LMSBuilder = () => {
   const calculateTotal = () => {
     let subtotal = BASE_PRICE;
     let websiteCost = 0;
-    let hasWebsite = selectedModules.has("mod-site");
+    const hasWebsite = selectedModules.has("mod-site");
 
     MODULE_CATEGORIES.forEach(cat => {
       cat.modules.forEach(m => {
