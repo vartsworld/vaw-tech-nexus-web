@@ -2040,7 +2040,6 @@ const TaskDetailPage = ({
                 {!feedbackForm ? (
                   <Button variant="outline" className="w-full h-10 rounded-xl border-dashed border-white/20 hover:border-primary/50 hover:bg-primary/5 text-xs group"
                     onClick={() => {
-                      console.log("Opening feedback builder (create mode)");
                       setIsFeedbackBuilderOpen(true);
                     }}>
                     <PlusCircle className="h-4 w-4 mr-2 text-primary group-hover:scale-110 transition-transform" />
