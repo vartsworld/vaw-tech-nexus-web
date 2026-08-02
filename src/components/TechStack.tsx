@@ -209,7 +209,10 @@ const TechStack = () => {
                 console.error(`Failed to load image: ${tech.logo}`);
                 const parent = e.currentTarget.parentElement;
                 if (parent) {
-                  parent.innerHTML = `<div class="text-2xl font-bold text-tech-gold">${tech.name.charAt(0)}</div>`;
+                  const div = document.createElement('div');
+                  div.className = 'text-2xl font-bold text-tech-gold';
+                  div.textContent = tech.name.charAt(0);
+                  parent.replaceChildren(div);
                 }
               }} />
             </div>
