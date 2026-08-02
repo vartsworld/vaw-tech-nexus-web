@@ -73,7 +73,7 @@ const RedemptionApprovals = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      let updateData: any = {
+      const updateData: any = {
         approved_by: user.id,
         approved_at: new Date().toISOString()
       };

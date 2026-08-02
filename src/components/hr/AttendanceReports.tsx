@@ -65,7 +65,7 @@ const AttendanceReports = () => {
 
   const fetchAttendanceData = async () => {
     try {
-      let query = supabase
+      const query = supabase
         .from('staff_attendance')
         .select(`
           *,

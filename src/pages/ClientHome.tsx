@@ -190,7 +190,7 @@ const ClientHome = ({ profile }: { profile: any }) => {
             const freq = (r.frequency || r.recurrence_frequency || "monthly").toLowerCase();
             const created = new Date(r.created_at || r.date || r.start_date || Date.now());
             const now = new Date();
-            let d = new Date(created);
+            const d = new Date(created);
             while (d <= now) {
               if (freq === "yearly" || freq === "annual") d.setFullYear(d.getFullYear() + 1);
               else if (freq === "quarterly") d.setMonth(d.getMonth() + 3);

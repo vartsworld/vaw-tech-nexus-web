@@ -355,7 +355,7 @@ const FinancialOversight = () => {
         const startDate = new Date(r.created_at || r.start_date || r.date || Date.now());
         const freq = (r.frequency || r.interval || r.recurrence || 'monthly').toLowerCase();
         const now = new Date();
-        let next = new Date(startDate);
+        const next = new Date(startDate);
 
         // Advance until we find the next future date
         const maxIterations = 120; // safety limit
