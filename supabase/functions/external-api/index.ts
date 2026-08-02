@@ -34,10 +34,46 @@ serve(async (req: Request) => {
         const apiSecret = req.headers.get('x-api-secret')
         const authHeader = req.headers.get('Authorization')
 
-        // In a real scenario, we would verify these against an 'api_keys' table
-        // For now, we'll allow it if either header or Bearer token is present (developer mode)
-        if (!apiKey && !authHeader) {
-            return new Response(JSON.stringify({ error: "Unauthorized: Missing authentication" }), {
+        let isAuthenticated = false;
+
+        // Verify Bearer token against Supabase Auth
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.replace('Bearer ', '');
+            const { data } = await supabaseAdmin.auth.getUser(token);
+            if (data?.user) {
+                isAuthenticated = true;
+            }
+        }
+
+        // Verify API key against environment variable or 'api_keys' table
+        if (!isAuthenticated && apiKey) {
+            // Check against static environment variable (if set for development)
+            const envApiKey = Deno.env.get('EXTERNAL_API_KEY');
+            const envApiSecret = Deno.env.get('EXTERNAL_API_SECRET');
+
+            if (envApiKey && apiKey === envApiKey) {
+                if (!envApiSecret || apiSecret === envApiSecret) {
+                    isAuthenticated = true;
+                }
+            }
+
+            // Fallback to checking the database if env vars aren't matched
+            if (!isAuthenticated) {
+                const { data: keyData, error } = await supabaseAdmin
+                    .from('api_keys')
+                    .select('id')
+                    .eq('status', 'active')
+                    .eq('key_hash', apiKey)
+                    .maybeSingle();
+
+                if (!error && keyData) {
+                    isAuthenticated = true;
+                }
+            }
+        }
+
+        if (!isAuthenticated) {
+            return new Response(JSON.stringify({ error: "Unauthorized: Invalid or missing authentication credentials" }), {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 401
             })
