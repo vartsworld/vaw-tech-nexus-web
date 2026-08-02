@@ -202,7 +202,7 @@ const TeamHeadDashboard = () => {
     localStorage.setItem('th_widgets_v1', JSON.stringify(widgets));
   }, [widgets]);
 
-  const { profile } = useStaffData();
+  const { profile, loading } = useStaffData();
 
   // Activity tracking and status
   const { status, reactivationCode, updateStatus, reactivate } = useUserStatus(profile?.user_id || '');
