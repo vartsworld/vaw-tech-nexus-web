@@ -133,9 +133,25 @@ const StaffMobileHome = ({
   // Tools sub-view: null | 'leave' | 'notes' | 'chess'
   const [activeTool, setActiveTool] = useState<string | null>(null);
 
+  const [actualCoinsBalance, setActualCoinsBalance] = useState(0);
+
   const firstName = profile?.full_name?.split(" ")[0] || "there";
-  const coinsBalance = profile?.total_points || 0;
   const streak = profile?.attendance_streak || 0;
+
+  useEffect(() => {
+    const fetchActualCoins = async () => {
+      if (!profile?.user_id) return;
+      const { data } = await supabase
+        .from('user_coin_transactions')
+        .select('coins, amount')
+        .eq('user_id', profile.user_id)
+        .gte('created_at', '2026-08-01');
+
+      const sum = data?.reduce((acc, curr) => acc + ((curr as any).coins ?? (curr as any).amount ?? 0), 0) || 0;
+      setActualCoinsBalance(sum);
+    };
+    fetchActualCoins();
+  }, [profile?.user_id]);
 
   // Fetch tasks
   const fetchTasks = useCallback(async () => {
@@ -416,13 +432,16 @@ const StaffMobileHome = ({
 
               {/* Status Counters */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
-                    <Coins className="w-5 h-5 text-emerald-500/50 animate-pulse" />
+                <div
+                  onClick={onOpenCoins}
+                  className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl cursor-pointer active:scale-95 transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center border border-emerald-500/30">
+                    <Coins className="w-5 h-5 text-emerald-400 animate-pulse" />
                   </div>
                   <div>
                     <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Coins</p>
-                    <p className="text-xs font-bold text-amber-500/50 uppercase leading-none mt-1">Coming Soon</p>
+                    <p className="text-sm font-black text-amber-400 leading-none mt-1">{actualCoinsBalance.toLocaleString()}</p>
                   </div>
                 </div>
                 <div
@@ -942,13 +961,16 @@ const StaffMobileHome = ({
 
               {/* Coins & Streak Display in Mobile Profile */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20">
-                    <Coins className="w-5 h-5 text-amber-500/60" />
+                <div
+                  onClick={onOpenCoins}
+                  className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-2xl cursor-pointer active:scale-95 transition-all"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center border border-amber-500/30">
+                    <Coins className="w-5 h-5 text-amber-400" />
                   </div>
                   <div>
                     <p className="text-[10px] text-white/40 uppercase font-black tracking-widest">Coins</p>
-                    <p className="text-xs font-bold text-amber-500/60 uppercase">Coming Soon</p>
+                    <p className="text-sm font-black text-amber-400 mt-1">{actualCoinsBalance.toLocaleString()}</p>
                   </div>
                 </div>
                 <div

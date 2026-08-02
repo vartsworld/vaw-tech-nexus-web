@@ -49,21 +49,19 @@ const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile, isInline }: Coin
     try {
       setLoading(true);
       
-      // 1. Fetch latest profile points
-      const { data: profile, error: profileError } = await supabase
-        .from('staff_profiles')
-        .select('total_points')
-        .eq('user_id', userId)
-        .maybeSingle();
-      
-      if (profileError) console.error("Profile fetch error:", profileError);
-      if (profile) setTotalPoints(profile.total_points || 0);
+      // 1. Fetch total from transactions since August 1, 2026
+      const { data: txTotalRes } = await supabase
+        .from("user_coin_transactions")
+        .select("coins, amount")
+        .eq("user_id", userId)
+        .gte("created_at", "2026-08-01");
 
-      // 2. Fetch from all possible log tables resiliently
+      const totalCoins = txTotalRes?.reduce((sum, tx) => sum + ((tx as any).coins ?? (tx as any).amount ?? 0), 0) || 0;
+      setTotalPoints(totalCoins);
+
+      // 2. Fetch logs from transactions since August 1, 2026
       const results = await Promise.allSettled([
-        supabase.from("user_coin_transactions").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
-        supabase.from("user_points_log").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
-        supabase.from("user_activity_log").select("*").eq("user_id", userId).not("points_earned", "is", null).neq("points_earned", 0).order("created_at", { ascending: false }).limit(50)
+        supabase.from("user_coin_transactions").select("*").eq("user_id", userId).gte("created_at", "2026-08-01").order("created_at", { ascending: false }).limit(50),
       ]);
 
       const allLogs: any[] = [];
@@ -82,45 +80,6 @@ const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile, isInline }: Coin
         })));
       } else {
         console.error("user_coin_transactions fetch failed:", results[0]);
-      }
-
-      // Process user_points_log
-      if (results[1].status === 'fulfilled' && !results[1].value.error) {
-        const data = results[1].value.data || [];
-        allLogs.push(...data.map(pl => ({
-          id: pl.id,
-          coins: pl.points,
-          transaction_type: 'earning',
-          reason: pl.reason || 'Points Earned',
-          source_type: pl.category || 'points',
-          created_at: pl.created_at,
-          type: 'points'
-        })));
-      } else {
-        console.error("user_points_log fetch failed:", results[1]);
-      }
-
-      // Process user_activity_log
-      if (results[2].status === 'fulfilled' && !results[2].value.error) {
-        const data = results[2].value.data || [];
-        allLogs.push(...data.map(al => {
-          let metadata: any = {};
-          try {
-            metadata = typeof al.metadata === 'string' ? JSON.parse(al.metadata) : (al.metadata || {});
-          } catch (e) { metadata = {}; }
-
-          return {
-            id: al.id,
-            coins: al.points_earned,
-            transaction_type: al.activity_type,
-            reason: metadata.reason || metadata.task_title || al.activity_type.replace(/_/g, ' '),
-            source_type: al.activity_type,
-            created_at: al.created_at || al.timestamp,
-            type: 'activity'
-          };
-        }));
-      } else {
-        console.error("user_activity_log fetch failed:", results[2]);
       }
 
       const combined = allLogs
