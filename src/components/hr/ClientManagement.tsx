@@ -439,7 +439,6 @@ const ClientManagement = () => {
         resError = error;
       } else {
         const targetId = typeof doc === 'string' ? doc : doc.id;
-        console.log('Linking local doc ID:', targetId);
         const { error } = await supabase
           .from('client_documents')
           .update({ project_id: selectedProjectForDocs.id })
