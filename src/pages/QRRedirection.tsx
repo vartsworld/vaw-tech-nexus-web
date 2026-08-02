@@ -55,7 +55,16 @@ const QRRedirection = () => {
               if (url.startsWith('/')) {
                 navigate(url);
               } else {
-                window.location.href = url;
+                try {
+                  const u = new URL(url, window.location.origin);
+                  if (u.protocol === 'http:' || u.protocol === 'https:') {
+                    window.location.href = u.href;
+                  } else {
+                    setError('Invalid URL configuration.');
+                  }
+                } catch (e) {
+                  setError('Invalid URL configuration.');
+                }
               }
             }, 1500);
           } else {
