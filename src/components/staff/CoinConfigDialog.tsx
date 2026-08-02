@@ -62,14 +62,18 @@ export const CoinConfigDialog = ({ open, onOpenChange }: CoinConfigDialogProps) 
     const handleSave = async () => {
         setSaving(true);
         try {
-            for (const config of configs) {
-                const { error } = await supabase
-                    .from('app_settings' as any)
-                    .update({ value: config.value })
-                    .eq('key', config.key);
+            const updates = configs.map(config => ({
+                key: config.key,
+                value: config.value,
+                description: config.description
+            }));
 
-                if (error) throw error;
-            }
+            const { error } = await supabase
+                .from('app_settings' as any)
+                .upsert(updates, { onConflict: 'key' });
+
+            if (error) throw error;
+
             toast.success('Coin configuration updated successfully');
             onOpenChange(false);
         } catch (error) {
