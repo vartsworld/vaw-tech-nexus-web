@@ -1,1 +1,5 @@
 ## 2026-08-02 - Icon-Only Button Accessibility\n**Learning:** Icon-only interactive control buttons (like theme toggles and menu toggles in navigation headers) across the repository lack built-in accessibility descriptions, which hinders screen readers and removes hover context.\n**Action:** Always verify that icon-only buttons include both an `aria-label` for screen readers and a `title` attribute for hover tooltips. Applied this pattern to Navbar.tsx and MobileHeader.tsx to ensure uniform accessibility.
+
+## 2024-08-02 - Added Character Counter to PricingInquiryForm
+**Learning:** The application uses a consistent pattern for character-limited inputs (like textareas). They should include a visible counter below the input, and the counter should change visually (e.g., become bold and amber) when the input reaches 80% of its maximum capacity to warn the user.
+**Action:** When adding or modifying text inputs with length constraints, always include this dynamic visual feedback pattern to ensure consistent and accessible user experience across forms.
