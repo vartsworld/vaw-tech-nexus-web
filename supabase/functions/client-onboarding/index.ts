@@ -154,10 +154,46 @@ serve(async (req) => {
                 })
         }
 
-        // Send welcome email (simplified - in production use proper email service)
+        // Send welcome email
         if (send_welcome_email && clientData.email) {
-            console.log(`Welcome email would be sent to: ${clientData.email}`)
-            // TODO: Integrate with email service (SendGrid, Resend, etc.)
+            console.log(`Sending welcome email to: ${clientData.email}`)
+            const resendApiKey = Deno.env.get('RESEND_API_KEY')
+
+            if (resendApiKey) {
+                try {
+                    const res = await fetch('https://api.resend.com/emails', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${resendApiKey}`
+                        },
+                        body: JSON.stringify({
+                            from: 'VAW Technologies <onboarding@resend.dev>',
+                            to: [clientData.email],
+                            subject: 'Welcome to VAW Technologies!',
+                            html: `
+                                <h1>Welcome ${clientData.contact_person}!</h1>
+                                <p>Your account for <strong>${clientData.company_name}</strong> has been successfully created.</p>
+                                <p>We are excited to partner with you. You can now access your dedicated portal.</p>
+                                <br/>
+                                <p>Best regards,</p>
+                                <p>VAW Technologies Team</p>
+                            `
+                        })
+                    })
+
+                    if (!res.ok) {
+                        const errorData = await res.text()
+                        console.error('Failed to send welcome email via Resend:', errorData)
+                    } else {
+                        console.log('Welcome email sent successfully.')
+                    }
+                } catch (emailError) {
+                    console.error('Exception while sending welcome email:', emailError)
+                }
+            } else {
+                console.warn('RESEND_API_KEY is not set. Skipping welcome email.')
+            }
         }
 
         // Notify super admins
