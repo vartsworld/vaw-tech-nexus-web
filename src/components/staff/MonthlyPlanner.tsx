@@ -1030,6 +1030,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                               ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
                               : "border-white/10 text-zinc-500 hover:border-white/20"
                           )}
+                          aria-label={task.status === 'completed' ? "Mark task as pending" : "Mark task as completed"}
+                          title={task.status === 'completed' ? "Mark task as pending" : "Mark task as completed"}
                         >
                           <Check className="w-4 h-4" />
                         </button>
@@ -1084,6 +1086,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                               ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
                               : "border-white/10 text-zinc-500 hover:border-white/20"
                           )}
+                          aria-label={sub.status === 'completed' ? "Mark subtask as pending" : "Mark subtask as completed"}
+                          title={sub.status === 'completed' ? "Mark subtask as pending" : "Mark subtask as completed"}
                         >
                           <Check className="w-4 h-4" />
                         </button>
@@ -1164,6 +1168,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                         )}
                         style={{ backgroundColor: c.value }}
                         title={c.name}
+                        aria-label={`Select color ${c.name}`}
                       />
                     ))}
                   </div>
@@ -1364,6 +1369,8 @@ const PlanItem = ({ plan, onEdit, onDelete, onToggleComplete }: PlanItemProps) =
             ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
             : "border-white/10 text-zinc-500 hover:border-white/20"
         )}
+        aria-label={plan.is_completed ? "Mark plan as pending" : "Mark plan as completed"}
+        title={plan.is_completed ? "Mark plan as pending" : "Mark plan as completed"}
       >
         <Check className="w-4 h-4" />
       </button>
