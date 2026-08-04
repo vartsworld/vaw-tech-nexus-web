@@ -303,14 +303,38 @@ const TasksManager = ({
     );
   };
 
-  const filteredTasks = tasks.filter(task => {
-    if (filter === 'all') return task.status !== 'completed';
-    if (filter === 'completed') return ['review_pending', 'pending_approval'].includes(task.status);
-    return task.status === filter;
-  });
-  const completedCount = tasks.filter(t => ['completed', 'review_pending', 'pending_approval'].includes(t.status)).length;
+  const taskCounts = useMemo(() => {
+    const counts = {
+      overdue: 0,
+      in_progress: 0,
+      pending: 0,
+      completed: 0,
+      handover: 0,
+      all: tasks.length
+    };
+
+    tasks.forEach(task => {
+      if (task.status === 'overdue') counts.overdue++;
+      else if (task.status === 'in_progress') counts.in_progress++;
+      else if (task.status === 'pending') counts.pending++;
+      else if (['completed', 'review_pending', 'pending_approval'].includes(task.status)) counts.completed++;
+      else if (task.status === 'handover') counts.handover++;
+    });
+
+    return counts;
+  }, [tasks]);
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (filter === 'all') return task.status !== 'completed';
+      if (filter === 'completed') return ['review_pending', 'pending_approval'].includes(task.status);
+      return task.status === filter;
+    });
+  }, [tasks, filter]);
+
+  const completedCount = taskCounts.completed;
   const totalTasks = tasks.length;
-  const completionRate = totalTasks > 0 ? completedCount / totalTasks * 100 : 0;
+  const completionRate = totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
   // If a task is selected, show inline detail view
   if (selectedTask) {
     return (
@@ -367,27 +391,27 @@ const TasksManager = ({
             {[{
               key: 'overdue',
               label: 'Overdue',
-              count: tasks.filter(t => t.status === 'overdue').length
+              count: taskCounts.overdue
             }, {
               key: 'in_progress',
               label: 'Current',
-              count: tasks.filter(t => t.status === 'in_progress').length
+              count: taskCounts.in_progress
             }, {
               key: 'pending',
               label: 'Upcoming',
-              count: tasks.filter(t => t.status === 'pending').length
+              count: taskCounts.pending
             }, {
               key: 'completed',
               label: 'Submitted',
-              count: tasks.filter(t => ['completed', 'review_pending', 'pending_approval'].includes(t.status)).length
+              count: taskCounts.completed
             }, {
               key: 'handover',
               label: 'Handover',
-              count: tasks.filter(t => t.status === 'handover').length
+              count: taskCounts.handover
             }, {
               key: 'all',
               label: 'All',
-              count: tasks.length
+              count: taskCounts.all
             }].map(filterOption => (
               <Button
                 key={filterOption.key}
