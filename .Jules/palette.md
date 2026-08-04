@@ -1,1 +1,5 @@
 ## 2026-08-02 - Icon-Only Button Accessibility\n**Learning:** Icon-only interactive control buttons (like theme toggles and menu toggles in navigation headers) across the repository lack built-in accessibility descriptions, which hinders screen readers and removes hover context.\n**Action:** Always verify that icon-only buttons include both an `aria-label` for screen readers and a `title` attribute for hover tooltips. Applied this pattern to Navbar.tsx and MobileHeader.tsx to ensure uniform accessibility.
+
+## 2026-08-04 - Icon-Only Action Button Accessibility
+**Learning:** Icon-only interactive control buttons used for actions such as marking tasks or plans as completed (e.g. checkmark buttons) lack accessibility descriptions, meaning screen reader users lack context on what the buttons do, and standard users lack tooltips. Similarly, color picker buttons often lack labels describing what color they correspond to.
+**Action:** When using icon-only buttons for toggling state or making selections, ensure both `aria-label` and `title` attributes are included with descriptive text (often dynamically generated based on current state).
