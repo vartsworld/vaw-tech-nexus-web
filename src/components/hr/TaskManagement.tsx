@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1325,6 +1325,17 @@ const TaskManagement = () => {
     }
   };
 
+  const statusCounts = useMemo(() => {
+    const counts = { all: tasks.length, pending: 0, in_progress: 0, review_pending: 0, completed: 0, handover: 0 };
+    for (let i = 0; i < tasks.length; i++) {
+      const status = tasks[i].status as keyof typeof counts;
+      if (counts[status] !== undefined && status !== 'all') {
+        counts[status]++;
+      }
+    }
+    return counts;
+  }, [tasks]);
+
   // Render Create/Edit Page
   if (currentView === 'create' || currentView === 'edit') {
     return (
@@ -1338,6 +1349,7 @@ const TaskManagement = () => {
   }
 
   // Render Detail Page
+
   if (currentView === 'detail' && selectedTask) {
     return (
       <TaskDetailPage
@@ -1359,15 +1371,6 @@ const TaskManagement = () => {
       />
     );
   }
-
-  const statusCounts = {
-    all: tasks.length,
-    pending: tasks.filter(t => t.status === 'pending').length,
-    in_progress: tasks.filter(t => t.status === 'in_progress').length,
-    review_pending: tasks.filter(t => t.status === 'review_pending').length,
-    completed: tasks.filter(t => t.status === 'completed').length,
-    handover: tasks.filter(t => t.status === 'handover').length,
-  };
 
   return (
     <TooltipProvider>
