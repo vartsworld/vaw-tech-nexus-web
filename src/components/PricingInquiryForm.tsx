@@ -200,7 +200,12 @@ const PricingInquiryForm = ({
 
           <div className="space-y-2">
             <Label htmlFor="requirements">Website Requirements <span className="text-red-500">*</span></Label>
-            <Textarea id="requirements" placeholder="Describe your website needs, features, design preferences, target audience, etc." value={formData.requirements} onChange={e => handleInputChange("requirements", e.target.value)} rows={4} required />
+            <Textarea id="requirements" placeholder="Describe your website needs, features, design preferences, target audience, etc." value={formData.requirements} onChange={e => handleInputChange("requirements", e.target.value)} rows={4} required maxLength={1000} />
+            <div className="flex justify-end text-xs text-muted-foreground mt-1">
+              <span className={formData.requirements.length >= 800 ? "text-amber-500 font-bold" : ""}>
+                {formData.requirements.length}/1000 characters
+              </span>
+            </div>
           </div>
 
           <div className="space-y-2">
