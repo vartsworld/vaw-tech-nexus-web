@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -83,8 +83,7 @@ const TaskManagement = () => {
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [filteredTasks, setFilteredTasks] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -182,11 +181,7 @@ const TaskManagement = () => {
   }, [newTask.client_id, isAddDialogOpen]);
 
 
-  useEffect(() => {
-    filterTasks();
-  }, [tasks, searchTerm, filterStatus, filterPriority]);
-
-  useEffect(() => {
+    useEffect(() => {
     const channel = supabase
       .channel('tasks-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_tasks' }, () => {
@@ -612,14 +607,15 @@ const TaskManagement = () => {
     }
   };
 
-  const filterTasks = () => {
+  const filteredTasks = useMemo(() => {
     let filtered = tasks;
 
     if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(task =>
-        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.assigned_to_profile?.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+        task.title.toLowerCase().includes(searchLower) ||
+        task.description?.toLowerCase().includes(searchLower) ||
+        task.assigned_to_profile?.full_name.toLowerCase().includes(searchLower)
       );
     }
 
@@ -631,8 +627,8 @@ const TaskManagement = () => {
       filtered = filtered.filter(task => task.priority === filterPriority);
     }
 
-    setFilteredTasks(filtered);
-  };
+    return filtered;
+  }, [tasks, searchTerm, filterStatus, filterPriority]);
 
   const handleAddClient = async () => {
     // Validate required fields
@@ -1360,14 +1356,20 @@ const TaskManagement = () => {
     );
   }
 
-  const statusCounts = {
-    all: tasks.length,
-    pending: tasks.filter(t => t.status === 'pending').length,
-    in_progress: tasks.filter(t => t.status === 'in_progress').length,
-    review_pending: tasks.filter(t => t.status === 'review_pending').length,
-    completed: tasks.filter(t => t.status === 'completed').length,
-    handover: tasks.filter(t => t.status === 'handover').length,
-  };
+  const statusCounts = useMemo(() => {
+    return tasks.reduce(
+      (acc, task) => {
+        acc.all++;
+        if (task.status === 'pending') acc.pending++;
+        else if (task.status === 'in_progress') acc.in_progress++;
+        else if (task.status === 'review_pending') acc.review_pending++;
+        else if (task.status === 'completed') acc.completed++;
+        else if (task.status === 'handover') acc.handover++;
+        return acc;
+      },
+      { all: 0, pending: 0, in_progress: 0, review_pending: 0, completed: 0, handover: 0 }
+    );
+  }, [tasks]);
 
   return (
     <TooltipProvider>

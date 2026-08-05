@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -218,27 +218,35 @@ const SupportTicketManagement = () => {
     );
   };
 
-  const filtered = tickets.filter(t => {
-    if (filterStatus !== "all" && t.status !== filterStatus) return false;
-    if (filterType !== "all" && t.type !== filterType) return false;
-    if (search) {
-      const s = search.toLowerCase();
-      return (
-        t.subject?.toLowerCase().includes(s) ||
-        t.message?.toLowerCase().includes(s) ||
-        t.client_profiles?.company_name?.toLowerCase().includes(s) ||
-        t.client_profiles?.contact_person?.toLowerCase().includes(s)
-      );
-    }
-    return true;
-  });
+  const filtered = useMemo(() => {
+    return tickets.filter(t => {
+      if (filterStatus !== "all" && t.status !== filterStatus) return false;
+      if (filterType !== "all" && t.type !== filterType) return false;
+      if (search) {
+        const s = search.toLowerCase();
+        return (
+          t.subject?.toLowerCase().includes(s) ||
+          t.message?.toLowerCase().includes(s) ||
+          t.client_profiles?.company_name?.toLowerCase().includes(s) ||
+          t.client_profiles?.contact_person?.toLowerCase().includes(s)
+        );
+      }
+      return true;
+    });
+  }, [tickets, filterStatus, filterType, search]);
 
-  const stats = {
-    total: tickets.length,
-    pending: tickets.filter(t => t.status === "pending").length,
-    inProgress: tickets.filter(t => t.status === "in_progress").length,
-    resolved: tickets.filter(t => t.status === "resolved").length,
-  };
+  const stats = useMemo(() => {
+    return tickets.reduce(
+      (acc, t) => {
+        acc.total++;
+        if (t.status === "pending") acc.pending++;
+        else if (t.status === "in_progress") acc.inProgress++;
+        else if (t.status === "resolved") acc.resolved++;
+        return acc;
+      },
+      { total: 0, pending: 0, inProgress: 0, resolved: 0 }
+    );
+  }, [tickets]);
 
   return (
     <div className="space-y-6">
