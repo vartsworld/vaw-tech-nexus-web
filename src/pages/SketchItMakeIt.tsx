@@ -268,13 +268,14 @@ export default function SketchItMakeIt() {
               </h3>
               <p className="text-xs text-slate-400 mb-4">Click anywhere to download</p>
               <button
+                aria-label={`Download ${drawing.title} drawing`}
                 className="w-full bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
                 onClick={(e) => {
                   e.stopPropagation();
                   triggerDownload(drawing);
                 }}
               >
-                <Download className="w-4 h-4" /> Download PDF/JPG
+                <Download className="w-4 h-4" aria-hidden="true" /> Download PDF/JPG
               </button>
             </div>
           ))}
@@ -419,8 +420,9 @@ export default function SketchItMakeIt() {
               >
                 <button
                   onClick={() => toggleFaq(index)}
-                  className="w-full flex items-center justify-between p-5 text-left font-bold text-slate-800 hover:bg-slate-50 transition-colors text-base sm:text-lg"
+                  className="w-full flex items-center justify-between p-5 text-left font-bold text-slate-800 hover:bg-slate-50 transition-colors text-base sm:text-lg focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:outline-none rounded-xl"
                   aria-expanded={isOpen}
+                  aria-controls={`faq-answer-${index}`}
                 >
                   <span>{faq.question}</span>
                   <ChevronDown
@@ -430,7 +432,7 @@ export default function SketchItMakeIt() {
                   />
                 </button>
                 {isOpen && (
-                  <div className="px-5 pb-5 pt-1 text-slate-600 text-sm sm:text-base leading-relaxed bg-emerald-50/20 border-t border-slate-50">
+                  <div id={`faq-answer-${index}`} className="px-5 pb-5 pt-1 text-slate-600 text-sm sm:text-base leading-relaxed bg-emerald-50/20 border-t border-slate-50">
                     {faq.answer}
                   </div>
                 )}
