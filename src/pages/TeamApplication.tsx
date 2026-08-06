@@ -30,7 +30,8 @@ import {
   Calendar as CalendarIcon,
   MapPin,
   Navigation,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -1307,11 +1308,17 @@ Legal Terms Accepted: Yes (${formData.submitted_at})
                     <Textarea
                       id="about_me"
                       rows={3}
+                      maxLength={1000}
                       value={formData.about_me}
                       onChange={(e) => setFormData((prev) => ({ ...prev, about_me: e.target.value }))}
                       placeholder="Briefly describe your experience, goals, and key strengths..."
                       className="bg-zinc-950 border-zinc-800 focus:border-zinc-500 text-white resize-none"
                     />
+                    <div className="flex justify-end text-xs text-zinc-500 mt-1">
+                      <span className={formData.about_me.length >= 800 ? "text-amber-500 font-bold" : ""}>
+                        {formData.about_me.length}/1000 characters
+                      </span>
+                    </div>
                   </div>
 
                   {/* DRAG & DROP CV UPLOAD AREA */}
@@ -1819,7 +1826,14 @@ Legal Terms Accepted: Yes (${formData.submitted_at})
                 onClick={handleSubmitFinal}
                 className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 disabled:opacity-50"
               >
-                {isSubmitting ? "Submitting..." : "Submit Application"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit Application"
+                )}
               </Button>
             </DialogFooter>
           </div>
