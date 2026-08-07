@@ -587,6 +587,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
               size="icon"
               className="h-8 w-8 rounded-lg border-white/10 bg-white/5 hover:bg-white/10"
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              aria-label="Previous month"
+              title="Previous month"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -595,6 +597,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
               size="icon"
               className="h-8 w-8 rounded-lg border-white/10 bg-white/5 hover:bg-white/10"
               onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              aria-label="Next month"
+              title="Next month"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -614,6 +618,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
             size="icon"
             className="h-9 w-9 rounded-xl border border-white/5 text-white/40 hover:text-white hover:bg-white/10"
             onClick={() => setIsSettingsOpen(true)}
+            aria-label="Open planner settings"
+            title="Open planner settings"
           >
             <Settings className="w-4 h-4" />
           </Button>
@@ -1242,6 +1248,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                         className="h-8 w-8 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-white/5 shrink-0"
                         onClick={() => handleDeleteColorTag(c.value)}
                         title="Delete tag"
+                        aria-label="Delete tag"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -1335,6 +1342,8 @@ const PlanItem = ({ plan, onEdit, onDelete, onToggleComplete }: PlanItemProps) =
               size="icon"
               className="h-7 w-7 rounded-lg text-white/40 hover:text-white"
               onClick={() => onEdit(plan)}
+              aria-label="Edit plan"
+              title="Edit plan"
             >
               <Edit className="w-3.5 h-3.5" />
             </Button>
@@ -1343,6 +1352,8 @@ const PlanItem = ({ plan, onEdit, onDelete, onToggleComplete }: PlanItemProps) =
               size="icon"
               className="h-7 w-7 rounded-lg text-red-500/40 hover:text-red-500"
               onClick={() => onDelete(plan.id)}
+              aria-label="Delete plan"
+              title="Delete plan"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
