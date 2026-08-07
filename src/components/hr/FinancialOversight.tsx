@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
     DollarSign,
@@ -242,34 +242,44 @@ const FinancialOversight = () => {
     }, []);
 
     // Build synced client lookup
-    const syncedClients = (clients as any[]).filter((c) => c.billing_sync_id);
-    const syncIdSet = new Set(syncedClients.map((c) => String(c.billing_sync_id)));
-    const syncIdToClient = new Map<string, any>(syncedClients.map((c) => [String(c.billing_sync_id), c]));
+    const { syncedClients, syncIdSet, syncIdToClient } = useMemo(() => {
+        const synced = (clients as any[]).filter((c) => c.billing_sync_id);
+        const idSet = new Set(synced.map((c) => String(c.billing_sync_id)));
+        const idToClient = new Map<string, any>(synced.map((c) => [String(c.billing_sync_id), c]));
+        return { syncedClients: synced, syncIdSet: idSet, syncIdToClient: idToClient };
+    }, [clients]);
 
-    const isMatched = (record: any) => syncIdSet.has(getClientCode(record));
+    const isMatched = useCallback((record: any) => syncIdSet.has(getClientCode(record)), [syncIdSet]);
 
     // Matched data
-    const matchedInvoices = (externalStats?.invoices || []).filter(isMatched);
-    const matchedPayments = (externalStats?.payments || []).filter(isMatched);
-    const matchedRecurring = (externalStats?.recurring || []).filter(isMatched);
-    const allExpenses = externalStats?.expenses || [];
+    const { matchedInvoices, matchedPayments, matchedRecurring, allExpenses } = useMemo(() => {
+        const invs = (externalStats?.invoices || []).filter(isMatched);
+        const pays = (externalStats?.payments || []).filter(isMatched);
+        const recs = (externalStats?.recurring || []).filter(isMatched);
+        const exps = externalStats?.expenses || [];
+        return { matchedInvoices: invs, matchedPayments: pays, matchedRecurring: recs, allExpenses: exps };
+    }, [externalStats, isMatched]);
 
     // Calculations — avoid double-counting between invoices and payments
-    const totalRevenue = matchedInvoices.reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
-    
-    // Use payments as source of truth for collected; fall back to paid invoices only if no payments exist
-    const paymentTotal = matchedPayments.reduce((acc: number, p: any) => acc + Number(p.amount || 0), 0);
-    const paidInvoiceTotal = matchedInvoices
-        .filter((inv: any) => inv.status === 'paid' || inv.status === 'collected')
-        .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
-    const totalCollected = paymentTotal > 0 ? paymentTotal : paidInvoiceTotal;
-    
-    const totalExpenses = allExpenses.reduce((acc: number, e: any) => acc + Number(e.amount || 0), 0);
-    const pendingCollection = Math.max(0, totalRevenue - totalCollected);
-    const profitMargin = totalRevenue > 0 ? ((totalRevenue - totalExpenses) / totalRevenue * 100).toFixed(1) : '0';
+    const { totalRevenue, paymentTotal, totalCollected, totalExpenses, pendingCollection, profitMargin } = useMemo(() => {
+        const revenue = matchedInvoices.reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
+
+        // Use payments as source of truth for collected; fall back to paid invoices only if no payments exist
+        const payTotal = matchedPayments.reduce((acc: number, p: any) => acc + Number(p.amount || 0), 0);
+        const paidInvoiceTotal = matchedInvoices
+            .filter((inv: any) => inv.status === 'paid' || inv.status === 'collected')
+            .reduce((acc: number, inv: any) => acc + Number(inv.amount || inv.total || 0), 0);
+        const collected = payTotal > 0 ? payTotal : paidInvoiceTotal;
+
+        const expenses = allExpenses.reduce((acc: number, e: any) => acc + Number(e.amount || 0), 0);
+        const pending = Math.max(0, revenue - collected);
+        const margin = revenue > 0 ? ((revenue - expenses) / revenue * 100).toFixed(1) : '0';
+
+        return { totalRevenue: revenue, paymentTotal: payTotal, totalCollected: collected, totalExpenses: expenses, pendingCollection: pending, profitMargin: margin };
+    }, [matchedInvoices, matchedPayments, allExpenses]);
 
     // Monthly chart data
-    const getMonthlyData = () => {
+    const chartData = useMemo(() => {
         const dataMap: Record<string, { name: string; revenue: number; expenses: number; timestamp: number }> = {};
 
         matchedInvoices.forEach((inv: any) => {
@@ -299,10 +309,10 @@ const FinancialOversight = () => {
             });
         }
         return sorted;
-    };
+    }, [matchedInvoices, allExpenses]);
 
     // Client billing ranking
-    const getClientRankings = () => {
+    const clientRankings = useMemo(() => {
         const clientMap: Record<string, { id: string; name: string; paid: number; total: number; hasPayments: boolean }> = {};
 
         matchedInvoices.forEach((inv: any) => {
@@ -343,10 +353,10 @@ const FinancialOversight = () => {
         });
 
         return Object.values(clientMap).filter(c => c.total > 0).sort((a, b) => b.paid - a.paid);
-    };
+    }, [matchedInvoices, matchedPayments, syncIdToClient]);
 
     // Calculate next invoice date from recurring invoice data
-    const calculateNextDate = (r: any): string | null => {
+    const calculateNextDate = useCallback((r: any): string | null => {
         // Check explicit next date fields first
         const explicit = r.next_date || r.next_due_date || r.next_invoice_date || r.due_date;
         if (explicit) return explicit;
@@ -372,10 +382,10 @@ const FinancialOversight = () => {
         }
 
         return next > now ? next.toISOString() : null;
-    };
+    }, []);
 
     // Upcoming recurring
-    const getUpcomingRecurring = () => {
+    const upcomingRecurring = useMemo(() => {
         return matchedRecurring
             .map((r: any) => {
                 const code = getClientCode(r);
@@ -393,11 +403,7 @@ const FinancialOversight = () => {
                 if (!b.nextDate) return -1;
                 return new Date(a.nextDate).getTime() - new Date(b.nextDate).getTime();
             });
-    };
-
-    const chartData = getMonthlyData();
-    const clientRankings = getClientRankings();
-    const upcomingRecurring = getUpcomingRecurring();
+    }, [matchedRecurring, syncIdToClient, calculateNextDate]);
 
     if (loading) {
         return (
