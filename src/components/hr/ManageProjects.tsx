@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -149,12 +149,14 @@ const ManageProjects = () => {
         });
     };
 
-    const filteredProjects = projects.filter(p => {
-        const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            p.clients?.company_name?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesType = filterType === "all" || p.project_type === filterType;
-        return matchesSearch && matchesType;
-    });
+    const filteredProjects = useMemo(() => {
+        return projects.filter(p => {
+            const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                p.clients?.company_name?.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesType = filterType === "all" || p.project_type === filterType;
+            return matchesSearch && matchesType;
+        });
+    }, [projects, searchTerm, filterType]);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -166,12 +168,24 @@ const ManageProjects = () => {
         }
     };
 
-    const projectStats = {
-        total: projects.length,
-        active: projects.filter(p => p.status === 'active').length,
-        planning: projects.filter(p => p.status === 'planning').length,
-        completed: projects.filter(p => p.status === 'completed').length,
-    };
+    const projectStats = useMemo(() => {
+        let active = 0;
+        let planning = 0;
+        let completed = 0;
+
+        for (const p of projects) {
+            if (p.status === 'active') active++;
+            else if (p.status === 'planning') planning++;
+            else if (p.status === 'completed') completed++;
+        }
+
+        return {
+            total: projects.length,
+            active,
+            planning,
+            completed,
+        };
+    }, [projects]);
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
