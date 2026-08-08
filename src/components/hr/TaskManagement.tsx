@@ -83,7 +83,7 @@ const TaskManagement = () => {
   const [projects, setProjects] = useState([]);
   const [clients, setClients] = useState([]);
   const [departments, setDepartments] = useState([]);
-  const [filteredTasks, setFilteredTasks] = useState([]);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
@@ -182,9 +182,6 @@ const TaskManagement = () => {
   }, [newTask.client_id, isAddDialogOpen]);
 
 
-  useEffect(() => {
-    filterTasks();
-  }, [tasks, searchTerm, filterStatus, filterPriority]);
 
   useEffect(() => {
     const channel = supabase
@@ -612,7 +609,7 @@ const TaskManagement = () => {
     }
   };
 
-  const filterTasks = () => {
+  const filteredTasks = useMemo(() => {
     let filtered = tasks;
 
     if (searchTerm) {
@@ -631,8 +628,8 @@ const TaskManagement = () => {
       filtered = filtered.filter(task => task.priority === filterPriority);
     }
 
-    setFilteredTasks(filtered);
-  };
+    return filtered;
+  }, [tasks, searchTerm, filterStatus, filterPriority]);
 
   const handleAddClient = async () => {
     // Validate required fields
