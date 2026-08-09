@@ -319,10 +319,10 @@ export default function PricingManagement() {
                                         <div className="flex items-start gap-4">
                                             {/* Sort Controls */}
                                             <div className="flex flex-col gap-1 shrink-0 mt-1">
-                                                <Button size="icon" variant="ghost" className="h-5 w-5 p-0 text-gray-600 hover:text-white" onClick={() => movePkg(idx, -1)} disabled={idx === 0}>
+                                                <Button size="icon" variant="ghost" className="h-5 w-5 p-0 text-gray-600 hover:text-white" onClick={() => movePkg(idx, -1)} disabled={idx === 0} aria-label="Move package up" title="Move package up">
                                                     <ChevronUp className="h-3 w-3" />
                                                 </Button>
-                                                <Button size="icon" variant="ghost" className="h-5 w-5 p-0 text-gray-600 hover:text-white" onClick={() => movePkg(idx, 1)} disabled={idx === packages.length - 1}>
+                                                <Button size="icon" variant="ghost" className="h-5 w-5 p-0 text-gray-600 hover:text-white" onClick={() => movePkg(idx, 1)} disabled={idx === packages.length - 1} aria-label="Move package down" title="Move package down">
                                                     <ChevronDown className="h-3 w-3" />
                                                 </Button>
                                             </div>
@@ -370,14 +370,15 @@ export default function PricingManagement() {
                                                     size="sm" variant="ghost"
                                                     className={`h-7 text-[10px] gap-1 ${pkg.is_popular ? "text-amber-400 hover:text-amber-300" : "text-gray-500 hover:text-amber-400"}`}
                                                     onClick={() => togglePopular(pkg)}
-                                                    title="Toggle Most Popular"
+                                                    title={pkg.is_popular ? "Remove Most Popular badge" : "Set as Most Popular"}
+                                                    aria-label={pkg.is_popular ? "Remove Most Popular badge" : "Set as Most Popular"}
                                                 >
                                                     <Star className="h-3 w-3" />
                                                 </Button>
-                                                <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400 hover:text-white" onClick={() => openEditPkg(pkg)}>
+                                                <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400 hover:text-white" onClick={() => openEditPkg(pkg)} aria-label={`Edit ${pkg.name} package`} title={`Edit ${pkg.name} package`}>
                                                     <Edit className="h-3.5 w-3.5" />
                                                 </Button>
-                                                <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-500/40 hover:text-rose-500 hover:bg-rose-500/10" onClick={() => deletePkg(pkg.id)}>
+                                                <Button size="icon" variant="ghost" className="h-7 w-7 text-rose-500/40 hover:text-rose-500 hover:bg-rose-500/10" onClick={() => deletePkg(pkg.id)} aria-label={`Delete ${pkg.name} package`} title={`Delete ${pkg.name} package`}>
                                                     <Trash2 className="h-3.5 w-3.5" />
                                                 </Button>
                                             </div>
@@ -433,10 +434,10 @@ export default function PricingManagement() {
                                                     className="data-[state=checked]:bg-green-600 scale-75"
                                                 />
                                                 <div className="flex gap-1">
-                                                    <Button size="icon" variant="ghost" className="h-6 w-6 text-gray-400 hover:text-white" onClick={() => openEditAddon(addon)}>
+                                                    <Button size="icon" variant="ghost" className="h-6 w-6 text-gray-400 hover:text-white" onClick={() => openEditAddon(addon)} aria-label={`Edit ${addon.name} addon`} title={`Edit ${addon.name} addon`}>
                                                         <Edit className="h-3 w-3" />
                                                     </Button>
-                                                    <Button size="icon" variant="ghost" className="h-6 w-6 text-rose-500/40 hover:text-rose-500" onClick={() => deleteAddon(addon.id)}>
+                                                    <Button size="icon" variant="ghost" className="h-6 w-6 text-rose-500/40 hover:text-rose-500" onClick={() => deleteAddon(addon.id)} aria-label={`Delete ${addon.name} addon`} title={`Delete ${addon.name} addon`}>
                                                         <Trash2 className="h-3 w-3" />
                                                     </Button>
                                                 </div>

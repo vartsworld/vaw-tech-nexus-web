@@ -1,3 +1,6 @@
 ## 2024-05-14 - React Performance Tuning in Complex Dashboards
 **Learning:** High-density analytics dashboards (like `FinancialOversight.tsx`) frequently compute aggregated statistics (totals, chart data, arrays of filtered inputs) directly inside the component body, which executes on every re-render and can block the main thread.
 **Action:** Always wrap heavy synchronous calculations, array `.map()`/`.filter()` chains, and nested loop iterations with `useMemo`, ensuring dependency arrays strictly list only variables that should trigger a recalculation. Wrapping lookup dictionaries constructed from arrays in `useMemo` is also highly effective for $O(1)$ fast lookups across downstream calculations.
+## 2024-06-11 - Add aria-labels and titles to Pricing Management controls
+**Learning:** Icon-only buttons used in lists and sort controls (like those in Pricing Management for moving packages up/down or toggling the popular state) often lack accessible names for screen readers and tooltips for visual users, leading to poor UX and a11y.
+**Action:** Across the repository, ensure all icon-only action buttons (e.g., `ChevronUp`, `Star`, `Edit`, `Trash2`) explicitly include both `aria-label` and `title` attributes. For stateful buttons, dynamically change the labels based on the active state.
