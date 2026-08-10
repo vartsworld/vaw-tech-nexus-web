@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
     Briefcase,
@@ -23,6 +23,17 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+
+const PROJECT_PHASE_MAP: Record<string, { label: string; sub: string; color: string }> = {
+    planning: { label: 'PLANNING', sub: 'PHASE BLUEPRINT', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+    in_progress: { label: 'IN DEVELOPMENT', sub: 'ACTIVE BUILD', color: 'text-primary bg-primary/10 border-primary/20' },
+    review: { label: 'IN REVIEW', sub: 'QA & TESTING', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+    review_pending: { label: 'PENDING REVIEW', sub: 'AWAITING SIGN-OFF', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
+    at_risk: { label: 'AT RISK', sub: 'ATTENTION NEEDED', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+    on_hold: { label: 'ON HOLD', sub: 'PAUSED', color: 'text-muted-foreground bg-muted border-border' },
+    completed: { label: 'COMPLETED', sub: 'DELIVERED', color: 'text-green-400 bg-green-500/10 border-green-500/20' },
+    cancel: { label: 'CANCELLED', sub: 'PROJECT CLOSED', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+};
 
 const DashboardOverview = ({ profile }: { profile: any }) => {
     const [stats, setStats] = useState({
@@ -220,7 +231,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
         }
     };
 
-    const statCards = [
+    const statCards = useMemo(() => [
         {
             label: "Active Projects",
             value: stats.activeProjects,
@@ -261,7 +272,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
             bg: "bg-tech-purple/10",
             description: "Successfully delivered projects"
         }
-    ];
+    ], [stats.activeProjects, stats.pendingPaymentsCount, stats.completedProjects, nextBilling, paymentReminders]);
 
     return (
         <div className="space-y-8 pb-12">
@@ -402,17 +413,7 @@ const DashboardOverview = ({ profile }: { profile: any }) => {
                             [1, 2].map(i => <div key={i} className="h-32 neu-card rounded-2xl animate-pulse" />)
                         ) : recentProjects.length > 0 ? (
                             recentProjects.map((project, idx) => {
-                                const phaseMap: Record<string, { label: string; sub: string; color: string }> = {
-                                    planning: { label: 'PLANNING', sub: 'PHASE BLUEPRINT', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-                                    in_progress: { label: 'IN DEVELOPMENT', sub: 'ACTIVE BUILD', color: 'text-primary bg-primary/10 border-primary/20' },
-                                    review: { label: 'IN REVIEW', sub: 'QA & TESTING', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
-                                    review_pending: { label: 'PENDING REVIEW', sub: 'AWAITING SIGN-OFF', color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
-                                    at_risk: { label: 'AT RISK', sub: 'ATTENTION NEEDED', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
-                                    on_hold: { label: 'ON HOLD', sub: 'PAUSED', color: 'text-muted-foreground bg-muted border-border' },
-                                    completed: { label: 'COMPLETED', sub: 'DELIVERED', color: 'text-green-400 bg-green-500/10 border-green-500/20' },
-                                    cancel: { label: 'CANCELLED', sub: 'PROJECT CLOSED', color: 'text-red-400 bg-red-500/10 border-red-500/20' },
-                                };
-                                const phase = phaseMap[project.status] || phaseMap.in_progress;
+                                const phase = PROJECT_PHASE_MAP[project.status] || PROJECT_PHASE_MAP.in_progress;
                                 const activeTask = ongoingTasks.find((t: any) => t.client_project_id === project.id);
 
                                 return (
