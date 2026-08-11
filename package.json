@@ -43,6 +43,7 @@
     "@tanstack/react-query": "^5.56.2",
     "@types/canvas-confetti": "^1.9.0",
     "@types/react-beautiful-dnd": "^13.1.8",
+    "calendarkit-pro": "^1.1.0",
     "canvas-confetti": "^1.9.4",
     "chess.js": "^1.4.0",
     "class-variance-authority": "^0.7.1",

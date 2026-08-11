@@ -19,7 +19,9 @@ import {
   FileText,
   Link,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  ShieldAlert,
+  Copy
 } from "lucide-react";
 import {
   AlertDialog,
@@ -54,6 +56,7 @@ const TeamApplicationsList = () => {
       const { data, error } = await supabase
         .from('team_applications_staff')
         .select('*')
+        .neq('status', 'approved')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -95,9 +98,13 @@ const TeamApplicationsList = () => {
 
       if (error) throw error;
 
-      setApplications(applications.map(app =>
-        app.id === applicationId ? { ...app, status } : app
-      ));
+      if (status === 'approved') {
+        setApplications(prev => prev.filter(app => app.id !== applicationId));
+      } else {
+        setApplications(applications.map(app =>
+          app.id === applicationId ? { ...app, status } : app
+        ));
+      }
 
       toast({
         title: "Success",
@@ -150,13 +157,14 @@ const TeamApplicationsList = () => {
       // Create a temporary UUID that will be replaced when the edge function creates the real auth user
       const tempUserId = crypto.randomUUID();
 
-      // Create staff profile with temp user_id
+      // Create staff profile with temp user_id and copy ALL details from application
       const { error: staffError } = await supabase
         .from('staff_profiles')
         .insert({
           user_id: tempUserId,
           full_name: application.full_name,
           email: application.email,
+          phone: application.phone,
           username: application.username,
           role: application.preferred_role,
           department_id: application.preferred_department_id,
@@ -168,20 +176,31 @@ const TeamApplicationsList = () => {
           father_name: application.father_name,
           mother_name: application.mother_name,
           siblings: application.siblings,
+          sibling_names: application.sibling_names,
           relationship_status: application.relationship_status,
           marriage_preference: application.marriage_preference,
           work_confidence_level: application.work_confidence_level,
           reference_person_name: application.reference_person_name,
           reference_person_number: application.reference_person_number,
+          physical_address: application.physical_address,
+          govt_id_type: application.govt_id_type,
+          govt_id_number: application.govt_id_number,
+          blood_group: application.blood_group,
+          has_health_issues: application.has_health_issues,
+          health_issues: application.health_issues,
+          kyc_selfie_url: application.kyc_selfie_url,
+          kyc_document_url: application.kyc_document_url || application.kyc_selfie_url,
+          emergency_contact_name: application.emergency_contact_name,
+          emergency_contact_phone: application.emergency_contact_phone,
           applied_via_link: true,
           application_status: 'approved',
           first_time_passcode: firstTimePasscode,
           passcode_used: false
-        });
+        } as any);
 
       if (staffError) throw staffError;
 
-      // Update application status to approved
+      // Update application status to approved (will automatically remove it from applications list)
       await updateApplicationStatus(application.id, 'approved');
 
       toast({
@@ -198,11 +217,42 @@ const TeamApplicationsList = () => {
     }
   };
 
+  const requestReKycLink = async (application: any) => {
+    try {
+      const reKycUrl = `${window.location.origin}/re-kyc/${application.id}`;
+      await navigator.clipboard.writeText(reKycUrl);
+
+      const { error } = await supabase
+        .from('team_applications_staff')
+        .update({
+          status: 're_kyc_requested',
+        } as any)
+        .eq('id', application.id);
+
+      if (!error) {
+        setApplications((apps: any) => apps.map((a: any) => a.id === application.id ? { ...a, status: 're_kyc_requested' } : a));
+      }
+
+      toast({
+        title: "Re-KYC Link Copied!",
+        description: `Re-KYC URL: ${reKycUrl} (Copied to clipboard). Send this to the applicant to complete their KYC.`,
+      });
+    } catch (err: any) {
+      console.error('Error requesting Re-KYC:', err);
+      toast({
+        title: "Error",
+        description: "Failed to generate Re-KYC link.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusBadgeColor = (status) => {
     switch (status) {
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-yellow-100 text-yellow-800';
+      case 'approved': return 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300';
+      case 'rejected': return 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300';
+      case 're_kyc_requested': return 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300';
+      default: return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300';
     }
   };
 
@@ -263,7 +313,12 @@ const TeamApplicationsList = () => {
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="font-medium">{application.full_name}</div>
+                        <div className="font-medium flex items-center gap-1.5">
+                          {application.full_name}
+                          <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                            APP-{application.id.slice(0, 8).toUpperCase()}
+                          </span>
+                        </div>
                         <div className="text-sm text-gray-500">@{application.username}</div>
                       </div>
                     </div>
@@ -313,6 +368,16 @@ const TeamApplicationsList = () => {
                         title="View application"
                       >
                         <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => requestReKycLink(application)}
+                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
+                        title="Request Re-KYC Link"
+                      >
+                        <ShieldAlert className="h-4 w-4 mr-1" />
+                        <span className="text-xs font-semibold hidden lg:inline">Re-KYC</span>
                       </Button>
                       {application.status === 'pending' && (
                         <>

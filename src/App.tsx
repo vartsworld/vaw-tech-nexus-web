@@ -14,6 +14,8 @@ import HRDashboard from "./pages/HRDashboard";
 import Internship from "./pages/Internship";
 import InternExperience from "./pages/InternExperience";
 import TeamApplication from "./pages/TeamApplication";
+import TrackApplication from "./pages/TrackApplication";
+import ReKYCPage from "./pages/ReKYCPage";
 import Pricing from "./pages/Pricing";
 import DigitalMarketing from "./pages/DigitalMarketing";
 import WebAppDevelopment from "./pages/WebAppDevelopment";
@@ -130,6 +132,10 @@ const AppContent = () => {
           <Route path="/internship" element={<Internship />} />
           <Route path="/intern-experience" element={<InternExperience />} />
           <Route path="/team-application" element={<TeamApplication />} />
+          <Route path="/track-application" element={<TrackApplication />} />
+          <Route path="/track" element={<TrackApplication />} />
+          <Route path="/re-kyc" element={<ReKYCPage />} />
+          <Route path="/re-kyc/:id" element={<ReKYCPage />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/digital-marketing" element={<DigitalMarketing />} />
           <Route path="/website-development" element={<WebsiteDevelopment />} />

@@ -215,6 +215,7 @@ const TeamApplication = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [departments, setDepartments] = useState<any[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [submittedAppId, setSubmittedAppId] = useState("");
   const [uploadingCV, setUploadingCV] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showPolicyModal, setShowPolicyModal] = useState(false);
@@ -668,9 +669,11 @@ const TeamApplication = () => {
         emergency_contact_phone: formData.emergency_contact_phone,
       };
 
-      const { error } = await supabase
+      const { data: insertedData, error } = await supabase
         .from("team_applications_staff")
-        .insert(insertPayload);
+        .insert(insertPayload)
+        .select("id")
+        .single();
 
       if (error) {
         console.warn("Full payload insert failed, falling back to core payload:", error);
@@ -709,11 +712,16 @@ Legal Terms Accepted: Yes (${formData.submitted_at})
           preferred_role: formData.preferred_role as any,
         };
 
-        const { error: coreError } = await supabase
+        const { data: fallbackData, error: coreError } = await supabase
           .from("team_applications_staff")
-          .insert(corePayload);
+          .insert(corePayload)
+          .select("id")
+          .single();
 
         if (coreError) throw coreError;
+        if (fallbackData?.id) setSubmittedAppId(fallbackData.id);
+      } else if (insertedData?.id) {
+        setSubmittedAppId(insertedData.id);
       }
 
       clearDraft();
@@ -737,6 +745,10 @@ Legal Terms Accepted: Yes (${formData.submitted_at})
   };
 
   if (submitted) {
+    const displayAppId = submittedAppId
+      ? `APP-${submittedAppId.slice(0, 8).toUpperCase()}`
+      : "APP-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-lg bg-zinc-900 border-zinc-800 text-zinc-100 shadow-2xl backdrop-blur-xl">
@@ -748,8 +760,28 @@ Legal Terms Accepted: Yes (${formData.submitted_at})
             <div className="space-y-2">
               <h2 className="text-3xl font-bold text-white tracking-tight">Application Submitted!</h2>
               <p className="text-zinc-400 text-sm max-w-md mx-auto">
-                Thank you for applying to join VAW Technologies. Your application and verification documents have been recorded.
+                Thank you for applying to join VAW Technologies. Your application has been received and assigned a unique Application ID.
               </p>
+            </div>
+
+            {/* Application ID Highlight Card */}
+            <div className="bg-blue-950/40 border border-blue-500/30 rounded-2xl p-5 space-y-2">
+              <div className="text-[11px] text-blue-300 font-bold uppercase tracking-wider">Your Unique Application ID</div>
+              <div className="text-2xl font-mono font-bold text-white tracking-wider flex items-center justify-center gap-3">
+                <span className="text-blue-400">{displayAppId}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(displayAppId);
+                    toast({ title: "Copied!", description: "Application ID copied to clipboard." });
+                  }}
+                  className="h-8 px-2 text-zinc-300 hover:text-white hover:bg-blue-500/20"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-[11px] text-zinc-400">Save this ID to track your application status in real time.</p>
             </div>
 
             <div className="bg-zinc-950 rounded-xl p-4 border border-zinc-800 text-left text-xs space-y-2 text-zinc-300">
@@ -767,16 +799,13 @@ Legal Terms Accepted: Yes (${formData.submitted_at})
                   <Check className="h-3 w-3" /> Live Selfie Verified
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-400">Resume / CV:</span>
-                <span className="text-zinc-200 font-semibold truncate max-w-[200px]">
-                  {formData.cv_filename || "Attached Resume"}
-                </span>
-              </div>
             </div>
 
-            <div className="pt-2">
-              <Button asChild className="w-full bg-zinc-800 hover:bg-zinc-700 text-white font-medium">
+            <div className="pt-2 space-y-3">
+              <Button asChild className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-11 rounded-xl">
+                <Link to={`/track-application?id=${displayAppId}`}>Track Application Status</Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full border-zinc-800 bg-zinc-950 text-zinc-300 hover:bg-zinc-900 h-11 rounded-xl">
                 <Link to="/">Return to Home Page</Link>
               </Button>
             </div>

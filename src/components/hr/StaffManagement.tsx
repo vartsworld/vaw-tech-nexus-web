@@ -26,7 +26,10 @@ import {
   Link,
   Contact2,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Eye,
+  Download,
+  ShieldAlert
 } from "lucide-react";
 import {
   AlertDialog,
@@ -43,6 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 import EnhancedStaffForm from "./EnhancedStaffForm";
 import { createPatraStaff, updatePatraStaff } from "@/integrations/patra";
 import { StaffCardResult } from "./StaffCardResult";
+import { viewOrDownloadFile } from "@/pages/TeamApplication";
 
 const StaffManagement = () => {
   const [staff, setStaff] = useState([]);
@@ -617,6 +621,36 @@ const StaffManagement = () => {
     }
   };
 
+  const requestStaffReKyc = async (member: any) => {
+    try {
+      const reKycUrl = `${window.location.origin}/re-kyc/${member.id}`;
+      await navigator.clipboard.writeText(reKycUrl);
+
+      const { error } = await supabase
+        .from('staff_profiles')
+        .update({
+          application_status: 're_kyc_requested',
+        } as any)
+        .eq('id', member.id);
+
+      if (!error) {
+        setStaff((prev: any) => prev.map((s: any) => s.id === member.id ? { ...s, application_status: 're_kyc_requested' } : s));
+      }
+
+      toast({
+        title: "Re-KYC Link Copied!",
+        description: `Re-KYC URL: ${reKycUrl} (Copied to clipboard). Send to ${member.full_name} to complete Re-KYC.`,
+      });
+    } catch (err: any) {
+      console.error('Error requesting staff Re-KYC:', err);
+      toast({
+        title: "Error",
+        description: "Failed to generate staff Re-KYC link.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -857,8 +891,11 @@ const StaffManagement = () => {
                             <Crown className="h-4 w-4 text-yellow-500" />
                           )}
                         </div>
-                        <div className="text-sm text-gray-500 flex items-center gap-2">
+                        <div className="text-sm text-gray-500 flex flex-wrap items-center gap-1.5">
                           <span>@{member.username}</span>
+                          <Badge variant="outline" className="text-[10px] py-0.5 px-1.5 bg-blue-500/10 text-blue-400 border-blue-500/20 font-mono">
+                            APP-{member.id.slice(0, 8).toUpperCase()}
+                          </Badge>
                           {member.staff_id_number && (
                             <Badge variant="outline" className="text-[10px] py-0 px-1 bg-white/5 font-mono">
                               {member.staff_id_number}
@@ -957,6 +994,15 @@ const StaffManagement = () => {
                         }}
                       >
                         <Eye className="h-4 w-4 text-blue-600" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Request Re-KYC Verification"
+                        onClick={() => requestStaffReKyc(member)}
+                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
+                      >
+                        <ShieldAlert className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -1092,6 +1138,7 @@ const StaffManagement = () => {
                   <h4 className="font-semibold text-sm text-primary mb-2">Basic & Contact Info</h4>
                   <div className="space-y-1.5 text-xs">
                     <p><strong>Email:</strong> {selectedStaffDetail.email}</p>
+                    <p><strong>Phone:</strong> {selectedStaffDetail.phone || 'Not provided'}</p>
                     <p><strong>Role:</strong> <span className="capitalize">{selectedStaffDetail.role?.replace('_', ' ')}</span></p>
                     <p><strong>Department:</strong> {selectedStaffDetail.departments?.name || 'Unassigned'}</p>
                     <p><strong>Gender:</strong> {selectedStaffDetail.gender || 'Not specified'}</p>
@@ -1175,17 +1222,32 @@ const StaffManagement = () => {
                       <Eye className="h-4 w-4 mr-2" /> View Profile Photo
                     </Button>
                   )}
-                  {selectedStaffDetail.kyc_selfie_url && (
-                    <div className="flex items-center gap-2">
+                  {(selectedStaffDetail.kyc_selfie_url || selectedStaffDetail.kyc_document_url) ? (
+                    <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/30 p-2 rounded-xl">
                       <img
-                        src={selectedStaffDetail.kyc_selfie_url}
-                        alt="KYC Selfie"
-                        className="w-12 h-12 rounded-lg object-cover border border-emerald-500 cursor-pointer"
-                        onClick={() => viewOrDownloadFile(selectedStaffDetail.kyc_selfie_url, `${selectedStaffDetail.full_name}_Selfie.jpg`)}
+                        src={selectedStaffDetail.kyc_selfie_url || selectedStaffDetail.kyc_document_url}
+                        alt="KYC Verification Photo"
+                        className="w-12 h-12 rounded-lg object-cover border border-emerald-500 cursor-pointer shadow-sm hover:scale-105 transition-transform"
+                        onClick={() => viewOrDownloadFile(selectedStaffDetail.kyc_selfie_url || selectedStaffDetail.kyc_document_url, `${selectedStaffDetail.full_name}_KYC_Selfie.jpg`)}
+                        onError={(e) => {
+                          // Hide image tag if broken, fallback to text button
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
                       />
-                      <span className="text-xs text-emerald-600 font-semibold">✓ Live KYC Selfie Verified</span>
+                      <div className="flex flex-col">
+                        <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                          <UserCheck className="w-3.5 h-3.5" /> KYC Photo Verified
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => viewOrDownloadFile(selectedStaffDetail.kyc_selfie_url || selectedStaffDetail.kyc_document_url, `${selectedStaffDetail.full_name}_KYC_Selfie.jpg`)}
+                          className="text-[11px] text-emerald-300 underline font-medium hover:text-white text-left mt-0.5"
+                        >
+                          View Full Image
+                        </button>
+                      </div>
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

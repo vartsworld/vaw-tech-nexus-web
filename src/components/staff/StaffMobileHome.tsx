@@ -52,8 +52,8 @@ type RoomType = 'home' | 'workspace' | 'breakroom' | 'meeting';
 
 interface StaffMobileHomeProps {
   profile: any;
-  currentRoom: RoomType;
-  onRoomChange: (room: RoomType) => void;
+  currentRoom: string;
+  onRoomChange: (room: string) => void;
   onOpenChat?: () => void;
   onOpenCoins?: () => void;
   onOpenStreakCalendar?: () => void;

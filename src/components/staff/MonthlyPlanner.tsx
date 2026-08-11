@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Scheduler } from 'calendarkit-pro';
+import type { CalendarEvent, ViewType } from 'calendarkit-pro';
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogTrigger,
   DialogDescription
 } from "@/components/ui/dialog";
 import {
@@ -26,9 +27,11 @@ import {
   Settings,
   Briefcase,
   Layers,
-  Circle,
   Check,
-  Target
+  Target,
+  Grid,
+  List,
+  Sparkles
 } from "lucide-react";
 import {
   format,
@@ -36,13 +39,7 @@ import {
   subMonths,
   startOfMonth,
   endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  isSameMonth,
   isSameDay,
-  addDays,
-  eachDayOfInterval,
-  isToday,
   parseISO
 } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,7 +47,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { Calendar as ShadcnCalendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -95,25 +91,39 @@ const getIsoDateKey = (isoStr: string) => {
 };
 
 const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyPlannerProps) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [view, setView] = useState<ViewType>('month');
   const [plans, setPlans] = useState<MonthlyPlan[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [staffMembers, setStaffMembers] = useState<any[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isDayDetailOpen, setIsDayDetailOpen] = useState(false);
+  const [isDayTasksDialogOpen, setIsDayTasksDialogOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [customTagNames, setCustomTagNames] = useState<Record<string, string>>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('vaw_planner_custom_tags') || '{}');
-    } catch {
-      return {};
-    }
-  });
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedPlan, setSelectedPlan] = useState<MonthlyPlan | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const isMobile = useIsMobile();
   const [tasks, setTasks] = useState<any[]>([]);
   const [subtasks, setSubtasks] = useState<any[]>([]);
+  const lastDateClickRef = React.useRef<number>(0);
+
+  const handleDateChange = (newDate: Date) => {
+    lastDateClickRef.current = Date.now();
+    setCurrentMonth(newDate);
+    setSelectedDate(newDate);
+    if (view === 'month') {
+      setIsDayTasksDialogOpen(true);
+    }
+  };
+
+  const handleViewChange = (newView: ViewType) => {
+    // If currently in 'month' view and an automated date cell click tries to switch view to 'day' within 150ms, keep it in 'month' view!
+    if (view === 'month' && newView === 'day' && Date.now() - lastDateClickRef.current < 150) {
+      return;
+    }
+    setView(newView);
+  };
+
   const [newPlan, setNewPlan] = useState({
     title: '',
     description: '',
@@ -123,7 +133,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   });
   const { toast } = useToast();
 
-  // Dynamic color tags with localStorage persistence and backward compatibility migration
+  // Dynamic color tags with localStorage persistence
   const [colorTags, setColorTags] = useState<{ name: string; value: string }[]>(() => {
     try {
       const saved = localStorage.getItem('vaw_planner_custom_colors');
@@ -230,50 +240,46 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   useEffect(() => {
     fetchPlans();
     fetchClients();
+    fetchStaffMembers();
     fetchTasksAndSubtasks();
   }, [currentMonth, filterClientId]);
 
+  const fetchStaffMembers = async () => {
+    const { data } = await supabase.from('staff_profiles').select('id, user_id, full_name, email');
+    setStaffMembers(data || []);
+  };
+
   const fetchTasksAndSubtasks = async () => {
     try {
-      // 1. Fetch staff tasks
       const { data: tasksData, error: tasksError } = await supabase
         .from('staff_tasks')
         .select('*');
 
       if (tasksError) throw tasksError;
 
-      // 2. Fetch staff subtasks
       const { data: subtasksData, error: subtasksError } = await supabase
         .from('staff_subtasks')
         .select('*, staff_tasks(*)');
 
       if (subtasksError) throw subtasksError;
 
-      // Filter tasks according to user assignments and role
       const filteredTasks = (tasksData || []).filter(task => {
-        // --- DEPARTMENT SHARING LOGIC ---
-        // If the task creator's department is the user's department, show it.
         if (task.department_id && userProfile?.department_id && task.department_id === userProfile.department_id) {
           return true;
         }
 
-        // If the user's department is in the targeted departments of the task
         const stageConfig = task.stage_config ? (typeof task.stage_config === 'string' ? JSON.parse(task.stage_config) : task.stage_config) : {};
         const targetDepts = (stageConfig as any)?.target_departments;
         if (Array.isArray(targetDepts) && userProfile?.department_id && targetDepts.includes(userProfile.department_id)) {
           return true;
         }
-        // ---------------------------------
 
-        // Common tasks: no client_id (shown to everyone)
         if (!task.client_id) return true;
 
-        // If user is a team head or has elevated permissions, they can see all
         if (userProfile?.role === 'team_head' || userProfile?.role === 'admin' || userProfile?.is_department_head) {
           return true;
         }
 
-        // Otherwise (client task), show only if assigned
         let isAssignedToTask = false;
         if (task.assigned_to) {
           try {
@@ -284,41 +290,32 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           }
         }
 
-        // Or assigned to any subtask under this task
         const subtasksOfThisTask = (subtasksData || []).filter((s: any) => s.task_id === task.id);
         const isAssignedToSubtask = subtasksOfThisTask.some((st: any) => st.assigned_to === userId);
 
         return isAssignedToTask || isAssignedToSubtask;
       });
 
-      // Filter subtasks
       const filteredSubtasks = (subtasksData || []).filter(subtask => {
         const parentTask = subtask.staff_tasks;
         if (!parentTask) return false;
 
-        // --- DEPARTMENT SHARING LOGIC ---
-        // If parent task is visible due to creator's department matching user's department
         if (parentTask.department_id && userProfile?.department_id && parentTask.department_id === userProfile.department_id) {
           return true;
         }
 
-        // If parent task is visible due to targeted departments including user's department
         const stageConfig = parentTask.stage_config ? (typeof parentTask.stage_config === 'string' ? JSON.parse(parentTask.stage_config) : parentTask.stage_config) : {};
         const targetDepts = (stageConfig as any)?.target_departments;
         if (Array.isArray(targetDepts) && userProfile?.department_id && targetDepts.includes(userProfile.department_id)) {
           return true;
         }
-        // ---------------------------------
 
-        // Common parent task: show to everyone
         if (!parentTask.client_id) return true;
 
-        // Elevated permissions
         if (userProfile?.role === 'team_head' || userProfile?.role === 'admin' || userProfile?.is_department_head) {
           return true;
         }
 
-        // Assigned directly to subtask or to parent task
         let isAssignedToParent = false;
         if (parentTask.assigned_to) {
           try {
@@ -416,7 +413,10 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       const { data, error } = await query;
 
       if (error) throw error;
-      setPlans(data || []);
+      setPlans((data || []).map((item: any) => ({
+        ...item,
+        assigned_staff: Array.isArray(item.assigned_staff) ? item.assigned_staff : []
+      })));
     } catch (error) {
       console.error('Error fetching plans:', error);
       toast({
@@ -460,7 +460,11 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         description: "Plan added successfully",
       });
 
-      setPlans([...plans, data]);
+      const formattedPlan: MonthlyPlan = {
+        ...(data as any),
+        assigned_staff: Array.isArray(data.assigned_staff) ? (data.assigned_staff as string[]) : []
+      };
+      setPlans([...plans, formattedPlan]);
       setIsAddDialogOpen(false);
       resetNewPlan();
     } catch (error) {
@@ -497,7 +501,11 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         description: "Plan updated successfully",
       });
 
-      setPlans(plans.map(p => p.id === selectedPlan.id ? data : p));
+      const formattedPlan: MonthlyPlan = {
+        ...(data as any),
+        assigned_staff: Array.isArray(data.assigned_staff) ? (data.assigned_staff as string[]) : []
+      };
+      setPlans(plans.map(p => p.id === selectedPlan.id ? formattedPlan : p));
       setIsAddDialogOpen(false);
       setSelectedPlan(null);
       resetNewPlan();
@@ -552,7 +560,6 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       });
 
       setPlans(plans.filter(p => p.id !== id));
-      // If we deleted from Day Detail, we stay there, if it was the last plan it might need handling
     } catch (error) {
       console.error('Error deleting plan:', error);
       toast({
@@ -574,71 +581,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     setSelectedPlan(null);
   };
 
-  const renderHeader = () => {
-    return (
-      <div className="flex items-center justify-between px-4 py-3 bg-zinc-950/50 border-b border-white/5">
-        <div className="flex items-center gap-6">
-          <h2 className="text-xl font-black uppercase italic tracking-tighter text-white">
-            {format(currentMonth, 'MMMM yyyy')}
-          </h2>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 rounded-lg border-white/10 bg-white/5 hover:bg-white/10"
-              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              aria-label="Previous month"
-              title="Previous month"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 rounded-lg border-white/10 bg-white/5 hover:bg-white/10"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-              aria-label="Next month"
-              title="Next month"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 rounded-lg border-white/10 bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase"
-              onClick={() => setCurrentMonth(new Date())}
-            >
-              Today
-            </Button>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-xl border border-white/5 text-white/40 hover:text-white hover:bg-white/10"
-            onClick={() => setIsSettingsOpen(true)}
-            aria-label="Open planner settings"
-            title="Open planner settings"
-          >
-            <Settings className="w-4 h-4" />
-          </Button>
-          <Button
-            className="h-9 rounded-xl bg-primary hover:bg-primary/90 text-black font-black text-xs uppercase tracking-wider"
-            onClick={() => {
-              setSelectedDate(new Date());
-              resetNewPlan();
-              setIsAddDialogOpen(true);
-            }}
-          >
-            <Plus className="w-4 h-4 mr-1" /> New Plan
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
-  // Memoize filtered lists based on active filters to avoid array filtering on every render
+  // Memoize filtered lists based on active filters
   const { filteredPlans, filteredTasks, filteredSubtasks } = useMemo(() => {
     if (selectedClientIds.includes('all')) {
       return {
@@ -672,8 +615,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     };
   }, [plans, tasks, subtasks, selectedClientIds]);
 
-
-  // Precompute grouped items by local date key YYYY-MM-DD for O(1) rendering lookup
+  // Precompute grouped items by local date key YYYY-MM-DD for day lookup
   const { plansByDate, tasksByDate, subtasksByDate } = useMemo(() => {
     const plansMap: Record<string, MonthlyPlan[]> = {};
     const tasksMap: Record<string, any[]> = {};
@@ -713,415 +655,412 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     };
   }, [filteredPlans, filteredTasks, filteredSubtasks]);
 
-  // Group plans for the detailed view
-  const getGroupedPlans = (datePlans: MonthlyPlan[]) => {
-    const common = datePlans.filter(p => !p.client_id);
-    const clientGrouped: Record<string, { name: string, plans: MonthlyPlan[] }> = {};
+  // Convert monthly plans, staff tasks, and subtasks into CalendarKit Pro CalendarEvents
+  const calendarEvents = useMemo<CalendarEvent[]>(() => {
+    const events: CalendarEvent[] = [];
 
-    datePlans.filter(p => p.client_id).forEach(p => {
-      const client = clients.find(c => c.id === p.client_id);
-      const name = client?.company_name || 'Unknown Client';
-      if (!clientGrouped[p.client_id!]) {
-        clientGrouped[p.client_id!] = { name, plans: [] };
-      }
-      clientGrouped[p.client_id!].plans.push(p);
+    const getClientName = (cId: string | null | undefined) => {
+      if (!cId || cId === 'common') return 'Common (No Client)';
+      const found = clients.find(c => c.id === cId);
+      return found ? found.company_name : 'Client';
+    };
+
+    // 1. Monthly Plans
+    filteredPlans.forEach(plan => {
+      if (!plan.date) return;
+      const startDate = new Date(`${plan.date}T09:00:00`);
+      const endDate = new Date(`${plan.date}T17:00:00`);
+      const clientName = getClientName(plan.client_id);
+      events.push({
+        id: plan.id,
+        title: plan.title,
+        start: startDate,
+        end: endDate,
+        description: plan.description || '',
+        color: plan.color || '#3b82f6',
+        allDay: true,
+        calendarId: 'plan',
+        resourceId: plan.client_id || 'common',
+        type: 'plan',
+        rawPlan: plan,
+        guests: [clientName],
+      });
     });
 
-    return { common, clientGrouped };
+    // 2. Staff Tasks
+    filteredTasks.forEach(task => {
+      if (!task.due_date) return;
+      const dateKey = getIsoDateKey(task.due_date);
+      if (!dateKey) return;
+      const startDate = new Date(`${dateKey}T10:00:00`);
+      const endDate = new Date(`${dateKey}T12:00:00`);
+      const clientName = getClientName(task.client_id);
+      events.push({
+        id: `task-${task.id}`,
+        title: `⚡ ${task.title}`,
+        start: startDate,
+        end: endDate,
+        description: task.description || '',
+        color: '#8b5cf6',
+        allDay: true,
+        calendarId: 'task',
+        resourceId: task.client_id || 'common',
+        type: 'task',
+        rawTask: task,
+        guests: [clientName],
+      });
+    });
+
+    // 3. Subtasks
+    filteredSubtasks.forEach(sub => {
+      if (!sub.due_date) return;
+      const dateKey = getIsoDateKey(sub.due_date);
+      if (!dateKey) return;
+      const startDate = new Date(`${dateKey}T14:00:00`);
+      const endDate = new Date(`${dateKey}T16:00:00`);
+      const clientName = getClientName(sub.staff_tasks?.client_id);
+      events.push({
+        id: `subtask-${sub.id}`,
+        title: `📌 ${sub.title}`,
+        start: startDate,
+        end: endDate,
+        description: sub.description || '',
+        color: '#ec4899',
+        allDay: true,
+        calendarId: 'subtask',
+        resourceId: sub.staff_tasks?.client_id || 'common',
+        type: 'subtask',
+        rawSubtask: sub,
+        guests: [clientName],
+      });
+    });
+
+    return events;
+  }, [filteredPlans, filteredTasks, filteredSubtasks, clients]);
+
+  const handleEventDrop = async (event: CalendarEvent, start: Date) => {
+    if (event.type === 'plan' && event.rawPlan) {
+      const newDateStr = format(start, 'yyyy-MM-dd');
+      try {
+        const { error } = await supabase
+          .from('monthly_plans')
+          .update({ date: newDateStr })
+          .eq('id', event.rawPlan.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Plan Rescheduled",
+          description: `Moved "${event.title}" to ${format(start, 'PPP')}`,
+        });
+
+        setPlans(prev => prev.map(p => p.id === event.rawPlan.id ? { ...p, date: newDateStr } : p));
+      } catch (err) {
+        console.error('Error updating plan date on drop:', err);
+        toast({
+          title: "Error",
+          description: "Failed to reschedule plan date",
+          variant: "destructive"
+        });
+      }
+    }
   };
 
-  const selectedDateKey = selectedDate ? getLocalDateKey(selectedDate) : '';
-  const selectedDayPlans = selectedDateKey ? plansByDate[selectedDateKey] || [] : [];
-  const selectedDayTasks = selectedDateKey ? tasksByDate[selectedDateKey] || [] : [];
-  const selectedDaySubtasks = selectedDateKey ? subtasksByDate[selectedDateKey] || [] : [];
-  const { common: commonPlans, clientGrouped } = getGroupedPlans(selectedDayPlans);
+  const SchedulerAny = Scheduler as any;
 
   return (
-    <Card className="w-full shadow-2xl border-white/5 bg-zinc-950/40 backdrop-blur-xl overflow-hidden rounded-3xl">
-      <CardHeader className="p-0">
-        {renderHeader()}
-      </CardHeader>
+    <div className="w-full text-white calendar-kit-dark-container">
+      <SchedulerAny
+        events={calendarEvents}
+        view={view}
+        onViewChange={handleViewChange}
+        date={currentMonth}
+        onDateChange={handleDateChange}
+        maxEventsPerDay={100}
+        translations={{
+          guests: "Assigned Staff",
+          whosJoining: "Assign Staff",
+          resource: "Client",
+          selectResource: "Choose Client"
+        }}
+        guests={staffMembers.map(s => ({
+          id: s.user_id || s.id,
+          name: s.full_name || s.email || 'Staff Member',
+          email: s.email || `${(s.full_name || 'staff').toLowerCase().replace(/\s+/g, '')}@vaw.com`,
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(s.full_name || 'staff')}`
+        }))}
+        onEventDrop={handleEventDrop}
+        onEventResize={handleEventDrop}
+        onEventCreate={async (eventData: any) => {
+          try {
+            const eventDate = eventData.start ? new Date(eventData.start) : (selectedDate || new Date());
+            const assignedStaff = Array.isArray(eventData.guests)
+              ? eventData.guests.map((g: any) => typeof g === 'string' ? g : (g.id || g.user_id))
+              : [];
 
-      {/* Dynamic Sorter/Filter Toolbar Row */}
-      <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3 bg-white/[0.02] border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-9 px-3 rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-white flex items-center gap-2 text-xs font-bold uppercase"
-              >
-                <Briefcase className="w-3.5 h-3.5 text-blue-400" />
-                <span>Filter Clients ({selectedClientIds.includes('all') ? 'All' : selectedClientIds.length})</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 bg-zinc-950 border border-white/10 rounded-2xl p-3 shadow-2xl space-y-2 z-50">
-              <h4 className="text-[10px] font-black uppercase tracking-wider text-white/40 px-2 pb-1 border-b border-white/5">
-                Filter by Client
-              </h4>
-              <ScrollArea className="h-48 pr-1">
-                <div className="space-y-1">
-                  {/* All Option */}
-                  <button
-                    onClick={() => handleToggleClientFilter('all')}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
-                  >
-                    <Checkbox
-                      checked={selectedClientIds.includes('all')}
-                      onCheckedChange={() => handleToggleClientFilter('all')}
-                      className="border-white/20 data-[state=checked]:bg-primary data-[state=checked]:text-black"
-                    />
-                    <span className="text-xs font-bold text-white uppercase">All Clients</span>
-                  </button>
+            const { error } = await supabase
+              .from('monthly_plans')
+              .insert({
+                date: format(eventDate, 'yyyy-MM-dd'),
+                title: eventData.title || 'New Task',
+                description: eventData.description || '',
+                created_by: userId,
+                department_id: userProfile?.department_id,
+                assigned_staff: assignedStaff,
+                client_id: eventData.resourceId && eventData.resourceId !== 'common' ? eventData.resourceId : null,
+                color: eventData.color || '#3b82f6'
+              });
 
-                  {/* Common / No Client Option */}
-                  <button
-                    onClick={() => handleToggleClientFilter('common')}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
-                  >
-                    <Checkbox
-                      checked={selectedClientIds.includes('common')}
-                      onCheckedChange={() => handleToggleClientFilter('common')}
-                      className="border-white/20 data-[state=checked]:bg-primary data-[state=checked]:text-black"
-                    />
-                    <span className="text-xs font-bold text-white/70 uppercase">Common (No Client)</span>
-                  </button>
+            if (error) throw error;
+            toast({
+              title: "Success",
+              description: "Task created successfully",
+            });
+            fetchPlans();
+          } catch (err: any) {
+            console.error('Error creating task from calendar popup:', err);
+            toast({
+              title: "Error",
+              description: "Failed to create task",
+              variant: "destructive"
+            });
+          }
+        }}
+        onEventUpdate={async (eventData: any) => {
+          if (eventData.rawPlan) {
+            try {
+              const assignedStaff = Array.isArray(eventData.guests)
+                ? eventData.guests.map((g: any) => typeof g === 'string' ? g : (g.id || g.user_id))
+                : undefined;
 
-                  {/* Client Options */}
-                  {clients.map(client => (
-                    <button
-                      key={client.id}
-                      onClick={() => handleToggleClientFilter(client.id)}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
-                    >
-                      <Checkbox
-                        checked={selectedClientIds.includes(client.id)}
-                        onCheckedChange={() => handleToggleClientFilter(client.id)}
-                        className="border-white/20 data-[state=checked]:bg-primary data-[state=checked]:text-black"
-                      />
-                      <span className="text-xs font-medium text-white/90 truncate">{client.company_name}</span>
-                    </button>
-                  ))}
-                </div>
-              </ScrollArea>
-            </PopoverContent>
-          </Popover>
-        </div>
-        <div className="text-[10px] uppercase font-black tracking-widest text-white/35 flex items-center gap-2">
-          <span>Active Filter:</span>
-          <span className="text-primary">
-            {selectedClientIds.includes('all') ? 'All Clients' : `${selectedClientIds.length} Selected`}
-          </span>
-        </div>
-      </div>
+              const { error } = await supabase
+                .from('monthly_plans')
+                .update({
+                  title: eventData.title,
+                  description: eventData.description,
+                  ...(assignedStaff ? { assigned_staff: assignedStaff } : {}),
+                  client_id: eventData.resourceId && eventData.resourceId !== 'common' ? eventData.resourceId : null,
+                  color: eventData.color
+                })
+                .eq('id', eventData.rawPlan.id);
 
-      <CardContent className="p-4 sm:p-6 flex justify-center">
-        <div className="w-full max-w-4xl bg-zinc-900/40 border border-white/5 rounded-3xl p-3 sm:p-6 backdrop-blur-md">
-          <ShadcnCalendar
-            mode="single"
-            required
-            month={currentMonth}
-            onMonthChange={setCurrentMonth}
-            selected={selectedDate || undefined}
-            onSelect={setSelectedDate}
-            onDayClick={(date) => {
-              setSelectedDate(date);
-              setIsDayDetailOpen(true);
-            }}
-            className="w-full p-0 bg-transparent text-white"
-            classNames={{
-              months: "w-full space-y-4",
-              month: "space-y-4 w-full",
-              caption: "hidden",
-              table: "w-full border-collapse space-y-1",
-              head_row: "grid grid-cols-7 w-full border-b border-white/5 pb-2",
-              head_cell: "text-zinc-500 rounded-md font-bold text-center text-xs uppercase tracking-wider py-2",
-              row: "grid grid-cols-7 w-full mt-2",
-              cell: "aspect-square w-full text-center text-sm p-0 relative [&:has([aria-selected])]:bg-transparent focus-within:relative focus-within:z-20",
-              day: "h-full w-full p-0 font-bold text-white hover:bg-white/10 rounded-2xl flex flex-col items-center justify-center transition-all border border-transparent aria-selected:border-2 aria-selected:border-primary aria-selected:bg-transparent aria-selected:text-primary",
-              day_today: "border-primary/50 text-primary bg-primary/5 hover:bg-primary/20",
-              day_selected: "border-2 border-primary text-primary hover:bg-white/10 hover:text-primary focus:bg-transparent focus:text-primary rounded-2xl bg-transparent font-black",
-              day_outside: "text-zinc-600 opacity-30",
-            }}
-            components={{
-              DayContent: ({ date }) => {
-                const dateKey = getLocalDateKey(date);
-                const dayPlans = plansByDate[dateKey] || [];
-                const dayTasks = tasksByDate[dateKey] || [];
-                const daySubtasks = subtasksByDate[dateKey] || [];
+              if (error) throw error;
+              toast({ title: "Updated", description: "Plan updated successfully" });
+              fetchPlans();
+            } catch (err) {
+              console.error('Error updating plan:', err);
+            }
+          }
+        }}
+        onEventDelete={(eventId) => {
+          const targetPlan = plans.find(p => p.id === eventId);
+          if (targetPlan) {
+            handleDeletePlan(targetPlan.id);
+          }
+        }}
+        isDarkMode={true}
+        resources={clients.map(c => ({ id: c.id, label: c.company_name, color: '#3b82f6' }))}
+        calendars={[
+          { id: 'plan', label: 'Monthly Plans', color: '#3b82f6', active: true },
+          { id: 'task', label: 'Staff Tasks', color: '#8b5cf6', active: true },
+          { id: 'subtask', label: 'Subtasks', color: '#ec4899', active: true }
+        ]}
+        className="w-full rounded-3xl bg-zinc-950/80 border border-white/10 text-white shadow-2xl overflow-hidden"
+      />
 
-                const totalCount = dayPlans.length + dayTasks.length + daySubtasks.length;
-                const hasItems = totalCount > 0;
-                const allCompleted = hasItems &&
-                  dayPlans.every(p => p.is_completed) &&
-                  dayTasks.every(t => t.status === 'completed') &&
-                  daySubtasks.every(s => s.status === 'completed');
+      {/* ═══════════════════════════════════════════════════
+          DATE TASKS POPUP DIALOG (Month view date cell click)
+      ═══════════════════════════════════════════════════ */}
+      <Dialog open={isDayTasksDialogOpen} onOpenChange={setIsDayTasksDialogOpen}>
+        <DialogContent className="sm:max-w-lg bg-zinc-950 border-white/10 text-white rounded-3xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+          <DialogHeader className="shrink-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-black uppercase italic tracking-tight text-white flex items-center gap-2">
+                <CalendarIcon className="w-5 h-5 text-blue-400" />
+                {selectedDate ? format(selectedDate, 'EEEE, MMMM do, yyyy') : ''}
+              </DialogTitle>
+              <Badge variant="outline" className="border-blue-500/30 text-blue-400 bg-blue-500/10 text-xs font-bold">
+                {(() => {
+                  const dateKey = selectedDate ? getLocalDateKey(selectedDate) : '';
+                  const dayPlans = plansByDate[dateKey] || [];
+                  const dayTasks = tasksByDate[dateKey] || [];
+                  const daySubtasks = subtasksByDate[dateKey] || [];
+                  const count = dayPlans.length + dayTasks.length + daySubtasks.length;
+                  return `${count} ${count === 1 ? 'Item' : 'Items'}`;
+                })()}
+              </Badge>
+            </div>
+          </DialogHeader>
 
+          <div className="flex-1 overflow-y-auto pr-2 space-y-3 min-h-[140px] max-h-[50vh] scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+            {(() => {
+              const dateKey = selectedDate ? getLocalDateKey(selectedDate) : '';
+              const dayPlans = plansByDate[dateKey] || [];
+              const dayTasks = tasksByDate[dateKey] || [];
+              const daySubtasks = subtasksByDate[dateKey] || [];
+              const totalCount = dayPlans.length + dayTasks.length + daySubtasks.length;
+
+              if (totalCount === 0) {
                 return (
-                  <div className={cn(
-                    "relative flex flex-col items-center justify-center w-full h-full p-2 rounded-2xl transition-all",
-                    allCompleted && "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
-                  )}>
-                    <span className={cn(
-                      "text-sm sm:text-base",
-                      allCompleted && "font-black"
-                    )}>{date.getDate()}</span>
-
-                    {allCompleted && (
-                      <div className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 bg-emerald-500 text-black rounded-full p-0.5 shadow-md flex items-center justify-center">
-                        <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
-                      </div>
-                    )}
-
-                    {totalCount > 0 && (
-                      <div className="absolute bottom-2 flex gap-1 justify-center w-full px-1 overflow-hidden">
-                        {[
-                          ...dayPlans.map(p => p.color || '#3b82f6'),
-                          ...dayTasks.map(() => '#8b5cf6'),
-                          ...daySubtasks.map(() => '#ec4899')
-                        ].slice(0, 3).map((color, idx) => (
-                          <span
-                            key={idx}
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: color }}
-                          />
-                        ))}
-                        {totalCount > 3 && (
-                          <span className="w-1 h-1 rounded-full bg-white opacity-50" />
-                        )}
-                      </div>
-                    )}
+                  <div className="flex flex-col items-center justify-center py-8 text-center border border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
+                    <CalendarIcon className="w-8 h-8 text-white/20 mb-2" />
+                    <p className="text-xs font-bold text-white/60 uppercase">No plans scheduled for this date</p>
+                    <p className="text-[10px] text-white/30 mt-1">Initialize your daily targets or add a new plan.</p>
                   </div>
                 );
               }
-            }}
-          />
-        </div>
-      </CardContent>
 
-      {/* ═══════════════════════════════════════════════════
-          DAY DETAIL DIALOG
-      ═══════════════════════════════════════════════════ */}
-      <Dialog open={isDayDetailOpen} onOpenChange={setIsDayDetailOpen}>
-        <DialogContent className="sm:max-w-2xl bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="p-6 border-b border-white/5 bg-gradient-to-br from-primary/10 via-transparent to-transparent shrink-0">
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="text-2xl font-black uppercase italic text-white tracking-tighter">
-                  {selectedDate ? format(selectedDate, 'EEEE, MMMM do') : 'Day Details'}
-                </DialogTitle>
-                <p className="text-[10px] text-white/40 uppercase font-black tracking-widest mt-1">
-                  Daily Strategic Objectives & Task Groups
-                </p>
-              </div>
-              <Button
-                onClick={() => {
-                  setIsDayDetailOpen(false);
-                  resetNewPlan();
-                  setIsAddDialogOpen(true);
-                }}
-                className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-xs uppercase h-10 px-4"
-              >
-                <Plus className="w-4 h-4 mr-2" /> Add Plan
-              </Button>
-            </div>
+              return (
+                <div className="space-y-2.5 pb-2">
+                  {dayPlans.map(p => {
+                    const cObj = clients.find(c => c.id === p.client_id);
+                    const cName = cObj ? cObj.company_name : 'Common (Internal)';
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => {
+                          setIsDayTasksDialogOpen(false);
+                          setSelectedPlan(p);
+                          setNewPlan({
+                            title: p.title,
+                            description: p.description,
+                            assigned_staff: p.assigned_staff || [],
+                            client_id: p.client_id || 'common',
+                            color: p.color || '#3b82f6'
+                          });
+                          setIsAddDialogOpen(true);
+                        }}
+                        className="p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 cursor-pointer transition-all space-y-1.5 group relative"
+                        style={{ borderLeft: `4px solid ${p.color || '#3b82f6'}` }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-sm text-white group-hover:text-blue-300 transition-colors flex items-center gap-2">
+                            {p.title}
+                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge variant="outline" className="border-blue-500/40 bg-blue-500/15 text-blue-300 font-bold text-[10px] uppercase tracking-wider">{cName}</Badge>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs font-bold text-white/60 hover:text-white hover:bg-white/10 rounded-lg flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsDayTasksDialogOpen(false);
+                                setSelectedPlan(p);
+                                setNewPlan({
+                                  title: p.title,
+                                  description: p.description,
+                                  assigned_staff: p.assigned_staff || [],
+                                  client_id: p.client_id || 'common',
+                                  color: p.color || '#3b82f6'
+                                });
+                                setIsAddDialogOpen(true);
+                              }}
+                            >
+                              <Edit className="w-3.5 h-3.5" /> Edit
+                            </Button>
+                          </div>
+                        </div>
+                        {p.description && <p className="text-xs text-white/60 line-clamp-2">{p.description}</p>}
+                      </div>
+                    );
+                  })}
+
+                  {dayTasks.map(t => (
+                    <div
+                      key={t.id}
+                      onClick={() => handleToggleTaskCompletion(t.id, t.status)}
+                      className="p-3 rounded-2xl bg-purple-950/20 hover:bg-purple-900/30 border border-purple-500/20 cursor-pointer transition-all space-y-1.5 group"
+                      style={{ borderLeft: `4px solid #8b5cf6` }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-sm text-purple-200 group-hover:text-purple-100 transition-colors flex items-center gap-1.5">
+                          ⚡ {t.title}
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge variant="outline" className="border-purple-500/40 bg-purple-500/15 text-purple-300 font-bold text-[10px] uppercase tracking-wider">Task</Badge>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs font-bold text-purple-300 hover:text-white hover:bg-purple-500/20 rounded-lg flex items-center gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleTaskCompletion(t.id, t.status);
+                            }}
+                          >
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            {t.status === 'completed' ? 'Pending' : 'Complete'}
+                          </Button>
+                        </div>
+                      </div>
+                      {t.description && <p className="text-xs text-white/60 line-clamp-2">{t.description}</p>}
+                    </div>
+                  ))}
+
+                  {daySubtasks.map(st => (
+                    <div
+                      key={st.id}
+                      onClick={() => handleToggleSubtaskCompletion(st.id, st.status)}
+                      className="p-3 rounded-2xl bg-pink-950/20 hover:bg-pink-900/30 border border-pink-500/20 cursor-pointer transition-all space-y-1.5 group"
+                      style={{ borderLeft: `4px solid #ec4899` }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-sm text-pink-200 group-hover:text-pink-100 transition-colors flex items-center gap-1.5">
+                          📌 {st.title}
+                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge variant="outline" className="border-pink-500/40 bg-pink-500/15 text-pink-300 font-bold text-[10px] uppercase tracking-wider">Subtask</Badge>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs font-bold text-pink-300 hover:text-white hover:bg-pink-500/20 rounded-lg flex items-center gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleSubtaskCompletion(st.id, st.status);
+                            }}
+                          >
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            {st.status === 'completed' ? 'Pending' : 'Complete'}
+                          </Button>
+                        </div>
+                      </div>
+                      {st.description && <p className="text-xs text-white/60 line-clamp-2">{st.description}</p>}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
-          <ScrollArea className="flex-1 p-6">
-            <div className="space-y-8">
-              {/* Common Tasks */}
-              {commonPlans.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-primary" />
-                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/60">Common Plans</h4>
-                  </div>
-                  <div className="grid gap-3">
-                    {commonPlans.map(plan => (
-                      <PlanItem
-                        key={plan.id}
-                        plan={plan}
-                        onEdit={(p) => {
-                          setSelectedPlan(p);
-                          setNewPlan({
-                            title: p.title,
-                            description: p.description,
-                            assigned_staff: p.assigned_staff,
-                            client_id: 'common',
-                            color: p.color
-                          });
-                          setIsAddDialogOpen(true);
-                        }}
-                        onDelete={handleDeletePlan}
-                        onToggleComplete={handleTogglePlanCompletion}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Client Tasks Grouped */}
-              {Object.entries(clientGrouped).map(([clientId, group]) => (
-                <div key={clientId} className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-blue-400" />
-                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/60">{group.name}</h4>
-                  </div>
-                  <div className="grid gap-3">
-                    {group.plans.map(plan => (
-                      <PlanItem
-                        key={plan.id}
-                        plan={plan}
-                        onEdit={(p) => {
-                          setSelectedPlan(p);
-                          setNewPlan({
-                            title: p.title,
-                            description: p.description,
-                            assigned_staff: p.assigned_staff,
-                            client_id: p.client_id || 'common',
-                            color: p.color
-                          });
-                          setIsAddDialogOpen(true);
-                        }}
-                        onDelete={handleDeletePlan}
-                        onToggleComplete={handleTogglePlanCompletion}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-
-              {/* Tasks Due Today */}
-              {selectedDayTasks.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-purple-400" />
-                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/60">Tasks Due</h4>
-                  </div>
-                  <div className="grid gap-3">
-                    {selectedDayTasks.map(task => (
-                      <div
-                        key={task.id}
-                        className={cn(
-                          "p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all group relative overflow-hidden flex justify-between items-center gap-4",
-                          task.status === 'completed' && "opacity-50"
-                        )}
-                        style={{ borderLeft: `4px solid #8b5cf6` }}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <h5
-                            className={cn(
-                              "font-black text-sm uppercase italic tracking-tight text-white",
-                              task.status === 'completed' && "line-through text-zinc-500"
-                            )}
-                            style={task.status === 'completed' ? {} : { color: '#8b5cf6' }}
-                          >
-                            {task.title}
-                          </h5>
-                          <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed font-medium mt-1">
-                            {task.description || 'No directives or descriptions provided.'}
-                          </p>
-                          <div className="mt-3 flex items-center gap-3 text-[9px] text-white/25 font-bold uppercase tracking-wider">
-                            <span>Points: {task.points}</span>
-                            {task.client_id && <span className="text-blue-400">Client Task</span>}
-                            <span>Status: {task.status}</span>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => handleToggleTaskCompletion(task.id, task.status)}
-                          className={cn(
-                            "w-8 h-8 rounded-full border flex items-center justify-center transition-all shrink-0",
-                            task.status === 'completed'
-                              ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
-                              : "border-white/10 text-zinc-500 hover:border-white/20"
-                          )}
-                          aria-label={task.status === 'completed' ? "Mark task as pending" : "Mark task as completed"}
-                          title={task.status === 'completed' ? "Mark task as pending" : "Mark task as completed"}
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Subtasks Due Today */}
-              {selectedDaySubtasks.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-pink-400" />
-                    <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/60">Subtasks Due</h4>
-                  </div>
-                  <div className="grid gap-3">
-                    {selectedDaySubtasks.map(sub => (
-                      <div
-                        key={sub.id}
-                        className={cn(
-                          "p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-all group relative overflow-hidden flex justify-between items-center gap-4",
-                          sub.status === 'completed' && "opacity-50"
-                        )}
-                        style={{ borderLeft: `4px solid #ec4899` }}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <h5
-                            className={cn(
-                              "font-black text-sm uppercase italic tracking-tight text-white",
-                              sub.status === 'completed' && "line-through text-zinc-500"
-                            )}
-                            style={sub.status === 'completed' ? {} : { color: '#ec4899' }}
-                          >
-                            {sub.title}
-                          </h5>
-                          <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed font-medium mt-1">
-                            {sub.description || 'No directives or descriptions provided.'}
-                          </p>
-                          <div className="mt-3 flex items-center gap-3 text-[9px] text-white/25 font-bold uppercase tracking-wider">
-                            <span>Points: {sub.points}</span>
-                            {sub.staff_tasks?.title && <span className="text-zinc-400">Parent: {sub.staff_tasks.title}</span>}
-                            <span>Status: {sub.status}</span>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => handleToggleSubtaskCompletion(sub.id, sub.status)}
-                          className={cn(
-                            "w-8 h-8 rounded-full border flex items-center justify-center transition-all shrink-0",
-                            sub.status === 'completed'
-                              ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
-                              : "border-white/10 text-zinc-500 hover:border-white/20"
-                          )}
-                          aria-label={sub.status === 'completed' ? "Mark subtask as pending" : "Mark subtask as completed"}
-                          title={sub.status === 'completed' ? "Mark subtask as pending" : "Mark subtask as completed"}
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {selectedDayPlans.length === 0 && selectedDayTasks.length === 0 && selectedDaySubtasks.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-white/5 rounded-3xl">
-                  <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
-                    <CalendarIcon className="w-8 h-8 text-white/20" />
-                  </div>
-                  <h3 className="text-white font-bold uppercase text-sm tracking-widest">No plans or tasks for today</h3>
-                  <p className="text-white/30 text-[10px] uppercase font-black mt-2">Initialize your daily targets to stay on track</p>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+          <div className="flex gap-2 pt-3 border-t border-white/5 shrink-0">
+            <Button
+              className="flex-1 h-11 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg"
+              onClick={() => {
+                setIsDayTasksDialogOpen(false);
+                resetNewPlan();
+                setIsAddDialogOpen(true);
+              }}
+            >
+              <Plus className="w-4 h-4 mr-1.5" /> Add Plan For Date
+            </Button>
+            <Button
+              variant="outline"
+              className="h-11 px-4 border-white/10 bg-white/5 text-white hover:bg-white/10 text-xs font-bold rounded-xl"
+              onClick={() => setIsDayTasksDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
+
+
 
       {/* ═══════════════════════════════════════════════════
           ADD / EDIT PLAN DIALOG
       ═══════════════════════════════════════════════════ */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[480px] bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden">
+        <DialogContent className="sm:max-w-[480px] bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden shadow-2xl">
           <div className="p-6 border-b border-white/5 bg-white/[0.02]">
             <DialogTitle className="text-xl font-black uppercase italic text-white tracking-tighter">
               {selectedPlan ? 'Edit Strategic Plan' : 'Define New Strategy'}
@@ -1139,7 +1078,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                   placeholder="e.g., Q4 Marketing Review"
                   value={newPlan.title}
                   onChange={(e) => setNewPlan({ ...newPlan, title: e.target.value })}
-                  className="h-12 bg-white/5 border-white/10 rounded-xl focus:ring-primary/20 transition-all font-bold"
+                  className="h-12 bg-white/5 border-white/10 rounded-xl focus:ring-primary/20 transition-all font-bold text-white"
                 />
               </div>
 
@@ -1150,10 +1089,10 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                     value={newPlan.client_id}
                     onValueChange={(val) => setNewPlan({ ...newPlan, client_id: val })}
                   >
-                    <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl font-bold">
+                    <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl font-bold text-white">
                       <SelectValue placeholder="Select Client" />
                     </SelectTrigger>
-                    <SelectContent className="bg-zinc-900 border-white/10">
+                    <SelectContent className="bg-zinc-900 border-white/10 text-white">
                       <SelectItem value="common">Common Plan</SelectItem>
                       {clients.map(c => (
                         <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>
@@ -1187,7 +1126,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                   placeholder="Detail the core objectives and expected outcomes..."
                   value={newPlan.description}
                   onChange={(e) => setNewPlan({ ...newPlan, description: e.target.value })}
-                  className="min-h-[120px] bg-white/5 border-white/10 rounded-xl focus:ring-primary/20 transition-all font-medium leading-relaxed"
+                  className="min-h-[120px] bg-white/5 border-white/10 rounded-xl focus:ring-primary/20 transition-all font-medium leading-relaxed text-white"
                 />
               </div>
             </div>
@@ -1215,7 +1154,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           PLANNER SETTINGS DIALOG
       ═══════════════════════════════════════════════════ */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-md bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col shadow-2xl">
           <div className="p-6 border-b border-white/5 bg-white/[0.02] shrink-0">
             <DialogTitle className="text-xl font-black uppercase italic tracking-tighter text-white">Planner Settings</DialogTitle>
             <DialogDescription className="text-white/40 uppercase text-[10px] font-bold tracking-widest mt-1">
@@ -1267,7 +1206,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                       placeholder="e.g., Critical"
                       value={newTagName}
                       onChange={(e) => setNewTagName(e.target.value)}
-                      className="h-9 bg-white/5 border-white/10 rounded-lg text-xs font-bold"
+                      className="h-9 bg-white/5 border-white/10 rounded-lg text-xs font-bold text-white"
                     />
                   </div>
                   <div className="grid gap-1">
@@ -1284,7 +1223,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                         value={newTagColor}
                         onChange={(e) => setNewTagColor(e.target.value)}
                         placeholder="#ffffff"
-                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs font-mono uppercase"
+                        className="h-9 bg-white/5 border-white/10 rounded-lg text-xs font-mono uppercase text-white"
                       />
                     </div>
                   </div>
@@ -1305,7 +1244,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           </div>
         </DialogContent>
       </Dialog>
-    </Card>
+    </div>
   );
 };
 
@@ -1362,7 +1301,7 @@ const PlanItem = ({ plan, onEdit, onDelete, onToggleComplete }: PlanItemProps) =
         <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed font-medium">
           {plan.description || 'No directives provided.'}
         </p>
-        {plan.assigned_staff.length > 0 && (
+        {plan.assigned_staff && plan.assigned_staff.length > 0 && (
           <div className="mt-3 flex items-center gap-1.5">
             <User className="w-3 h-3 text-white/20" />
             <span className="text-[9px] font-black uppercase tracking-widest text-white/20">

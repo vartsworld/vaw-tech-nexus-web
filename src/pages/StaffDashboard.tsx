@@ -45,7 +45,8 @@ import {
   Lock as LockIcon,
   Eraser,
   Volume2,
-  VolumeX
+  VolumeX,
+  ChevronLeft
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUser } from "@/context/UserContext";
@@ -492,7 +493,7 @@ const StaffDashboard = () => {
 
 
   useEffect(() => {
-    const roomTitleMap: Record<RoomType, string> = {
+    const roomTitleMap: Record<string, string> = {
       home: "Home",
       workspace: "Dashboard",
       meeting: "Meeting Room",
@@ -885,169 +886,176 @@ const StaffDashboard = () => {
               />
             </div>
           )}
-      {/* Office Header */}
-      {currentRoom !== 'home' && (
-        <header className="relative z-30 bg-black/80 backdrop-blur-xl border-b border-white/20 shadow-2xl">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-blue-600 hover:bg-blue-700 text-white border-none text-[10px] uppercase font-bold px-2 py-0.5">
-                    Staff Profile
-                  </Badge>
-                  <p className="text-white text-sm sm:text-base font-bold flex items-center">
-                    <User className="inline w-4 h-4 mr-1.5 text-blue-400" />
-                    {profile?.full_name || profile?.username || 'Staff'}
-                  </p>
-                </div>
-                {departmentName && (
-                  <p className="text-purple-300 text-xs font-semibold mt-0.5">{departmentName} Department</p>
-                )}
-              </div>
-            </div>
+          <VirtualOfficeLayout
+            currentRoom={currentRoom}
+            onRoomChange={handleRoomChange}
+            onlineUsers={onlineUsers}
+            userId={profile.user_id}
+            userProfile={profile}
+            onOpenCoins={() => setCurrentRoom('coin')}
+            isSidebarCollapsed={isSidebarCollapsed}
+            onSidebarCollapse={setIsSidebarCollapsed}
+            header={
+              currentRoom !== 'home' ? (
+                <>
+                  <header className="relative z-30 bg-black/80 backdrop-blur-xl border-b border-white/20 shadow-2xl shrink-0">
+                    <div className="container mx-auto px-4 py-3">
+                      <div className="flex flex-row justify-between items-center gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-blue-600 hover:bg-blue-700 text-white border-none text-[10px] uppercase font-bold px-2 py-0.5">
+                                Staff Profile
+                              </Badge>
+                              <p className="text-white text-sm sm:text-base font-bold flex items-center">
+                                <User className="inline w-4 h-4 mr-1.5 text-blue-400" />
+                                {profile?.full_name || profile?.username || 'Staff'}
+                              </p>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                                className="h-7 w-7 ml-2 rounded-full bg-white/5 hover:bg-white/20 text-white/70 hover:text-white border border-white/10"
+                                title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                              >
+                                <ChevronLeft className={`w-4 h-4 transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
+                              </Button>
+                            </div>
+                            {departmentName && (
+                              <p className="text-purple-300 text-xs font-semibold mt-0.5">{departmentName} Department</p>
+                            )}
+                          </div>
+                        </div>
 
-            <div className="flex items-center gap-3">
-              <div
-                className="hidden md:flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full text-amber-300 font-bold text-xs cursor-pointer hover:bg-amber-500/20 transition-all shadow-md shadow-amber-500/5 select-none"
-                onClick={() => setCurrentRoom('coin')}
-              >
-                <Coins className="w-4 h-4 text-amber-400" />
-                <span>{(profile?.total_points || 0).toLocaleString()} Coins</span>
-              </div>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="hidden md:flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full text-amber-300 font-bold text-xs cursor-pointer hover:bg-amber-500/20 transition-all shadow-md shadow-amber-500/5 select-none"
+                            onClick={() => setCurrentRoom('coin')}
+                          >
+                            <Coins className="w-4 h-4 text-amber-400" />
+                            <span>{(profile?.total_points || 0).toLocaleString()} Coins</span>
+                          </div>
 
-              {/* Desktop Only Streak Display in Header */}
-              <div
-                className="hidden md:flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full text-orange-400 font-bold text-xs cursor-pointer hover:bg-orange-500/20 transition-all shadow-md shadow-orange-500/5 select-none"
-                onClick={() => setShowStreakCalendar(true)}
-                title="View Streak Calendar"
-              >
-                <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
-                <span>{profile?.attendance_streak || 0}d Streak</span>
-              </div>
+                          {/* Desktop Only Streak Display in Header */}
+                          <div
+                            className="hidden md:flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full text-orange-400 font-bold text-xs cursor-pointer hover:bg-orange-500/20 transition-all shadow-md shadow-orange-500/5 select-none"
+                            onClick={() => setShowStreakCalendar(true)}
+                            title="View Streak Calendar"
+                          >
+                            <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
+                            <span>{profile?.attendance_streak || 0}d Streak</span>
+                          </div>
 
-              <div>
-                <NotificationsBar userId={profile?.user_id || ''} />
-              </div>
+                          <div>
+                            <NotificationsBar userId={profile?.user_id || ''} />
+                          </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
-                      <AvatarFallback>{profile?.full_name?.charAt(0) || 'U'}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64 bg-zinc-950 text-white border-white/10 shadow-2xl">
-                  <DropdownMenuLabel className="text-white/60 text-[10px] font-bold uppercase tracking-wider">My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-white/10" />
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="rounded-full">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={profile?.profile_photo_url || profile?.avatar_url} />
+                                  <AvatarFallback>{profile?.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                                </Avatar>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64 bg-zinc-950 text-white border-white/10 shadow-2xl">
+                              <DropdownMenuLabel className="text-white/60 text-[10px] font-bold uppercase tracking-wider">My Account</DropdownMenuLabel>
+                              <DropdownMenuSeparator className="bg-white/10" />
 
-                  {/* Status Indicator inside Dropdown */}
-                  <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
-                    <span>Status</span>
-                    <UserStatusBadge
-                      status={status}
-                      isBreakActive={false}
-                      breakTimeRemaining={0}
-                    />
-                  </div>
+                              {/* Status Indicator inside Dropdown */}
+                              <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
+                                <span>Status</span>
+                                <UserStatusBadge
+                                  status={status}
+                                  isBreakActive={false}
+                                  breakTimeRemaining={0}
+                                />
+                              </div>
 
-                  {/* Coins Display inside Dropdown */}
-                  <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
-                    <div className="flex items-center">
-                      <Coins className="mr-2 h-4 w-4 text-amber-500/50" />
-                      <span>Coins Balance</span>
+                              {/* Coins Display inside Dropdown */}
+                              <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
+                                <div className="flex items-center">
+                                  <Coins className="mr-2 h-4 w-4 text-amber-500/50" />
+                                  <span>Coins Balance</span>
+                                </div>
+                                <span className="text-amber-500/50 font-bold text-xs">Coming Soon</span>
+                              </div>
+
+                              {/* Streak Display inside Dropdown */}
+                              <DropdownMenuItem onClick={() => setShowStreakCalendar(true)} className="flex items-center justify-between cursor-pointer py-1.5 focus:bg-white/5">
+                                <div className="flex items-center">
+                                  <Flame className="mr-2 h-4 w-4 text-orange-500" />
+                                  <span>My Streak</span>
+                                </div>
+                                <span className="text-orange-400 font-bold text-xs">{profile?.attendance_streak || 0}d</span>
+                              </DropdownMenuItem>
+
+                              {/* App Update inside Dropdown */}
+                              <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
+                                <span>System Version</span>
+                                <UpdateButton variant="dark" compact={true} />
+                              </div>
+
+                              {/* Sound Toggle inside Dropdown */}
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setInteractionSoundsEnabled(!interactionSoundsEnabled);
+                                }}
+                                className="py-1.5 focus:bg-white/5 flex items-center justify-between cursor-pointer text-xs"
+                              >
+                                <div className="flex items-center">
+                                  {interactionSoundsEnabled ? (
+                                    <Volume2 className="mr-2 h-4 w-4 text-green-400" />
+                                  ) : (
+                                    <VolumeX className="mr-2 h-4 w-4 text-zinc-400" />
+                                  )}
+                                  <span>Interaction Sounds</span>
+                                </div>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                                  interactionSoundsEnabled ? "bg-green-500/10 text-green-400" : "bg-zinc-800 text-zinc-400"
+                                }`}>
+                                  {interactionSoundsEnabled ? "ON" : "OFF"}
+                                </span>
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator className="bg-white/10" />
+
+                              <DropdownMenuItem onClick={() => navigate("/sales/dashboard")} className="text-blue-400 hover:text-blue-300 py-1.5 focus:bg-white/5">
+                                <Briefcase className="mr-2 h-4 w-4" />
+                                Sales Hub (Client Entry)
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setShowProfileDialog(true)} className="py-1.5 focus:bg-white/5">
+                                <User className="mr-2 h-4 w-4 text-zinc-400" />
+                                View/Edit Profile
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setShowEmojiDialog(true)} className="py-1.5 focus:bg-white/5">
+                                <LockIcon className="mr-2 h-4 w-4 text-zinc-400" />
+                                Update Emoji Password
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="text-green-400 hover:text-green-300 py-1.5 focus:bg-white/5">
+                                <Fingerprint className="mr-2 h-4 w-4" />
+                                Fingerprint Login
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator className="bg-white/10" />
+                              <DropdownMenuItem onClick={handleLogout} className="text-red-400 hover:text-red-300 py-1.5 focus:bg-white/5">
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Logout
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-amber-500/50 font-bold text-xs">Coming Soon</span>
-                  </div>
-
-                  {/* Streak Display inside Dropdown */}
-                  <DropdownMenuItem onClick={() => setShowStreakCalendar(true)} className="flex items-center justify-between cursor-pointer py-1.5 focus:bg-white/5">
-                    <div className="flex items-center">
-                      <Flame className="mr-2 h-4 w-4 text-orange-500" />
-                      <span>My Streak</span>
-                    </div>
-                    <span className="text-orange-400 font-bold text-xs">{profile?.attendance_streak || 0}d</span>
-                  </DropdownMenuItem>
-
-                  {/* App Update inside Dropdown */}
-                  <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
-                    <span>System Version</span>
-                    <UpdateButton variant="dark" compact={true} />
-                  </div>
-
-                  {/* Sound Toggle inside Dropdown */}
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setInteractionSoundsEnabled(!interactionSoundsEnabled);
-                    }}
-                    className="py-1.5 focus:bg-white/5 flex items-center justify-between cursor-pointer text-xs"
-                  >
-                    <div className="flex items-center">
-                      {interactionSoundsEnabled ? (
-                        <Volume2 className="mr-2 h-4 w-4 text-green-400" />
-                      ) : (
-                        <VolumeX className="mr-2 h-4 w-4 text-zinc-400" />
-                      )}
-                      <span>Interaction Sounds</span>
-                    </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
-                      interactionSoundsEnabled ? "bg-green-500/10 text-green-400" : "bg-zinc-800 text-zinc-400"
-                    }`}>
-                      {interactionSoundsEnabled ? "ON" : "OFF"}
-                    </span>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuSeparator className="bg-white/10" />
-
-                  <DropdownMenuItem onClick={() => navigate("/sales/dashboard")} className="text-blue-400 hover:text-blue-300 py-1.5 focus:bg-white/5">
-                    <Briefcase className="mr-2 h-4 w-4" />
-                    Sales Hub (Client Entry)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowProfileDialog(true)} className="py-1.5 focus:bg-white/5">
-                    <User className="mr-2 h-4 w-4 text-zinc-400" />
-                    View/Edit Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowEmojiDialog(true)} className="py-1.5 focus:bg-white/5">
-                    <LockIcon className="mr-2 h-4 w-4 text-zinc-400" />
-                    Update Emoji Password
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="text-green-400 hover:text-green-300 py-1.5 focus:bg-white/5">
-                    <Fingerprint className="mr-2 h-4 w-4" />
-                    Fingerprint Login
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-white/10" />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-400 hover:text-red-300 py-1.5 focus:bg-white/5">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
-      )}
-
-      {/* Announcement Banner */}
-      {currentRoom !== 'home' && (
-        <AnnouncementBanner userId={profile.user_id} departmentId={profile.department_id} />
-      )}
-
-      <div className="flex-1 overflow-hidden relative z-10">
-        <VirtualOfficeLayout
-          currentRoom={currentRoom}
-          onRoomChange={handleRoomChange}
-          onlineUsers={onlineUsers}
-          userId={profile.user_id}
-          userProfile={profile}
-          onOpenCoins={() => setCurrentRoom('coin')}
-        >
-          {roomComponents[currentRoom] || roomComponents['workspace']}
-        </VirtualOfficeLayout>
-      </div>
+                  </header>
+                  <AnnouncementBanner userId={profile.user_id} departmentId={profile.department_id} />
+                </>
+              ) : undefined
+            }
+          >
+            {roomComponents[currentRoom] || roomComponents['workspace']}
+          </VirtualOfficeLayout>
         </>
       )}
 

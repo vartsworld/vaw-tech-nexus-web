@@ -47,7 +47,8 @@ import {
   Activity,
   Trophy,
   Volume2,
-  VolumeX
+  VolumeX,
+  ChevronLeft
 } from "lucide-react";
 import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
 import { useUser } from "@/context/UserContext";
@@ -418,7 +419,7 @@ const TeamHeadDashboard = () => {
 
 
   useEffect(() => {
-    const roomTitleMap: Record<RoomType, string> = {
+    const roomTitleMap: Record<string, string> = {
       home: "Home",
       workspace: "Dashboard",
       meeting: "Meeting Room",
@@ -949,159 +950,147 @@ const TeamHeadDashboard = () => {
             </div>
           )}
 
-          {/* Office Header */}
-          {currentRoom !== 'home' && (
-            <header className="relative z-30 bg-black/40 backdrop-blur-3xl border-b border-white/5 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-              <div className="container mx-auto px-4 py-3">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                  
-                  {/* Left: Branding & User */}
-                  <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 flex items-center justify-center p-1">
-                        <img 
-                          src="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png" 
-                          alt="VAW" 
-                          className="w-full h-full object-contain" 
-                        />
-                      </div>
-                      <div className="flex flex-col">
-                        <h1 className="text-xl font-black tracking-tight text-white flex items-center gap-1.5">
-                          VAW <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">TECHNOLOGIES</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                            className="h-7 w-7 ml-3 rounded-full bg-white/5 hover:bg-white/20 text-white/70 hover:text-white border border-white/10"
+          <VirtualOfficeLayout
+            currentRoom={currentRoom}
+            onRoomChange={handleRoomChange}
+            onlineUsers={onlineUsers}
+            userId={profile?.user_id}
+            userProfile={profile}
+            onOpenCoins={() => setCurrentRoom('coin')}
+            className="h-full w-full"
+            isSidebarCollapsed={isSidebarCollapsed}
+            onSidebarCollapse={setIsSidebarCollapsed}
+            header={
+              currentRoom !== 'home' ? (
+                <>
+                  <header className="relative z-30 bg-black/40 backdrop-blur-3xl border-b border-white/5 shadow-[0_10px_40px_rgba(0,0,0,0.5)] shrink-0">
+                    <div className="container mx-auto px-4 py-3">
+                      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                        
+                        {/* Left: User Info */}
+                        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+                          <div className="flex items-center gap-3">
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full">
+                                  Team Head
+                                </Badge>
+                                <p className="text-white text-sm sm:text-base font-bold flex items-center">
+                                  <User className="inline w-4 h-4 mr-1.5 text-blue-400" />
+                                  {profile?.full_name || profile?.username || 'Team Head'}
+                                </p>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                                  className="h-7 w-7 ml-2 rounded-full bg-white/5 hover:bg-white/20 text-white/70 hover:text-white border border-white/10"
+                                  title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                                >
+                                  <ChevronLeft className={`w-4 h-4 transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
+                                </Button>
+                              </div>
+                              {departmentName && (
+                                <p className="text-blue-300/80 text-xs font-semibold mt-0.5">{departmentName} Department</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right: Actions & Badges */}
+                        <div className="flex items-center gap-3 md:gap-4 flex-wrap justify-end">
+                          
+                          {/* Status Badge */}
+                          <div className="flex items-center shadow-inner rounded-full p-0.5 border border-white/5 bg-black/20">
+                            <UserStatusBadge status={status} isBreakActive={false} breakTimeRemaining={0} />
+                          </div>
+
+                          {/* Coins Display */}
+                          <div
+                            onClick={() => setCurrentRoom('coin')}
+                            className="flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 hover:from-amber-500/20 hover:to-yellow-500/20 border border-amber-500/20 rounded-full px-3 py-1.5 cursor-pointer transition-all shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:shadow-[0_0_15px_rgba(245,158,11,0.2)] active:scale-95"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`}>
-                              <path d="M15 18l-6-6 6-6"/>
-                            </svg>
-                          </Button>
-                        </h1>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 hover:bg-blue-500/30 text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full">
-                            Team Head
-                          </Badge>
-                          <p className="text-white/60 text-xs font-semibold flex items-center">
-                            <span className="w-1 h-1 rounded-full bg-white/40 mr-1.5"></span>
-                            {profile?.full_name || profile?.username || 'Team Leader'}
-                          </p>
+                            <div className="bg-amber-500/20 p-1 rounded-full">
+                              <Coins className="w-3.5 h-3.5 text-amber-400" />
+                            </div>
+                            <span className="text-amber-300 text-xs font-bold tracking-wide">
+                              {(profile?.total_points || 0).toLocaleString()} Coins
+                            </span>
+                          </div>
+
+                          {/* Streak Display */}
+                          <div
+                            className="hidden md:flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full text-orange-400 font-bold text-xs cursor-pointer hover:bg-orange-500/20 transition-all shadow-md shadow-orange-500/5 select-none"
+                            onClick={() => setShowStreakCalendar(true)}
+                            title="View Streak Calendar"
+                          >
+                            <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
+                            <span>{profile?.attendance_streak || 0}d Streak</span>
+                          </div>
+
+                          <div className="hidden sm:block">
+                            <NotificationsBar userId={profile?.user_id || ''} />
+                          </div>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="rounded-full w-10 h-10 ring-2 ring-white/10 hover:ring-white/30 transition-all p-0 overflow-hidden shadow-lg ml-1">
+                                <Avatar className="h-full w-full">
+                                  <AvatarImage src={profile?.profile_photo_url} className="object-cover" />
+                                  <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white font-bold text-sm">
+                                    {profile?.full_name?.charAt(0) || 'U'}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-64 bg-zinc-950/95 backdrop-blur-2xl border-white/10 text-white shadow-2xl rounded-2xl p-1">
+                              <div className="px-4 py-3 mb-1 bg-white/5 rounded-xl border border-white/5">
+                                <p className="text-sm font-bold truncate text-white">{profile?.full_name || 'Team Head'}</p>
+                              </div>
+                              
+                              <DropdownMenuItem onClick={() => navigate("/sales/dashboard")} className="cursor-pointer hover:bg-blue-500/10 focus:bg-blue-500/10 text-blue-400 py-2.5 rounded-lg my-0.5 transition-colors">
+                                <Briefcase className="mr-3 h-4 w-4" />
+                                <span className="font-medium">Sales Hub (Client Entry)</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setShowProfileDialog(true)} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 py-2.5 rounded-lg my-0.5 transition-colors">
+                                <User className="mr-3 h-4 w-4 text-purple-400" />
+                                <span className="font-medium">View/Edit Profile</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setShowEmojiDialog(true)} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 py-2.5 rounded-lg my-0.5 transition-colors">
+                                <LockIcon className="mr-3 h-4 w-4 text-emerald-400" />
+                                <span className="font-medium">Update Emoji Password</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 py-2.5 rounded-lg my-0.5 transition-colors">
+                                <Fingerprint className="mr-3 h-4 w-4 text-teal-400" />
+                                <span className="font-medium">Fingerprint Login</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setShowCoinConfigDialog(true)} className="cursor-pointer hover:bg-amber-500/10 focus:bg-amber-500/10 text-amber-400 py-2.5 rounded-lg my-0.5 transition-colors">
+                                <Settings2 className="mr-3 h-4 w-4" />
+                                <span className="font-medium">Coin Rewards Config</span>
+                              </DropdownMenuItem>
+                              
+                              <div className="h-px bg-white/10 my-1"></div>
+                              
+                              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 hover:text-red-300 py-2.5 rounded-lg my-0.5 transition-colors">
+                                <LogOut className="mr-3 h-4 w-4" />
+                                <span className="font-medium">Logout</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+
+                          <div className="hidden md:block">
+                            <UpdateButton variant="dark" />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Right: Actions & Badges */}
-                  <div className="flex items-center gap-3 md:gap-4 flex-wrap justify-end">
-                    
-                    {/* Status Badge */}
-                    <div className="flex items-center shadow-inner rounded-full p-0.5 border border-white/5 bg-black/20">
-                      <UserStatusBadge status={status} isBreakActive={false} breakTimeRemaining={0} />
-                    </div>
-
-                    {/* Coins Display */}
-                    <div
-                      onClick={() => setCurrentRoom('coin')}
-                      className="flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 hover:from-amber-500/20 hover:to-yellow-500/20 border border-amber-500/20 rounded-full px-3 py-1.5 cursor-pointer transition-all shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:shadow-[0_0_15px_rgba(245,158,11,0.2)] active:scale-95"
-                    >
-                      <div className="bg-amber-500/20 p-1 rounded-full">
-                        <Coins className="w-3.5 h-3.5 text-amber-400" />
-                      </div>
-                      <span className="text-amber-300 text-xs font-bold tracking-wide">
-                        {(profile?.total_points || 0).toLocaleString()} Coins
-                      </span>
-                    </div>
-
-                    {/* Streak Display */}
-                    <div
-                      className="hidden md:flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full text-orange-400 font-bold text-xs cursor-pointer hover:bg-orange-500/20 transition-all shadow-md shadow-orange-500/5 select-none"
-                      onClick={() => setShowStreakCalendar(true)}
-                      title="View Streak Calendar"
-                    >
-                      <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
-                      <span>{profile?.attendance_streak || 0}d Streak</span>
-                    </div>
-
-                    <div className="hidden sm:block">
-                      <NotificationsBar userId={profile?.user_id || ''} />
-                    </div>
-
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="rounded-full w-10 h-10 ring-2 ring-white/10 hover:ring-white/30 transition-all p-0 overflow-hidden shadow-lg ml-1">
-                          <Avatar className="h-full w-full">
-                            <AvatarImage src={profile?.profile_photo_url} className="object-cover" />
-                            <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white font-bold text-sm">
-                              {profile?.full_name?.charAt(0) || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-64 bg-zinc-950/95 backdrop-blur-2xl border-white/10 text-white shadow-2xl rounded-2xl p-1">
-                        <div className="px-4 py-3 mb-1 bg-white/5 rounded-xl border border-white/5">
-                          <p className="text-sm font-bold truncate text-white">{profile?.full_name || 'Team Head'}</p>
-                        </div>
-                        
-                        <DropdownMenuItem onClick={() => navigate("/sales/dashboard")} className="cursor-pointer hover:bg-blue-500/10 focus:bg-blue-500/10 text-blue-400 py-2.5 rounded-lg my-0.5 transition-colors">
-                          <Briefcase className="mr-3 h-4 w-4" />
-                          <span className="font-medium">Sales Hub (Client Entry)</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowProfileDialog(true)} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 py-2.5 rounded-lg my-0.5 transition-colors">
-                          <User className="mr-3 h-4 w-4 text-purple-400" />
-                          <span className="font-medium">View/Edit Profile</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowEmojiDialog(true)} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 py-2.5 rounded-lg my-0.5 transition-colors">
-                          <LockIcon className="mr-3 h-4 w-4 text-emerald-400" />
-                          <span className="font-medium">Update Emoji Password</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 py-2.5 rounded-lg my-0.5 transition-colors">
-                          <Fingerprint className="mr-3 h-4 w-4 text-teal-400" />
-                          <span className="font-medium">Fingerprint Login</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowCoinConfigDialog(true)} className="cursor-pointer hover:bg-amber-500/10 focus:bg-amber-500/10 text-amber-400 py-2.5 rounded-lg my-0.5 transition-colors">
-                          <Settings2 className="mr-3 h-4 w-4" />
-                          <span className="font-medium">Coin Rewards Config</span>
-                        </DropdownMenuItem>
-                        
-                        <div className="h-px bg-white/10 my-1"></div>
-                        
-                        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 hover:text-red-300 py-2.5 rounded-lg my-0.5 transition-colors">
-                          <LogOut className="mr-3 h-4 w-4" />
-                          <span className="font-medium">Logout</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <div className="hidden md:block">
-                      <UpdateButton variant="dark" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </header>
-          )}
-
-      {/* Announcement Banner */}
-      {currentRoom !== 'home' && (
-        <AnnouncementBanner userId={profile?.user_id || ''} departmentId={profile?.department_id} />
-      )}
-
-      <div className="flex-1 overflow-hidden relative z-10">
-        <VirtualOfficeLayout
-          currentRoom={currentRoom}
-          onRoomChange={handleRoomChange}
-          onlineUsers={onlineUsers}
-          userId={profile?.user_id}
-          userProfile={profile}
-          onOpenCoins={() => setCurrentRoom('coin')}
-          className="h-full w-full"
-          isSidebarCollapsed={isSidebarCollapsed}
-          onSidebarCollapse={setIsSidebarCollapsed}
-        >
-          {roomComponents[currentRoom]}
-        </VirtualOfficeLayout>
-      </div>
+                  </header>
+                  <AnnouncementBanner userId={profile?.user_id || ''} departmentId={profile?.department_id} />
+                </>
+              ) : undefined
+            }
+          >
+            {roomComponents[currentRoom]}
+          </VirtualOfficeLayout>
         </>
       )}
 
