@@ -492,7 +492,9 @@ const TeamApplicationsList = () => {
               {selectedApplication.about_me && (
                 <div className="pt-2">
                   <h3 className="font-semibold mb-2 text-blue-600">About / Notes</h3>
-                  <p className="text-xs bg-slate-50 border p-3 rounded-lg whitespace-pre-wrap">{selectedApplication.about_me}</p>
+                  <p className="text-sm bg-zinc-950 dark:bg-zinc-950 border border-zinc-800 text-zinc-100 dark:text-zinc-100 p-4 rounded-xl whitespace-pre-wrap leading-relaxed">
+                    {selectedApplication.about_me}
+                  </p>
                 </div>
               )}
 

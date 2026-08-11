@@ -288,8 +288,10 @@ const TeamApplicationsList = () => {
                             <div className="space-y-4">
                               {selectedApplication.about_me && (
                                 <div>
-                                  <h4 className="font-semibold mb-2">About Me</h4>
-                                  <p className="text-sm bg-muted p-3 rounded">{selectedApplication.about_me}</p>
+                                  <h4 className="font-semibold mb-2 text-blue-500">About Me</h4>
+                                  <p className="text-sm bg-zinc-950 border border-zinc-800 text-zinc-100 p-4 rounded-xl whitespace-pre-wrap leading-relaxed">
+                                    {selectedApplication.about_me}
+                                  </p>
                                 </div>
                               )}
 

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, Link, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { ProfileImageCropModal } from "@/components/kyc/ProfileImageCropModal";
 
 interface EnhancedStaffFormProps {
   departments: any[];
@@ -30,6 +31,8 @@ const EnhancedStaffForm = ({
   const [showReference, setShowReference] = useState(newStaff.work_confidence_level && newStaff.work_confidence_level !== 'great');
   const [teamApplications, setTeamApplications] = useState<any[]>([]);
   const [internApplications, setInternApplications] = useState<any[]>([]);
+  const [cropFile, setCropFile] = useState<File | string | null>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -574,7 +577,7 @@ const EnhancedStaffForm = ({
             </div>
           </div>
           <div>
-            <Label htmlFor="photo_upload">Profile Photo</Label>
+            <Label htmlFor="photo_upload">Profile Photo (1:1 Ratio)</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="photo_upload"
@@ -582,7 +585,10 @@ const EnhancedStaffForm = ({
                 accept="image/*"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file, 'photo');
+                  if (file) {
+                    setCropFile(file);
+                    setIsCropModalOpen(true);
+                  }
                 }}
                 disabled={uploading}
               />
@@ -596,6 +602,22 @@ const EnhancedStaffForm = ({
           </div>
         </div>
       </div>
+
+      <ProfileImageCropModal
+        isOpen={isCropModalOpen}
+        imageFile={cropFile}
+        onClose={() => {
+          setIsCropModalOpen(false);
+          setCropFile(null);
+        }}
+        onCropSave={async (croppedDataUrl) => {
+          setNewStaff({ ...newStaff, profile_photo_url: croppedDataUrl });
+          toast({
+            title: "Profile Photo Cropped (1:1)",
+            description: "Avatar ready for submission.",
+          });
+        }}
+      />
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-2 pt-4 border-t">

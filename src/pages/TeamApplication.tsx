@@ -38,6 +38,7 @@ import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import vawLogoDark from "@/assets/vaw-logo-dark.png";
 import { KYCCameraDrawer } from "@/components/kyc/KYCCameraDrawer";
+import { ProfileImageCropModal } from "@/components/kyc/ProfileImageCropModal";
 
 const DRAFT_STORAGE_KEY = "vaw_team_application_draft";
 
@@ -230,6 +231,10 @@ const TeamApplication = () => {
   // Camera State
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isCameraDrawerOpen, setIsCameraDrawerOpen] = useState(false);
+
+  // Profile Photo Crop Modal State
+  const [cropFile, setCropFile] = useState<File | string | null>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1588,12 +1593,15 @@ Legal Terms Accepted: Yes (${formData.submitted_at})
                           accept="image/*"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
-                            if (file) handlePhotoUpload(file);
+                            if (file) {
+                              setCropFile(file);
+                              setIsCropModalOpen(true);
+                            }
                           }}
                           disabled={uploadingPhoto}
                           className="bg-zinc-900 border-zinc-800 text-white cursor-pointer file:bg-zinc-800 file:text-white file:border-0 file:rounded-lg file:px-3 file:py-1 file:text-xs file:font-semibold hover:file:bg-zinc-700"
                         />
-                        <p className="text-xs text-zinc-500">Clear headshot photograph.</p>
+                        <p className="text-xs text-zinc-500">1:1 square headshot photograph.</p>
                       </div>
                     </div>
                   </div>
@@ -1700,12 +1708,28 @@ Legal Terms Accepted: Yes (${formData.submitted_at})
                       isOpen={isCameraDrawerOpen}
                       onClose={() => setIsCameraDrawerOpen(false)}
                       fullName={formData.full_name}
-                      username={formData.username}
+                      username={formData.username || formData.full_name?.toLowerCase().replace(/\s+/g, "")}
                       onCapture={(photoUrl) => {
                         setFormData((prev) => ({ ...prev, kyc_selfie_url: photoUrl }));
                         toast({
-                          title: "KYC Selfie Verified!",
-                          description: "Verification photo captured with timestamp and applicant details.",
+                          title: "Selfie Verified!",
+                          description: "KYC photo captured with timestamp and applicant details.",
+                        });
+                      }}
+                    />
+
+                    <ProfileImageCropModal
+                      isOpen={isCropModalOpen}
+                      imageFile={cropFile}
+                      onClose={() => {
+                        setIsCropModalOpen(false);
+                        setCropFile(null);
+                      }}
+                      onCropSave={(croppedUrl) => {
+                        setFormData((prev) => ({ ...prev, profile_photo_url: croppedUrl }));
+                        toast({
+                          title: "Profile Photo Cropped (1:1)",
+                          description: "Image successfully adjusted to 1:1 ratio.",
                         });
                       }}
                     />

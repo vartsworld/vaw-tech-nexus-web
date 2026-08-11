@@ -28,6 +28,7 @@ import SEO from "@/components/SEO";
 import vawLogoDark from "@/assets/vaw-logo-dark.png";
 import { getApplicationDisplayId } from "./TrackApplication";
 import { KYCCameraDrawer } from "@/components/kyc/KYCCameraDrawer";
+import { ProfileImageCropModal } from "@/components/kyc/ProfileImageCropModal";
 
 const ReKYCPage = () => {
   const { id: routeId } = useParams();
@@ -52,12 +53,20 @@ const ReKYCPage = () => {
     govt_id_type: "aadhaar",
     govt_id_number: "",
     kyc_selfie_url: "",
+    profile_photo_url: "",
     physical_address: "",
     geo_coordinates: "",
     declaration_accepted: false
   });
 
-  // Camera handling state
+  // Crop Modal state
+  const [cropFile, setCropFile] = useState<File | string | null>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+
+  const handleProfilePhotoSelect = (file: File) => {
+    setCropFile(file);
+    setIsCropModalOpen(true);
+  };
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraFacingMode, setCameraFacingMode] = useState<"user" | "environment">("user");
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -145,7 +154,8 @@ const ReKYCPage = () => {
           email: staffObj.email || "",
           phone: staffObj.phone || "",
           govt_id_number: staffObj.govt_id_number || "",
-          kyc_selfie_url: staffObj.kyc_selfie_url || staffObj.profile_photo_url || "",
+          kyc_selfie_url: staffObj.kyc_selfie_url || "",
+          profile_photo_url: staffObj.profile_photo_url || "",
           physical_address: staffObj.physical_address || "",
         }));
         setLoading(false);
@@ -181,7 +191,8 @@ const ReKYCPage = () => {
           email: profObj.email || "",
           phone: profObj.phone || "",
           govt_id_number: profObj.govt_id_number || "",
-          kyc_selfie_url: profObj.profile_photo_url || profObj.kyc_selfie_url || "",
+          kyc_selfie_url: profObj.kyc_selfie_url || "",
+          profile_photo_url: profObj.profile_photo_url || "",
           physical_address: profObj.physical_address || "",
         }));
         setLoading(false);
@@ -217,7 +228,8 @@ const ReKYCPage = () => {
           email: teamObj.email || "",
           phone: teamObj.phone || "",
           govt_id_number: teamObj.govt_id_number || "",
-          kyc_selfie_url: teamObj.kyc_selfie_url || teamObj.resume_url || "",
+          kyc_selfie_url: teamObj.kyc_selfie_url || "",
+          profile_photo_url: teamObj.profile_photo_url || "",
           physical_address: teamObj.physical_address || "",
         }));
         setLoading(false);
@@ -374,29 +386,39 @@ const ReKYCPage = () => {
     try {
       if (recordSource === "team_applications_staff" || recordSource === "team_applications") {
         const targetTable = recordSource === "team_applications_staff" ? "team_applications_staff" : "team_applications";
+        const updatePayload: any = {
+          govt_id_number: kycData.govt_id_number,
+          kyc_selfie_url: kycData.kyc_selfie_url,
+          physical_address: kycData.physical_address || rawRecord.physical_address,
+          phone: kycData.phone || rawRecord.phone,
+          status: "pending",
+          updated_at: new Date().toISOString(),
+        };
+        if (kycData.profile_photo_url) {
+          updatePayload.profile_photo_url = kycData.profile_photo_url;
+        }
+
         const { error } = await supabase
           .from(targetTable as any)
-          .update({
-            govt_id_number: kycData.govt_id_number,
-            kyc_selfie_url: kycData.kyc_selfie_url,
-            physical_address: kycData.physical_address || rawRecord.physical_address,
-            phone: kycData.phone || rawRecord.phone,
-            status: "pending",
-            updated_at: new Date().toISOString(),
-          } as any)
+          .update(updatePayload)
           .eq("id", rawRecord.id);
 
         if (error) throw error;
       } else if (recordSource === "staff_profiles") {
+        const updatePayload: any = {
+          govt_id_number: kycData.govt_id_number,
+          kyc_selfie_url: kycData.kyc_selfie_url,
+          physical_address: kycData.physical_address || rawRecord.physical_address,
+          application_status: "approved",
+          updated_at: new Date().toISOString(),
+        };
+        if (kycData.profile_photo_url) {
+          updatePayload.profile_photo_url = kycData.profile_photo_url;
+        }
+
         const { error } = await supabase
           .from("staff_profiles")
-          .update({
-            govt_id_number: kycData.govt_id_number,
-            kyc_selfie_url: kycData.kyc_selfie_url,
-            physical_address: kycData.physical_address || rawRecord.physical_address,
-            application_status: "approved",
-            updated_at: new Date().toISOString(),
-          } as any)
+          .update(updatePayload)
           .eq("id", rawRecord.id);
 
         if (error) throw error;
@@ -532,24 +554,70 @@ const ReKYCPage = () => {
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                      <User className="h-3 w-3 text-blue-400" /> Full Name
-                    </span>
-                    <p className="font-bold text-white text-base">{kycData.full_name || "N/A"}</p>
+                <CardContent className="p-5 flex flex-col md:flex-row items-center gap-6">
+                  {/* Profile Photo Display & Upload */}
+                  <div className="flex flex-col items-center gap-2 shrink-0">
+                    <div className="relative group w-20 h-20 rounded-2xl overflow-hidden border-2 border-blue-500/50 bg-zinc-950 shadow-md">
+                      {kycData.profile_photo_url ? (
+                        <img
+                          src={kycData.profile_photo_url}
+                          alt={kycData.full_name || "Profile Photo"}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-zinc-500 bg-zinc-950">
+                          <User className="h-8 w-8" />
+                          <span className="text-[9px]">No Photo</span>
+                        </div>
+                      )}
+                      <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                        <Camera className="h-5 w-5 text-white" />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleProfilePhotoSelect(file);
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <label className="text-[11px] font-semibold text-blue-400 hover:underline cursor-pointer flex items-center gap-1">
+                      <Camera className="h-3 w-3" />
+                      {kycData.profile_photo_url ? "Change Photo" : "Upload Photo"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleProfilePhotoSelect(file);
+                        }}
+                      />
+                    </label>
                   </div>
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                      <Mail className="h-3 w-3 text-blue-400" /> Email Address
-                    </span>
-                    <p className="font-medium text-zinc-200 text-sm truncate">{kycData.email || "N/A"}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                      <Phone className="h-3 w-3 text-blue-400" /> Phone Number
-                    </span>
-                    <p className="font-medium text-zinc-200 text-sm">{kycData.phone || "N/A"}</p>
+
+                  {/* Personal details grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1 w-full">
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                        <User className="h-3 w-3 text-blue-400" /> Full Name
+                      </span>
+                      <p className="font-bold text-white text-base">{kycData.full_name || "N/A"}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                        <Mail className="h-3 w-3 text-blue-400" /> Email Address
+                      </span>
+                      <p className="font-medium text-zinc-200 text-sm truncate">{kycData.email || "N/A"}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                        <Phone className="h-3 w-3 text-blue-400" /> Phone Number
+                      </span>
+                      <p className="font-medium text-zinc-200 text-sm">{kycData.phone || "N/A"}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -757,6 +825,22 @@ const ReKYCPage = () => {
                 )}
               </Button>
             </div>
+
+            <ProfileImageCropModal
+              isOpen={isCropModalOpen}
+              imageFile={cropFile}
+              onClose={() => {
+                setIsCropModalOpen(false);
+                setCropFile(null);
+              }}
+              onCropSave={(croppedUrl) => {
+                setKycData((prev) => ({ ...prev, profile_photo_url: croppedUrl }));
+                toast({
+                  title: "Profile Photo Saved (1:1)",
+                  description: "Image cropped to 1:1 aspect ratio.",
+                });
+              }}
+            />
           </form>
         )}
       </main>
