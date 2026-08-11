@@ -1,3 +1,6 @@
 ## 2024-05-14 - React Performance Tuning in Complex Dashboards
 **Learning:** High-density analytics dashboards (like `FinancialOversight.tsx`) frequently compute aggregated statistics (totals, chart data, arrays of filtered inputs) directly inside the component body, which executes on every re-render and can block the main thread.
 **Action:** Always wrap heavy synchronous calculations, array `.map()`/`.filter()` chains, and nested loop iterations with `useMemo`, ensuring dependency arrays strictly list only variables that should trigger a recalculation. Wrapping lookup dictionaries constructed from arrays in `useMemo` is also highly effective for $O(1)$ fast lookups across downstream calculations.
+## 2024-03-24 - React performance: Remove redundant filteredTasks state
+**Learning:** Derived state (like filtered lists of tasks based on a search term or status) should not be synchronized into a separate local state variable using `useEffect` and a `setState` setter, as this causes an additional, unnecessary render cycle every time the dependencies change.
+**Action:** Always compute derived state synchronously during render using `useMemo`. This guarantees the filtered data is immediately available to the DOM without triggering a secondary evaluation pass.
