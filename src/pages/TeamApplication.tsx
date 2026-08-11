@@ -37,6 +37,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import vawLogoDark from "@/assets/vaw-logo-dark.png";
+import { KYCCameraDrawer } from "@/components/kyc/KYCCameraDrawer";
 
 const DRAFT_STORAGE_KEY = "vaw_team_application_draft";
 
@@ -228,6 +229,7 @@ const TeamApplication = () => {
 
   // Camera State
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isCameraDrawerOpen, setIsCameraDrawerOpen] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1630,89 +1632,89 @@ Legal Terms Accepted: Yes (${formData.submitted_at})
 
                   {/* LIVE CAMERA KYC SELFIE SECTION */}
                   <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-4">
-                    <Label className="text-white font-semibold flex items-center gap-2">
-                      <Camera className="h-4 w-4 text-zinc-400" /> Mandatory Live KYC Selfie Capture <span className="text-rose-400">*</span>
+                    <Label className="text-white font-semibold flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Camera className="h-4 w-4 text-blue-400" /> Mandatory Live KYC Selfie Capture <span className="text-rose-400">*</span>
+                      </span>
+                      <span className="text-[10px] font-mono uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded">
+                        Verification Only
+                      </span>
                     </Label>
 
                     <p className="text-xs text-zinc-400">
-                      Use your device's front camera to take a live selfie verifying your identity.
+                      Take a live selfie photo for identification verification. This photo is strictly for identity verification and does not change your profile picture.
                     </p>
 
                     {/* Camera view / preview */}
-                    <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-zinc-900 border border-zinc-800 min-h-[200px] space-y-4">
-                      {isCameraActive ? (
-                        <div className="relative w-full max-w-sm rounded-xl overflow-hidden border-2 border-zinc-700 shadow-xl">
-                          <video ref={videoRef} autoPlay playsInline muted className="w-full h-56 object-cover" />
-                          <canvas ref={canvasRef} className="hidden" />
-                          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-3">
-                            <Button
-                              type="button"
-                              onClick={captureSelfie}
-                              className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg flex items-center gap-1 text-xs"
-                            >
-                              <Camera className="h-4 w-4" /> Snap Selfie
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={stopCamera}
-                              className="bg-zinc-900 border-zinc-700 text-zinc-300 text-xs"
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      ) : formData.kyc_selfie_url ? (
+                    <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-zinc-900 border border-zinc-800 min-h-[180px] space-y-4">
+                      {formData.kyc_selfie_url ? (
                         <div className="flex flex-col items-center gap-3">
-                          <img
-                            src={formData.kyc_selfie_url}
-                            alt="KYC Live Selfie"
-                            className="w-36 h-36 rounded-xl object-cover border-2 border-emerald-500/50 shadow-xl"
-                          />
+                          <div className="relative group w-36 h-36 rounded-2xl overflow-hidden border-2 border-emerald-500/80 shadow-xl bg-black">
+                            <img
+                              src={formData.kyc_selfie_url}
+                              alt="KYC Live Selfie"
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => setIsCameraDrawerOpen(true)}
+                                className="bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-xl"
+                              >
+                                <Camera className="h-3.5 w-3.5 mr-1" /> Retake Photo
+                              </Button>
+                            </div>
+                          </div>
+
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={startCamera}
-                            className="bg-zinc-950 border-zinc-800 text-xs flex items-center gap-1 text-zinc-300"
+                            onClick={() => setIsCameraDrawerOpen(true)}
+                            className="bg-zinc-950 border-zinc-800 hover:bg-zinc-900 text-xs flex items-center gap-1.5 text-zinc-300 rounded-xl"
                           >
-                            <RefreshCw className="h-3.5 w-3.5" /> Retake Selfie
+                            <RefreshCw className="h-3.5 w-3.5 text-blue-400" /> Retake Verification Selfie
                           </Button>
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center text-center space-y-3">
-                          <div className="w-14 h-14 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-400">
-                            <Camera className="h-7 w-7" />
+                        <div className="flex flex-col items-center text-center space-y-3 py-2">
+                          <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                            <Camera className="h-6 w-6" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold text-zinc-200">KYC Selfie Verification</p>
+                            <p className="text-[11px] text-zinc-400">Opens bottom camera drawer with shutter and camera flip</p>
                           </div>
                           <Button
                             type="button"
-                            onClick={startCamera}
-                            className="bg-zinc-800 hover:bg-zinc-700 text-white font-medium text-xs px-5"
+                            onClick={() => setIsCameraDrawerOpen(true)}
+                            className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs h-9 px-5 rounded-xl shadow-lg shadow-blue-600/20"
                           >
-                            Open Front Camera
+                            <Camera className="h-4 w-4 mr-2" /> Open Camera Drawer
                           </Button>
-                          {cameraError && (
-                            <div className="space-y-2">
-                              <p className="text-xs text-rose-400">{cameraError}</p>
-                              <Input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) handleSelfieFileUpload(file);
-                                }}
-                                className="text-xs bg-zinc-950 border-zinc-800"
-                              />
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>
+
+                    <KYCCameraDrawer
+                      isOpen={isCameraDrawerOpen}
+                      onClose={() => setIsCameraDrawerOpen(false)}
+                      fullName={formData.full_name}
+                      username={formData.username}
+                      onCapture={(photoUrl) => {
+                        setFormData((prev) => ({ ...prev, kyc_selfie_url: photoUrl }));
+                        toast({
+                          title: "KYC Selfie Verified!",
+                          description: "Verification photo captured with timestamp and applicant details.",
+                        });
+                      }}
+                    />
 
                     {/* STATUS SHOWN BELOW SELFIE DISPLAYED */}
                     {formData.kyc_selfie_url && (
                       <div className="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-emerald-400 font-medium flex items-center gap-2">
                         <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                        <span>Live Selfie Verified</span>
+                        <span>Live Selfie Verified for KYC (Not Profile Photo)</span>
                       </div>
                     )}
                   </div>

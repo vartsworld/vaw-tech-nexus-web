@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import vawLogoDark from "@/assets/vaw-logo-dark.png";
 import { getApplicationDisplayId } from "./TrackApplication";
+import { KYCCameraDrawer } from "@/components/kyc/KYCCameraDrawer";
 
 const ReKYCPage = () => {
   const { id: routeId } = useParams();
@@ -41,6 +42,7 @@ const ReKYCPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [recordSource, setRecordSource] = useState<"team_applications_staff" | "staff_profiles" | "team_applications" | null>(null);
   const [rawRecord, setRawRecord] = useState<any>(null);
+  const [isCameraDrawerOpen, setIsCameraDrawerOpen] = useState(false);
 
   // KYC Form State
   const [kycData, setKycData] = useState({
@@ -520,13 +522,13 @@ const ReKYCPage = () => {
             {/* Applicant Personal Details Summary Card */}
             {rawRecord && (
               <Card className="bg-zinc-900/90 border-blue-500/30 backdrop-blur-xl shadow-xl rounded-2xl overflow-hidden">
-                <CardHeader className="border-b border-zinc-800/80 p-5 bg-blue-500/5">
-                  <div className="flex items-center justify-between">
+                <CardHeader className="border-b border-zinc-800/80 p-4 sm:p-5 bg-blue-500/5">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
                     <CardTitle className="text-base font-bold text-white flex items-center gap-2">
-                      <User className="h-5 w-5 text-blue-400" />
+                      <User className="h-5 w-5 text-blue-400 shrink-0" />
                       Applicant Personal Details
                     </CardTitle>
-                    <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-400 font-mono text-xs py-1 px-3">
+                    <Badge variant="outline" className="border-blue-500/40 bg-blue-500/10 text-blue-400 font-mono text-xs py-1 px-3 whitespace-nowrap shrink-0">
                       ID: {getApplicationDisplayId(rawRecord.id)}
                     </Badge>
                   </div>
@@ -612,45 +614,9 @@ const ReKYCPage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
-                {/* Photo Preview or Live Camera View */}
+                {/* Photo Preview or Trigger Drawer Button */}
                 <div className="flex flex-col items-center justify-center">
-                  {isCameraActive ? (
-                    <div className="relative w-full max-w-md rounded-2xl overflow-hidden border-2 border-blue-500 bg-black aspect-video flex flex-col items-center justify-center shadow-2xl">
-                      <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
-                      <canvas ref={canvasRef} className="hidden" />
-
-                      {/* Floating Camera Controls Overlay */}
-                      <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-3 px-4">
-                        <Button
-                          type="button"
-                          onClick={captureSnapshot}
-                          className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 h-10 shadow-xl rounded-xl"
-                        >
-                          <Camera className="h-4 w-4 mr-2" /> Capture Photo
-                        </Button>
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={toggleCameraFacingMode}
-                          className="border-white/20 bg-black/60 text-white hover:bg-black/80 backdrop-blur-md h-10 px-3 rounded-xl text-xs font-semibold"
-                          title="Switch camera (Front / Back)"
-                        >
-                          <RefreshCw className="h-4 w-4 mr-1.5 text-blue-400" />
-                          {cameraFacingMode === "user" ? "Back Cam" : "Front Cam"}
-                        </Button>
-
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={stopCamera}
-                          className="border-white/20 bg-black/60 text-white hover:bg-black/80 backdrop-blur-md h-10 px-3 rounded-xl text-xs"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : kycData.kyc_selfie_url ? (
+                  {kycData.kyc_selfie_url ? (
                     <div className="relative group w-48 h-48 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow-xl bg-zinc-950">
                       <img
                         src={kycData.kyc_selfie_url}
@@ -661,8 +627,8 @@ const ReKYCPage = () => {
                         <Button
                           type="button"
                           size="sm"
-                          onClick={startCamera}
-                          className="bg-blue-600 text-white text-xs rounded-xl"
+                          onClick={() => setIsCameraDrawerOpen(true)}
+                          className="bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-xl"
                         >
                           <Camera className="h-3.5 w-3.5 mr-1" /> Retake Photo
                         </Button>
@@ -673,31 +639,37 @@ const ReKYCPage = () => {
                     </div>
                   ) : (
                     <div className="w-full max-w-md h-52 rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-950/60 flex flex-col items-center justify-center text-center p-6 space-y-3">
-                      <User className="h-10 w-10 text-zinc-600" />
-                      <p className="text-xs text-zinc-400">No live selfie photo captured yet</p>
+                      <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                        <Camera className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-white">Verification Selfie</p>
+                        <p className="text-xs text-zinc-400 mt-1">This camera photo is exclusively for identity verification (not profile picture)</p>
+                      </div>
                       <Button
                         type="button"
-                        onClick={startCamera}
-                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-lg"
+                        onClick={() => setIsCameraDrawerOpen(true)}
+                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs h-10 px-5 rounded-xl shadow-lg shadow-blue-600/20"
                       >
-                        <Camera className="h-4 w-4 mr-2" /> Start Camera & Take Selfie
+                        <Camera className="h-4 w-4 mr-2" /> Open Camera Drawer
                       </Button>
                     </div>
                   )}
-
-                  {cameraError && (
-                    <p className="text-xs text-amber-400 mt-3 flex items-center gap-1 font-medium">
-                      <AlertCircle className="h-4 w-4" /> {cameraError}
-                    </p>
-                  )}
                 </div>
 
-                {/* Camera Actions */}
-                {isCameraActive && (
-                  <div className="flex justify-center text-xs text-zinc-400">
-                    Currently using: <strong className="text-blue-400 ml-1">{cameraFacingMode === "user" ? "Front Camera (Selfie)" : "Back Camera (Environment)"}</strong>
-                  </div>
-                )}
+                <KYCCameraDrawer
+                  isOpen={isCameraDrawerOpen}
+                  onClose={() => setIsCameraDrawerOpen(false)}
+                  fullName={kycData.full_name || rawRecord?.full_name}
+                  username={rawRecord?.username || kycData.full_name?.toLowerCase().replace(/\s+/g, "")}
+                  onCapture={(photoUrl) => {
+                    setKycData((prev) => ({ ...prev, kyc_selfie_url: photoUrl }));
+                    toast({
+                      title: "Selfie Verified!",
+                      description: "KYC photo captured with timestamp and applicant details.",
+                    });
+                  }}
+                />
               </CardContent>
             </Card>
 

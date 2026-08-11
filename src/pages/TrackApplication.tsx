@@ -431,14 +431,14 @@ const TrackApplication = () => {
                   </CardDescription>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2 text-right">
-                    <div className="text-[10px] text-zinc-500 uppercase font-semibold">Application ID</div>
-                    <div className="font-mono text-sm font-bold text-blue-400 flex items-center gap-2">
-                      {application.displayId}
+                <div className="w-full sm:w-auto flex items-center sm:justify-end">
+                  <div className="bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 w-full sm:w-auto flex items-center justify-between sm:justify-start gap-3">
+                    <div className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider shrink-0">Application ID</div>
+                    <div className="font-mono text-sm font-bold text-blue-400 flex items-center gap-1.5 shrink-0">
+                      <span>{application.displayId}</span>
                       <button
                         onClick={copyDisplayId}
-                        className="text-zinc-400 hover:text-white transition-colors"
+                        className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
                         title="Copy Application ID"
                       >
                         {copiedId ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
