@@ -10,24 +10,22 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   ShieldCheck,
   Camera,
-  Upload,
   CheckCircle2,
   AlertCircle,
   MapPin,
-  FileCheck,
   User,
   CreditCard,
   Phone,
+  Mail,
   ArrowLeft,
-  Sparkles,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Navigation
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import { getApplicationDisplayId } from "./TrackApplication";
 
 const ReKYCPage = () => {
@@ -53,19 +51,13 @@ const ReKYCPage = () => {
     govt_id_number: "",
     kyc_selfie_url: "",
     physical_address: "",
-    addr_house: "",
-    addr_street: "",
-    addr_city: "",
-    addr_state: "",
-    addr_pincode: "",
     geo_coordinates: "",
-    emergency_contact_name: "",
-    emergency_contact_phone: "",
     declaration_accepted: false
   });
 
   // Camera handling state
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [cameraFacingMode, setCameraFacingMode] = useState<"user" | "environment">("user");
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -80,12 +72,41 @@ const ReKYCPage = () => {
     }
   }, [appId]);
 
-  // Clean up camera stream on unmount
+  // Handle camera stream initialization & switching
   useEffect(() => {
+    let activeStream: MediaStream | null = null;
+
+    if (isCameraActive) {
+      const initCamera = async () => {
+        setCameraError(null);
+        try {
+          if (mediaStreamRef.current) {
+            mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+          }
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: cameraFacingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false,
+          });
+          mediaStreamRef.current = stream;
+          activeStream = stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            await videoRef.current.play().catch((e) => console.error("Video play error:", e));
+          }
+        } catch (err: any) {
+          console.error("Camera access error:", err);
+          setCameraError("Camera access denied or device unavailable. Please allow camera permissions.");
+        }
+      };
+      initCamera();
+    }
+
     return () => {
-      stopCamera();
+      if (activeStream) {
+        activeStream.getTracks().forEach((track) => track.stop());
+      }
     };
-  }, []);
+  }, [isCameraActive, cameraFacingMode]);
 
   const fetchApplicantRecord = async (targetId: string) => {
     setLoading(true);
@@ -148,24 +169,8 @@ const ReKYCPage = () => {
     }
   };
 
-  const startCamera = async () => {
-    setCameraError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: false,
-      });
-      mediaStreamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setIsCameraActive(true);
-    } catch (err: any) {
-      console.error("Camera access error:", err);
-      setCameraError("Camera access denied or unavailable. Please upload a photo manually.");
-      setIsCameraActive(false);
-    }
+  const startCamera = () => {
+    setIsCameraActive(true);
   };
 
   const stopCamera = () => {
@@ -174,6 +179,10 @@ const ReKYCPage = () => {
       mediaStreamRef.current = null;
     }
     setIsCameraActive(false);
+  };
+
+  const toggleCameraFacingMode = () => {
+    setCameraFacingMode((prev) => (prev === "user" ? "environment" : "user"));
   };
 
   const captureSnapshot = () => {
@@ -196,30 +205,6 @@ const ReKYCPage = () => {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "File Too Large",
-          description: "Photo file size should be less than 10MB.",
-          variant: "destructive",
-        });
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setKycData((prev) => ({ ...prev, kyc_selfie_url: result }));
-        toast({
-          title: "Photo Uploaded",
-          description: "KYC photo attached successfully.",
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const fetchGeoLocation = () => {
     if (!navigator.geolocation) {
       toast({
@@ -231,9 +216,27 @@ const ReKYCPage = () => {
     }
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
-        setKycData((prev) => ({ ...prev, geo_coordinates: coords }));
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const coords = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+        let detectedAddr = `GPS Coordinates: ${coords}`;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+          const data = await res.json();
+          if (data && data.display_name) {
+            detectedAddr = `${data.display_name} (${coords})`;
+          }
+        } catch (err) {
+          console.error("Reverse geocoding error:", err);
+        }
+
+        setKycData((prev) => ({
+          ...prev,
+          geo_coordinates: coords,
+          physical_address: detectedAddr,
+        }));
         setGeoLoading(false);
         toast({
           title: "Location Verified",
@@ -245,11 +248,11 @@ const ReKYCPage = () => {
         setGeoLoading(false);
         toast({
           title: "Location Access Denied",
-          description: "Unable to retrieve GPS coordinates. You may enter your address manually.",
+          description: "Please enable location permission in your browser to verify your location.",
           variant: "destructive",
         });
       },
-      { timeout: 10000, enableHighAccuracy: true }
+      { timeout: 15000, enableHighAccuracy: true }
     );
   };
 
@@ -275,8 +278,17 @@ const ReKYCPage = () => {
 
     if (!kycData.kyc_selfie_url) {
       toast({
-        title: "Selfie / Photo Required",
-        description: "Please capture or upload a live KYC selfie photo.",
+        title: "Selfie Required",
+        description: "Please capture a live KYC selfie photo using your camera.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!kycData.geo_coordinates) {
+      toast({
+        title: "Location Verification Required",
+        description: "Please click 'Capture & Verify Live Location' to verify your current location.",
         variant: "destructive",
       });
       return;
@@ -293,11 +305,6 @@ const ReKYCPage = () => {
 
     setIsSubmitting(true);
     try {
-      const fullAddress = kycData.physical_address ||
-        [kycData.addr_house, kycData.addr_street, kycData.addr_city, kycData.addr_state, kycData.addr_pincode]
-          .filter(Boolean)
-          .join(", ");
-
       if (recordSource === "team_applications_staff") {
         const { error } = await supabase
           .from("team_applications_staff")
@@ -305,7 +312,7 @@ const ReKYCPage = () => {
             govt_id_number: kycData.govt_id_number,
             kyc_selfie_url: kycData.kyc_selfie_url,
             profile_photo_url: kycData.kyc_selfie_url,
-            physical_address: fullAddress || rawRecord.physical_address,
+            physical_address: kycData.physical_address || rawRecord.physical_address,
             phone: kycData.phone || rawRecord.phone,
             status: "pending",
             updated_at: new Date().toISOString(),
@@ -319,7 +326,7 @@ const ReKYCPage = () => {
           .update({
             govt_id_number: kycData.govt_id_number,
             profile_photo_url: kycData.kyc_selfie_url,
-            physical_address: fullAddress || rawRecord.physical_address,
+            physical_address: kycData.physical_address || rawRecord.physical_address,
             application_status: "approved",
             updated_at: new Date().toISOString(),
           } as any)
@@ -362,7 +369,7 @@ const ReKYCPage = () => {
       />
       <Navbar />
 
-      <main className="flex-1 container mx-auto px-4 py-10 max-w-3xl">
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-3xl">
         <div className="mb-6">
           <Link
             to={appId ? `/track-application?id=${appId}` : "/track-application"}
@@ -397,11 +404,11 @@ const ReKYCPage = () => {
               <div>
                 <h3 className="text-2xl font-bold text-white">Re-KYC Submitted Successfully!</h3>
                 <p className="text-zinc-400 text-sm max-w-md mx-auto mt-2">
-                  Your updated Government ID, live photo, and verified details have been submitted to HR.
+                  Your updated Government ID, live photo, and verified location details have been submitted to HR.
                 </p>
               </div>
 
-              <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 text-left text-xs space-y-1.5 font-mono max-w-sm mx-auto">
+              <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 text-left text-xs space-y-2 font-mono max-w-sm mx-auto">
                 <div className="flex justify-between text-zinc-400">
                   <span>Applicant Name:</span>
                   <span className="text-zinc-200 font-semibold">{kycData.full_name}</span>
@@ -409,6 +416,10 @@ const ReKYCPage = () => {
                 <div className="flex justify-between text-zinc-400">
                   <span>Application ID:</span>
                   <span className="text-blue-400 font-semibold">{getApplicationDisplayId(rawRecord?.id || appId)}</span>
+                </div>
+                <div className="flex justify-between text-zinc-400">
+                  <span>Location:</span>
+                  <span className="text-emerald-400 font-semibold truncate max-w-[180px]">{kycData.geo_coordinates}</span>
                 </div>
                 <div className="flex justify-between text-zinc-400">
                   <span>KYC Status:</span>
@@ -430,22 +441,42 @@ const ReKYCPage = () => {
           </Card>
         ) : (
           /* Re-KYC Form */
-          <form onSubmit={handleSubmitReKyc} className="space-y-8">
-            {/* Applicant Summary */}
+          <form onSubmit={handleSubmitReKyc} className="space-y-6">
+            {/* Applicant Personal Details Summary Card */}
             {rawRecord && (
-              <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                  <div className="text-xs text-zinc-500 uppercase font-semibold">Applicant Profile</div>
-                  <div className="text-lg font-bold text-white">{kycData.full_name}</div>
-                  <div className="text-xs text-zinc-400 flex items-center gap-3 mt-1">
-                    <span>{kycData.email}</span>
-                    {kycData.phone && <span>• {kycData.phone}</span>}
+              <Card className="bg-zinc-900/90 border-blue-500/30 backdrop-blur-xl shadow-xl rounded-2xl overflow-hidden">
+                <CardHeader className="border-b border-zinc-800/80 p-5 bg-blue-500/5">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-bold text-white flex items-center gap-2">
+                      <User className="h-5 w-5 text-blue-400" />
+                      Applicant Personal Details
+                    </CardTitle>
+                    <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-400 font-mono text-xs py-1 px-3">
+                      ID: {getApplicationDisplayId(rawRecord.id)}
+                    </Badge>
                   </div>
-                </div>
-                <Badge variant="outline" className="border-blue-500/30 bg-blue-500/10 text-blue-400 font-mono text-xs py-1.5 px-3">
-                  {getApplicationDisplayId(rawRecord.id)}
-                </Badge>
-              </div>
+                </CardHeader>
+                <CardContent className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                      <User className="h-3 w-3 text-blue-400" /> Full Name
+                    </span>
+                    <p className="font-bold text-white text-base">{kycData.full_name || "N/A"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                      <Mail className="h-3 w-3 text-blue-400" /> Email Address
+                    </span>
+                    <p className="font-medium text-zinc-200 text-sm truncate">{kycData.email || "N/A"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                      <Phone className="h-3 w-3 text-blue-400" /> Phone Number
+                    </span>
+                    <p className="font-medium text-zinc-200 text-sm">{kycData.phone || "N/A"}</p>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Step 1: Government Identification */}
@@ -456,7 +487,7 @@ const ReKYCPage = () => {
                   1. Government Identification
                 </CardTitle>
                 <CardDescription className="text-zinc-400 text-xs">
-                  Provide your government issued photo identity proof document.
+                  Select and enter your government issued photo identity document details.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6 space-y-4">
@@ -494,37 +525,51 @@ const ReKYCPage = () => {
               </CardContent>
             </Card>
 
-            {/* Step 2: Live KYC Selfie / Photo Capture */}
+            {/* Step 2: Live Camera Selfie Capture */}
             <Card className="bg-zinc-900/90 border-zinc-800 backdrop-blur-xl shadow-xl rounded-2xl overflow-hidden">
               <CardHeader className="border-b border-zinc-800 p-6">
                 <CardTitle className="text-lg font-bold text-white flex items-center gap-2">
                   <Camera className="h-5 w-5 text-blue-400" />
-                  2. Live KYC Selfie & Photo Proof *
+                  2. Live Camera Selfie Capture *
                 </CardTitle>
                 <CardDescription className="text-zinc-400 text-xs">
-                  Capture a live selfie or upload a clear recent face photo for identity verification.
+                  Capture a live selfie photo using your front or back camera for verification.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
-                {/* Photo Preview or Camera View */}
+                {/* Photo Preview or Live Camera View */}
                 <div className="flex flex-col items-center justify-center">
                   {isCameraActive ? (
-                    <div className="relative w-full max-w-sm rounded-2xl overflow-hidden border-2 border-blue-500 bg-black aspect-video flex items-center justify-center">
+                    <div className="relative w-full max-w-md rounded-2xl overflow-hidden border-2 border-blue-500 bg-black aspect-video flex flex-col items-center justify-center shadow-2xl">
                       <video ref={videoRef} className="w-full h-full object-cover" autoPlay playsInline muted />
                       <canvas ref={canvasRef} className="hidden" />
-                      <div className="absolute bottom-4 flex gap-3">
+
+                      {/* Floating Camera Controls Overlay */}
+                      <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-3 px-4">
                         <Button
                           type="button"
                           onClick={captureSnapshot}
-                          className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 shadow-lg"
+                          className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 h-10 shadow-xl rounded-xl"
                         >
                           <Camera className="h-4 w-4 mr-2" /> Capture Photo
                         </Button>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={toggleCameraFacingMode}
+                          className="border-white/20 bg-black/60 text-white hover:bg-black/80 backdrop-blur-md h-10 px-3 rounded-xl text-xs font-semibold"
+                          title="Switch camera (Front / Back)"
+                        >
+                          <RefreshCw className="h-4 w-4 mr-1.5 text-blue-400" />
+                          {cameraFacingMode === "user" ? "Back Cam" : "Front Cam"}
+                        </Button>
+
                         <Button
                           type="button"
                           variant="outline"
                           onClick={stopCamera}
-                          className="border-zinc-700 bg-zinc-900 text-zinc-300"
+                          className="border-white/20 bg-black/60 text-white hover:bg-black/80 backdrop-blur-md h-10 px-3 rounded-xl text-xs"
                         >
                           Cancel
                         </Button>
@@ -542,9 +587,9 @@ const ReKYCPage = () => {
                           type="button"
                           size="sm"
                           onClick={startCamera}
-                          className="bg-blue-600 text-white text-xs"
+                          className="bg-blue-600 text-white text-xs rounded-xl"
                         >
-                          Retake Camera
+                          <Camera className="h-3.5 w-3.5 mr-1" /> Retake Photo
                         </Button>
                       </div>
                       <div className="absolute bottom-2 right-2 bg-emerald-500 text-zinc-950 p-1 rounded-full">
@@ -552,94 +597,90 @@ const ReKYCPage = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="w-full max-w-sm h-48 rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-950 flex flex-col items-center justify-center text-center p-6 space-y-3">
+                    <div className="w-full max-w-md h-52 rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-950/60 flex flex-col items-center justify-center text-center p-6 space-y-3">
                       <User className="h-10 w-10 text-zinc-600" />
-                      <p className="text-xs text-zinc-400">No live selfie attached yet</p>
+                      <p className="text-xs text-zinc-400">No live selfie photo captured yet</p>
+                      <Button
+                        type="button"
+                        onClick={startCamera}
+                        className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs h-9 px-4 rounded-xl shadow-lg"
+                      >
+                        <Camera className="h-4 w-4 mr-2" /> Start Camera & Take Selfie
+                      </Button>
                     </div>
                   )}
 
                   {cameraError && (
-                    <p className="text-xs text-amber-400 mt-2 flex items-center gap-1">
-                      <AlertCircle className="h-3.5 w-3.5" /> {cameraError}
+                    <p className="text-xs text-amber-400 mt-3 flex items-center gap-1 font-medium">
+                      <AlertCircle className="h-4 w-4" /> {cameraError}
                     </p>
                   )}
                 </div>
 
-                {/* Actions: Start Camera or Upload File */}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={startCamera}
-                    disabled={isCameraActive}
-                    className="w-full sm:w-auto border-blue-500/40 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
-                  >
-                    <Camera className="h-4 w-4 mr-2" /> Open Camera Selfie
-                  </Button>
-                  <span className="text-xs text-zinc-500">or</span>
-                  <label className="w-full sm:w-auto cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                    <div className="flex items-center justify-center px-4 py-2 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-300 hover:bg-zinc-800 text-sm font-semibold transition-colors">
-                      <Upload className="h-4 w-4 mr-2 text-zinc-400" /> Upload Face Image
-                    </div>
-                  </label>
-                </div>
+                {/* Camera Actions */}
+                {isCameraActive && (
+                  <div className="flex justify-center text-xs text-zinc-400">
+                    Currently using: <strong className="text-blue-400 ml-1">{cameraFacingMode === "user" ? "Front Camera (Selfie)" : "Back Camera (Environment)"}</strong>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Step 3: Address & Location Verification */}
+            {/* Step 3: Location Verification (GPS Capture) */}
             <Card className="bg-zinc-900/90 border-zinc-800 backdrop-blur-xl shadow-xl rounded-2xl overflow-hidden">
               <CardHeader className="border-b border-zinc-800 p-6">
                 <CardTitle className="text-lg font-bold text-white flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-blue-400" />
-                  3. Address & Coordinates
+                  3. Location Capture & Verification *
                 </CardTitle>
                 <CardDescription className="text-zinc-400 text-xs">
-                  Verify your current residential physical address.
+                  Verify your present physical location using live GPS coordinates.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6 space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-zinc-300 text-xs font-semibold">Physical Address *</Label>
-                  <Input
-                    type="text"
-                    placeholder="House/Street, City, State, Pincode..."
-                    value={kycData.physical_address}
-                    onChange={(e) => setKycData((prev) => ({ ...prev, physical_address: e.target.value }))}
-                    className="bg-zinc-950 border-zinc-800 text-zinc-100 text-sm h-11"
-                  />
-                </div>
+                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Live GPS Location</span>
+                      {kycData.geo_coordinates ? (
+                        <p className="text-sm font-bold text-emerald-400 mt-0.5 flex items-center gap-1.5">
+                          <CheckCircle2 className="h-4 w-4" /> {kycData.geo_coordinates}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-zinc-500 mt-0.5">Location not captured yet. Click button to verify.</p>
+                      )}
+                    </div>
 
-                <div className="flex items-center justify-between pt-2">
-                  <div className="text-xs text-zinc-400">
-                    {kycData.geo_coordinates ? (
-                      <span className="text-emerald-400 font-mono">GPS: {kycData.geo_coordinates}</span>
-                    ) : (
-                      "Attach live GPS location (optional)"
-                    )}
+                    <Button
+                      type="button"
+                      onClick={fetchGeoLocation}
+                      disabled={geoLoading}
+                      className="bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs h-10 px-4 rounded-xl shrink-0"
+                    >
+                      {geoLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" /> Detecting Location...
+                        </>
+                      ) : (
+                        <>
+                          <Navigation className="h-4 w-4 mr-2" /> Capture & Verify Live Location
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={fetchGeoLocation}
-                    disabled={geoLoading}
-                    className="border-zinc-800 bg-zinc-950 text-zinc-300 text-xs"
-                  >
-                    {geoLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <MapPin className="h-3.5 w-3.5 mr-1 text-blue-400" />}
-                    Capture Location
-                  </Button>
+
+                  {kycData.physical_address && (
+                    <div className="pt-2 border-t border-zinc-800/60 text-xs text-zinc-300">
+                      <span className="text-zinc-500 font-semibold block mb-0.5">Detected Address / Region:</span>
+                      <p className="font-mono bg-zinc-900 p-2.5 rounded-lg border border-zinc-800 text-zinc-200">{kycData.physical_address}</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             {/* Declaration & Submission */}
-            <div className="space-y-4">
+            <div className="space-y-4 pt-2">
               <div className="flex items-start gap-3 p-4 rounded-xl bg-zinc-900 border border-zinc-800">
                 <Checkbox
                   id="declaration"
@@ -650,7 +691,7 @@ const ReKYCPage = () => {
                   className="mt-0.5"
                 />
                 <label htmlFor="declaration" className="text-xs text-zinc-400 leading-relaxed cursor-pointer">
-                  I hereby declare that all identity documents and selfie photos provided are true, authentic, and belong to me. I authorize VAW Technologies HR to verify my KYC details.
+                  I hereby declare that all identity documents, live selfie photo, and location details provided are true, authentic, and belong to me. I authorize VAW Technologies HR to verify my KYC details.
                 </label>
               </div>
 
@@ -673,8 +714,6 @@ const ReKYCPage = () => {
           </form>
         )}
       </main>
-
-      <Footer />
     </div>
   );
 };
