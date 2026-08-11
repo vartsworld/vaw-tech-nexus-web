@@ -41,7 +41,7 @@ const ReKYCPage = () => {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [recordSource, setRecordSource] = useState<"team_applications_staff" | "staff_profiles" | "team_applications" | null>(null);
+  const [recordSource, setRecordSource] = useState<"team_applications_staff" | "staff_profiles" | "team_applications" | "internship_applications" | null>(null);
   const [rawRecord, setRawRecord] = useState<any>(null);
   const [isCameraDrawerOpen, setIsCameraDrawerOpen] = useState(false);
 
@@ -56,6 +56,7 @@ const ReKYCPage = () => {
     profile_photo_url: "",
     physical_address: "",
     geo_coordinates: "",
+    kyc_gps_location: "",
     declaration_accepted: false
   });
 
@@ -236,6 +237,43 @@ const ReKYCPage = () => {
         return;
       }
 
+      // 4. Query internship_applications
+      let { data: internApps } = await supabase
+        .from("internship_applications")
+        .select("*")
+        .or(`id.eq.${rawTerm},id.ilike.${rawTerm}%`);
+
+      if (!internApps || internApps.length === 0) {
+        const { data: allIntern } = await supabase.from("internship_applications").select("*");
+        internApps = allIntern || [];
+      }
+
+      let matchedIntern = internApps?.find(
+        (app: any) =>
+          app.id?.toLowerCase() === rawTerm ||
+          app.id?.toLowerCase().startsWith(rawTerm) ||
+          getApplicationDisplayId(app.id).toLowerCase() === cleanTarget.toLowerCase() ||
+          app.email?.toLowerCase() === cleanTarget.toLowerCase()
+      );
+
+      if (matchedIntern) {
+        const internObj = matchedIntern as any;
+        setRecordSource("internship_applications");
+        setRawRecord(internObj);
+        setKycData((prev) => ({
+          ...prev,
+          full_name: internObj.full_name || "",
+          email: internObj.email || "",
+          phone: internObj.phone || "",
+          govt_id_number: internObj.govt_id_number || "",
+          kyc_selfie_url: internObj.kyc_selfie_url || "",
+          profile_photo_url: internObj.profile_photo_url || "",
+          physical_address: internObj.physical_address || "",
+        }));
+        setLoading(false);
+        return;
+      }
+
       toast({
         title: "Application Not Found",
         description: "Could not find a valid record for the provided Application ID.",
@@ -311,10 +349,11 @@ const ReKYCPage = () => {
           console.error("Reverse geocoding error:", err);
         }
 
+        // Store GPS in a separate field — do NOT overwrite the user's entered physical_address
         setKycData((prev) => ({
           ...prev,
           geo_coordinates: coords,
-          physical_address: detectedAddr,
+          kyc_gps_location: detectedAddr,
         }));
         setGeoLoading(false);
         toast({
@@ -384,16 +423,24 @@ const ReKYCPage = () => {
 
     setIsSubmitting(true);
     try {
-      if (recordSource === "team_applications_staff" || recordSource === "team_applications") {
-        const targetTable = recordSource === "team_applications_staff" ? "team_applications_staff" : "team_applications";
+      if (recordSource === "team_applications_staff" || recordSource === "team_applications" || recordSource === "internship_applications") {
+        const targetTable = recordSource;
         const updatePayload: any = {
           govt_id_number: kycData.govt_id_number,
           kyc_selfie_url: kycData.kyc_selfie_url,
-          physical_address: kycData.physical_address || rawRecord.physical_address,
+          // physical_address is NOT overwritten — GPS is stored in kyc_gps_location only
           phone: kycData.phone || rawRecord.phone,
           status: "pending",
           updated_at: new Date().toISOString(),
         };
+        // Only update physical_address if the user actually entered one
+        if (kycData.physical_address && kycData.physical_address !== rawRecord.physical_address) {
+          updatePayload.physical_address = kycData.physical_address;
+        }
+        // Always store GPS separately
+        if (kycData.geo_coordinates) {
+          updatePayload.kyc_gps_location = kycData.kyc_gps_location || kycData.geo_coordinates;
+        }
         if (kycData.profile_photo_url) {
           updatePayload.profile_photo_url = kycData.profile_photo_url;
         }
@@ -408,10 +455,16 @@ const ReKYCPage = () => {
         const updatePayload: any = {
           govt_id_number: kycData.govt_id_number,
           kyc_selfie_url: kycData.kyc_selfie_url,
-          physical_address: kycData.physical_address || rawRecord.physical_address,
+          // physical_address is NOT overwritten — GPS stored separately
           application_status: "approved",
           updated_at: new Date().toISOString(),
         };
+        if (kycData.physical_address && kycData.physical_address !== rawRecord.physical_address) {
+          updatePayload.physical_address = kycData.physical_address;
+        }
+        if (kycData.geo_coordinates) {
+          updatePayload.kyc_gps_location = kycData.kyc_gps_location || kycData.geo_coordinates;
+        }
         if (kycData.profile_photo_url) {
           updatePayload.profile_photo_url = kycData.profile_photo_url;
         }
@@ -755,7 +808,7 @@ const ReKYCPage = () => {
                 <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 space-y-3">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div>
-                      <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Live GPS Location</span>
+                      <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">Live GPS Coordinates</span>
                       {kycData.geo_coordinates ? (
                         <p className="text-sm font-bold text-emerald-400 mt-0.5 flex items-center gap-1.5">
                           <CheckCircle2 className="h-4 w-4" /> {kycData.geo_coordinates}
@@ -783,12 +836,24 @@ const ReKYCPage = () => {
                     </Button>
                   </div>
 
-                  {kycData.physical_address && (
+                  {kycData.kyc_gps_location && (
                     <div className="pt-2 border-t border-zinc-800/60 text-xs text-zinc-300">
-                      <span className="text-zinc-500 font-semibold block mb-0.5">Detected Address / Region:</span>
-                      <p className="font-mono bg-zinc-900 p-2.5 rounded-lg border border-zinc-800 text-zinc-200">{kycData.physical_address}</p>
+                      <span className="text-zinc-500 font-semibold block mb-0.5">📍 GPS-Detected Address (KYC Only — does not change your primary address):</span>
+                      <p className="font-mono bg-zinc-900 p-2.5 rounded-lg border border-emerald-800/40 text-emerald-200">{kycData.kyc_gps_location}</p>
                     </div>
                   )}
+                </div>
+
+                {/* Primary address remains editable and unaffected by GPS */}
+                <div className="space-y-2">
+                  <Label className="text-zinc-300 text-xs font-semibold">Primary Residential Address <span className="text-zinc-500">(unchanged by GPS)</span></Label>
+                  <textarea
+                    rows={2}
+                    placeholder="Your permanent home address..."
+                    value={kycData.physical_address}
+                    onChange={(e) => setKycData((prev) => ({ ...prev, physical_address: e.target.value }))}
+                    className="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm rounded-xl p-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  />
                 </div>
               </CardContent>
             </Card>

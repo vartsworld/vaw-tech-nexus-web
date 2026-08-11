@@ -31,6 +31,8 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
   const [projects, setProjects] = useState<any[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [isClientPopoverOpen, setIsClientPopoverOpen] = useState(false);
   const { toast } = useToast();
 
   const parseJson = (val: any) => {
@@ -367,7 +369,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
               {/* Assign To */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-muted-foreground">Assign To</Label>
+                  <Label className="text-xs text-muted-foreground">Assign To (Guests)</Label>
                   <Button
                     type="button" variant="ghost" size="sm"
                     className="h-auto py-1 px-2 text-[10px] text-primary"
@@ -386,9 +388,11 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
                         {newTask.assigned_to.length > 0 ? (
                           newTask.assigned_to.map((id) => {
                             const member = staff.find(s => s.user_id === id);
+                            const dept = departments.find(d => d.id === member?.department_id);
                             return (
                               <Badge key={id} className="bg-primary/10 text-primary border-primary/20 text-[10px]">
                                 {member?.full_name || id}
+                                {dept && <span className="ml-1 opacity-60">· {dept.name}</span>}
                               </Badge>
                             );
                           })
@@ -424,7 +428,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
                                 <Checkbox checked={newTask.assigned_to.includes(member.user_id)} onCheckedChange={() => {}} />
                                 <div className="flex flex-col flex-1">
                                   <span className="text-sm font-medium">{member.full_name}</span>
-                                  <span className="text-[10px] text-muted-foreground">@{member.username}</span>
+                                  <span className="text-[10px] text-muted-foreground">@{member.username} · {dept.name}</span>
                                 </div>
                                 {newTask.assigned_to.includes(member.user_id) && <Check className="h-4 w-4 text-primary" />}
                               </div>
@@ -453,7 +457,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
                               <Checkbox checked={newTask.assigned_to.includes(member.user_id)} onCheckedChange={() => {}} />
                               <div className="flex flex-col flex-1">
                                   <span className="text-sm font-medium">{member.full_name}</span>
-                                  <span className="text-[10px] text-muted-foreground">@{member.username}</span>
+                                  <span className="text-[10px] text-muted-foreground">@{member.username} · No Dept.</span>
                                 </div>
                                 {newTask.assigned_to.includes(member.user_id) && <Check className="h-4 w-4 text-primary" />}
                             </div>
@@ -530,7 +534,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
                 </Popover>
               </div>
 
-              {/* Client */}
+              {/* Client - Searchable Popover */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Client</Label>
@@ -538,15 +542,62 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
                     <Plus className="h-3 w-3 mr-1" /> Add Client
                   </Button>
                 </div>
-                <Select value={newTask.client_id} onValueChange={(v) => setNewTask({ ...newTask, client_id: v })}>
-                  <SelectTrigger className="h-11 bg-transparent border-white/10">
-                    <SelectValue placeholder="Select client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="no-client">No Client</SelectItem>
-                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Popover open={isClientPopoverOpen} onOpenChange={setIsClientPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between h-11 bg-transparent border-white/10 hover:bg-white/5">
+                      <span className="truncate text-sm">
+                        {newTask.client_id && newTask.client_id !== "no-client"
+                          ? clients.find(c => c.id === newTask.client_id)?.company_name || "Unknown Client"
+                          : <span className="text-muted-foreground">Select client...</span>
+                        }
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[280px] p-2" align="start">
+                    <div className="space-y-1">
+                      <input
+                        className="w-full px-2 py-1.5 text-sm bg-transparent border border-white/10 rounded-lg text-white placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 mb-2"
+                        placeholder="Search clients..."
+                        value={clientSearchQuery}
+                        onChange={e => setClientSearchQuery(e.target.value)}
+                      />
+                      <div className="max-h-[220px] overflow-y-auto space-y-0.5">
+                        <div
+                          className={`flex items-center px-3 py-2 rounded-lg cursor-pointer text-sm transition-colors ${
+                            !newTask.client_id || newTask.client_id === "no-client"
+                              ? "bg-primary/10 text-primary"
+                              : "text-muted-foreground hover:bg-white/5"
+                          }`}
+                          onClick={() => { setNewTask({ ...newTask, client_id: "no-client" }); setIsClientPopoverOpen(false); setClientSearchQuery(""); }}
+                        >
+                          No Client
+                        </div>
+                        {clients
+                          .filter(c =>
+                            !clientSearchQuery ||
+                            c.company_name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+                            c.contact_person?.toLowerCase().includes(clientSearchQuery.toLowerCase())
+                          )
+                          .map(c => (
+                            <div
+                              key={c.id}
+                              className={`flex flex-col px-3 py-2 rounded-lg cursor-pointer text-sm transition-colors ${
+                                newTask.client_id === c.id
+                                  ? "bg-primary/10 text-primary"
+                                  : "hover:bg-white/5 text-white"
+                              }`}
+                              onClick={() => { setNewTask({ ...newTask, client_id: c.id }); setIsClientPopoverOpen(false); setClientSearchQuery(""); }}
+                            >
+                              <span className="font-medium">{c.company_name}</span>
+                              {c.contact_person && <span className="text-[10px] text-muted-foreground">{c.contact_person}</span>}
+                            </div>
+                          ))
+                        }
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Project */}

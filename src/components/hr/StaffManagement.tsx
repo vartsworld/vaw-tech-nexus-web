@@ -732,11 +732,12 @@ const StaffManagement = () => {
               setNewStaff={setNewStaff}
               onSubmit={async () => {
                 if (editingStaff) {
+                  const { cv_url, profile_photo_url, kyc_selfie_url, kyc_gps_location, geo_coordinates, ...safeFields } = newStaff;
                   const updateData = {
-                    ...newStaff,
-                    department_id: newStaff.department_id === "" ? null : newStaff.department_id,
-                    hire_date: newStaff.hire_date === "" ? null : newStaff.hire_date,
-                    date_of_birth: newStaff.date_of_birth === "" ? null : newStaff.date_of_birth
+                    ...safeFields,
+                    department_id: safeFields.department_id === "" ? null : safeFields.department_id,
+                    hire_date: safeFields.hire_date === "" ? null : safeFields.hire_date,
+                    date_of_birth: safeFields.date_of_birth === "" ? null : safeFields.date_of_birth
                   };
                   await handleUpdateStaff(editingStaff.id, updateData);
                   setIsEditDialogOpen(false);
@@ -1023,6 +1024,8 @@ const StaffManagement = () => {
                             cv_url: member.cv_url || "",
                             about_me: member.about_me || "",
                             profile_photo_url: member.profile_photo_url || "",
+                            kyc_selfie_url: member.kyc_selfie_url || "",
+                            kyc_gps_location: member.kyc_gps_location || "",
                             father_name: member.father_name || "",
                             mother_name: member.mother_name || "",
                             siblings: member.siblings || "",

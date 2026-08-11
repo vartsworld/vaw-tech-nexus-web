@@ -106,29 +106,30 @@ const TrackApplication = () => {
       });
 
       if (matchedStaff) {
+        const staffObj = matchedStaff as any;
         const reKycRequested =
-          matchedStaff.status === "re_kyc_requested" ||
-          matchedStaff.kyc_status === "re_kyc_requested" ||
-          (matchedStaff.about_me && matchedStaff.about_me.includes("Re-KYC Requested"));
+          staffObj.status === "re_kyc_requested" ||
+          staffObj.kyc_status === "re_kyc_requested" ||
+          (staffObj.about_me && staffObj.about_me.includes("Re-KYC Requested"));
 
         setApplication({
-          id: matchedStaff.id,
-          displayId: getApplicationDisplayId(matchedStaff.id),
-          applicantName: matchedStaff.full_name,
-          email: matchedStaff.email,
-          phone: matchedStaff.phone || undefined,
+          id: staffObj.id,
+          displayId: getApplicationDisplayId(staffObj.id),
+          applicantName: staffObj.full_name,
+          email: staffObj.email,
+          phone: staffObj.phone || undefined,
           type: "staff",
-          roleOrDomain: matchedStaff.preferred_role || "Staff / Team",
-          status: matchedStaff.status || "pending",
-          createdAt: matchedStaff.created_at,
+          roleOrDomain: staffObj.preferred_role || "Staff / Team",
+          status: staffObj.status || "pending",
+          createdAt: staffObj.created_at,
           kycStatus: reKycRequested
             ? "re_kyc_requested"
-            : matchedStaff.kyc_selfie_url
+            : staffObj.kyc_selfie_url
             ? "verified"
             : "pending",
           reKycRequested,
-          cvUrl: matchedStaff.cv_url || undefined,
-          details: matchedStaff,
+          cvUrl: staffObj.cv_url || undefined,
+          details: staffObj,
         });
         setIsSearching(false);
         return;
@@ -150,29 +151,30 @@ const TrackApplication = () => {
       });
 
       if (matchedProfile) {
+        const profObj = matchedProfile as any;
         const reKycRequested =
-          matchedProfile.application_status === "re_kyc_requested" ||
-          matchedProfile.re_kyc_requested === true ||
-          (matchedProfile.about_me && matchedProfile.about_me.includes("Re-KYC Requested"));
+          profObj.application_status === "re_kyc_requested" ||
+          profObj.re_kyc_requested === true ||
+          (profObj.about_me && profObj.about_me.includes("Re-KYC Requested"));
 
         setApplication({
-          id: matchedProfile.id,
-          displayId: getApplicationDisplayId(matchedProfile.id),
-          applicantName: matchedProfile.full_name,
-          email: matchedProfile.email,
-          phone: matchedProfile.phone || undefined,
+          id: profObj.id,
+          displayId: getApplicationDisplayId(profObj.id),
+          applicantName: profObj.full_name,
+          email: profObj.email,
+          phone: profObj.phone || undefined,
           type: "staff",
-          roleOrDomain: matchedProfile.role || "Staff Member",
+          roleOrDomain: profObj.role || "Staff Member",
           status: "approved",
-          createdAt: matchedProfile.created_at || new Date().toISOString(),
+          createdAt: profObj.created_at || new Date().toISOString(),
           kycStatus: reKycRequested
             ? "re_kyc_requested"
-            : matchedProfile.kyc_selfie_url || matchedProfile.kyc_document_url
+            : profObj.kyc_selfie_url || profObj.kyc_document_url
             ? "verified"
             : "pending",
           reKycRequested,
-          cvUrl: matchedProfile.cv_url || undefined,
-          details: matchedProfile,
+          cvUrl: profObj.cv_url || undefined,
+          details: profObj,
         });
         setIsSearching(false);
         return;
@@ -556,8 +558,6 @@ const TrackApplication = () => {
           </div>
         )}
       </main>
-
-      <Footer />
     </div>
   );
 };

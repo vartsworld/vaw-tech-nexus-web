@@ -768,8 +768,54 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
   const SchedulerAny = Scheduler as any;
 
+  // Compute which dates have all items completed (green highlight)
+  const completedDateKeys = useMemo(() => {
+    const greenDates = new Set<string>();
+    // Collect all date keys that have at least one item
+    const allDateKeys = new Set<string>([
+      ...Object.keys(plansByDate),
+      ...Object.keys(tasksByDate),
+      ...Object.keys(subtasksByDate),
+    ]);
+
+    allDateKeys.forEach(dateKey => {
+      const dayPlans = plansByDate[dateKey] || [];
+      const dayTasks = tasksByDate[dateKey] || [];
+      const daySubtasks = subtasksByDate[dateKey] || [];
+      const total = dayPlans.length + dayTasks.length + daySubtasks.length;
+      if (total === 0) return;
+
+      const allPlansComplete = dayPlans.every(p => p.is_completed === true);
+      const allTasksComplete = dayTasks.every(t => t.status === 'completed');
+      const allSubtasksComplete = daySubtasks.every(s => s.status === 'completed');
+
+      if (allPlansComplete && allTasksComplete && allSubtasksComplete) {
+        greenDates.add(dateKey);
+      }
+    });
+
+    return greenDates;
+  }, [plansByDate, tasksByDate, subtasksByDate]);
+
   return (
-    <div className="w-full text-white calendar-kit-dark-container">
+    <div className="w-full text-white calendar-kit-dark-container relative">
+      {/* Inject dynamic CSS for green completed date cells */}
+      <style>{`
+        ${Array.from(completedDateKeys).map(dateKey => {
+          const [y, m, d] = dateKey.split('-');
+          return `
+            /* Target cells with aria-label or data attrs matching the date */
+            [data-date="${dateKey}"] .ck-month-day-number,
+            [aria-label*="${parseInt(d)} ${new Date(dateKey + 'T12:00:00').toLocaleString('en-US', { month: 'long' })}"] .ck-month-day-number {
+              background: rgba(16, 185, 129, 0.2) !important;
+              border-radius: 50% !important;
+              color: #10b981 !important;
+              box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5) !important;
+            }
+          `;
+        }).join('\n')}
+      `}</style>
+
       <SchedulerAny
         events={calendarEvents}
         view={view}
@@ -918,27 +964,40 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                     return (
                       <div
                         key={p.id}
-                        onClick={() => {
-                          setIsDayTasksDialogOpen(false);
-                          setSelectedPlan(p);
-                          setNewPlan({
-                            title: p.title,
-                            description: p.description,
-                            assigned_staff: p.assigned_staff || [],
-                            client_id: p.client_id || 'common',
-                            color: p.color || '#3b82f6'
-                          });
-                          setIsAddDialogOpen(true);
-                        }}
-                        className="p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 cursor-pointer transition-all space-y-1.5 group relative"
+                        className={cn(
+                          "p-3 rounded-2xl border border-white/10 cursor-pointer transition-all space-y-1.5 group relative",
+                          p.is_completed
+                            ? "bg-emerald-950/30 border-emerald-500/20 opacity-70"
+                            : "bg-white/[0.03] hover:bg-white/[0.08]"
+                        )}
                         style={{ borderLeft: `4px solid ${p.color || '#3b82f6'}` }}
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-bold text-sm text-white group-hover:text-blue-300 transition-colors flex items-center gap-2">
+                          <span className={cn(
+                            "font-bold text-sm transition-colors flex items-center gap-2",
+                            p.is_completed ? "line-through text-white/40" : "text-white group-hover:text-blue-300"
+                          )}>
                             {p.title}
                           </span>
                           <div className="flex items-center gap-2 shrink-0">
                             <Badge variant="outline" className="border-blue-500/40 bg-blue-500/15 text-blue-300 font-bold text-[10px] uppercase tracking-wider">{cName}</Badge>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className={cn(
+                                "h-7 px-2 text-xs font-bold rounded-lg flex items-center gap-1",
+                                p.is_completed
+                                  ? "text-emerald-400 hover:text-white hover:bg-emerald-500/20"
+                                  : "text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10"
+                              )}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleTogglePlanCompletion(p.id, p.is_completed || false);
+                              }}
+                            >
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              {p.is_completed ? 'Undo' : 'Complete'}
+                            </Button>
                             <Button
                               size="sm"
                               variant="ghost"

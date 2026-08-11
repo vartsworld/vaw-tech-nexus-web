@@ -554,53 +554,91 @@ const EnhancedStaffForm = ({
       {/* File Uploads */}
       <div className="space-y-4">
         <h3 className="font-semibold text-lg">Documents & Photo</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="cv_upload">Upload CV</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="cv_upload"
-                type="file"
-                accept=".pdf,.doc,.docx"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file, 'cv');
-                }}
-                disabled={uploading}
-              />
-              {newStaff.cv_url && (
-                <div className="flex items-center gap-2">
-                  <span className="text-green-600 text-sm whitespace-nowrap">✓ Uploaded</span>
-                  <Button type="button" variant="link" size="sm" onClick={() => window.open(newStaff.cv_url, '_blank')} className="p-0 h-auto">View</Button>
-                </div>
-              )}
+        {isEdit ? (
+          /* In edit mode: show read-only info for CV, profile photo, KYC & GPS — HR cannot change these */
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
+            <p className="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
+              🔒 The following fields are locked for HR edits: CV, Profile Photo, KYC Selfie, and Live GPS Location.
+              These can only be updated by the staff member via the Re-KYC portal or application process.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                <span className="text-xs text-muted-foreground block mb-1">CV / Resume</span>
+                {newStaff.cv_url
+                  ? <a href={newStaff.cv_url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline text-xs">View CV ↗</a>
+                  : <span className="text-zinc-500 text-xs">No CV uploaded</span>
+                }
+              </div>
+              <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                <span className="text-xs text-muted-foreground block mb-1">Profile Photo</span>
+                {newStaff.profile_photo_url
+                  ? <img src={newStaff.profile_photo_url} className="h-12 w-12 rounded-lg object-cover border border-white/20" alt="Profile" />
+                  : <span className="text-zinc-500 text-xs">No photo uploaded</span>
+                }
+              </div>
+              <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                <span className="text-xs text-muted-foreground block mb-1">KYC Selfie</span>
+                {newStaff.kyc_selfie_url
+                  ? <img src={newStaff.kyc_selfie_url} className="h-12 w-12 rounded-lg object-cover border border-emerald-500/30" alt="KYC" />
+                  : <span className="text-zinc-500 text-xs">No KYC selfie</span>
+                }
+              </div>
+              <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                <span className="text-xs text-muted-foreground block mb-1">Live GPS Location (KYC)</span>
+                <span className="text-emerald-400 text-xs font-mono">{newStaff.kyc_gps_location || 'Not captured'}</span>
+              </div>
             </div>
           </div>
-          <div>
-            <Label htmlFor="photo_upload">Profile Photo (1:1 Ratio)</Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id="photo_upload"
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setCropFile(file);
-                    setIsCropModalOpen(true);
-                  }
-                }}
-                disabled={uploading}
-              />
-              {newStaff.profile_photo_url && (
-                <div className="flex items-center gap-2">
-                  <span className="text-green-600 text-sm whitespace-nowrap">✓ Uploaded</span>
-                  <Button type="button" variant="link" size="sm" onClick={() => window.open(newStaff.profile_photo_url, '_blank')} className="p-0 h-auto">View</Button>
-                </div>
-              )}
+        ) : (
+          /* In create mode: allow full uploads */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="cv_upload">Upload CV</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="cv_upload"
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file, 'cv');
+                  }}
+                  disabled={uploading}
+                />
+                {newStaff.cv_url && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-600 text-sm whitespace-nowrap">✓ Uploaded</span>
+                    <Button type="button" variant="link" size="sm" onClick={() => window.open(newStaff.cv_url, '_blank')} className="p-0 h-auto">View</Button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="photo_upload">Profile Photo (1:1 Ratio)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="photo_upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setCropFile(file);
+                      setIsCropModalOpen(true);
+                    }
+                  }}
+                  disabled={uploading}
+                />
+                {newStaff.profile_photo_url && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-600 text-sm whitespace-nowrap">✓ Uploaded</span>
+                    <Button type="button" variant="link" size="sm" onClick={() => window.open(newStaff.profile_photo_url, '_blank')} className="p-0 h-auto">View</Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       <ProfileImageCropModal
