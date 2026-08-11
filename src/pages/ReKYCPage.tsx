@@ -25,7 +25,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
-import Navbar from "@/components/Navbar";
+import vawLogoDark from "@/assets/vaw-logo-dark.png";
 import { getApplicationDisplayId } from "./TrackApplication";
 
 const ReKYCPage = () => {
@@ -39,7 +39,7 @@ const ReKYCPage = () => {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [recordSource, setRecordSource] = useState<"team_applications_staff" | "staff_profiles" | null>(null);
+  const [recordSource, setRecordSource] = useState<"team_applications_staff" | "staff_profiles" | "team_applications" | null>(null);
   const [rawRecord, setRawRecord] = useState<any>(null);
 
   // KYC Form State
@@ -110,13 +110,27 @@ const ReKYCPage = () => {
 
   const fetchApplicantRecord = async (targetId: string) => {
     setLoading(true);
-    const rawTerm = targetId.replace(/^APP-/i, "").trim();
+    const cleanTarget = targetId.trim();
+    const rawTerm = cleanTarget.replace(/^APP-/i, "").trim().toLowerCase();
 
     try {
-      // Check team_applications_staff first
-      const { data: staffApps } = await supabase.from("team_applications_staff").select("*");
+      // 1. Query team_applications_staff (targeted search first to bypass bulk RLS limits)
+      let { data: staffApps, error: staffErr } = await supabase
+        .from("team_applications_staff")
+        .select("*")
+        .or(`id.eq.${rawTerm},id.ilike.${rawTerm}%`);
+
+      if (staffErr || !staffApps || staffApps.length === 0) {
+        const { data: allStaff } = await supabase.from("team_applications_staff").select("*");
+        staffApps = allStaff || [];
+      }
+
       let matchedStaff = staffApps?.find(
-        (app: any) => app.id === rawTerm || getApplicationDisplayId(app.id) === targetId || app.email === targetId
+        (app: any) =>
+          app.id?.toLowerCase() === rawTerm ||
+          app.id?.toLowerCase().startsWith(rawTerm) ||
+          getApplicationDisplayId(app.id).toLowerCase() === cleanTarget.toLowerCase() ||
+          app.email?.toLowerCase() === cleanTarget.toLowerCase()
       );
 
       if (matchedStaff) {
@@ -135,10 +149,23 @@ const ReKYCPage = () => {
         return;
       }
 
-      // Check staff_profiles
-      const { data: profiles } = await supabase.from("staff_profiles").select("*");
+      // 2. Query staff_profiles
+      let { data: profiles, error: profErr } = await supabase
+        .from("staff_profiles")
+        .select("*")
+        .or(`id.eq.${rawTerm},id.ilike.${rawTerm}%`);
+
+      if (profErr || !profiles || profiles.length === 0) {
+        const { data: allProf } = await supabase.from("staff_profiles").select("*");
+        profiles = allProf || [];
+      }
+
       let matchedProfile = profiles?.find(
-        (p: any) => p.id === rawTerm || getApplicationDisplayId(p.id) === targetId || p.email === targetId
+        (p: any) =>
+          p.id?.toLowerCase() === rawTerm ||
+          p.id?.toLowerCase().startsWith(rawTerm) ||
+          getApplicationDisplayId(p.id).toLowerCase() === cleanTarget.toLowerCase() ||
+          p.email?.toLowerCase() === cleanTarget.toLowerCase()
       );
 
       if (matchedProfile) {
@@ -152,6 +179,41 @@ const ReKYCPage = () => {
           govt_id_number: matchedProfile.govt_id_number || "",
           kyc_selfie_url: matchedProfile.profile_photo_url || "",
           physical_address: matchedProfile.physical_address || "",
+        }));
+        setLoading(false);
+        return;
+      }
+
+      // 3. Query team_applications (general applications)
+      let { data: teamApps } = await supabase
+        .from("team_applications")
+        .select("*")
+        .or(`id.eq.${rawTerm},id.ilike.${rawTerm}%`);
+
+      if (!teamApps || teamApps.length === 0) {
+        const { data: allTeam } = await supabase.from("team_applications").select("*");
+        teamApps = allTeam || [];
+      }
+
+      let matchedTeam = teamApps?.find(
+        (app: any) =>
+          app.id?.toLowerCase() === rawTerm ||
+          app.id?.toLowerCase().startsWith(rawTerm) ||
+          getApplicationDisplayId(app.id).toLowerCase() === cleanTarget.toLowerCase() ||
+          app.email?.toLowerCase() === cleanTarget.toLowerCase()
+      );
+
+      if (matchedTeam) {
+        setRecordSource("team_applications");
+        setRawRecord(matchedTeam);
+        setKycData((prev) => ({
+          ...prev,
+          full_name: matchedTeam.full_name || "",
+          email: matchedTeam.email || "",
+          phone: matchedTeam.phone || "",
+          govt_id_number: matchedTeam.govt_id_number || "",
+          kyc_selfie_url: matchedTeam.kyc_selfie_url || matchedTeam.resume_url || "",
+          physical_address: matchedTeam.physical_address || "",
         }));
         setLoading(false);
         return;
@@ -305,9 +367,10 @@ const ReKYCPage = () => {
 
     setIsSubmitting(true);
     try {
-      if (recordSource === "team_applications_staff") {
+      if (recordSource === "team_applications_staff" || recordSource === "team_applications") {
+        const targetTable = recordSource === "team_applications_staff" ? "team_applications_staff" : "team_applications";
         const { error } = await supabase
-          .from("team_applications_staff")
+          .from(targetTable as any)
           .update({
             govt_id_number: kycData.govt_id_number,
             kyc_selfie_url: kycData.kyc_selfie_url,
@@ -367,7 +430,16 @@ const ReKYCPage = () => {
         title="Re-KYC Verification Portal | VAW Technologies"
         description="Update and complete your KYC identity verification as requested by HR."
       />
-      <Navbar />
+
+      {/* Clean Minimal Logo-Only Header */}
+      <header className="w-full py-5 px-6 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-3 group">
+          <img src={vawLogoDark} alt="VAW Official Network" className="h-8 md:h-9 w-auto object-contain transition-transform group-hover:scale-105" />
+        </Link>
+        <Badge variant="outline" className="border-amber-500/30 text-amber-400 bg-amber-500/10 text-xs px-3 py-1 font-semibold uppercase">
+          Official HR Re-KYC Portal
+        </Badge>
+      </header>
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-3xl">
         <div className="mb-6">
@@ -380,14 +452,14 @@ const ReKYCPage = () => {
           </Link>
         </div>
 
-        {/* Header */}
+        {/* Page Title */}
         <div className="text-center space-y-3 mb-8">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-semibold uppercase tracking-wider">
             <ShieldCheck className="h-4 w-4" />
-            Official HR Re-KYC Portal
+            Identity Verification
           </div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
-            Re-KYC Identity Verification
+            Re-KYC Verification
           </h1>
           <p className="text-zinc-400 text-sm max-w-lg mx-auto">
             Please complete <strong>JUST the KYC section</strong> below to update your verified identification details for HR review.
