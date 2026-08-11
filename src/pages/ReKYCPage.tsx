@@ -379,7 +379,6 @@ const ReKYCPage = () => {
           .update({
             govt_id_number: kycData.govt_id_number,
             kyc_selfie_url: kycData.kyc_selfie_url,
-            profile_photo_url: kycData.kyc_selfie_url,
             physical_address: kycData.physical_address || rawRecord.physical_address,
             phone: kycData.phone || rawRecord.phone,
             status: "pending",
@@ -393,7 +392,7 @@ const ReKYCPage = () => {
           .from("staff_profiles")
           .update({
             govt_id_number: kycData.govt_id_number,
-            profile_photo_url: kycData.kyc_selfie_url,
+            kyc_selfie_url: kycData.kyc_selfie_url,
             physical_address: kycData.physical_address || rawRecord.physical_address,
             application_status: "approved",
             updated_at: new Date().toISOString(),
