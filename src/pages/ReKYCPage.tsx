@@ -134,16 +134,17 @@ const ReKYCPage = () => {
       );
 
       if (matchedStaff) {
+        const staffObj = matchedStaff as any;
         setRecordSource("team_applications_staff");
-        setRawRecord(matchedStaff);
+        setRawRecord(staffObj);
         setKycData((prev) => ({
           ...prev,
-          full_name: matchedStaff.full_name || "",
-          email: matchedStaff.email || "",
-          phone: matchedStaff.phone || "",
-          govt_id_number: matchedStaff.govt_id_number || "",
-          kyc_selfie_url: matchedStaff.kyc_selfie_url || matchedStaff.profile_photo_url || "",
-          physical_address: matchedStaff.physical_address || "",
+          full_name: staffObj.full_name || "",
+          email: staffObj.email || "",
+          phone: staffObj.phone || "",
+          govt_id_number: staffObj.govt_id_number || "",
+          kyc_selfie_url: staffObj.kyc_selfie_url || staffObj.profile_photo_url || "",
+          physical_address: staffObj.physical_address || "",
         }));
         setLoading(false);
         return;
@@ -169,16 +170,17 @@ const ReKYCPage = () => {
       );
 
       if (matchedProfile) {
+        const profObj = matchedProfile as any;
         setRecordSource("staff_profiles");
-        setRawRecord(matchedProfile);
+        setRawRecord(profObj);
         setKycData((prev) => ({
           ...prev,
-          full_name: matchedProfile.full_name || "",
-          email: matchedProfile.email || "",
-          phone: matchedProfile.phone || "",
-          govt_id_number: matchedProfile.govt_id_number || "",
-          kyc_selfie_url: matchedProfile.profile_photo_url || "",
-          physical_address: matchedProfile.physical_address || "",
+          full_name: profObj.full_name || "",
+          email: profObj.email || "",
+          phone: profObj.phone || "",
+          govt_id_number: profObj.govt_id_number || "",
+          kyc_selfie_url: profObj.profile_photo_url || profObj.kyc_selfie_url || "",
+          physical_address: profObj.physical_address || "",
         }));
         setLoading(false);
         return;
@@ -204,16 +206,17 @@ const ReKYCPage = () => {
       );
 
       if (matchedTeam) {
+        const teamObj = matchedTeam as any;
         setRecordSource("team_applications");
-        setRawRecord(matchedTeam);
+        setRawRecord(teamObj);
         setKycData((prev) => ({
           ...prev,
-          full_name: matchedTeam.full_name || "",
-          email: matchedTeam.email || "",
-          phone: matchedTeam.phone || "",
-          govt_id_number: matchedTeam.govt_id_number || "",
-          kyc_selfie_url: matchedTeam.kyc_selfie_url || matchedTeam.resume_url || "",
-          physical_address: matchedTeam.physical_address || "",
+          full_name: teamObj.full_name || "",
+          email: teamObj.email || "",
+          phone: teamObj.phone || "",
+          govt_id_number: teamObj.govt_id_number || "",
+          kyc_selfie_url: teamObj.kyc_selfie_url || teamObj.resume_url || "",
+          physical_address: teamObj.physical_address || "",
         }));
         setLoading(false);
         return;
