@@ -93,7 +93,7 @@ const getIsoDateKey = (isoStr: string) => {
   }
 };
 
-const calculatePriorityFromDueDate = (dueDateStr: string | null | undefined): string => {
+const calculatePriorityFromDueDate = (dueDateStr: string | null | undefined): 'low' | 'medium' | 'high' | 'urgent' => {
   if (!dueDateStr) return 'medium';
   try {
     const dueDate = new Date(dueDateStr);
@@ -546,6 +546,64 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     }
   };
 
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const { error: subtaskError } = await supabase
+        .from('staff_subtasks')
+        .delete()
+        .eq('task_id', taskId);
+
+      if (subtaskError) console.error('Error deleting subtasks for task:', subtaskError);
+
+      const { error } = await supabase
+        .from('staff_tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Task deleted successfully",
+      });
+
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+      setSubtasks(prev => prev.filter(s => s.task_id !== taskId));
+    } catch (err: any) {
+      console.error('Error deleting task:', err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to delete task",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteSubtask = async (subtaskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('staff_subtasks')
+        .delete()
+        .eq('id', subtaskId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Subtask deleted successfully",
+      });
+
+      setSubtasks(prev => prev.filter(s => s.id !== subtaskId));
+    } catch (err: any) {
+      console.error('Error deleting subtask:', err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to delete subtask",
+        variant: "destructive"
+      });
+    }
+  };
+
   const fetchPlans = async () => {
     setIsLoading(true);
     try {
@@ -950,9 +1008,42 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   }, [plansByDate, tasksByDate, subtasksByDate]);
 
   return (
-    <div className="w-full text-white calendar-kit-dark-container relative">
-      {/* Inject dynamic CSS for green completed date cells */}
+    <div className="w-full text-white calendar-kit-dark-container max-h-[calc(100vh-100px)] flex flex-col overflow-hidden">
+      {/* Inject dynamic CSS for green completed date cells, height constraints, and viewport popup centering */}
       <style>{`
+        .calendar-kit-dark-container {
+          max-height: calc(100vh - 100px) !important;
+          display: flex !important;
+          flex-direction: column !important;
+        }
+
+        /* Ensure all view bodies (Agenda, Week, Day, Month) scroll internally */
+        .calendar-kit-dark-container > div,
+        .calendar-kit-dark-container .ck-scheduler-container,
+        .calendar-kit-dark-container [class*="ck-grid"],
+        .calendar-kit-dark-container [class*="ck-content"],
+        .calendar-kit-dark-container [class*="ck-body"],
+        .calendar-kit-dark-container [class*="ck-views"],
+        .calendar-kit-dark-container [class*="ck-week"],
+        .calendar-kit-dark-container [class*="ck-day"],
+        .calendar-kit-dark-container [class*="ck-agenda"] {
+          max-height: 100% !important;
+          overflow-y: auto !important;
+        }
+
+        /* Viewport centering for popups, modals, and dialogs */
+        .ck-modal,
+        .ck-dialog,
+        .ck-popover {
+          position: fixed !important;
+          top: 50% !important;
+          left: 50% !important;
+          transform: translate(-50%, -50%) !important;
+          z-index: 9999 !important;
+          max-height: 90vh !important;
+          overflow-y: auto !important;
+        }
+
         ${Array.from(completedDateKeys).map(dateKey => {
           const [y, m, d] = dateKey.split('-');
           return `
@@ -1051,9 +1142,22 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           }
         }}
         onEventDelete={(eventId) => {
-          const targetPlan = plans.find(p => p.id === eventId);
-          if (targetPlan) {
-            handleDeletePlan(targetPlan.id);
+          if (!eventId) return;
+          const idStr = String(eventId);
+          if (idStr.startsWith('task-')) {
+            const taskId = idStr.replace('task-', '');
+            handleDeleteTask(taskId);
+          } else if (idStr.startsWith('subtask-')) {
+            const subtaskId = idStr.replace('subtask-', '');
+            handleDeleteSubtask(subtaskId);
+          } else {
+            const targetPlan = plans.find(p => p.id === idStr);
+            if (targetPlan) {
+              handleDeletePlan(targetPlan.id);
+            } else {
+              // Direct fallback delete attempt on monthly_plans
+              handleDeletePlan(idStr);
+            }
           }
         }}
         isDarkMode={true}
@@ -1170,6 +1274,17 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                             >
                               <Edit className="w-3.5 h-3.5" /> Edit
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeletePlan(p.id);
+                              }}
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                            </Button>
                           </div>
                         </div>
                         {p.description && <p className="text-xs text-white/60 line-clamp-2">{p.description}</p>}
@@ -1202,6 +1317,17 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                             <Check className="w-3.5 h-3.5 text-emerald-400" />
                             {t.status === 'completed' ? 'Pending' : 'Complete'}
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg flex items-center gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteTask(t.id);
+                            }}
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                          </Button>
                         </div>
                       </div>
                       {t.description && <p className="text-xs text-white/60 line-clamp-2">{t.description}</p>}
@@ -1232,6 +1358,17 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                           >
                             <Check className="w-3.5 h-3.5 text-emerald-400" />
                             {st.status === 'completed' ? 'Pending' : 'Complete'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg flex items-center gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteSubtask(st.id);
+                            }}
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
                           </Button>
                         </div>
                       </div>
