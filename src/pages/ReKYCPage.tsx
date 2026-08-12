@@ -121,154 +121,145 @@ const ReKYCPage = () => {
   }, [isCameraActive, cameraFacingMode]);
 
   const fetchApplicantRecord = async (targetId: string) => {
+    if (!targetId || !targetId.trim()) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     const cleanTarget = targetId.trim();
     const rawTerm = cleanTarget.replace(/^APP-/i, "").trim().toLowerCase();
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanTarget) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawTerm);
+    const isHex8 = /^[0-9a-f]{8}$/i.test(rawTerm);
+    const isEmail = cleanTarget.includes("@");
 
-    try {
-      // 1. Query team_applications_staff (targeted search first to bypass bulk RLS limits)
-      let { data: staffApps, error: staffErr } = await supabase
-        .from("team_applications_staff")
-        .select("*")
-        .or(`id.eq.${rawTerm},id.ilike.${rawTerm}%`);
+    const matchRecord = (rec: any) => {
+      if (!rec) return false;
+      const recId = (rec.id || "").toLowerCase();
+      const recIdNoHyphen = recId.replace(/-/g, "");
+      const cleanTargetLower = cleanTarget.toLowerCase();
+      const rawTermLower = rawTerm.toLowerCase();
+      const displayIdLower = getApplicationDisplayId(rec.id).toLowerCase();
+      const displayIdNoApp = displayIdLower.replace(/^app-/i, "");
 
-      if (staffErr || !staffApps || staffApps.length === 0) {
-        const { data: allStaff } = await supabase.from("team_applications_staff").select("*");
-        staffApps = allStaff || [];
+      return (
+        recId === cleanTargetLower ||
+        recId === rawTermLower ||
+        recIdNoHyphen.startsWith(rawTermLower) ||
+        displayIdLower === cleanTargetLower ||
+        displayIdNoApp === rawTermLower ||
+        (rec.email && rec.email.toLowerCase() === cleanTargetLower) ||
+        (rec.phone && rec.phone.replace(/\D/g, "").includes(cleanTarget.replace(/\D/g, "")))
+      );
+    };
+
+    const queryTable = async (tableName: string) => {
+      let records: any[] = [];
+      try {
+        if (isUUID) {
+          const targetUuid = cleanTarget.includes("-") ? cleanTarget : rawTerm;
+          const { data } = await supabase.from(tableName as any).select("*").eq("id", targetUuid);
+          if (data && data.length > 0) records.push(...data);
+        }
+        if (isEmail) {
+          const { data } = await supabase.from(tableName as any).select("*").eq("email", cleanTarget.toLowerCase());
+          if (data && data.length > 0) records.push(...data);
+        }
+        if (isHex8) {
+          const uuidLower = `${rawTerm}-0000-0000-0000-000000000000`;
+          const uuidUpper = `${rawTerm}-ffff-ffff-ffff-ffffffffffff`;
+          const { data } = await supabase.from(tableName as any).select("*").gte("id", uuidLower).lte("id", uuidUpper);
+          if (data && data.length > 0) records.push(...data);
+        }
+      } catch (e) {
+        console.warn(`Targeted query error for ${tableName}:`, e);
       }
 
-      let matchedStaff = staffApps?.find(
-        (app: any) =>
-          app.id?.toLowerCase() === rawTerm ||
-          app.id?.toLowerCase().startsWith(rawTerm) ||
-          getApplicationDisplayId(app.id).toLowerCase() === cleanTarget.toLowerCase() ||
-          app.email?.toLowerCase() === cleanTarget.toLowerCase()
-      );
+      // Safe fallback: fetch records without invalid PostgREST syntax
+      if (records.length === 0) {
+        try {
+          const { data } = await supabase.from(tableName as any).select("*");
+          if (data) records = data;
+        } catch (e) {
+          console.warn(`Fallback query error for ${tableName}:`, e);
+        }
+      }
 
+      return records.find(matchRecord);
+    };
+
+    try {
+      // 1. Query team_applications_staff (Staff applications)
+      const matchedStaff = await queryTable("team_applications_staff");
       if (matchedStaff) {
-        const staffObj = matchedStaff as any;
         setRecordSource("team_applications_staff");
-        setRawRecord(staffObj);
+        setRawRecord(matchedStaff);
         setKycData((prev) => ({
           ...prev,
-          full_name: staffObj.full_name || "",
-          email: staffObj.email || "",
-          phone: staffObj.phone || "",
-          govt_id_number: staffObj.govt_id_number || "",
-          kyc_selfie_url: staffObj.kyc_selfie_url || "",
-          profile_photo_url: staffObj.profile_photo_url || "",
-          physical_address: staffObj.physical_address || "",
+          full_name: matchedStaff.full_name || "",
+          email: matchedStaff.email || "",
+          phone: matchedStaff.phone || "",
+          govt_id_number: matchedStaff.govt_id_number || "",
+          kyc_selfie_url: matchedStaff.kyc_selfie_url || "",
+          profile_photo_url: matchedStaff.profile_photo_url || "",
+          physical_address: matchedStaff.physical_address || "",
         }));
         setLoading(false);
         return;
       }
 
       // 2. Query staff_profiles
-      let { data: profiles, error: profErr } = await supabase
-        .from("staff_profiles")
-        .select("*")
-        .or(`id.eq.${rawTerm},id.ilike.${rawTerm}%`);
-
-      if (profErr || !profiles || profiles.length === 0) {
-        const { data: allProf } = await supabase.from("staff_profiles").select("*");
-        profiles = allProf || [];
-      }
-
-      let matchedProfile = profiles?.find(
-        (p: any) =>
-          p.id?.toLowerCase() === rawTerm ||
-          p.id?.toLowerCase().startsWith(rawTerm) ||
-          getApplicationDisplayId(p.id).toLowerCase() === cleanTarget.toLowerCase() ||
-          p.email?.toLowerCase() === cleanTarget.toLowerCase()
-      );
-
+      const matchedProfile = await queryTable("staff_profiles");
       if (matchedProfile) {
-        const profObj = matchedProfile as any;
         setRecordSource("staff_profiles");
-        setRawRecord(profObj);
+        setRawRecord(matchedProfile);
         setKycData((prev) => ({
           ...prev,
-          full_name: profObj.full_name || "",
-          email: profObj.email || "",
-          phone: profObj.phone || "",
-          govt_id_number: profObj.govt_id_number || "",
-          kyc_selfie_url: profObj.kyc_selfie_url || "",
-          profile_photo_url: profObj.profile_photo_url || "",
-          physical_address: profObj.physical_address || "",
+          full_name: matchedProfile.full_name || "",
+          email: matchedProfile.email || "",
+          phone: matchedProfile.phone || "",
+          govt_id_number: matchedProfile.govt_id_number || "",
+          kyc_selfie_url: matchedProfile.kyc_selfie_url || "",
+          profile_photo_url: matchedProfile.profile_photo_url || "",
+          physical_address: matchedProfile.physical_address || "",
         }));
         setLoading(false);
         return;
       }
 
-      // 3. Query team_applications (general applications)
-      let { data: teamApps } = await supabase
-        .from("team_applications")
-        .select("*")
-        .or(`id.eq.${rawTerm},id.ilike.${rawTerm}%`);
-
-      if (!teamApps || teamApps.length === 0) {
-        const { data: allTeam } = await supabase.from("team_applications").select("*");
-        teamApps = allTeam || [];
-      }
-
-      let matchedTeam = teamApps?.find(
-        (app: any) =>
-          app.id?.toLowerCase() === rawTerm ||
-          app.id?.toLowerCase().startsWith(rawTerm) ||
-          getApplicationDisplayId(app.id).toLowerCase() === cleanTarget.toLowerCase() ||
-          app.email?.toLowerCase() === cleanTarget.toLowerCase()
-      );
-
+      // 3. Query team_applications (General team applications)
+      const matchedTeam = await queryTable("team_applications");
       if (matchedTeam) {
-        const teamObj = matchedTeam as any;
         setRecordSource("team_applications");
-        setRawRecord(teamObj);
+        setRawRecord(matchedTeam);
         setKycData((prev) => ({
           ...prev,
-          full_name: teamObj.full_name || "",
-          email: teamObj.email || "",
-          phone: teamObj.phone || "",
-          govt_id_number: teamObj.govt_id_number || "",
-          kyc_selfie_url: teamObj.kyc_selfie_url || "",
-          profile_photo_url: teamObj.profile_photo_url || "",
-          physical_address: teamObj.physical_address || "",
+          full_name: matchedTeam.full_name || "",
+          email: matchedTeam.email || "",
+          phone: matchedTeam.phone || "",
+          govt_id_number: matchedTeam.govt_id_number || "",
+          kyc_selfie_url: matchedTeam.kyc_selfie_url || "",
+          profile_photo_url: matchedTeam.profile_photo_url || "",
+          physical_address: matchedTeam.physical_address || "",
         }));
         setLoading(false);
         return;
       }
 
       // 4. Query internship_applications
-      let { data: internApps } = await supabase
-        .from("internship_applications")
-        .select("*")
-        .or(`id.eq.${rawTerm},id.ilike.${rawTerm}%`);
-
-      if (!internApps || internApps.length === 0) {
-        const { data: allIntern } = await supabase.from("internship_applications").select("*");
-        internApps = allIntern || [];
-      }
-
-      let matchedIntern = internApps?.find(
-        (app: any) =>
-          app.id?.toLowerCase() === rawTerm ||
-          app.id?.toLowerCase().startsWith(rawTerm) ||
-          getApplicationDisplayId(app.id).toLowerCase() === cleanTarget.toLowerCase() ||
-          app.email?.toLowerCase() === cleanTarget.toLowerCase()
-      );
-
+      const matchedIntern = await queryTable("internship_applications");
       if (matchedIntern) {
-        const internObj = matchedIntern as any;
         setRecordSource("internship_applications");
-        setRawRecord(internObj);
+        setRawRecord(matchedIntern);
         setKycData((prev) => ({
           ...prev,
-          full_name: internObj.full_name || "",
-          email: internObj.email || "",
-          phone: internObj.phone || "",
-          govt_id_number: internObj.govt_id_number || "",
-          kyc_selfie_url: internObj.kyc_selfie_url || "",
-          profile_photo_url: internObj.profile_photo_url || "",
-          physical_address: internObj.physical_address || "",
+          full_name: matchedIntern.full_name || "",
+          email: matchedIntern.email || "",
+          phone: matchedIntern.phone || "",
+          govt_id_number: matchedIntern.govt_id_number || "",
+          kyc_selfie_url: matchedIntern.kyc_selfie_url || "",
+          profile_photo_url: matchedIntern.profile_photo_url || "",
+          physical_address: matchedIntern.physical_address || "",
         }));
         setLoading(false);
         return;
@@ -276,7 +267,7 @@ const ReKYCPage = () => {
 
       toast({
         title: "Application Not Found",
-        description: "Could not find a valid record for the provided Application ID.",
+        description: "Could not find a valid record for the provided Application ID or search term.",
         variant: "destructive",
       });
     } catch (err) {
