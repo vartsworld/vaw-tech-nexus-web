@@ -84,6 +84,25 @@ export const TaskDetailDialog = ({
     return /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
   };
 
+  const formatSubtaskDate = (dateStr: string | null | undefined, timeStr?: string | null): string => {
+    if (!dateStr) return '';
+    try {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const monthStr = String(month).padStart(2, '0');
+      const dayStr = String(day).padStart(2, '0');
+      let timePart = '';
+      if (timeStr) {
+        const [h, m] = timeStr.split(':').map(Number);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 === 0 ? 12 : h % 12;
+        timePart = `, ${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+      }
+      return `${dayStr}/${monthStr}/${year}${timePart}`;
+    } catch {
+      return dateStr;
+    }
+  };
+
   const getFileUrl = (path: string) => {
     if (!path) return '';
     if (path.startsWith('http')) return path;
@@ -964,8 +983,7 @@ export const TaskDetailDialog = ({
                         {st.due_date && (
                           <span className="text-[9px] text-orange-300/80 flex items-center gap-1 bg-orange-500/10 px-1.5 py-0.5 rounded-full border border-orange-500/20">
                             <Calendar className="w-2.5 h-2.5" />
-                            {format(new Date(st.due_date), 'MMM dd')}
-                            {st.due_time && ` ${st.due_time}`}
+                            {formatSubtaskDate(st.due_date, st.due_time)}
                           </span>
                         )}
                         <Eye className="w-3 h-3 text-white/20 ml-auto" />
@@ -1284,7 +1302,7 @@ export const TaskDetailDialog = ({
               {viewingSubtask.due_date && (
                 <div className="flex items-center gap-2 text-xs text-white/50">
                   <Calendar className="w-3.5 h-3.5 text-orange-400" />
-                  Due: {(() => { try { return format(new Date(viewingSubtask.due_date), 'MMM dd, yyyy'); } catch { return viewingSubtask.due_date; } })()}
+                  Due: {formatSubtaskDate(viewingSubtask.due_date, viewingSubtask.due_time)}
                 </div>
               )}
             </div>

@@ -189,6 +189,7 @@ const TeamApplicationsList = () => {
           has_health_issues: application.has_health_issues,
           health_issues: application.health_issues,
           kyc_selfie_url: application.kyc_selfie_url,
+          kyc_gps_location: application.kyc_gps_location,
           kyc_document_url: application.kyc_document_url || application.kyc_selfie_url,
           emergency_contact_name: application.emergency_contact_name,
           emergency_contact_phone: application.emergency_contact_phone,

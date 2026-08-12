@@ -629,15 +629,6 @@ const TeamHeadDashboard = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start relative z-10">
-          <div className="h-full">
-            <QuickNotes userId={profile?.user_id || ''} />
-          </div>
-
-          <div className="h-full bg-black/40 backdrop-blur-md rounded-xl border border-white/10 p-4">
-            <ClientOnboardingCreator userId={profile?.user_id || ''} />
-          </div>
-        </div>
 
         {/* Row 2: Activity Log */}
         {widgets.find(w => w.id === 'activity')?.isVisible && (

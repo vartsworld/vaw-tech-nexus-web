@@ -60,9 +60,28 @@ const TaskDetailPage = ({
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const stageScrollRef = useRef<HTMLDivElement>(null);
   const [newSubtask, setNewSubtask] = useState({
-    title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1, rank: 0,
-    time_limit_hr: 0, penalty_coins: 0
+    title: "", description: "", assigned_to: "", priority: "medium" as string, points: 0, due_date: "", due_time: "", stage: 1
   });
+
+  // Helper: format a date string as DD/MM/YYYY, HH:MM AM/PM
+  const formatSubtaskDate = (dateStr: string | null | undefined, timeStr?: string | null): string => {
+    if (!dateStr) return '';
+    try {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const monthStr = String(month).padStart(2, '0');
+      const dayStr = String(day).padStart(2, '0');
+      let timePart = '';
+      if (timeStr) {
+        const [h, m] = timeStr.split(':').map(Number);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 === 0 ? 12 : h % 12;
+        timePart = `, ${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+      }
+      return `${dayStr}/${monthStr}/${year}${timePart}`;
+    } catch {
+      return dateStr;
+    }
+  };
   const [newStageName, setNewStageName] = useState("");
   const [editingStageNum, setEditingStageNum] = useState<number | null>(null);
   const [editingStageName, setEditingStageName] = useState("");
@@ -303,8 +322,6 @@ const TaskDetailPage = ({
         due_date: newSubtask.due_date || null, due_time: newSubtask.due_time || null,
         created_by: user?.id, stage: newSubtask.stage || 1, status: 'pending',
         rank: (subtasks.filter(s => s.stage === newSubtask.stage).length + 1) * 10,
-        time_limit_hr: newSubtask.time_limit_hr || 0,
-        penalty_coins: newSubtask.penalty_coins || 0,
         attachments: [
           ...newSubtaskFiles,
           ...linkAttachments
@@ -314,7 +331,7 @@ const TaskDetailPage = ({
         .select('*, staff_profiles:assigned_to (full_name, username, avatar_url)').single();
       if (error) throw error;
       setSubtasks([data, ...subtasks]);
-      setNewSubtask({ title: "", description: "", assigned_to: "", priority: "medium", points: 0, due_date: "", due_time: "", stage: newSubtask.stage, rank: 0, time_limit_hr: 0, penalty_coins: 0 });
+      setNewSubtask({ title: "", description: "", assigned_to: "", priority: "medium", points: 0, due_date: "", due_time: "", stage: newSubtask.stage });
       setNewSubtaskURL("");
       setNewSubtaskLinkName("");
       setNewSubtaskFiles([]);
@@ -1395,7 +1412,7 @@ const TaskDetailPage = ({
                                               <div className="flex items-center gap-1">
                                                 <Calendar className="h-3 w-3 text-amber-400" />
                                                 <span className="text-[9px] text-amber-400 font-medium">
-                                                  {(() => { try { return format(new Date(st.due_date), 'MMM dd'); } catch { return st.due_date; } })()}
+                                                  {formatSubtaskDate(st.due_date, st.due_time)}
                                                 </span>
                                               </div>
                                             )}
@@ -2239,57 +2256,10 @@ const TaskDetailPage = ({
                     className="bg-white/5 border-white/10"
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Time Limit (hr)</Label>
-                  <Input 
-                    type="number"
-                    value={editingSubtask.time_limit_hr || 0} 
-                    onChange={e => setEditingSubtask({...editingSubtask, time_limit_hr: parseInt(e.target.value) || 0})}
-                    className="bg-white/5 border-white/10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Penalty Coins</Label>
-                  <Input 
-                    type="number"
-                    value={editingSubtask.penalty_coins || 0} 
-                    onChange={e => setEditingSubtask({...editingSubtask, penalty_coins: parseInt(e.target.value) || 0})}
-                    className="bg-white/5 border-white/10"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Days to Due</Label>
-                  <Input 
-                    type="number"
-                    placeholder="Days"
-                    onChange={e => {
-                      const days = parseInt(e.target.value);
-                      if (!isNaN(days)) {
-                        const d = new Date(task.created_at || new Date());
-                        d.setDate(d.getDate() + days);
-                        setEditingSubtask({...editingSubtask, due_date: d.toISOString().split('T')[0]});
-                      }
-                    }}
-                    className="bg-white/5 border-white/10 text-xs"
-                  />
-                </div>
-                <div className="space-y-2 col-span-2">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-widest">Due Date</Label>
-                  <Input 
-                    type="date"
-                    value={editingSubtask.due_date || ''} 
-                    onChange={e => setEditingSubtask({...editingSubtask, due_date: e.target.value})}
-                    className="bg-white/5 border-white/10 text-xs"
-                  />
-                </div>
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground uppercase tracking-widest">Stage</Label>
                   <Select value={String(editingSubtask.stage)} onValueChange={v => setEditingSubtask({...editingSubtask, stage: parseInt(v)})}>
-                    <SelectTrigger className="bg-white/5 border-white/10 border-white/10">
+                    <SelectTrigger className="bg-white/5 border-white/10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -2299,15 +2269,17 @@ const TaskDetailPage = ({
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                   <Label className="text-xs text-muted-foreground uppercase tracking-widest">Rank / Order</Label>
-                   <Input 
-                     type="number"
-                     value={editingSubtask.rank || 0} 
-                     onChange={e => setEditingSubtask({...editingSubtask, rank: parseInt(e.target.value) || 0})}
-                     className="bg-white/5 border-white/10"
-                   />
-                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-widest">
+                  Due Date {editingSubtask.due_date && <span className="text-primary ml-1 font-bold">{formatSubtaskDate(editingSubtask.due_date, editingSubtask.due_time)}</span>}
+                </Label>
+                <Input 
+                  type="date"
+                  value={editingSubtask.due_date || ''} 
+                  onChange={e => setEditingSubtask({...editingSubtask, due_date: e.target.value})}
+                  className="bg-white/5 border-white/10 text-xs"
+                />
               </div>
 
               {/* Edit Attachments */}
@@ -2423,11 +2395,12 @@ const TaskDetailPage = ({
 
       {/* Create Subtask Dialog */}
       <Dialog open={isCreateSubtaskDialogOpen} onOpenChange={setIsCreateSubtaskDialogOpen}>
-        <DialogContent className="max-w-md bg-black/90 border-white/10 backdrop-blur-xl">
-          <DialogHeader>
+        <DialogContent className="max-w-md bg-black/90 border-white/10 backdrop-blur-xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-2 shrink-0">
             <DialogTitle className="text-lg font-bold">Add New Subtask</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 pt-2">
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground uppercase tracking-widest">Title *</Label>
               <Input 
@@ -2438,6 +2411,7 @@ const TaskDetailPage = ({
                 className="bg-white/5 border-white/10"
               />
             </div>
+            
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground uppercase tracking-widest">Description</Label>
               <Textarea 
@@ -2447,6 +2421,7 @@ const TaskDetailPage = ({
                 className="bg-white/5 border-white/10 min-h-[80px]"
               />
             </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase tracking-widest">Assignee *</Label>
@@ -2467,6 +2442,14 @@ const TaskDetailPage = ({
                         </SelectGroup>
                       );
                     })}
+                    {staff.filter(s => !s.department_id).length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px] uppercase text-muted-foreground px-2 py-1.5">Other</SelectLabel>
+                        {staff.filter(s => !s.department_id).map(m => (
+                          <SelectItem key={m.id} value={m.user_id} className="text-xs">{m.full_name}</SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -2485,6 +2468,7 @@ const TaskDetailPage = ({
                 </Select>
               </div>
             </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase tracking-widest">Points</Label>
@@ -2496,53 +2480,6 @@ const TaskDetailPage = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Rank / Order</Label>
-                <Input 
-                  type="number"
-                  value={newSubtask.rank} 
-                  onChange={e => setNewSubtask({...newSubtask, rank: parseInt(e.target.value) || 0})}
-                  className="bg-white/5 border-white/10"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Time Limit (hr)</Label>
-                <Input 
-                  type="number"
-                  value={newSubtask.time_limit_hr} 
-                  onChange={e => setNewSubtask({...newSubtask, time_limit_hr: parseInt(e.target.value) || 0})}
-                  className="bg-white/5 border-white/10"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Penalty Coins</Label>
-                <Input 
-                  type="number"
-                  value={newSubtask.penalty_coins} 
-                  onChange={e => setNewSubtask({...newSubtask, penalty_coins: parseInt(e.target.value) || 0})}
-                  className="bg-white/5 border-white/10"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Days to Due</Label>
-                <Input 
-                  type="number"
-                  placeholder="Days"
-                  onChange={e => {
-                    const days = parseInt(e.target.value);
-                    if (!isNaN(days)) {
-                      const d = new Date(task.created_at || new Date());
-                      d.setDate(d.getDate() + days);
-                      setNewSubtask({...newSubtask, due_date: d.toISOString().split('T')[0]});
-                    }
-                  }}
-                  className="bg-white/5 border-white/10 text-xs"
-                />
-              </div>
-              <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground uppercase tracking-widest">Due Date</Label>
                 <Input 
                   type="date"
@@ -2550,30 +2487,43 @@ const TaskDetailPage = ({
                   onChange={e => setNewSubtask({...newSubtask, due_date: e.target.value})}
                   className="bg-white/5 border-white/10 text-xs"
                 />
+                {newSubtask.due_date && (
+                  <p className="text-[10px] text-primary font-semibold mt-1">
+                    {formatSubtaskDate(newSubtask.due_date, newSubtask.due_time)}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Attachments */}
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs text-muted-foreground uppercase tracking-widest">Attachments</Label>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="outline" className="h-6 text-[9px] border-white/10" onClick={() => setNewSubtaskAttachType(newSubtaskAttachType === 'url' ? 'none' : 'url')}>
-                    <Share2 className="h-2.5 w-2.5 mr-1" /> URL
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-6 text-[9px] border-white/10" onClick={() => {
-                      setNewSubtaskAttachType('file');
-                      document.getElementById('new-subtask-file-input-dialog')?.click();
-                    }}>
-                    <Upload className="h-2.5 w-2.5 mr-1" /> File
-                  </Button>
-                </div>
+            <div className="space-y-3 pt-2">
+              <Label className="text-xs text-muted-foreground uppercase tracking-widest">Attachments</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 border-white/10 bg-white/5 hover:bg-white/10 flex items-center justify-center gap-2 rounded-xl text-xs font-semibold"
+                  onClick={() => setNewSubtaskAttachType(newSubtaskAttachType === 'url' ? 'none' : 'url')}
+                >
+                  <Share2 className="h-4 w-4 text-blue-400" /> Add URL Link
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 border-white/10 bg-white/5 hover:bg-white/10 flex items-center justify-center gap-2 rounded-xl text-xs font-semibold"
+                  onClick={() => {
+                    setNewSubtaskAttachType('file');
+                    document.getElementById('new-subtask-file-input-dialog')?.click();
+                  }}
+                >
+                  <Upload className="h-4 w-4 text-emerald-400" /> Upload File
+                </Button>
               </div>
               
               <input type="file" multiple hidden id="new-subtask-file-input-dialog" onChange={handleNewSubtaskFileUpload} />
 
               {newSubtaskAttachType === 'url' && (
-                <div className="space-y-2">
+                <div className="space-y-2 mt-2">
                   <div className="flex gap-2">
                     <Input placeholder="https://..." value={newSubtaskURL}
                       onChange={e => setNewSubtaskURL(e.target.value)}
@@ -2600,7 +2550,7 @@ const TaskDetailPage = ({
               )}
 
               {newSubtaskFiles.length > 0 && (
-                <div className="space-y-1">
+                <div className="space-y-1 mt-2">
                   {newSubtaskFiles.map((file: any, i: number) => (
                     <div key={i} className="flex items-center justify-between p-2 rounded bg-white/5 border border-white/10 text-[10px]">
                       <div className="flex items-center gap-2 truncate">
@@ -2616,12 +2566,13 @@ const TaskDetailPage = ({
               )}
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsCreateSubtaskDialogOpen(false)}>Cancel</Button>
+          
+          <div className="p-6 pt-3 border-t border-white/5 flex items-center justify-between shrink-0">
+            <Button variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={() => setIsCreateSubtaskDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleCreateSubtask} className="bg-primary hover:bg-primary/80">
               Add Subtask
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 

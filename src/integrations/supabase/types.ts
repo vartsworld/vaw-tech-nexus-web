@@ -2271,6 +2271,8 @@ export type Database = {
           phone: string
           resume_url: string | null
           updated_at: string
+          kyc_selfie_url?: string | null
+          kyc_gps_location?: string | null
         }
         Insert: {
           college_name: string
@@ -2285,6 +2287,8 @@ export type Database = {
           phone: string
           resume_url?: string | null
           updated_at?: string
+          kyc_selfie_url?: string | null
+          kyc_gps_location?: string | null
         }
         Update: {
           college_name?: string
@@ -2299,6 +2303,8 @@ export type Database = {
           phone?: string
           resume_url?: string | null
           updated_at?: string
+          kyc_selfie_url?: string | null
+          kyc_gps_location?: string | null
         }
         Relationships: []
       }
@@ -3760,6 +3766,13 @@ export type Database = {
           user_id: string
           username: string
           work_confidence_level: string | null
+          kyc_selfie_url: string | null
+          kyc_gps_location: string | null
+          govt_id_type: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          has_health_issues: boolean | null
+          sibling_names: string[] | null
         }
         Insert: {
           about_me?: string | null
@@ -3805,6 +3818,13 @@ export type Database = {
           user_id: string
           username: string
           work_confidence_level?: string | null
+          kyc_selfie_url?: string | null
+          kyc_gps_location?: string | null
+          govt_id_type?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          has_health_issues?: boolean | null
+          sibling_names?: string[] | null
         }
         Update: {
           about_me?: string | null
@@ -3850,6 +3870,13 @@ export type Database = {
           user_id?: string
           username?: string
           work_confidence_level?: string | null
+          kyc_selfie_url?: string | null
+          kyc_gps_location?: string | null
+          govt_id_type?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          has_health_issues?: boolean | null
+          sibling_names?: string[] | null
         }
         Relationships: [
           {
@@ -4502,6 +4529,8 @@ export type Database = {
           status: string | null
           updated_at: string
           why_join_team: string
+          kyc_selfie_url?: string | null
+          kyc_gps_location?: string | null
         }
         Insert: {
           created_at?: string
@@ -4519,6 +4548,8 @@ export type Database = {
           status?: string | null
           updated_at?: string
           why_join_team: string
+          kyc_selfie_url?: string | null
+          kyc_gps_location?: string | null
         }
         Update: {
           created_at?: string
@@ -4536,6 +4567,8 @@ export type Database = {
           status?: string | null
           updated_at?: string
           why_join_team?: string
+          kyc_selfie_url?: string | null
+          kyc_gps_location?: string | null
         }
         Relationships: []
       }
@@ -4564,8 +4597,19 @@ export type Database = {
           siblings: string | null
           status: string | null
           updated_at: string | null
-          username: string | null
           work_confidence_level: string | null
+          physical_address: string | null
+          govt_id_type: string | null
+          govt_id_number: string | null
+          blood_group: string | null
+          kyc_selfie_url: string | null
+          kyc_gps_location: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          legal_accepted: boolean | null
+          has_health_issues: boolean | null
+          health_issues: string[] | null
+          sibling_names: string[] | null
         }
         Insert: {
           about_me?: string | null
@@ -4593,6 +4637,18 @@ export type Database = {
           updated_at?: string | null
           username?: string | null
           work_confidence_level?: string | null
+          physical_address?: string | null
+          govt_id_type?: string | null
+          govt_id_number?: string | null
+          blood_group?: string | null
+          kyc_selfie_url?: string | null
+          kyc_gps_location?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          legal_accepted?: boolean | null
+          has_health_issues?: boolean | null
+          health_issues?: string[] | null
+          sibling_names?: string[] | null
         }
         Update: {
           about_me?: string | null
@@ -4620,6 +4676,18 @@ export type Database = {
           updated_at?: string | null
           username?: string | null
           work_confidence_level?: string | null
+          physical_address?: string | null
+          govt_id_type?: string | null
+          govt_id_number?: string | null
+          blood_group?: string | null
+          kyc_selfie_url?: string | null
+          kyc_gps_location?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          legal_accepted?: boolean | null
+          has_health_issues?: boolean | null
+          health_issues?: string[] | null
+          sibling_names?: string[] | null
         }
         Relationships: []
       }

@@ -121,10 +121,7 @@ const TaskManagement = () => {
     points: 0,
     due_date: "",
     due_time: "",
-    stage: 1,
-    rank: 0,
-    time_limit_hr: 0,
-    penalty_coins: 0
+    stage: 1
   });
 
   const [savingEdit, setSavingEdit] = useState(false);
@@ -378,9 +375,7 @@ const TaskManagement = () => {
           created_by: user?.id,
           stage: newSubtask.stage || 1,
           status: 'pending',
-          rank: (subtasks.filter(s => s.stage === (newSubtask.stage || 1)).length + 1) * 10,
-          time_limit_hr: newSubtask.time_limit_hr || 0,
-          penalty_coins: newSubtask.penalty_coins || 0
+          rank: (subtasks.filter(s => s.stage === (newSubtask.stage || 1)).length + 1) * 10
         })
         .select(`
           *,
@@ -402,10 +397,7 @@ const TaskManagement = () => {
         points: 0,
         due_date: "",
         due_time: "",
-        stage: newSubtask.stage,
-        rank: 0,
-        time_limit_hr: 0,
-        penalty_coins: 0
+        stage: newSubtask.stage
       });
       setQuickAddStage(null);
       setSelectedSubtaskTemplateId("none");

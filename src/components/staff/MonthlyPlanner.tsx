@@ -31,7 +31,10 @@ import {
   Target,
   Grid,
   List,
-  Sparkles
+  Sparkles,
+  Loader2,
+  ClipboardList,
+  ChevronDown
 } from "lucide-react";
 import {
   format,
@@ -90,6 +93,27 @@ const getIsoDateKey = (isoStr: string) => {
   }
 };
 
+const calculatePriorityFromDueDate = (dueDateStr: string | null | undefined): string => {
+  if (!dueDateStr) return 'medium';
+  try {
+    const dueDate = new Date(dueDateStr);
+    const today = new Date();
+    // Reset hours to compare dates
+    dueDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    const diffTime = dueDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 1) return 'urgent';
+    if (diffDays <= 3) return 'high';
+    if (diffDays <= 7) return 'medium';
+    return 'low';
+  } catch (err) {
+    console.error('Error calculating priority:', err);
+    return 'medium';
+  }
+};
+
 const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyPlannerProps) => {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [view, setView] = useState<ViewType>('month');
@@ -106,6 +130,32 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   const [tasks, setTasks] = useState<any[]>([]);
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const lastDateClickRef = React.useRef<number>(0);
+
+  // Create Task from Calendar state
+  const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false);
+  const [isCalendarClientPopoverOpen, setIsCalendarClientPopoverOpen] = useState(false);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [newCalendarTask, setNewCalendarTask] = useState({
+    title: '',
+    description: '',
+    client_id: '',
+    assigned_to: [] as string[],
+    priority: 'medium' as string,
+    points: 10,
+    due_date: '',
+  });
+  const [isSubmittingCalendarTask, setIsSubmittingCalendarTask] = useState(false);
+  const [calendarTaskClientSearch, setCalendarTaskClientSearch] = useState('');
+  const [staffSearchQuery, setStaffSearchQuery] = useState('');
+
+  const matchingStaff = useMemo(() => {
+    if (!staffSearchQuery.trim()) return [];
+    const q = staffSearchQuery.toLowerCase();
+    return staffMembers.filter(member => 
+      (member.full_name?.toLowerCase().includes(q) || member.email?.toLowerCase().includes(q)) &&
+      !newCalendarTask.assigned_to.includes(member.user_id)
+    );
+  }, [staffSearchQuery, staffMembers, newCalendarTask.assigned_to]);
 
   const handleDateChange = (newDate: Date) => {
     lastDateClickRef.current = Date.now();
@@ -242,12 +292,114 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     fetchClients();
     fetchStaffMembers();
     fetchTasksAndSubtasks();
+    fetchDepartments();
   }, [currentMonth, filterClientId]);
 
   const fetchStaffMembers = async () => {
-    const { data } = await supabase.from('staff_profiles').select('id, user_id, full_name, email');
+    const { data } = await supabase.from('staff_profiles').select('id, user_id, full_name, email, department_id');
     setStaffMembers(data || []);
   };
+
+  const fetchDepartments = async () => {
+    const { data } = await supabase.from('departments').select('id, name');
+    setDepartments(data || []);
+  };
+
+  // Helper: format a date as DD/MM/YYYY, HH:MM AM/PM
+  const formatDisplayDate = (dateStr: string | null | undefined, timeStr?: string | null): string => {
+    if (!dateStr) return '';
+    try {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const monthStr = String(month).padStart(2, '0');
+      const dayStr = String(day).padStart(2, '0');
+      let timePart = '';
+      if (timeStr) {
+        const [h, m] = timeStr.split(':').map(Number);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h % 12 === 0 ? 12 : h % 12;
+        timePart = `, ${String(h12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
+      }
+      return `${dayStr}/${monthStr}/${year}${timePart}`;
+    } catch {
+      return dateStr;
+    }
+  };
+  const handleCreateTaskFromCalendar = async () => {
+    if (!newCalendarTask.title || newCalendarTask.assigned_to.length === 0) {
+      toast({
+        title: 'Validation Error',
+        description: 'Title and at least one assignee are required.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      setIsSubmittingCalendarTask(true);
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const targetDueDate = newCalendarTask.due_date || (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null);
+      const autoPriority = calculatePriorityFromDueDate(targetDueDate);
+
+      const { data, error } = await supabase
+        .from('staff_tasks')
+        .insert({
+          title: newCalendarTask.title,
+          description: newCalendarTask.description || null,
+          assigned_to: JSON.stringify(newCalendarTask.assigned_to),
+          assigned_by: user?.id,
+          client_id: newCalendarTask.client_id && newCalendarTask.client_id !== 'no-client' ? newCalendarTask.client_id : null,
+          priority: autoPriority,
+          status: 'pending',
+          due_date: targetDueDate,
+          points: 10,
+          department_id: userProfile?.department_id || null,
+          attachments: [],
+        })
+        .select('*')
+        .single();
+      if (error) throw error;
+
+      // Automatically create a subtask named "Calendar" for each assignee
+      if (newCalendarTask.assigned_to && newCalendarTask.assigned_to.length > 0) {
+        const subtasksToInsert = newCalendarTask.assigned_to.map((assigneeId, idx) => ({
+          task_id: data.id,
+          title: 'Calendar',
+          description: newCalendarTask.description || null,
+          assigned_to: assigneeId,
+          priority: autoPriority,
+          points: 10,
+          due_date: targetDueDate,
+          due_time: null,
+          created_by: user?.id,
+          stage: 1,
+          status: 'pending',
+          rank: (idx + 1) * 10,
+          attachments: []
+        }));
+
+        const { error: subtaskError } = await supabase
+          .from('staff_subtasks')
+          .insert(subtasksToInsert);
+
+        if (subtaskError) {
+          console.error('Error creating subtasks for calendar task:', subtaskError);
+        }
+      }
+
+      toast({ title: 'Task Created! 🎉', description: `"${newCalendarTask.title}" has been assigned from the calendar.` });
+      setIsCreateTaskDialogOpen(false);
+      setNewCalendarTask({ title: '', description: '', client_id: '', assigned_to: [], priority: 'medium', points: 10, due_date: '' });
+      setCalendarTaskClientSearch('');
+      setStaffSearchQuery('');
+      fetchTasksAndSubtasks();
+    } catch (err: any) {
+      console.error('Error creating task from calendar:', err);
+      toast({ title: 'Error', description: err.message || 'Failed to create task.', variant: 'destructive' });
+    } finally {
+      setIsSubmittingCalendarTask(false);
+    }
+  };
+
 
   const fetchTasksAndSubtasks = async () => {
     try {
@@ -1092,6 +1244,20 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           </div>
 
           <div className="flex gap-2 pt-3 border-t border-white/5 shrink-0">
+            {/* Create Task from Calendar */}
+            <Button
+              className="flex-1 h-11 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg"
+              onClick={() => {
+                setIsDayTasksDialogOpen(false);
+                setNewCalendarTask(prev => ({
+                  ...prev,
+                  due_date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''
+                }));
+                setIsCreateTaskDialogOpen(true);
+              }}
+            >
+              <ClipboardList className="w-4 h-4 mr-1.5" /> Assign Task
+            </Button>
             <Button
               className="flex-1 h-11 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg"
               onClick={() => {
@@ -1100,7 +1266,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                 setIsAddDialogOpen(true);
               }}
             >
-              <Plus className="w-4 h-4 mr-1.5" /> Add Plan For Date
+              <Plus className="w-4 h-4 mr-1.5" /> Add Plan
             </Button>
             <Button
               variant="outline"
@@ -1204,6 +1370,239 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
               className="flex-1 h-12 bg-primary hover:bg-primary/90 text-black rounded-xl font-black text-xs uppercase tracking-wider"
             >
               {selectedPlan ? 'Update Strategy' : 'Save Strategy'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══════════════════════════════════════════════════
+          CREATE TASK FROM CALENDAR DIALOG
+      ═══════════════════════════════════════════════════ */}
+      <Dialog open={isCreateTaskDialogOpen} onOpenChange={setIsCreateTaskDialogOpen}>
+        <DialogContent className="sm:max-w-[520px] bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+          <div className="p-6 border-b border-white/5 bg-white/[0.02] shrink-0">
+            <DialogTitle className="text-xl font-black uppercase italic text-white tracking-tighter flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-violet-400" />
+              Assign Task from Calendar
+            </DialogTitle>
+            <DialogDescription className="text-[10px] text-white/40 uppercase font-black tracking-widest mt-1">
+              Due Date: {selectedDate ? format(selectedDate, 'EEEE, MMMM do, yyyy') : ''}
+              {selectedDate && (
+                <span className="text-violet-400 ml-1.5 normal-case font-bold">
+                  ({calculatePriorityFromDueDate(format(selectedDate, 'yyyy-MM-dd')).toUpperCase()} Priority)
+                </span>
+              )}
+            </DialogDescription>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            {/* Title */}
+            <div className="grid gap-2">
+              <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Task Title *</Label>
+              <Input
+                autoFocus
+                placeholder="e.g. Redesign Landing Page"
+                value={newCalendarTask.title}
+                onChange={(e) => setNewCalendarTask({ ...newCalendarTask, title: e.target.value })}
+                className="h-12 bg-white/5 border-white/10 rounded-xl font-bold text-white"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="grid gap-2">
+              <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Description</Label>
+              <Textarea
+                placeholder="Describe the task objectives and deliverables..."
+                value={newCalendarTask.description}
+                onChange={(e) => setNewCalendarTask({ ...newCalendarTask, description: e.target.value })}
+                className="min-h-[80px] bg-white/5 border-white/10 rounded-xl text-white"
+              />
+            </div>
+
+            {/* Assign To (Search and Tags) */}
+            <div className="grid gap-2 relative">
+              <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Assign To *</Label>
+              
+              {/* Selected Staff Tags */}
+              {newCalendarTask.assigned_to.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 p-2 bg-white/5 border border-white/10 rounded-xl">
+                  {newCalendarTask.assigned_to.map(userId => {
+                    const member = staffMembers.find(s => s.user_id === userId);
+                    if (!member) return null;
+                    return (
+                      <Badge
+                        key={userId}
+                        variant="secondary"
+                        className="bg-violet-500/20 text-violet-200 border border-violet-500/30 px-2.5 py-1 rounded-lg flex items-center gap-1 text-xs font-semibold"
+                      >
+                        {member.full_name}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewCalendarTask(prev => ({
+                              ...prev,
+                              assigned_to: prev.assigned_to.filter(id => id !== userId)
+                            }));
+                          }}
+                          className="text-violet-400 hover:text-white transition-colors ml-1"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Tag Search Input */}
+              <div className="relative">
+                <Input
+                  placeholder="Type name to search staff..."
+                  value={staffSearchQuery}
+                  onChange={e => setStaffSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (matchingStaff.length > 0) {
+                        const firstMatch = matchingStaff[0];
+                        setNewCalendarTask(prev => ({
+                          ...prev,
+                          assigned_to: [...prev.assigned_to, firstMatch.user_id]
+                        }));
+                        setStaffSearchQuery('');
+                      }
+                    }
+                  }}
+                  className="h-12 bg-white/5 border-white/10 rounded-xl font-medium text-white focus:ring-violet-500/30"
+                />
+                
+                {staffSearchQuery.trim() && (
+                  <div className="absolute z-50 w-full mt-1 bg-zinc-950 border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-48 overflow-y-auto">
+                    {matchingStaff.length > 0 ? (
+                      matchingStaff.map((member, idx) => (
+                        <button
+                          key={member.user_id}
+                          onClick={() => {
+                            setNewCalendarTask(prev => ({
+                              ...prev,
+                              assigned_to: [...prev.assigned_to, member.user_id]
+                            }));
+                            setStaffSearchQuery('');
+                          }}
+                          className={cn(
+                            "w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between",
+                            idx === 0 ? "bg-white/5 text-violet-300" : "text-white/70 hover:bg-white/5 hover:text-white"
+                          )}
+                        >
+                          <div>
+                            <span className="font-semibold text-white">{member.full_name}</span>
+                            <span className="text-xs text-white/40 block">{member.email}</span>
+                          </div>
+                          <Badge variant="outline" className="border-white/10 text-white/50 text-[10px]">
+                            {departments.find(d => d.id === member.department_id)?.name || 'General'}
+                          </Badge>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-xs text-white/40 font-bold text-center">
+                        No matching unassigned staff found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Client (searchable) */}
+            <div className="grid gap-2">
+              <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Client</Label>
+              <Popover open={isCalendarClientPopoverOpen} onOpenChange={setIsCalendarClientPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="outline" className="w-full justify-between h-12 bg-white/5 border-white/10 hover:bg-white/10 text-white rounded-xl">
+                    <span className="truncate text-sm font-semibold">
+                      {newCalendarTask.client_id && newCalendarTask.client_id !== 'no-client'
+                        ? clients.find(c => c.id === newCalendarTask.client_id)?.company_name || "Unknown Client"
+                        : <span className="text-white/30">Select client...</span>
+                      }
+                    </span>
+                    <ChevronDown className="h-4 w-4 shrink-0 opacity-50 text-white/40" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-2 bg-zinc-950 border border-white/10 rounded-xl" align="start">
+                  <div className="space-y-1">
+                    <input
+                      className="w-full px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-violet-500/50 mb-2"
+                      placeholder="Search clients..."
+                      value={calendarTaskClientSearch}
+                      onChange={e => setCalendarTaskClientSearch(e.target.value)}
+                    />
+                    <div className="max-h-[200px] overflow-y-auto space-y-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewCalendarTask({ ...newCalendarTask, client_id: 'no-client' });
+                          setIsCalendarClientPopoverOpen(false);
+                          setCalendarTaskClientSearch('');
+                        }}
+                        className={cn(
+                          "w-full text-left px-3 py-2 text-sm rounded-lg transition-colors",
+                          !newCalendarTask.client_id || newCalendarTask.client_id === 'no-client'
+                            ? "bg-violet-500/10 text-violet-300"
+                            : "text-white/50 hover:bg-white/5 hover:text-white"
+                        )}
+                      >
+                        No Client
+                      </button>
+                      {clients
+                        .filter(c =>
+                          !calendarTaskClientSearch ||
+                          c.company_name?.toLowerCase().includes(calendarTaskClientSearch.toLowerCase())
+                        )
+                        .map(c => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setNewCalendarTask({ ...newCalendarTask, client_id: c.id });
+                              setIsCalendarClientPopoverOpen(false);
+                              setCalendarTaskClientSearch('');
+                            }}
+                            className={cn(
+                              "w-full text-left px-3 py-2 text-sm rounded-lg transition-colors",
+                              newCalendarTask.client_id === c.id
+                                ? "bg-violet-500/10 text-violet-300"
+                                : "text-white hover:bg-white/5"
+                            )}
+                          >
+                            {c.company_name}
+                          </button>
+                        ))
+                      }
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <div className="p-6 border-t border-white/5 bg-white/[0.02] flex gap-3 shrink-0">
+            <Button
+              variant="ghost"
+              onClick={() => setIsCreateTaskDialogOpen(false)}
+              className="flex-1 h-12 rounded-xl font-bold text-xs uppercase text-white/40 hover:text-white hover:bg-white/5"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateTaskFromCalendar}
+              disabled={isSubmittingCalendarTask}
+              className="flex-1 h-12 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg"
+            >
+              {isSubmittingCalendarTask ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...</>
+              ) : (
+                <><ClipboardList className="w-4 h-4 mr-2" /> Assign Task</>
+              )}
             </Button>
           </div>
         </DialogContent>

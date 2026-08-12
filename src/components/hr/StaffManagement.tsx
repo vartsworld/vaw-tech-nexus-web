@@ -89,7 +89,13 @@ const StaffManagement = () => {
     reference_person_number: "",
     physical_address: "",
     govt_id_number: "",
-    blood_group: ""
+    blood_group: "",
+    kyc_selfie_url: "",
+    kyc_gps_location: "",
+    geo_coordinates: "",
+    govt_id_type: "aadhaar",
+    emergency_contact_name: "",
+    emergency_contact_phone: ""
   });
   const { toast } = useToast();
 
@@ -316,7 +322,13 @@ const StaffManagement = () => {
         reference_person_number: "",
         physical_address: "",
         govt_id_number: "",
-        blood_group: ""
+        blood_group: "",
+        kyc_selfie_url: "",
+        kyc_gps_location: "",
+        geo_coordinates: "",
+        govt_id_type: "aadhaar",
+        emergency_contact_name: "",
+        emergency_contact_phone: ""
       });
 
       if (!patraResult && !isCreatingCard) {
@@ -765,7 +777,13 @@ const StaffManagement = () => {
                     reference_person_number: "",
                     physical_address: "",
                     govt_id_number: "",
-                    blood_group: ""
+                    blood_group: "",
+                    kyc_selfie_url: "",
+                    kyc_gps_location: "",
+                    geo_coordinates: "",
+                    govt_id_type: "aadhaar",
+                    emergency_contact_name: "",
+                    emergency_contact_phone: ""
                   });
                 }
               }}
@@ -795,7 +813,13 @@ const StaffManagement = () => {
                   reference_person_number: "",
                   physical_address: "",
                   govt_id_number: "",
-                  blood_group: ""
+                  blood_group: "",
+                  kyc_selfie_url: "",
+                  kyc_gps_location: "",
+                  geo_coordinates: "",
+                  govt_id_type: "aadhaar",
+                  emergency_contact_name: "",
+                  emergency_contact_phone: ""
                 });
               }}
               isEdit={true}
@@ -1036,7 +1060,11 @@ const StaffManagement = () => {
                             reference_person_number: member.reference_person_number || "",
                             physical_address: member.physical_address || "",
                             govt_id_number: member.govt_id_number || "",
-                            blood_group: member.blood_group || ""
+                            blood_group: member.blood_group || "",
+                             geo_coordinates: "",
+                             govt_id_type: member.govt_id_type || "aadhaar",
+                             emergency_contact_name: member.emergency_contact_name || "",
+                             emergency_contact_phone: member.emergency_contact_phone || ""
                           });
                           setIsEditDialogOpen(true);
                         }}
