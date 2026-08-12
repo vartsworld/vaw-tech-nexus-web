@@ -398,6 +398,11 @@ const ClientOnboarding = () => {
               <div>
                 <Label htmlFor="company_address">Company Address</Label>
                 <Textarea id="company_address" value={form.company_address} onChange={(e) => setForm({ ...form, company_address: e.target.value })} placeholder="Enter company address" rows={2} maxLength={500} />
+                <div className="flex justify-end text-xs text-muted-foreground mt-1">
+                  <span className={form.company_address.length >= 400 ? "text-amber-500 font-bold" : ""}>
+                    {form.company_address.length}/500 characters
+                  </span>
+                </div>
               </div>
             )}
 
@@ -432,12 +437,19 @@ const ClientOnboarding = () => {
                   <div key={idx}>
                     <Label>{field.label} {field.required && <span className="text-red-500">*</span>}</Label>
                     {field.type === "textarea" ? (
-                      <Textarea
-                        value={customFieldValues[field.label] || ""}
-                        onChange={(e) => setCustomFieldValues({ ...customFieldValues, [field.label]: e.target.value })}
-                        placeholder={`Enter ${field.label.toLowerCase()}`}
-                        maxLength={1000}
-                      />
+                      <div>
+                        <Textarea
+                          value={customFieldValues[field.label] || ""}
+                          onChange={(e) => setCustomFieldValues({ ...customFieldValues, [field.label]: e.target.value })}
+                          placeholder={`Enter ${field.label.toLowerCase()}`}
+                          maxLength={1000}
+                        />
+                        <div className="flex justify-end text-xs text-muted-foreground mt-1">
+                          <span className={(customFieldValues[field.label] || "").length >= 800 ? "text-amber-500 font-bold" : ""}>
+                            {(customFieldValues[field.label] || "").length}/1000 characters
+                          </span>
+                        </div>
+                      </div>
                     ) : (
                       <Input
                         value={customFieldValues[field.label] || ""}
@@ -455,6 +467,11 @@ const ClientOnboarding = () => {
               <div>
                 <Label htmlFor="notes">Additional Notes</Label>
                 <Textarea id="notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Any other details you'd like to share..." rows={3} maxLength={2000} />
+                <div className="flex justify-end text-xs text-muted-foreground mt-1">
+                  <span className={form.notes.length >= 1600 ? "text-amber-500 font-bold" : ""}>
+                    {form.notes.length}/2000 characters
+                  </span>
+                </div>
               </div>
             )}
 

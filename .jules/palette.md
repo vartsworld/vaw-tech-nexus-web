@@ -1,0 +1,3 @@
+## 2025-01-20 - Adding Dynamic Character Counters to Textareas
+**Learning:** Character constraints (like `maxLength`) on large inputs (e.g., textareas) can be frustrating for users if there is no visual feedback indicating their remaining capacity.
+**Action:** When adding character limits to Textarea inputs across the application (e.g., in PricingInquiryForm, ContactForm, TeamApplication, and ClientOnboarding), follow the standard UX pattern: enforce a `maxLength` and display a dynamic character counter (e.g., `{length}/{max} characters`) that applies the utility classes `text-amber-500 font-bold` when the text reaches 80% of capacity.
