@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -462,7 +462,9 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
         }
       });
 
-    return () => {
+
+
+  return () => {
       supabase.removeChannel(channel);
     };
   }, [userId, userProfile]);
@@ -2059,7 +2061,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     const config = statusConfig[safeStatus] || statusConfig.pending;
     const Icon = config.icon;
 
-    return (
+  return (
       <Badge className={config.color}>
         <Icon className="h-3 w-3 mr-1" />
         {safeStatus.replace('_', ' ').toUpperCase()}
@@ -2166,6 +2168,21 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
     }
     return true; 
   });
+
+  const subtasksByTaskId = useMemo(() => {
+    const map = new Map<string, any[]>();
+    folderSubtasks.forEach(st => {
+      const arr = map.get(st.task_id) || [];
+      arr.push(st);
+      map.set(st.task_id, arr);
+    });
+    return map;
+  }, [folderSubtasks]);
+
+  const selectedFolderTasks = useMemo(() => {
+    if (!selectedFolderProject) return [];
+    return tasks.filter(t => t.client_project_id === selectedFolderProject.id);
+  }, [tasks, selectedFolderProject]);
 
   return (
     <div className="px-1 py-4 space-y-8 max-w-7xl mx-auto min-h-full">
@@ -2840,14 +2857,12 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                               Development Sub-Task Registry
                             </h4>
 
-                            {tasks.filter(t => t.client_project_id === selectedFolderProject.id).length > 0 ? (
+                            {selectedFolderTasks.length > 0 ? (
                               <div className="space-y-4">
-                                {tasks
-                                  .filter(t => t.client_project_id === selectedFolderProject.id)
-                                  .map((task) => {
+                                {selectedFolderTasks.map((task) => {
                                     const taskAttachments = task.attachments ? (task.attachments as any[]) : [];
                                     const assigneeInfo = staff.find(s => s.id === task.assigned_to);
-                                    const taskSubtasks = folderSubtasks.filter(st => st.task_id === task.id);
+                                    const taskSubtasks = subtasksByTaskId.get(task.id) || [];
                                     const completedSubCount = taskSubtasks.filter(st => st.status === 'completed').length;
                                     const subPercent = taskSubtasks.length > 0 ? Math.round((completedSubCount / taskSubtasks.length) * 100) : 0;
 
@@ -2959,7 +2974,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
                             </h4>
 
                             {(() => {
-                              const projectTasks = tasks.filter(t => t.client_project_id === selectedFolderProject.id);
+                              const projectTasks = selectedFolderTasks;
                               const allFiles = [
                                 ...(selectedFolderProject.client_project_files || []),
                                 ...projectTasks.flatMap(t => (t.attachments ? (t.attachments as any[]) : []).map((file: any) => ({
