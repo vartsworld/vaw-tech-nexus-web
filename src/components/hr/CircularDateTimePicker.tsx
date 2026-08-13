@@ -210,11 +210,13 @@ const CircularDateTimePicker = ({ date, time, onDateChange, onTimeChange }: Circ
           {/* Month nav */}
           <div className="flex items-center justify-between">
             <button type="button" onClick={() => setViewMonth(subMonths(viewMonth, 1))}
+              aria-label="Previous month"
               className="h-7 w-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition">
               ‹
             </button>
             <span className="text-sm font-semibold text-foreground">{format(viewMonth, "MMMM yyyy")}</span>
             <button type="button" onClick={() => setViewMonth(addMonths(viewMonth, 1))}
+              aria-label="Next month"
               className="h-7 w-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/10 transition">
               ›
             </button>
