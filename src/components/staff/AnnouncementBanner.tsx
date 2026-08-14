@@ -120,6 +120,8 @@ const AnnouncementBanner = ({ userId, departmentId }: AnnouncementBannerProps) =
               <button
                 onClick={() => setCurrentIndex(prev => (prev - 1 + activeBanners.length) % activeBanners.length)}
                 className="p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0"
+                aria-label="Previous banner"
+                title="Previous banner"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -151,6 +153,8 @@ const AnnouncementBanner = ({ userId, departmentId }: AnnouncementBannerProps) =
                     key={i}
                     onClick={() => setCurrentIndex(i)}
                     className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentIndex % activeBanners.length ? 'bg-white w-3' : 'bg-white/40'}`}
+                    aria-label={"Go to banner " + (i + 1)}
+                    title={"Go to banner " + (i + 1)}
                   />
                 ))}
               </div>
@@ -161,6 +165,8 @@ const AnnouncementBanner = ({ userId, departmentId }: AnnouncementBannerProps) =
               <button
                 onClick={() => setCurrentIndex(prev => (prev + 1) % activeBanners.length)}
                 className="p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0"
+                aria-label="Next banner"
+                title="Next banner"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -170,6 +176,8 @@ const AnnouncementBanner = ({ userId, departmentId }: AnnouncementBannerProps) =
             <button
               onClick={() => setDismissed(prev => new Set([...prev, current.id]))}
               className="p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0"
+              aria-label="Dismiss banner"
+              title="Dismiss banner"
             >
               <X className="w-3.5 h-3.5 opacity-60" />
             </button>
