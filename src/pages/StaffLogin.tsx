@@ -359,32 +359,26 @@ const StaffLogin = () => {
 
       const emojiPass = newEmojiPassword.join('');
 
-      // Update emoji password in database
+      // Update emoji password in database without modifying user_id to prevent 409 conflict
+      const updatePayload = {
+        emoji_password: emojiPass,
+        is_emoji_password: true,
+        passcode_used: true
+      };
+
       const profileId = userProfile?.id;
       let updateError = null;
 
       if (profileId) {
         const { error } = await supabase
           .from('staff_profiles')
-          .update({
-            user_id: user.id,
-            emoji_password: emojiPass,
-            is_emoji_password: true,
-            passcode_used: true
-          })
+          .update(updatePayload)
           .eq('id', profileId);
         updateError = error;
-      }
-
-      if (!profileId || updateError) {
+      } else {
         const { error } = await supabase
           .from('staff_profiles')
-          .update({
-            user_id: user.id,
-            emoji_password: emojiPass,
-            is_emoji_password: true,
-            passcode_used: true
-          })
+          .update(updatePayload)
           .eq('user_id', user.id);
         updateError = error;
       }
