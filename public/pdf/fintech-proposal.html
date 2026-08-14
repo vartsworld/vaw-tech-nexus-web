@@ -1,0 +1,2516 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>UK–India Remittance Platform — Proposal | VAW Technologies</title>
+    <meta name="description" content="Commercial Proposal by VAW Technologies to design, build, certify and launch a regulated-grade GBP → INR remittance platform.">
+    
+    <!-- Open Graph / Facebook / LinkedIn / WhatsApp -->
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="VAW Technologies" />
+    <meta property="og:title" content="UK–India Remittance Platform — Commercial Proposal | VAW Technologies" />
+    <meta property="og:description" content="Turnkey engineering proposal to design, build, certify and launch a regulated GBP → INR remittance platform — customer apps, ledger engine, compliance & settlement." />
+    <meta property="og:image" content="/lovable-uploads/VAW-Opengraph.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="VAW Technologies - UK-India Remittance Platform Proposal" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="UK–India Remittance Platform — Commercial Proposal | VAW Technologies" />
+    <meta name="twitter:description" content="Turnkey engineering proposal to design, build, certify and launch a regulated GBP → INR remittance platform." />
+    <meta name="twitter:image" content="/lovable-uploads/VAW-Opengraph.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Public+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ink: #0E1F33;
+            --ink-2: #1B3350;
+            --ink-3: #2C4A6B;
+            --paper: #EFF2F4;
+            --card: #FFFFFF;
+            --rule: #C7D3DC;
+            --rule-soft: #E4EAEF;
+            --debit: #B23A2B;
+            --credit: #1C6B57;
+            --brass: #A8801F;
+            --muted: #4A6075;
+            --muted-2: #6A8296;
+            --display: "Fraunces", Georgia, serif;
+            --body: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+            --maxw: 1140px;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth;
+            -webkit-text-size-adjust: 100%
+        }
+
+        body {
+            margin: 0;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.62;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        img {
+            max-width: 100%
+        }
+
+        a {
+            color: var(--ink);
+            text-decoration-color: var(--rule);
+            text-underline-offset: 3px
+        }
+
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible {
+            outline: 2.5px solid var(--brass);
+            outline-offset: 3px
+        }
+
+        /* ---------- shared layout ---------- */
+        .wrap {
+            max-width: var(--maxw);
+            margin: 0 auto;
+            padding: 0 26px
+        }
+
+        .block {
+            padding: 84px 0;
+            border-top: 1px solid var(--rule)
+        }
+
+        .block:first-of-type {
+            border-top: none
+        }
+
+        .eyebrow {
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin: 0 0 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .eyebrow::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--rule)
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: var(--display);
+            font-weight: 600;
+            letter-spacing: -.015em;
+            margin: 0
+        }
+
+        h2 {
+            font-size: clamp(28px, 4vw, 42px);
+            line-height: 1.15;
+            margin-bottom: 18px;
+            font-weight: 700;
+        }
+
+        h3 {
+            font-size: 21px;
+            line-height: 1.25;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        h4 {
+            font-size: 16.5px;
+            font-family: var(--body);
+            font-weight: 700;
+            letter-spacing: 0;
+            margin-bottom: 8px
+        }
+
+        p {
+            margin: 0 0 16px
+        }
+
+        .lede {
+            font-size: clamp(17.5px, 2.1vw, 20.5px);
+            line-height: 1.55;
+            color: var(--ink-2);
+            font-weight: 500;
+            max-width: 66ch
+        }
+
+        .note {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.55;
+            font-weight: 500;
+        }
+
+        .grid {
+            display: grid;
+            gap: 24px
+        }
+
+        .g2 {
+            grid-template-columns: repeat(2, 1fr)
+        }
+
+        .g3 {
+            grid-template-columns: repeat(3, 1fr)
+        }
+
+        .g4 {
+            grid-template-columns: repeat(4, 1fr)
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--rule);
+            padding: 28px
+        }
+
+        .card.tight {
+            padding: 20px 22px
+        }
+
+        .mono {
+            font-family: var(--mono);
+            font-weight: 500
+        }
+
+        .num {
+            font-family: var(--mono);
+            font-weight: 600
+        }
+
+        .dr {
+            color: var(--debit)
+        }
+
+        .cr {
+            color: var(--credit)
+        }
+
+        .pill {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            padding: 5px 10px;
+            border: 1px solid var(--rule);
+            color: var(--muted);
+            background: var(--card);
+        }
+
+        .pill.hot {
+            border-color: var(--debit);
+            color: var(--debit)
+        }
+
+        .pill.go {
+            border-color: var(--credit);
+            color: var(--credit)
+        }
+
+        /* ---------- masthead ---------- */
+        .masthead {
+            background: linear-gradient(135deg, #091626 0%, #0E1F33 50%, #162B44 100%);
+            color: #EAF0F5;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .masthead .wrap {
+            padding-top: 38px;
+            padding-bottom: 70px;
+            position: relative;
+            z-index: 2
+        }
+
+        .mast-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding-bottom: 28px;
+            border-bottom: 1px solid rgba(255, 255, 255, .18);
+        }
+
+        .brandmark {
+            display: flex;
+            align-items: center;
+            gap: 16px
+        }
+
+        .brand-logo {
+            height: 48px;
+            width: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        .brandmark b {
+            display: block;
+            font-family: var(--body);
+            font-weight: 700;
+            font-size: 15px;
+            letter-spacing: .02em
+        }
+
+        .brandmark span {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+            color: #A3B8CC
+        }
+
+        .mast-meta {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            font-weight: 500;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: #A3B8CC;
+            text-align: right;
+            line-height: 1.9
+        }
+
+        h1 {
+            font-size: clamp(38px, 6.6vw, 80px);
+            line-height: .99;
+            margin: 44px 0 0;
+            color: #fff;
+            max-width: 15ch;
+            font-weight: 700;
+        }
+
+        h1 em {
+            font-style: normal;
+            color: var(--brass)
+        }
+
+        .mast-sub {
+            margin-top: 28px;
+            max-width: 60ch;
+            font-size: clamp(16.5px, 2vw, 19.5px);
+            line-height: 1.6;
+            color: #C5D6E6;
+            font-weight: 500;
+        }
+
+        .mast-facts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0;
+            margin-top: 44px;
+            border-top: 1px solid rgba(255, 255, 255, .18)
+        }
+
+        .mast-fact {
+            flex: 1 1 190px;
+            padding: 22px 24px 6px 0;
+            border-right: 1px solid rgba(255, 255, 255, .13);
+        }
+
+        .mast-fact:last-child {
+            border-right: none
+        }
+
+        .mast-fact dt {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: #A3B8CC;
+            margin-bottom: 8px
+        }
+
+        .mast-fact dd {
+            margin: 0;
+            font-family: var(--display);
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.15
+        }
+
+        .mast-fact small {
+            display: block;
+            font-family: var(--body);
+            font-size: 13px;
+            font-weight: 500;
+            color: #A0B5C8;
+            margin-top: 5px;
+            letter-spacing: 0
+        }
+
+        /* ---------- sticky nav ---------- */
+        nav.jump {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            background: #0E1F33;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        nav.jump ul {
+            max-width: var(--maxw);
+            margin: 0 auto;
+            padding: 0 26px;
+            list-style: none;
+            display: flex;
+            gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        nav.jump ul::-webkit-scrollbar {
+            display: none
+        }
+
+        nav.jump a {
+            display: block;
+            padding: 15px 16px;
+            font-family: var(--mono);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .11em;
+            text-transform: uppercase;
+            color: #D2DFEB;
+            text-decoration: none;
+            white-space: nowrap;
+            border-bottom: 3px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        nav.jump a:hover {
+            color: #FFFFFF;
+            border-bottom-color: var(--brass)
+        }
+
+        /* ---------- signature: corridor calculator ---------- */
+        .corridor {
+            background: var(--ink-2);
+            color: #E6EDF3;
+            padding: 0;
+            border: none
+        }
+
+        .corridor-in {
+            max-width: var(--maxw);
+            margin: 0 auto;
+            padding: 66px 26px 74px
+        }
+
+        .corridor h2 {
+            color: #fff
+        }
+
+        .corridor .lede {
+            color: #B9CBDA
+        }
+
+        .calc {
+            margin-top: 34px;
+            background: rgba(255, 255, 255, .05);
+            border: 1px solid rgba(255, 255, 255, .16);
+            display: grid;
+            grid-template-columns: 300px 1fr;
+        }
+
+        .calc-controls {
+            padding: 26px;
+            border-right: 1px solid rgba(255, 255, 255, .16)
+        }
+
+        .calc-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: #93A9BC;
+            margin-bottom: 9px
+        }
+
+        .amt {
+            font-family: var(--display);
+            font-size: 44px;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1;
+            margin-bottom: 16px
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--brass);
+            height: 22px
+        }
+
+        .toggle {
+            display: flex;
+            margin-top: 22px;
+            border: 1px solid rgba(255, 255, 255, .22)
+        }
+
+        .toggle button {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #B9CBDA;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            padding: 10px 6px;
+            cursor: pointer;
+        }
+
+        .toggle button[aria-pressed=true] {
+            background: var(--brass);
+            color: #0E1F33;
+            font-weight: 600
+        }
+
+        .calc-out {
+            padding: 26px
+        }
+
+        .legs {
+            list-style: none;
+            margin: 0;
+            padding: 0
+        }
+
+        .legs li {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 14px;
+            align-items: baseline;
+            padding: 8px 0;
+            border-bottom: 1px dotted rgba(255, 255, 255, .18);
+            font-size: 14.5px;
+        }
+
+        .legs li:last-child {
+            border-bottom: none
+        }
+
+        .legs .leg-name {
+            color: #CBD9E4
+        }
+
+        .legs .leg-name i {
+            display: block;
+            font-style: normal;
+            font-size: 11.5px;
+            color: #7E96AB;
+            font-family: var(--mono);
+            letter-spacing: .04em
+        }
+
+        .legs .leg-val {
+            font-family: var(--mono);
+            font-size: 14px;
+            color: #F0B4A8;
+            text-align: right;
+            min-width: 74px
+        }
+
+        .legs .leg-run {
+            font-family: var(--mono);
+            font-size: 12.5px;
+            color: #7E96AB;
+            text-align: right;
+            min-width: 72px
+        }
+
+        .legs li.rev .leg-val {
+            color: #7FD8BC
+        }
+
+        .calc-result {
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, .28);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .calc-result .big {
+            font-family: var(--display);
+            font-size: 34px;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1
+        }
+
+        .calc-result .big.neg {
+            color: #F09080
+        }
+
+        .warn {
+            margin-top: 16px;
+            padding: 12px 14px;
+            border-left: 3px solid var(--brass);
+            background: rgba(168, 128, 31, .14);
+            font-size: 13.5px;
+            color: #E9D9AE;
+        }
+
+        /* ---------- tables ---------- */
+        .tbl-scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card);
+            font-size: 14.5px;
+            min-width: 540px
+        }
+
+        caption {
+            caption-side: top;
+            text-align: left;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding-bottom: 9px;
+        }
+
+        th,
+        td {
+            padding: 11px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--rule-soft);
+            vertical-align: top
+        }
+
+        thead th {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            border-bottom: 1px solid var(--rule);
+            font-weight: 500;
+            background: #F7F9FA;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none
+        }
+
+        td.n,
+        th.n {
+            text-align: right;
+            font-family: var(--mono);
+            font-weight: 500;
+            white-space: nowrap
+        }
+
+        tfoot td {
+            border-top: 1.5px solid var(--ink);
+            font-weight: 700;
+            background: #F7F9FA
+        }
+
+        tfoot td.n {
+            font-family: var(--mono)
+        }
+
+        .rec-col {
+            background: #FCFAF2
+        }
+
+        /* ---------- rail / flow ---------- */
+        .rail {
+            margin-top: 8px;
+            border-left: 2px solid var(--rule);
+            padding-left: 0;
+            list-style: none
+        }
+
+        .rail li {
+            position: relative;
+            padding: 0 0 26px 30px
+        }
+
+        .rail li::before {
+            content: "";
+            position: absolute;
+            left: -7px;
+            top: 7px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--paper);
+            border: 2px solid var(--ink-3);
+        }
+
+        .rail li:last-child {
+            padding-bottom: 0
+        }
+
+        .rail .rail-k {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 3px
+        }
+
+        /* ---------- gantt ---------- */
+        .gantt {
+            background: var(--card);
+            border: 1px solid var(--rule);
+            padding: 22px
+        }
+
+        .gantt-hdr {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 16px;
+            align-items: end;
+            margin-bottom: 10px
+        }
+
+        .gantt-months {
+            display: grid;
+            grid-template-columns: repeat(14, 1fr);
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--muted-2);
+            text-align: center
+        }
+
+        .gantt-row {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 16px;
+            align-items: center;
+            padding: 7px 0;
+            border-top: 1px solid var(--rule-soft)
+        }
+
+        .gantt-row .gl {
+            font-size: 13.5px;
+            line-height: 1.32
+        }
+
+        .gantt-row .gl span {
+            display: block;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--muted);
+            letter-spacing: .1em;
+            text-transform: uppercase
+        }
+
+        .gantt-track {
+            display: grid;
+            grid-template-columns: repeat(14, 1fr);
+            height: 20px;
+            background:
+                repeating-linear-gradient(to right, var(--rule-soft) 0 1px, transparent 1px calc(100%/14));
+        }
+
+        .gantt-bar {
+            height: 20px;
+            background: var(--ink-3);
+            display: flex;
+            align-items: center;
+            padding: 0 7px;
+            font-family: var(--mono);
+            font-size: 10px;
+            color: #fff;
+            letter-spacing: .06em;
+            white-space: nowrap;
+            overflow: hidden
+        }
+
+        .gantt-bar.b1 {
+            background: var(--brass);
+            color: #0E1F33
+        }
+
+        .gantt-bar.b2 {
+            background: var(--credit)
+        }
+
+        .gantt-bar.b3 {
+            background: var(--debit)
+        }
+
+        /* ---------- tiers ---------- */
+        .tiers {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+            border: 1px solid var(--rule);
+            background: var(--card)
+        }
+
+        .tier {
+            padding: 26px 24px;
+            border-right: 1px solid var(--rule)
+        }
+
+        .tier:last-child {
+            border-right: none
+        }
+
+        .tier.pick {
+            background: #FCFAF2;
+            box-shadow: inset 0 4px 0 var(--brass)
+        }
+
+        .tier .tname {
+            font-family: var(--display);
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 2px
+        }
+
+        .tier .tprice {
+            font-family: var(--mono);
+            font-size: 25px;
+            font-weight: 600;
+            color: var(--ink);
+            margin: 14px 0 2px
+        }
+
+        .tier ul {
+            list-style: none;
+            margin: 16px 0 0;
+            padding: 0;
+            font-size: 14px
+        }
+
+        .tier li {
+            padding: 7px 0;
+            border-top: 1px solid var(--rule-soft);
+            color: var(--ink-2)
+        }
+
+        .tier li b {
+            font-family: var(--mono);
+            font-size: 12.5px;
+            color: var(--muted);
+            display: block;
+            letter-spacing: .08em;
+            text-transform: uppercase
+        }
+
+        /* ---------- misc blocks ---------- */
+        .callout {
+            border-left: 3px solid var(--debit);
+            background: #FBF2F0;
+            padding: 20px 22px
+        }
+
+        .callout.good {
+            border-left-color: var(--credit);
+            background: #F0F6F4
+        }
+
+        .callout.neutral {
+            border-left-color: var(--brass);
+            background: #FAF6EB
+        }
+
+        .kv {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 6px 18px;
+            font-size: 14.5px;
+            margin: 0
+        }
+
+        .kv dt {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding-top: 3px
+        }
+
+        .kv dd {
+            margin: 0
+        }
+
+        ul.ticks {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 14.5px
+        }
+
+        ul.ticks li {
+            padding: 6px 0 6px 22px;
+            position: relative;
+            border-bottom: 1px solid var(--rule-soft)
+        }
+
+        ul.ticks li:last-child {
+            border-bottom: none
+        }
+
+        ul.ticks li::before {
+            content: "—";
+            position: absolute;
+            left: 0;
+            color: var(--brass);
+            font-family: var(--mono)
+        }
+
+        ul.crosses li::before {
+            content: "×";
+            color: var(--debit)
+        }
+
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0;
+            border: 1px solid var(--rule);
+            background: var(--card)
+        }
+
+        .stat {
+            padding: 22px 20px;
+            border-right: 1px solid var(--rule)
+        }
+
+        .stat:last-child {
+            border-right: none
+        }
+
+        .stat b {
+            display: block;
+            font-family: var(--display);
+            font-size: 30px;
+            font-weight: 600;
+            line-height: 1.05
+        }
+
+        .stat span {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 6px;
+            line-height: 1.4
+        }
+
+        .sig {
+            margin-top: 30px;
+            padding-top: 26px;
+            border-top: 1px solid var(--rule);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px
+        }
+
+        footer {
+            background: var(--ink);
+            color: #93A9BC;
+            padding: 44px 0;
+            font-size: 13px
+        }
+
+        footer .wrap {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap
+        }
+
+        footer b {
+            color: #fff
+        }
+
+        /* ---------- responsive ---------- */
+        @media (max-width:900px) {
+
+            .g4,
+            .g3,
+            .tiers,
+            .stat-row {
+                grid-template-columns: 1fr 1fr
+            }
+
+            .calc {
+                grid-template-columns: 1fr
+            }
+
+            .calc-controls {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, .16)
+            }
+
+            .tier {
+                border-right: none;
+                border-bottom: 1px solid var(--rule)
+            }
+
+            .stat {
+                border-right: none;
+                border-bottom: 1px solid var(--rule)
+            }
+
+            .gantt-hdr,
+            .gantt-row {
+                grid-template-columns: 1fr;
+                gap: 6px
+            }
+        }
+
+        @media (max-width:620px) {
+            body {
+                font-size: 15.5px;
+                line-height: 1.6;
+            }
+
+            .wrap {
+                padding: 0 16px;
+            }
+
+            .g2,
+            .g3,
+            .g4,
+            .tiers,
+            .stat-row,
+            .sig {
+                grid-template-columns: 1fr;
+            }
+
+            .block {
+                padding: 44px 0;
+            }
+
+            .mast-fact {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, .13);
+                padding: 16px 0;
+            }
+
+            .mast-meta {
+                text-align: left;
+            }
+
+            .calc-controls, .calc-out {
+                padding: 18px 14px;
+            }
+
+            .gantt {
+                padding: 14px;
+                overflow-x: auto;
+            }
+
+            .gantt-hdr, .gantt-row {
+                min-width: 580px;
+            }
+
+            .legs li {
+                grid-template-columns: 1fr auto;
+                gap: 8px;
+            }
+
+            .legs .leg-run {
+                display: none;
+            }
+        }
+
+        @media (prefers-reduced-motion:reduce) {
+            html {
+                scroll-behavior: auto
+            }
+
+            * {
+                transition: none !important;
+                animation: none !important
+            }
+        }
+
+        @media print {
+            nav.jump {
+                display: none
+            }
+
+            body {
+                background: #fff;
+                font-size: 11pt
+            }
+
+            .block {
+                padding: 26px 0;
+                break-inside: avoid
+            }
+
+            .masthead,
+            .corridor {
+                background: #0E1F33 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ============ MASTHEAD ============ -->
+    <header class="masthead">
+        <div class="wrap">
+            <div class="mast-top">
+                <div class="brandmark">
+                    <img src="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png" alt="VAW Technologies Logo" class="brand-logo">
+                    <div>
+                        <b>VAW Technologies</b>
+                        <span>A division of VArts World Pvt. Ltd.</span>
+                    </div>
+                </div>
+                <div class="mast-meta">
+                    Commercial proposal<br>
+                    Ref. VAWT/REM/UK-IN/01<br>
+                    Valid 45 days from issue
+                </div>
+            </div>
+
+            <h1>Moving money<br>from Britain to India,<br><em>one ledger at a time.</em></h1>
+
+            <p class="mast-sub">A proposal to design, build, certify and launch a regulated-grade GBP&nbsp;→&nbsp;INR
+                remittance platform — customer apps, transfer engine, compliance operations and settlement — engineered
+                so that every rupee paid out can be traced back to the pound that funded it.</p>
+
+            <dl class="mast-facts">
+                <div class="mast-fact">
+                    <dt>Engagement</dt>
+                    <dd>10–14 months</dd>
+                    <small>Phase 0 starts within 10 working days of signature</small>
+                </div>
+                <div class="mast-fact">
+                    <dt>Investment</dt>
+                    <dd>₹85L – ₹1.50Cr</dd>
+                    <small>Turnkey Phase 1 &amp; 2 estimated range</small>
+                </div>
+                <div class="mast-fact">
+                    <dt>Delivery squad</dt>
+                    <dd>11–16 people</dd>
+                    <small>Dedicated, Kerala-based, single accountable lead</small>
+                </div>
+                <div class="mast-fact">
+                    <dt>Model</dt>
+                    <dd>Partner-led</dd>
+                    <small>You own the product; licensed institutions hold the money</small>
+                </div>
+            </dl>
+        </div>
+    </header>
+
+    <nav class="jump" aria-label="Section navigation">
+        <ul>
+            <li><a href="#summary">Summary</a></li>
+            <li><a href="#economics">Unit economics</a></li>
+            <li><a href="#market">Corridor</a></li>
+            <li><a href="#regulatory">Regulatory</a></li>
+            <li><a href="#models">Operating models</a></li>
+            <li><a href="#scope">Scope</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#security">Security</a></li>
+            <li><a href="#plan">Plan</a></li>
+            <li><a href="#team">Team</a></li>
+            <li><a href="#investment">Investment</a></li>
+            <li><a href="#risk">Risk</a></li>
+            <li><a href="#terms">Terms</a></li>
+        </ul>
+    </nav>
+
+    <!-- ============ SUMMARY ============ -->
+    <section class="block" id="summary">
+        <div class="wrap">
+            <p class="eyebrow">Where this proposal starts</p>
+            <h2>The software is the smaller half of the problem.</h2>
+            <p class="lede">Anyone can build a screen that accepts £500. The hard part is what happens in the ninety
+                seconds afterwards: the funds are collected under one regulator, converted at a rate you quoted before
+                you owned the currency, screened against sanctions lists in two jurisdictions, paid into an Indian
+                account under FEMA, and reconciled the next morning against three separate statements that will not
+                agree.</p>
+
+            <div class="grid g3" style="margin-top:34px">
+                <div class="card">
+                    <h3>What we are building</h3>
+                    <p class="note">A transaction orchestration platform: customer apps, a double-entry transfer engine,
+                        a compliance and operations console, and a reconciliation layer that sits on top of licensed
+                        financial institutions in both countries.</p>
+                </div>
+                <div class="card">
+                    <h3>What we are not building</h3>
+                    <p class="note">A bank. We do not build a wallet, an FX book, a correspondent network or a payout
+                        network. Those are bought from regulated providers, because building them multiplies cost and
+                        time by an order of magnitude.</p>
+                </div>
+                <div class="card">
+                    <h3>What decides the price</h3>
+                    <p class="note">Three answers: who holds customer money, which Indian inward-remittance channel you
+                        use, and how many pay-in methods you support at launch. Phase 0 fixes all three before a line of
+                        production code is written.</p>
+                </div>
+            </div>
+
+            <div class="callout neutral" style="margin-top:30px">
+                <h4>One correction we want to make early, because it changes the architecture</h4>
+                <p class="note" style="margin-bottom:0">Preliminary studies of this project have referenced RBI's
+                    Payment Aggregator – Cross Border (PA-CB) framework. PA-CB governs online <em>commercial</em>
+                    payments for goods and services. Personal family remittance into India travels a different road:
+                    either the <b>Money Transfer Service Scheme (MTSS)</b> or a <b>Rupee Drawing Arrangement (RDA)</b>
+                    with an AD Category-I bank. These are not interchangeable, and the choice imposes hard product
+                    limits — see the regulatory section. Designing against the wrong framework is the single most
+                    expensive mistake available on this project.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SIGNATURE: UNIT ECONOMICS ============ -->
+    <section class="corridor" id="economics">
+        <div class="corridor-in">
+            <p class="eyebrow" style="color:#93A9BC">The signature exhibit</p>
+            <h2>Follow one transfer.</h2>
+            <p class="lede">Before scope, before timelines, before price. Move the slider and watch where a customer's
+                money — and your margin — actually goes. Every deduction below is a real leg of the stack we are
+                proposing to build.</p>
+
+            <div class="calc">
+                <div class="calc-controls">
+                    <p class="calc-label">Customer sends</p>
+                    <div class="amt" id="amtOut">£500</div>
+                    <input type="range" id="amt" min="50" max="2500" step="25" value="500"
+                        aria-label="Transfer amount in pounds">
+                    <p class="calc-label" style="margin-top:24px">Pay-in method</p>
+                    <div class="toggle" role="group" aria-label="Pay-in method">
+                        <button id="btnOB" aria-pressed="true">Open banking</button>
+                        <button id="btnCard" aria-pressed="false">Debit card</button>
+                    </div>
+                    <p style="font-family:var(--mono);font-size:11px;color:#7E96AB;margin-top:18px;line-height:1.6">
+                        Recipient gets<br><span style="font-size:19px;color:#fff" id="inrOut">₹45,495</span><br>
+                        at 0.55% margin on a 91.50 mid
+                    </p>
+                </div>
+
+                <div class="calc-out">
+                    <ul class="legs" id="legs"></ul>
+                    <div class="calc-result">
+                        <div>
+                            <p class="calc-label" style="margin-bottom:6px">Contribution per transfer</p>
+                            <div class="big" id="contribOut">£2.82</div>
+                        </div>
+                        <div style="text-align:right">
+                            <p class="calc-label" style="margin-bottom:6px">Contribution margin</p>
+                            <div class="big" id="marginOut">49%</div>
+                        </div>
+                    </div>
+                    <div class="warn" id="warnBox">Switch to debit card and watch the model invert. Card acquiring is
+                        charged <em>ad valorem</em>; at typical remittance ticket sizes it consumes the entire spread.
+                        This is why open banking pay-in is a launch requirement in our scope, not a phase-two nicety.
+                    </div>
+                </div>
+            </div>
+            <p class="note" style="color:#7E96AB;margin-top:16px">Illustrative model. Partner fees, FX cost and KYC
+                pricing are placeholders until term sheets are in hand — replacing them with your real commercials is
+                deliverable D-04 of Phase 0. The structure of the calculation, however, is exactly the structure the
+                platform's ledger will implement.</p>
+        </div>
+    </section>
+
+    <!-- ============ MARKET ============ -->
+    <section class="block" id="market">
+        <div class="wrap">
+            <p class="eyebrow">Why this corridor</p>
+            <h2>The route is proven. The margin is contested.</h2>
+            <p class="lede">This is not a market you need to create. It is a market you need to enter with lower
+                friction than nine incumbents who are already very good at it.</p>
+
+            <div class="stat-row" style="margin-top:30px">
+                <div class="stat"><b>£3.3bn+</b><span>Flowed from the UK to India in 2024 — over a third of all UK
+                        outbound remittance value</span></div>
+                <div class="stat"><b>2m+</b><span>Individual UK→India transfers a year; the second-largest UK corridor
+                        by volume</span></div>
+                <div class="stat"><b>$135bn</b><span>India's total remittance receipts in FY25, up roughly 14% year on
+                        year</span></div>
+                <div class="stat"><b>3.55%</b><span>Average all-in cost at digital-first operators, against 14.55% at
+                        banks</span></div>
+            </div>
+
+            <div class="grid g2" style="margin-top:30px">
+                <div class="card">
+                    <h3>What this means commercially</h3>
+                    <p class="note">The UK→India corridor is already one of the cheapest in the world — roughly
+                        1.75%–3.2% all-in depending on ticket size, against a 6.36% global average. There is no room to
+                        win on being marginally cheaper than Wise. The defensible positions are speed to a specific
+                        payout rail, first-transfer conversion, recipient-side experience, and serving a segment the
+                        incumbents treat generically: students, seasonal workers, NRI property and education payers, or
+                        a named regional community.</p>
+                    <p class="note" style="margin-bottom:0">We recommend the platform be built to support
+                        <b>segment-specific journeys</b> from day one — configurable limits, purpose codes and messaging
+                        per segment — rather than a single generic flow that has to be retrofitted later.</p>
+                </div>
+                <div class="card">
+                    <h3>What this means technically</h3>
+                    <p class="note">Thin margins make cost-per-transaction an architectural constraint, not an
+                        accounting detail. Three consequences run through this entire proposal:</p>
+                    <ul class="ticks" style="margin-top:8px">
+                        <li>Pay-in must default to account-to-account, with cards as an exception path only</li>
+                        <li>KYC spend must be amortised — verify once, reuse across the customer lifetime, and never
+                            re-run a full check where a refresh will do</li>
+                        <li>Manual operations must be designed out. Every hour of human review is a real cost per
+                            transfer; the compliance console exists to make review rare and fast</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ REGULATORY ============ -->
+    <section class="block" id="regulatory">
+        <div class="wrap">
+            <p class="eyebrow">The part that is not negotiable</p>
+            <h2>Two regulators, one product.</h2>
+            <p class="lede">Every screen in this application is shaped by a rule written in London or Mumbai. Below is
+                the map we design against — and the specific places where regulation stops being paperwork and becomes a
+                product decision.</p>
+
+            <div class="grid g2" style="margin-top:34px">
+                <!-- UK -->
+                <div>
+                    <p class="pill" style="margin-bottom:14px">United Kingdom · FCA</p>
+                    <h3>Collecting pounds is a regulated activity</h3>
+                    <p class="note">Money remittance is a payment service under the Payment Services Regulations 2017.
+                        The operating question is whether you perform it under your own permission or as an agent of a
+                        firm that holds one.</p>
+
+                    <div class="tbl-scroll" style="margin-top:16px">
+                        <table>
+                            <caption>UK permission routes</caption>
+                            <thead>
+                                <tr>
+                                    <th>Route</th>
+                                    <th>Threshold &amp; capital</th>
+                                    <th class="n">Gateway</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><b>Agent of an authorised PI</b><br><span class="note">Fastest to market; the
+                                            principal owns the permission and the risk</span></td>
+                                    <td>No own capital; principal's due diligence and agent registration</td>
+                                    <td class="n">4–10 wks</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Small Payment Institution</b><br><span class="note">Lighter registration;
+                                            safeguarding not legally mandated</span></td>
+                                    <td>Average monthly turnover under €3m</td>
+                                    <td class="n">3–6 mo</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Authorised Payment Institution</b><br><span class="note">Full permission;
+                                            assessed on governance, capital, safeguarding, AML, business model,
+                                            systems</span></td>
+                                    <td>£20,000 initial capital for money remittance</td>
+                                    <td class="n">6–12 mo</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="callout" style="margin-top:20px">
+                        <h4>Three UK rules that write themselves into the code</h4>
+                        <ul class="ticks" style="margin-top:6px">
+                            <li><b>Safeguarding, strengthened from 7 May 2026.</b> Under PS25/12, in-scope firms must
+                                keep prescribed books and records, maintain a resolution pack, submit monthly
+                                safeguarding returns and obtain acknowledgement letters in prescribed form. This is a
+                                <em>reporting system</em> we build, not a policy document you file.</li>
+                            <li><b>APP fraud reimbursement.</b> Since 7 October 2024 sending firms must reimburse
+                                eligible scam victims within five business days, up to £85,000 per claim, with a £100
+                                excess and a 13-month claim window, and cost split 50/50 with the receiving firm. That
+                                liability is a direct input to our fraud engine, warning screens and Confirmation of
+                                Payee flow.</li>
+                            <li><b>Strong customer authentication and Consumer Duty.</b> SCA under reg. 100 governs the
+                                login and payment journey; Consumer Duty governs how clearly the rate, the fee and the
+                                delivery time are presented before the customer commits.</li>
+                        </ul>
+                    </div>
+                    <p class="note" style="margin-top:14px">Authorisation is also harder than it was: FCA refusal rates
+                        for payment institution applications have risen from roughly 1 in 14 in 2021 to about 1 in 5. We
+                        plan for a rejected first attempt as a live scenario, not an unthinkable one.</p>
+                </div>
+
+                <!-- INDIA -->
+                <div>
+                    <p class="pill" style="margin-bottom:14px">India · RBI &amp; FEMA</p>
+                    <h3>Paying out rupees is a different regime entirely</h3>
+                    <p class="note">Personal inward remittance runs on two RBI channels. They are not equivalent, and
+                        the choice constrains what the app is allowed to let a customer do.</p>
+
+                    <div class="tbl-scroll" style="margin-top:16px">
+                        <table>
+                            <caption>Indian inward channels</caption>
+                            <thead>
+                                <tr>
+                                    <th>Channel</th>
+                                    <th>Scope</th>
+                                    <th>Hard limits</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><b>MTSS</b><br><span class="note">Overseas Principal ties up with an authorised
+                                            Indian Agent</span></td>
+                                    <td>Personal remittance only. No trade, no property purchase, no investment, no
+                                        NRE/FCNR credit, no charitable donation</td>
+                                    <td>USD 2,500 per transaction; 30 remittances per beneficiary per year; cash payout
+                                        capped at ₹50,000</td>
+                                </tr>
+                                <tr>
+                                    <td><b>RDA</b><br><span class="note">AD Category-I bank with an approved overseas
+                                            exchange house</span></td>
+                                    <td>Personal remittance with no cap; trade remittance capped per transaction</td>
+                                    <td>No cap on personal transfers; no cash payout; trade use restricted</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="callout" style="margin-top:20px">
+                        <h4>Why this is a product decision, not a legal footnote</h4>
+                        <p class="note" style="margin-bottom:0">If you launch on MTSS, the app must enforce a
+                            per-transaction ceiling of roughly £2,000 and a 30-transfer annual counter <em>per
+                                beneficiary</em> — which means the platform needs beneficiary-level cumulative tracking,
+                            a counter visible to the customer, and graceful handling of the transfer that would breach
+                            it. If you launch on RDA, those ceilings disappear but cash payout does, and your partner
+                            set changes completely. The transfer engine we build supports both as configuration, but the
+                            launch channel must be fixed in Phase 0 because it determines the partner shortlist.</p>
+                    </div>
+
+                    <div class="grid g2" style="margin-top:20px">
+                        <div class="card tight">
+                            <h4>Payout rails</h4>
+                            <p class="note" style="margin-bottom:0">IMPS and NEFT to bank accounts are the reliable
+                                base. UPI payout for inward remittance is real but partner-dependent — it is delivered
+                                through an Indian bank connected to NPCI on behalf of money transfer operators, not by
+                                integrating UPI directly. NPCI's own international build-out is a country-by-country
+                                programme; treat UPI payout as a partner capability to be verified in Phase 0, never as
+                                an assumption.</p>
+                        </div>
+                        <div class="card tight">
+                            <h4>Data and privacy</h4>
+                            <p class="note" style="margin-bottom:0">RBI's payment data storage direction requires
+                                end-to-end payment transaction data to be stored on systems in India. The UK side sits
+                                under UK GDPR, and Indian personal data under the DPDP Act 2023. This is why the
+                                architecture is dual-region by design and not a single AWS account in one continent —
+                                retrofitting data residency after launch is a rebuild.</p>
+                        </div>
+                    </div>
+                    <p class="note" style="margin-top:14px">Also in scope: FEMA purpose codes captured at the point of
+                        transfer, PAN capture thresholds, beneficiary name matching, and FIRC-equivalent documentation
+                        where the recipient requires proof of source.</p>
+                </div>
+            </div>
+
+            <div class="callout good" style="margin-top:30px">
+                <h4>Our position</h4>
+                <p style="margin-bottom:0">VAW Technologies is a technology partner, not a law firm. We do not provide
+                    regulatory advice and we do not warrant licensing outcomes. What we do is build to a regulatory
+                    specification, and we insist that specification is written down and signed off by your appointed UK
+                    and Indian counsel in Phase 0. We will run those sessions, produce the traceability matrix that maps
+                    every rule to a system control, and hold ourselves to it in testing. Named counsel on both sides is
+                    a client-side dependency and a condition of the Phase 1 start.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ OPERATING MODELS ============ -->
+    <section class="block" id="models">
+        <div class="wrap">
+            <p class="eyebrow">The fork in the road</p>
+            <h2>Three ways to be in this business.</h2>
+            <p class="lede">The same app can sit on top of three very different companies. The difference between them
+                is measured in years and crores, so we put it in front of you before scope.</p>
+
+            <div class="grid g3" style="margin-top:32px">
+                <div class="card">
+                    <p class="pill go">Recommended for launch</p>
+                    <h3 style="margin-top:12px">A · Agent-led</h3>
+                    <p class="note">You operate as a registered agent of an FCA-authorised payment institution, and pay
+                        out through their existing Indian arrangement. You own the brand, the customer, the app and the
+                        data. They own the permission, the safeguarding and the settlement accounts.</p>
+                    <dl class="kv" style="margin-top:14px">
+                        <dt>Time to live</dt>
+                        <dd>Software timeline governs — 10–12 months</dd>
+                        <dt>Regulatory cost</dt>
+                        <dd>Lowest; principal's onboarding and diligence</dd>
+                        <dt>Trade-off</dt>
+                        <dd>Thinner margin; economics set by the principal; concentration risk on one partner</dd>
+                    </dl>
+                </div>
+                <div class="card">
+                    <p class="pill">Year two</p>
+                    <h3 style="margin-top:12px">B · Own UK permission</h3>
+                    <p class="note">You register as an SPI or apply for full API authorisation, and contract directly
+                        with FX and Indian payout partners. Materially better unit economics and direct control of the
+                        customer funds flow.</p>
+                    <dl class="kv" style="margin-top:14px">
+                        <dt>Time to live</dt>
+                        <dd>Software plus a 3–12 month authorisation gateway</dd>
+                        <dt>Regulatory cost</dt>
+                        <dd>Advisory, MLRO, compliance function, safeguarding audit</dd>
+                        <dt>Trade-off</dt>
+                        <dd>Real chance of refusal or conditions; ongoing supervisory burden</dd>
+                    </dl>
+                </div>
+                <div class="card">
+                    <p class="pill hot">Not for version one</p>
+                    <h3 style="margin-top:12px">C · Full institution</h3>
+                    <p class="note">Own UK authorisation plus your own MTSS Overseas Principal structure or RDA
+                        arrangement, your own compliance organisation on both sides, and direct banking relationships in
+                        India.</p>
+                    <dl class="kv" style="margin-top:14px">
+                        <dt>Time to live</dt>
+                        <dd>18–30 months, contingent on approvals</dd>
+                        <dt>Regulatory cost</dt>
+                        <dd>Multiples of the software cost; recurring, not one-off</dd>
+                        <dt>Trade-off</dt>
+                        <dd>Best long-run economics; wrong risk profile for a first release</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="callout neutral" style="margin-top:26px">
+                <p style="margin-bottom:0"><b>The architecture does not change between A, B and C.</b> That is the point
+                    of the design we are proposing. The transfer engine talks to pay-in, FX and payout through
+                    provider-agnostic adapters, so moving from a principal's rails to your own is a configuration and
+                    certification exercise — a few weeks — rather than a rebuild. This is the single most valuable thing
+                    we can give you at this stage, and it is why we do not recommend the cheapest possible V1.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SCOPE ============ -->
+    <section class="block" id="scope">
+        <div class="wrap">
+            <p class="eyebrow">What gets built</p>
+            <h2>Scope, in the order it earns its place.</h2>
+
+            <div class="grid g2" style="margin-top:30px">
+                <div class="card">
+                    <h3>Customer application — iOS and Android</h3>
+                    <ul class="ticks">
+                        <li><b>Onboarding</b> — phone and email verification, device binding, biometric and PIN unlock,
+                            session and step-up authentication meeting SCA</li>
+                        <li><b>Identity</b> — document capture, liveness, address verification, sanctions and PEP
+                            screening at onboarding, re-screening on a schedule, clear remediation paths for a failed
+                            check rather than a dead end</li>
+                        <li><b>Quote and send</b> — live rate, all-in cost shown before commitment, rate lock with an
+                            explicit expiry, delivery-time estimate, purpose code capture, limit and channel-cap
+                            enforcement</li>
+                        <li><b>Beneficiaries</b> — account and IFSC validation, UPI ID where the partner supports it,
+                            name-match confirmation before first send, per-beneficiary annual counters where MTSS
+                            applies</li>
+                        <li><b>Tracking</b> — a real state machine surfaced honestly, including the states customers
+                            hate: held for review, partner delay, returned by beneficiary bank</li>
+                        <li><b>Records</b> — receipts, statements, source-of-funds documents, and recipient-side
+                            notification by SMS or WhatsApp</li>
+                        <li><b>Support</b> — in-app chat, dispute raising, and a fraud-warning journey aligned to APP
+                            reimbursement obligations</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h3>Operations and compliance console</h3>
+                    <ul class="ticks">
+                        <li><b>Customer operations</b> — profile, KYC evidence, document re-request, limits override
+                            with maker-checker, account freeze</li>
+                        <li><b>Transaction operations</b> — live queue, stuck-transfer resolution, partner retry,
+                            refunds and returns, partial-failure handling</li>
+                        <li><b>Compliance</b> — alert queue, risk scoring, transaction monitoring rules with a versioned
+                            rule engine, case management, SAR-ready export, full four-eyes audit trail</li>
+                        <li><b>Treasury</b> — position by currency, prefund balance monitoring, rate feed health,
+                            exposure against locked quotes</li>
+                        <li><b>Reconciliation</b> — three-way match across pay-in statements, internal ledger and
+                            partner settlement files, with an exceptions workbench rather than a spreadsheet</li>
+                        <li><b>Reporting</b> — daily settlement, volume and revenue, safeguarding reconciliation output,
+                            regulatory return preparation, board-level MI</li>
+                        <li><b>Configuration</b> — fees, FX margin, corridors, limits, rules and content changed by
+                            authorised staff without a release</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="grid g2" style="margin-top:20px">
+                <div class="card">
+                    <h3>Deliberately out of scope for version one</h3>
+                    <ul class="ticks crosses">
+                        <li>Own wallet or stored-value balance — triggers e-money permissions</li>
+                        <li>Own FX book, hedging engine or treasury dealing</li>
+                        <li>Cash pickup network and agent locations</li>
+                        <li>Business payments, invoicing, trade remittance</li>
+                        <li>Additional corridors beyond UK→India</li>
+                        <li>Cards, lending, investments, crypto rails</li>
+                        <li>India→UK outbound (a different regulatory build entirely)</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Built as extension points, not built now</h3>
+                    <p class="note">Each of the above is excluded from the price but accommodated in the design: the
+                        ledger supports multi-currency balances, the corridor model supports N corridors, the partner
+                        adapters support multiple simultaneous providers, and the rules engine is corridor-scoped.
+                        Adding the second corridor should cost a fraction of the first. That is a deliberate investment
+                        in the Scale tier and it is where a meaningful part of the price difference between tiers sits.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ ARCHITECTURE ============ -->
+    <section class="block" id="architecture">
+        <div class="wrap">
+            <p class="eyebrow">How it is built</p>
+            <h2>A ledger with an app attached.</h2>
+            <p class="lede">Most remittance startups fail at reconciliation, not at the user interface. So we invert the
+                usual order and build the money-truth layer first.</p>
+
+            <div class="grid g2" style="margin-top:32px">
+                <div>
+                    <h3>The transfer engine</h3>
+                    <p class="note">A transfer is a long-running, distributed, partially-failing process across systems
+                        that do not share a transaction boundary. We treat it as such.</p>
+                    <ul class="ticks">
+                        <li><b>Immutable double-entry ledger.</b> Every movement posts balanced entries. Balances are
+                            derived, never edited. No process can update a row that represents money.</li>
+                        <li><b>Explicit state machine.</b> Every transfer has one legal state and an enumerated set of
+                            transitions. Undefined states cannot be reached, which is what makes support answerable.
+                        </li>
+                        <li><b>Saga orchestration with compensations.</b> Collected pounds but the payout partner
+                            rejected? A defined compensating path returns funds and posts the reversal. No silent
+                            losses.</li>
+                        <li><b>Idempotency everywhere.</b> Every command carries a key. Duplicate submissions, retried
+                            webhooks and mobile network flakes cannot create a second payout.</li>
+                        <li><b>Transactional outbox.</b> Events reach the queue if and only if the database commit
+                            succeeded. This closes the most common source of phantom transfers.</li>
+                        <li><b>Reconciliation as a first-class service.</b> Daily three-way match with an exception
+                            queue, break ageing and a required disposition for every unmatched item.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3>The stack</h3>
+                    <div class="tbl-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Layer</th>
+                                    <th>Choice</th>
+                                    <th>Why</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Mobile</td>
+                                    <td>React Native (New Architecture)</td>
+                                    <td>One codebase, native modules where security demands them</td>
+                                </tr>
+                                <tr>
+                                    <td>Consoles</td>
+                                    <td>Next.js + TypeScript</td>
+                                    <td>Server-rendered, role-gated, auditable</td>
+                                </tr>
+                                <tr>
+                                    <td>Services</td>
+                                    <td>Node.js / TypeScript; Go for the ledger</td>
+                                    <td>Team depth in TS; a typed, fast core for money</td>
+                                </tr>
+                                <tr>
+                                    <td>Data</td>
+                                    <td>PostgreSQL, append-only ledger tables</td>
+                                    <td>Strict consistency where money lives</td>
+                                </tr>
+                                <tr>
+                                    <td>Events</td>
+                                    <td>Kafka or SNS/SQS + outbox</td>
+                                    <td>Ordered, replayable, auditable</td>
+                                </tr>
+                                <tr>
+                                    <td>Cache / jobs</td>
+                                    <td>Redis, BullMQ</td>
+                                    <td>Rate quotes, locks, scheduled screening</td>
+                                </tr>
+                                <tr>
+                                    <td>Cloud</td>
+                                    <td>AWS eu-west-2 and ap-south-1</td>
+                                    <td>UK data under UK GDPR; Indian payment data resident in India</td>
+                                </tr>
+                                <tr>
+                                    <td>Secrets / keys</td>
+                                    <td>KMS, Secrets Manager, HSM-backed signing</td>
+                                    <td>Partner API signing and PII encryption</td>
+                                </tr>
+                                <tr>
+                                    <td>Observability</td>
+                                    <td>OpenTelemetry, Grafana, Sentry</td>
+                                    <td>Trace a single transfer across every hop</td>
+                                </tr>
+                                <tr>
+                                    <td>Delivery</td>
+                                    <td>GitHub Actions, Terraform, ephemeral envs</td>
+                                    <td>Reproducible infrastructure; audit-friendly change history</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="note" style="margin-top:12px"><b>PCI scope is minimised by design.</b> If card pay-in is
+                        enabled, card data never touches our servers — hosted fields and tokenisation keep you out of
+                        full PCI DSS assessment. That decision alone is worth several lakh and several weeks.</p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:28px">
+                <h3>The life of a transfer</h3>
+                <ol class="rail" style="margin-top:18px;counter-reset:none">
+                    <li><span class="rail-k">01 · Quote</span>Rate pulled from the FX provider, margin applied, quote
+                        persisted with an expiry. The quote is a record, not a UI value.</li>
+                    <li><span class="rail-k">02 · Instruct</span>Customer commits. Limits, channel caps, beneficiary
+                        counters and sanctions status are checked synchronously. Transfer created; ledger opens the
+                        obligation.</li>
+                    <li><span class="rail-k">03 · Collect</span>Open banking payment initiated or card charged. Funds
+                        confirmed into the safeguarded or partner-held account. Nothing moves onward until settlement is
+                        confirmed, not merely authorised.</li>
+                    <li><span class="rail-k">04 · Screen</span>Sanctions, PEP and adverse-media checks on sender and
+                        beneficiary; rules engine scores the transaction. Clean transfers pass through in milliseconds;
+                        the rest enter the review queue with a service-level clock.</li>
+                    <li><span class="rail-k">05 · Convert</span>FX executed with the partner against the locked quote.
+                        Any slippage between quoted and executed rate posts to a margin account — visible, measured,
+                        managed. It does not silently become someone's loss.</li>
+                    <li><span class="rail-k">06 · Pay out</span>Payout instruction to the Indian partner with purpose
+                        code and beneficiary detail. IMPS, NEFT or UPI depending on amount, hour and partner capability.
+                    </li>
+                    <li><span class="rail-k">07 · Confirm</span>Partner callback or polled status resolves the transfer.
+                        Customer and recipient both notified. Receipt generated and stored.</li>
+                    <li><span class="rail-k">08 · Reconcile</span>Next-cycle three-way match. Every break is aged, owned
+                        and dispositioned. This is the step that makes an audit survivable.</li>
+                </ol>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ SECURITY ============ -->
+    <section class="block" id="security">
+        <div class="wrap">
+            <p class="eyebrow">Assurance</p>
+            <h2>Treated as a financial system from day one.</h2>
+
+            <div class="grid g4" style="margin-top:30px">
+                <div class="card tight">
+                    <h4>Application</h4>
+                    <ul class="ticks">
+                        <li>TLS 1.3, HSTS, certificate pinning</li>
+                        <li>Field-level encryption for PII</li>
+                        <li>Short-lived tokens, refresh rotation</li>
+                        <li>Device binding and jailbreak detection</li>
+                        <li>Rate limiting and bot defence</li>
+                        <li>OWASP ASVS and MASVS baselines</li>
+                    </ul>
+                </div>
+                <div class="card tight">
+                    <h4>Financial controls</h4>
+                    <ul class="ticks">
+                        <li>Velocity, structuring and mule detection</li>
+                        <li>Duplicate-payout guards</li>
+                        <li>Beneficiary and counterparty risk scoring</li>
+                        <li>Maker-checker on every privileged action</li>
+                        <li>Write-once audit log</li>
+                        <li>Segregation of duties enforced in roles</li>
+                    </ul>
+                </div>
+                <div class="card tight">
+                    <h4>Infrastructure</h4>
+                    <ul class="ticks">
+                        <li>Private subnets, no public data plane</li>
+                        <li>WAF, DDoS protection, egress control</li>
+                        <li>KMS-managed keys with rotation</li>
+                        <li>Immutable infrastructure via Terraform</li>
+                        <li>Cross-region backup with tested restore</li>
+                        <li>DR targets: RPO 15 min, RTO 4 hours</li>
+                    </ul>
+                </div>
+                <div class="card tight">
+                    <h4>Verification</h4>
+                    <ul class="ticks">
+                        <li>SAST, DAST and dependency scanning in CI</li>
+                        <li>Threat modelling per epic</li>
+                        <li>Independent penetration test before launch</li>
+                        <li>Mobile-specific security testing</li>
+                        <li>Remediation and retest included in price</li>
+                        <li>ISO 27001 / SOC 2 readiness pack</li>
+                    </ul>
+                </div>
+            </div>
+            <p class="note" style="margin-top:18px">The penetration test is commissioned from an independent
+                CREST-accredited firm, not performed by the team that wrote the code. We budget the test, the
+                remediation sprint and the retest as a single milestone, because a report with open findings is not a
+                launch gate anyone should accept.</p>
+        </div>
+    </section>
+
+    <!-- ============ PLAN ============ -->
+    <section class="block" id="plan">
+        <div class="wrap">
+            <p class="eyebrow">Delivery</p>
+            <h2>Ten to fourteen months, with gates you control.</h2>
+            <p class="lede">The band is not vagueness. It is the difference between the three scopes on offer, and
+                between having partner contracts signed at kickoff versus negotiating them alongside the build.</p>
+
+            <div class="gantt" style="margin-top:30px">
+                <div class="gantt-hdr">
+                    <div class="mono"
+                        style="font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)">Phase
+                    </div>
+                    <div class="gantt-months">
+                        <span>M1</span><span>M2</span><span>M3</span><span>M4</span><span>M5</span><span>M6</span><span>M7</span><span>M8</span><span>M9</span><span>M10</span><span>M11</span><span>M12</span><span>M13</span><span>M14</span>
+                    </div>
+                </div>
+
+                <div class="gantt-row">
+                    <div class="gl"><span>Phase 0</span>Discovery, regulatory architecture, partner selection</div>
+                    <div class="gantt-track">
+                        <div class="gantt-bar b1" style="grid-column:1/3">6 weeks</div>
+                    </div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gl"><span>Phase 1</span>Foundations — design system, ledger core, dual-region infra
+                    </div>
+                    <div class="gantt-track">
+                        <div class="gantt-bar" style="grid-column:2/5">10 weeks</div>
+                    </div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gl"><span>Phase 2</span>Rails — pay-in, FX, payout, KYC/AML orchestration</div>
+                    <div class="gantt-track">
+                        <div class="gantt-bar" style="grid-column:4/8">14 weeks</div>
+                    </div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gl"><span>Phase 3</span>Experience — mobile apps, ops console, reconciliation</div>
+                    <div class="gantt-track">
+                        <div class="gantt-bar" style="grid-column:6/11">16 weeks</div>
+                    </div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gl"><span>Phase 4</span>Assurance — QA, pen test, partner certification, UAT</div>
+                    <div class="gantt-track">
+                        <div class="gantt-bar b3" style="grid-column:10/13">10 weeks</div>
+                    </div>
+                </div>
+                <div class="gantt-row">
+                    <div class="gl"><span>Phase 5</span>Launch, pilot cohort and stabilisation</div>
+                    <div class="gantt-track">
+                        <div class="gantt-bar b2" style="grid-column:12/15">8 weeks</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid g2" style="margin-top:28px">
+                <div class="card">
+                    <h3>Phase 0 is a real deliverable, not a sales call</h3>
+                    <p class="note">Six weeks, a fixed fee, and a signed artefact set. It exists because the ten
+                        questions below currently have no answers, and each one moves the estimate.</p>
+                    <ol class="note" style="padding-left:20px;margin-top:8px">
+                        <li>UK→India only at launch, or a second corridor in year one?</li>
+                        <li>Personal remittance only, or business payments too?</li>
+                        <li>MTSS or RDA as the Indian inward channel?</li>
+                        <li>Bank payout only, or UPI and cash pickup as well?</li>
+                        <li>Is there an FCA-authorised principal, and on what terms?</li>
+                        <li>Is there an Indian partner bank or authorised agent, and does their API exist?</li>
+                        <li>Who holds customer funds at each moment?</li>
+                        <li>Does the client intend to seek its own permission, and when?</li>
+                        <li>Expected monthly volume at month 3, 12 and 24?</li>
+                        <li>Average ticket size and target customer segment?</li>
+                    </ol>
+                    <p class="note" style="margin-bottom:0"><b>Deliverables:</b> regulatory requirements traceability
+                        matrix, target operating model, partner evaluation and shortlist, transaction and settlement
+                        flow specification, integration specifications, security architecture, data residency design,
+                        tested UX prototype, product backlog with estimates, and a fixed-price Phase 1–5 statement of
+                        work.</p>
+                </div>
+                <div class="card">
+                    <h3>How we run it</h3>
+                    <dl class="kv">
+                        <dt>Cadence</dt>
+                        <dd>Two-week sprints; demo every sprint on a real environment, never a slide</dd>
+                        <dt>Environments</dt>
+                        <dd>Dev, integration, partner sandbox, staging, production — from Phase 1, not Phase 4</dd>
+                        <dt>Governance</dt>
+                        <dd>Weekly delivery call, monthly steering with written status, shared risk register</dd>
+                        <dt>Change</dt>
+                        <dd>Written change control with an impact estimate before work begins. No silent scope drift in
+                            either direction</dd>
+                        <dt>Access</dt>
+                        <dd>Your team has read access to the repository, the board and the pipeline throughout</dd>
+                        <dt>Exit</dt>
+                        <dd>Source, infrastructure code, documentation and runbooks are yours at every milestone, not on
+                            final payment</dd>
+                    </dl>
+                    <div class="callout" style="margin-top:18px">
+                        <h4>The honest risk to this timeline</h4>
+                        <p class="note" style="margin-bottom:0">In our experience the schedule is broken by partner
+                            integration, not by our engineering. Sandbox access, certification queues and contract
+                            negotiation sit outside our control. We mitigate by building against a simulated partner
+                            from Phase 1 so that development never idles, and by making partner selection a Phase 0 gate
+                            — but if partner contracts are unsigned at month 4, the launch date moves. We would rather
+                            say that now than in month 9.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ TEAM ============ -->
+    <section class="block" id="team">
+        <div class="wrap">
+            <p class="eyebrow">Who does the work</p>
+            <h2>A dedicated squad, not a shared pool.</h2>
+
+            <div class="tbl-scroll" style="margin-top:26px">
+                <table>
+                    <caption>Squad composition and effort — Scale scope</caption>
+                    <thead>
+                        <tr>
+                            <th>Role</th>
+                            <th>Count</th>
+                            <th>Engaged</th>
+                            <th class="n">Person-months</th>
+                            <th>Accountable for</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Engagement lead / delivery manager</td>
+                            <td>1</td>
+                            <td>Full</td>
+                            <td class="n">12</td>
+                            <td>Commercials, escalation, steering, your single point of contact</td>
+                        </tr>
+                        <tr>
+                            <td>Solution architect</td>
+                            <td>1</td>
+                            <td>Full to M8, then part</td>
+                            <td class="n">10</td>
+                            <td>Ledger design, integration contracts, non-functional requirements</td>
+                        </tr>
+                        <tr>
+                            <td>Business analyst — payments</td>
+                            <td>1</td>
+                            <td>Full</td>
+                            <td class="n">12</td>
+                            <td>Regulatory traceability, partner specs, acceptance criteria</td>
+                        </tr>
+                        <tr>
+                            <td>Product designer</td>
+                            <td>1</td>
+                            <td>M1–M8</td>
+                            <td class="n">8</td>
+                            <td>Design system, both apps, console, usability testing</td>
+                        </tr>
+                        <tr>
+                            <td>Backend engineers</td>
+                            <td>3</td>
+                            <td>M2–M12</td>
+                            <td class="n">33</td>
+                            <td>Ledger, transfer engine, adapters, reconciliation</td>
+                        </tr>
+                        <tr>
+                            <td>Mobile engineers</td>
+                            <td>2</td>
+                            <td>M3–M12</td>
+                            <td class="n">20</td>
+                            <td>iOS and Android, offline states, security hardening</td>
+                        </tr>
+                        <tr>
+                            <td>Frontend engineer</td>
+                            <td>1</td>
+                            <td>M4–M12</td>
+                            <td class="n">9</td>
+                            <td>Operations and compliance console</td>
+                        </tr>
+                        <tr>
+                            <td>DevOps / platform engineer</td>
+                            <td>1</td>
+                            <td>Full</td>
+                            <td class="n">12</td>
+                            <td>Dual-region infrastructure, pipelines, observability, DR</td>
+                        </tr>
+                        <tr>
+                            <td>QA engineers</td>
+                            <td>2</td>
+                            <td>M3–M13</td>
+                            <td class="n">22</td>
+                            <td>Automation, partner sandbox suites, settlement scenarios</td>
+                        </tr>
+                        <tr>
+                            <td>Security engineer</td>
+                            <td>1</td>
+                            <td>Part-time</td>
+                            <td class="n">5</td>
+                            <td>Threat models, code review, pen test liaison, remediation</td>
+                        </tr>
+                        <tr>
+                            <td>Compliance technologist</td>
+                            <td>1</td>
+                            <td>Part-time</td>
+                            <td class="n">4</td>
+                            <td>Rules engine, screening configuration, reporting outputs</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3">Peak headcount 13 · Average 9.5</td>
+                            <td class="n">147</td>
+                            <td>—</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <p class="note" style="margin-top:14px">Named CVs for the engagement lead, solution architect and business
+                analyst are supplied with the contract and those three are contractually locked to the project.
+                Independent penetration testing and legal counsel are procured separately and are not included in the
+                figures above.</p>
+        </div>
+    </section>
+
+    <!-- ============ INVESTMENT ============ -->
+    <section class="block" id="investment">
+        <div class="wrap">
+            <p class="eyebrow">Investment &amp; Cost Estimation</p>
+            <h2>Project Investment Estimate</h2>
+            <p class="lede">All figures are in Indian rupees, exclusive of GST, third-party licence fees, and pass-through costs. The final commercial engagement is based on a refined fixed-scope delivery model de-risked via Phase 0.</p>
+
+            <div class="card" style="margin-top:32px; padding: 36px; background: #FAFBFD; border-left: 4px solid var(--brass);">
+                <div style="display:flex; justify-size:space-between; align-items:center; flex-wrap:wrap; gap:20px;">
+                    <div>
+                        <p class="pill go" style="margin-bottom:12px">Turnkey Build Estimate (Phase 1 &amp; 2)</p>
+                        <h3 style="font-size:32px; color:var(--ink);">Estimated Range: <span style="color:var(--brass);">₹85,00,000 – ₹1,50,00,000</span></h3>
+                        <p class="note" style="font-size:16px; margin-top:8px;">Timeline: 10 to 14 Months · Peak squad: 11–16 specialists</p>
+                    </div>
+                </div>
+                <hr style="border:none; border-top:1px solid var(--rule); margin: 24px 0;">
+                <p style="font-size:15.5px; color:var(--ink-2); line-height:1.65; margin-bottom:0;">
+                    Rather than fixed rigid tiers, the investment for delivering Phase 1 &amp; 2 is estimated between <b>₹85 Lakhs to ₹1.50 Crore</b> depending on selected provider integrations, multi-partner routing complexity, and regulatory feature sets. The exact figure is locked with zero margin overruns following the 6-week Phase 0 Discovery &amp; Architecture phase.
+                </p>
+            </div>
+
+            <div class="tbl-scroll" style="margin-top:38px">
+                <table>
+                    <caption>Module-level allocation (Approximate Estimates)</caption>
+                    <thead>
+                        <tr>
+                            <th>Workstream / Module</th>
+                            <th>Scope &amp; Deliverables Description</th>
+                            <th class="n">Approx. Allocation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Discovery, regulatory architecture &amp; partner selection</td>
+                            <td>Partner due diligence, compliance traceability matrix, technical architecture</td>
+                            <td class="n">~ ₹6L – ₹11L</td>
+                        </tr>
+                        <tr>
+                            <td>Product design, design system &amp; usability testing</td>
+                            <td>UX research, high-fidelity UI design, component system, accessibility testing</td>
+                            <td class="n">~ ₹5L – ₹8L</td>
+                        </tr>
+                        <tr>
+                            <td>Mobile applications — iOS and Android</td>
+                            <td>Native iOS &amp; Android consumer remittance applications with biometric auth</td>
+                            <td class="n">~ ₹11L – ₹16L</td>
+                        </tr>
+                        <tr>
+                            <td>Core ledger &amp; transfer orchestration engine</td>
+                            <td>Double-entry accounting ledger, state machine engine, transaction lifecycle</td>
+                            <td class="n">~ ₹12L – ₹19L</td>
+                        </tr>
+                        <tr>
+                            <td>UK pay-in integration</td>
+                            <td>Open banking payment initiation (PISP) and card acquiring gateway integration</td>
+                            <td class="n">~ ₹6L – ₹11L</td>
+                        </tr>
+                        <tr>
+                            <td>FX quoting, rate lock &amp; margin engine</td>
+                            <td>Real-time rate lock, wholesale FX spread management, margin engine</td>
+                            <td class="n">~ ₹3L – ₹8L</td>
+                        </tr>
+                        <tr>
+                            <td>India payout integration</td>
+                            <td>IMPS, NEFT, and UPI payout integrations with banking partners</td>
+                            <td class="n">~ ₹4L – ₹8L</td>
+                        </tr>
+                        <tr>
+                            <td>KYC, AML, sanctions &amp; fraud orchestration</td>
+                            <td>Identity verification, PEPs/sanctions screening, APP fraud warning flows</td>
+                            <td class="n">~ ₹6L – ₹11L</td>
+                        </tr>
+                        <tr>
+                            <td>Reconciliation &amp; settlement engine</td>
+                            <td>Two-way and three-way automated statement reconciliation workbench</td>
+                            <td class="n">~ ₹5L – ₹9L</td>
+                        </tr>
+                        <tr>
+                            <td>Operations &amp; compliance console</td>
+                            <td>Back-office management, manual review queue, case management console</td>
+                            <td class="n">~ ₹7L – ₹12L</td>
+                        </tr>
+                        <tr>
+                            <td>Reporting, MI &amp; regulatory returns</td>
+                            <td>Management intelligence dashboards, regulatory audit export engine</td>
+                            <td class="n">~ ₹3L – ₹5L</td>
+                        </tr>
+                        <tr>
+                            <td>DevOps, dual-region infrastructure &amp; observability</td>
+                            <td>UK &amp; India cloud deployment, CI/CD pipelines, 24/7 monitoring setup</td>
+                            <td class="n">~ ₹4L – ₹8L</td>
+                        </tr>
+                        <tr>
+                            <td>Security engineering &amp; assurance</td>
+                            <td>Threat modeling, security hardening, penetration test remediation</td>
+                            <td class="n">~ ₹4L – ₹7L</td>
+                        </tr>
+                        <tr>
+                            <td>QA, automation &amp; performance testing</td>
+                            <td>End-to-end automated testing, load testing, partner sandbox verification</td>
+                            <td class="n">~ ₹5L – ₹10L</td>
+                        </tr>
+                        <tr>
+                            <td>Programme management &amp; business analysis</td>
+                            <td>Agile delivery, technical docs, stakeholder reporting, release management</td>
+                            <td class="n">~ ₹4L – ₹7L</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2">Total Project Estimate (Phase 1 &amp; Phase 2)</td>
+                            <td class="n" style="font-size:16px;">~ ₹85L – ₹1.50Cr</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="grid g2" style="margin-top:30px">
+                <div class="card">
+                    <h3>Milestone Payment Schedule</h3>
+                    <div class="tbl-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Milestone</th>
+                                    <th class="n">%</th>
+                                    <th class="n">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Signature and mobilisation</td>
+                                    <td class="n">15</td>
+                                    <td class="n">₹17.25L</td>
+                                </tr>
+                                <tr>
+                                    <td>Phase 0 artefact set accepted</td>
+                                    <td class="n">10</td>
+                                    <td class="n">₹11.50L</td>
+                                </tr>
+                                <tr>
+                                    <td>Design system and ledger core accepted</td>
+                                    <td class="n">15</td>
+                                    <td class="n">₹17.25L</td>
+                                </tr>
+                                <tr>
+                                    <td>All rails live in partner sandbox</td>
+                                    <td class="n">15</td>
+                                    <td class="n">₹17.25L</td>
+                                </tr>
+                                <tr>
+                                    <td>Feature-complete build entering test</td>
+                                    <td class="n">15</td>
+                                    <td class="n">₹17.25L</td>
+                                </tr>
+                                <tr>
+                                    <td>UAT entry with signed test evidence</td>
+                                    <td class="n">10</td>
+                                    <td class="n">₹11.50L</td>
+                                </tr>
+                                <tr>
+                                    <td>Penetration test cleared and retested</td>
+                                    <td class="n">10</td>
+                                    <td class="n">₹11.50L</td>
+                                </tr>
+                                <tr>
+                                    <td>Production launch plus 30 days stable</td>
+                                    <td class="n">10</td>
+                                    <td class="n">₹11.50L</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td>Total</td>
+                                    <td class="n">100</td>
+                                    <td class="n">₹1.15Cr</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Year-one running costs</h3>
+                    <p class="note">Not included in the build price. Budget separately, and note that most scale with
+                        volume rather than time.</p>
+                    <div class="tbl-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th class="n">Monthly</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Cloud infrastructure, both regions</td>
+                                    <td class="n">₹1.6–4.0L</td>
+                                </tr>
+                                <tr>
+                                    <td>Observability, logging and security tooling</td>
+                                    <td class="n">₹45k–1.1L</td>
+                                </tr>
+                                <tr>
+                                    <td>SMS, OTP, push and email</td>
+                                    <td class="n">₹30k–1.2L</td>
+                                </tr>
+                                <tr>
+                                    <td>KYC verifications</td>
+                                    <td class="n">Per check</td>
+                                </tr>
+                                <tr>
+                                    <td>Sanctions and monitoring</td>
+                                    <td class="n">Per screen</td>
+                                </tr>
+                                <tr>
+                                    <td>Support tooling and telephony</td>
+                                    <td class="n">₹25k–70k</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td>Technology run rate</td>
+                                    <td class="n">₹3–8L</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <p class="note" style="margin-top:12px"><b>Post-launch support and evolution:</b> ₹24L–₹40L for year
+                        one, covering a maintained squad, an agreed enhancement allocation, 24×7 incident response for
+                        severity-one issues, and quarterly security review. Quoted separately after launch scope is
+                        fixed.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ RISK ============ -->
+    <section class="block" id="risk">
+        <div class="wrap">
+            <p class="eyebrow">Risk</p>
+            <h2>What could go wrong, and who owns it.</h2>
+            <p class="lede">This register is live from day one and reviewed at every steering meeting. We would rather
+                show it to you now than discover it together in month nine.</p>
+
+            <div class="tbl-scroll" style="margin-top:26px">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Risk</th>
+                            <th>Impact</th>
+                            <th>Owner</th>
+                            <th>Mitigation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Partner contracts unsigned when the build needs them</td>
+                            <td><span class="pill hot">High</span></td>
+                            <td>Client</td>
+                            <td>Partner selection is a Phase 0 gate; we build against a simulated partner so development
+                                continues regardless</td>
+                        </tr>
+                        <tr>
+                            <td>Chosen inward channel imposes limits the business model assumed away</td>
+                            <td><span class="pill hot">High</span></td>
+                            <td>Joint</td>
+                            <td>Channel decision fixed in Phase 0 against a modelled volume and ticket-size profile,
+                                with counsel sign-off</td>
+                        </tr>
+                        <tr>
+                            <td>Partner APIs are immature, undocumented or sandbox-only</td>
+                            <td><span class="pill hot">High</span></td>
+                            <td>VAW</td>
+                            <td>Technical due diligence on every shortlisted partner during Phase 0; adapter pattern
+                                keeps replacement to weeks</td>
+                        </tr>
+                        <tr>
+                            <td>FCA authorisation refused or granted with conditions</td>
+                            <td><span class="pill hot">High</span></td>
+                            <td>Client</td>
+                            <td>Launch on the agent-led model so the product is live and earning while any application
+                                is in progress</td>
+                        </tr>
+                        <tr>
+                            <td>Penetration test surfaces findings late in the schedule</td>
+                            <td><span class="pill">Medium</span></td>
+                            <td>VAW</td>
+                            <td>Threat modelling per epic and a mid-build advisory test, so the formal test confirms
+                                rather than discovers</td>
+                        </tr>
+                        <tr>
+                            <td>APP fraud losses exceed the modelled provision</td>
+                            <td><span class="pill">Medium</span></td>
+                            <td>Client</td>
+                            <td>Confirmation of Payee, staged limits for new customers, behavioural risk scoring and
+                                explicit warning journeys in scope</td>
+                        </tr>
+                        <tr>
+                            <td>Data residency requirements interpreted differently by a partner bank</td>
+                            <td><span class="pill">Medium</span></td>
+                            <td>Joint</td>
+                            <td>Dual-region architecture from Phase 1 with a documented data-flow map reviewed by Indian
+                                counsel</td>
+                        </tr>
+                        <tr>
+                            <td>Scope expands as commercial ambition grows during the build</td>
+                            <td><span class="pill">Medium</span></td>
+                            <td>Joint</td>
+                            <td>Written change control with impact estimates; a standing enhancement allocation absorbs
+                                small changes without renegotiation</td>
+                        </tr>
+                        <tr>
+                            <td>Key personnel change on either side</td>
+                            <td><span class="pill">Low</span></td>
+                            <td>VAW</td>
+                            <td>Three named roles contractually locked; documentation and runbooks maintained as
+                                deliverables, not as an afterthought</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ TERMS ============ -->
+    <section class="block" id="terms">
+        <div class="wrap">
+            <p class="eyebrow">Commercial terms</p>
+            <h2>Assumptions, exclusions and the next step.</h2>
+
+            <div class="grid g3" style="margin-top:30px">
+                <div class="card">
+                    <h4>Included</h4>
+                    <ul class="ticks">
+                        <li>All design, engineering, testing and project management described above</li>
+                        <li>Source code, infrastructure code, documentation and runbooks, transferred at each milestone
+                        </li>
+                        <li>Store submission and launch support for both platforms</li>
+                        <li>Penetration test remediation and retest</li>
+                        <li>Two rounds of UAT defect resolution</li>
+                        <li>Knowledge transfer and operational training for your team</li>
+                        <li>90 days of warranty support after go-live</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4>Excluded</h4>
+                    <ul class="ticks crosses">
+                        <li>Legal, regulatory and licensing advisory, and all associated fees</li>
+                        <li>Third-party licences, KYC and screening subscriptions, cloud consumption</li>
+                        <li>Independent penetration testing fees (we manage the vendor; you contract them)</li>
+                        <li>Regulatory capital, safeguarding accounts and partner prefunding</li>
+                        <li>Marketing, brand identity, content and customer acquisition</li>
+                        <li>Ongoing customer support operations and staffing</li>
+                        <li>GST and applicable taxes</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h4>Assumptions</h4>
+                    <ul class="ticks">
+                        <li>A single empowered client decision-maker is available weekly</li>
+                        <li>UK and Indian counsel are appointed before Phase 1 begins</li>
+                        <li>Partner sandbox access is granted within four weeks of shortlisting</li>
+                        <li>Feedback on deliverables returns within five working days</li>
+                        <li>English-language interface at launch; localisation quoted separately</li>
+                        <li>Prices hold for 45 days from the date of issue</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="callout good" style="margin-top:32px">
+                <h3 style="margin-bottom:8px">The recommended next step is small.</h3>
+                <p>We do not think you should sign a full project contract on the strength of a proposal. We think you
+                    should commission <b>Phase 0</b> — six weeks, <b class="mono">₹9,00,000</b>, fixed — and end it
+                    holding a partner shortlist with commercial terms, a regulatory traceability matrix signed by your
+                    counsel, a tested prototype, and a fixed-price statement of work for the remaining build.</p>
+                <p style="margin-bottom:0">If you then decide to build with someone else, every artefact from Phase 0 is
+                    yours to take with you. If you build with us, the full Phase 0 fee is credited against the Phase 1–2
+                    price. That is the fairest way we know to de-risk a decision of this size for both of us.</p>
+            </div>
+
+            <div class="sig">
+                <div>
+                    <p class="eyebrow">Prepared by</p>
+                    <p style="margin-bottom:4px"><b>VAW Technologies</b><br>A division of VArts World Pvt.
+                        Ltd.<br>Kerala, India</p>
+                    <p class="note">Project lead and single point of contact named on the contract cover sheet.</p>
+                </div>
+                <div>
+                    <p class="eyebrow">Prepared for</p>
+                    <p style="margin-bottom:4px"><b>Client name</b><br>UK–India Digital Remittance Platform<br>Ref.
+                        VAWT/REM/UK-IN/01</p>
+                    <p class="note">Issued <span class="mono">August 2026</span>. Valid 45 days. Figures exclusive of
+                        GST.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="wrap">
+            <div><b>VAW Technologies</b> — VArts World Pvt. Ltd.</div>
+            <div>Commercial in confidence · Ref. VAWT/REM/UK-IN/01</div>
+        </div>
+    </footer>
+
+    <script>
+        (function () {
+            var amt = document.getElementById('amt'),
+                amtOut = document.getElementById('amtOut'),
+                legs = document.getElementById('legs'),
+                contribOut = document.getElementById('contribOut'),
+                marginOut = document.getElementById('marginOut'),
+                inrOut = document.getElementById('inrOut'),
+                warnBox = document.getElementById('warnBox'),
+                btnOB = document.getElementById('btnOB'),
+                btnCard = document.getElementById('btnCard'),
+                payin = 'ob';
+
+            var MID = 91.50, FX_MARGIN = 0.0055;
+
+            function gbp(v) { return (v < 0 ? '-£' : '£') + Math.abs(v).toFixed(2); }
+
+            function render() {
+                var a = parseFloat(amt.value);
+                var fee = a < 750 ? 2.99 : 4.99;
+                var fxRev = a * FX_MARGIN;
+                var revenue = fee + fxRev;
+
+                var payinCost = payin === 'ob' ? 0.20 : (a * 0.013 + 0.20);
+                var costs = [
+                    { n: 'Pay-in collection', d: payin === 'ob' ? 'Open banking initiation, flat' : 'Debit card acquiring, 1.3% + 20p', v: payinCost },
+                    { n: 'Remittance partner fee', d: 'Fixed leg plus volume component', v: 0.80 + a * 0.0006 },
+                    { n: 'Wholesale FX cost', d: 'Provider spread against mid', v: a * 0.0012 },
+                    { n: 'India payout', d: 'IMPS / NEFT / UPI instruction', v: 0.12 },
+                    { n: 'Identity verification', d: 'One-time check amortised over lifetime transfers', v: 0.20 },
+                    { n: 'Sanctions &amp; monitoring', d: 'Per-transaction screening', v: 0.05 },
+                    { n: 'Fraud &amp; reimbursement provision', d: 'Modelled against APP liability', v: a * 0.0007 },
+                    { n: 'Support allocation', d: 'Contact rate × cost per contact', v: 0.30 }
+                ];
+
+                var html = '<li class="rev"><span class="leg-name">Revenue<i>Fee ' + gbp(fee) + ' + FX margin ' + (FX_MARGIN * 100).toFixed(2) + '%</i></span><span class="leg-val">+' + gbp(revenue) + '</span><span class="leg-run">' + gbp(revenue) + '</span></li>';
+                var run = revenue, total = 0;
+                costs.forEach(function (c) {
+                    run -= c.v; total += c.v;
+                    html += '<li><span class="leg-name">' + c.n + '<i>' + c.d + '</i></span><span class="leg-val">−' + gbp(c.v) + '</span><span class="leg-run">' + gbp(run) + '</span></li>';
+                });
+                legs.innerHTML = html;
+
+                var contrib = revenue - total;
+                var margin = revenue > 0 ? (contrib / revenue * 100) : 0;
+                amtOut.textContent = '£' + a.toLocaleString('en-GB');
+                contribOut.textContent = gbp(contrib);
+                contribOut.className = 'big' + (contrib < 0 ? ' neg' : '');
+                marginOut.textContent = Math.round(margin) + '%';
+                marginOut.className = 'big' + (contrib < 0 ? ' neg' : '');
+                inrOut.textContent = '₹' + Math.round(a * MID * (1 - FX_MARGIN)).toLocaleString('en-IN');
+
+                if (payin === 'card' && contrib < 0) {
+                    warnBox.innerHTML = '<b>The model is now loss-making at ' + gbp(Math.abs(contrib)) + ' per transfer.</b> Card acquiring is charged as a percentage of value, so it scales with the amount sent while your fee does not. This is the clearest argument in the proposal for making open banking the default pay-in method at launch.';
+                } else if (payin === 'card') {
+                    warnBox.innerHTML = 'Card pay-in survives only at small ticket sizes, and even then it consumes most of the spread. Keep it as an exception path for customers who cannot use open banking, not as the default.';
+                } else {
+                    warnBox.innerHTML = 'Switch to debit card and watch the model invert. Card acquiring is charged <em>ad valorem</em>; at typical remittance ticket sizes it consumes the entire spread. This is why open banking pay-in is a launch requirement in our scope, not a phase-two nicety.';
+                }
+            }
+
+            function setPayin(p) {
+                payin = p;
+                btnOB.setAttribute('aria-pressed', p === 'ob');
+                btnCard.setAttribute('aria-pressed', p === 'card');
+                render();
+            }
+
+            amt.addEventListener('input', render);
+            btnOB.addEventListener('click', function () { setPayin('ob'); });
+            btnCard.addEventListener('click', function () { setPayin('card'); });
+            render();
+        })();
+    </script>
+</body>
+
+</html>
