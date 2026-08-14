@@ -18,6 +18,16 @@ const buildUserMetadata = (fullName?: string | null, username?: string | null) =
 })
 
 export const findAuthUserByEmail = async (supabaseClient: any, email: string) => {
+  try {
+    const { data: listData, error: listError } = await supabaseClient.auth.admin.listUsers()
+    if (!listError && listData?.users) {
+      const match = listData.users.find((u: any) => u.email?.toLowerCase() === email.toLowerCase())
+      if (match) return match
+    }
+  } catch (e) {
+    console.warn('listUsers lookup failed:', e)
+  }
+
   const { data, error } = await supabaseClient.auth.admin.generateLink({
     type: 'magiclink',
     email,
