@@ -284,10 +284,34 @@ const StaffLogin = () => {
       }
 
       // Sign in with Supabase auth using email and emoji password
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      let { error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: inputEmojiPass,
       });
+
+      if (authError) {
+        console.warn('Emoji auth failed, attempting fallback password reset sync via edge function...', authError);
+        // Fallback for unsynced auth password: use reset-staff-password edge function to update Auth password
+        const { data: resetData, error: resetErr } = await supabase.functions.invoke(
+          'reset-staff-password',
+          {
+            body: {
+              email: data.email,
+              newPassword: inputEmojiPass,
+              fullName: data.full_name,
+              username: data.username,
+            }
+          }
+        );
+
+        if (!resetErr && resetData?.success) {
+          const retryAuth = await supabase.auth.signInWithPassword({
+            email: data.email,
+            password: inputEmojiPass,
+          });
+          authError = retryAuth.error;
+        }
+      }
 
       if (authError) {
         console.error('Auth error:', authError);
@@ -358,40 +382,66 @@ const StaffLogin = () => {
       }
 
       const emojiPass = newEmojiPassword.join('');
+      const targetUsername = userProfile?.username || username;
 
-      // Update emoji password in database without modifying user_id to prevent 409 conflict
-      const updatePayload = {
-        emoji_password: emojiPass,
-        is_emoji_password: true,
-        passcode_used: true
-      };
+      // 1. Try SECURITY DEFINER RPC function to update emoji password and sync user_id without RLS errors
+      const { error: rpcError } = await supabase.rpc('set_staff_emoji_password' as any, {
+        p_username: targetUsername,
+        p_user_id: user.id,
+        p_emoji_password: emojiPass
+      });
 
-      const profileId = userProfile?.id;
-      let updateError = null;
+      if (rpcError) {
+        console.warn('RPC set_staff_emoji_password failed/unavailable, executing direct client update fallback...', rpcError);
+        // Fallback: Direct database update without mutating user_id to avoid 409 Conflict
+        const updatePayload = {
+          emoji_password: emojiPass,
+          is_emoji_password: true,
+          passcode_used: true
+        };
 
-      if (profileId) {
-        const { error } = await supabase
-          .from('staff_profiles')
-          .update(updatePayload)
-          .eq('id', profileId);
-        updateError = error;
-      } else {
-        const { error } = await supabase
-          .from('staff_profiles')
-          .update(updatePayload)
-          .eq('user_id', user.id);
-        updateError = error;
+        const profileId = userProfile?.id;
+        let updateError = null;
+
+        if (profileId) {
+          const { error } = await supabase
+            .from('staff_profiles')
+            .update(updatePayload)
+            .eq('id', profileId);
+          updateError = error;
+        } else {
+          const { error } = await supabase
+            .from('staff_profiles')
+            .update(updatePayload)
+            .eq('user_id', user.id);
+          updateError = error;
+        }
+
+        if (updateError) {
+          console.error('Error updating profile emoji password:', updateError);
+          throw updateError;
+        }
       }
 
-      if (updateError) {
-        console.error('Error updating profile emoji password:', updateError);
-        throw updateError;
-      }
-
-      // Update auth password to emoji password
+      // 2. Update auth password to emoji password
       const { error: passwordError } = await supabase.auth.updateUser({
         password: emojiPass
       });
+
+      if (passwordError) {
+        console.warn('Direct updateUser password failed, invoking reset-staff-password edge function...', passwordError);
+        // Fallback for Auth password update: call reset-staff-password edge function
+        await supabase.functions.invoke(
+          'reset-staff-password',
+          {
+            body: {
+              email: user.email,
+              newPassword: emojiPass,
+              username: targetUsername,
+            }
+          }
+        );
+      }
 
       if (passwordError) throw passwordError;
 
