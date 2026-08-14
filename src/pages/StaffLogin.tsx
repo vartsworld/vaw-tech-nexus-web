@@ -170,10 +170,34 @@ const StaffLogin = () => {
       }
 
       // Sign in with Supabase auth using email and passcode
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      let { error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: passcode,
       });
+
+      if (authError) {
+        console.warn("Initial authentication failed, attempting sync via reset-staff-password edge function...", authError);
+        // Fallback for legacy accounts with unsynced auth or temp UUID: invoke edge function to set up/sync auth user
+        const { data: resetData, error: resetErr } = await supabase.functions.invoke(
+          'reset-staff-password',
+          {
+            body: {
+              email: data.email,
+              newPassword: passcode,
+              fullName: data.full_name,
+              username: data.username,
+            }
+          }
+        );
+
+        if (!resetErr && resetData?.success) {
+          const retryAuth = await supabase.auth.signInWithPassword({
+            email: data.email,
+            password: passcode,
+          });
+          authError = retryAuth.error;
+        }
+      }
 
       if (authError) {
         console.error('Auth error:', authError);
@@ -183,6 +207,16 @@ const StaffLogin = () => {
           variant: "destructive",
         });
         return;
+      }
+
+      // Re-get current auth user and ensure staff_profiles user_id matches
+      const { data: { user: currentAuthUser } } = await supabase.auth.getUser();
+      if (currentAuthUser && data.user_id !== currentAuthUser.id) {
+        await supabase
+          .from('staff_profiles')
+          .update({ user_id: currentAuthUser.id })
+          .eq('id', data.id);
+        data.user_id = currentAuthUser.id;
       }
 
       if (!data.emoji_password) {
@@ -195,9 +229,8 @@ const StaffLogin = () => {
         });
       } else {
         // Check attendance and navigate to appropriate dashboard
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        if (authUser) {
-          const hasMarkedAttendance = await checkTodayAttendance(authUser.id);
+        if (currentAuthUser) {
+          const hasMarkedAttendance = await checkTodayAttendance(currentAuthUser.id);
           const dashboardRoute = getDashboardRoute(data);
           // Set currentRoom to workspace when navigating
           const navigationState = !hasMarkedAttendance
@@ -327,16 +360,39 @@ const StaffLogin = () => {
       const emojiPass = newEmojiPassword.join('');
 
       // Update emoji password in database
-      const { error: updateError } = await supabase
-        .from('staff_profiles')
-        .update({
-          emoji_password: emojiPass,
-          is_emoji_password: true,
-          passcode_used: true
-        })
-        .eq('user_id', user.id);
+      const profileId = userProfile?.id;
+      let updateError = null;
 
-      if (updateError) throw updateError;
+      if (profileId) {
+        const { error } = await supabase
+          .from('staff_profiles')
+          .update({
+            user_id: user.id,
+            emoji_password: emojiPass,
+            is_emoji_password: true,
+            passcode_used: true
+          })
+          .eq('id', profileId);
+        updateError = error;
+      }
+
+      if (!profileId || updateError) {
+        const { error } = await supabase
+          .from('staff_profiles')
+          .update({
+            user_id: user.id,
+            emoji_password: emojiPass,
+            is_emoji_password: true,
+            passcode_used: true
+          })
+          .eq('user_id', user.id);
+        updateError = error;
+      }
+
+      if (updateError) {
+        console.error('Error updating profile emoji password:', updateError);
+        throw updateError;
+      }
 
       // Update auth password to emoji password
       const { error: passwordError } = await supabase.auth.updateUser({

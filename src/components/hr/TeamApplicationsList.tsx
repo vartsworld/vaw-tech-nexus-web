@@ -149,23 +149,50 @@ const TeamApplicationsList = () => {
     }
   };
 
-  const approveAndCreateStaff = async (application) => {
+  const approveAndCreateStaff = async (application: any) => {
     try {
       // Generate first-time passcode
       const firstTimePasscode = Math.random().toString(36).substring(2, 10);
+      const normalizedEmail = application.email?.trim().toLowerCase();
+      const trimmedName = application.full_name?.trim();
+      const trimmedUsername = application.username?.trim();
 
-      // Create a temporary UUID that will be replaced when the edge function creates the real auth user
-      const tempUserId = crypto.randomUUID();
+      if (!normalizedEmail || !trimmedName || !trimmedUsername) {
+        throw new Error("Application is missing required fields (name, email, or username).");
+      }
 
-      // Create staff profile with temp user_id and copy ALL details from application
+      // Invoke reset-staff-password edge function to prepare/create real Supabase auth user
+      const { data: authSetupData, error: authSetupError } = await supabase.functions.invoke(
+        'reset-staff-password',
+        {
+          body: {
+            email: normalizedEmail,
+            newPassword: firstTimePasscode,
+            fullName: trimmedName,
+            username: trimmedUsername,
+          }
+        }
+      );
+
+      if (authSetupError) {
+        console.error('Error preparing staff auth:', authSetupError);
+        throw new Error(authSetupError.message || 'Failed to prepare staff login auth.');
+      }
+
+      if (authSetupData?.error) throw new Error(authSetupData.error);
+      if (!authSetupData?.userId) throw new Error('Staff login could not be prepared.');
+
+      const resolvedUserId = authSetupData.userId;
+
+      // Create staff profile with resolved user_id and copy ALL details from application
       const { error: staffError } = await supabase
         .from('staff_profiles')
         .insert({
-          user_id: tempUserId,
-          full_name: application.full_name,
-          email: application.email,
+          user_id: resolvedUserId,
+          full_name: trimmedName,
+          email: normalizedEmail,
           phone: application.phone,
-          username: application.username,
+          username: trimmedUsername,
           role: application.preferred_role,
           department_id: application.preferred_department_id,
           gender: application.gender,
@@ -212,7 +239,7 @@ const TeamApplicationsList = () => {
       console.error('Error approving application:', error);
       toast({
         title: "Error",
-        description: "Failed to approve application and create staff member.",
+        description: error instanceof Error ? error.message : "Failed to approve application and create staff member.",
         variant: "destructive",
       });
     }
