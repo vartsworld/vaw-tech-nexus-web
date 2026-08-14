@@ -108,9 +108,15 @@ export const useStaffData = () => {
         .from('staff_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
+
+      if (!staffProfile) {
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
 
       const userProfile: Profile = {
         id: staffProfile.id,

@@ -20,7 +20,8 @@ import {
   ArrowLeft,
   Loader2,
   RefreshCw,
-  Navigation
+  Navigation,
+  Search
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +39,7 @@ const ReKYCPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const [searchInput, setSearchInput] = useState(appId);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -128,9 +130,17 @@ const ReKYCPage = () => {
 
     setLoading(true);
     const cleanTarget = targetId.trim();
+    // Extract pure UUID if present anywhere in cleanTarget (e.g. APP-12345678-abcd... -> 12345678-abcd...)
+    const uuidMatch = cleanTarget.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+    const pureUuid = uuidMatch ? uuidMatch[0].toLowerCase() : null;
+
+    // Extract clean term without APP- prefix
     const rawTerm = cleanTarget.replace(/^APP-/i, "").trim().toLowerCase();
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanTarget) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawTerm);
-    const isHex8 = /^[0-9a-f]{8}$/i.test(rawTerm);
+
+    // Extract 8-char hex prefix if applicable (for APP-01234567 or 01234567)
+    const cleanHex = rawTerm.replace(/[^0-9a-f]/gi, "");
+    const hex8 = cleanHex.length >= 8 ? cleanHex.slice(0, 8).toLowerCase() : null;
+
     const isEmail = cleanTarget.includes("@");
 
     const matchRecord = (rec: any) => {
@@ -143,9 +153,10 @@ const ReKYCPage = () => {
       const displayIdNoApp = displayIdLower.replace(/^app-/i, "");
 
       return (
+        (pureUuid && recId === pureUuid) ||
         recId === cleanTargetLower ||
         recId === rawTermLower ||
-        recIdNoHyphen.startsWith(rawTermLower) ||
+        (hex8 && recIdNoHyphen.startsWith(hex8)) ||
         displayIdLower === cleanTargetLower ||
         displayIdNoApp === rawTermLower ||
         (rec.email && rec.email.toLowerCase() === cleanTargetLower) ||
@@ -156,18 +167,17 @@ const ReKYCPage = () => {
     const queryTable = async (tableName: string) => {
       let records: any[] = [];
       try {
-        if (isUUID) {
-          const targetUuid = cleanTarget.includes("-") ? cleanTarget : rawTerm;
-          const { data } = await supabase.from(tableName as any).select("*").eq("id", targetUuid);
+        if (pureUuid) {
+          const { data } = await supabase.from(tableName as any).select("*").eq("id", pureUuid);
           if (data && data.length > 0) records.push(...data);
         }
-        if (isEmail) {
+        if (isEmail && records.length === 0) {
           const { data } = await supabase.from(tableName as any).select("*").eq("email", cleanTarget.toLowerCase());
           if (data && data.length > 0) records.push(...data);
         }
-        if (isHex8) {
-          const uuidLower = `${rawTerm}-0000-0000-0000-000000000000`;
-          const uuidUpper = `${rawTerm}-ffff-ffff-ffff-ffffffffffff`;
+        if (hex8 && records.length === 0) {
+          const uuidLower = `${hex8}-0000-0000-0000-000000000000`;
+          const uuidUpper = `${hex8}-ffff-ffff-ffff-ffffffffffff`;
           const { data } = await supabase.from(tableName as any).select("*").gte("id", uuidLower).lte("id", uuidUpper);
           if (data && data.length > 0) records.push(...data);
         }
@@ -175,7 +185,7 @@ const ReKYCPage = () => {
         console.warn(`Targeted query error for ${tableName}:`, e);
       }
 
-      // Safe fallback: fetch records without invalid PostgREST syntax
+      // Fallback query if targeted query returned no matches
       if (records.length === 0) {
         try {
           const { data } = await supabase.from(tableName as any).select("*");
@@ -535,6 +545,39 @@ const ReKYCPage = () => {
             Please complete <strong>JUST the KYC section</strong> below to update your verified identification details for HR review.
           </p>
         </div>
+
+        {/* Application Search Bar Card */}
+        {!rawRecord && !submitted && (
+          <Card className="bg-zinc-900/90 border-zinc-800 backdrop-blur-xl shadow-2xl mb-8 overflow-hidden">
+            <CardContent className="p-6">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (searchInput) fetchApplicantRecord(searchInput);
+                }}
+                className="flex flex-col sm:flex-row gap-3"
+              >
+                <div className="relative flex-1">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-500" />
+                  <Input
+                    type="text"
+                    placeholder="Enter Application ID (e.g. APP-XXXXXX), Email, or Phone..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    className="pl-11 h-12 bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-500 rounded-xl focus:border-blue-500 text-sm"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="h-12 px-8 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-600/20"
+                >
+                  {loading ? "Searching..." : "Find Application"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Success Confirmation View */}
         {submitted ? (
