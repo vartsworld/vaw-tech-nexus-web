@@ -76,10 +76,11 @@ const DigitalMarketing = () => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <SEO
-        title="Digital Marketing Case Study & Strategy Consulting | VAW"
-        description="No random ad packages. We do a real case study of your brand & market, then build a 3–6 month digital marketing strategy — Right Ads, Right Time, Right Place."
-        keywords="digital marketing consulting, brand case study, marketing strategy Kerala, marketing audit, VAW Technologies, Varts"
+        title="Best Digital Marketing Agency in Kerala | VAW Technologies"
+        description="Looking for the best digital marketing agency in Kerala? VAW Technologies delivers data-driven digital marketing, brand case studies, Meta/Google ad campaigns, and SEO consulting."
+        keywords="best digital marketing agency in kerala, digital marketing agency kerala, digital marketing consulting kerala, SEO agency kerala, social media marketing kerala, VAW Technologies"
         ogImage="/og/digital-marketing.png"
+        ogImageAlt="Best Digital Marketing Agency in Kerala - VAW Technologies"
       />
       <Navbar />
 

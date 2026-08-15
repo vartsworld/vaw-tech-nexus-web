@@ -41,10 +41,11 @@ const WebsiteDevelopment = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="Premium Website Development & UI/UX"
-        description="Premium website development services in Kerala. We build creative business websites, e-commerce platforms, and AI-integrated portals. Expert web developers at VAW Technologies."
-        keywords="web development, website design, kerala dev, india dev, VAW, Varts, creative websites, ecommerce development"
+        title="Best Website Development Agency in Kerala | VAW Technologies"
+        description="Looking for the best website development agency in Kerala? VAW Technologies builds high-performance, mobile-responsive, SEO-optimized business websites and web portals."
+        keywords="best website development agency in kerala, website development kerala, web design kerala, best web developers kollam, custom website design india, VAW Technologies"
         ogImage="/og/website-development.png"
+        ogImageAlt="Best Website Development Agency in Kerala - VAW Technologies"
       />
       <Navbar />
 

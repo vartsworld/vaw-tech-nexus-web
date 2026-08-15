@@ -30,10 +30,11 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <SEO
-        title="VAW Technologies | Varts World - Premium Tech & AI Solutions"
-        description="VAW Technologies (V Arts World) - Your partner for premium website development, AI solutions, digital marketing, and app development in Kerala, India. Expert in Varts, VAW, and Virtual Arts."
-        keywords="VAW, Varts, virtual arts, Kerala dev, Kerala hackathon, india dev, web development, designing, marketing, App development, Ai tool development, Advertisement, tech agency kerala, VAW Technologies"
+        title="VAW Technologies | Best Website Development & Digital Marketing Agency in Kerala"
+        description="VAW Technologies (Varts World) is the best website development and digital marketing agency in Kerala. We build high-converting websites, web apps, AI tools & ROI-driven marketing campaigns."
+        keywords="best website development agency in kerala, best digital marketing agency in kerala, web development Kerala, digital marketing agency Kerala, website design Kerala, VAW Technologies, Varts World, web app development Kerala, SEO agency Kerala"
         ogImage="/og/home.png"
+        ogImageAlt="VAW Technologies - Best Website Development & Digital Marketing Agency in Kerala"
       />
       <Navbar />
       <MobileHeader />
