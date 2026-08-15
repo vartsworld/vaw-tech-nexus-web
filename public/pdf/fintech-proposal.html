@@ -975,13 +975,17 @@
         }
 
         /* ---------- responsive ---------- */
-        @media (max-width:900px) {
+        @media (max-width:960px) {
 
             .g4,
             .g3,
             .tiers,
             .stat-row {
                 grid-template-columns: 1fr 1fr
+            }
+
+            .g2 {
+                grid-template-columns: 1fr;
             }
 
             .calc {
@@ -1010,14 +1014,17 @@
             }
         }
 
-        @media (max-width:620px) {
+        @media (max-width:640px) {
             body {
                 font-size: 15.5px;
                 line-height: 1.6;
+                overflow-x: hidden;
             }
 
             .wrap {
                 padding: 0 16px;
+                max-width: 100%;
+                overflow-x: hidden;
             }
 
             .g2,
@@ -1026,11 +1033,12 @@
             .tiers,
             .stat-row,
             .sig {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr !important;
             }
 
             .block {
                 padding: 44px 0;
+                overflow-x: hidden;
             }
 
             .mast-fact {
@@ -1053,7 +1061,7 @@
             }
 
             .gantt-hdr, .gantt-row {
-                min-width: 580px;
+                min-width: 540px;
             }
 
             .legs li {
@@ -1063,6 +1071,16 @@
 
             .legs .leg-run {
                 display: none;
+            }
+
+            table {
+                min-width: 480px;
+                font-size: 13.5px;
+            }
+
+            th, td {
+                padding: 9px 10px;
+                word-break: break-word;
             }
         }
 
