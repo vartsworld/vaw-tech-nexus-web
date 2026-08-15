@@ -1,3 +1,6 @@
 ## 2024-05-14 - React Performance Tuning in Complex Dashboards
 **Learning:** High-density analytics dashboards (like `FinancialOversight.tsx`) frequently compute aggregated statistics (totals, chart data, arrays of filtered inputs) directly inside the component body, which executes on every re-render and can block the main thread.
 **Action:** Always wrap heavy synchronous calculations, array `.map()`/`.filter()` chains, and nested loop iterations with `useMemo`, ensuring dependency arrays strictly list only variables that should trigger a recalculation. Wrapping lookup dictionaries constructed from arrays in `useMemo` is also highly effective for $O(1)$ fast lookups across downstream calculations.
+## 2024-08-16 - [Optimize task filtering to single pass]
+**Learning:** In components rendering multiple filtered views of the same array (like tasks by status in mobile dashboards), using multiple distinct `.filter()` calls inside separate `useMemo` hooks forces multiple `O(N)` iterations and introduces extra React rendering overhead.
+**Action:** When categorizing a single source array into multiple state arrays, consolidate the operation into a single `for...of` loop inside one `useMemo` hook to execute exactly one `O(N)` pass and return a combined object of the categorized arrays.
