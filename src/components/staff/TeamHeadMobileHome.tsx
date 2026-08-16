@@ -328,9 +328,21 @@ const TeamHeadMobileHome = ({
     fetchPlans();
   }, [fetchTasks, fetchPlans]);
 
-  const todoTasks = useMemo(() => tasks.filter(t => t.status === 'pending'), [tasks]);
-  const inProgressTasks = useMemo(() => tasks.filter(t => t.status === 'in_progress'), [tasks]);
-  const completedTasks = useMemo(() => tasks.filter(t => t.status === 'completed'), [tasks]);
+  // ⚡ Bolt Performance Optimization: Replaced three separate O(N) .filter() array iterations
+  // with a single O(N) pass to categorize todo, in progress, and completed tasks
+  const { todoTasks, inProgressTasks, completedTasks } = useMemo(() => {
+    const todo: Task[] = [];
+    const inProgress: Task[] = [];
+    const completed: Task[] = [];
+
+    for (const task of tasks) {
+      if (task.status === 'pending') todo.push(task);
+      else if (task.status === 'in_progress') inProgress.push(task);
+      else if (task.status === 'completed') completed.push(task);
+    }
+
+    return { todoTasks: todo, inProgressTasks: inProgress, completedTasks: completed };
+  }, [tasks]);
   const totalTasks = tasks.length;
 
   const projectGroups = useMemo(() => {

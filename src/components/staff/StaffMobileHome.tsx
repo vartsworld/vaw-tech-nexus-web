@@ -261,9 +261,21 @@ const StaffMobileHome = ({
   }, [fetchTasks, fetchPlans]);
 
   // Task lists
-  const currentTasks = useMemo(() => tasks.filter(t => t.status === "in_progress"), [tasks]);
-  const overdueTasks = useMemo(() => tasks.filter(t => t.status === "overdue"), [tasks]);
-  const completedTasks = useMemo(() => tasks.filter(t => t.status === "completed"), [tasks]);
+  // ⚡ Bolt Performance Optimization: Replaced three separate O(N) .filter() array iterations
+  // with a single O(N) pass to categorize current, overdue, and completed tasks
+  const { currentTasks, overdueTasks, completedTasks } = useMemo(() => {
+    const current: Task[] = [];
+    const overdue: Task[] = [];
+    const completed: Task[] = [];
+
+    for (const task of tasks) {
+      if (task.status === "in_progress") current.push(task);
+      else if (task.status === "overdue") overdue.push(task);
+      else if (task.status === "completed") completed.push(task);
+    }
+
+    return { currentTasks: current, overdueTasks: overdue, completedTasks: completed };
+  }, [tasks]);
   const totalTasks = tasks.length;
 
   const handleLogout = async () => {
