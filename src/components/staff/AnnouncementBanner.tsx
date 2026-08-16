@@ -118,6 +118,8 @@ const AnnouncementBanner = ({ userId, departmentId }: AnnouncementBannerProps) =
             {/* Nav left */}
             {activeBanners.length > 1 && (
               <button
+                aria-label="Previous announcement"
+                title="Previous announcement"
                 onClick={() => setCurrentIndex(prev => (prev - 1 + activeBanners.length) % activeBanners.length)}
                 className="p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0"
               >
@@ -149,6 +151,8 @@ const AnnouncementBanner = ({ userId, departmentId }: AnnouncementBannerProps) =
                 {activeBanners.map((_, i) => (
                   <button
                     key={i}
+                    aria-label={`Go to announcement ${i + 1}`}
+                    title={`Go to announcement ${i + 1}`}
                     onClick={() => setCurrentIndex(i)}
                     className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentIndex % activeBanners.length ? 'bg-white w-3' : 'bg-white/40'}`}
                   />
@@ -159,6 +163,8 @@ const AnnouncementBanner = ({ userId, departmentId }: AnnouncementBannerProps) =
             {/* Nav right */}
             {activeBanners.length > 1 && (
               <button
+                aria-label="Next announcement"
+                title="Next announcement"
                 onClick={() => setCurrentIndex(prev => (prev + 1) % activeBanners.length)}
                 className="p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0"
               >
@@ -168,6 +174,8 @@ const AnnouncementBanner = ({ userId, departmentId }: AnnouncementBannerProps) =
 
             {/* Dismiss */}
             <button
+              aria-label="Dismiss announcement"
+              title="Dismiss announcement"
               onClick={() => setDismissed(prev => new Set([...prev, current.id]))}
               className="p-1 rounded hover:bg-white/10 transition-colors flex-shrink-0"
             >
