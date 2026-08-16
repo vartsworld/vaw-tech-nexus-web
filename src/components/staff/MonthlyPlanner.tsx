@@ -1072,12 +1072,21 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           resource: "Client",
           selectResource: "Choose Client"
         }}
-        guests={staffMembers.map(s => ({
-          id: s.user_id || s.id,
-          name: s.full_name || s.email || 'Staff Member',
-          email: s.email || `${(s.full_name || 'staff').toLowerCase().replace(/\s+/g, '')}@vaw.com`,
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(s.full_name || 'staff')}`
-        }))}
+        guests={[
+          ...staffMembers.map(s => ({
+            id: s.user_id || s.id,
+            name: s.full_name || s.email || 'Staff Member',
+            email: s.email || `${(s.full_name || 'staff').toLowerCase().replace(/\s+/g, '')}@vaw.com`,
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(s.full_name || 'staff')}`
+          })),
+          { id: 'common', name: 'Common (Internal)', email: 'common@vaw.com', avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Common` },
+          ...clients.map(c => ({
+            id: c.id,
+            name: c.company_name || 'Client',
+            email: c.email || 'client@vaw.com',
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(c.company_name || 'client')}`
+          }))
+        ]}
         onEventDrop={handleEventDrop}
         onEventResize={handleEventDrop}
         onEventCreate={async (eventData: any) => {
