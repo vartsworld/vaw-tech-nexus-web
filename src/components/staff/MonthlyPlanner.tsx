@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Scheduler } from 'calendarkit-pro';
 import type { CalendarEvent, ViewType } from 'calendarkit-pro';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -34,7 +35,9 @@ import {
   Sparkles,
   Loader2,
   ClipboardList,
-  ChevronDown
+  ChevronDown,
+  Filter,
+  Search
 } from "lucide-react";
 import {
   format,
@@ -219,8 +222,37 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   });
 
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>(['all']);
+  const [clientFilterSearch, setClientFilterSearch] = useState('');
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#3b82f6');
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [portalTarget, setPortalTarget] = useState<Element | null>(null);
+
+  useEffect(() => {
+    const updateTarget = () => {
+      if (containerRef.current) {
+        // Find the view switcher container inside calendarkit-pro header (usually contains view buttons month|week|day|agenda)
+        const viewButtons = containerRef.current.querySelectorAll('button');
+        let targetEl: Element | null = null;
+        viewButtons.forEach(btn => {
+          const txt = btn.textContent?.toLowerCase() || '';
+          if (txt.includes('month') || txt.includes('week') || txt.includes('day') || txt.includes('agenda')) {
+            targetEl = btn.parentElement;
+          }
+        });
+        if (targetEl) {
+          setPortalTarget(targetEl);
+        }
+      }
+    };
+
+    const timer = setTimeout(updateTarget, 100);
+    const interval = setInterval(updateTarget, 1000);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleToggleClientFilter = (clientId: string) => {
     if (clientId === 'all') {
@@ -1008,7 +1040,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   }, [plansByDate, tasksByDate, subtasksByDate]);
 
   return (
-    <div className="w-full text-white calendar-kit-dark-container max-h-[calc(100vh-100px)] flex flex-col overflow-hidden">
+    <div ref={containerRef} className="w-full text-white calendar-kit-dark-container max-h-[calc(100vh-100px)] flex flex-col overflow-hidden">
       {/* Inject dynamic CSS for green completed date cells, height constraints, and viewport popup centering */}
       <style>{`
         .calendar-kit-dark-container {
@@ -1058,6 +1090,137 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           `;
         }).join('\n')}
       `}</style>
+
+      {portalTarget && createPortal(
+        <div className="inline-flex items-center mr-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-8 px-2.5 border border-white/10 rounded-xl bg-zinc-900/90 text-white hover:bg-zinc-800 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md",
+                  !selectedClientIds.includes('all') && "border-blue-500/50 bg-blue-500/10 text-blue-300"
+                )}
+              >
+                <Filter className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span className="hidden sm:inline">
+                  {selectedClientIds.includes('all')
+                    ? 'Filter'
+                    : selectedClientIds.length === 1
+                    ? (clients.find(c => c.id === selectedClientIds[0])?.company_name || (selectedClientIds[0] === 'common' ? 'Common' : '1 Client'))
+                    : `${selectedClientIds.length} Selected`}
+                </span>
+                <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-3 bg-zinc-950 border-white/10 text-white rounded-2xl shadow-2xl space-y-2 z-[99999]" align="end">
+              <div className="flex items-center justify-between px-1">
+                <p className="text-[10px] font-black uppercase text-white/40 tracking-wider">Filter Clients</p>
+                {!selectedClientIds.includes('all') && (
+                  <button
+                    onClick={() => handleToggleClientFilter('all')}
+                    className="text-[10px] font-bold text-blue-400 hover:underline"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              {/* Search Field */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-white/40" />
+                <Input
+                  placeholder="Search clients..."
+                  value={clientFilterSearch}
+                  onChange={(e) => setClientFilterSearch(e.target.value)}
+                  className="h-8 pl-8 pr-3 text-xs bg-white/5 border-white/10 rounded-xl focus:border-blue-500 text-white placeholder:text-white/30"
+                />
+                {clientFilterSearch && (
+                  <X
+                    className="w-3 h-3 absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white cursor-pointer"
+                    onClick={() => setClientFilterSearch('')}
+                  />
+                )}
+              </div>
+
+              {/* Active Selected Tags (Chips) */}
+              {!selectedClientIds.includes('all') && selectedClientIds.length > 0 && (
+                <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto p-1 bg-white/[0.02] border border-white/5 rounded-xl">
+                  {selectedClientIds.map(id => {
+                    const label = id === 'common' ? 'Common' : clients.find(c => c.id === id)?.company_name || 'Client';
+                    return (
+                      <Badge
+                        key={id}
+                        variant="secondary"
+                        className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-[10px] font-semibold py-0.5 px-2 rounded-lg flex items-center gap-1 group cursor-pointer hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/30 transition-all"
+                        onClick={() => handleToggleClientFilter(id)}
+                      >
+                        <span className="truncate max-w-[100px]">{label}</span>
+                        <X className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Options List */}
+              <div className="max-h-48 overflow-y-auto space-y-0.5 pr-1 scrollbar-thin scrollbar-thumb-white/10">
+                {('all'.includes(clientFilterSearch.toLowerCase()) || !clientFilterSearch) && (
+                  <div
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl cursor-pointer hover:bg-white/5 transition-colors text-xs font-medium",
+                      selectedClientIds.includes('all') && "bg-blue-500/10 text-blue-300 font-bold"
+                    )}
+                    onClick={() => handleToggleClientFilter('all')}
+                  >
+                    <Checkbox checked={selectedClientIds.includes('all')} />
+                    <span>All Clients</span>
+                  </div>
+                )}
+
+                {('common (internal)'.includes(clientFilterSearch.toLowerCase()) || !clientFilterSearch) && (
+                  <div
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl cursor-pointer hover:bg-white/5 transition-colors text-xs font-medium",
+                      selectedClientIds.includes('common') && "bg-blue-500/10 text-blue-300 font-bold"
+                    )}
+                    onClick={() => handleToggleClientFilter('common')}
+                  >
+                    <Checkbox checked={selectedClientIds.includes('common')} />
+                    <span>Common (Internal)</span>
+                  </div>
+                )}
+
+                <div className="h-px bg-white/10 my-1" />
+
+                {clients
+                  .filter(c => c.company_name?.toLowerCase().includes(clientFilterSearch.toLowerCase()))
+                  .map(client => {
+                    const isSelected = selectedClientIds.includes(client.id);
+                    return (
+                      <div
+                        key={client.id}
+                        className={cn(
+                          "flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl cursor-pointer hover:bg-white/5 transition-colors text-xs font-medium truncate",
+                          isSelected && "bg-blue-500/10 text-blue-300 font-bold"
+                        )}
+                        onClick={() => handleToggleClientFilter(client.id)}
+                      >
+                        <Checkbox checked={isSelected} />
+                        <span className="truncate">{client.company_name}</span>
+                      </div>
+                    );
+                  })}
+                {clients.filter(c => c.company_name?.toLowerCase().includes(clientFilterSearch.toLowerCase())).length === 0 && clientFilterSearch && (
+                  <p className="text-[11px] text-white/40 text-center py-2">No matching clients</p>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>,
+        portalTarget
+      )}
 
       <SchedulerAny
         events={calendarEvents}
