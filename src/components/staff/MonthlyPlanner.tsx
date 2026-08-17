@@ -37,8 +37,10 @@ import {
   ClipboardList,
   ChevronDown,
   Filter,
-  Search
+  Search,
+  ExternalLink
 } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   format,
   addMonths,
@@ -160,6 +162,9 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     );
   }, [staffSearchQuery, staffMembers, newCalendarTask.assigned_to]);
 
+  const [viewDetailTask, setViewDetailTask] = useState<{ type: 'task' | 'subtask'; data: any } | null>(null);
+  const [editingTask, setEditingTask] = useState<{ type: 'task' | 'subtask'; data: any } | null>(null);
+
   const handleDateChange = (newDate: Date) => {
     lastDateClickRef.current = Date.now();
     setCurrentMonth(newDate);
@@ -195,7 +200,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       const customTags = JSON.parse(localStorage.getItem('vaw_planner_custom_tags') || '{}');
       const defaults = [
         { name: 'Blue', value: '#3b82f6' },
-        { name: 'Emerald', value: '#10b981' },
+        { name: 'Cyan', value: '#06b6d4' },
         { name: 'Amber', value: '#f59e0b' },
         { name: 'Rose', value: '#f43f5e' },
         { name: 'Violet', value: '#8b5cf6' },
@@ -328,7 +333,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   }, [currentMonth, filterClientId]);
 
   const fetchStaffMembers = async () => {
-    const { data } = await supabase.from('staff_profiles').select('id, user_id, full_name, email, department_id');
+    const { data } = await supabase.from('staff_profiles').select('id, user_id, full_name, email, department_id, avatar_url');
     setStaffMembers(data || []);
   };
 
@@ -372,61 +377,56 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       const targetDueDate = newCalendarTask.due_date || (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null);
       const autoPriority = calculatePriorityFromDueDate(targetDueDate);
 
-      const { data, error } = await supabase
-        .from('staff_tasks')
-        .insert({
-          title: newCalendarTask.title,
-          description: newCalendarTask.description || null,
-          assigned_to: JSON.stringify(newCalendarTask.assigned_to),
-          assigned_by: user?.id,
-          client_id: newCalendarTask.client_id && newCalendarTask.client_id !== 'no-client' ? newCalendarTask.client_id : null,
-          priority: autoPriority,
-          status: 'pending',
-          due_date: targetDueDate,
-          points: 10,
-          department_id: userProfile?.department_id || null,
-          attachments: [],
-        })
-        .select('*')
-        .single();
-      if (error) throw error;
+      if (editingTask && editingTask.type === 'task') {
+        const { error } = await supabase
+          .from('staff_tasks')
+          .update({
+            title: newCalendarTask.title,
+            description: newCalendarTask.description || null,
+            assigned_to: JSON.stringify(newCalendarTask.assigned_to),
+            client_id: newCalendarTask.client_id && newCalendarTask.client_id !== 'no-client' ? newCalendarTask.client_id : null,
+            priority: autoPriority,
+            due_date: targetDueDate,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingTask.data.id);
 
-      // Automatically create a subtask named "Calendar" for each assignee
-      if (newCalendarTask.assigned_to && newCalendarTask.assigned_to.length > 0) {
-        const subtasksToInsert = newCalendarTask.assigned_to.map((assigneeId, idx) => ({
-          task_id: data.id,
-          title: 'Calendar',
-          description: newCalendarTask.description || null,
-          assigned_to: assigneeId,
-          priority: autoPriority,
-          points: 10,
-          due_date: targetDueDate,
-          due_time: null,
-          created_by: user?.id,
-          stage: 1,
-          status: 'pending',
-          rank: (idx + 1) * 10,
-          attachments: []
-        }));
+        if (error) throw error;
 
-        const { error: subtaskError } = await supabase
-          .from('staff_subtasks')
-          .insert(subtasksToInsert);
+        toast({ title: 'Task Updated! ✏️', description: `"${newCalendarTask.title}" updated successfully.` });
+      } else {
+        const { data, error } = await supabase
+          .from('staff_tasks')
+          .insert({
+            title: newCalendarTask.title,
+            description: newCalendarTask.description || null,
+            assigned_to: JSON.stringify(newCalendarTask.assigned_to),
+            assigned_by: user?.id,
+            client_id: newCalendarTask.client_id && newCalendarTask.client_id !== 'no-client' ? newCalendarTask.client_id : null,
+            priority: autoPriority,
+            status: 'pending',
+            due_date: targetDueDate,
+            points: 10,
+            department_id: userProfile?.department_id || null,
+            attachments: [],
+          })
+          .select('*')
+          .single();
 
-        if (subtaskError) {
-          console.error('Error creating subtasks for calendar task:', subtaskError);
-        }
+        if (error) throw error;
+
+        toast({ title: 'Task Created! 🎉', description: `"${newCalendarTask.title}" has been assigned from the calendar.` });
       }
 
-      toast({ title: 'Task Created! 🎉', description: `"${newCalendarTask.title}" has been assigned from the calendar.` });
       setIsCreateTaskDialogOpen(false);
+      setEditingTask(null);
       setNewCalendarTask({ title: '', description: '', client_id: '', assigned_to: [], priority: 'medium', points: 10, due_date: '' });
       setCalendarTaskClientSearch('');
       setStaffSearchQuery('');
       fetchTasksAndSubtasks();
     } catch (err: any) {
-      console.error('Error creating task from calendar:', err);
-      toast({ title: 'Error', description: err.message || 'Failed to create task.', variant: 'destructive' });
+      console.error('Error saving task from calendar:', err);
+      toast({ title: 'Error', description: err.message || 'Failed to save task.', variant: 'destructive' });
     } finally {
       setIsSubmittingCalendarTask(false);
     }
@@ -919,7 +919,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         start: startDate,
         end: endDate,
         description: plan.description || '',
-        color: plan.color || '#3b82f6',
+        color: plan.is_completed ? '#10b981' : (plan.color || '#3b82f6'),
         allDay: true,
         calendarId: 'plan',
         resourceId: plan.client_id || 'common',
@@ -937,13 +937,14 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       const startDate = new Date(`${dateKey}T10:00:00`);
       const endDate = new Date(`${dateKey}T12:00:00`);
       const clientName = getClientName(task.client_id);
+      const isCompleted = task.status === 'completed';
       events.push({
         id: `task-${task.id}`,
         title: `⚡ ${task.title}`,
         start: startDate,
         end: endDate,
         description: task.description || '',
-        color: '#8b5cf6',
+        color: isCompleted ? '#10b981' : '#8b5cf6',
         allDay: true,
         calendarId: 'task',
         resourceId: task.client_id || 'common',
@@ -961,19 +962,20 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       const startDate = new Date(`${dateKey}T14:00:00`);
       const endDate = new Date(`${dateKey}T16:00:00`);
       const clientName = getClientName(sub.staff_tasks?.client_id);
+      const isCompleted = sub.status === 'completed';
       events.push({
         id: `subtask-${sub.id}`,
         title: `📌 ${sub.title}`,
         start: startDate,
         end: endDate,
         description: sub.description || '',
-        color: '#ec4899',
+        color: isCompleted ? '#10b981' : '#ec4899',
         allDay: true,
         calendarId: 'subtask',
         resourceId: sub.staff_tasks?.client_id || 'common',
         type: 'subtask',
         rawSubtask: sub,
-        guests: [clientName],
+        guests: [sub.status === 'completed' ? 'Completed' : 'Pending'],
       });
     });
 
@@ -1074,6 +1076,19 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           z-index: 9999 !important;
           max-height: 90vh !important;
           overflow-y: auto !important;
+        }
+
+        /* Faded green styling for completed events in monthly calendar view */
+        .calendar-kit-dark-container [style*="background-color: rgb(16, 185, 129)"],
+        .calendar-kit-dark-container [style*="background-color:#10b981"],
+        .calendar-kit-dark-container [style*="background-color: #10b981"],
+        .calendar-kit-dark-container [style*="border-color: rgb(16, 185, 129)"],
+        .calendar-kit-dark-container [style*="border-color:#10b981"] {
+          background-color: rgba(16, 185, 129, 0.25) !important;
+          border-color: rgba(16, 185, 129, 0.4) !important;
+          color: #6ee7b7 !important;
+          opacity: 0.65 !important;
+          text-decoration: line-through !important;
         }
 
         ${Array.from(completedDateKeys).map(dateKey => {
@@ -1228,6 +1243,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         onViewChange={handleViewChange}
         date={currentMonth}
         onDateChange={handleDateChange}
+        firstDayOfWeek={0}
+        weekStartsOn={0}
         maxEventsPerDay={100}
         translations={{
           guests: "Assigned Staff",
@@ -1346,7 +1363,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           DATE TASKS POPUP DIALOG (Month view date cell click)
       ═══════════════════════════════════════════════════ */}
       <Dialog open={isDayTasksDialogOpen} onOpenChange={setIsDayTasksDialogOpen}>
-        <DialogContent className="sm:max-w-lg bg-zinc-950 border-white/10 text-white rounded-3xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+        <DialogContent hideCloseButton className="sm:max-w-lg bg-zinc-950 border-white/10 text-white rounded-3xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
           <DialogHeader className="shrink-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl font-black uppercase italic tracking-tight text-white flex items-center gap-2">
@@ -1398,7 +1415,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                             ? "bg-emerald-950/30 border-emerald-500/20 opacity-70"
                             : "bg-white/[0.03] hover:bg-white/[0.08]"
                         )}
-                        style={{ borderLeft: `4px solid ${p.color || '#3b82f6'}` }}
+                        style={{ borderLeft: `4px solid ${p.is_completed ? '#10b981' : (p.color || '#3b82f6')}` }}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className={cn(
@@ -1464,89 +1481,162 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                     );
                   })}
 
-                  {dayTasks.map(t => (
-                    <div
-                      key={t.id}
-                      onClick={() => handleToggleTaskCompletion(t.id, t.status)}
-                      className="p-3 rounded-2xl bg-purple-950/20 hover:bg-purple-900/30 border border-purple-500/20 cursor-pointer transition-all space-y-1.5 group"
-                      style={{ borderLeft: `4px solid #8b5cf6` }}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-sm text-purple-200 group-hover:text-purple-100 transition-colors flex items-center gap-1.5">
-                          ⚡ {t.title}
-                        </span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant="outline" className="border-purple-500/40 bg-purple-500/15 text-purple-300 font-bold text-[10px] uppercase tracking-wider">Task</Badge>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs font-bold text-purple-300 hover:text-white hover:bg-purple-500/20 rounded-lg flex items-center gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleTaskCompletion(t.id, t.status);
-                            }}
-                          >
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            {t.status === 'completed' ? 'Pending' : 'Complete'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg flex items-center gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteTask(t.id);
-                            }}
-                          >
-                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                          </Button>
-                        </div>
-                      </div>
-                      {t.description && <p className="text-xs text-white/60 line-clamp-2">{t.description}</p>}
-                    </div>
-                  ))}
+                  {dayTasks.map(t => {
+                    const isDone = t.status === 'completed';
+                    let assignedIds: string[] = [];
+                    if (t.assigned_to) {
+                      try {
+                        const parsed = typeof t.assigned_to === 'string' ? JSON.parse(t.assigned_to) : t.assigned_to;
+                        assignedIds = Array.isArray(parsed) ? parsed : [parsed];
+                      } catch {
+                        assignedIds = [String(t.assigned_to)];
+                      }
+                    }
+                    const assignedStaffList = staffMembers.filter(s => assignedIds.includes(s.user_id || s.id));
 
-                  {daySubtasks.map(st => (
-                    <div
-                      key={st.id}
-                      onClick={() => handleToggleSubtaskCompletion(st.id, st.status)}
-                      className="p-3 rounded-2xl bg-pink-950/20 hover:bg-pink-900/30 border border-pink-500/20 cursor-pointer transition-all space-y-1.5 group"
-                      style={{ borderLeft: `4px solid #ec4899` }}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-bold text-sm text-pink-200 group-hover:text-pink-100 transition-colors flex items-center gap-1.5">
-                          📌 {st.title}
-                        </span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant="outline" className="border-pink-500/40 bg-pink-500/15 text-pink-300 font-bold text-[10px] uppercase tracking-wider">Subtask</Badge>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs font-bold text-pink-300 hover:text-white hover:bg-pink-500/20 rounded-lg flex items-center gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleSubtaskCompletion(st.id, st.status);
-                            }}
-                          >
-                            <Check className="w-3.5 h-3.5 text-emerald-400" />
-                            {st.status === 'completed' ? 'Pending' : 'Complete'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg flex items-center gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteSubtask(st.id);
-                            }}
-                          >
-                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                          </Button>
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => setViewDetailTask({ type: 'task', data: t })}
+                        className={cn(
+                          "p-3 rounded-2xl cursor-pointer transition-all space-y-1.5 group relative border",
+                          isDone
+                            ? "bg-emerald-950/30 border-emerald-500/20 opacity-70"
+                            : "bg-purple-950/20 hover:bg-purple-900/30 border-purple-500/20 hover:border-purple-500/40"
+                        )}
+                        style={{ borderLeft: `4px solid ${isDone ? '#10b981' : '#8b5cf6'}` }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={cn(
+                            "font-bold text-sm transition-colors flex items-center gap-1.5",
+                            isDone ? "line-through text-white/40" : "text-purple-200 group-hover:text-purple-100"
+                          )}>
+                            ⚡ {t.title}
+                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge variant="outline" className={cn("font-bold text-[10px] uppercase tracking-wider", isDone ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300" : "border-purple-500/40 bg-purple-500/15 text-purple-300")}>Task</Badge>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className={cn(
+                                "h-7 px-2 text-xs font-bold rounded-lg flex items-center gap-1",
+                                isDone ? "text-emerald-400 hover:text-white hover:bg-emerald-500/20" : "text-purple-300 hover:text-white hover:bg-purple-500/20"
+                              )}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleTaskCompletion(t.id, t.status);
+                              }}
+                            >
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              {isDone ? 'Undo' : 'Complete'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteTask(t.id);
+                              }}
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                            </Button>
+                          </div>
                         </div>
+                        {t.description && <p className="text-xs text-white/60 line-clamp-2">{t.description}</p>}
+                        
+                        {/* Overlapping Staff Avatar Circles */}
+                        {assignedStaffList.length > 0 && (
+                          <div className="flex items-center gap-1.5 pt-1">
+                            <div className="flex -space-x-2 overflow-hidden">
+                              {assignedStaffList.slice(0, 4).map((member, i) => (
+                                <Avatar key={member.user_id || i} className="inline-block h-6 w-6 rounded-full ring-2 ring-zinc-950">
+                                  <AvatarImage src={member.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(member.full_name || 'staff')}`} />
+                                  <AvatarFallback className="bg-violet-600 text-[9px] font-bold text-white uppercase">
+                                    {(member.full_name || 'S').slice(0, 2)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              ))}
+                            </div>
+                            {assignedStaffList.length > 4 && (
+                              <span className="text-[10px] font-bold text-white/40">+{assignedStaffList.length - 4}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      {st.description && <p className="text-xs text-white/60 line-clamp-2">{st.description}</p>}
-                    </div>
-                  ))}
+                    );
+                  })}
+
+                  {daySubtasks.map(st => {
+                    const isDone = st.status === 'completed';
+                    const assignedMember = staffMembers.find(s => s.user_id === st.assigned_to || s.id === st.assigned_to);
+
+                    return (
+                      <div
+                        key={st.id}
+                        onClick={() => setViewDetailTask({ type: 'subtask', data: st })}
+                        className={cn(
+                          "p-3 rounded-2xl cursor-pointer transition-all space-y-1.5 group relative border",
+                          isDone
+                            ? "bg-emerald-950/30 border-emerald-500/20 opacity-70"
+                            : "bg-pink-950/20 hover:bg-pink-900/30 border-pink-500/20 hover:border-pink-500/40"
+                        )}
+                        style={{ borderLeft: `4px solid ${isDone ? '#10b981' : '#ec4899'}` }}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={cn(
+                            "font-bold text-sm transition-colors flex items-center gap-1.5",
+                            isDone ? "line-through text-white/40" : "text-pink-200 group-hover:text-pink-100"
+                          )}>
+                            📌 {st.title}
+                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Badge variant="outline" className={cn("font-bold text-[10px] uppercase tracking-wider", isDone ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300" : "border-pink-500/40 bg-pink-500/15 text-pink-300")}>Subtask</Badge>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className={cn(
+                                "h-7 px-2 text-xs font-bold rounded-lg flex items-center gap-1",
+                                isDone ? "text-emerald-400 hover:text-white hover:bg-emerald-500/20" : "text-pink-300 hover:text-white hover:bg-pink-500/20"
+                              )}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleSubtaskCompletion(st.id, st.status);
+                              }}
+                            >
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              {isDone ? 'Undo' : 'Complete'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSubtask(st.id);
+                              }}
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                            </Button>
+                          </div>
+                        </div>
+                        {st.description && <p className="text-xs text-white/60 line-clamp-2">{st.description}</p>}
+
+                        {/* Assignee Avatar */}
+                        {assignedMember && (
+                          <div className="flex items-center gap-1.5 pt-1">
+                            <Avatar className="h-6 w-6 rounded-full ring-2 ring-zinc-950">
+                              <AvatarImage src={assignedMember.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(assignedMember.full_name || 'staff')}`} />
+                              <AvatarFallback className="bg-pink-600 text-[9px] font-bold text-white uppercase">
+                                {(assignedMember.full_name || 'S').slice(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-[11px] font-semibold text-white/60">{assignedMember.full_name}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })()}
@@ -1568,18 +1658,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
               <ClipboardList className="w-4 h-4 mr-1.5" /> Assign Task
             </Button>
             <Button
-              className="flex-1 h-11 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg"
-              onClick={() => {
-                setIsDayTasksDialogOpen(false);
-                resetNewPlan();
-                setIsAddDialogOpen(true);
-              }}
-            >
-              <Plus className="w-4 h-4 mr-1.5" /> Add Plan
-            </Button>
-            <Button
               variant="outline"
-              className="h-11 px-4 border-white/10 bg-white/5 text-white hover:bg-white/10 text-xs font-bold rounded-xl"
+              className="h-11 px-6 border-white/10 bg-white/5 text-white hover:bg-white/10 text-xs font-bold rounded-xl"
               onClick={() => setIsDayTasksDialogOpen(false)}
             >
               Close
@@ -1594,7 +1674,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           ADD / EDIT PLAN DIALOG
       ═══════════════════════════════════════════════════ */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[480px] bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden shadow-2xl">
+        <DialogContent hideCloseButton className="sm:max-w-[480px] bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden shadow-2xl">
           <div className="p-6 border-b border-white/5 bg-white/[0.02]">
             <DialogTitle className="text-xl font-black uppercase italic text-white tracking-tighter">
               {selectedPlan ? 'Edit Strategic Plan' : 'Define New Strategy'}
@@ -1685,22 +1765,20 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       </Dialog>
 
       {/* ═══════════════════════════════════════════════════
-          CREATE TASK FROM CALENDAR DIALOG
+          CREATE / EDIT TASK FROM CALENDAR DIALOG
       ═══════════════════════════════════════════════════ */}
-      <Dialog open={isCreateTaskDialogOpen} onOpenChange={setIsCreateTaskDialogOpen}>
-        <DialogContent className="sm:max-w-[520px] bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
+      <Dialog open={isCreateTaskDialogOpen} onOpenChange={(open) => {
+        setIsCreateTaskDialogOpen(open);
+        if (!open) setEditingTask(null);
+      }}>
+        <DialogContent hideCloseButton className="sm:max-w-[520px] bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
           <div className="p-6 border-b border-white/5 bg-white/[0.02] shrink-0">
             <DialogTitle className="text-xl font-black uppercase italic text-white tracking-tighter flex items-center gap-2">
               <ClipboardList className="w-5 h-5 text-violet-400" />
-              Assign Task from Calendar
+              {editingTask ? 'Edit Task Details' : 'Assign Task from Calendar'}
             </DialogTitle>
             <DialogDescription className="text-[10px] text-white/40 uppercase font-black tracking-widest mt-1">
-              Due Date: {selectedDate ? format(selectedDate, 'EEEE, MMMM do, yyyy') : ''}
-              {selectedDate && (
-                <span className="text-violet-400 ml-1.5 normal-case font-bold">
-                  ({calculatePriorityFromDueDate(format(selectedDate, 'yyyy-MM-dd')).toUpperCase()} Priority)
-                </span>
-              )}
+              Due Date: {newCalendarTask.due_date ? format(new Date(`${newCalendarTask.due_date}T12:00:00`), 'EEEE, MMMM do, yyyy') : (selectedDate ? format(selectedDate, 'EEEE, MMMM do, yyyy') : '')}
             </DialogDescription>
           </div>
 
@@ -1908,12 +1986,194 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
               className="flex-1 h-12 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg"
             >
               {isSubmittingCalendarTask ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...</>
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {editingTask ? 'Saving...' : 'Creating...'}</>
               ) : (
-                <><ClipboardList className="w-4 h-4 mr-2" /> Assign Task</>
+                <><ClipboardList className="w-4 h-4 mr-2" /> {editingTask ? 'Save Changes' : 'Assign Task'}</>
               )}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══════════════════════════════════════════════════
+          TASK / SUBTASK DETAIL VIEW DIALOG
+      ═══════════════════════════════════════════════════ */}
+      <Dialog open={!!viewDetailTask} onOpenChange={(open) => { if (!open) setViewDetailTask(null); }}>
+        <DialogContent hideCloseButton className="sm:max-w-[500px] bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden shadow-2xl">
+          {viewDetailTask && (() => {
+            const item = viewDetailTask.data;
+            const isDone = item.status === 'completed';
+            let assignedIds: string[] = [];
+            if (viewDetailTask.type === 'task') {
+              if (item.assigned_to) {
+                try {
+                  const parsed = typeof item.assigned_to === 'string' ? JSON.parse(item.assigned_to) : item.assigned_to;
+                  assignedIds = Array.isArray(parsed) ? parsed : [parsed];
+                } catch {
+                  assignedIds = [String(item.assigned_to)];
+                }
+              }
+            } else {
+              if (item.assigned_to) assignedIds = [item.assigned_to];
+            }
+            const assignedStaffList = staffMembers.filter(s => assignedIds.includes(s.user_id || s.id));
+            const dueDateObj = item.due_date ? new Date(`${item.due_date}T12:00:00`) : null;
+
+            return (
+              <>
+                <div className="p-6 border-b border-white/5 bg-white/[0.02]">
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <Badge variant="outline" className={cn(
+                      "font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full",
+                      isDone
+                        ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
+                        : viewDetailTask.type === 'task'
+                        ? "border-purple-500/40 bg-purple-500/15 text-purple-300"
+                        : "border-pink-500/40 bg-pink-500/15 text-pink-300"
+                    )}>
+                      {isDone ? 'Completed' : viewDetailTask.type === 'task' ? 'Task' : 'Subtask'}
+                    </Badge>
+                  </div>
+                  <DialogTitle className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                    {viewDetailTask.type === 'task' ? '⚡' : '📌'} {item.title}
+                  </DialogTitle>
+                </div>
+
+                <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                  {/* Large Prominent Due Date Card */}
+                  {dueDateObj && (
+                    <div className="p-4 bg-gradient-to-r from-violet-950/40 to-purple-950/40 border border-violet-500/20 rounded-2xl flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-violet-300/60 tracking-widest">Due Date</p>
+                        <p className="text-lg font-black text-white tracking-tight mt-0.5">
+                          {format(dueDateObj, 'EEEE, MMMM d, yyyy')}
+                        </p>
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
+                        <CalendarIcon className="w-5 h-5 text-violet-400" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Priority & Client */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3.5 bg-white/5 border border-white/5 rounded-2xl">
+                      <p className="text-[10px] font-black uppercase text-white/40 tracking-wider">Priority</p>
+                      <p className="text-xs font-black text-white uppercase mt-0.5">{item.priority || 'Medium'}</p>
+                    </div>
+                    <div className="p-3.5 bg-white/5 border border-white/5 rounded-2xl flex flex-col justify-between">
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-white/40 tracking-wider">Client</p>
+                        <p className="text-xs font-black text-white truncate mt-0.5">
+                          {clients.find(c => c.id === (item.client_id || item.staff_tasks?.client_id))?.company_name || 'Common (Internal)'}
+                        </p>
+                      </div>
+                      {(item.client_id || item.staff_tasks?.client_id) && (item.client_id !== 'no-client') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const cId = item.client_id || item.staff_tasks?.client_id;
+                            window.location.href = `/client-dashboard?clientId=${cId}`;
+                          }}
+                          className="mt-2 inline-flex items-center gap-1 text-[10px] font-extrabold text-violet-400 hover:text-violet-300 transition-colors uppercase tracking-wider"
+                        >
+                          View in Client Dashboard <ExternalLink className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Assigned Staff Members Field */}
+                  <div className="p-4 bg-white/5 border border-white/5 rounded-2xl space-y-2.5">
+                    <p className="text-[10px] font-black uppercase text-white/40 tracking-wider">Assigned Staff</p>
+                    {assignedStaffList.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {assignedStaffList.map(member => (
+                          <div key={member.user_id || member.id} className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">
+                            <Avatar className="h-6 w-6 rounded-full">
+                              <AvatarImage src={member.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(member.full_name || 'staff')}`} />
+                              <AvatarFallback className="bg-violet-600 text-[9px] font-bold text-white uppercase">
+                                {(member.full_name || 'S').slice(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs font-bold text-white">{member.full_name || member.email}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-white/40 italic">No assigned staff members.</p>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  <div className="p-4 bg-white/5 border border-white/5 rounded-2xl space-y-1.5">
+                    <p className="text-[10px] font-black uppercase text-white/40 tracking-wider">Description & Directives</p>
+                    <p className="text-xs text-white/80 leading-relaxed whitespace-pre-wrap">
+                      {item.description || 'No description provided for this entry.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-6 border-t border-white/5 bg-white/[0.02] flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const t = viewDetailTask;
+                      setViewDetailTask(null);
+                      if (t.type === 'task') {
+                        let assignedIds: string[] = [];
+                        if (t.data.assigned_to) {
+                          try {
+                            const parsed = typeof t.data.assigned_to === 'string' ? JSON.parse(t.data.assigned_to) : t.data.assigned_to;
+                            assignedIds = Array.isArray(parsed) ? parsed : [parsed];
+                          } catch {
+                            assignedIds = [String(t.data.assigned_to)];
+                          }
+                        }
+                        setNewCalendarTask({
+                          title: t.data.title || '',
+                          description: t.data.description || '',
+                          client_id: t.data.client_id || 'no-client',
+                          assigned_to: assignedIds,
+                          priority: t.data.priority || 'medium',
+                          points: t.data.points || 10,
+                          due_date: t.data.due_date || ''
+                        });
+                        setEditingTask(t);
+                        setIsCreateTaskDialogOpen(true);
+                      } else {
+                        toast({ title: "Info", description: "Subtasks inherit settings from parent tasks." });
+                      }
+                    }}
+                    className="flex-1 h-11 border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 text-xs font-bold rounded-xl"
+                  >
+                    <Edit className="w-4 h-4 mr-1.5" /> Edit Task
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (viewDetailTask.type === 'task') {
+                        handleToggleTaskCompletion(item.id, item.status);
+                      } else {
+                        handleToggleSubtaskCompletion(item.id, item.status);
+                      }
+                      setViewDetailTask(null);
+                    }}
+                    className="flex-1 h-11 border-white/10 bg-white/5 text-white hover:bg-white/10 text-xs font-bold rounded-xl"
+                  >
+                    <Check className="w-4 h-4 mr-1.5 text-emerald-400" />
+                    {isDone ? 'Mark Pending' : 'Mark Complete'}
+                  </Button>
+                  <Button
+                    onClick={() => setViewDetailTask(null)}
+                    className="h-11 px-5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
