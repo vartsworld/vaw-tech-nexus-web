@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1F33">
+<title>Integration Architecture — Wise Platform | VAW Technologies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   MOBILE FIRST — base styles target a 360px phone.
+   Enhancements layer up at 600px / 900px / 1200px.
+   ============================================================ */
+
+:root{
+  --ink:#0E1F33; --ink-2:#1B3350;
+  --paper:#EFF2F4; --card:#FFFFFF;
+  --rule:#C7D3DC; --rule-soft:#E4EAEF;
+  --debit:#B23A2B; --credit:#1C6B57; --brass:#A8801F; --signal:#1F6F8B;
+  --muted:#5C7285; --muted-2:#8098AB;
+  --display:"Fraunces",Georgia,serif;
+  --body:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --gut:18px;
+  --sp:44px;
+  --tap:48px;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;scroll-padding-top:64px}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--body);font-size:16px;line-height:1.6;
+  font-variant-numeric:tabular-nums;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+a{color:var(--ink);text-underline-offset:3px}
+a:focus-visible,button:focus-visible{outline:2.5px solid var(--brass);outline-offset:3px}
+
+.wrap{
+  width:100%;max-width:1140px;margin:0 auto;
+  padding-left:max(var(--gut),env(safe-area-inset-left));
+  padding-right:max(var(--gut),env(safe-area-inset-right));
+}
+.block{padding:var(--sp) 0;border-top:1px solid var(--rule)}
+.block:first-of-type{border-top:none}
+
+.eyebrow{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 12px;display:flex;align-items:center;gap:10px;
+}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--rule)}
+
+h1,h2,h3,h4{font-family:var(--display);font-weight:600;letter-spacing:-.015em;margin:0}
+h1{font-size:clamp(30px,8.5vw,68px);line-height:1.02;color:#fff;margin:28px 0 0;max-width:16ch}
+h1 em{font-style:normal;color:var(--brass)}
+h2{font-size:clamp(25px,6.4vw,40px);line-height:1.1;margin-bottom:14px}
+h3{font-size:clamp(18px,4.6vw,21px);line-height:1.25;margin-bottom:8px}
+h4{font-family:var(--body);font-size:15.5px;font-weight:700;letter-spacing:0;margin-bottom:6px}
+p{margin:0 0 14px}
+.lede{font-size:clamp(16px,4.2vw,20px);line-height:1.5;color:var(--ink-2);max-width:66ch}
+.note{font-size:13.5px;color:var(--muted);line-height:1.55}
+
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+.card{background:var(--card);border:1px solid var(--rule);padding:18px 16px}
+.mono{font-family:var(--mono)}
+
+.pill{
+  display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.11em;
+  text-transform:uppercase;padding:5px 9px;border:1px solid var(--rule);
+  color:var(--muted);background:var(--card);
+}
+.pill.go{border-color:var(--credit);color:var(--credit)}
+.pill.hot{border-color:var(--debit);color:var(--debit)}
+
+/* masthead */
+.masthead{
+  background:var(--ink);color:#EAF0F5;
+  background-image:repeating-linear-gradient(to bottom,rgba(255,255,255,.045) 0 1px,transparent 1px 34px);
+  padding-top:env(safe-area-inset-top);
+}
+.masthead .wrap{padding-top:24px;padding-bottom:36px}
+.mast-top{display:flex;flex-direction:column;gap:16px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.18)}
+.brandmark{display:flex;align-items:center;gap:14px}
+.brand-logo{height:44px;width:auto;object-fit:contain;display:block}
+.brandmark b{display:block;font-size:13.5px;font-weight:700;line-height:1.3}
+.brandmark span{
+  display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted-2);line-height:1.5;
+}
+.mast-meta{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted-2);line-height:1.9}
+.mast-sub{margin-top:20px;max-width:60ch;font-size:clamp(15px,4vw,18.5px);line-height:1.55;color:#B9CBDA}
+.mast-facts{display:grid;grid-template-columns:minmax(0,1fr);margin-top:28px;border-top:1px solid rgba(255,255,255,.18)}
+.mast-fact{padding:16px 0 14px;border-bottom:1px solid rgba(255,255,255,.13)}
+.mast-fact:last-child{border-bottom:none}
+.mast-fact dt{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2);margin-bottom:5px}
+.mast-fact dd{margin:0;font-family:var(--display);font-size:22px;font-weight:600;color:#fff;line-height:1.15}
+.mast-fact small{display:block;font-size:12px;color:#93A9BC;margin-top:4px;line-height:1.45}
+
+/* sticky nav */
+nav.jump{
+  position:sticky;top:0;z-index:40;background:rgba(239,242,244,.96);
+  -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);border-bottom:1px solid var(--rule);
+}
+nav.jump ul{
+  max-width:1140px;margin:0 auto;list-style:none;display:flex;
+  padding-left:max(var(--gut),env(safe-area-inset-left));
+  padding-right:max(var(--gut),env(safe-area-inset-right));
+  overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;
+}
+nav.jump ul::-webkit-scrollbar{display:none}
+nav.jump a{
+  display:flex;align-items:center;min-height:var(--tap);padding:0 13px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);text-decoration:none;white-space:nowrap;
+  border-bottom:2px solid transparent;scroll-snap-align:start;
+}
+nav.jump a:active{color:var(--ink)}
+
+/* tables: stacked cards on phones, real tables at 900px */
+.tbl{background:var(--card);border:1px solid var(--rule)}
+.tbl-cap{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);padding:13px 15px 0;margin:0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+tbody tr{display:block;padding:14px 15px;border-bottom:1px solid var(--rule)}
+tbody tr:last-child{border-bottom:none}
+tbody td{display:block;padding:0;border:none}
+tbody td[data-l]::before{
+  content:attr(data-l);display:block;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--muted-2);margin:10px 0 2px;
+}
+tbody td.n{font-family:var(--mono);font-weight:500}
+tfoot{display:block;border-top:2px solid var(--ink);background:#F7F9FA}
+tfoot tr{display:flex;flex-wrap:wrap;gap:6px 18px;padding:14px 15px;font-weight:700}
+tfoot td{display:block;padding:0;border:none}
+tfoot td.n{font-family:var(--mono)}
+tfoot td[data-l]::before{
+  content:attr(data-l) " ";font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--muted);font-weight:500;
+}
+.rowlead{display:block;font-weight:700;font-size:15px;line-height:1.3}
+.yes{color:var(--credit);font-weight:700}
+.no{color:var(--debit);font-weight:700}
+.part{color:var(--brass);font-weight:700}
+
+/* content blocks */
+.callout{border-left:3px solid var(--debit);background:#FBF2F0;padding:16px}
+.callout.good{border-left-color:var(--credit);background:#F0F6F4}
+.callout.neutral{border-left-color:var(--brass);background:#FAF6EB}
+.callout.sig{border-left-color:var(--signal);background:#EFF5F8}
+.callout p:last-child{margin-bottom:0}
+
+ul.ticks{list-style:none;padding:0;margin:0;font-size:14px}
+ul.ticks li{padding:9px 0 9px 21px;position:relative;border-bottom:1px solid var(--rule-soft);line-height:1.5}
+ul.ticks li:last-child{border-bottom:none}
+ul.ticks li::before{content:"—";position:absolute;left:0;top:9px;color:var(--brass);font-family:var(--mono)}
+ul.crosses li::before{content:"×";color:var(--debit)}
+
+.kv{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;font-size:14px;margin:0}
+.kv dt{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:12px}
+.kv dt:first-of-type{margin-top:0}
+.kv dd{margin:0 0 2px;line-height:1.5}
+
+.flow{display:grid;gap:9px;margin-top:6px}
+.flownode{background:var(--card);border:1px solid var(--rule);padding:12px 14px;font-size:14px;line-height:1.5}
+.flownode b{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px}
+.flownode.us{border-left:3px solid var(--brass)}
+.flownode.them{border-left:3px solid var(--signal)}
+
+.stat-row{display:grid;grid-template-columns:minmax(0,1fr);border:1px solid var(--rule);background:var(--card)}
+.stat{padding:16px;border-bottom:1px solid var(--rule)}
+.stat:last-child{border-bottom:none}
+.stat b{display:block;font-family:var(--display);font-size:26px;font-weight:600;line-height:1.05}
+.stat span{display:block;font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.45}
+
+.tiers{display:grid;grid-template-columns:minmax(0,1fr);border:1px solid var(--rule);background:var(--card)}
+.tier{padding:20px 16px;border-bottom:1px solid var(--rule)}
+.tier:last-child{border-bottom:none}
+.tier.pick{background:#FCFAF2;box-shadow:inset 4px 0 0 var(--brass)}
+.tier .tname{font-family:var(--display);font-size:21px;font-weight:600;margin-top:10px}
+.tier .tprice{font-family:var(--mono);font-size:23px;font-weight:500;margin:12px 0 2px}
+.tier ul{list-style:none;margin:14px 0 0;padding:0;font-size:13.5px}
+.tier li{padding:8px 0;border-top:1px solid var(--rule-soft);color:var(--ink-2);line-height:1.45}
+.tier li b{font-family:var(--mono);font-size:10px;color:var(--muted);display:block;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1px}
+
+.sig-blk{margin-top:24px;padding-top:22px;border-top:1px solid var(--rule);display:grid;gap:22px}
+
+footer{background:var(--ink);color:#93A9BC;font-size:12.5px;padding:30px 0 calc(30px + env(safe-area-inset-bottom))}
+footer .wrap{display:grid;gap:6px}
+footer b{color:#fff}
+
+/* ---------- 600px+ ---------- */
+@media (min-width:600px){
+  :root{--gut:24px;--sp:56px}
+  body{font-size:16.5px}
+  .grid.g2{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+  .card{padding:22px}
+  .mast-top{flex-direction:row;justify-content:space-between;align-items:flex-start}
+  .mast-meta{text-align:right}
+  .mast-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mast-fact{padding:18px 20px 14px 0;border-bottom:none;border-right:1px solid rgba(255,255,255,.13)}
+  .mast-fact:nth-child(2n){border-right:none}
+  .mast-fact:nth-child(-n+2){border-bottom:1px solid rgba(255,255,255,.13)}
+  .stat-row{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .stat{border-bottom:none;border-right:1px solid var(--rule)}
+  .stat:last-child{border-right:none}
+  .kv{grid-template-columns:auto minmax(0,1fr);gap:6px 16px}
+  .kv dt{margin-top:0;padding-top:3px}
+  .kv dd{margin-bottom:0}
+  .sig-blk{grid-template-columns:repeat(2,minmax(0,1fr));gap:26px}
+  footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+}
+
+/* ---------- 900px+ ---------- */
+@media (min-width:900px){
+  :root{--sp:70px}
+  html{scroll-padding-top:70px}
+  .grid{gap:20px}
+  .grid.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+  .tbl{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:640px}
+  thead{position:static;width:auto;height:auto;overflow:visible;clip:auto}
+  thead th{
+    display:table-cell;padding:11px 14px;text-align:left;
+    font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);font-weight:500;background:#F7F9FA;border-bottom:1px solid var(--rule);
+  }
+  thead th.n{text-align:right}
+  tbody tr{display:table-row;padding:0}
+  tbody td{display:table-cell;padding:11px 14px;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+  tbody tr:last-child td{border-bottom:none}
+  tbody td[data-l]::before{display:none}
+  tbody td.n{text-align:right;white-space:nowrap}
+  .rowlead{font-size:14px}
+  tfoot{display:table-footer-group;border-top:none;background:transparent}
+  tfoot tr{display:table-row;padding:0}
+  tfoot td{display:table-cell;padding:12px 14px;border-top:2px solid var(--ink);background:#F7F9FA}
+  tfoot td.n{text-align:right}
+  tfoot td[data-l]::before{display:none}
+  .rec-col{background:#FCFAF2}
+
+  .mast-facts{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .mast-fact{border-bottom:none!important;border-right:1px solid rgba(255,255,255,.13)!important}
+  .mast-fact:last-child{border-right:none!important}
+  .mast-fact dd{font-size:25px}
+
+  .tiers{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .tier{padding:24px 22px;border-bottom:none;border-right:1px solid var(--rule)}
+  .tier:last-child{border-right:none}
+  .tier.pick{box-shadow:inset 0 4px 0 var(--brass)}
+
+  .masthead .wrap{padding-top:30px;padding-bottom:60px}
+  .mast-sub{margin-top:22px}
+}
+
+@media (min-width:1200px){:root{--gut:28px}}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *{transition:none!important;animation:none!important}
+}
+
+@media print{
+  nav.jump{display:none}
+  body{background:#fff;font-size:10.5pt}
+  .block{padding:20px 0;break-inside:avoid}
+  .masthead{background:#0E1F33!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  thead{position:static;width:auto;height:auto;overflow:visible;clip:auto}
+  tbody tr{display:table-row}
+  tbody td{display:table-cell;padding:8px 10px;border-bottom:1px solid #ddd}
+  tbody td[data-l]::before{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="mast-top">
+      <div class="brandmark">
+        <img src="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png" alt="VAW Technologies Logo" class="brand-logo">
+        <div><b>VAW Technologies</b><span>A division of VArts World Pvt. Ltd.</span></div>
+      </div>
+      <div class="mast-meta">Volume II · Integration architecture<br>Ref. VAWT/REM/UK-IN/02<br>Valid 45 days from issue</div>
+    </div>
+
+    <h1>We don't need to<br>build the rails.<br><em>We need to build<br>the business.</em></h1>
+
+    <p class="mast-sub">An integration architecture for the UK–India remittance platform: which third-party provider carries the money, what we still own, and what that changes about cost, timeline and risk. Our recommendation is <b style="color:#fff">Wise Platform</b> as the primary rail, behind an abstraction layer that keeps you free to change your mind.</p>
+
+    <dl class="mast-facts">
+      <div class="mast-fact"><dt>Primary rail</dt><dd>Wise Platform</dd><small>Corridor-native GBP→INR, bank and UPI payout</small></div>
+      <div class="mast-fact"><dt>Programme</dt><dd>10–13 months</dd><small>Provider onboarding runs in parallel</small></div>
+      <div class="mast-fact"><dt>Investment</dt><dd>₹88L – ₹1.30Cr</dd><small>Inside the envelope already agreed</small></div>
+      <div class="mast-fact"><dt>Lock-in</dt><dd>None by design</dd><small>Adapter pattern; a second rail is weeks, not months</small></div>
+    </dl>
+  </div>
+</header>
+
+<nav class="jump" aria-label="Sections">
+  <ul>
+    <li><a href="#position">Position</a></li>
+    <li><a href="#evaluation">Provider study</a></li>
+    <li><a href="#wise">Wise Platform</a></li>
+    <li><a href="#ours">What we build</a></li>
+    <li><a href="#portability">Portability</a></li>
+    <li><a href="#risk">Integration risk</a></li>
+    <li><a href="#commercials">Commercials</a></li>
+    <li><a href="#next">Next step</a></li>
+  </ul>
+</nav>
+
+<!-- POSITION -->
+<section class="block" id="position">
+  <div class="wrap">
+    <p class="eyebrow">The position</p>
+    <h2>A payment gateway is not a remittance rail.</h2>
+    <p class="lede">The question you asked was whether we can integrate a third party for the transaction. The answer is yes — and it is the right call. But the three names that come up first solve three different problems, and only one of them solves yours.</p>
+
+    <div class="grid g3" style="margin-top:26px">
+      <div class="card">
+        <p class="pill hot">Collection only</p>
+        <h3 style="margin-top:12px">Stripe</h3>
+        <p class="note">Excellent at taking a card payment. It does not convert GBP to INR on your behalf and pay a stranger's Indian bank account — that is a regulated money-movement activity outside its model. It can sit on the pay-in leg, but its published India pricing runs 4.3% for international cards plus 2% for currency conversion, which is fatal to remittance margins.</p>
+      </div>
+      <div class="card">
+        <p class="pill hot">Payout only</p>
+        <h3 style="margin-top:12px">RazorpayX</h3>
+        <p class="note">Genuinely good at the last mile: API-driven payouts to Indian bank accounts and UPI over IMPS, NEFT and RTGS. But it starts from money that is already INR, already inside India, already yours. It does not solve GBP collection, FX, or the cross-border leg — which is the entire regulated middle of your product.</p>
+      </div>
+      <div class="card">
+        <p class="pill go">End to end</p>
+        <h3 style="margin-top:12px">Wise Platform</h3>
+        <p class="note">Built for exactly this shape: quote, recipient, transfer, funding, tracking and reconciliation across the border, in one contract. Its INR support covers both Indian bank accounts and UPI addresses natively, with Confirmation of Payee built into recipient creation. This is the rail we recommend.</p>
+      </div>
+    </div>
+
+    <div class="callout neutral" style="margin-top:22px">
+      <h4>The trap in this decision</h4>
+      <p>Wiring Stripe to your own bank account and then RazorpayX out of it looks like an integration. It is not — it is a home-made cross-border money transmission business with none of the permissions and all of the liability. Money must not touch a corporate account between collection and payout. The whole point of choosing a rail is that the regulated leg belongs to a firm licensed to carry it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- EVALUATION -->
+<section class="block" id="evaluation">
+  <div class="wrap">
+    <p class="eyebrow">Provider study</p>
+    <h2>Seven providers, one corridor.</h2>
+    <p class="lede">We assessed the field against what this product actually needs, not against general reputation. Only providers that can carry a GBP→INR consumer remittance end to end were shortlisted.</p>
+
+    <div class="tbl" style="margin-top:24px">
+      <p class="tbl-cap">Capability assessment · UK→India consumer remittance</p>
+      <table>
+        <thead>
+          <tr><th>Provider</th><th>GBP in</th><th>FX</th><th>INR bank</th><th>UPI</th><th>Cross-border</th><th>Fit</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="rowlead">Wise Platform</span><span class="note">UK-headquartered; corridor-native</span></td>
+            <td data-l="GBP in" class="yes">Yes</td><td data-l="FX" class="yes">Yes</td>
+            <td data-l="INR bank" class="yes">Yes</td><td data-l="UPI" class="yes">Yes</td>
+            <td data-l="Cross-border" class="yes">Yes</td>
+            <td data-l="Fit"><span class="pill go">Strong</span></td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Nium</span><span class="note">Licensed in several markets; payouts plus issuing</span></td>
+            <td data-l="GBP in" class="part">Partial</td><td data-l="FX" class="yes">Yes</td>
+            <td data-l="INR bank" class="yes">Yes</td><td data-l="UPI" class="part">Partner</td>
+            <td data-l="Cross-border" class="yes">Yes</td>
+            <td data-l="Fit"><span class="pill">Viable second</span></td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Thunes</span><span class="note">Deep emerging-market payout network</span></td>
+            <td data-l="GBP in" class="no">No</td><td data-l="FX" class="yes">Yes</td>
+            <td data-l="INR bank" class="yes">Yes</td><td data-l="UPI" class="yes">Yes</td>
+            <td data-l="Cross-border" class="yes">Yes</td>
+            <td data-l="Fit"><span class="pill">Payout-side</span></td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Currencycloud (Visa)</span><span class="note">FX and multi-currency accounts for institutions</span></td>
+            <td data-l="GBP in" class="yes">Yes</td><td data-l="FX" class="yes">Yes</td>
+            <td data-l="INR bank" class="yes">Yes</td><td data-l="UPI" class="no">No</td>
+            <td data-l="Cross-border" class="yes">Yes</td>
+            <td data-l="Fit"><span class="pill">Selective onboarding</span></td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Airwallex</span><span class="note">Strong in major economies; business-oriented</span></td>
+            <td data-l="GBP in" class="yes">Yes</td><td data-l="FX" class="yes">Yes</td>
+            <td data-l="INR bank" class="yes">Yes</td><td data-l="UPI" class="no">No</td>
+            <td data-l="Cross-border" class="yes">Yes</td>
+            <td data-l="Fit"><span class="pill">B2B-leaning</span></td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Stripe</span><span class="note">Card acceptance and platform payments</span></td>
+            <td data-l="GBP in" class="yes">Yes</td><td data-l="FX" class="part">Limited</td>
+            <td data-l="INR bank" class="no">No</td><td data-l="UPI" class="no">No</td>
+            <td data-l="Cross-border" class="no">No</td>
+            <td data-l="Fit"><span class="pill hot">Pay-in only</span></td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">RazorpayX</span><span class="note">Indian payout APIs</span></td>
+            <td data-l="GBP in" class="no">No</td><td data-l="FX" class="no">No</td>
+            <td data-l="INR bank" class="yes">Yes</td><td data-l="UPI" class="yes">Yes</td>
+            <td data-l="Cross-border" class="no">No</td>
+            <td data-l="Fit"><span class="pill hot">Payout only</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid g2" style="margin-top:22px">
+      <div class="card">
+        <h3>Why Wise came first</h3>
+        <ul class="ticks">
+          <li>One contract covers collection, conversion, cross-border movement and INR payout — no stitching, and no gap where the money is nobody's responsibility</li>
+          <li>India is a first-class corridor, with published handling for both bank-account recipients (IFSC and account number) and UPI addresses</li>
+          <li>Confirmation of Payee runs automatically when a recipient is created, which is exactly the control the UK reimbursement regime pushes you towards</li>
+          <li>Transfer requirements are returned by the API per corridor, so the app renders the right fields without hard-coding rules that change</li>
+          <li>Partner pricing configuration means your fee is your own, not a rebate on someone else's</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Why we still name a second</h3>
+        <p class="note">Provider concentration is the largest single operational risk in this architecture. If the rail declines your model, changes pricing, or has a bad week, a single-provider platform has no answer.</p>
+        <p class="note">We therefore recommend <b>Nium</b> as the designated second rail, and design the integration so that adding it is a contained piece of work rather than a re-architecture. We are not proposing to build it now — we are proposing not to make it impossible later.</p>
+        <p class="note" style="margin-bottom:0">Thunes remains the natural third if cash pickup or wallet payout ever enters scope.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WISE -->
+<section class="block" id="wise">
+  <div class="wrap">
+    <p class="eyebrow">Wise Platform</p>
+    <h2>Which door we walk through matters more than the API.</h2>
+    <p class="lede">Wise Platform is not one product. It offers distinct integration models, and they differ in who holds the licence, who owns the customer, and who performs identity verification. This is the single most important thing to resolve before development starts.</p>
+
+    <div class="tbl" style="margin-top:24px">
+      <p class="tbl-cap">Integration models and what each implies</p>
+      <table>
+        <thead><tr><th>Model</th><th>Who it is for</th><th>Who Wise onboards</th><th>Implication for us</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="rowlead">Enterprise payouts</span></td>
+            <td data-l="Who it is for">Businesses moving their own funds — payroll, suppliers</td>
+            <td data-l="Who Wise onboards">The business only</td>
+            <td data-l="Implication for us" class="no">Wrong model. We are moving customers' money, not the company's.</td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Correspondent payouts</span></td>
+            <td data-l="Who it is for">Licensed banks and financial institutions sending on behalf of their customers</td>
+            <td data-l="Who Wise onboards">The institution</td>
+            <td data-l="Implication for us">Available once the client holds its own permission. The best long-run economics.</td>
+          </tr>
+          <tr class="rec-col">
+            <td><span class="rowlead">Embedded payouts</span></td>
+            <td data-l="Who it is for">Platforms offering customers cross-border money movement inside their own product</td>
+            <td data-l="Who Wise onboards">Your customers, through profiles your platform creates and verifies via the API</td>
+            <td data-l="Implication for us" class="yes">The realistic launch model. Wise carries identity verification and the regulated leg; we carry the product.</td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Affiliate</span></td>
+            <td data-l="Who it is for">Referral of customers to Wise for commission</td>
+            <td data-l="Who Wise onboards">Wise, directly</td>
+            <td data-l="Implication for us" class="no">Not a product. You would be an advertising channel, not an operator.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout" style="margin-top:22px">
+      <h4>The condition we will not paper over</h4>
+      <p>Wise's own documentation is explicit that third-party partners — those moving money on behalf of their customers — need either <b>a sponsor bank or their own licence</b> under which funds can be moved to Wise. Choosing Wise removes an enormous amount of engineering. It does not remove the need for a regulated position in the UK.</p>
+      <p>This is why we are not promising a four-month build. The engineering can move fast. The commercial and regulatory qualification with Wise runs on Wise's calendar, and it is the gate that decides your launch date. We start it in week one and run it in parallel with everything else.</p>
+    </div>
+
+    <div class="grid g2" style="margin-top:22px">
+      <div class="card">
+        <h3>What Wise carries</h3>
+        <ul class="ticks">
+          <li>Customer profile creation and identity verification through the API</li>
+          <li>Live GBP→INR quoting, with rate, fee and delivery estimate returned together</li>
+          <li>Recipient creation, format validation and name-match confirmation</li>
+          <li>The cross-border transfer, conversion and settlement</li>
+          <li>INR delivery to Indian bank accounts and UPI addresses</li>
+          <li>Transfer state changes, delivered by webhook</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What Wise does not carry</h3>
+        <ul class="ticks crosses">
+          <li>Your brand, your app, your customer relationship</li>
+          <li>Your internal ledger and your financial reporting</li>
+          <li>Your operations team's tooling and case management</li>
+          <li>Your fraud posture and reimbursement liability handling</li>
+          <li>Your consumer disclosures and pre-contract presentation</li>
+          <li>Your support experience when a transfer sticks</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT WE BUILD -->
+<section class="block" id="ours">
+  <div class="wrap">
+    <p class="eyebrow">The honest question</p>
+    <h2>If Wise does all that, what are we paying you for?</h2>
+    <p class="lede">A fair question, and one your board will ask. The answer is that Wise sells a rail. It does not sell a remittance business. Everything a customer actually experiences, and everything a regulator actually inspects, sits on our side of the line.</p>
+
+    <div class="grid g2" style="margin-top:26px">
+      <div>
+        <h3 style="margin-bottom:12px">Our side of the line</h3>
+        <div class="flow">
+          <div class="flownode us"><b>Identity &amp; session</b>Your customer, your login, your device trust, your step-up authentication meeting UK strong customer authentication rules.</div>
+          <div class="flownode us"><b>Presentation &amp; disclosure</b>Rate, fee, total cost and delivery time shown before commitment, in the form the Consumer Duty expects. Wise returns numbers; how they are framed is a compliance obligation you own.</div>
+          <div class="flownode us"><b>Internal ledger</b>Double-entry, immutable, in your books. Wise's records are a counterparty statement, not your accounts. Every rupee delivered must trace to a pound collected, in a system you control.</div>
+          <div class="flownode us"><b>Fraud &amp; reimbursement posture</b>Warning journeys, staged limits for new customers, behavioural scoring and a claims process. The reimbursement liability lands on the sending firm, not on the rail.</div>
+          <div class="flownode us"><b>Operations console</b>Stuck transfers, refunds, disputes, case management, four-eyes controls, audit trail. This is where your team actually works.</div>
+          <div class="flownode us"><b>Reconciliation &amp; reporting</b>Daily match of your ledger against the provider statement, exception ageing, management information and regulatory return preparation.</div>
+        </div>
+      </div>
+      <div>
+        <h3 style="margin-bottom:12px">Their side of the line</h3>
+        <div class="flow">
+          <div class="flownode them"><b>Identity verification</b>Document and identity checks executed under Wise's programme against the profiles we create.</div>
+          <div class="flownode them"><b>Pricing engine</b>Live mid-market rate, transfer fee and delivery estimate returned as a single quote.</div>
+          <div class="flownode them"><b>Recipient validation</b>Format checks on IFSC codes and UPI addresses, account existence and name matching, returned with a confidence outcome.</div>
+          <div class="flownode them"><b>Regulated movement</b>Collection, conversion, cross-border settlement and INR delivery — the legs that require a licence.</div>
+          <div class="flownode them"><b>Status</b>Transfer state changes delivered by webhook for us to project into your ledger and your app.</div>
+        </div>
+        <div class="callout sig" style="margin-top:14px">
+          <p class="note" style="margin-bottom:0"><b>The proportion is roughly two to one.</b> Integrating the rail is about a tenth of the programme. Building a business that can operate, reconcile, defend and report on what the rail carries is the rest. That ratio is why the saving from choosing Wise is real but moderate — and why anyone quoting you a four-month remittance platform is quoting the integration and quietly omitting the business.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PORTABILITY -->
+<section class="block" id="portability">
+  <div class="wrap">
+    <p class="eyebrow">Design principle</p>
+    <h2>Built to survive a change of provider.</h2>
+    <p class="lede">We recommend Wise and we expect it to serve you well. We also refuse to build an application that cannot survive changing its mind.</p>
+
+    <div class="grid g2" style="margin-top:24px">
+      <div class="card">
+        <h3>The adapter layer</h3>
+        <p class="note">Our services never call Wise directly. They call a canonical interface — <span class="mono">quote</span>, <span class="mono">createRecipient</span>, <span class="mono">verifyRecipient</span>, <span class="mono">createTransfer</span>, <span class="mono">fund</span>, <span class="mono">status</span>, <span class="mono">refund</span> — expressed in your domain language, not the provider's. A single Wise adapter does the translating.</p>
+        <p class="note" style="margin-bottom:0">Provider identifiers, state names and error codes are mapped into a canonical model at the boundary. Nothing provider-specific reaches the ledger, the app or the console. That mapping table is a deliverable, reviewed and versioned.</p>
+      </div>
+      <div class="card">
+        <h3>What it buys you</h3>
+        <ul class="ticks">
+          <li>A second rail becomes an adapter plus certification — weeks of work, not a rebuild</li>
+          <li>Corridor-level routing later: by provider, by amount band, by cost, by availability</li>
+          <li>A real negotiating position at contract renewal, because switching is credible</li>
+          <li>Continuity if a provider has an outage or declines a transaction class</li>
+          <li>Provider changes never force a mobile app release</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout good" style="margin-top:20px">
+      <p><b>Cost of the principle:</b> roughly ₹4 lakh in the recommended scope, spent on the interface, the mapping layer and a contract-test suite that runs against a simulated provider. We consider it the highest-return four lakh in the programme. It is also what makes the simulated provider possible — which means engineering never idles while Wise onboarding is in progress.</p>
+    </div>
+  </div>
+</section>
+
+<!-- RISK -->
+<section class="block" id="risk">
+  <div class="wrap">
+    <p class="eyebrow">Integration risk</p>
+    <h2>What third-party dependence actually costs you.</h2>
+
+    <div class="tbl" style="margin-top:22px">
+      <p class="tbl-cap">Risks specific to the integrated architecture</p>
+      <table>
+        <thead><tr><th>Risk</th><th>Owner</th><th>Mitigation</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="rowlead">Wise declines or delays the commercial model</span><span class="note">Qualification depends on your regulated position and expected volumes</span></td>
+            <td data-l="Owner">Client</td>
+            <td data-l="Mitigation">Qualification opens in week one with a volume and corridor pack we prepare; Nium approached in parallel as a live alternative, not a fallback slide</td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Sponsor bank or licence requirement not yet satisfied</span></td>
+            <td data-l="Owner">Client</td>
+            <td data-l="Mitigation">Resolved in discovery with counsel; it determines which integration model is even available, so it gates the build rather than surprising it</td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Margin compression</span><span class="note">Your pricing sits on top of the provider's; their cost is your floor</span></td>
+            <td data-l="Owner">Joint</td>
+            <td data-l="Mitigation">Contribution modelled per corridor and ticket band before commercial sign-off; second-rail optionality preserves renewal leverage</td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Webhook loss, duplication or out-of-order delivery</span></td>
+            <td data-l="Owner">VAW</td>
+            <td data-l="Mitigation">Idempotent handlers, a reconciling poller as backstop, and state transitions that are safe to receive twice</td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Quote expiry between presentation and payment</span></td>
+            <td data-l="Owner">VAW</td>
+            <td data-l="Mitigation">Quote persisted with its expiry; the app re-quotes and re-confirms rather than silently repricing the customer</td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Name-match failures at recipient creation</span><span class="note">Partial and failed matches need explicit customer acceptance before a transfer can proceed</span></td>
+            <td data-l="Owner">VAW</td>
+            <td data-l="Mitigation">Designed as a first-class journey, not an error screen — the customer is shown the result and makes a recorded decision</td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Sandbox and production behave differently</span></td>
+            <td data-l="Owner">VAW</td>
+            <td data-l="Mitigation">A production pilot cohort with real low-value transfers before general launch; contract tests run against both</td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Provider outage</span></td>
+            <td data-l="Owner">Joint</td>
+            <td data-l="Mitigation">A degraded mode that queues instructions and communicates honestly, rather than accepting money it cannot move</td>
+          </tr>
+          <tr>
+            <td><span class="rowlead">Reconciliation drift against provider statements</span></td>
+            <td data-l="Owner">VAW</td>
+            <td data-l="Mitigation">Daily automated match with an aged exception queue and a required disposition for every break</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- COMMERCIALS -->
+<section class="block" id="commercials">
+  <div class="wrap">
+    <p class="eyebrow">Commercials</p>
+    <h2>What the integration changes.</h2>
+    <p class="lede">Choosing a rail removes real engineering: the FX layer, the payout integration and much of the settlement mechanics. It adds provider integration and certification work. The net is a genuine saving, and it lands inside the envelope already agreed.</p>
+
+    <div class="stat-row" style="margin-top:24px">
+      <div class="stat"><b>−₹13L</b><span>Net reduction against the equivalent independently-built scope</span></div>
+      <div class="stat"><b>−1 month</b><span>Shorter programme, subject to provider onboarding running to plan</span></div>
+      <div class="stat"><b>−2 roles</b><span>Smaller peak squad; no dedicated FX or settlement specialist required</span></div>
+    </div>
+
+    <div class="tiers" style="margin-top:26px">
+      <div class="tier">
+        <p class="pill">Tier one</p>
+        <div class="tname">Corridor Launch</div>
+        <p class="note">Single rail, bank and UPI payout — the smallest platform that can legitimately operate.</p>
+        <div class="tprice">₹88,00,000</div>
+        <p class="note">10 months · peak squad 9</p>
+        <ul>
+          <li><b>Rail</b> Wise Platform only</li>
+          <li><b>Abstraction</b> Interface defined, one adapter</li>
+          <li><b>Payout</b> Indian bank account and UPI address</li>
+          <li><b>Console</b> Core operations and compliance queues</li>
+          <li><b>Reconciliation</b> Daily match, manual exceptions</li>
+        </ul>
+      </div>
+      <div class="tier pick">
+        <p class="pill go">Recommended</p>
+        <div class="tname">Scale</div>
+        <p class="note">Adds the abstraction layer, the simulated provider, full treasury and compliance tooling, and automated reconciliation.</p>
+        <div class="tprice">₹1,02,00,000</div>
+        <p class="note">11 months · peak squad 12</p>
+        <ul>
+          <li><b>Rail</b> Wise Platform, second rail designed for</li>
+          <li><b>Abstraction</b> Full canonical layer and contract tests</li>
+          <li><b>Payout</b> Bank and UPI with name-match journey</li>
+          <li><b>Console</b> Full operations, compliance, treasury, MI</li>
+          <li><b>Reconciliation</b> Automated with exceptions workbench</li>
+        </ul>
+      </div>
+      <div class="tier">
+        <p class="pill">Tier three</p>
+        <div class="tname">Multi-rail</div>
+        <p class="note">Two live providers from launch with routing, for a business that will not accept single-provider concentration.</p>
+        <div class="tprice">₹1,30,00,000</div>
+        <p class="note">13 months · peak squad 15</p>
+        <ul>
+          <li><b>Rail</b> Wise Platform and Nium, both live</li>
+          <li><b>Abstraction</b> Routing by cost, band and availability</li>
+          <li><b>Payout</b> Multi-rail with automatic failover</li>
+          <li><b>Console</b> Adds provider performance and routing control</li>
+          <li><b>Reconciliation</b> Per-provider with consolidated view</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tbl" style="margin-top:26px">
+      <p class="tbl-cap">Module allocation · figures in ₹ lakh</p>
+      <table>
+        <thead><tr><th>Workstream</th><th class="n">Launch</th><th class="n rec-col">Scale</th><th class="n">Multi-rail</th></tr></thead>
+        <tbody>
+          <tr><td><span class="rowlead">Discovery, provider qualification &amp; solution architecture</span></td><td data-l="Launch" class="n">8</td><td data-l="Scale" class="n rec-col">9</td><td data-l="Multi-rail" class="n">11</td></tr>
+          <tr><td><span class="rowlead">Product design, design system &amp; usability testing</span></td><td data-l="Launch" class="n">6</td><td data-l="Scale" class="n rec-col">7</td><td data-l="Multi-rail" class="n">7</td></tr>
+          <tr><td><span class="rowlead">Mobile applications — iOS and Android</span></td><td data-l="Launch" class="n">12</td><td data-l="Scale" class="n rec-col">12</td><td data-l="Multi-rail" class="n">14</td></tr>
+          <tr><td><span class="rowlead">Core ledger &amp; transfer orchestration</span></td><td data-l="Launch" class="n">9</td><td data-l="Scale" class="n rec-col">10</td><td data-l="Multi-rail" class="n">12</td></tr>
+          <tr><td><span class="rowlead">UK pay-in integration</span></td><td data-l="Launch" class="n">5</td><td data-l="Scale" class="n rec-col">6</td><td data-l="Multi-rail" class="n">8</td></tr>
+          <tr><td><span class="rowlead">FX presentation &amp; quote handling</span></td><td data-l="Launch" class="n">2</td><td data-l="Scale" class="n rec-col">2</td><td data-l="Multi-rail" class="n">3</td></tr>
+          <tr><td><span class="rowlead">India payout handling</span></td><td data-l="Launch" class="n">2</td><td data-l="Scale" class="n rec-col">2</td><td data-l="Multi-rail" class="n">3</td></tr>
+          <tr><td><span class="rowlead">Compliance, fraud &amp; reimbursement journeys</span></td><td data-l="Launch" class="n">4</td><td data-l="Scale" class="n rec-col">5</td><td data-l="Multi-rail" class="n">7</td></tr>
+          <tr><td><span class="rowlead">Reconciliation &amp; settlement</span></td><td data-l="Launch" class="n">4</td><td data-l="Scale" class="n rec-col">5</td><td data-l="Multi-rail" class="n">7</td></tr>
+          <tr><td><span class="rowlead">Wise Platform integration &amp; certification</span></td><td data-l="Launch" class="n">8</td><td data-l="Scale" class="n rec-col">9</td><td data-l="Multi-rail" class="n">9</td></tr>
+          <tr><td><span class="rowlead">Provider abstraction &amp; simulated rail</span></td><td data-l="Launch" class="n">—</td><td data-l="Scale" class="n rec-col">4</td><td data-l="Multi-rail" class="n">10</td></tr>
+          <tr><td><span class="rowlead">Operations &amp; compliance console</span></td><td data-l="Launch" class="n">8</td><td data-l="Scale" class="n rec-col">8</td><td data-l="Multi-rail" class="n">10</td></tr>
+          <tr><td><span class="rowlead">Reporting, MI &amp; regulatory returns</span></td><td data-l="Launch" class="n">2</td><td data-l="Scale" class="n rec-col">3</td><td data-l="Multi-rail" class="n">4</td></tr>
+          <tr><td><span class="rowlead">DevOps, infrastructure &amp; observability</span></td><td data-l="Launch" class="n">4</td><td data-l="Scale" class="n rec-col">5</td><td data-l="Multi-rail" class="n">6</td></tr>
+          <tr><td><span class="rowlead">Security engineering &amp; assurance</span></td><td data-l="Launch" class="n">4</td><td data-l="Scale" class="n rec-col">4</td><td data-l="Multi-rail" class="n">5</td></tr>
+          <tr><td><span class="rowlead">QA, automation &amp; performance testing</span></td><td data-l="Launch" class="n">6</td><td data-l="Scale" class="n rec-col">6</td><td data-l="Multi-rail" class="n">8</td></tr>
+          <tr><td><span class="rowlead">Programme management &amp; business analysis</span></td><td data-l="Launch" class="n">4</td><td data-l="Scale" class="n rec-col">5</td><td data-l="Multi-rail" class="n">6</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td>Total</td><td data-l="Launch" class="n">₹88L</td><td data-l="Scale" class="n rec-col">₹1.02Cr</td><td data-l="Multi-rail" class="n">₹1.30Cr</td></tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="grid g2" style="margin-top:22px">
+      <div class="card">
+        <h3>Where the saving comes from</h3>
+        <dl class="kv">
+          <dt>FX layer</dt><dd>Reduced from a rate engine with margin management to quote presentation and expiry handling</dd>
+          <dt>India payout</dt><dd>Reduced from a partner bank integration to recipient creation and result handling</dd>
+          <dt>Settlement</dt><dd>Cross-border settlement mechanics move to the provider; we reconcile against their statement</dd>
+          <dt>Identity</dt><dd>Verification executed under the provider's programme rather than orchestrated across our own vendors</dd>
+          <dt>Added back</dt><dd>Provider integration, certification, contract testing and the abstraction layer</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <h3>What did not get cheaper</h3>
+        <p class="note">The ledger, the operations console, reconciliation, the mobile applications, the fraud posture, security assurance and QA are effectively unchanged. They are functions of your business and your obligations, not of which rail carries the money.</p>
+        <p class="note" style="margin-bottom:0">We want to be plain about this rather than let an integration decision be mistaken for a discount that isn't there. A remittance platform that skips these does not become cheaper — it becomes unlaunchable, and the cost reappears later at a worse moment.</p>
+      </div>
+    </div>
+
+    <div class="grid g2" style="margin-top:18px">
+      <div class="card">
+        <h3>Payment schedule — Scale scope</h3>
+        <div class="tbl" style="border:none;margin-top:8px">
+          <table>
+            <thead><tr><th>Milestone</th><th class="n">Share</th><th class="n">Amount</th></tr></thead>
+            <tbody>
+              <tr><td><span class="rowlead">Signature and mobilisation</span></td><td data-l="Share" class="n">15%</td><td data-l="Amount" class="n">₹15.30L</td></tr>
+              <tr><td><span class="rowlead">Discovery and provider qualification pack accepted</span></td><td data-l="Share" class="n">10%</td><td data-l="Amount" class="n">₹10.20L</td></tr>
+              <tr><td><span class="rowlead">Design system and ledger core accepted</span></td><td data-l="Share" class="n">15%</td><td data-l="Amount" class="n">₹15.30L</td></tr>
+              <tr><td><span class="rowlead">End-to-end transfer live in provider sandbox</span></td><td data-l="Share" class="n">15%</td><td data-l="Amount" class="n">₹15.30L</td></tr>
+              <tr><td><span class="rowlead">Feature-complete build entering test</span></td><td data-l="Share" class="n">15%</td><td data-l="Amount" class="n">₹15.30L</td></tr>
+              <tr><td><span class="rowlead">UAT entry with signed test evidence</span></td><td data-l="Share" class="n">10%</td><td data-l="Amount" class="n">₹10.20L</td></tr>
+              <tr><td><span class="rowlead">Penetration test cleared and retested</span></td><td data-l="Share" class="n">10%</td><td data-l="Amount" class="n">₹10.20L</td></tr>
+              <tr><td><span class="rowlead">Production launch plus 30 days stable</span></td><td data-l="Share" class="n">10%</td><td data-l="Amount" class="n">₹10.20L</td></tr>
+            </tbody>
+            <tfoot><tr><td>Total</td><td data-l="Share" class="n">100%</td><td data-l="Amount" class="n">₹1.02Cr</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Excluded, as before</h3>
+        <ul class="ticks crosses">
+          <li>Provider fees, FX cost and per-transaction charges</li>
+          <li>Legal, regulatory and licensing advisory and fees</li>
+          <li>Sponsor bank arrangements and any associated costs</li>
+          <li>Independent penetration testing fees</li>
+          <li>Cloud consumption and third-party subscriptions</li>
+          <li>Marketing, brand and customer acquisition</li>
+          <li>GST and applicable taxes</li>
+        </ul>
+        <p class="note" style="margin-top:12px;margin-bottom:0">Figures assume the embedded integration model. If the client's regulated position leads to the correspondent model instead, the integration workstream is re-estimated in discovery — and that change usually moves upward.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NEXT -->
+<section class="block" id="next">
+  <div class="wrap">
+    <p class="eyebrow">Next step</p>
+    <h2>One question to Wise, before anything else.</h2>
+    <p class="lede">Everything in this document depends on an answer only Wise can give. We propose getting it first, in week one, with a pack we prepare on your behalf.</p>
+
+    <div class="grid g2" style="margin-top:24px">
+      <div class="card">
+        <h3>The qualification pack</h3>
+        <p class="note">A short, precise submission that lets Wise route you to the right integration model instead of a generic sales conversation. It states:</p>
+        <ul class="ticks">
+          <li>Corridor and direction — UK to India, GBP to INR</li>
+          <li>Originator and beneficiary — consumer to consumer, personal remittance</li>
+          <li>Payout types required — Indian bank account and UPI address</li>
+          <li>Expected monthly volume, and average, median and maximum ticket size</li>
+          <li>The client's current and intended regulated position in the UK</li>
+          <li>Whether a sponsor bank arrangement exists or is being sought</li>
+          <li>The single question: which integration model applies to us, and on what terms?</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>What we do while we wait</h3>
+        <p class="note">Nothing stops. The qualification runs in parallel with a discovery phase that produces the artefacts the build needs regardless of which rail is finally selected.</p>
+        <ul class="ticks">
+          <li>Canonical provider interface and mapping specification</li>
+          <li>A simulated rail, so engineering can start against a working contract</li>
+          <li>Transfer state machine and ledger design</li>
+          <li>Nium approached in parallel as a genuine alternative</li>
+          <li>Tested UX prototype, including the name-match journey</li>
+          <li>Fixed-price statement of work for the full build</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sig-blk">
+      <div>
+        <p class="eyebrow">Prepared by</p>
+        <p style="margin-bottom:4px"><b>VAW Technologies</b><br>A division of VArts World Pvt. Ltd.<br>Kerala, India</p>
+        <p class="note">Project lead and single point of contact named on the contract cover sheet.</p>
+      </div>
+      <div>
+        <p class="eyebrow">Prepared for</p>
+        <p style="margin-bottom:4px"><b>Client name</b><br>UK–India Digital Remittance Platform<br>Ref. VAWT/REM/UK-IN/02</p>
+        <p class="note">Issued <span class="mono">August 2026</span>. Valid 45 days. Figures exclusive of GST.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div><b>VAW Technologies</b> — VArts World Pvt. Ltd.</div>
+    <div>Commercial in confidence · Ref. VAWT/REM/UK-IN/02</div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -68,6 +68,7 @@ import ClientFeedback from "./pages/ClientFeedback";
 import GPSProposal from "./pages/GPSProposal";
 import GPSAIProposal from "./pages/GPSAIProposal";
 import FintechProposal from "./pages/FintechProposal";
+import FintechProposal2 from "./pages/FintechProposal2";
 import VAWAcademy from "./pages/VAWAcademy";
 import ToolsNexus from "./pages/ToolsNexus";
 import InboxPage from "./pages/InboxPage";
@@ -190,6 +191,7 @@ const AppContent = () => {
           <Route path="/proposal/gps" element={<GPSProposal />} />
           <Route path="/proposal/gps-ai" element={<GPSAIProposal />} />
           <Route path="/proposal/fintech" element={<FintechProposal />} />
+          <Route path="/proposal/fintech2" element={<FintechProposal2 />} />
           <Route path="/fintech-proposal" element={<FintechProposal />} />
           <Route path="/gps-ai" element={<GPSAIProposal />} />
           <Route path="/academy" element={<VAWAcademy />} />
