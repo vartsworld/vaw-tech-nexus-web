@@ -364,13 +364,13 @@ export default function ToolsNexusView({ profile }: { profile: any }) {
         </Dialog>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-black/40 p-4 rounded-3xl border border-white/10 backdrop-blur-md">
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-zinc-950/75 p-4 rounded-3xl border border-white/15 backdrop-blur-xl shadow-2xl">
         <div className="relative w-full md:max-w-sm">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
           <Input
             type="text"
             placeholder="Search community inside apps..."
-            className="pl-10 bg-black/35 border-white/10 rounded-2xl h-11 text-sm focus:border-blue-500/50"
+            className="pl-10 bg-black/60 border-white/20 rounded-2xl h-11 text-sm text-zinc-100 placeholder:text-zinc-400 focus:border-blue-400/80"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -383,10 +383,10 @@ export default function ToolsNexusView({ profile }: { profile: any }) {
               <button
                 key={cat.value}
                 onClick={() => setActiveCategory(cat.value)}
-                className={`px-4 py-2 rounded-2xl text-xs font-semibold tracking-wide transition-all whitespace-nowrap ${
+                className={`px-4 py-2 rounded-2xl text-xs font-bold tracking-wide transition-all whitespace-nowrap ${
                   isActive
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-950/20"
-                    : "bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-zinc-200 border border-white/5"
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-950/40"
+                    : "bg-black/50 hover:bg-black/70 text-zinc-200 hover:text-white border border-white/15"
                 }`}
               >
                 {cat.label}
@@ -403,40 +403,40 @@ export default function ToolsNexusView({ profile }: { profile: any }) {
             key={tool.id}
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            className="group bg-black/30 border border-white/10 hover:border-white/20 rounded-3xl p-6 backdrop-blur-md flex flex-col justify-between h-[230px] transition-all relative overflow-hidden"
+            className="group bg-zinc-950/80 border border-white/15 hover:border-white/30 rounded-3xl p-6 backdrop-blur-xl flex flex-col justify-between h-[230px] transition-all relative overflow-hidden shadow-2xl"
           >
-            <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none blur-2xl" />
+            <div className="absolute inset-0 bg-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none blur-2xl" />
 
             <div className="space-y-4 relative z-10">
               <div className="flex justify-between items-start">
-                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl shadow-inner group-hover:scale-105 transition-transform duration-500">
+                <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-2xl shadow-inner group-hover:scale-105 transition-transform duration-500">
                   {tool.icon}
                 </div>
 
-                <Badge className="bg-white/5 hover:bg-white/5 border-white/10 text-zinc-400 text-[10px] uppercase font-bold px-2 py-0.5 rounded-lg border-none">
+                <Badge className="bg-white/10 hover:bg-white/10 border-white/15 text-zinc-200 text-[10px] uppercase font-bold px-2 py-0.5 rounded-lg border-none">
                   {tool.category}
                 </Badge>
               </div>
 
               <div className="space-y-1">
-                <h3 className="text-zinc-100 text-base font-semibold group-hover:text-blue-400 transition-colors">
+                <h3 className="text-white text-base font-bold group-hover:text-blue-400 transition-colors">
                   {tool.title}
                 </h3>
-                <p className="text-zinc-500 text-xs font-light line-clamp-2 leading-relaxed">
+                <p className="text-zinc-300 text-xs font-normal line-clamp-2 leading-relaxed">
                   {tool.description}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-white/10 relative z-10">
-              <span className="text-[10px] text-zinc-500 font-medium">
+            <div className="flex items-center justify-between pt-4 border-t border-white/15 relative z-10">
+              <span className="text-[10px] text-zinc-400 font-semibold">
                 By {tool.developer_name}
               </span>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleUpvote(tool.id)}
-                  className="flex items-center gap-1 text-[11px] font-bold text-zinc-400 hover:text-emerald-400 transition-colors bg-white/5 border border-white/10 px-2.5 py-1 rounded-xl"
+                  className="flex items-center gap-1 text-[11px] font-bold text-zinc-200 hover:text-emerald-400 transition-colors bg-white/10 border border-white/15 px-2.5 py-1 rounded-xl"
                 >
                   <ThumbsUp className="w-3.5 h-3.5" />
                   <span>{tool.upvotes}</span>
@@ -445,7 +445,7 @@ export default function ToolsNexusView({ profile }: { profile: any }) {
                 <Button
                   size="sm"
                   onClick={() => handleLaunchApp(tool)}
-                  className="h-8 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-xs font-semibold px-3 flex items-center gap-1"
+                  className="h-8 rounded-xl bg-blue-600/30 hover:bg-blue-600/50 text-blue-300 border border-blue-400/30 text-xs font-bold px-3 flex items-center gap-1"
                 >
                   <Maximize2 className="w-3 h-3" />
                   Launch

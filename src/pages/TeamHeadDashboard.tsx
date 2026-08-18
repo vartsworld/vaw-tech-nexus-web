@@ -672,14 +672,6 @@ const TeamHeadDashboard = () => {
             <ActivityLogPanel userId={profile?.user_id || ''} className="bg-black/40 backdrop-blur-lg border-white/10 h-[600px]" />
           </div>
         )}
-
-        {widgets.find(w => w.id === 'chess')?.isVisible && (
-          <div className="w-full flex justify-center py-4 relative z-10">
-            <div className="w-full max-w-2xl">
-              <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
-            </div>
-          </div>
-        )}
       </div>
     ),
     game: (

@@ -502,7 +502,7 @@ const VirtualOfficeLayout = ({
           style={{ backgroundImage: "url('/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png')" }}
         >
           {/* Transparent masking color and blur overlay */}
-          <div className="absolute inset-0 bg-black/75 backdrop-blur-xl z-0 pointer-events-none" />
+          <div className="absolute inset-0 bg-black/85 backdrop-blur-2xl z-0 pointer-events-none" />
           <div className="relative z-10 flex flex-col h-full w-full">
           {/* Top Header Logo (VAW Technologies) */}
           <div className={cn("p-6 flex items-center", isSidebarCollapsed ? "justify-center" : "justify-between border-b border-white/5")}>
@@ -540,10 +540,10 @@ const VirtualOfficeLayout = ({
                     <button
                       onClick={() => toggleSection(section.title)}
                       aria-expanded={openSections.includes(section.title)}
-                      className="flex items-center justify-between w-full text-[10px] font-black uppercase tracking-[0.2em] text-white/30 hover:text-white/60 transition-colors px-2 mb-2 focus-visible:ring-1 focus-visible:ring-white/20 rounded"
+                      className="flex items-center justify-between w-full text-[10px] font-black uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors px-2 mb-2 focus-visible:ring-1 focus-visible:ring-white/20 rounded"
                     >
                       <span className="flex items-center gap-2">
-                        <section.icon className="w-3 h-3" />
+                        <section.icon className="w-3 h-3 text-white/70" />
                         {section.title}
                       </span>
                       {openSections.includes(section.title) ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
@@ -564,8 +564,8 @@ const VirtualOfficeLayout = ({
                               "w-full transition-all duration-200 group/btn relative",
                               isSidebarCollapsed ? "justify-center px-0 h-12" : "justify-start px-3 h-10",
                               isActive
-                                ? "bg-white/5 text-white"
-                                : "text-white/40 hover:text-white hover:bg-white/[0.02]"
+                                ? "bg-blue-600/30 text-white font-bold border border-blue-500/30"
+                                : "text-white/70 hover:text-white hover:bg-white/10"
                             )}
                             onClick={() => handleLinkClick(item)}
                             title={isSidebarCollapsed ? item.name : undefined}
@@ -573,6 +573,7 @@ const VirtualOfficeLayout = ({
                             <Icon className={cn(
                               "w-5 h-5 transition-transform group-hover/btn:scale-110",
                               !isSidebarCollapsed && "mr-3",
+                              isActive ? "text-blue-400" : "text-white/60 group-hover/btn:text-white",
                               (item as any).color
                             )} />
                             {!isSidebarCollapsed && (
