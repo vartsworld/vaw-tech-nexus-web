@@ -408,9 +408,6 @@ const StaffDashboard = () => {
     }
   };
 
-    }
-  };
-
   // Set up presence tracking for online users
   useEffect(() => {
     if (!profile?.user_id || !profile?.full_name) return;
