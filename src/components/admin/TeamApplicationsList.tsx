@@ -14,7 +14,7 @@ interface TeamApplication {
   full_name: string;
   email: string;
   phone: string | null;
-  username: string | null;
+  username?: string | null;
   gender: string | null;
   date_of_birth: string | null;
   cv_url: string | null;
@@ -97,7 +97,6 @@ const TeamApplicationsList = () => {
           };
 
           // Add optional fields if they exist
-          if (application.phone) newStaffProfile.phone = application.phone;
           if (application.gender) newStaffProfile.gender = application.gender;
           if (application.date_of_birth) newStaffProfile.date_of_birth = application.date_of_birth;
           if (application.cv_url) newStaffProfile.cv_url = application.cv_url;

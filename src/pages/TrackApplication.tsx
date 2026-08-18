@@ -169,7 +169,7 @@ const TrackApplication = () => {
           createdAt: profObj.created_at || new Date().toISOString(),
           kycStatus: reKycRequested
             ? "re_kyc_requested"
-            : profObj.kyc_selfie_url || profObj.kyc_document_url
+            : profObj.kyc_selfie_url
             ? "verified"
             : "pending",
           reKycRequested,

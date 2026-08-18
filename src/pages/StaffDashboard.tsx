@@ -315,11 +315,11 @@ const StaffDashboard = () => {
 
   const addEmojiToPassword = (emoji: string, isConfirm: boolean) => {
     if (isConfirm) {
-      if (confirmEmojiPassword.length < 6) {
+      if (confirmEmojiPassword.length < newEmojiPassword.length) {
         setConfirmEmojiPassword([...confirmEmojiPassword, emoji]);
       }
     } else {
-      if (newEmojiPassword.length < 6) {
+      if (newEmojiPassword.length < 8) {
         setNewEmojiPassword([...newEmojiPassword, emoji]);
       }
     }
@@ -334,8 +334,8 @@ const StaffDashboard = () => {
   };
 
   const handleSetEmojiPassword = async () => {
-    if (newEmojiPassword.length !== 6) {
-      toast.error("Please select exactly 6 emojis");
+    if (newEmojiPassword.length < 4) {
+      toast.error("Please select at least 4 emojis");
       return;
     }
 
@@ -1138,20 +1138,22 @@ const StaffDashboard = () => {
         <DialogContent className="max-w-[90vw] max-h-[90vh] w-full overflow-y-auto sm:max-w-[500px] bg-zinc-950 border-white/10 rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase italic tracking-tight text-white">Update Emoji Password</DialogTitle>
-            <DialogDescription className="text-white/40 uppercase text-[10px] font-bold tracking-widest">Select 6 emojis for your new high-security passcode</DialogDescription>
+            <DialogDescription className="text-white/40 uppercase text-[10px] font-bold tracking-widest">Select at least 4 emojis (up to 8) for your passcode</DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Sequence Input</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">
+                {newEmojiPassword.length < 4 || confirmEmojiPassword.length < newEmojiPassword.length ? "Sequence Input" : "Pattern Ready"}
+              </Label>
 
               <div className="flex gap-2">
-                <div className="flex-1 grid grid-cols-6 gap-2 p-4 bg-white/5 border border-white/10 rounded-xl min-h-[80px] items-center justify-items-center">
-                  {(newEmojiPassword.length < 6 ? newEmojiPassword : confirmEmojiPassword).map((emoji, idx) => (
-                    <motion.span initial={{ scale: 0.5 }} animate={{ scale: 1 }} key={idx} className="text-3xl">{emoji}</motion.span>
+                <div className="flex-1 grid grid-cols-8 gap-2 p-4 bg-white/5 border border-white/10 rounded-xl min-h-[80px] items-center justify-items-center">
+                  {(confirmEmojiPassword.length > 0 ? confirmEmojiPassword : newEmojiPassword).map((emoji, idx) => (
+                    <motion.span initial={{ scale: 0.5 }} animate={{ scale: 1 }} key={idx} className="text-2xl">{emoji}</motion.span>
                   ))}
-                  {(newEmojiPassword.length < 6 ? newEmojiPassword : confirmEmojiPassword).length === 0 && (
-                    <div className="col-span-6 text-[10px] font-black uppercase tracking-widest text-white/10">
-                      Start selecting...
+                  {(confirmEmojiPassword.length > 0 ? confirmEmojiPassword : newEmojiPassword).length === 0 && (
+                    <div className="col-span-8 text-[10px] font-black uppercase tracking-widest text-white/10">
+                      Select at least 4 emojis...
                     </div>
                   )}
                 </div>
@@ -1167,7 +1169,11 @@ const StaffDashboard = () => {
               </div>
 
               <p className="text-[9px] font-bold text-center uppercase tracking-widest text-white/20">
-                {newEmojiPassword.length < 6 ? "Enter your new 6-emoji pattern" : "Re-enter pattern to confirm"}
+                {confirmEmojiPassword.length === newEmojiPassword.length && newEmojiPassword.length >= 4
+                  ? "Pattern confirmed!"
+                  : confirmEmojiPassword.length > 0
+                  ? `Confirm pattern (${confirmEmojiPassword.length}/${newEmojiPassword.length})`
+                  : `Enter pattern (${newEmojiPassword.length}/4+ emojis selected)`}
               </p>
             </div>
 
@@ -1176,14 +1182,13 @@ const StaffDashboard = () => {
                 <button
                   key={idx}
                   onClick={() => {
-                    if (newEmojiPassword.length < 6) {
-                      addEmojiToPassword(emoji, false);
-                    } else if (confirmEmojiPassword.length < 6) {
+                    if (confirmEmojiPassword.length > 0 || (newEmojiPassword.length >= 4 && confirmEmojiPassword.length < newEmojiPassword.length)) {
                       addEmojiToPassword(emoji, true);
+                    } else if (newEmojiPassword.length < 8) {
+                      addEmojiToPassword(emoji, false);
                     }
                   }}
                   className="text-2xl hover:bg-white/10 hover:scale-110 active:scale-95 p-2 rounded-xl transition-all duration-200 flex items-center justify-center h-10 w-10 mx-auto"
-                  disabled={newEmojiPassword.length >= 6 && confirmEmojiPassword.length >= 6}
                 >
                   {emoji}
                 </button>
@@ -1193,7 +1198,7 @@ const StaffDashboard = () => {
             <Button
               onClick={handleSetEmojiPassword}
               className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 disabled:opacity-20"
-              disabled={newEmojiPassword.length !== 6 || confirmEmojiPassword.length !== 6}
+              disabled={newEmojiPassword.length < 4 || (confirmEmojiPassword.length > 0 && confirmEmojiPassword.length !== newEmojiPassword.length)}
             >
               Update Security Pattern
             </Button>

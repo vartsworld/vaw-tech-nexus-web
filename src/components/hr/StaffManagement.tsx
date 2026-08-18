@@ -1253,13 +1253,13 @@ const StaffManagement = () => {
                       <Eye className="h-4 w-4 mr-2" /> View Profile Photo
                     </Button>
                   )}
-                  {(selectedStaffDetail.kyc_selfie_url || selectedStaffDetail.kyc_document_url) ? (
+                  {selectedStaffDetail.kyc_selfie_url ? (
                     <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/30 p-2 rounded-xl">
                       <img
-                        src={selectedStaffDetail.kyc_selfie_url || selectedStaffDetail.kyc_document_url}
+                        src={selectedStaffDetail.kyc_selfie_url}
                         alt="KYC Verification Photo"
                         className="w-12 h-12 rounded-lg object-cover border border-emerald-500 cursor-pointer shadow-sm hover:scale-105 transition-transform"
-                        onClick={() => viewOrDownloadFile(selectedStaffDetail.kyc_selfie_url || selectedStaffDetail.kyc_document_url, `${selectedStaffDetail.full_name}_KYC_Selfie.jpg`)}
+                        onClick={() => viewOrDownloadFile(selectedStaffDetail.kyc_selfie_url, `${selectedStaffDetail.full_name}_KYC_Selfie.jpg`)}
                         onError={(e) => {
                           // Hide image tag if broken, fallback to text button
                           (e.target as HTMLElement).style.display = 'none';
@@ -1271,7 +1271,7 @@ const StaffManagement = () => {
                         </span>
                         <button
                           type="button"
-                          onClick={() => viewOrDownloadFile(selectedStaffDetail.kyc_selfie_url || selectedStaffDetail.kyc_document_url, `${selectedStaffDetail.full_name}_KYC_Selfie.jpg`)}
+                          onClick={() => viewOrDownloadFile(selectedStaffDetail.kyc_selfie_url, `${selectedStaffDetail.full_name}_KYC_Selfie.jpg`)}
                           className="text-[11px] text-emerald-300 underline font-medium hover:text-white text-left mt-0.5"
                         >
                           View Full Image
