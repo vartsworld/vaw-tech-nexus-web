@@ -471,24 +471,61 @@ const TeamHeadDashboard = () => {
     }
   };
 
-  const addEmojiToPassword = (emoji: string, isConfirm: boolean) => {
-    if (isConfirm) {
-      if (confirmEmojiPassword.length < newEmojiPassword.length) {
-        setConfirmEmojiPassword([...confirmEmojiPassword, emoji]);
+  const [emojiStep, setEmojiStep] = useState<"old" | "new" | "confirm">("old");
+  const [oldEmojiPassword, setOldEmojiPassword] = useState<string[]>([]);
+
+  const resetEmojiDialog = () => {
+    setEmojiStep("old");
+    setOldEmojiPassword([]);
+    setNewEmojiPassword([]);
+    setConfirmEmojiPassword([]);
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    if (emojiStep === "old") {
+      if (oldEmojiPassword.length < 8) {
+        setOldEmojiPassword(prev => [...prev, emoji]);
       }
-    } else {
+    } else if (emojiStep === "new") {
       if (newEmojiPassword.length < 8) {
-        setNewEmojiPassword([...newEmojiPassword, emoji]);
+        setNewEmojiPassword(prev => [...prev, emoji]);
+      }
+    } else if (emojiStep === "confirm") {
+      if (confirmEmojiPassword.length < newEmojiPassword.length) {
+        setConfirmEmojiPassword(prev => [...prev, emoji]);
       }
     }
   };
 
   const removeLastEmoji = () => {
-    if (confirmEmojiPassword.length > 0) {
-      setConfirmEmojiPassword(prev => prev.slice(0, -1));
-    } else if (newEmojiPassword.length > 0) {
+    if (emojiStep === "old") {
+      setOldEmojiPassword(prev => prev.slice(0, -1));
+    } else if (emojiStep === "new") {
       setNewEmojiPassword(prev => prev.slice(0, -1));
+    } else if (emojiStep === "confirm") {
+      setConfirmEmojiPassword(prev => prev.slice(0, -1));
     }
+  };
+
+  const handleVerifyOldPassword = () => {
+    const enteredOld = oldEmojiPassword.join("");
+    const actualOld = (profile as any)?.emoji_password || "";
+
+    if (actualOld && enteredOld !== actualOld) {
+      toast.error("Existing emoji password is incorrect");
+      setOldEmojiPassword([]);
+      return;
+    }
+    toast.success("Existing password verified!");
+    setEmojiStep("new");
+  };
+
+  const handleNextToConfirm = () => {
+    if (newEmojiPassword.length < 4) {
+      toast.error("New emoji password must have at least 4 emojis");
+      return;
+    }
+    setEmojiStep("confirm");
   };
 
   const handleSetEmojiPassword = async () => {
@@ -497,8 +534,8 @@ const TeamHeadDashboard = () => {
       return;
     }
 
-    if (JSON.stringify(newEmojiPassword) !== JSON.stringify(confirmEmojiPassword)) {
-      toast.error("Emoji passwords don't match");
+    if (newEmojiPassword.join("") !== confirmEmojiPassword.join("")) {
+      toast.error("New emoji passwords do not match");
       return;
     }
 
@@ -521,10 +558,9 @@ const TeamHeadDashboard = () => {
 
       if (authError) throw authError;
 
-      toast.success("Emoji password updated successfully");
+      toast.success("Emoji password updated successfully!");
       setShowEmojiDialog(false);
-      setNewEmojiPassword([]);
-      setConfirmEmojiPassword([]);
+      resetEmojiDialog();
     } catch (error) {
       console.error('Error setting emoji password:', error);
       toast.error("Failed to update emoji password");
@@ -1129,26 +1165,56 @@ const TeamHeadDashboard = () => {
       </Dialog>
 
       {/* Emoji Password Dialog */}
-      <Dialog open={showEmojiDialog} onOpenChange={setShowEmojiDialog}>
+      <Dialog open={showEmojiDialog} onOpenChange={(open) => {
+        setShowEmojiDialog(open);
+        if (!open) resetEmojiDialog();
+      }}>
         <DialogContent className="max-w-[90vw] max-h-[90vh] w-full overflow-y-auto sm:max-w-[500px] bg-zinc-950 border-white/10 rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-black uppercase italic tracking-tight text-white">Update Emoji Password</DialogTitle>
-            <DialogDescription className="text-white/40 uppercase text-[10px] font-bold tracking-widest">Select at least 4 emojis (up to 8) for your passcode</DialogDescription>
+            <DialogDescription className="text-white/40 uppercase text-[10px] font-bold tracking-widest">
+              {emojiStep === "old" && "Step 1: Enter your EXISTING emoji password to verify identity"}
+              {emojiStep === "new" && "Step 2: Enter your NEW emoji password (minimum 4 emojis)"}
+              {emojiStep === "confirm" && "Step 3: RE-ENTER your new emoji password to confirm"}
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 py-4">
+
+          {/* Step Progress Indicators */}
+          <div className="flex items-center justify-between gap-2 px-2 py-1 bg-white/5 rounded-xl border border-white/10">
+            {[
+              { key: "old", label: "1. Verify Old" },
+              { key: "new", label: "2. New Password" },
+              { key: "confirm", label: "3. Confirm" },
+            ].map((st, i) => {
+              const active = emojiStep === st.key;
+              const completed = (st.key === "old" && (emojiStep === "new" || emojiStep === "confirm")) ||
+                                (st.key === "new" && emojiStep === "confirm");
+              return (
+                <div key={i} className={`flex-1 text-center py-1.5 px-2 rounded-lg text-[10px] font-black uppercase transition-all ${
+                  active ? "bg-blue-600 text-white shadow-md" : completed ? "bg-emerald-500/20 text-emerald-400" : "text-white/30"
+                }`}>
+                  {st.label}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="space-y-6 py-2">
             <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">
-                {newEmojiPassword.length < 4 || confirmEmojiPassword.length < newEmojiPassword.length ? "Sequence Input" : "Pattern Ready"}
+                {emojiStep === "old" && "Existing Pattern Input"}
+                {emojiStep === "new" && `New Pattern (${newEmojiPassword.length}/4+ Emojis)`}
+                {emojiStep === "confirm" && `Confirm Pattern (${confirmEmojiPassword.length}/${newEmojiPassword.length} Emojis)`}
               </Label>
 
               <div className="flex gap-2">
                 <div className="flex-1 grid grid-cols-8 gap-2 p-4 bg-white/5 border border-white/10 rounded-xl min-h-[80px] items-center justify-items-center">
-                  {(confirmEmojiPassword.length > 0 ? confirmEmojiPassword : newEmojiPassword).map((emoji, idx) => (
+                  {(emojiStep === "old" ? oldEmojiPassword : emojiStep === "new" ? newEmojiPassword : confirmEmojiPassword).map((emoji, idx) => (
                     <motion.span initial={{ scale: 0.5 }} animate={{ scale: 1 }} key={idx} className="text-2xl">{emoji}</motion.span>
                   ))}
-                  {(confirmEmojiPassword.length > 0 ? confirmEmojiPassword : newEmojiPassword).length === 0 && (
+                  {(emojiStep === "old" ? oldEmojiPassword : emojiStep === "new" ? newEmojiPassword : confirmEmojiPassword).length === 0 && (
                     <div className="col-span-8 text-[10px] font-black uppercase tracking-widest text-white/10">
-                      Select at least 4 emojis...
+                      {emojiStep === "old" ? "Enter your current emoji password..." : emojiStep === "new" ? "Tap at least 4 emojis..." : "Re-enter new emojis..."}
                     </div>
                   )}
                 </div>
@@ -1157,32 +1223,18 @@ const TeamHeadDashboard = () => {
                   size="icon"
                   className="h-auto w-16 bg-white/5 border-white/10 text-white/40 hover:text-white hover:bg-white/10 shrink-0 rounded-xl"
                   onClick={removeLastEmoji}
-                  disabled={newEmojiPassword.length === 0 && confirmEmojiPassword.length === 0}
+                  disabled={(emojiStep === "old" ? oldEmojiPassword : emojiStep === "new" ? newEmojiPassword : confirmEmojiPassword).length === 0}
                 >
                   <Eraser className="h-5 w-5" />
                 </Button>
               </div>
-
-              <p className="text-[9px] font-bold text-center uppercase tracking-widest text-white/20">
-                {confirmEmojiPassword.length === newEmojiPassword.length && newEmojiPassword.length >= 4
-                  ? "Pattern confirmed!"
-                  : confirmEmojiPassword.length > 0
-                  ? `Confirm pattern (${confirmEmojiPassword.length}/${newEmojiPassword.length})`
-                  : `Enter pattern (${newEmojiPassword.length}/4+ emojis selected)`}
-              </p>
             </div>
 
-            <div className="grid grid-cols-6 gap-3 max-h-48 overflow-y-auto p-4 bg-white/5 border border-white/10 rounded-2xl">
+            <div className="grid grid-cols-6 gap-3 max-h-44 overflow-y-auto p-4 bg-white/5 border border-white/10 rounded-2xl">
               {EMOJI_OPTIONS.map((emoji, idx) => (
                 <button
                   key={idx}
-                  onClick={() => {
-                    if (confirmEmojiPassword.length > 0 || (newEmojiPassword.length >= 4 && confirmEmojiPassword.length < newEmojiPassword.length)) {
-                      addEmojiToPassword(emoji, true);
-                    } else if (newEmojiPassword.length < 8) {
-                      addEmojiToPassword(emoji, false);
-                    }
-                  }}
+                  onClick={() => handleEmojiSelect(emoji)}
                   className="text-2xl hover:bg-white/10 hover:scale-110 active:scale-95 p-2 rounded-xl transition-all duration-200 flex items-center justify-center h-10 w-10 mx-auto"
                 >
                   {emoji}
@@ -1190,13 +1242,57 @@ const TeamHeadDashboard = () => {
               ))}
             </div>
 
-            <Button
-              onClick={handleSetEmojiPassword}
-              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 disabled:opacity-20"
-              disabled={newEmojiPassword.length < 4 || (confirmEmojiPassword.length > 0 && confirmEmojiPassword.length !== newEmojiPassword.length)}
-            >
-              Update Security Pattern
-            </Button>
+            {/* Action Buttons for Step Controls */}
+            {emojiStep === "old" && (
+              <Button
+                onClick={handleVerifyOldPassword}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 disabled:opacity-20"
+                disabled={oldEmojiPassword.length === 0}
+              >
+                Verify Existing Password
+              </Button>
+            )}
+
+            {emojiStep === "new" && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setEmojiStep("old")}
+                  className="h-12 bg-white/5 border-white/10 text-white rounded-xl font-bold uppercase"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleNextToConfirm}
+                  className="flex-1 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 disabled:opacity-20"
+                  disabled={newEmojiPassword.length < 4}
+                >
+                  Next: Confirm Pattern
+                </Button>
+              </div>
+            )}
+
+            {emojiStep === "confirm" && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setConfirmEmojiPassword([]);
+                    setEmojiStep("new");
+                  }}
+                  className="h-12 bg-white/5 border-white/10 text-white rounded-xl font-bold uppercase"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleSetEmojiPassword}
+                  className="flex-1 h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 disabled:opacity-20"
+                  disabled={confirmEmojiPassword.length !== newEmojiPassword.length}
+                >
+                  Save New Password
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
