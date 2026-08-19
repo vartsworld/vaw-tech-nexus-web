@@ -26,7 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChessGameOverDialog } from "@/components/staff/ChessGameOverDialog";
 import confetti from 'canvas-confetti';
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Chessboard } from "react-chessboard";
 
 interface MiniChessProps {
   userId: string;
@@ -52,39 +52,6 @@ interface ChessInvite {
 
 type GameMode = 'menu' | 'playing' | 'finding';
 
-const ChessPiece = memo(({ piece, color, compact }: { piece: string, color: 'w' | 'b', compact?: boolean }) => {
-  const isWhite = color === 'w';
-
-  const getIconName = () => {
-    switch (piece.toLowerCase()) {
-      case 'p': return "chess_pawn";
-      case 'r': return "chess_rook";
-      case 'n': return "chess_knight";
-      case 'b': return "chess_bishop_2";
-      case 'q': return "chess_queen";
-      case 'k': return "chess_king_2";
-      default: return "";
-    }
-  };
-
-  return (
-    <span
-      className={`material-symbols-outlined select-none drop-shadow-md cursor-pointer
-        ${isWhite ? 'text-white' : 'text-[#1a1a1a]'}
-      `}
-      style={{
-        fontSize: compact ? 'clamp(14px, 2.8vw, 24px)' : 'clamp(20px, 4vw, 48px)',
-        fontVariationSettings: `'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 48`,
-        WebkitTextStroke: isWhite ? (compact ? '0.8px #1a1a1a' : '1.5px #1a1a1a') : '0.5px #ffffff'
-      }}
-    >
-      {getIconName()}
-    </span>
-  );
-});
-
-ChessPiece.displayName = "ChessPiece";
-
 const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => {
 
   const [gameMode, setGameMode] = useState<GameMode>('menu');
@@ -95,9 +62,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
 
   // Chess game state
   const [chess] = useState(new Chess());
-  const [board, setBoard] = useState(chess.board());
-  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
-  const [possibleMoves, setPossibleMoves] = useState<string[]>([]);
+  const [fen, setFen] = useState(chess.fen());
   const [gameHistory, setGameHistory] = useState<string[]>([]);
   const [isGameOver, setIsGameOver] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
@@ -187,7 +152,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
           const game = payload.new;
           if (game && game.status === 'completed' && !isGameOver) {
             chess.load(game.fen_string);
-            setBoard(chess.board());
+            setFen(chess.fen());
             setIsGameOver(true);
             setWinner(game.winner_id);
             setGameOverData(game);
@@ -223,7 +188,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
   const handleRealtimeMove = (game: any) => {
     if (game.game_state && game.game_state.fen !== chess.fen()) {
       chess.load(game.game_state.fen);
-      setBoard(chess.board());
+      setFen(chess.fen());
       setGameHistory(game.game_state.history || []);
 
       if (chess.isGameOver()) {
@@ -431,9 +396,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
 
   const startBotGame = () => {
     chess.reset();
-    setBoard(chess.board());
-    setSelectedSquare(null);
-    setPossibleMoves([]);
+    setFen(chess.fen());
     setGameHistory([]);
     setIsGameOver(false);
     setWinner(null);
@@ -484,7 +447,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
         setIsVsBot(false);
         setMyColor('b'); // Joined game, usually player 2 (Black)
         chess.reset();
-        setBoard(chess.board());
+        setFen(chess.fen());
         setGameMode('playing');
         toast.success(`Matched with ${opponentProfile?.full_name || 'opponent'}! You are Black.`);
       } else {
@@ -525,7 +488,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
             setIsVsBot(false);
             setMyColor('w'); // Created game, player 1 (White)
             chess.reset();
-            setBoard(chess.board());
+            setFen(chess.fen());
             setGameMode('playing');
             toast.success(`Matched with ${oppProfile?.full_name || 'opponent'}! You are White.`);
             matched = true;
@@ -581,7 +544,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
       setIsVsBot(false);
       setMyColor('b'); // Invitee is Black
       chess.reset();
-      setBoard(chess.board());
+      setFen(chess.fen());
       setGameHistory([]);
       setIsGameOver(false);
       setWinner(null);
@@ -611,92 +574,74 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
     }
   };
 
-  const handleSquareClick = useCallback(async (row: number, col: number) => {
-    if (isGameOver) return;
+  const onPieceDrop = (sourceSquare: string, targetSquare: string) => {
+    if (isGameOver) return false;
 
-    // Only allow moves when it's player's turn (white for now)
-    if (!isVsBot && chess.turn() !== 'w') return;
+    // Only allow moves for your own pieces (or both if bot)
+    if (!isVsBot && chess.turn() !== myColor) return false;
 
-    const square = String.fromCharCode(97 + col) + (8 - row);
+    try {
+      const moveResult = chess.move({
+        from: sourceSquare,
+        to: targetSquare,
+        promotion: 'q',
+      });
 
-    if (selectedSquare) {
-      const move = {
-        from: selectedSquare,
-        to: square,
-        promotion: 'q'
-      };
+      if (moveResult) {
+        setFen(chess.fen());
+        setGameHistory([...gameHistory, moveResult.san]);
 
-      try {
-        const moveResult = chess.move(move);
-        if (moveResult) {
-          setBoard(chess.board());
-          setGameHistory([...gameHistory, moveResult.san]);
-          setSelectedSquare(null);
-          setPossibleMoves([]);
-
-          // Broadcasting move (realtime fast sync)
-          const gameChannel = supabase.channel(`chess_game_${activeGameId || 'global'}`);
-          await gameChannel.send({
-            type: 'broadcast',
-            event: 'move',
-            payload: {
-              gameId: activeGameId,
-              userId: userId,
-              gameData: {
-                game_state: {
-                   fen: chess.fen(),
-                   history: [...gameHistory, moveResult.san],
-                   turn: chess.turn()
-                }
+        // Broadcasting move (realtime fast sync)
+        const gameChannel = supabase.channel(`chess_game_${activeGameId || 'global'}`);
+        gameChannel.send({
+          type: 'broadcast',
+          event: 'move',
+          payload: {
+            gameId: activeGameId,
+            userId: userId,
+            gameData: {
+              game_state: {
+                 fen: chess.fen(),
+                 history: [...gameHistory, moveResult.san],
+                 turn: chess.turn()
               }
             }
-          });
-
-          // Sync move to database (persistence)
-          if (activeGameId) {
-            await supabase
-              .from('chess_games')
-              .update({
-                game_state: {
-                  fen: chess.fen(),
-                  history: [...gameHistory, moveResult.san],
-                  turn: chess.turn()
-                }
-              })
-              .eq('id', activeGameId);
           }
+        });
 
-          if (chess.isGameOver()) {
-            setIsGameOver(true);
-            const winnerColor = chess.turn() === 'w' ? 'Black' : 'White';
-            setWinner(winnerColor);
-            const winnerId = winnerColor === 'White' ? userId : opponentId;
-            await finalizeGame(winnerId, chess.isDraw());
-          } else if (isVsBot) {
-            // Bot move
-            setTimeout(makeBotMove, 500);
-          }
-        } else {
-          setSelectedSquare(null);
-          setPossibleMoves([]);
+        // Sync move to database (persistence)
+        if (activeGameId) {
+          supabase
+            .from('chess_games')
+            .update({
+              game_state: {
+                fen: chess.fen(),
+                history: [...gameHistory, moveResult.san],
+                turn: chess.turn()
+              }
+            })
+            .eq('id', activeGameId);
         }
-      } catch (err) {
-        console.error("Move error:", err);
-        setSelectedSquare(null);
-        setPossibleMoves([]);
-      }
-    } else {
-      const piece = chess.get(square as any);
-      if (piece && piece.color === chess.turn()) {
-        // Ensure player only moves their own pieces
-        if (!isVsBot && piece.color !== myColor) return;
+
+        if (chess.isGameOver()) {
+          setIsGameOver(true);
+          const winnerColor = chess.turn() === 'w' ? 'Black' : 'White';
+          setWinner(winnerColor);
+          const winnerId = winnerColor === 'White' ? userId : opponentId;
+          finalizeGame(winnerId, chess.isDraw());
+        } else if (isVsBot) {
+          // Bot move
+          setTimeout(makeBotMove, 500);
+        }
         
-        setSelectedSquare(square);
-        const moves = chess.moves({ square: square as any, verbose: true });
-        setPossibleMoves(moves.map((move: any) => move.to));
+        return true;
       }
+    } catch (err) {
+      console.error("Move error:", err);
     }
-  }, [selectedSquare, chess, gameHistory, isGameOver, isVsBot, myColor, activeGameId, userId, opponentId, opponentName]);
+
+    return false;
+  };
 
   const makeBotMove = () => {
     const moves = chess.moves({ verbose: true });
@@ -709,7 +654,7 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
       : moves[Math.floor(Math.random() * moves.length)];
 
     const moveResult = chess.move(selectedMove);
-    setBoard(chess.board());
+    setFen(chess.fen());
     setGameHistory(prev => [...prev, moveResult.san]);
 
     if (chess.isGameOver()) {
@@ -749,28 +694,11 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
     setOpponentName('');
     setActiveGameId(null); // Clear active game
     chess.reset();
-    setBoard(chess.board());
-    setSelectedSquare(null);
-    setPossibleMoves([]);
+    setFen(chess.fen());
     setGameHistory([]);
     setIsGameOver(false);
     setWinner(null);
     setGameOverTime(null);
-  };
-
-
-  const isSquareHighlighted = (row: number, col: number) => {
-    const square = String.fromCharCode(97 + col) + (8 - row);
-    return selectedSquare === square;
-  };
-
-  const isPossibleMove = (row: number, col: number) => {
-    const square = String.fromCharCode(97 + col) + (8 - row);
-    return possibleMoves.includes(square);
-  };
-
-  const getSquareNotation = (row: number, col: number) => {
-    return String.fromCharCode(97 + col) + (8 - row);
   };
 
   // Render game menu
@@ -1013,56 +941,11 @@ const MiniChess = ({ userId, userProfile, compact = false }: MiniChessProps) => 
               aspectRatio: '1/1'
             }}
           >
-            {/* Visual Board Flipping Logic */}
-            <div
-              className={`grid grid-cols-8 grid-rows-8 h-full w-full transition-transform duration-500 ${myColor === 'b' ? 'rotate-180' : ''}`}
-              style={{ gridTemplateRows: 'repeat(8, 1fr)' }}
-            >
-              {[...Array(64)].map((_, i) => {
-                // If black, we flip the index for visual mapping
-                const displayIndex = myColor === 'b' ? 63 - i : i;
-                const row = Math.floor(displayIndex / 8);
-                const col = displayIndex % 8;
-                
-                const isLight = (row + col) % 2 === 0;
-                const piece = board[row][col];
-                const isSelected = isSquareHighlighted(row, col);
-                const isPossible = isPossibleMove(row, col);
-
-                return (
-                  <div
-                    key={`${row}-${col}`}
-                    onClick={() => handleSquareClick(row, col)}
-                    className={`
-                      relative flex items-center justify-center
-                      ${isLight ? 'bg-[#efebe9]' : 'bg-[#a1887f]'}
-                      ${isSelected ? 'after:absolute after:inset-0 after:bg-yellow-400/40' : ''}
-                      ${isPossible && !piece ? 'after:absolute after:w-[30%] after:h-[30%] after:bg-black/25 after:rounded-full shadow-inner' : ''}
-                      ${isPossible && piece ? 'after:absolute after:inset-[10%] after:border-4 after:border-black/30 after:rounded-full' : ''}
-                      cursor-pointer select-none h-full w-full
-                    `}
-                  >
-                    {piece && (
-                      <div className={myColor === 'b' ? 'rotate-180' : ''}>
-                        <ChessPiece piece={piece.type} color={piece.color} compact={compact} />
-                      </div>
-                    )}
-
-                    {/* Coordinate Labels */}
-                    {col === 0 && (
-                      <span className={`absolute top-0 left-0.5 font-bold opacity-30 select-none ${compact ? 'text-[5px]' : 'text-[7px] sm:text-[10px]'} ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'} ${myColor === 'b' ? 'rotate-180' : ''}`}>
-                        {8 - row}
-                      </span>
-                    )}
-                    {row === 7 && (
-                      <span className={`absolute bottom-0 right-0.5 font-bold opacity-30 select-none ${compact ? 'text-[5px]' : 'text-[7px] sm:text-[10px]'} ${isLight ? 'text-[#a1887f]' : 'text-[#efebe9]'} ${myColor === 'b' ? 'rotate-180' : ''}`}>
-                        {String.fromCharCode(97 + col)}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <Chessboard
+              position={fen}
+              onPieceDrop={onPieceDrop}
+              boardOrientation={myColor === 'w' ? 'white' : 'black'}
+            />
 
             {/* Game Over Overlay (for next 5 min) */}
             {gameOverTime && (
