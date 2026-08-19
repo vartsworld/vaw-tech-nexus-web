@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  calendarkit-pro:
+    hash: bab2b50fce50ef347943fbb3f35de76fd6f618d38cc1914ea29c8ffee7250a9b
+    path: patches/calendarkit-pro.patch
+
 importers:
 
   .:
@@ -109,7 +114,7 @@ importers:
         version: 13.1.8
       calendarkit-pro:
         specifier: ^1.1.0
-        version: 1.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 1.1.0(patch_hash=bab2b50fce50ef347943fbb3f35de76fd6f618d38cc1914ea29c8ffee7250a9b)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       canvas-confetti:
         specifier: ^1.9.4
         version: 1.9.4
@@ -6930,7 +6935,7 @@ snapshots:
 
   cac@6.7.14: {}
 
-  calendarkit-pro@1.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  calendarkit-pro@1.1.0(patch_hash=bab2b50fce50ef347943fbb3f35de76fd6f618d38cc1914ea29c8ffee7250a9b)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@dnd-kit/core': 6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@dnd-kit/modifiers': 9.0.0(@dnd-kit/core@6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
