@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, memo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,46 +20,7 @@ import {
 import { Chess } from 'chess.js';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
-// ─── Piece rendering ────────────────────────────────────────────────────────
-
-const WHITE_PIECES: Record<string, string> = {
-  k: 'chess_king_2', q: 'chess_queen', r: 'chess_rook', b: 'chess_bishop_2', n: 'chess_knight', p: 'chess_pawn'
-};
-const BLACK_PIECES: Record<string, string> = {
-  k: 'chess_king_2', q: 'chess_queen', r: 'chess_rook', b: 'chess_bishop_2', n: 'chess_knight', p: 'chess_pawn'
-};
-
-const PieceIcon = memo(({ piece }: { piece: any }) => {
-  if (!piece) return null;
-  const isWhite = piece.color === 'w';
-  const iconName = isWhite ? WHITE_PIECES[piece.type] : BLACK_PIECES[piece.type];
-
-  return (
-    <span
-      className={`material-symbols-outlined select-none pointer-events-none leading-none drop-shadow-md
-        ${isWhite ? 'text-white' : 'text-[#1a1a1a]'}
-      `}
-      style={{
-        fontSize: 'clamp(20px, 4vw, 48px)',
-        fontVariationSettings: `'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 48`,
-        WebkitTextStroke: isWhite ? '1.5px #1a1a1a' : '0.5px #ffffff',
-        lineHeight: 1
-      }}
-    >
-      {iconName}
-    </span>
-  );
-}, (prev, next) => {
-  // If both are falsy/null, they are equal (no piece rendering)
-  if (!prev.piece && !next.piece) return true;
-  // If one is falsy and the other isn't, they are not equal
-  if (!prev.piece || !next.piece) return false;
-  // Compare properties
-  return prev.piece.type === next.piece.type && prev.piece.color === next.piece.color;
-});
-
-PieceIcon.displayName = "PieceIcon";
+import { Chessboard } from "react-chessboard";
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
@@ -67,7 +28,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
   const chessRef = useRef(new Chess());
   const chess = chessRef.current;
 
-  const [board, setBoard] = useState(chess.board());
+  const [fen, setFen] = useState(chess.fen());
   const [gameState, setGameState] = useState({
     turn: 'w' as 'w' | 'b',
     inCheck: false,
@@ -75,8 +36,6 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
     winner: null as string | null,
     gameMode: 'ai' as 'ai' | 'multiplayer'
   });
-  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
-  const [possibleMoves, setPossibleMoves] = useState<string[]>([]);
   const [gameHistory, setGameHistory] = useState<string[]>([]);
   const [isCreateGameOpen, setIsCreateGameOpen] = useState(false);
   const [availableGames, setAvailableGames] = useState<any[]>([]);
@@ -91,7 +50,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
 
   // ── Board Init ──────────────────────────────────────────────────────────────
   const syncBoardFromChess = () => {
-    setBoard([...chess.board()]);
+    setFen(chess.fen());
     setGameState(prev => ({
       ...prev,
       turn: chess.turn(),
@@ -103,10 +62,8 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
 
   const initializeBoard = useCallback(() => {
     chess.reset();
-    setBoard([...chess.board()]);
+    setFen(chess.fen());
     setGameState({ turn: 'w', inCheck: false, isGameOver: false, winner: null, gameMode: 'ai' });
-    setSelectedSquare(null);
-    setPossibleMoves([]);
     setGameHistory([]);
     setGameTimer({ white: 600, black: 600 });
     setIsTimerRunning(false);
@@ -171,7 +128,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
           if (newGameState?.game_state?.fen) {
             try {
               chess.load(newGameState.game_state.fen);
-              setBoard([...chess.board()]);
+              setFen(chess.fen());
               setGameHistory(newGameState.game_state.history || []);
               setLastMovedSquare(newGameState.game_state.lastMove?.to || null);
               setGameState(prev => ({
@@ -181,8 +138,6 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
                 isGameOver: chess.isGameOver() || newGameState.status === 'completed',
                 winner: newGameState.winner_id ? (newGameState.winner_id === userId ? 'you' : 'opponent') : null,
               }));
-              setSelectedSquare(null);
-              setPossibleMoves([]);
             } catch (e) {
               console.error("Failed to load FEN from realtime:", e);
             }
@@ -208,52 +163,39 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
     } catch (e) { console.error(e); }
   };
 
-  // ── Square click ────────────────────────────────────────────────────────────
-  const handleSquareClick = useCallback((row: number, col: number) => {
-    const square = String.fromCharCode(97 + col) + (8 - row);
+  // ── Piece Drop ──────────────────────────────────────────────────────────────
+  const onPieceDrop = (sourceSquare: string, targetSquare: string) => {
+    if (gameState.isGameOver) return false;
 
-    if (selectedSquare) {
-      try {
-        const moveResult = chess.move({ from: selectedSquare, to: square, promotion: 'q' });
-        if (moveResult) {
-          setLastMovedSquare(square);
-          const newHistory = [...gameHistory, moveResult.san];
-          setGameHistory(newHistory);
-          syncBoardFromChess();
+    try {
+      const moveResult = chess.move({
+        from: sourceSquare,
+        to: targetSquare,
+        promotion: 'q',
+      });
 
-          if (gameState.gameMode === 'multiplayer' && currentGameId) {
-            saveGameState(newHistory, moveResult.to);
-          }
-          if (gameState.gameMode === 'ai' && !chess.isGameOver()) {
-            setTimeout(makeAIMove, 600);
-          }
-          setSelectedSquare(null);
-          setPossibleMoves([]);
+      if (moveResult) {
+        setLastMovedSquare(targetSquare);
+        const newHistory = [...gameHistory, moveResult.san];
+        setGameHistory(newHistory);
+        syncBoardFromChess();
 
-          if (chess.isGameOver()) {
-            setIsTimerRunning(false);
-            toast({ title: chess.isCheckmate() ? "Checkmate!" : "Game Over", description: chess.isCheckmate() ? `${chess.turn() === 'w' ? 'Black' : 'White'} wins!` : "Draw." });
-          }
-          return;
+        if (gameState.gameMode === 'multiplayer' && currentGameId) {
+          saveGameState(newHistory, moveResult.to);
         }
-      } catch (_) { /* invalid move */ }
-      // Deselect if same square or invalid
-      setSelectedSquare(null);
-      setPossibleMoves([]);
-      // Maybe select new piece
-      const piece = chess.get(square as any);
-      if (piece && piece.color === chess.turn()) {
-        setSelectedSquare(square);
-        setPossibleMoves(chess.moves({ square: square as any, verbose: true }).map((m: any) => m.to));
+        if (gameState.gameMode === 'ai' && !chess.isGameOver()) {
+          setTimeout(makeAIMove, 600);
+        }
+
+        if (chess.isGameOver()) {
+          setIsTimerRunning(false);
+          toast({ title: chess.isCheckmate() ? "Checkmate!" : "Game Over", description: chess.isCheckmate() ? `${chess.turn() === 'w' ? 'Black' : 'White'} wins!` : "Draw." });
+        }
+        return true;
       }
-    } else {
-      const piece = chess.get(square as any);
-      if (piece && piece.color === chess.turn()) {
-        setSelectedSquare(square);
-        setPossibleMoves(chess.moves({ square: square as any, verbose: true }).map((m: any) => m.to));
-      }
-    }
-  }, [selectedSquare, chess, gameHistory, gameState, currentGameId]);
+    } catch (_) { /* invalid move */ }
+    return false;
+  };
 
   // ── AI move ─────────────────────────────────────────────────────────────────
   const makeAIMove = () => {
@@ -310,7 +252,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
       if (error || !data) throw error;
       const gs = data.game_state as any;
       if (gs?.fen) chess.load(gs.fen);
-      setBoard([...chess.board()]);
+      setFen(chess.fen());
       setGameHistory(gs?.history || []);
       setGameState({ turn: chess.turn(), inCheck: chess.inCheck(), isGameOver: chess.isGameOver(), winner: null, gameMode: 'multiplayer' });
       setCurrentGameId(gameId);
@@ -331,23 +273,6 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
   };
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-
-  const squareInfo = (row: number, col: number) => {
-    const sq = String.fromCharCode(97 + col) + (8 - row);
-    return {
-      isSelected: selectedSquare === sq,
-      isPossible: possibleMoves.includes(sq),
-      isLastMoved: lastMovedSquare === sq,
-    };
-  };
-
-  // ── Board square colors ───────────────────────────────────────────────────────
-  const getSquareBg = (row: number, col: number, isSelected: boolean, isPossible: boolean, isLastMoved: boolean) => {
-    if (isSelected) return 'bg-yellow-400';
-    if (isPossible) return (row + col) % 2 === 0 ? 'bg-emerald-300' : 'bg-emerald-400';
-    if (isLastMoved) return (row + col) % 2 === 0 ? 'bg-sky-200' : 'bg-sky-400';
-    return (row + col) % 2 === 0 ? 'bg-[#efebe9]' : 'bg-[#a1887f]';
-  };
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
@@ -437,94 +362,11 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
             {/* Board shadow/glow frame */}
             <div className={`absolute -inset-1 rounded-lg blur transition-all duration-700 ${gameState.turn === 'w' ? 'bg-amber-400/30' : 'bg-purple-600/30'}`}></div>
             <div className="relative bg-[#5d4037] p-1.5 rounded-lg shadow-2xl w-full max-w-[450px]">
-              {/* File labels top */}
-              <div className="grid grid-cols-8 mb-0.5">
-                {['a','b','c','d','e','f','g','h'].map(f => (
-                  <div key={f} className="text-center text-[9px] font-bold text-amber-200/70 leading-none">{f}</div>
-                ))}
-              </div>
-              <div className="flex">
-                {/* Rank labels left */}
-                <div className="flex flex-col mr-0.5">
-                  {[8,7,6,5,4,3,2,1].map(r => (
-                    <div key={r} className="h-10 flex items-center text-[9px] font-bold text-amber-200/70 leading-none w-2">{r}</div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-8 border border-[#5d4037] rounded overflow-hidden flex-1">
-                  {isPlayerWhite ? (
-                    board.map((row, rowIndex) =>
-                      row.map((piece, colIndex) => {
-                        const { isSelected, isPossible, isLastMoved } = squareInfo(rowIndex, colIndex);
-                        const bgClass = getSquareBg(rowIndex, colIndex, isSelected, isPossible, isLastMoved);
-
-                        return (
-                          <div
-                            key={`${rowIndex}-${colIndex}`}
-                            className={`
-                              h-10 w-full flex items-center justify-center cursor-pointer
-                              relative transition-all duration-100
-                              ${bgClass}
-                              ${isSelected ? 'ring-2 ring-yellow-300 ring-inset z-10' : ''}
-                              hover:brightness-110
-                            `}
-                            onClick={() => handleSquareClick(rowIndex, colIndex)}
-                          >
-                            {/* Possible move dot */}
-                            {isPossible && !piece && (
-                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <div className="w-3 h-3 rounded-full bg-black/25"></div>
-                              </div>
-                            )}
-                            {/* Capture ring */}
-                            {isPossible && piece && (
-                              <div className="absolute inset-0 ring-4 ring-black/30 ring-inset rounded-sm pointer-events-none z-10"></div>
-                            )}
-                            <PieceIcon piece={piece} />
-                          </div>
-                        );
-                      })
-                    )
-                  ) : (
-                    [...board].reverse().map((row, rowIndex) =>
-                      [...row].reverse().map((piece, colIndex) => {
-                        // When flipped:
-                        // rowIndex 0 (Black top) is now rowIndex 7 (White bottom)
-                        // colIndex 0 (a) is now colIndex 7 (h)
-                        const actualRow = 7 - rowIndex;
-                        const actualCol = 7 - colIndex;
-                        const { isSelected, isPossible, isLastMoved } = squareInfo(actualRow, actualCol);
-                        const bgClass = getSquareBg(actualRow, actualCol, isSelected, isPossible, isLastMoved);
-
-                        return (
-                          <div
-                            key={`${actualRow}-${actualCol}`}
-                            className={`
-                              h-10 w-full flex items-center justify-center cursor-pointer
-                              relative transition-all duration-100
-                              ${bgClass}
-                              ${isSelected ? 'ring-2 ring-yellow-300 ring-inset z-10' : ''}
-                              hover:brightness-110
-                            `}
-                            onClick={() => handleSquareClick(actualRow, actualCol)}
-                          >
-                            {/* Possible move dot */}
-                            {isPossible && !piece && (
-                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <div className="w-3 h-3 rounded-full bg-black/25"></div>
-                              </div>
-                            )}
-                            {/* Capture ring */}
-                            {isPossible && piece && (
-                              <div className="absolute inset-0 ring-4 ring-black/30 ring-inset rounded-sm pointer-events-none z-10"></div>
-                            )}
-                            <PieceIcon piece={piece} />
-                          </div>
-                        );
-                      })
-                    )
-                  )}
-                </div>
-              </div>
+              <Chessboard
+                position={fen}
+                onPieceDrop={onPieceDrop}
+                boardOrientation={isPlayerWhite ? "white" : "black"}
+              />
             </div>
           </div>
 

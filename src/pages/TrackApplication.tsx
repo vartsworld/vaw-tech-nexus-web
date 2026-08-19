@@ -94,7 +94,7 @@ const TrackApplication = () => {
 
       if (staffErr) console.warn("Staff apps fetch error:", staffErr);
 
-      let matchedStaff = staffApps?.find((app: any) => {
+      const matchedStaff = staffApps?.find((app: any) => {
         const appDisplay = getApplicationDisplayId(app.id).toLowerCase();
         return (
           app.id?.toLowerCase() === rawTerm ||
@@ -140,7 +140,7 @@ const TrackApplication = () => {
         .from("staff_profiles")
         .select("*");
 
-      let matchedProfile = staffProfiles?.find((prof: any) => {
+      const matchedProfile = staffProfiles?.find((prof: any) => {
         const profDisplay = getApplicationDisplayId(prof.id).toLowerCase();
         return (
           prof.id?.toLowerCase() === rawTerm ||
@@ -185,7 +185,7 @@ const TrackApplication = () => {
         .from("internship_applications")
         .select("*");
 
-      let matchedIntern = internApps?.find((app: any) => {
+      const matchedIntern = internApps?.find((app: any) => {
         const appDisplay = getApplicationDisplayId(app.id).toLowerCase();
         return (
           app.id?.toLowerCase() === rawTerm ||
@@ -223,7 +223,7 @@ const TrackApplication = () => {
         .from("team_applications")
         .select("*");
 
-      let matchedTeamGen = teamApps?.find((app: any) => {
+      const matchedTeamGen = teamApps?.find((app: any) => {
         const appDisplay = getApplicationDisplayId(app.id).toLowerCase();
         return (
           app.id?.toLowerCase() === rawTerm ||
