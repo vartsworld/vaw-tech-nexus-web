@@ -1,0 +1,70 @@
+diff --git a/dist/index.js b/dist/index.js
+index cb31b55e492a8321e3b34f6f38ef70fa90f766bb..a778f5ad4315967382ba704910c5964d72178c7c 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -490,8 +490,8 @@ var MonthView = ({
+ }) => {
+   const days = React15.useMemo(() => getMonthGrid(currentDate), [currentDate]);
+   const weekDays = React15.useMemo(() => {
+-    const start = dateFns.startOfWeek(currentDate, { weekStartsOn: 1 });
+-    const end = dateFns.endOfWeek(currentDate, { weekStartsOn: 1 });
++    const start = dateFns.startOfWeek(currentDate, { weekStartsOn: 0 });
++    const end = dateFns.endOfWeek(currentDate, { weekStartsOn: 0 });
+     return dateFns.eachDayOfInterval({ start, end });
+   }, [currentDate]);
+   const getZonedDate = React15.useCallback((date) => {
+@@ -642,8 +642,8 @@ var WeekView = ({
+   locale,
+   readonly
+ }) => {
+-  const start = dateFns.startOfWeek(currentDate, { weekStartsOn: 1 });
+-  const end = dateFns.endOfWeek(currentDate, { weekStartsOn: 1 });
++  const start = dateFns.startOfWeek(currentDate, { weekStartsOn: 0 });
++  const end = dateFns.endOfWeek(currentDate, { weekStartsOn: 0 });
+   const weekDays = dateFns.eachDayOfInterval({ start, end });
+   const hours = Array.from({ length: 24 }, (_, i) => i);
+   const hourHeight = 60;
+@@ -700,7 +700,7 @@ var WeekView = ({
+       className: "flex-1 overflow-y-auto scrollbar-hide relative bg-background scroll-smooth",
+       style: { scrollbarGutter: "stable" }
+     },
+-    /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex border-b-[0.5px] border-border/50 bg-gradient-to-r from-muted/20 via-background to-muted/20 z-20 sticky top-0 backdrop-blur-sm" }, /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex-none p-3 text-center text-xs font-semibold text-muted-foreground w-16 flex items-center justify-center border-r-[0.5px] border-border/30 bg-muted/10" }, getTimezoneDisplay(timezone)), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex-1 grid grid-cols-7" }, weekDays.map((day, index) => /* @__PURE__ */ React15__namespace.default.createElement("div", { key: day.toISOString(), className: cn("py-3 px-2 text-center", index > 0 && "border-l-[0.5px] border-border/30") }, /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5" }, dateFns.format(day, "EEE", { locale })), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: cn(
++    /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex border-b-[0.5px] border-border/50 bg-gradient-to-r from-muted/20 via-background to-muted/20 z-20 sticky top-0 backdrop-blur-sm" }, /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex-none p-3 text-center text-xs font-semibold text-muted-foreground w-16 flex items-center justify-center border-r-[0.5px] border-border/30 bg-muted/10" }, ""), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex-1 grid grid-cols-7" }, weekDays.map((day, index) => /* @__PURE__ */ React15__namespace.default.createElement("div", { key: day.toISOString(), className: cn("py-3 px-2 text-center", index > 0 && "border-l-[0.5px] border-border/30") }, /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5" }, dateFns.format(day, "EEE", { locale })), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: cn(
+       "w-9 h-9 flex items-center justify-center rounded-xl mx-auto text-sm font-semibold transition-all duration-200",
+       dateFns.isToday(day) ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-110" : "text-foreground hover:bg-accent/80"
+     ) }, dateFns.format(day, "d", { locale })))))),
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 4c6c2205461bb0f46da8988d790716603c092f53..514b7e0bcc401788155256bb9b139f3551db6cbd 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -469,8 +469,8 @@ var MonthView = ({
+ }) => {
+   const days = useMemo(() => getMonthGrid(currentDate), [currentDate]);
+   const weekDays = useMemo(() => {
+-    const start = startOfWeek(currentDate, { weekStartsOn: 1 });
+-    const end = endOfWeek(currentDate, { weekStartsOn: 1 });
++    const start = startOfWeek(currentDate, { weekStartsOn: 0 });
++    const end = endOfWeek(currentDate, { weekStartsOn: 0 });
+     return eachDayOfInterval({ start, end });
+   }, [currentDate]);
+   const getZonedDate = useCallback((date) => {
+@@ -621,8 +621,8 @@ var WeekView = ({
+   locale,
+   readonly
+ }) => {
+-  const start = startOfWeek(currentDate, { weekStartsOn: 1 });
+-  const end = endOfWeek(currentDate, { weekStartsOn: 1 });
++  const start = startOfWeek(currentDate, { weekStartsOn: 0 });
++  const end = endOfWeek(currentDate, { weekStartsOn: 0 });
+   const weekDays = eachDayOfInterval({ start, end });
+   const hours = Array.from({ length: 24 }, (_, i) => i);
+   const hourHeight = 60;
+@@ -679,7 +679,7 @@ var WeekView = ({
+       className: "flex-1 overflow-y-auto scrollbar-hide relative bg-background scroll-smooth",
+       style: { scrollbarGutter: "stable" }
+     },
+-    /* @__PURE__ */ React15__default.createElement("div", { className: "flex border-b-[0.5px] border-border/50 bg-gradient-to-r from-muted/20 via-background to-muted/20 z-20 sticky top-0 backdrop-blur-sm" }, /* @__PURE__ */ React15__default.createElement("div", { className: "flex-none p-3 text-center text-xs font-semibold text-muted-foreground w-16 flex items-center justify-center border-r-[0.5px] border-border/30 bg-muted/10" }, getTimezoneDisplay(timezone)), /* @__PURE__ */ React15__default.createElement("div", { className: "flex-1 grid grid-cols-7" }, weekDays.map((day, index) => /* @__PURE__ */ React15__default.createElement("div", { key: day.toISOString(), className: cn("py-3 px-2 text-center", index > 0 && "border-l-[0.5px] border-border/30") }, /* @__PURE__ */ React15__default.createElement("div", { className: "text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5" }, format(day, "EEE", { locale })), /* @__PURE__ */ React15__default.createElement("div", { className: cn(
++    /* @__PURE__ */ React15__default.createElement("div", { className: "flex border-b-[0.5px] border-border/50 bg-gradient-to-r from-muted/20 via-background to-muted/20 z-20 sticky top-0 backdrop-blur-sm" }, /* @__PURE__ */ React15__default.createElement("div", { className: "flex-none p-3 text-center text-xs font-semibold text-muted-foreground w-16 flex items-center justify-center border-r-[0.5px] border-border/30 bg-muted/10" }, ""), /* @__PURE__ */ React15__default.createElement("div", { className: "flex-1 grid grid-cols-7" }, weekDays.map((day, index) => /* @__PURE__ */ React15__default.createElement("div", { key: day.toISOString(), className: cn("py-3 px-2 text-center", index > 0 && "border-l-[0.5px] border-border/30") }, /* @__PURE__ */ React15__default.createElement("div", { className: "text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5" }, format(day, "EEE", { locale })), /* @__PURE__ */ React15__default.createElement("div", { className: cn(
+       "w-9 h-9 flex items-center justify-center rounded-xl mx-auto text-sm font-semibold transition-all duration-200",
+       isToday(day) ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-110" : "text-foreground hover:bg-accent/80"
+     ) }, format(day, "d", { locale })))))),

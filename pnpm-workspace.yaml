@@ -3,3 +3,6 @@ allowBuilds:
   core-js: set this to true or false
   deno: set this to true or false
   esbuild: set this to true or false
+
+patchedDependencies:
+  calendarkit-pro: patches/calendarkit-pro.patch
