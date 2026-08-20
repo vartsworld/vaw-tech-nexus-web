@@ -5,7 +5,7 @@ import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import RealChessEngine from "@/components/staff/RealChessEngine";
 import { Trophy, Loader2 } from "lucide-react";
 
-export default function ChessPage() {
+export default function ChessGamePage() {
   const { profile, loading } = useStaffData();
   const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({});
 
@@ -66,7 +66,7 @@ export default function ChessPage() {
         <div className="flex flex-col space-y-1">
           <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
             <Trophy className="w-8 h-8 text-amber-500" />
-            Chess Arena
+            Chess
           </h1>
           <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
             Realtime multiplayer battles and strategic practice

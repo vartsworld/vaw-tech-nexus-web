@@ -1,8 +1,57 @@
 diff --git a/dist/index.js b/dist/index.js
-index cb31b55e492a8321e3b34f6f38ef70fa90f766bb..a778f5ad4315967382ba704910c5964d72178c7c 100644
+index cb31b55e492a8321e3b34f6f38ef70fa90f766bb..2789c0644a6f92f9fec6c304b04c54d7b8d4948b 100644
 --- a/dist/index.js
 +++ b/dist/index.js
-@@ -490,8 +490,8 @@ var MonthView = ({
+@@ -134,7 +134,7 @@ var CalendarHeader = ({
+       className: "rounded-lg h-8 w-8 hover:bg-background/80 transition-all duration-200"
+     },
+     /* @__PURE__ */ React15__namespace.default.createElement(lucideReact.ChevronRight, { className: "h-4 w-4 text-muted-foreground" })
+-  )), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "ml-2 md:ml-4" }, /* @__PURE__ */ React15__namespace.default.createElement("h2", { className: "text-lg md:text-xl font-semibold text-foreground whitespace-nowrap capitalize tracking-tight" }, dateFns.format(currentDate, "MMMM yyyy", { locale }))))), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex items-center gap-2 md:gap-3 w-full md:w-auto justify-end" }, onLanguageChange && language && /* @__PURE__ */ React15__namespace.default.createElement(
++  )), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "ml-2 md:ml-4" }, /* @__PURE__ */ React15__namespace.default.createElement("h2", { className: "text-lg md:text-xl font-semibold text-foreground whitespace-nowrap capitalize tracking-tight" }, dateFns.format(currentDate, "dd MMMM yyyy", { locale }))))), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex items-center gap-2 md:gap-3 w-full md:w-auto justify-end" }, onLanguageChange && language && /* @__PURE__ */ React15__namespace.default.createElement(
+     Button,
+     {
+       variant: "ghost",
+@@ -206,7 +206,7 @@ var MiniCalendar = ({
+     onDateChange(day);
+     if (onViewChange) onViewChange("day");
+   };
+-  return /* @__PURE__ */ React15__namespace.default.createElement("div", { className: cn("px-4 w-[260px]", className) }, /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ React15__namespace.default.createElement("span", { className: "text-sm font-semibold text-foreground capitalize" }, dateFns.format(viewDate, "MMMM yyyy")), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex items-center bg-muted/40 rounded-lg p-0.5" }, /* @__PURE__ */ React15__namespace.default.createElement(
++  return /* @__PURE__ */ React15__namespace.default.createElement("div", { className: cn("px-4 w-[260px]", className) }, /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ React15__namespace.default.createElement("span", { className: "text-sm font-semibold text-foreground capitalize" }, dateFns.format(viewDate, "dd MMMM yyyy")), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex items-center bg-muted/40 rounded-lg p-0.5" }, /* @__PURE__ */ React15__namespace.default.createElement(
+     Button,
+     {
+       variant: "ghost",
+@@ -380,29 +380,7 @@ var Sidebar = ({
+         style: { backgroundColor: cal.color }
+       }
+     )
+-  ))))), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "mt-auto px-4 pt-5" }, /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "bg-muted/20 rounded-2xl p-3" }, /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex items-center gap-2 mb-3" }, /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "p-1.5 bg-primary/10 rounded-lg" }, /* @__PURE__ */ React15__namespace.default.createElement(lucideReact.Globe, { className: "w-4 h-4 text-primary" })), /* @__PURE__ */ React15__namespace.default.createElement("span", { className: "text-sm font-semibold text-foreground" }, translations?.timezone || "Timezone")), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "relative" }, /* @__PURE__ */ React15__namespace.default.createElement(
+-    "button",
+-    {
+-      onClick: () => setTimezoneOpen(!timezoneOpen),
+-      className: "w-full flex items-center justify-between bg-blue-200/40  hover:bg-blue-200/80 rounded-xl py-2.5 pl-4 pr-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200 text-left"
+-    },
+-    /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "flex-1 truncate mr-2 font-medium" }, selectedTimezoneLabel),
+-    /* @__PURE__ */ React15__namespace.default.createElement(lucideReact.ChevronDown, { className: cn("w-4 h-4 text-muted-foreground transition-transform duration-200", timezoneOpen && "rotate-180") })
+-  ), timezoneOpen && /* @__PURE__ */ React15__namespace.default.createElement(React15__namespace.default.Fragment, null, /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "fixed inset-0 z-40", onClick: () => setTimezoneOpen(false) }), /* @__PURE__ */ React15__namespace.default.createElement("div", { className: "absolute bottom-full left-0 w-full mb-2 bg-background rounded-xl shadow-2xl z-50 max-h-[260px] overflow-y-auto p-1.5 animate-in fade-in zoom-in-95 duration-200 backdrop-blur-none" }, timezones.map((tz) => /* @__PURE__ */ React15__namespace.default.createElement(
+-    "div",
+-    {
+-      key: tz.value,
+-      className: cn(
+-        "px-3 py-2.5 text-sm rounded-lg cursor-pointer transition-all duration-200",
+-        (timezone || "") === tz.value ? "bg-primary text-primary-foreground font-semibold" : "text-foreground hover:bg-accent/80"
+-      ),
+-      onClick: () => {
+-        onTimezoneChange?.(tz.value);
+-        setTimezoneOpen(false);
+-      }
+-    },
+-    formatTzLabel(tz)
+-  ))))))));
++  ))))));
+ };
+ var DraggableEvent = ({ event, children, className, style: propStyle, ...props }) => {
+   const { attributes, listeners, setNodeRef, transform, isDragging } = core.useDraggable({
+@@ -490,8 +468,8 @@ var MonthView = ({
  }) => {
    const days = React15.useMemo(() => getMonthGrid(currentDate), [currentDate]);
    const weekDays = React15.useMemo(() => {
@@ -13,7 +62,7 @@ index cb31b55e492a8321e3b34f6f38ef70fa90f766bb..a778f5ad4315967382ba704910c5964d
      return dateFns.eachDayOfInterval({ start, end });
    }, [currentDate]);
    const getZonedDate = React15.useCallback((date) => {
-@@ -642,8 +642,8 @@ var WeekView = ({
+@@ -642,8 +620,8 @@ var WeekView = ({
    locale,
    readonly
  }) => {
@@ -24,7 +73,7 @@ index cb31b55e492a8321e3b34f6f38ef70fa90f766bb..a778f5ad4315967382ba704910c5964d
    const weekDays = dateFns.eachDayOfInterval({ start, end });
    const hours = Array.from({ length: 24 }, (_, i) => i);
    const hourHeight = 60;
-@@ -700,7 +700,7 @@ var WeekView = ({
+@@ -700,7 +678,7 @@ var WeekView = ({
        className: "flex-1 overflow-y-auto scrollbar-hide relative bg-background scroll-smooth",
        style: { scrollbarGutter: "stable" }
      },
@@ -34,10 +83,59 @@ index cb31b55e492a8321e3b34f6f38ef70fa90f766bb..a778f5ad4315967382ba704910c5964d
        dateFns.isToday(day) ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-110" : "text-foreground hover:bg-accent/80"
      ) }, dateFns.format(day, "d", { locale })))))),
 diff --git a/dist/index.mjs b/dist/index.mjs
-index 4c6c2205461bb0f46da8988d790716603c092f53..514b7e0bcc401788155256bb9b139f3551db6cbd 100644
+index 4c6c2205461bb0f46da8988d790716603c092f53..36e6dcc4ff1b8bc0124b68d7ffdf99cf683773ab 100644
 --- a/dist/index.mjs
 +++ b/dist/index.mjs
-@@ -469,8 +469,8 @@ var MonthView = ({
+@@ -113,7 +113,7 @@ var CalendarHeader = ({
+       className: "rounded-lg h-8 w-8 hover:bg-background/80 transition-all duration-200"
+     },
+     /* @__PURE__ */ React15__default.createElement(ChevronRight, { className: "h-4 w-4 text-muted-foreground" })
+-  )), /* @__PURE__ */ React15__default.createElement("div", { className: "ml-2 md:ml-4" }, /* @__PURE__ */ React15__default.createElement("h2", { className: "text-lg md:text-xl font-semibold text-foreground whitespace-nowrap capitalize tracking-tight" }, format(currentDate, "MMMM yyyy", { locale }))))), /* @__PURE__ */ React15__default.createElement("div", { className: "flex items-center gap-2 md:gap-3 w-full md:w-auto justify-end" }, onLanguageChange && language && /* @__PURE__ */ React15__default.createElement(
++  )), /* @__PURE__ */ React15__default.createElement("div", { className: "ml-2 md:ml-4" }, /* @__PURE__ */ React15__default.createElement("h2", { className: "text-lg md:text-xl font-semibold text-foreground whitespace-nowrap capitalize tracking-tight" }, format(currentDate, "dd MMMM yyyy", { locale }))))), /* @__PURE__ */ React15__default.createElement("div", { className: "flex items-center gap-2 md:gap-3 w-full md:w-auto justify-end" }, onLanguageChange && language && /* @__PURE__ */ React15__default.createElement(
+     Button,
+     {
+       variant: "ghost",
+@@ -185,7 +185,7 @@ var MiniCalendar = ({
+     onDateChange(day);
+     if (onViewChange) onViewChange("day");
+   };
+-  return /* @__PURE__ */ React15__default.createElement("div", { className: cn("px-4 w-[260px]", className) }, /* @__PURE__ */ React15__default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ React15__default.createElement("span", { className: "text-sm font-semibold text-foreground capitalize" }, format(viewDate, "MMMM yyyy")), /* @__PURE__ */ React15__default.createElement("div", { className: "flex items-center bg-muted/40 rounded-lg p-0.5" }, /* @__PURE__ */ React15__default.createElement(
++  return /* @__PURE__ */ React15__default.createElement("div", { className: cn("px-4 w-[260px]", className) }, /* @__PURE__ */ React15__default.createElement("div", { className: "flex items-center justify-between mb-4" }, /* @__PURE__ */ React15__default.createElement("span", { className: "text-sm font-semibold text-foreground capitalize" }, format(viewDate, "dd MMMM yyyy")), /* @__PURE__ */ React15__default.createElement("div", { className: "flex items-center bg-muted/40 rounded-lg p-0.5" }, /* @__PURE__ */ React15__default.createElement(
+     Button,
+     {
+       variant: "ghost",
+@@ -359,29 +359,7 @@ var Sidebar = ({
+         style: { backgroundColor: cal.color }
+       }
+     )
+-  ))))), /* @__PURE__ */ React15__default.createElement("div", { className: "mt-auto px-4 pt-5" }, /* @__PURE__ */ React15__default.createElement("div", { className: "bg-muted/20 rounded-2xl p-3" }, /* @__PURE__ */ React15__default.createElement("div", { className: "flex items-center gap-2 mb-3" }, /* @__PURE__ */ React15__default.createElement("div", { className: "p-1.5 bg-primary/10 rounded-lg" }, /* @__PURE__ */ React15__default.createElement(Globe, { className: "w-4 h-4 text-primary" })), /* @__PURE__ */ React15__default.createElement("span", { className: "text-sm font-semibold text-foreground" }, translations?.timezone || "Timezone")), /* @__PURE__ */ React15__default.createElement("div", { className: "relative" }, /* @__PURE__ */ React15__default.createElement(
+-    "button",
+-    {
+-      onClick: () => setTimezoneOpen(!timezoneOpen),
+-      className: "w-full flex items-center justify-between bg-blue-200/40  hover:bg-blue-200/80 rounded-xl py-2.5 pl-4 pr-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all duration-200 text-left"
+-    },
+-    /* @__PURE__ */ React15__default.createElement("div", { className: "flex-1 truncate mr-2 font-medium" }, selectedTimezoneLabel),
+-    /* @__PURE__ */ React15__default.createElement(ChevronDown, { className: cn("w-4 h-4 text-muted-foreground transition-transform duration-200", timezoneOpen && "rotate-180") })
+-  ), timezoneOpen && /* @__PURE__ */ React15__default.createElement(React15__default.Fragment, null, /* @__PURE__ */ React15__default.createElement("div", { className: "fixed inset-0 z-40", onClick: () => setTimezoneOpen(false) }), /* @__PURE__ */ React15__default.createElement("div", { className: "absolute bottom-full left-0 w-full mb-2 bg-background rounded-xl shadow-2xl z-50 max-h-[260px] overflow-y-auto p-1.5 animate-in fade-in zoom-in-95 duration-200 backdrop-blur-none" }, timezones.map((tz) => /* @__PURE__ */ React15__default.createElement(
+-    "div",
+-    {
+-      key: tz.value,
+-      className: cn(
+-        "px-3 py-2.5 text-sm rounded-lg cursor-pointer transition-all duration-200",
+-        (timezone || "") === tz.value ? "bg-primary text-primary-foreground font-semibold" : "text-foreground hover:bg-accent/80"
+-      ),
+-      onClick: () => {
+-        onTimezoneChange?.(tz.value);
+-        setTimezoneOpen(false);
+-      }
+-    },
+-    formatTzLabel(tz)
+-  ))))))));
++  ))))));
+ };
+ var DraggableEvent = ({ event, children, className, style: propStyle, ...props }) => {
+   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+@@ -469,8 +447,8 @@ var MonthView = ({
  }) => {
    const days = useMemo(() => getMonthGrid(currentDate), [currentDate]);
    const weekDays = useMemo(() => {
@@ -48,7 +146,7 @@ index 4c6c2205461bb0f46da8988d790716603c092f53..514b7e0bcc401788155256bb9b139f35
      return eachDayOfInterval({ start, end });
    }, [currentDate]);
    const getZonedDate = useCallback((date) => {
-@@ -621,8 +621,8 @@ var WeekView = ({
+@@ -621,8 +599,8 @@ var WeekView = ({
    locale,
    readonly
  }) => {
@@ -59,7 +157,7 @@ index 4c6c2205461bb0f46da8988d790716603c092f53..514b7e0bcc401788155256bb9b139f35
    const weekDays = eachDayOfInterval({ start, end });
    const hours = Array.from({ length: 24 }, (_, i) => i);
    const hourHeight = 60;
-@@ -679,7 +679,7 @@ var WeekView = ({
+@@ -679,7 +657,7 @@ var WeekView = ({
        className: "flex-1 overflow-y-auto scrollbar-hide relative bg-background scroll-smooth",
        style: { scrollbarGutter: "stable" }
      },

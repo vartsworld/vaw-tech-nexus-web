@@ -536,7 +536,7 @@ const StaffDashboard = () => {
       planner: "Calendar",
       leave: "Leave",
       tools: "Tools",
-      chess: "Chess",
+      arcade: "Arcade",
       onboarding: "Onboarding",
       notes: "Notes",
       operations: "Operations",
@@ -662,15 +662,15 @@ const StaffDashboard = () => {
     breakroom: null,
     leave: <LeaveView profile={profile} />,
     tools: <ToolsNexusView profile={profile} />,
-    chess: (
+    arcade: (
       <div className="space-y-6 max-w-5xl mx-auto py-2">
         <div className="flex flex-col space-y-1">
           <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
             <Trophy className="w-8 h-8 text-amber-500" />
-            Chess Arena
+            Arcade
           </h1>
           <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
-            Realtime multiplayer battles and strategic practice
+            Select a game to play with colleagues or AI
           </p>
         </div>
 

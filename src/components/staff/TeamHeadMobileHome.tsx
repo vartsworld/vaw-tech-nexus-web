@@ -750,8 +750,8 @@ const TeamHeadMobileHome = ({
                 <Smile className="w-6 h-6 animate-pulse" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-white">Games</h4>
-                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Play Chess Arena</p>
+                <h4 className="text-sm font-bold text-white">Arcade</h4>
+                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Play Games</p>
               </div>
             </button>
 
@@ -835,7 +835,7 @@ const TeamHeadMobileHome = ({
           {activeTool === "projects" && <SubProjectsView />}
           {activeTool === "leave" && <LeaveView profile={profile} />}
           {activeTool === "notes" && <QuickNotes userId={profile?.user_id} />}
-          {activeTool === "chess" && (
+          {activeTool === "arcade" && (
             <div className="bg-black/40 backdrop-blur-2xl p-4 rounded-3xl border border-white/10 shadow-2xl">
               <MiniChess userId={profile?.user_id} userProfile={profile} />
             </div>

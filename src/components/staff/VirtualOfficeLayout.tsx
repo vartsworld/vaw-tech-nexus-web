@@ -400,7 +400,7 @@ const VirtualOfficeLayout = ({
       items: [
         { id: 'leave', name: 'Leave Application', icon: PlaneTakeoff, path: '/staff/leave' },
         { id: 'tools', name: 'Tools Nexus', icon: Compass, path: '/staff/tools-nexus' },
-        { id: 'chess', name: 'Chess Arena', icon: Swords, path: '/staff/chess' },
+        { id: 'arcade', name: 'Arcade', icon: Swords, path: '/staff/arcade' },
         { id: 'onboarding', name: 'Onboarding', icon: Compass, path: '/staff/onboarding' },
         { id: 'notes', name: 'Personal Notes', icon: ClipboardList, path: '/staff/notes' },
         { id: 'meeting' as const, name: 'Meeting Room', icon: Users, path: '#' },
