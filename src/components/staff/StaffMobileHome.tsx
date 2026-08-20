@@ -831,15 +831,15 @@ const StaffMobileHome = ({
                     </button>
 
                     <button
-                      onClick={() => setActiveTool("chess")}
+                      onClick={() => setActiveTool("arcade")}
                       className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
                     >
                       <div className="w-12 h-12 rounded-2xl bg-purple-500/15 flex items-center justify-center text-purple-400 border border-purple-500/20">
                         <Smile className="w-6 h-6 animate-pulse" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-white">Games</h4>
-                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Play Chess Arena</p>
+                        <h4 className="text-sm font-bold text-white">Arcade</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Play Games</p>
                       </div>
                     </button>
 
@@ -922,7 +922,7 @@ const StaffMobileHome = ({
                   {/* Render active tool */}
                   {activeTool === "leave" && <LeaveView profile={profile} />}
                   {activeTool === "notes" && <QuickNotes userId={profile?.user_id} />}
-                  {activeTool === "chess" && (
+                  {activeTool === "arcade" && (
                     <div className="bg-black/40 backdrop-blur-2xl p-4 rounded-3xl border border-white/10 shadow-2xl">
                       <MiniChess userId={profile?.user_id} userProfile={profile} />
                     </div>

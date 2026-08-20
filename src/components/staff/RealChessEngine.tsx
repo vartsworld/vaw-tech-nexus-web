@@ -15,7 +15,8 @@ import {
   Eye,
   Wifi,
   WifiOff,
-  Zap
+  Zap,
+  Settings
 } from "lucide-react";
 import { Chess } from 'chess.js';
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +47,31 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
   const [isLive, setIsLive] = useState(false);
   const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
   const [lastMovedSquare, setLastMovedSquare] = useState<string | null>(null);
+
+  const [moveFrom, setMoveFrom] = useState<string | null>(null);
+  const [optionSquares, setOptionSquares] = useState({});
+  const boardRef = useRef<HTMLDivElement>(null);
+  const [boardWidth, setBoardWidth] = useState<number>(400);
+  const BOARD_THEMES = [
+    { id: 'classic', name: 'Classic', dark: '#b58863', light: '#f0d9b5', bg: '#5d4037' },
+    { id: 'ocean', name: 'Ocean', dark: '#006699', light: '#99ccff', bg: '#003366' },
+    { id: 'emerald', name: 'Emerald', dark: '#4caf50', light: '#c8e6c9', bg: '#1b5e20' },
+    { id: 'monochrome', name: 'Monochrome', dark: '#757575', light: '#e0e0e0', bg: '#212121' }
+  ];
+  const [boardTheme, setBoardTheme] = useState(BOARD_THEMES[0]);
+
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (boardRef.current) {
+        setBoardWidth(boardRef.current.clientWidth - 12); // Account for padding
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const { toast } = useToast();
 
   // ── Board Init ──────────────────────────────────────────────────────────────
@@ -274,7 +300,79 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+
+  // ── Click-to-Move ──────────────────────────────────────────────────────────
+  const getMoveOptions = (square: string) => {
+    const moves = chess.moves({
+      square,
+      verbose: true,
+    });
+    if (moves.length === 0) {
+      setOptionSquares({});
+      return false;
+    }
+    const newSquares: Record<string, any> = {};
+    moves.map((move: any) => {
+      newSquares[move.to] = {
+        background:
+          chess.get(move.to as any) && chess.get(move.to as any)?.color !== chess.get(square as any)?.color
+            ? 'radial-gradient(circle, rgba(0,0,0,.1) 85%, transparent 85%)'
+            : 'radial-gradient(circle, rgba(0,0,0,.1) 25%, transparent 25%)',
+        borderRadius: '50%',
+      };
+      return move;
+    });
+    newSquares[square] = {
+      background: 'rgba(255, 255, 0, 0.4)',
+    };
+    setOptionSquares(newSquares);
+    return true;
+  };
+
+  const onSquareClick = (square: string) => {
+    if (gameState.isGameOver) return;
+    setLastMovedSquare(null);
+
+    // from square
+    if (!moveFrom) {
+      const hasMoveOptions = getMoveOptions(square);
+      if (hasMoveOptions) setMoveFrom(square);
+      return;
+    }
+
+    // to square
+    if (moveFrom) {
+      const moveResult = chess.move({
+        from: moveFrom,
+        to: square,
+        promotion: 'q',
+      });
+
+      if (moveResult) {
+        setLastMovedSquare(square);
+        const newHistory = [...gameHistory, moveResult.san];
+        setGameHistory(newHistory);
+        syncBoardFromChess();
+
+        if (gameState.gameMode === 'multiplayer' && currentGameId) {
+          saveGameState(newHistory, moveResult.to);
+        }
+        if (gameState.gameMode === 'ai' && !chess.isGameOver()) {
+          setTimeout(makeAIMove, 600);
+        }
+
+        if (chess.isGameOver()) {
+          setIsTimerRunning(false);
+          toast({ title: chess.isCheckmate() ? "Checkmate!" : "Game Over", description: chess.isCheckmate() ? `${chess.turn() === 'w' ? 'Black' : 'White'} wins!` : "Draw." });
+        }
+      }
+
+      setMoveFrom(null);
+      setOptionSquares({});
+    }
+  };
+
+// ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
       <Card className="overflow-hidden">
@@ -290,6 +388,33 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
               )}
             </CardTitle>
             <div className="flex items-center gap-2">
+
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 border-white/20 text-white hover:bg-white/10">
+                    <Settings className="h-3.5 w-3.5 mr-1" /> Style
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-xs">
+                  <DialogHeader><DialogTitle>Board Style</DialogTitle></DialogHeader>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    {BOARD_THEMES.map(theme => (
+                      <Button
+                        key={theme.id}
+                        variant={boardTheme.id === theme.id ? "default" : "outline"}
+                        onClick={() => setBoardTheme(theme)}
+                        className="w-full h-auto py-2 flex flex-col gap-1 items-center"
+                      >
+                        <div className="flex w-full h-4 rounded overflow-hidden">
+                          <div style={{ backgroundColor: theme.light }} className="w-1/2 h-full"></div>
+                          <div style={{ backgroundColor: theme.dark }} className="w-1/2 h-full"></div>
+                        </div>
+                        <span className="text-xs">{theme.name}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </DialogContent>
+              </Dialog>
               <Button variant="outline" size="sm" onClick={initializeBoard} className="h-7 border-white/20 text-white hover:bg-white/10">
                 <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reset
               </Button>
@@ -361,12 +486,21 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
           <div className="relative flex justify-center items-center w-full">
             {/* Board shadow/glow frame */}
             <div className={`absolute -inset-1 rounded-lg blur transition-all duration-700 ${gameState.turn === 'w' ? 'bg-amber-400/30' : 'bg-purple-600/30'}`}></div>
-            <div className="relative bg-[#5d4037] p-1.5 rounded-lg shadow-2xl w-full max-w-[450px]">
-              <Chessboard
-                position={fen}
-                onPieceDrop={onPieceDrop}
-                boardOrientation={isPlayerWhite ? "white" : "black"}
-              />
+            <div ref={boardRef} className="relative p-1.5 rounded-lg shadow-2xl w-full max-w-[450px] aspect-square flex items-center justify-center transition-colors" style={{ backgroundColor: boardTheme.bg }}>
+              <div style={{ width: boardWidth }}>
+                <Chessboard
+                  id="RealChessEngine"
+                  position={fen}
+                  onPieceDrop={onPieceDrop}
+                  onSquareClick={onSquareClick}
+                  customSquareStyles={optionSquares}
+                  customDarkSquareStyle={{ backgroundColor: boardTheme.dark }}
+                  customLightSquareStyle={{ backgroundColor: boardTheme.light }}
+                  boardOrientation={isPlayerWhite ? "white" : "black"}
+                  boardWidth={boardWidth}
+                  arePiecesDraggable={false}
+                />
+              </div>
             </div>
           </div>
 
