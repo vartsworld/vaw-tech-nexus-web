@@ -30,7 +30,7 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
         .select('*')
         .eq('user_id', userId)
         .eq('date', today)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error checking attendance:', error);
@@ -51,7 +51,7 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
         .from('app_settings')
         .select('value')
         .eq('key', 'points_config')
-        .single();
+        .maybeSingle();
 
       // Defaults if config missing
       const configValue = typeof configData?.value === 'object' && configData?.value !== null ? configData.value : {};
@@ -80,7 +80,7 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
         .select('*')
         .eq('user_id', userId)
         .eq('date', today)
-        .single();
+        .maybeSingle();
 
       if (existingAttendance) {
         toast({
@@ -111,7 +111,7 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
         .from('app_settings')
         .select('value')
         .eq('key', 'points_config')
-        .single();
+        .maybeSingle();
       const attendanceEnabled = (settingsData?.value as any)?.attendance_points_enabled !== false;
 
       if (attendanceEnabled && points > 0) {

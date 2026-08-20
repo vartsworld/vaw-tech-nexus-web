@@ -743,7 +743,7 @@ const TeamHeadMobileHome = ({
             </button>
 
             <button
-              onClick={() => setActiveTool("chess")}
+              onClick={() => setActiveTool("arcade")}
               className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
             >
               <div className="w-12 h-12 rounded-2xl bg-purple-500/15 flex items-center justify-center text-purple-400 border border-purple-500/20">

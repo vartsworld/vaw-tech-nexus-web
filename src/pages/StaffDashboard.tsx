@@ -53,6 +53,7 @@ import { useUser } from "@/context/UserContext";
 import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
 import UpdateButton from "@/components/staff/UpdateButton";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
+import ArcadeView from "@/components/staff/ArcadeView";
 import StaffMobileHome from "@/components/staff/StaffMobileHome";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -464,7 +465,7 @@ const StaffDashboard = () => {
         .from('departments')
         .select('name')
         .eq('id', profile.department_id)
-        .single();
+        .maybeSingle();
 
       if (data && !error) {
         setDepartmentName(data.name);
@@ -486,7 +487,7 @@ const StaffDashboard = () => {
         .select('*')
         .eq('user_id', profile.user_id)
         .eq('date', today)
-        .single();
+        .maybeSingle();
 
       // Check if user has submitted mood today
       const { data: moodData, error: moodError } = await supabase
@@ -494,7 +495,7 @@ const StaffDashboard = () => {
         .select('*')
         .eq('user_id', profile.user_id)
         .eq('date', today)
-        .single();
+        .maybeSingle();
 
       console.log('Attendance today:', attendanceData);
       console.log('Mood today:', moodData);
@@ -673,10 +674,7 @@ const StaffDashboard = () => {
             Select a game to play with colleagues or AI
           </p>
         </div>
-
-        <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[600px] backdrop-blur-md">
-          <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
-        </div>
+        <ArcadeView />
       </div>
     ),
     onboarding: (

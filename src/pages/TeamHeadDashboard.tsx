@@ -56,6 +56,7 @@ import UpdateButton from "@/components/staff/UpdateButton";
 import { Fingerprint } from "lucide-react";
 import { toast } from "sonner";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
+import ArcadeView from "@/components/staff/ArcadeView";
 
 import MeetingRoom from "@/components/staff/MeetingRoom";
 import AttendanceChecker from "@/components/staff/AttendanceChecker";
@@ -336,7 +337,7 @@ const TeamHeadDashboard = () => {
         .from('departments')
         .select('name')
         .eq('id', profile.department_id)
-        .single();
+        .maybeSingle();
 
       if (data && !error) {
         setDepartmentName(data.name);
@@ -385,7 +386,7 @@ const TeamHeadDashboard = () => {
         .select('*')
         .eq('user_id', profile.user_id)
         .eq('date', today)
-        .single();
+        .maybeSingle();
 
       // Check if user has submitted mood today
       const { data: moodData } = await supabase
@@ -393,7 +394,7 @@ const TeamHeadDashboard = () => {
         .select('*')
         .eq('user_id', profile.user_id)
         .eq('date', today)
-        .single();
+        .maybeSingle();
 
       if (!attendanceData) {
         setShowAttendanceCheck(true);
@@ -724,10 +725,7 @@ const TeamHeadDashboard = () => {
             Select a game to play with colleagues or AI
           </p>
         </div>
-
-        <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[600px] backdrop-blur-md">
-          <MiniChess userId={profile?.user_id || ''} userProfile={profile} />
-        </div>
+        <ArcadeView />
       </div>
     ),
     onboarding: (
