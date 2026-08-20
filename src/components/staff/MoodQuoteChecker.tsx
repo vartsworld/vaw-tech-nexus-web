@@ -43,7 +43,7 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
         .eq('is_system', true)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setDailyQuote(data);
@@ -60,7 +60,7 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
         .select('*')
         .eq('user_id', userId)
         .eq('date', today)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error checking mood entry:', error);
@@ -111,7 +111,7 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
         .from('app_settings')
         .select('value')
         .eq('key', 'points_config')
-        .single();
+        .maybeSingle();
       const moodEnabled = (settingsData?.value as any)?.mood_points_enabled !== false;
       const moodPoints = personalQuote ? 15 : 10;
 
