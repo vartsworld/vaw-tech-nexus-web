@@ -498,8 +498,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
                   customLightSquareStyle={{ backgroundColor: boardTheme.light }}
                   boardOrientation={isPlayerWhite ? "white" : "black"}
                   boardWidth={boardWidth}
-                  arePiecesDraggable={false}
-                />
+                  />
               </div>
             </div>
           </div>

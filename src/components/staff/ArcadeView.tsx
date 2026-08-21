@@ -18,12 +18,12 @@ const ArcadeView = () => {
     {
       id: "tictactoe",
       title: "Tic Tac Toe",
-      description: "Classic X's and O's multiplayer",
+      description: "Classic X's and O's vs AI",
       icon: Circle,
       color: "bg-gradient-to-r from-orange-500 to-orange-400 text-white",
       iconColor: "text-white",
-      path: "#",
-      available: false
+      path: "/staff/tictactoe",
+      available: true
     },
     {
       id: "wordchallenge",
@@ -38,12 +38,12 @@ const ArcadeView = () => {
     {
       id: "pingpong",
       title: "Ping Pong",
-      description: "Fast-paced action",
+      description: "Fast-paced action vs AI",
       icon: Minus,
       color: "bg-white text-black border border-zinc-200",
       iconColor: "text-black",
-      path: "#",
-      available: false
+      path: "/staff/pingpong",
+      available: true
     }
   ];
 
