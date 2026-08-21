@@ -63,16 +63,6 @@ export default function ChessGamePage() {
       userProfile={profile}
     >
       <div className="space-y-6 max-w-5xl mx-auto py-2">
-        <div className="flex flex-col space-y-1">
-          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-            <Trophy className="w-8 h-8 text-amber-500" />
-            Chess
-          </h1>
-          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
-            Realtime multiplayer battles and strategic practice
-          </p>
-        </div>
-
         <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[600px]">
           <RealChessEngine userId={profile.user_id} userProfile={profile} />
         </div>

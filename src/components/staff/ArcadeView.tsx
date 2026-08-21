@@ -22,8 +22,8 @@ const ArcadeView = () => {
       icon: Circle,
       color: "bg-gradient-to-r from-orange-500 to-orange-400 text-white",
       iconColor: "text-white",
-      path: "#",
-      available: false
+      path: "/staff/arcade/tictactoe",
+      available: true
     },
     {
       id: "wordchallenge",
@@ -42,8 +42,8 @@ const ArcadeView = () => {
       icon: Minus,
       color: "bg-white text-black border border-zinc-200",
       iconColor: "text-black",
-      path: "#",
-      available: false
+      path: "/staff/arcade/pingpong",
+      available: true
     }
   ];
 
