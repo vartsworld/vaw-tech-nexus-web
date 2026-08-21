@@ -58,7 +58,6 @@ import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import RealtimeClock from "./RealtimeClock";
 import { Checkbox } from "@/components/ui/checkbox";
 
 interface MonthlyPlan {
@@ -1106,10 +1105,6 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           `;
         }).join('\n')}
       `}</style>
-
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white text-lg font-bold flex gap-2 items-center z-50 pointer-events-none">
-        <RealtimeClock />
-      </div>
 
       {portalTarget && createPortal(
         <div className="inline-flex items-center mr-2">
