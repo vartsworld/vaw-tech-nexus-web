@@ -30,6 +30,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
   const chess = chessRef.current;
 
   const [fen, setFen] = useState(chess.fen());
+  const [difficulty, setDifficulty] = useState('Easy');
   const [gameState, setGameState] = useState({
     turn: 'w' as 'w' | 'b',
     inCheck: false,
@@ -42,7 +43,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
   const [availableGames, setAvailableGames] = useState<any[]>([]);
   const [currentGameId, setCurrentGameId] = useState<string | null>(null);
   const [isPlayerWhite, setIsPlayerWhite] = useState(true);
-  const [gameTimer, setGameTimer] = useState({ white: 600, black: 600 });
+  const [gameTimer, setGameTimer] = useState(900);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isLive, setIsLive] = useState(false);
   const [realtimeChannel, setRealtimeChannel] = useState<any>(null);
@@ -91,7 +92,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
     setFen(chess.fen());
     setGameState({ turn: 'w', inCheck: false, isGameOver: false, winner: null, gameMode: 'ai' });
     setGameHistory([]);
-    setGameTimer({ white: 600, black: 600 });
+    setGameTimer(900);
     setIsTimerRunning(false);
     setLastMovedSquare(null);
     setCurrentGameId(null);
@@ -108,15 +109,9 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
     if (isTimerRunning && !gameState.isGameOver) {
       interval = setInterval(() => {
         setGameTimer(prev => {
-          const newTimer = { ...prev };
-          if (gameState.turn === 'w') {
-            newTimer.white = Math.max(0, newTimer.white - 1);
-            if (newTimer.white === 0) handleTimeOut('white');
-          } else {
-            newTimer.black = Math.max(0, newTimer.black - 1);
-            if (newTimer.black === 0) handleTimeOut('black');
-          }
-          return newTimer;
+          const nextTimer = Math.max(0, prev - 1);
+          if (nextTimer === 0) handleTimeOut(gameState.turn === 'w' ? 'white' : 'black');
+          return nextTimer;
         });
       }, 1000);
     }
@@ -225,9 +220,23 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
 
   // ── AI move ─────────────────────────────────────────────────────────────────
   const makeAIMove = () => {
-    const moves = chess.moves();
+    const moves = chess.moves({ verbose: true });
     if (!moves.length) return;
-    const moveResult = chess.move(moves[Math.floor(Math.random() * moves.length)]);
+
+    let selectedMove = moves[Math.floor(Math.random() * moves.length)];
+
+    if (difficulty === 'Hard' || difficulty === 'Medium') {
+      // Basic heuristic: prioritize captures
+      const captures = moves.filter(m => m.flags.includes('c') || m.flags.includes('e'));
+      if (captures.length > 0) {
+        // Hard always captures if possible, Medium has a 50% chance
+        if (difficulty === 'Hard' || Math.random() > 0.5) {
+          selectedMove = captures[Math.floor(Math.random() * captures.length)];
+        }
+      }
+    }
+
+    const moveResult = chess.move(selectedMove);
     setLastMovedSquare(moveResult?.to || null);
     setGameHistory(prev => [...prev, moveResult.san]);
     syncBoardFromChess();
@@ -254,7 +263,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
     try {
       const { data, error } = await supabase.from('chess_games').insert([{
         player1_id: userId,
-        player2_id: opponent || userId,
+        player2_id: opponent || null,
         status: 'active',
         game_state: { fen: chess.fen(), history: [], turn: 'w' }
       }]).select().single();
@@ -333,6 +342,17 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
     if (gameState.isGameOver) return;
     setLastMovedSquare(null);
 
+    // Allow reselection if clicking another own piece
+    if (chess.get(square as any) && chess.get(square as any)?.color === chess.turn()) {
+      const hasMoveOptions = getMoveOptions(square);
+      if (hasMoveOptions) {
+        setMoveFrom(square);
+      } else {
+        setMoveFrom(null);
+      }
+      return;
+    }
+
     // from square
     if (!moveFrom) {
       const hasMoveOptions = getMoveOptions(square);
@@ -381,6 +401,18 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
             <CardTitle className="flex items-center gap-2 text-base">
               <Crown className="h-5 w-5 text-yellow-400" />
               Chess Engine
+              <span className={`font-mono font-bold text-sm text-slate-300 ml-4 px-3 py-1 bg-black/40 rounded-full flex items-center gap-2`}>
+                <Clock className="w-4 h-4 text-amber-500" /> {formatTime(gameTimer)}
+              </span>
+              <Badge variant="outline" className="text-[10px] ml-2">
+                {gameState.gameMode === 'ai' ? 'vs AI' : 'Multiplayer'}
+              </Badge>
+              <span className={`text-center text-[10px] font-bold uppercase tracking-widest py-1 px-3 ml-2 rounded-full ${gameState.turn === 'w'
+                ? 'bg-amber-100 text-amber-700'
+                : 'bg-slate-800 text-slate-200'
+                }`}>
+                {gameState.isGameOver ? '— Game Over —' : `${gameState.turn === 'w' ? '⬜ White' : '⬛ Black'} to move`}
+              </span>
               {gameState.gameMode === 'multiplayer' && (
                 <span className={`ml-2 flex items-center gap-1 text-xs font-normal px-2 py-0.5 rounded-full ${isLive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'}`}>
                   {isLive ? <><Wifi className="h-3 w-3" /> LIVE</> : <><WifiOff className="h-3 w-3" /> Connecting...</>}
@@ -427,10 +459,21 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
                 <DialogContent className="max-w-sm">
                   <DialogHeader><DialogTitle>Start New Game</DialogTitle></DialogHeader>
                   <div className="flex gap-3 pt-2">
-                    <Button onClick={() => { initializeBoard(); createNewGame(); setIsCreateGameOpen(false); }} className="flex-1 h-12">
-                      <Target className="h-4 w-4 mr-2" /> vs AI
-                    </Button>
-                    <Button variant="outline" onClick={() => { initializeBoard(); createNewGame(crypto.randomUUID()); setIsCreateGameOpen(false); }} className="flex-1 h-12">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <Button onClick={() => { initializeBoard(); createNewGame(); setIsCreateGameOpen(false); }} className="h-12 w-full">
+                        <Target className="h-4 w-4 mr-2" /> vs AI
+                      </Button>
+                      <select
+                        className="bg-zinc-900 border border-white/20 text-white text-sm rounded-lg h-9 px-3 w-full outline-none focus:border-amber-500"
+                        value={difficulty}
+                        onChange={(e) => setDifficulty(e.target.value)}
+                      >
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                      </select>
+                    </div>
+                    <Button variant="outline" onClick={() => { initializeBoard(); createNewGame(null); setIsCreateGameOpen(false); }} className="flex-1 h-12">
                       <Users className="h-4 w-4 mr-2" /> Multiplayer
                     </Button>
                   </div>
@@ -441,46 +484,19 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
         </CardHeader>
 
         <CardContent className="p-4 space-y-4">
-          {/* Timers / Status */}
-          <div className="flex items-center justify-between gap-3">
-            {/* Black timer */}
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all ${gameState.turn === 'b' && !gameState.isGameOver ? 'border-slate-600 bg-slate-800 shadow-[0_0_12px_rgba(100,80,200,0.5)] scale-105' : 'border-slate-200 bg-slate-100'}`}>
-              <div className="w-5 h-5 rounded-full bg-slate-900 border-2 border-slate-600 shadow-inner" />
-              <span className={`font-mono font-bold text-sm ${gameState.turn === 'b' && !gameState.isGameOver ? 'text-white' : 'text-slate-600'}`}>
-                {formatTime(gameTimer.black)}
-              </span>
-              {gameState.turn === 'b' && !gameState.isGameOver && <Zap className="h-3.5 w-3.5 text-purple-400 animate-pulse" />}
+          {/* Status */}
+          {(gameState.inCheck || gameState.isGameOver) && (
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="flex flex-col items-center gap-1">
+                {gameState.inCheck && <Badge variant="destructive" className="animate-bounce text-xs">⚡ Check!</Badge>}
+                {gameState.isGameOver && (
+                  <Badge variant="secondary" className="flex items-center gap-1 text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
+                    <Trophy className="h-3 w-3" /> {gameState.winner ? `${gameState.winner} wins!` : 'Draw'}
+                  </Badge>
+                )}
+              </div>
             </div>
-
-            <div className="flex flex-col items-center gap-1">
-              {gameState.inCheck && <Badge variant="destructive" className="animate-bounce text-xs">⚡ Check!</Badge>}
-              {gameState.isGameOver && (
-                <Badge variant="secondary" className="flex items-center gap-1 text-xs bg-yellow-100 text-yellow-800 border-yellow-300">
-                  <Trophy className="h-3 w-3" /> {gameState.winner ? `${gameState.winner} wins!` : 'Draw'}
-                </Badge>
-              )}
-              <Badge variant="outline" className="text-[10px]">
-                {gameState.gameMode === 'ai' ? 'vs AI' : 'Multiplayer'}
-              </Badge>
-            </div>
-
-            {/* White timer */}
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all ${gameState.turn === 'w' && !gameState.isGameOver ? 'border-amber-400 bg-amber-50 shadow-[0_0_12px_rgba(251,191,36,0.5)] scale-105' : 'border-slate-200 bg-slate-100'}`}>
-              {gameState.turn === 'w' && !gameState.isGameOver && <Zap className="h-3.5 w-3.5 text-amber-500 animate-pulse" />}
-              <span className={`font-mono font-bold text-sm ${gameState.turn === 'w' && !gameState.isGameOver ? 'text-amber-700' : 'text-slate-600'}`}>
-                {formatTime(gameTimer.white)}
-              </span>
-              <div className="w-5 h-5 rounded-full bg-amber-50 border-2 border-amber-400 shadow-inner" />
-            </div>
-          </div>
-
-          {/* Turn indicator */}
-          <div className={`text-center text-xs font-bold uppercase tracking-widest py-1 rounded-full ${gameState.turn === 'w'
-            ? 'bg-amber-100 text-amber-700'
-            : 'bg-slate-800 text-slate-200'
-            }`}>
-            {gameState.isGameOver ? '— Game Over —' : `${gameState.turn === 'w' ? '⬜ White' : '⬛ Black'} to move`}
-          </div>
+          )}
 
           {/* Chess Board */}
           <div className="relative flex justify-center items-center w-full">
@@ -498,7 +514,6 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
                   customLightSquareStyle={{ backgroundColor: boardTheme.light }}
                   boardOrientation={isPlayerWhite ? "white" : "black"}
                   boardWidth={boardWidth}
-                  arePiecesDraggable={false}
                 />
               </div>
             </div>
@@ -506,9 +521,9 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
 
           {/* Move History */}
           {gameHistory.length > 0 && (
-            <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Move History</p>
-              <div className="max-h-24 overflow-y-auto">
+            <details className="group bg-slate-50 rounded-lg p-3 border border-slate-200">
+              <summary className="cursor-pointer text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Move History</summary>
+              <div className="max-h-24 overflow-y-auto mt-2">
                 <div className="grid grid-cols-5 gap-x-2 gap-y-0.5 text-xs font-mono">
                   {gameHistory.map((move, i) => (
                     <div key={i} className={`${i === gameHistory.length - 1 ? 'text-emerald-600 font-bold' : 'text-slate-600'} ${i % 2 === 0 ? '' : 'text-slate-500'}`}>
@@ -518,7 +533,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
                   ))}
                 </div>
               </div>
-            </div>
+            </details>
           )}
 
           {/* Available Multiplayer Games */}
