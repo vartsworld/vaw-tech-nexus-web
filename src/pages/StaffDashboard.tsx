@@ -91,7 +91,7 @@ import ClientOnboardingCreator from "@/components/staff/ClientOnboardingCreator"
 import { QuickNotes } from "@/components/staff/QuickNotes";
 import TeamChat from "@/components/staff/TeamChat";
 import TeamStatusSidebar from "@/components/staff/TeamStatusSidebar";
-import FlipClock from "@/components/8starlabs-ui/flip-clock";
+import HeaderClock from "@/components/HeaderClock";
 
 type RoomType =
   | 'home'
@@ -112,7 +112,8 @@ type RoomType =
   | 'chat'
   | 'staff'
   | 'coin'
-  | 'game';
+  | 'game'
+  | 'arcade';
 
 const EMOJI_OPTIONS = [
   "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
@@ -135,7 +136,7 @@ const paramToRoom = (param: string): RoomType | null => {
   const validRooms: RoomType[] = [
     'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
     'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox',
-    'chat', 'staff', 'coin', 'game'
+    'chat', 'staff', 'coin', 'game', 'arcade'
   ];
   if (validRooms.includes(param as RoomType)) return param as RoomType;
   return null;
@@ -962,6 +963,7 @@ const StaffDashboard = () => {
                         </div>
 
                         <div className="flex items-center gap-3">
+                          <HeaderClock />
                           <div>
                             <NotificationsBar userId={profile?.user_id || ''} />
                           </div>
@@ -1061,8 +1063,6 @@ const StaffDashboard = () => {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
-
-                          <FlipClock size="sm" variant="muted" />
                         </div>
                       </div>
                     </div>

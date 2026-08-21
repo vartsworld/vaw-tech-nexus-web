@@ -91,7 +91,7 @@ import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
 
 import LeaveView from "@/components/staff/LeaveView";
 import ToolsNexusView from "@/components/staff/ToolsNexusView";
-import FlipClock from "@/components/8starlabs-ui/flip-clock";
+import HeaderClock from "@/components/HeaderClock";
 
 type RoomType =
   | 'home'
@@ -112,7 +112,8 @@ type RoomType =
   | 'chat'
   | 'staff'
   | 'coin'
-  | 'game';
+  | 'game'
+  | 'arcade';
 
 const EMOJI_OPTIONS = [
   "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
@@ -135,7 +136,7 @@ const paramToRoom = (param: string): RoomType | null => {
   const validRooms: RoomType[] = [
     'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
     'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox',
-    'chat', 'staff', 'coin', 'game'
+    'chat', 'staff', 'coin', 'game', 'arcade'
   ];
   if (validRooms.includes(param as RoomType)) return param as RoomType;
   return null;
@@ -1016,7 +1017,7 @@ const TeamHeadDashboard = () => {
 
                         {/* Right: Actions & Badges */}
                         <div className="flex items-center gap-3 md:gap-4 flex-wrap justify-end">
-                          
+                          <HeaderClock />
                           <div className="hidden sm:block">
                             <NotificationsBar userId={profile?.user_id || ''} />
                           </div>
@@ -1066,8 +1067,6 @@ const TeamHeadDashboard = () => {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
-
-                          <FlipClock size="sm" variant="muted" />
                         </div>
                       </div>
                     </div>
