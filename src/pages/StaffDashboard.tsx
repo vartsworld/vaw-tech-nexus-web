@@ -91,6 +91,7 @@ import ClientOnboardingCreator from "@/components/staff/ClientOnboardingCreator"
 import { QuickNotes } from "@/components/staff/QuickNotes";
 import TeamChat from "@/components/staff/TeamChat";
 import TeamStatusSidebar from "@/components/staff/TeamStatusSidebar";
+import FlipClock from "@/components/8starlabs-ui/flip-clock";
 
 type RoomType =
   | 'home'
@@ -961,24 +962,6 @@ const StaffDashboard = () => {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <div
-                            className="hidden md:flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-3 py-1.5 rounded-full text-amber-300 font-bold text-xs cursor-pointer hover:bg-amber-500/20 transition-all shadow-md shadow-amber-500/5 select-none"
-                            onClick={() => setCurrentRoom('coin')}
-                          >
-                            <Coins className="w-4 h-4 text-amber-400" />
-                            <span>{(profile?.total_points || 0).toLocaleString()} Coins</span>
-                          </div>
-
-                          {/* Desktop Only Streak Display in Header */}
-                          <div
-                            className="hidden md:flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full text-orange-400 font-bold text-xs cursor-pointer hover:bg-orange-500/20 transition-all shadow-md shadow-orange-500/5 select-none"
-                            onClick={() => setShowStreakCalendar(true)}
-                            title="View Streak Calendar"
-                          >
-                            <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
-                            <span>{profile?.attendance_streak || 0}d Streak</span>
-                          </div>
-
                           <div>
                             <NotificationsBar userId={profile?.user_id || ''} />
                           </div>
@@ -1078,6 +1061,8 @@ const StaffDashboard = () => {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+
+                          <FlipClock size="sm" variant="muted" />
                         </div>
                       </div>
                     </div>

@@ -91,6 +91,7 @@ import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
 
 import LeaveView from "@/components/staff/LeaveView";
 import ToolsNexusView from "@/components/staff/ToolsNexusView";
+import FlipClock from "@/components/8starlabs-ui/flip-clock";
 
 type RoomType =
   | 'home'
@@ -1016,34 +1017,6 @@ const TeamHeadDashboard = () => {
                         {/* Right: Actions & Badges */}
                         <div className="flex items-center gap-3 md:gap-4 flex-wrap justify-end">
                           
-                          {/* Status Badge */}
-                          <div className="flex items-center shadow-inner rounded-full p-0.5 border border-white/5 bg-black/20">
-                            <UserStatusBadge status={status} isBreakActive={false} breakTimeRemaining={0} />
-                          </div>
-
-                          {/* Coins Display */}
-                          <div
-                            onClick={() => setCurrentRoom('coin')}
-                            className="flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 hover:from-amber-500/20 hover:to-yellow-500/20 border border-amber-500/20 rounded-full px-3 py-1.5 cursor-pointer transition-all shadow-[0_0_10px_rgba(245,158,11,0.1)] hover:shadow-[0_0_15px_rgba(245,158,11,0.2)] active:scale-95"
-                          >
-                            <div className="bg-amber-500/20 p-1 rounded-full">
-                              <Coins className="w-3.5 h-3.5 text-amber-400" />
-                            </div>
-                            <span className="text-amber-300 text-xs font-bold tracking-wide">
-                              {(profile?.total_points || 0).toLocaleString()} Coins
-                            </span>
-                          </div>
-
-                          {/* Streak Display */}
-                          <div
-                            className="hidden md:flex items-center gap-1.5 bg-orange-500/10 border border-orange-500/20 px-3 py-1.5 rounded-full text-orange-400 font-bold text-xs cursor-pointer hover:bg-orange-500/20 transition-all shadow-md shadow-orange-500/5 select-none"
-                            onClick={() => setShowStreakCalendar(true)}
-                            title="View Streak Calendar"
-                          >
-                            <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
-                            <span>{profile?.attendance_streak || 0}d Streak</span>
-                          </div>
-
                           <div className="hidden sm:block">
                             <NotificationsBar userId={profile?.user_id || ''} />
                           </div>
@@ -1094,9 +1067,7 @@ const TeamHeadDashboard = () => {
                             </DropdownMenuContent>
                           </DropdownMenu>
 
-                          <div className="hidden md:block">
-                            <UpdateButton variant="dark" />
-                          </div>
+                          <FlipClock size="sm" variant="muted" />
                         </div>
                       </div>
                     </div>
