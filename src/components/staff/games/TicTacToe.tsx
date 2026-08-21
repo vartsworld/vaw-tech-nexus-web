@@ -25,8 +25,8 @@ export default function TicTacToe() {
     return null;
   };
 
-  const makeMove = (index: number, player: Player) => {
-    const newBoard = [...board];
+  const makeMove = (index: number, player: Player, currentBoard?: Player[]) => {
+    const newBoard = [...(currentBoard || board)];
     newBoard[index] = player;
     setBoard(newBoard);
 
@@ -50,7 +50,8 @@ export default function TicTacToe() {
         const available = newBoard.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
         if (available.length > 0) {
           const aiMove = available[Math.floor(Math.random() * available.length)];
-          makeMove(aiMove as number, 'O');
+          // Pass the newBoard so the AI doesn't use the stale closure board
+          makeMove(aiMove as number, 'O', newBoard);
           setXIsNext(true);
         }
       }, 500); // Small delay for realistic feeling
