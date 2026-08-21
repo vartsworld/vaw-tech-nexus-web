@@ -1033,37 +1033,89 @@ const TeamHeadDashboard = () => {
                                 </Avatar>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-64 bg-zinc-950/95 backdrop-blur-2xl border-white/10 text-white shadow-2xl rounded-2xl p-1">
-                              <div className="px-4 py-3 mb-1 bg-white/5 rounded-xl border border-white/5">
-                                <p className="text-sm font-bold truncate text-white">{profile?.full_name || 'Team Head'}</p>
+                            <DropdownMenuContent align="end" className="w-64 bg-zinc-950 text-white border-white/10 shadow-2xl">
+                              <DropdownMenuLabel className="text-white/60 text-[10px] font-bold uppercase tracking-wider">My Account</DropdownMenuLabel>
+                              <DropdownMenuSeparator className="bg-white/10" />
+
+                              {/* Status Indicator inside Dropdown */}
+                              <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
+                                <span>Status</span>
+                                <UserStatusBadge
+                                  status={status}
+                                  isBreakActive={false}
+                                  breakTimeRemaining={0}
+                                />
                               </div>
-                              
-                              <DropdownMenuItem onClick={() => navigate("/sales/dashboard")} className="cursor-pointer hover:bg-blue-500/10 focus:bg-blue-500/10 text-blue-400 py-2.5 rounded-lg my-0.5 transition-colors">
-                                <Briefcase className="mr-3 h-4 w-4" />
-                                <span className="font-medium">Sales Hub (Client Entry)</span>
+
+                              {/* Coins Display inside Dropdown */}
+                              <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
+                                <div className="flex items-center">
+                                  <Coins className="mr-2 h-4 w-4 text-amber-500/50" />
+                                  <span>Coins Balance</span>
+                                </div>
+                                <span className="text-amber-500/50 font-bold text-xs">Coming Soon</span>
+                              </div>
+
+                              {/* Streak Display inside Dropdown */}
+                              <DropdownMenuItem onClick={() => setShowStreakCalendar(true)} className="flex items-center justify-between cursor-pointer py-1.5 focus:bg-white/5">
+                                <div className="flex items-center">
+                                  <Flame className="mr-2 h-4 w-4 text-orange-500" />
+                                  <span>My Streak</span>
+                                </div>
+                                <span className="text-orange-400 font-bold text-xs">{profile?.attendance_streak || 0}d</span>
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setShowProfileDialog(true)} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 py-2.5 rounded-lg my-0.5 transition-colors">
-                                <User className="mr-3 h-4 w-4 text-purple-400" />
-                                <span className="font-medium">View/Edit Profile</span>
+
+                              {/* App Update inside Dropdown */}
+                              <div className="px-2.5 py-1.5 flex items-center justify-between text-xs text-white/60">
+                                <span>System Version</span>
+                                <UpdateButton variant="dark" compact={true} />
+                              </div>
+
+                              {/* Sound Toggle inside Dropdown */}
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setInteractionSoundsEnabled(!interactionSoundsEnabled);
+                                }}
+                                className="py-1.5 focus:bg-white/5 flex items-center justify-between cursor-pointer text-xs"
+                              >
+                                <div className="flex items-center">
+                                  {interactionSoundsEnabled ? (
+                                    <Volume2 className="mr-2 h-4 w-4 text-green-400" />
+                                  ) : (
+                                    <VolumeX className="mr-2 h-4 w-4 text-zinc-400" />
+                                  )}
+                                  <span>Interaction Sounds</span>
+                                </div>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ${
+                                  interactionSoundsEnabled ? "bg-green-500/10 text-green-400" : "bg-zinc-800 text-zinc-400"
+                                }`}>
+                                  {interactionSoundsEnabled ? "ON" : "OFF"}
+                                </span>
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setShowEmojiDialog(true)} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 py-2.5 rounded-lg my-0.5 transition-colors">
-                                <LockIcon className="mr-3 h-4 w-4 text-emerald-400" />
-                                <span className="font-medium">Update Emoji Password</span>
+
+                              <DropdownMenuSeparator className="bg-white/10" />
+
+                              <DropdownMenuItem onClick={() => navigate("/sales/dashboard")} className="text-blue-400 hover:text-blue-300 py-1.5 focus:bg-white/5">
+                                <Briefcase className="mr-2 h-4 w-4" />
+                                Sales Hub (Client Entry)
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="cursor-pointer hover:bg-white/10 focus:bg-white/10 py-2.5 rounded-lg my-0.5 transition-colors">
-                                <Fingerprint className="mr-3 h-4 w-4 text-teal-400" />
-                                <span className="font-medium">Fingerprint Login</span>
+                              <DropdownMenuItem onClick={() => setShowProfileDialog(true)} className="py-1.5 focus:bg-white/5">
+                                <User className="mr-2 h-4 w-4 text-zinc-400" />
+                                View/Edit Profile
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setShowCoinConfigDialog(true)} className="cursor-pointer hover:bg-amber-500/10 focus:bg-amber-500/10 text-amber-400 py-2.5 rounded-lg my-0.5 transition-colors">
-                                <Settings2 className="mr-3 h-4 w-4" />
-                                <span className="font-medium">Coin Rewards Config</span>
+                              <DropdownMenuItem onClick={() => setShowEmojiDialog(true)} className="py-1.5 focus:bg-white/5">
+                                <LockIcon className="mr-2 h-4 w-4 text-zinc-400" />
+                                Update Emoji Password
                               </DropdownMenuItem>
-                              
-                              <div className="h-px bg-white/10 my-1"></div>
-                              
-                              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-400 hover:bg-red-500/10 focus:bg-red-500/10 hover:text-red-300 py-2.5 rounded-lg my-0.5 transition-colors">
-                                <LogOut className="mr-3 h-4 w-4" />
-                                <span className="font-medium">Logout</span>
+                              <DropdownMenuItem onClick={() => setShowBiometricDialog(true)} className="text-green-400 hover:text-green-300 py-1.5 focus:bg-white/5">
+                                <Fingerprint className="mr-2 h-4 w-4" />
+                                Fingerprint Login
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator className="bg-white/10" />
+                              <DropdownMenuItem onClick={handleLogout} className="text-red-400 hover:text-red-300 py-1.5 focus:bg-white/5">
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Logout
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
