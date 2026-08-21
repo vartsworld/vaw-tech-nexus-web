@@ -92,6 +92,9 @@ import { QuickNotes } from "@/components/staff/QuickNotes";
 import TeamChat from "@/components/staff/TeamChat";
 import TeamStatusSidebar from "@/components/staff/TeamStatusSidebar";
 import HeaderClock from "@/components/HeaderClock";
+import TicTacToe from "@/components/staff/games/TicTacToe";
+import PingPong from "@/components/staff/games/PingPong";
+import RealChessEngine from "@/components/staff/RealChessEngine";
 
 type RoomType =
   | 'home'
@@ -113,7 +116,9 @@ type RoomType =
   | 'staff'
   | 'coin'
   | 'game'
-  | 'arcade';
+  | 'arcade'
+  | 'tictactoe'
+  | 'pingpong';
 
 const EMOJI_OPTIONS = [
   "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
@@ -136,7 +141,7 @@ const paramToRoom = (param: string): RoomType | null => {
   const validRooms: RoomType[] = [
     'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
     'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox',
-    'chat', 'staff', 'coin', 'game', 'arcade'
+    'chat', 'staff', 'coin', 'game', 'arcade', 'tictactoe', 'pingpong'
   ];
   if (validRooms.includes(param as RoomType)) return param as RoomType;
   return null;
@@ -677,6 +682,23 @@ const StaffDashboard = () => {
           </p>
         </div>
         <ArcadeView />
+      </div>
+    ),
+    chess: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[600px]">
+          <RealChessEngine userId={profile.user_id} userProfile={profile} />
+        </div>
+      </div>
+    ),
+    tictactoe: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <TicTacToe />
+      </div>
+    ),
+    pingpong: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <PingPong />
       </div>
     ),
     onboarding: (

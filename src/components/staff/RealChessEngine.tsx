@@ -60,7 +60,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
     { id: 'monochrome', name: 'Monochrome', dark: '#757575', light: '#e0e0e0', bg: '#212121' }
   ];
   const [boardTheme, setBoardTheme] = useState(BOARD_THEMES[0]);
-
+  const [showMoveHistory, setShowMoveHistory] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -110,7 +110,12 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
       interval = setInterval(() => {
         setGameTimer(prev => {
           const nextTimer = Math.max(0, prev - 1);
-          if (nextTimer === 0) handleTimeOut(gameState.turn === 'w' ? 'white' : 'black');
+          if (nextTimer === 0) {
+            // Note: handleTimeOut accesses the current turn, but for the timer
+            // logic itself to not re-render every second, we avoid putting turn
+            // in the dependency array. The game engine resolves timeouts cleanly.
+            handleTimeOut(chess.turn() === 'w' ? 'white' : 'black');
+          }
           return nextTimer;
         });
       }, 1000);
@@ -118,7 +123,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isTimerRunning, gameState.turn, gameState.isGameOver]);
+  }, [isTimerRunning, gameState.isGameOver]);
 
   // ── Fetch games on mount ────────────────────────────────────────────────────
   useEffect(() => {
@@ -225,14 +230,32 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
 
     let selectedMove = moves[Math.floor(Math.random() * moves.length)];
 
-    if (difficulty === 'Hard' || difficulty === 'Medium') {
-      // Basic heuristic: prioritize captures
-      const captures = moves.filter(m => m.flags.includes('c') || m.flags.includes('e'));
-      if (captures.length > 0) {
-        // Hard always captures if possible, Medium has a 50% chance
-        if (difficulty === 'Hard' || Math.random() > 0.5) {
-          selectedMove = captures[Math.floor(Math.random() * captures.length)];
+    if (difficulty === 'Hard') {
+      const pieceValues: Record<string, number> = { p: 10, n: 30, b: 30, r: 50, q: 90, k: 900 };
+      let bestScore = -Infinity;
+
+      for (const move of moves) {
+        let score = 0;
+        if (move.captured) {
+          score += pieceValues[move.captured] || 0;
         }
+
+        // Slightly value moving to the center
+        if (['d4', 'd5', 'e4', 'e5'].includes(move.to)) score += 2;
+        if (['c3', 'c4', 'c5', 'c6', 'f3', 'f4', 'f5', 'f6'].includes(move.to)) score += 1;
+
+        if (score > bestScore) {
+          bestScore = score;
+          selectedMove = move;
+        } else if (score === bestScore && Math.random() > 0.5) {
+          selectedMove = move; // add some variety for equal scores
+        }
+      }
+    } else if (difficulty === 'Medium') {
+      // Basic heuristic: prioritize captures half the time
+      const captures = moves.filter(m => m.flags.includes('c') || m.flags.includes('e'));
+      if (captures.length > 0 && Math.random() > 0.5) {
+        selectedMove = captures[Math.floor(Math.random() * captures.length)];
       }
     }
 
@@ -445,6 +468,10 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
                       </Button>
                     ))}
                   </div>
+                  <div className="flex items-center justify-between mt-4 mb-2">
+                    <span className="text-sm">Show Move History</span>
+                    <input type="checkbox" checked={showMoveHistory} onChange={(e) => setShowMoveHistory(e.target.checked)} />
+                  </div>
                 </DialogContent>
               </Dialog>
               <Button variant="outline" size="sm" onClick={initializeBoard} className="h-7 border-white/20 text-white hover:bg-white/10">
@@ -520,8 +547,8 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
           </div>
 
           {/* Move History */}
-          {gameHistory.length > 0 && (
-            <details className="group bg-slate-50 rounded-lg p-3 border border-slate-200">
+          {showMoveHistory && gameHistory.length > 0 && (
+            <details className="group bg-slate-50 rounded-lg p-3 border border-slate-200" open>
               <summary className="cursor-pointer text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Move History</summary>
               <div className="max-h-24 overflow-y-auto mt-2">
                 <div className="grid grid-cols-5 gap-x-2 gap-y-0.5 text-xs font-mono">

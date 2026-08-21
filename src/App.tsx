@@ -72,9 +72,6 @@ import FintechProposal2 from "./pages/FintechProposal2";
 import VAWAcademy from "./pages/VAWAcademy";
 import ToolsNexus from "./pages/ToolsNexus";
 import InboxPage from "./pages/InboxPage";
-import ChessGamePage from "./pages/ChessGamePage";
-import TicTacToePage from "./pages/TicTacToePage";
-import PingPongPage from "./pages/PingPongPage";
 import NotesPage from "./pages/NotesPage";
 import OnboardingPage from "./pages/OnboardingPage";
 import LeavePage from "./pages/LeavePage";
@@ -159,9 +156,6 @@ const AppContent = () => {
           <Route path="/staff/task/:taskId" element={<StaffTaskDetail />} />
           <Route path="/staff/work" element={<StaffWork />} />
           <Route path="/staff/inbox" element={<InboxPage />} />
-          <Route path="/staff/arcade/chess" element={<ChessGamePage />} />
-          <Route path="/staff/arcade/tictactoe" element={<TicTacToePage />} />
-          <Route path="/staff/arcade/pingpong" element={<PingPongPage />} />
           <Route path="/staff/notes" element={<NotesPage />} />
           <Route path="/staff/onboarding" element={<OnboardingPage />} />
           <Route path="/staff/leave" element={<LeavePage />} />

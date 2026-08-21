@@ -12,7 +12,7 @@ const ArcadeView = () => {
       icon: Swords,
       color: "bg-white text-black",
       iconColor: "text-black",
-      path: "/staff/arcade/chess",
+      path: "?chess",
       available: true
     },
     {
@@ -22,7 +22,7 @@ const ArcadeView = () => {
       icon: Circle,
       color: "bg-gradient-to-r from-orange-500 to-orange-400 text-white",
       iconColor: "text-white",
-      path: "/staff/arcade/tictactoe",
+      path: "?tictactoe",
       available: true
     },
     {
@@ -42,8 +42,28 @@ const ArcadeView = () => {
       icon: Minus,
       color: "bg-white text-black border border-zinc-200",
       iconColor: "text-black",
-      path: "/staff/arcade/pingpong",
+      path: "?pingpong",
       available: true
+    },
+    {
+      id: "codepuzzle",
+      title: "Code Puzzle",
+      description: "Debug under pressure",
+      icon: Swords,
+      color: "bg-zinc-800 text-white border border-white/5",
+      iconColor: "text-white",
+      path: "#",
+      available: false
+    },
+    {
+      id: "quickquiz",
+      title: "Quick Quiz",
+      description: "Test your general knowledge",
+      icon: Circle,
+      color: "bg-blue-900 text-white border border-white/5",
+      iconColor: "text-white",
+      path: "#",
+      available: false
     }
   ];
 
