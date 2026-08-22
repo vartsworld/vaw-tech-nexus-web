@@ -12,6 +12,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import HRDashboard from "./pages/HRDashboard";
 import Internship from "./pages/Internship";
+import InternshipRegistration from "./pages/InternshipRegistration";
 import InternExperience from "./pages/InternExperience";
 import TeamApplication from "./pages/TeamApplication";
 import TrackApplication from "./pages/TrackApplication";
@@ -131,6 +132,7 @@ const AppContent = () => {
           <Route path="/" element={<Index />} />
           <Route path="/service-request" element={<ServiceRequest />} />
           <Route path="/internship" element={<Internship />} />
+          <Route path="/internship/registration" element={<InternshipRegistration />} />
           <Route path="/intern-experience" element={<InternExperience />} />
           <Route path="/team-application" element={<TeamApplication />} />
           <Route path="/track-application" element={<TrackApplication />} />

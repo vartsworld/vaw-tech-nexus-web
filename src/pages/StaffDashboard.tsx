@@ -95,6 +95,14 @@ import HeaderClock from "@/components/HeaderClock";
 import TicTacToe from "@/components/staff/games/TicTacToe";
 import PingPong from "@/components/staff/games/PingPong";
 import RealChessEngine from "@/components/staff/RealChessEngine";
+import CodeTyper from "@/components/staff/games/CodeTyper";
+import ColorMatch from "@/components/staff/games/ColorMatch";
+import CodePuzzle from "@/components/staff/games/CodePuzzle";
+import QuickQuiz from "@/components/staff/games/QuickQuiz";
+import SnakeGame from "@/components/staff/games/SnakeGame";
+import MemoryMatrix from "@/components/staff/games/MemoryMatrix";
+import ArcadeGameHeader from "@/components/staff/ArcadeGameHeader";
+import { Swords, Circle, Quote, Code, Globe, Brain, Zap, Palette } from "lucide-react";
 
 type RoomType =
   | 'home'
@@ -118,7 +126,13 @@ type RoomType =
   | 'game'
   | 'arcade'
   | 'tictactoe'
-  | 'pingpong';
+  | 'pingpong'
+  | 'codetyper'
+  | 'colormatch'
+  | 'codepuzzle'
+  | 'quickquiz'
+  | 'snake'
+  | 'memory';
 
 const EMOJI_OPTIONS = [
   "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
@@ -141,7 +155,8 @@ const paramToRoom = (param: string): RoomType | null => {
   const validRooms: RoomType[] = [
     'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
     'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox',
-    'chat', 'staff', 'coin', 'game', 'arcade', 'tictactoe', 'pingpong'
+    'chat', 'staff', 'coin', 'game', 'arcade', 'tictactoe', 'pingpong',
+    'codetyper', 'colormatch', 'codepuzzle', 'quickquiz', 'snake', 'memory'
   ];
   if (validRooms.includes(param as RoomType)) return param as RoomType;
   return null;
@@ -686,6 +701,12 @@ const StaffDashboard = () => {
     ),
     chess: (
       <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <ArcadeGameHeader
+          title="Chess Arena"
+          description="Realtime multiplayer & AI chess battles"
+          icon={Swords}
+          onBack={() => handleRoomChange('arcade')}
+        />
         <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[600px]">
           <RealChessEngine userId={profile.user_id} userProfile={profile} />
         </div>
@@ -693,12 +714,90 @@ const StaffDashboard = () => {
     ),
     tictactoe: (
       <div className="space-y-6 max-w-5xl mx-auto py-2">
-        <TicTacToe />
+        <ArcadeGameHeader
+          title="Tic Tac Toe"
+          description="Classic X's and O's vs AI engine"
+          icon={Circle}
+          onBack={() => handleRoomChange('arcade')}
+        />
+        <TicTacToe userId={profile.user_id} />
       </div>
     ),
     pingpong: (
       <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <ArcadeGameHeader
+          title="Ping Pong"
+          description="Fast-paced retro arcade pong vs AI"
+          icon={Gamepad2}
+          onBack={() => handleRoomChange('arcade')}
+        />
         <PingPong />
+      </div>
+    ),
+    codetyper: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <ArcadeGameHeader
+          title="Quote Typer"
+          description="Inspiring motivational quotes typing speed test"
+          icon={Quote}
+          onBack={() => handleRoomChange('arcade')}
+        />
+        <CodeTyper userId={profile.user_id} onClose={() => handleRoomChange('arcade')} />
+      </div>
+    ),
+    colormatch: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <ArcadeGameHeader
+          title="Color Match"
+          description="Design staff color vision & hex perception game"
+          icon={Palette}
+          onBack={() => handleRoomChange('arcade')}
+        />
+        <ColorMatch userId={profile.user_id} onClose={() => handleRoomChange('arcade')} />
+      </div>
+    ),
+    codepuzzle: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <ArcadeGameHeader
+          title="Code Puzzle"
+          description="Debug code snippets under pressure"
+          icon={Code}
+          onBack={() => handleRoomChange('arcade')}
+        />
+        <CodePuzzle userId={profile.user_id} onClose={() => handleRoomChange('arcade')} />
+      </div>
+    ),
+    quickquiz: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <ArcadeGameHeader
+          title="Quick Quiz"
+          description="Test CS fundamentals & speed logic"
+          icon={Brain}
+          onBack={() => handleRoomChange('arcade')}
+        />
+        <QuickQuiz userId={profile.user_id} onClose={() => handleRoomChange('arcade')} />
+      </div>
+    ),
+    snake: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <ArcadeGameHeader
+          title="Snake Retro"
+          description="Grow your snake and chase high scores"
+          icon={Zap}
+          onBack={() => handleRoomChange('arcade')}
+        />
+        <SnakeGame userId={profile.user_id} onClose={() => handleRoomChange('arcade')} />
+      </div>
+    ),
+    memory: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <ArcadeGameHeader
+          title="Memory Matrix"
+          description="Match tech pairs & test memory speed"
+          icon={Sparkles}
+          onBack={() => handleRoomChange('arcade')}
+        />
+        <MemoryMatrix userId={profile.user_id} onClose={() => handleRoomChange('arcade')} />
       </div>
     ),
     onboarding: (
