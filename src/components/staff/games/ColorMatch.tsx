@@ -241,7 +241,7 @@ export default function ColorMatch({ onClose, userId }: { onClose?: () => void; 
         <CardTitle className="text-xl font-black text-pink-400 flex items-center justify-between">
           <span className="flex items-center gap-2">
             <Palette className="w-5 h-5 text-pink-400" />
-            Color Wheel Perception
+            Color Match
           </span>
         </CardTitle>
 
@@ -278,8 +278,8 @@ export default function ColorMatch({ onClose, userId }: { onClose?: () => void; 
               size="sm"
               onClick={() => toggleUnlimitedMode(false)}
               className={`text-xs font-bold rounded-lg transition-all ${!isUnlimited
-                  ? "bg-pink-600 text-white shadow-md shadow-pink-600/30"
-                  : "bg-transparent text-zinc-400 hover:text-white"
+                ? "bg-pink-600 text-white shadow-md shadow-pink-600/30"
+                : "bg-transparent text-zinc-400 hover:text-white"
                 }`}
             >
               <Clock className="w-3.5 h-3.5 mr-1" />
@@ -289,8 +289,8 @@ export default function ColorMatch({ onClose, userId }: { onClose?: () => void; 
               size="sm"
               onClick={() => toggleUnlimitedMode(true)}
               className={`text-xs font-bold rounded-lg transition-all ${isUnlimited
-                  ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
-                  : "bg-transparent text-zinc-400 hover:text-white"
+                ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+                : "bg-transparent text-zinc-400 hover:text-white"
                 }`}
             >
               <InfinityIcon className="w-3.5 h-3.5 mr-1" />
