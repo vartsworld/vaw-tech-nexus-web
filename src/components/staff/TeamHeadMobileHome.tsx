@@ -26,7 +26,10 @@ import {
   Plus,
   Check,
   ClipboardList,
-  Smile
+  Smile,
+  X,
+  ExternalLink,
+  ChevronDown
 } from "lucide-react";
 import BiometricSettingsDialog from "@/components/staff/BiometricSettingsDialog";
 import { Badge } from "@/components/ui/badge";
@@ -39,10 +42,33 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { format, isSameDay, parseISO } from "date-fns";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+
+// Helper to format a Date as YYYY-MM-DD in local time
+const getLocalDateKey = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper to format an ISO string date as YYYY-MM-DD in local time
+const getIsoDateKey = (isoStr: string | null | undefined) => {
+  if (!isoStr) return '';
+  try {
+    if (isoStr.includes('T')) {
+      const d = parseISO(isoStr);
+      return getLocalDateKey(d);
+    }
+    return isoStr.substring(0, 10);
+  } catch {
+    return '';
+  }
+};
 import { TaskDetailDialog } from "./TaskDetailDialog";
 import LeaveView from "@/components/staff/LeaveView";
 import TeamHeadWorkspace from "./TeamHeadWorkspace";
@@ -56,8 +82,10 @@ import {
   Video,
   Activity,
   Compass,
-  UserCheck
+  UserCheck,
+  Globe
 } from "lucide-react";
+import ProjectMonitor from "@/pages/ProjectMonitor";
 
 type MobileTab = 'home' | 'tasks' | 'planner' | 'tools' | 'profile';
 
@@ -167,12 +195,18 @@ const TeamHeadMobileHome = ({
 
   // Planner states
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
   const [plans, setPlans] = useState<any[]>([]);
+  const [plannerTasks, setPlannerTasks] = useState<any[]>([]);
+  const [plannerSubtasks, setPlannerSubtasks] = useState<any[]>([]);
+  const [staffMembers, setStaffMembers] = useState<any[]>([]);
   const [newPlanTitle, setNewPlanTitle] = useState("");
   const [plansLoading, setPlansLoading] = useState(false);
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>(['all']);
+  const [clientFilterSearch, setClientFilterSearch] = useState("");
   const [newPlanClientId, setNewPlanClientId] = useState<string>("common");
+  const [viewDetailTask, setViewDetailTask] = useState<{ type: 'task' | 'subtask'; data: any } | null>(null);
 
   const firstName = profile?.full_name?.split(' ')[0] || 'Leader';
 
@@ -300,24 +334,33 @@ const TeamHeadMobileHome = ({
     }
   }, [profile?.user_id, profile?.department_id]);
 
-  // Fetch plans
+  // Fetch plans and deliverables
   const fetchPlans = useCallback(async () => {
     if (!profile?.user_id) return;
     setPlansLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('monthly_plans')
-        .select('*');
-      if (error) throw error;
-      setPlans(data || []);
+      const [plansRes, clientsRes, staffRes, tasksRes, subtasksRes] = await Promise.all([
+        supabase.from('monthly_plans').select('*'),
+        supabase.from('clients').select('id, company_name'),
+        supabase.from('staff_profiles').select('user_id, id, full_name, avatar_url, role, department_id'),
+        supabase.from('staff_tasks').select('id, title, description, due_date, status, priority, client_id, assigned_to, department_id, stage_config'),
+        supabase.from('staff_subtasks').select('id, title, description, due_date, status, assigned_to, task_id, staff_tasks(client_id, department_id)')
+      ]);
 
-      // Fetch clients
-      const { data: clientsData } = await supabase
-        .from('clients')
-        .select('id, company_name');
-      setClients(clientsData || []);
+      if (plansRes.error) throw plansRes.error;
+      setPlans(plansRes.data || []);
+      setClients(clientsRes.data || []);
+      setStaffMembers(staffRes.data || []);
+
+      if (!tasksRes.error && tasksRes.data) {
+        setPlannerTasks(tasksRes.data);
+      }
+
+      if (!subtasksRes.error && subtasksRes.data) {
+        setPlannerSubtasks(subtasksRes.data);
+      }
     } catch (err) {
-      console.error('Error fetching plans:', err);
+      console.error('Error fetching plans and deliverables:', err);
     } finally {
       setPlansLoading(false);
     }
@@ -418,6 +461,45 @@ const TeamHeadMobileHome = ({
     }
   };
 
+  // Toggle planner task completion
+  const handleToggleTaskCompletion = async (taskId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+    try {
+      const { error } = await supabase
+        .from('staff_tasks')
+        .update({ status: newStatus })
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      setPlannerTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+      toast.success(newStatus === 'completed' ? "Task marked completed!" : "Task marked pending");
+    } catch (err) {
+      console.error('Error updating task status:', err);
+      toast.error("Failed to update task");
+    }
+  };
+
+  // Toggle planner subtask completion
+  const handleToggleSubtaskCompletion = async (subtaskId: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+    try {
+      const { error } = await supabase
+        .from('staff_subtasks')
+        .update({ status: newStatus })
+        .eq('id', subtaskId);
+
+      if (error) throw error;
+
+      setPlannerSubtasks(prev => prev.map(s => s.id === subtaskId ? { ...s, status: newStatus } : s));
+      toast.success(newStatus === 'completed' ? "Subtask marked completed!" : "Subtask marked pending");
+    } catch (err) {
+      console.error('Error updating subtask status:', err);
+      toast.error("Failed to update subtask");
+    }
+  };
+
   const handleToggleClientFilter = (clientId: string) => {
     if (clientId === 'all') {
       setSelectedClientIds(['all']);
@@ -446,7 +528,7 @@ const TeamHeadMobileHome = ({
       const { data, error } = await supabase
         .from('monthly_plans')
         .insert({
-          date: format(selectedDate, 'yyyy-MM-dd'),
+          date: getLocalDateKey(selectedDate),
           title: newPlanTitle.trim(),
           description: "",
           created_by: profile?.user_id,
@@ -470,36 +552,143 @@ const TeamHeadMobileHome = ({
     }
   };
 
+  const isLeader =
+    profile?.role === 'team_head' ||
+    profile?.role === 'lead' ||
+    profile?.role === 'manager' ||
+    profile?.role === 'admin' ||
+    profile?.role === 'super_admin' ||
+    profile?.is_department_head;
+
   // Filter plans based on selected client filter
   const filteredPlans = useMemo(() => {
     return plans.filter(p => {
       if (selectedClientIds.includes('all')) return true;
-      if (!p.client_id) return selectedClientIds.includes('common');
+      if (!p.client_id || p.client_id === 'common') return selectedClientIds.includes('common');
       return selectedClientIds.includes(p.client_id);
     });
   }, [plans, selectedClientIds]);
 
-  const selectedDatePlans = useMemo(() => {
-    if (!selectedDate) return [];
-    return filteredPlans.filter(p => isSameDay(parseISO(p.date), selectedDate));
-  }, [filteredPlans, selectedDate]);
-
-  // Group plans for grouping in UI list
-  const { commonPlans, clientGrouped } = useMemo(() => {
-    const common = selectedDatePlans.filter(p => !p.client_id);
-    const clientGroupedMap: Record<string, { name: string, plans: any[] }> = {};
-
-    selectedDatePlans.filter(p => p.client_id).forEach(p => {
-      const client = clients.find(c => c.id === p.client_id);
-      const name = client?.company_name || 'Unknown Client';
-      if (!clientGroupedMap[p.client_id!]) {
-        clientGroupedMap[p.client_id!] = { name, plans: [] };
+  // Filter planner tasks based on selected client filter
+  const filteredPlannerTasks = useMemo(() => {
+    return plannerTasks.filter(t => {
+      // 1. If specific clients are selected in the filter, filter by those clients
+      if (!selectedClientIds.includes('all')) {
+        if (!t.client_id || t.client_id === 'common' || t.client_id === 'no-client') {
+          return selectedClientIds.includes('common');
+        }
+        return selectedClientIds.includes(t.client_id);
       }
-      clientGroupedMap[p.client_id!].plans.push(p);
-    });
 
-    return { commonPlans: common, clientGrouped: clientGroupedMap };
-  }, [selectedDatePlans, clients]);
+      // 2. If 'all' is selected:
+      if (isLeader) return true;
+
+      if (t.department_id && profile?.department_id && t.department_id === profile.department_id) {
+        return true;
+      }
+      const stageConfig = t.stage_config ? (typeof t.stage_config === 'string' ? JSON.parse(t.stage_config) : t.stage_config) : {};
+      const targetDepts = (stageConfig as any)?.target_departments;
+      if (Array.isArray(targetDepts) && profile?.department_id && targetDepts.includes(profile.department_id)) {
+        return true;
+      }
+      if (!t.client_id) return true;
+
+      let isAssigned = false;
+      if (t.assigned_to) {
+        try {
+          const parsed = typeof t.assigned_to === 'string' ? JSON.parse(t.assigned_to) : t.assigned_to;
+          isAssigned = Array.isArray(parsed) ? parsed.includes(profile?.user_id) : parsed === profile?.user_id;
+        } catch {
+          isAssigned = String(t.assigned_to).includes(profile?.user_id || '');
+        }
+      }
+      return isAssigned;
+    });
+  }, [plannerTasks, selectedClientIds, isLeader, profile?.department_id, profile?.user_id]);
+
+  // Filter planner subtasks
+  const filteredPlannerSubtasks = useMemo(() => {
+    return plannerSubtasks.filter(s => {
+      const parentTask = s.staff_tasks;
+      const clientId = parentTask?.client_id;
+      if (!selectedClientIds.includes('all')) {
+        if (!clientId || clientId === 'common' || clientId === 'no-client') {
+          return selectedClientIds.includes('common');
+        }
+        return selectedClientIds.includes(clientId);
+      }
+
+      if (isLeader) return true;
+      if (s.assigned_to === profile?.user_id) return true;
+      if (parentTask?.department_id && profile?.department_id && parentTask.department_id === profile.department_id) {
+        return true;
+      }
+      return true;
+    });
+  }, [plannerSubtasks, selectedClientIds, isLeader, profile?.department_id, profile?.user_id]);
+
+  // Group by date (YYYY-MM-DD local format)
+  const plansByDate = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    filteredPlans.forEach(p => {
+      const dKey = getIsoDateKey(p.date);
+      if (dKey) {
+        if (!map[dKey]) map[dKey] = [];
+        map[dKey].push(p);
+      }
+    });
+    return map;
+  }, [filteredPlans]);
+
+  const tasksByDate = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    filteredPlannerTasks.forEach(t => {
+      const dKey = getIsoDateKey(t.due_date);
+      if (dKey) {
+        if (!map[dKey]) map[dKey] = [];
+        map[dKey].push(t);
+      }
+    });
+    return map;
+  }, [filteredPlannerTasks]);
+
+  const subtasksByDate = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    filteredPlannerSubtasks.forEach(s => {
+      const dKey = getIsoDateKey(s.due_date);
+      if (dKey) {
+        if (!map[dKey]) map[dKey] = [];
+        map[dKey].push(s);
+      }
+    });
+    return map;
+  }, [filteredPlannerSubtasks]);
+
+  // Calculate 100% completed dates
+  const completedDateKeys = useMemo(() => {
+    const set = new Set<string>();
+    const allDateKeys = new Set([
+      ...Object.keys(plansByDate),
+      ...Object.keys(tasksByDate),
+      ...Object.keys(subtasksByDate)
+    ]);
+
+    allDateKeys.forEach(dateKey => {
+      const pList = plansByDate[dateKey] || [];
+      const tList = tasksByDate[dateKey] || [];
+      const sList = subtasksByDate[dateKey] || [];
+      const total = pList.length + tList.length + sList.length;
+      if (total > 0) {
+        const allPlansDone = pList.every(p => p.is_completed);
+        const allTasksDone = tList.every(t => t.status === 'completed');
+        const allSubtasksDone = sList.every(s => s.status === 'completed');
+        if (allPlansDone && allTasksDone && allSubtasksDone) {
+          set.add(dateKey);
+        }
+      }
+    });
+    return set;
+  }, [plansByDate, tasksByDate, subtasksByDate]);
 
   // Task filtering for team head tasks tab
   const filteredTasks = useMemo(() => {
@@ -808,6 +997,19 @@ const TeamHeadMobileHome = ({
             </button>
 
             <button
+              onClick={() => setActiveTool("project-monitor")}
+              className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 flex items-center justify-center text-cyan-400 border border-cyan-500/20">
+                <Globe className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Project Monitor</h4>
+                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Asset Tracking</p>
+              </div>
+            </button>
+
+            <button
               onClick={() => setActiveTool("coin")}
               className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl col-span-2"
             >
@@ -848,6 +1050,11 @@ const TeamHeadMobileHome = ({
           {activeTool === "meeting" && <MeetingRoom />}
           {activeTool === "tools_nexus" && <ToolsNexusView profile={profile} />}
           {activeTool === "activity" && <ActivityLogPanel userId={profile?.user_id || ''} className="border-none bg-transparent" />}
+          {activeTool === "project-monitor" && (
+            <div className="bg-black/40 backdrop-blur-2xl p-4 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
+              <ProjectMonitor standalone={true} />
+            </div>
+          )}
           {activeTool === "coin" && (
             <div className="space-y-4">
               <div className="bg-black/40 backdrop-blur-2xl p-5 rounded-3xl border border-white/10 text-center">
@@ -964,24 +1171,47 @@ const TeamHeadMobileHome = ({
           mode="single"
           selected={selectedDate}
           onSelect={setSelectedDate}
+          month={calendarMonth}
+          onMonthChange={setCalendarMonth}
           className="p-3 bg-transparent w-full"
           components={{
             DayContent: ({ date }) => {
-              const dayPlans = filteredPlans.filter(p => isSameDay(parseISO(p.date), date));
+              const dKey = getLocalDateKey(date);
+              const dayPlans = plansByDate[dKey] || [];
+              const dayTasks = tasksByDate[dKey] || [];
+              const daySubtasks = subtasksByDate[dKey] || [];
+              const totalItems = dayPlans.length + dayTasks.length + daySubtasks.length;
+              const isAllDone = completedDateKeys.has(dKey);
+
               return (
-                <div className="relative flex flex-col items-center justify-center w-full h-full p-1">
-                  <span className="text-xs">{date.getDate()}</span>
-                  {dayPlans.length > 0 && (
+                <div className={cn(
+                  "relative flex flex-col items-center justify-center w-full h-full p-1 rounded-lg transition-all",
+                  isAllDone && "ring-1 ring-emerald-500/60 bg-emerald-500/10"
+                )}>
+                  <span className={cn("text-xs", isAllDone && "font-bold text-emerald-400")}>{date.getDate()}</span>
+                  {totalItems > 0 && (
                     <div className="absolute bottom-1 flex gap-0.5 justify-center w-full px-0.5 overflow-hidden">
-                      {dayPlans.slice(0, 3).map((plan, idx) => (
+                      {dayPlans.slice(0, 2).map((plan, idx) => (
                         <span
-                          key={idx}
-                          className="w-1 h-1 rounded-full"
+                          key={`p-${idx}`}
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
                           style={{ backgroundColor: plan.color || '#8b5cf6' }}
                         />
                       ))}
-                      {dayPlans.length > 3 && (
-                        <span className="w-1 h-1 rounded-full bg-white opacity-50" />
+                      {dayTasks.slice(0, 2).map((task, idx) => (
+                        <span
+                          key={`t-${idx}`}
+                          className="w-1.5 h-1.5 rounded-full shrink-0 bg-purple-400"
+                        />
+                      ))}
+                      {daySubtasks.slice(0, 1).map((sub, idx) => (
+                        <span
+                          key={`s-${idx}`}
+                          className="w-1.5 h-1.5 rounded-full shrink-0 bg-pink-400"
+                        />
+                      ))}
+                      {totalItems > 5 && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-white/60 shrink-0" />
                       )}
                     </div>
                   )}
@@ -992,71 +1222,139 @@ const TeamHeadMobileHome = ({
         />
       </div>
 
-      {/* Day's plans */}
+      {/* Day's plans & deliverables */}
       <div className="space-y-4">
         <div className="border-t border-white/5 pt-4 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-4">
             <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">
-              Plans for {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Selected Date"}
+              Deliverables for {selectedDate ? format(selectedDate, "MMMM d, yyyy") : "Selected Date"}
             </h3>
 
-            {/* Client Filter Popover */}
+            {/* Searchable Client Filter Popover */}
             <Popover>
               <PopoverTrigger asChild>
                 <button
-                  className="h-8 px-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white flex items-center gap-1 text-[10px] font-black uppercase tracking-wider"
+                  className="h-8 px-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider transition-colors"
                 >
                   <Briefcase className="w-3 h-3 text-purple-400" />
                   <span>Filter ({selectedClientIds.includes('all') ? 'All' : selectedClientIds.length})</span>
+                  <ChevronDown className="w-3 h-3 text-white/40" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-64 bg-zinc-950 border border-white/10 rounded-2xl p-3 shadow-2xl space-y-2 z-50">
-                <h4 className="text-[10px] font-black uppercase tracking-wider text-white/40 px-2 pb-1 border-b border-white/5">
-                  Filter by Client
-                </h4>
-                <ScrollArea className="h-48 pr-1">
+              <PopoverContent className="w-72 max-w-[calc(100vw-32px)] bg-zinc-950 border border-white/10 rounded-2xl p-3 shadow-2xl space-y-2.5 z-50">
+                <div className="flex items-center justify-between px-1 pb-1 border-b border-white/5">
+                  <h4 className="text-[10px] font-black uppercase tracking-wider text-white/60">
+                    Filter by Client
+                  </h4>
+                  {!selectedClientIds.includes('all') && (
+                    <button
+                      onClick={() => setSelectedClientIds(['all'])}
+                      className="text-[9px] font-bold text-violet-400 hover:text-violet-300 uppercase"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
+
+                {/* Search input */}
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-white/40" />
+                  <Input
+                    placeholder="Search clients..."
+                    value={clientFilterSearch}
+                    onChange={(e) => setClientFilterSearch(e.target.value)}
+                    className="h-7 pl-8 pr-7 text-xs bg-white/5 border-white/10 rounded-lg text-white placeholder:text-white/30 focus-visible:ring-violet-500"
+                  />
+                  {clientFilterSearch && (
+                    <button
+                      onClick={() => setClientFilterSearch("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Active Filter Chips */}
+                {!selectedClientIds.includes('all') && selectedClientIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto py-1">
+                    {selectedClientIds.map(id => {
+                      const name = id === 'common' ? 'Common' : (clients.find(c => c.id === id)?.company_name || 'Client');
+                      return (
+                        <Badge
+                          key={id}
+                          variant="secondary"
+                          className="text-[9px] font-bold bg-violet-500/20 text-violet-300 border-violet-500/30 gap-1 pr-1 cursor-pointer"
+                          onClick={() => handleToggleClientFilter(id)}
+                        >
+                          <span className="truncate max-w-[100px]">{name}</span>
+                          <span className="hover:text-white ml-0.5 inline-flex items-center">
+                            <X className="w-2.5 h-2.5" />
+                          </span>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <ScrollArea className="h-44 pr-1">
                   <div className="space-y-1">
                     {/* All Option */}
-                    <button
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleToggleClientFilter('all')}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleToggleClientFilter('all'); }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left cursor-pointer select-none"
                     >
                       <Checkbox
                         checked={selectedClientIds.includes('all')}
-                        onCheckedChange={() => handleToggleClientFilter('all')}
-                        className="border-white/20 data-[state=checked]:bg-violet-500 data-[state=checked]:text-black"
+                        className="border-white/20 data-[state=checked]:bg-violet-500 data-[state=checked]:text-black pointer-events-none"
                       />
-                      <span className="text-xs font-bold text-white uppercase">All Clients</span>
-                    </button>
+                      <span className="text-xs font-bold text-white uppercase">All Deliverables</span>
+                    </div>
 
                     {/* Common / No Client Option */}
-                    <button
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleToggleClientFilter('common')}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleToggleClientFilter('common'); }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left cursor-pointer select-none"
                     >
                       <Checkbox
                         checked={selectedClientIds.includes('common')}
-                        onCheckedChange={() => handleToggleClientFilter('common')}
-                        className="border-white/20 data-[state=checked]:bg-violet-500 data-[state=checked]:text-black"
+                        className="border-white/20 data-[state=checked]:bg-violet-500 data-[state=checked]:text-black pointer-events-none"
                       />
                       <span className="text-xs font-bold text-white/70 uppercase">Common (No Client)</span>
-                    </button>
+                    </div>
 
-                    {/* Client Options */}
-                    {clients.map(client => (
-                      <button
-                        key={client.id}
-                        onClick={() => handleToggleClientFilter(client.id)}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left"
-                      >
-                        <Checkbox
-                          checked={selectedClientIds.includes(client.id)}
-                          onCheckedChange={() => handleToggleClientFilter(client.id)}
-                          className="border-white/20 data-[state=checked]:bg-violet-500 data-[state=checked]:text-black"
-                        />
-                        <span className="text-xs font-medium text-white/90 truncate">{client.company_name}</span>
-                      </button>
-                    ))}
+                    {/* Client Options with Search */}
+                    {clients
+                      .filter(client => client.company_name?.toLowerCase().includes(clientFilterSearch.toLowerCase()))
+                      .map(client => {
+                        const isSelected = selectedClientIds.includes(client.id);
+                        return (
+                          <div
+                            key={client.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleToggleClientFilter(client.id)}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleToggleClientFilter(client.id); }}
+                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors text-left cursor-pointer select-none"
+                          >
+                            <Checkbox
+                              checked={isSelected}
+                              className="border-white/20 data-[state=checked]:bg-violet-500 data-[state=checked]:text-black pointer-events-none"
+                            />
+                            <span className="text-xs font-medium text-white/90 truncate">{client.company_name}</span>
+                          </div>
+                        );
+                      })}
+
+                    {clients.filter(c => c.company_name?.toLowerCase().includes(clientFilterSearch.toLowerCase())).length === 0 && clientFilterSearch && (
+                      <p className="text-[11px] text-white/40 text-center py-3">No matching clients</p>
+                    )}
                   </div>
                 </ScrollArea>
               </PopoverContent>
@@ -1064,108 +1362,247 @@ const TeamHeadMobileHome = ({
           </div>
 
           {plansLoading ? (
-            <div className="h-10 bg-zinc-900 rounded-xl animate-pulse" />
-          ) : selectedDatePlans.length === 0 ? (
-            <p className="text-xs text-zinc-500 py-3 text-center">No plans scheduled for this day.</p>
-          ) : (
-            <div className="space-y-4">
-              {/* Common Plans Section */}
-              {commonPlans.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 px-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                    Common Plans
-                  </h4>
-                  <div className="space-y-2">
-                    {commonPlans.map(plan => (
-                      <div
-                        key={plan.id}
-                        style={{
-                          borderLeft: `4px solid ${plan.color || '#8b5cf6'}`,
-                          backgroundColor: `${plan.color || '#8b5cf6'}15`
-                        }}
-                        className="flex items-center justify-between p-3.5 rounded-xl border-r border-t border-b border-white/5 transition-all"
-                      >
-                        <div className="flex-1 min-w-0 pr-3">
-                          <h4
-                            className={cn(
-                              "text-sm font-bold text-white",
-                              plan.is_completed && "line-through text-zinc-600"
-                            )}
-                            style={plan.is_completed ? {} : { color: plan.color || '#ffffff' }}
-                          >
-                            {plan.title}
-                          </h4>
-                          {plan.description && (
-                            <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{plan.description}</p>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => handleTogglePlanCompletion(plan.id, plan.is_completed)}
-                          className={cn(
-                            "w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0",
-                            plan.is_completed
-                              ? "bg-violet-500/20 border-violet-500 text-violet-400"
-                              : "border-white/10 text-zinc-500 hover:border-white/20"
-                          )}
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+            <div className="h-14 bg-zinc-900 rounded-2xl animate-pulse" />
+          ) : (() => {
+            const dKey = selectedDate ? getLocalDateKey(selectedDate) : '';
+            const dayPlans = plansByDate[dKey] || [];
+            const dayTasks = tasksByDate[dKey] || [];
+            const daySubtasks = subtasksByDate[dKey] || [];
+            const total = dayPlans.length + dayTasks.length + daySubtasks.length;
 
-              {/* Client-specific Groups */}
-              {Object.entries(clientGrouped).map(([clientId, group]) => (
-                <div key={clientId} className="space-y-2">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-400 flex items-center gap-1.5 px-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                    {group.name}
-                  </h4>
-                  <div className="space-y-2">
-                    {group.plans.map(plan => (
-                      <div
-                        key={plan.id}
-                        style={{
-                          borderLeft: `4px solid ${plan.color || '#8b5cf6'}`,
-                          backgroundColor: `${plan.color || '#8b5cf6'}15`
-                        }}
-                        className="flex items-center justify-between p-3.5 rounded-xl border-r border-t border-b border-white/5 transition-all"
+            if (total === 0) {
+              return <p className="text-xs text-zinc-500 py-4 text-center">No plans or tasks scheduled for this day.</p>;
+            }
+
+            return (
+              <div className="space-y-3">
+                {/* 1. Plans */}
+                {dayPlans.map(plan => {
+                  const clientObj = clients.find(c => c.id === plan.client_id);
+                  const clientName = clientObj ? clientObj.company_name : (plan.client_id && plan.client_id !== 'common' ? 'Client' : 'Common');
+                  const assignedStaffList = staffMembers.filter(s => Array.isArray(plan.assigned_staff) && plan.assigned_staff.includes(s.user_id || s.id));
+
+                  return (
+                    <div
+                      key={plan.id}
+                      style={{
+                        borderLeft: `4px solid ${plan.is_completed ? '#10b981' : (plan.color || '#8b5cf6')}`,
+                      }}
+                      className={cn(
+                        "flex items-start justify-between p-3.5 rounded-2xl border transition-all gap-3",
+                        plan.is_completed ? "bg-emerald-950/20 border-emerald-500/20 opacity-75" : "bg-black/40 border-white/10"
+                      )}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <Badge variant="outline" className="border-violet-500/40 bg-violet-500/15 text-violet-300 font-bold text-[9px] uppercase tracking-wider py-0 px-2 rounded-md">
+                            {clientName}
+                          </Badge>
+                        </div>
+                        <h4
+                          className={cn(
+                            "text-sm font-bold text-white leading-snug",
+                            plan.is_completed && "line-through text-zinc-500"
+                          )}
+                          style={plan.is_completed ? {} : { color: plan.color || '#ffffff' }}
+                        >
+                          {plan.title}
+                        </h4>
+                        {plan.description && (
+                          <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{plan.description}</p>
+                        )}
+                        {assignedStaffList.length > 0 && (
+                          <div className="flex items-center gap-1 mt-2">
+                            <div className="flex -space-x-1.5 overflow-hidden">
+                              {assignedStaffList.slice(0, 3).map((m, i) => (
+                                <Avatar key={m.user_id || i} className="h-5 w-5 rounded-full ring-1 ring-zinc-950">
+                                  <AvatarImage src={m.avatar_url} />
+                                  <AvatarFallback className="bg-violet-600 text-[8px] text-white">
+                                    {(m.full_name || 'S').slice(0, 2)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              ))}
+                            </div>
+                            <span className="text-[10px] text-zinc-400 font-medium ml-1 truncate max-w-[150px]">
+                              {assignedStaffList.map(s => s.full_name?.split(' ')[0]).filter(Boolean).join(', ')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleTogglePlanCompletion(plan.id, plan.is_completed)}
+                        className={cn(
+                          "w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0 mt-0.5",
+                          plan.is_completed
+                            ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                            : "border-white/10 text-zinc-500 hover:border-white/20"
+                        )}
                       >
-                        <div className="flex-1 min-w-0 pr-3">
-                          <h4
-                            className={cn(
-                              "text-sm font-bold text-white",
-                              plan.is_completed && "line-through text-zinc-600"
-                            )}
-                            style={plan.is_completed ? {} : { color: plan.color || '#ffffff' }}
-                          >
-                            {plan.title}
-                          </h4>
-                          {plan.description && (
-                            <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{plan.description}</p>
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+
+                {/* 2. Tasks */}
+                {dayTasks.map(task => {
+                  const isDone = task.status === 'completed';
+                  const clientObj = clients.find(c => c.id === task.client_id);
+                  const clientName = clientObj ? clientObj.company_name : (task.client_id && task.client_id !== 'common' && task.client_id !== 'no-client' ? 'Client' : 'Internal Task');
+
+                  let assignedIds: string[] = [];
+                  if (task.assigned_to) {
+                    try {
+                      const parsed = typeof task.assigned_to === 'string' ? JSON.parse(task.assigned_to) : task.assigned_to;
+                      assignedIds = Array.isArray(parsed) ? parsed : [parsed];
+                    } catch {
+                      assignedIds = [String(task.assigned_to)];
+                    }
+                  }
+                  const assignedStaffList = staffMembers.filter(s => assignedIds.includes(s.user_id || s.id));
+
+                  return (
+                    <div
+                      key={task.id}
+                      onClick={() => setViewDetailTask({ type: 'task', data: task })}
+                      style={{
+                        borderLeft: `4px solid ${isDone ? '#10b981' : '#8b5cf6'}`,
+                      }}
+                      className={cn(
+                        "flex items-start justify-between p-3.5 rounded-2xl border transition-all gap-3 cursor-pointer",
+                        isDone ? "bg-emerald-950/20 border-emerald-500/20 opacity-75" : "bg-purple-950/20 border-purple-500/20 hover:border-purple-500/40"
+                      )}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                          <Badge variant="outline" className="border-purple-500/40 bg-purple-500/15 text-purple-300 font-bold text-[9px] uppercase tracking-wider py-0 px-2 rounded-md">
+                            {clientName}
+                          </Badge>
+                          {task.priority && (
+                            <Badge variant="outline" className={cn("text-[9px] font-black uppercase py-0 px-1.5 rounded-md",
+                              task.priority === 'urgent' ? "border-red-500/40 text-red-400 bg-red-500/10" :
+                              task.priority === 'high' ? "border-orange-500/40 text-orange-400 bg-orange-500/10" :
+                              "border-yellow-500/40 text-yellow-400 bg-yellow-500/10"
+                            )}>
+                              {task.priority}
+                            </Badge>
                           )}
                         </div>
-                        <button
-                          onClick={() => handleTogglePlanCompletion(plan.id, plan.is_completed)}
+                        <h4
                           className={cn(
-                            "w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0",
-                            plan.is_completed
-                              ? "bg-violet-500/20 border-violet-500 text-violet-400"
-                              : "border-white/10 text-zinc-500 hover:border-white/20"
+                            "text-sm font-bold text-white leading-snug flex items-center gap-1.5",
+                            isDone && "line-through text-zinc-500"
                           )}
                         >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
+                          <span>⚡</span> {task.title}
+                        </h4>
+                        {task.description && (
+                          <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{task.description}</p>
+                        )}
+                        {assignedStaffList.length > 0 && (
+                          <div className="flex items-center gap-1 mt-2">
+                            <div className="flex -space-x-1.5 overflow-hidden">
+                              {assignedStaffList.slice(0, 3).map((m, i) => (
+                                <Avatar key={m.user_id || i} className="h-5 w-5 rounded-full ring-1 ring-zinc-950">
+                                  <AvatarImage src={m.avatar_url} />
+                                  <AvatarFallback className="bg-purple-600 text-[8px] text-white">
+                                    {(m.full_name || 'S').slice(0, 2)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              ))}
+                            </div>
+                            <span className="text-[10px] text-zinc-400 font-medium ml-1 truncate max-w-[150px]">
+                              {assignedStaffList.map(s => s.full_name?.split(' ')[0]).filter(Boolean).join(', ')}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleTaskCompletion(task.id, task.status);
+                        }}
+                        className={cn(
+                          "w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0 mt-0.5",
+                          isDone
+                            ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                            : "border-white/10 text-zinc-500 hover:border-white/20"
+                        )}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+
+                {/* 3. Subtasks */}
+                {daySubtasks.map(subtask => {
+                  const isDone = subtask.status === 'completed';
+                  const assignedMember = staffMembers.find(s => s.user_id === subtask.assigned_to || s.id === subtask.assigned_to);
+
+                  return (
+                    <div
+                      key={subtask.id}
+                      onClick={() => setViewDetailTask({ type: 'subtask', data: subtask })}
+                      style={{
+                        borderLeft: `4px solid ${isDone ? '#10b981' : '#ec4899'}`,
+                      }}
+                      className={cn(
+                        "flex items-start justify-between p-3.5 rounded-2xl border transition-all gap-3 cursor-pointer",
+                        isDone ? "bg-emerald-950/20 border-emerald-500/20 opacity-75" : "bg-pink-950/20 border-pink-500/20 hover:border-pink-500/40"
+                      )}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Badge variant="outline" className="border-pink-500/40 bg-pink-500/15 text-pink-300 font-bold text-[9px] uppercase tracking-wider py-0 px-2 rounded-md">
+                            Subtask
+                          </Badge>
+                        </div>
+                        <h4
+                          className={cn(
+                            "text-sm font-bold text-white leading-snug flex items-center gap-1.5",
+                            isDone && "line-through text-zinc-500"
+                          )}
+                        >
+                          <span>📌</span> {subtask.title}
+                        </h4>
+                        {subtask.description && (
+                          <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{subtask.description}</p>
+                        )}
+                        {assignedMember && (
+                          <div className="flex items-center gap-1.5 mt-2">
+                            <Avatar className="h-5 w-5 rounded-full ring-1 ring-zinc-950">
+                              <AvatarImage src={assignedMember.avatar_url} />
+                              <AvatarFallback className="bg-pink-600 text-[8px] text-white">
+                                {(assignedMember.full_name || 'S').slice(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-[10px] text-zinc-400 font-medium">
+                              {assignedMember.full_name}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleSubtaskCompletion(subtask.id, subtask.status);
+                        }}
+                        className={cn(
+                          "w-7 h-7 rounded-full border flex items-center justify-center transition-all shrink-0 mt-0.5",
+                          isDone
+                            ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
+                            : "border-white/10 text-zinc-500 hover:border-white/20"
+                        )}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Inline Quick Add Plan */}
@@ -1495,6 +1932,95 @@ const TeamHeadMobileHome = ({
           </div>
         </div>
       </nav>
+
+      {/* Task / Subtask Detail Dialog */}
+      <Dialog open={!!viewDetailTask} onOpenChange={(open) => !open && setViewDetailTask(null)}>
+        <DialogContent className="max-w-[calc(100vw-32px)] w-full rounded-2xl bg-zinc-950 border-white/10 text-white p-5 z-[99999]">
+          {viewDetailTask && (() => {
+            const isTask = viewDetailTask.type === 'task';
+            const item = viewDetailTask.data;
+            const isDone = item.status === 'completed';
+            const clientObj = isTask && item.client_id ? clients.find(c => c.id === item.client_id) : null;
+            const clientName = clientObj ? clientObj.company_name : (item.client_id && item.client_id !== 'common' && item.client_id !== 'no-client' ? 'Client' : 'Internal');
+
+            return (
+              <div className="space-y-4">
+                <DialogHeader className="space-y-2 text-left">
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant="outline" className={cn(
+                      "font-bold text-[10px] uppercase tracking-wider py-0.5 px-2 rounded-md",
+                      isTask ? "border-purple-500/40 bg-purple-500/15 text-purple-300" : "border-pink-500/40 bg-pink-500/15 text-pink-300"
+                    )}>
+                      {isTask ? '⚡ Task' : '📌 Subtask'} • {clientName}
+                    </Badge>
+                    {item.priority && (
+                      <Badge variant="outline" className={cn("text-[9px] font-black uppercase py-0.5 px-1.5 rounded-md",
+                        item.priority === 'urgent' ? "border-red-500/40 text-red-400 bg-red-500/10" :
+                        item.priority === 'high' ? "border-orange-500/40 text-orange-400 bg-orange-500/10" :
+                        "border-yellow-500/40 text-yellow-400 bg-yellow-500/10"
+                      )}>
+                        {item.priority}
+                      </Badge>
+                    )}
+                  </div>
+                  <DialogTitle className="text-base font-bold text-white leading-snug">
+                    {item.title}
+                  </DialogTitle>
+                </DialogHeader>
+
+                {item.description && (
+                  <div className="bg-white/[0.03] border border-white/5 rounded-xl p-3">
+                    <p className="text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-zinc-900/60 p-2.5 rounded-xl border border-white/5">
+                    <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold block mb-1">Due Date</span>
+                    <span className="text-zinc-200 font-medium">{item.due_date || 'No due date'}</span>
+                  </div>
+                  <div className="bg-zinc-900/60 p-2.5 rounded-xl border border-white/5">
+                    <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold block mb-1">Status</span>
+                    <span className={cn("font-bold capitalize", isDone ? "text-emerald-400" : "text-amber-400")}>
+                      {item.status || 'Pending'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 border-white/10 hover:bg-white/5 text-zinc-300 text-xs py-2 h-auto rounded-xl"
+                    onClick={() => setViewDetailTask(null)}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    className={cn(
+                      "flex-1 text-xs py-2 h-auto rounded-xl font-bold transition-all",
+                      isDone
+                        ? "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                        : "bg-emerald-500 hover:bg-emerald-600 text-black"
+                    )}
+                    onClick={() => {
+                      if (isTask) {
+                        handleToggleTaskCompletion(item.id, item.status);
+                      } else {
+                        handleToggleSubtaskCompletion(item.id, item.status);
+                      }
+                      setViewDetailTask(null);
+                    }}
+                  >
+                    {isDone ? 'Mark Incomplete' : 'Mark as Done'}
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       <BiometricSettingsDialog open={showBiometricDialog} onOpenChange={setShowBiometricDialog} />
     </div>

@@ -29,7 +29,8 @@ import {
   ChevronLeft,
   Circle,
   Swords,
-  ClipboardList
+  ClipboardList,
+  Globe
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import TeamChat from "./TeamChat";
@@ -406,6 +407,7 @@ const VirtualOfficeLayout = ({
         { id: 'meeting' as const, name: 'Meeting Room', icon: Users, path: '#' },
         { id: 'notepad', name: 'Quick Notepad', icon: ClipboardList, path: '#' },
         { id: 'activity', name: 'Activity', icon: Activity, path: '/staff/activity' },
+        { id: 'project-monitor', name: 'Project Monitor', icon: Globe, path: '/staff/project-monitor' },
       ]
     }
   ];

@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Globe, Server, Calendar, ExternalLink, RefreshCw, Trash2, Edit, CheckCircle, XCircle, AlertTriangle, Facebook, Filter, ArrowUpDown, Search } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Plus, Globe, Server, Calendar, ExternalLink, RefreshCw, Trash2, Edit, CheckCircle, XCircle, AlertTriangle, Facebook, Filter, ArrowUpDown, Search, Users, Instagram, Twitter, Linkedin, BarChart2, PieChart, TrendingUp, Hash } from "lucide-react";
 import { addDays } from "date-fns";
 import { format, differenceInDays, isPast, addMonths, addYears } from "date-fns";
 
@@ -78,6 +79,20 @@ const ProjectMonitorPage = ({ standalone = false }: { standalone?: boolean }) =>
     update_server: false,
     update_facebook: false
   });
+
+  // Marketing Analytics State for manual entry
+  const [marketingLinks, setMarketingLinks] = useState<{ id: string; clientId: string; platform: string; url: string; notes: string }[]>([]);
+  const [isMarketingDialogOpen, setIsMarketingDialogOpen] = useState(false);
+  const [marketingForm, setMarketingForm] = useState({ clientId: "", platform: "Instagram", url: "", notes: "" });
+
+  const handleAddMarketingLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!marketingForm.clientId || !marketingForm.url) return;
+    setMarketingLinks(prev => [...prev, { ...marketingForm, id: Math.random().toString() }]);
+    setIsMarketingDialogOpen(false);
+    setMarketingForm({ clientId: "", platform: "Instagram", url: "", notes: "" });
+    toast.success("Social media link added successfully");
+  };
 
   const isMounted = useRef(true);
 
@@ -705,7 +720,22 @@ const ProjectMonitorPage = ({ standalone = false }: { standalone?: boolean }) =>
         )}
 
         {/* Filter and Sort Bar */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <Tabs defaultValue="tech" className="w-full">
+          <div className="flex items-center justify-center mb-8">
+            <TabsList className="bg-white/5 border border-white/10 rounded-full p-1 h-14 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+              <TabsTrigger value="tech" className="rounded-full px-8 py-2.5 data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-white/60 transition-all font-semibold">
+                <Globe className="w-4 h-4 mr-2" />
+                Tech Monitor
+              </TabsTrigger>
+              <TabsTrigger value="marketing" className="rounded-full px-8 py-2.5 data-[state=active]:bg-purple-600 data-[state=active]:text-white text-white/60 transition-all font-semibold">
+                <PieChart className="w-4 h-4 mr-2" />
+                Marketing Analytics
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="tech" className="mt-0 space-y-6">
+            <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -795,103 +825,149 @@ const ProjectMonitorPage = ({ standalone = false }: { standalone?: boolean }) =>
               const facebookStatus = getRenewalStatus(project.facebook_token_renewal_date);
 
               return (
-                <Card key={project.id} className="overflow-hidden">
+                <Card key={project.id} className="group relative overflow-hidden bg-zinc-900/40 backdrop-blur-xl border border-white/10 hover:border-white/30 transition-all duration-300 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgba(79,70,229,0.2)] flex flex-col">
                   {/* Website Preview */}
-                  <div className="relative h-40 bg-muted border-b">
+                  <div className="relative h-48 bg-black/60 border-b border-white/5 overflow-hidden rounded-t-xl">
                     <iframe
                       src={project.website_url}
-                      className="w-full h-full pointer-events-none"
+                      className="w-full h-full pointer-events-none border-0"
                       title={project.project_name}
                       sandbox="allow-scripts allow-same-origin"
                       loading="lazy"
                     />
-                    <div className="absolute top-2 right-2 flex items-center gap-2">
-                      {getStatusIcon(websiteStatuses[project.id])}
+                    
+                    {/* Status & Redirection - Moved to Bottom Right */}
+                    <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2">
+                      <div className="bg-black/60 backdrop-blur-md rounded-full px-3 py-1.5 flex items-center gap-2 border border-white/10 shadow-lg">
+                        {getStatusIcon(websiteStatuses[project.id])}
+                      </div>
                       <Button
                         size="icon"
                         variant="secondary"
-                        className="h-7 w-7"
+                        className="h-9 w-9 bg-black/60 hover:bg-white/20 backdrop-blur-md border border-white/10 text-white rounded-full transition-colors"
                         onClick={() => window.open(project.website_url, '_blank')}
                       >
-                        <ExternalLink className="w-3 h-3" />
+                        <ExternalLink className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
 
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{project.project_name}</CardTitle>
-                        {project.clients && (
-                          <p className="text-sm text-muted-foreground">{project.clients.company_name}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(project)}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDelete(project.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                  <CardContent className="p-6 flex-1 flex flex-col items-center text-center relative z-20 bg-gradient-to-b from-white/5 to-transparent">
+                    {/* Edit/Delete Actions (Absolute Top Right of Content) */}
+                    <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <Button size="icon" variant="ghost" className="h-8 w-8 bg-white/5 hover:bg-white/10 text-white rounded-full" onClick={() => handleEdit(project)}>
+                        <Edit className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-full" onClick={() => handleDelete(project.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
-                  </CardHeader>
 
-                  <CardContent className="space-y-3">
+                    {/* Centered Title & Client */}
+                    <div className="mb-4 mt-2">
+                      <h3 className="text-2xl font-bold text-white tracking-tight leading-tight mb-1">{project.project_name}</h3>
+                      {project.clients && (
+                        <p className="text-white/50 font-medium text-sm flex items-center justify-center gap-1.5">
+                          <Users className="w-4 h-4" />
+                          {project.clients.company_name}
+                        </p>
+                      )}
+                    </div>
+
                     <a
                       href={project.website_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-primary hover:underline truncate block"
+                      className="inline-flex items-center justify-center gap-1.5 text-sm font-semibold text-indigo-400 hover:text-indigo-300 transition-colors truncate max-w-full mb-6 bg-indigo-500/10 px-4 py-1.5 rounded-full border border-indigo-500/20"
                     >
+                      <Globe className="w-4 h-4" />
                       {project.website_url}
                     </a>
 
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-col gap-3 w-full max-w-sm mx-auto mb-6">
                       {domainStatus && (
-                        <Badge variant="secondary" className={`${domainStatus.color} flex items-center gap-1`}>
-                          <Globe className="w-3 h-3" />
-                          Domain: {domainStatus.label}
-                        </Badge>
+                        <div className="flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl p-3 hover:bg-white/5 transition-colors">
+                           <div className="flex items-center gap-3">
+                             <div className={`p-2 rounded-xl ${domainStatus.color.replace('text-', 'bg-').replace('100', '500/20').replace('800', '400')}`}>
+                               <Globe className={`w-4 h-4 ${domainStatus.color.replace('bg-', 'text-').replace('100', '400')}`} />
+                             </div>
+                             <div className="text-left">
+                               <p className="text-[10px] uppercase font-bold tracking-wider text-white/40">Domain</p>
+                               <p className="text-sm font-semibold text-white/90">{domainStatus.label}</p>
+                             </div>
+                           </div>
+                           <Badge variant="outline" className={`border-white/10 bg-white/5 text-white/70 px-2 py-0.5 rounded-lg`}>
+                             {project.domain_renewal_cycle}
+                           </Badge>
+                        </div>
                       )}
+                      
                       {serverStatus && (
-                        <Badge variant="secondary" className={`${serverStatus.color} flex items-center gap-1`}>
-                          <Server className="w-3 h-3" />
-                          Server: {serverStatus.label}
-                        </Badge>
+                        <div className="flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl p-3 hover:bg-white/5 transition-colors">
+                           <div className="flex items-center gap-3">
+                             <div className={`p-2 rounded-xl ${serverStatus.color.replace('text-', 'bg-').replace('100', '500/20').replace('800', '400')}`}>
+                               <Server className={`w-4 h-4 ${serverStatus.color.replace('bg-', 'text-').replace('100', '400')}`} />
+                             </div>
+                             <div className="text-left">
+                               <p className="text-[10px] uppercase font-bold tracking-wider text-white/40">Server</p>
+                               <p className="text-sm font-semibold text-white/90">{serverStatus.label}</p>
+                             </div>
+                           </div>
+                           <Badge variant="outline" className={`border-white/10 bg-white/5 text-white/70 px-2 py-0.5 rounded-lg`}>
+                             {project.server_renewal_cycle}
+                           </Badge>
+                        </div>
                       )}
+
                       {facebookStatus && (
-                        <Badge variant="secondary" className={`${facebookStatus.color} flex items-center gap-1`}>
-                          <Facebook className="w-3 h-3" />
-                          FB Token: {facebookStatus.label}
-                        </Badge>
+                        <div className="flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl p-3 hover:bg-white/5 transition-colors">
+                           <div className="flex items-center gap-3">
+                             <div className={`p-2 rounded-xl ${facebookStatus.color.replace('text-', 'bg-').replace('100', '500/20').replace('800', '400')}`}>
+                               <Facebook className={`w-4 h-4 ${facebookStatus.color.replace('bg-', 'text-').replace('100', '400')}`} />
+                             </div>
+                             <div className="text-left">
+                               <p className="text-[10px] uppercase font-bold tracking-wider text-white/40">FB Token</p>
+                               <p className="text-sm font-semibold text-white/90">{facebookStatus.label}</p>
+                             </div>
+                           </div>
+                           <Badge variant="outline" className={`border-white/10 bg-white/5 text-white/70 px-2 py-0.5 rounded-lg`}>
+                             {project.facebook_token_renewal_cycle}
+                           </Badge>
+                        </div>
                       )}
                     </div>
 
                     {project.notes && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{project.notes}</p>
+                      <div className="w-full max-w-sm mx-auto bg-black/20 rounded-2xl p-4 mb-6 border border-white/5">
+                        <p className="text-sm text-white/60 font-medium italic text-center">"{project.notes}"</p>
+                      </div>
                     )}
-
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <span className="text-xs text-muted-foreground">
-                        Added {format(new Date(project.created_at), 'MMM dd, yyyy')}
-                      </span>
-                      <div className="flex gap-2">
+                    
+                    <div className="mt-auto w-full pt-6 border-t border-white/5 flex items-center justify-between">
+                      <div className="flex flex-col text-left">
+                        <span className="text-[10px] uppercase tracking-widest font-bold text-white/30">Registry Date</span>
+                        <span className="text-xs font-semibold text-white/50">
+                          {format(new Date(project.created_at), 'MMM dd, yyyy')}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
                         <Button
                           size="sm"
-                          variant="outline"
                           onClick={() => handleUpdateRenewal(project)}
+                          className="bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors h-9 px-4"
                         >
-                          <Calendar className="w-3 h-3 mr-1" />
-                          Update Renewal
+                          <Calendar className="w-3.5 h-3.5 mr-2" />
+                          Update
                         </Button>
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="ghost"
                           onClick={() => checkWebsiteStatus(project.id, project.website_url)}
+                          className="h-9 w-9 rounded-xl bg-white/5 hover:bg-white/15 text-white/60 hover:text-white transition-all hover:rotate-180"
+                          title="Refresh Status"
                         >
-                          <RefreshCw className="w-3 h-3 mr-1" />
-                          Refresh
+                          <RefreshCw className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
@@ -1064,6 +1140,116 @@ const ProjectMonitorPage = ({ standalone = false }: { standalone?: boolean }) =>
             </form>
           </DialogContent>
         </Dialog>
+        </TabsContent>
+
+        <TabsContent value="marketing" className="mt-0">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-white">Social Media Assets</h2>
+            <Dialog open={isMarketingDialogOpen} onOpenChange={setIsMarketingDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-purple-600 hover:bg-purple-700">
+                  <Plus className="w-4 h-4 mr-2" /> Add Link
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md bg-[#0f0f0f] border-white/10 text-white">
+                <DialogHeader>
+                  <DialogTitle>Add Social Media Link</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAddMarketingLink} className="space-y-4 mt-4">
+                  <div className="space-y-1">
+                    <Label className="text-gray-400">Client</Label>
+                    <Select value={marketingForm.clientId} onValueChange={v => setMarketingForm(prev => ({ ...prev, clientId: v }))}>
+                      <SelectTrigger className="bg-white/5 border-white/10"><SelectValue placeholder="Select Client" /></SelectTrigger>
+                      <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                        {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-gray-400">Platform</Label>
+                    <Select value={marketingForm.platform} onValueChange={v => setMarketingForm(prev => ({ ...prev, platform: v }))}>
+                      <SelectTrigger className="bg-white/5 border-white/10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="bg-[#1a1a1a] border-white/10 text-white">
+                        <SelectItem value="Instagram">Instagram</SelectItem>
+                        <SelectItem value="Facebook">Facebook</SelectItem>
+                        <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                        <SelectItem value="Twitter">Twitter</SelectItem>
+                        <SelectItem value="YouTube">YouTube</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-gray-400">Profile URL</Label>
+                    <Input required value={marketingForm.url} onChange={e => setMarketingForm(prev => ({ ...prev, url: e.target.value }))} className="bg-white/5 border-white/10" placeholder="https://..." />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-gray-400">Additional Notes</Label>
+                    <Textarea value={marketingForm.notes} onChange={e => setMarketingForm(prev => ({ ...prev, notes: e.target.value }))} className="bg-white/5 border-white/10" placeholder="Login info, target demographic, etc." />
+                  </div>
+                  <div className="pt-4 flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setIsMarketingDialogOpen(false)}>Cancel</Button>
+                    <Button type="submit" className="bg-purple-600 hover:bg-purple-700">Save Link</Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {clients.filter(c => marketingLinks.some(l => l.clientId === c.id)).length === 0 && (
+              <Card className="p-12 text-center col-span-full border-white/10 bg-white/5">
+                <PieChart className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-50" />
+                <h3 className="text-lg font-medium text-white mb-2">No Marketing Links Yet</h3>
+                <p className="text-muted-foreground mb-4">Add social media links to track client profiles</p>
+                <Button onClick={() => setIsMarketingDialogOpen(true)} variant="outline" className="border-white/10">Add First Link</Button>
+              </Card>
+            )}
+            
+            {clients.filter(c => marketingLinks.some(l => l.clientId === c.id)).map(client => {
+              const clientLinks = marketingLinks.filter(l => l.clientId === client.id);
+              return (
+              <Card key={client.id} className="bg-zinc-900/40 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-lg flex flex-col">
+                <div className="p-6 border-b border-white/5 bg-gradient-to-r from-purple-500/10 to-transparent">
+                  <h3 className="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-purple-400" />
+                    {client.company_name}
+                  </h3>
+                  <p className="text-white/50 text-sm font-medium">Social Media Profiles</p>
+                </div>
+                <CardContent className="p-6 flex-1 flex flex-col gap-4 bg-gradient-to-b from-white/5 to-transparent">
+                  {clientLinks.map((link) => {
+                    const Icon = link.platform === 'Instagram' ? Instagram : link.platform === 'Facebook' ? Facebook : link.platform === 'Twitter' ? Twitter : Linkedin;
+                    const color = link.platform === 'Instagram' ? 'text-pink-500' : link.platform === 'Facebook' ? 'text-blue-500' : link.platform === 'Twitter' ? 'text-sky-400' : 'text-sky-600';
+                    const bg = link.platform === 'Instagram' ? 'bg-pink-500/10' : link.platform === 'Facebook' ? 'bg-blue-500/10' : 'bg-sky-500/10';
+
+                    return (
+                      <div key={link.id} className="flex flex-col p-4 rounded-xl bg-black/30 border border-white/5">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className={`p-2 rounded-lg ${bg}`}>
+                            <Icon className={`w-4 h-4 ${color}`} />
+                          </div>
+                          <div className="flex-1 overflow-hidden">
+                            <p className="text-sm font-bold text-white/90">{link.platform}</p>
+                            <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-xs text-purple-400 hover:text-purple-300 truncate block">
+                              {link.url}
+                            </a>
+                          </div>
+                        </div>
+                        {link.notes && (
+                          <div className="bg-white/5 rounded p-2 text-xs text-white/60 italic border-l-2 border-purple-500/50">
+                            {link.notes}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
+              );
+            })}
+          </div>
+        </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

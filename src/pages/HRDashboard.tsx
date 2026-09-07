@@ -264,7 +264,6 @@ const HRDashboard = () => {
         { id: "clients", label: "Clients", icon: UserPlus },
         { id: "support", label: "Support Tickets", icon: HeadphonesIcon },
         { id: "manage-projects", label: "Manage Projects", icon: FolderSearch },
-        { id: "project-monitor", label: "Project Monitor", icon: Activity },
         { id: "financials", label: "Financial Oversight", icon: DollarSign },
         { id: "pricing", label: "Pricing Manager", icon: Tag },
         { id: "applications", label: "Applications", icon: UserPlus },
@@ -300,7 +299,6 @@ const HRDashboard = () => {
       case "templates": return <TaskTemplateManagement />;
       case "clients": return <ClientManagement />;
       case "manage-projects": return <ManageProjects />;
-      case "project-monitor": return <ProjectMonitor standalone={true} />;
       case "departments": return <DepartmentManagement />;
       case "performance": return <PerformanceMetrics />;
       case "points": return <PointsMonitoring />;

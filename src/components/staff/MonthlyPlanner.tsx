@@ -167,9 +167,10 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
   const handleDateChange = (newDate: Date) => {
     lastDateClickRef.current = Date.now();
+    const isMonthChange = newDate.getMonth() !== currentMonth.getMonth() || newDate.getFullYear() !== currentMonth.getFullYear();
     setCurrentMonth(newDate);
     setSelectedDate(newDate);
-    if (view === 'month') {
+    if (view === 'month' && !isMonthChange) {
       setIsDayTasksDialogOpen(true);
     }
   };
@@ -460,7 +461,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
         if (!task.client_id) return true;
 
-        if (userProfile?.role === 'team_head' || userProfile?.role === 'admin' || userProfile?.is_department_head) {
+        if (userProfile?.role === 'team_head' || userProfile?.role === 'lead' || userProfile?.role === 'manager' || userProfile?.role === 'admin' || userProfile?.role === 'super_admin' || userProfile?.is_department_head) {
           return true;
         }
 
@@ -496,7 +497,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
         if (!parentTask.client_id) return true;
 
-        if (userProfile?.role === 'team_head' || userProfile?.role === 'admin' || userProfile?.is_department_head) {
+        if (userProfile?.role === 'team_head' || userProfile?.role === 'lead' || userProfile?.role === 'manager' || userProfile?.role === 'admin' || userProfile?.role === 'super_admin' || userProfile?.is_department_head) {
           return true;
         }
 

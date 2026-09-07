@@ -88,6 +88,7 @@ import EmmaAssistant from "@/components/ai/EmmaAssistant";
 import { Sparkles } from "lucide-react";
 import OfficeZenHome from "@/components/staff/OfficeZenHome";
 import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
+import ProjectMonitor from "@/pages/ProjectMonitor";
 
 import LeaveView from "@/components/staff/LeaveView";
 import ToolsNexusView from "@/components/staff/ToolsNexusView";
@@ -132,7 +133,8 @@ type RoomType =
   | 'codepuzzle'
   | 'quickquiz'
   | 'snake'
-  | 'memory';
+  | 'memory'
+  | 'project-monitor';
 
 const EMOJI_OPTIONS = [
   "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
@@ -156,7 +158,7 @@ const paramToRoom = (param: string): RoomType | null => {
     'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
     'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox',
     'chat', 'staff', 'coin', 'game', 'arcade', 'tictactoe', 'pingpong',
-    'codetyper', 'colormatch', 'codepuzzle', 'quickquiz', 'snake', 'memory'
+    'codetyper', 'colormatch', 'codepuzzle', 'quickquiz', 'snake', 'memory', 'project-monitor'
   ];
   if (validRooms.includes(param as RoomType)) return param as RoomType;
   return null;
@@ -730,6 +732,23 @@ const TeamHeadDashboard = () => {
             <MyCoins isInline={true} />
           </div>
        </div>
+    ),
+    'project-monitor': (
+      <div className="space-y-6 max-w-7xl mx-auto py-2">
+        <div className="flex flex-col space-y-1">
+          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+            <Globe className="w-8 h-8 text-blue-500" />
+            Project Monitor
+          </h1>
+          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
+            Real-time status tracking and asset renewal lifecycle
+          </p>
+        </div>
+
+        <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[500px] backdrop-blur-md overflow-hidden">
+          <ProjectMonitor standalone={true} />
+        </div>
+      </div>
     ),
     meeting: <MeetingRoom />,
     planner: <MonthlyPlanner userId={profile?.user_id || ''} userProfile={profile} />,
