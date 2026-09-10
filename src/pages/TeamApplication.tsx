@@ -640,11 +640,13 @@ const TeamApplication = () => {
 
     setIsSubmitting(true);
     try {
+      const generatedId = crypto.randomUUID();
       const siblingsSummary = formData.siblings_count > 0
         ? `${formData.siblings_count} (${formData.sibling_names.filter(Boolean).join(", ")})`
         : "None";
 
       const insertPayload: any = {
+        id: generatedId,
         full_name: formData.full_name,
         email: formData.email,
         phone: formData.phone,
@@ -677,11 +679,9 @@ const TeamApplication = () => {
         emergency_contact_phone: formData.emergency_contact_phone,
       };
 
-      const { data: insertedData, error } = await supabase
+      const { error } = await supabase
         .from("team_applications_staff")
-        .insert(insertPayload)
-        .select("id")
-        .single();
+        .insert(insertPayload);
 
       if (error) {
         console.warn("Full payload insert failed, falling back to core payload:", error);
@@ -699,6 +699,7 @@ Legal Terms Accepted: Yes (${formData.submitted_at})
         `.trim();
 
         const corePayload = {
+          id: generatedId,
           full_name: formData.full_name,
           email: formData.email,
           phone: formData.phone,
@@ -720,16 +721,14 @@ Legal Terms Accepted: Yes (${formData.submitted_at})
           preferred_role: formData.preferred_role as any,
         };
 
-        const { data: fallbackData, error: coreError } = await supabase
+        const { error: coreError } = await supabase
           .from("team_applications_staff")
-          .insert(corePayload)
-          .select("id")
-          .single();
+          .insert(corePayload);
 
         if (coreError) throw coreError;
-        if (fallbackData?.id) setSubmittedAppId(fallbackData.id);
-      } else if (insertedData?.id) {
-        setSubmittedAppId(insertedData.id);
+        setSubmittedAppId(generatedId);
+      } else {
+        setSubmittedAppId(generatedId);
       }
 
       clearDraft();
