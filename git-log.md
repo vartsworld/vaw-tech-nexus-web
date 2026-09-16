@@ -3,3 +3,4 @@ All the git log will be shown in here
 - Team-application form UI updated 
 - Build error fixed
 - Updated the HR and the calendar
+- Updated
