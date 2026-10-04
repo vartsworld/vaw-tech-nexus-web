@@ -59,6 +59,7 @@
     "jspdf": "^4.2.0",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
+    "ogl": "^1.0.11",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
     "react-avatar-editor": "^15.1.0",

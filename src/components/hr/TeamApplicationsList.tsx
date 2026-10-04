@@ -315,7 +315,7 @@ const TeamApplicationsList = () => {
           <CardTitle>Recent Applications</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto"><Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Applicant</TableHead>
@@ -440,7 +440,7 @@ const TeamApplicationsList = () => {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+          </Table></div>
         </CardContent>
       </Card>
 

@@ -443,7 +443,7 @@ const PointsMonitoring = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto"><Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-16">Rank</TableHead>
@@ -491,7 +491,7 @@ const PointsMonitoring = () => {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+          </Table></div>
         </CardContent>
       </Card>
 
@@ -544,7 +544,7 @@ const PointsMonitoring = () => {
 
           {/* Activity Table */}
           <div className="border rounded-lg">
-            <Table>
+            <div className="overflow-x-auto"><Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Staff Member</TableHead>
@@ -602,7 +602,7 @@ const PointsMonitoring = () => {
                   ))
                 )}
               </TableBody>
-            </Table>
+            </Table></div>
           </div>
         </CardContent>
       </Card>
@@ -611,3 +611,4 @@ const PointsMonitoring = () => {
 };
 
 export default PointsMonitoring;
+

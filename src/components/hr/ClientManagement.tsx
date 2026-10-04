@@ -908,7 +908,7 @@ const ClientManagement = () => {
           <CardTitle>Clients ({filteredClients.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto"><Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Company</TableHead>
@@ -1042,7 +1042,7 @@ const ClientManagement = () => {
                 </TableRow>
               )}
             </TableBody>
-          </Table>
+          </Table></div>
         </CardContent>
       </Card>
 

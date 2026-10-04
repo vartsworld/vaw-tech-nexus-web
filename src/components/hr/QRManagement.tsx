@@ -360,7 +360,7 @@ const QRManagement = () => {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
+          <div className="overflow-x-auto"><Table>
             <TableHeader className="bg-muted/10">
               <TableRow className="border-white/5 hover:bg-transparent h-16">
                 <TableHead className="pl-8 font-black text-[10px] uppercase tracking-widest italic">Client Name</TableHead>
@@ -469,7 +469,7 @@ const QRManagement = () => {
                 </TableRow>
               )}
             </TableBody>
-          </Table>
+          </Table></div>
         </CardContent>
       </Card>
 
@@ -628,3 +628,4 @@ const QRManagement = () => {
 };
 
 export default QRManagement;
+

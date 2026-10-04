@@ -830,11 +830,11 @@ const StaffManagement = () => {
 
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filter & Search</CardTitle>
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="text-base md:text-lg">Filter & Search</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -871,7 +871,7 @@ const StaffManagement = () => {
               </SelectContent>
             </Select>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">
+              <span className="text-xs md:text-sm text-gray-600">
                 Showing {filteredStaff.length} of {staff.length} staff
               </span>
             </div>
@@ -881,23 +881,24 @@ const StaffManagement = () => {
 
       {/* Staff Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Staff Members</CardTitle>
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="text-base md:text-lg">Staff Members</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Staff Member</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Hire Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Login Info</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+        <CardContent className="p-0 md:p-6">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Staff Member</TableHead>
+                  <TableHead className="whitespace-nowrap">Role</TableHead>
+                  <TableHead className="whitespace-nowrap hidden sm:table-cell">Department</TableHead>
+                  <TableHead className="whitespace-nowrap hidden md:table-cell">Contact</TableHead>
+                  <TableHead className="whitespace-nowrap hidden lg:table-cell">Hire Date</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
+                  <TableHead className="whitespace-nowrap hidden md:table-cell">Login Info</TableHead>
+                  <TableHead className="whitespace-nowrap">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {filteredStaff.map((member) => (
                 <TableRow key={member.id}>
@@ -1096,7 +1097,8 @@ const StaffManagement = () => {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

@@ -1423,21 +1423,22 @@ const TaskManagement = () => {
               className="pl-10 bg-card border-muted-foreground/10"
             />
           </div>
-          <Select value={filterPriority} onValueChange={setFilterPriority}>
-            <SelectTrigger className="w-[140px] bg-card border-muted-foreground/10">
-              <Flag className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="urgent">Urgent</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex items-center gap-1 bg-card border border-muted-foreground/10 rounded-lg p-1">
-            <Button
+          <div className="flex flex-row items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <Select value={filterPriority} onValueChange={setFilterPriority}>
+              <SelectTrigger className="w-[140px] bg-card border-muted-foreground/10 shrink-0">
+                <Flag className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-1 bg-card border border-muted-foreground/10 rounded-lg p-1 shrink-0">
+              <Button
               variant={viewMode === 'table' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('table')}
@@ -1474,6 +1475,7 @@ const TaskManagement = () => {
                 {isFullScreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
               </Button>
             )}
+            </div>
           </div>
         </div>
 
@@ -1505,7 +1507,7 @@ const TaskManagement = () => {
             <>
               {/* Desktop Table */}
               <div className="hidden md:block rounded-xl border border-border/60 overflow-hidden bg-card shadow-sm">
-                <Table>
+                <div className="overflow-x-auto"><Table>
                   <TableHeader>
                     <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
                       <TableHead className="font-semibold text-[11px] uppercase tracking-widest text-muted-foreground/70 py-3.5">Task</TableHead>
@@ -1641,7 +1643,7 @@ const TaskManagement = () => {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                </Table></div>
               </div>
 
               {/* Mobile Card View */}
@@ -2144,3 +2146,4 @@ const TaskManagement = () => {
 };
 
 export default TaskManagement;
+

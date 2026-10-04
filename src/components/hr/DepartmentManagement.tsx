@@ -555,7 +555,7 @@ const DepartmentManagement = () => {
           <CardTitle>Department Staff Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto"><Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Department</TableHead>
@@ -608,7 +608,7 @@ const DepartmentManagement = () => {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
+          </Table></div>
           {departments.length === 0 && (
             <div className="text-center py-8 text-gray-500">
               No departments found. Create your first department to get started.

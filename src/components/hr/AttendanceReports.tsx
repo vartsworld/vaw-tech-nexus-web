@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   Calendar as CalendarIcon,
   Download,
@@ -184,14 +195,14 @@ const AttendanceReports = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-row justify-between items-center gap-3">
         <div className="flex items-center gap-2">
-          <BarChart3 className="h-6 w-6 text-blue-600" />
-          <h2 className="text-2xl font-bold">Attendance Reports</h2>
+          <BarChart3 className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
+          <h2 className="text-xl md:text-2xl font-bold">Attendance Reports</h2>
         </div>
-        <Button onClick={exportToCSV} className="flex items-center gap-2">
+        <Button onClick={exportToCSV} size="sm" className="flex items-center gap-2">
           <Download className="h-4 w-4" />
           Export CSV
         </Button>
@@ -199,18 +210,18 @@ const AttendanceReports = () => {
 
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Report Filters</CardTitle>
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="text-base md:text-lg">Report Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <Label>Date Range</Label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                    <Button variant="outline" className="w-full justify-start text-xs md:text-sm">
+                      <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
                       {format(dateRange.from, "MMM dd, yyyy")}
                     </Button>
                   </PopoverTrigger>
@@ -225,8 +236,8 @@ const AttendanceReports = () => {
                 </Popover>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                    <Button variant="outline" className="w-full justify-start text-xs md:text-sm">
+                      <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
                       {format(dateRange.to, "MMM dd, yyyy")}
                     </Button>
                   </PopoverTrigger>
@@ -256,23 +267,39 @@ const AttendanceReports = () => {
               </Select>
             </div>
             <div className="flex items-end">
-              <Button 
-                variant="outline" 
-                onClick={() => setDateRange({
-                  from: startOfMonth(new Date()),
-                  to: endOfMonth(new Date())
-                })}
-                className="w-full"
-              >
-                Reset to Current Month
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="w-full text-xs md:text-sm">
+                    Reset to Current Month
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will reset your date filters to the current month.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={() => setDateRange({
+                        from: startOfMonth(new Date()),
+                        to: endOfMonth(new Date())
+                      })}
+                    >
+                      Continue
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         <StatCard
           title="Total Present"
           value={summaryStats.totalPresent}
@@ -297,7 +324,7 @@ const AttendanceReports = () => {
         <StatCard
           title="Perfect Attendance"
           value={summaryStats.perfectAttendance}
-          subtitle="Employees with no late marks"
+          subtitle="No late marks"
           icon={Users}
           color="purple"
         />
@@ -305,91 +332,133 @@ const AttendanceReports = () => {
 
       {/* Attendance Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Attendance Records</CardTitle>
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="text-base md:text-lg">Attendance Records</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Employee</TableHead>
-                <TableHead>Check-in Time</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Emotion</TableHead>
-                <TableHead>Note</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {attendanceData.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4 text-gray-400" />
-                      {record.date ? format(new Date(record.date), 'MMM dd, yyyy') : 'N/A'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{record.staff_profiles?.full_name}</div>
-                      <div className="text-sm text-gray-500">@{record.staff_profiles?.username}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-gray-400" />
-                      {record.check_in_time ? format(new Date(record.check_in_time), 'hh:mm:ss a') : 'N/A'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {record.is_late ? (
-                      <Badge variant="outline" className="text-orange-600 border-orange-600">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Late
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-green-600 border-green-600">
-                        <UserCheck className="h-3 w-3 mr-1" />
-                        On Time
-                      </Badge>
-                    )}
-                  </TableCell>
-                   <TableCell>
-                     {record.staff_profiles?.departments?.name || 'Unassigned'}
-                   </TableCell>
-                   <TableCell>
-                      {record.mood ? (
-                        <div className="flex items-center gap-2">
-                          {record.mood === 'happy' && <span title="Happy"><Smile className="h-4 w-4 text-green-500" /></span>}
-                          {record.mood === 'neutral' && <span title="Neutral"><Meh className="h-4 w-4 text-blue-500" /></span>}
-                          {record.mood === 'sad' && <span title="Sad"><Frown className="h-4 w-4 text-orange-500" /></span>}
-                          {record.mood === 'stressed' && <span title="Stressed"><Zap className="h-4 w-4 text-red-500" /></span>}
-                          {record.mood === 'excited' && <span title="Excited"><Activity className="h-4 w-4 text-purple-500" /></span>}
-                          <span className="capitalize text-sm">{record.mood}</span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 text-sm">N/A</span>
-                      )}
-                   </TableCell>
-                   <TableCell>
-                      {record.note ? (
-                        <div className="flex items-center gap-2 group relative">
-                          <MessageSquare className="h-4 w-4 text-gray-400 shrink-0" />
-                          <span className="text-sm truncate max-w-[150px]" title={record.note}>
-                            {record.note}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400 text-sm">-</span>
-                      )}
-                   </TableCell>
+        <CardContent className="p-0 md:p-6">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Employee</TableHead>
+                  <TableHead className="whitespace-nowrap">Check-in Time</TableHead>
+                  <TableHead className="whitespace-nowrap hidden sm:table-cell">Department</TableHead>
+                  <TableHead className="whitespace-nowrap hidden md:table-cell">Emotion</TableHead>
+                  <TableHead className="whitespace-nowrap hidden lg:table-cell">Note</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {(() => {
+                  if (attendanceData.length === 0) return null;
+                  
+                  // Group by date
+                  const groupedData: Record<string, typeof attendanceData> = {};
+                  attendanceData.forEach(record => {
+                    const d = record.date || 'unknown';
+                    if (!groupedData[d]) groupedData[d] = [];
+                    groupedData[d].push(record);
+                  });
+
+                  // Sort dates descending
+                  const sortedDates = Object.keys(groupedData).sort((a, b) => b.localeCompare(a));
+
+                  return sortedDates.map((dateStr, groupIndex) => {
+                    // Alternate row shading for groups
+                    const baseBgClass = groupIndex % 2 === 0 ? "bg-muted/30" : "bg-transparent";
+                    
+                    return (
+                      <React.Fragment key={dateStr}>
+                        {/* Date Header Row */}
+                        <TableRow className={`hover:bg-transparent ${baseBgClass}`}>
+                          <TableCell colSpan={6} className="font-semibold text-sm py-2">
+                            <div className="flex items-center gap-2">
+                              <CalendarIcon className="h-4 w-4 text-blue-500" />
+                              {dateStr !== 'unknown' ? format(new Date(dateStr), 'MMM dd, yyyy') : 'Unknown Date'}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        
+                        {/* Records for this date */}
+                        {groupedData[dateStr].map(record => {
+                          // Client-side late calculation: if difference between check_in_time and date > 24 hours
+                          let isLate24h = false;
+                          if (record.check_in_time && record.date) {
+                             const checkIn = new Date(record.check_in_time).getTime();
+                             const expected = new Date(record.date).getTime();
+                             isLate24h = (checkIn - expected) > 24 * 60 * 60 * 1000;
+                          }
+                          
+                          const rowBgClass = isLate24h ? "bg-red-500/10 hover:bg-red-500/20" : baseBgClass;
+
+                          return (
+                            <TableRow key={record.id} className={rowBgClass}>
+                              <TableCell>
+                                <div className="pl-6">
+                                  <div className="font-medium text-sm">{record.staff_profiles?.full_name}</div>
+                                  <div className="text-xs text-gray-500">@{record.staff_profiles?.username}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4 text-gray-400 shrink-0" />
+                                  <span className="text-xs md:text-sm">
+                                    {record.check_in_time ? format(new Date(record.check_in_time), 'hh:mm a') : 'N/A'}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="hidden sm:table-cell text-sm">
+                                {record.staff_profiles?.departments?.name || 'Unassigned'}
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                {record.mood ? (
+                                  <div className="flex items-center gap-2">
+                                    {record.mood === 'happy' && <span title="Happy"><Smile className="h-4 w-4 text-green-500" /></span>}
+                                    {record.mood === 'neutral' && <span title="Neutral"><Meh className="h-4 w-4 text-blue-500" /></span>}
+                                    {record.mood === 'sad' && <span title="Sad"><Frown className="h-4 w-4 text-orange-500" /></span>}
+                                    {record.mood === 'stressed' && <span title="Stressed"><Zap className="h-4 w-4 text-red-500" /></span>}
+                                    {record.mood === 'excited' && <span title="Excited"><Activity className="h-4 w-4 text-purple-500" /></span>}
+                                    <span className="capitalize text-sm">{record.mood}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400 text-sm">N/A</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="hidden lg:table-cell">
+                                {record.note ? (
+                                  <div className="flex items-center gap-2 group relative">
+                                    <MessageSquare className="h-4 w-4 text-gray-400 shrink-0" />
+                                    <span className="text-sm truncate max-w-[150px]" title={record.note}>
+                                      {record.note}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400 text-sm">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {isLate24h ? (
+                                  <Badge variant="outline" className="text-red-600 border-red-600/30 bg-red-100/50 text-xs shadow-none">
+                                    Late {'>'} 24h
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-green-600 border-green-600/30 bg-green-100/50 text-xs shadow-none">
+                                    On Time
+                                  </Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  });
+                })()}
+              </TableBody>
+            </Table>
+          </div>
           {attendanceData.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-gray-500 text-sm">
               No attendance records found for the selected criteria.
             </div>
           )}

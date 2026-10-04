@@ -363,7 +363,7 @@ const PerformanceMetrics = () => {
           <CardTitle>Individual Performance Rankings</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto"><Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Rank</TableHead>
@@ -457,7 +457,7 @@ const PerformanceMetrics = () => {
                 );
               })}
             </TableBody>
-          </Table>
+          </Table></div>
           {staffPerformance.length === 0 && (
             <div className="text-center py-8 text-gray-500">
               No performance data available for the selected criteria.

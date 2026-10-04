@@ -88,10 +88,18 @@ const HRDashboard = () => {
 
   const [hrProfile, setHrProfile] = useState<any>(null);
   const [departmentName, setDepartmentName] = useState<string>("");
-  const [isDarkMode, setIsDarkMode] = useState(true); // Default to dark for premium feel
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  // Desktop sidebar: collapsed/expanded rail
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // Mobile sidebar: drawer open/closed
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   const { toast } = useToast();
+
+  // Close mobile drawer on route change
+  useEffect(() => {
+    setIsMobileDrawerOpen(false);
+  }, [activeTab]);
 
   // Real-time queries for dashboard data
   const { data: staffData } = useRealtimeQuery({
@@ -183,7 +191,6 @@ const HRDashboard = () => {
 
   useEffect(() => {
     fetchHRProfile();
-    // Default to dark mode for the premium "Wow" effect
     document.documentElement.classList.add('dark');
   }, []);
 
@@ -254,7 +261,6 @@ const HRDashboard = () => {
         { id: "templates", label: "Task Templates", icon: Layers },
         { id: "attendance", label: "Attendance", icon: Calendar },
         { id: "qr", label: "QR Manager", icon: QrCode },
-
       ]
     },
     {
@@ -289,6 +295,23 @@ const HRDashboard = () => {
     }
   ];
 
+  // Bottom nav items (most-used, mobile only)
+  const bottomNavItems = [
+    { id: "dashboard", label: "Home", icon: LayoutDashboard },
+    { id: "staff", label: "Staff", icon: Users },
+    { id: "tasks", label: "Tasks", icon: ClipboardList },
+    { id: "attendance", label: "Attend.", icon: Calendar },
+    { id: "emma", label: "EMMA", icon: Sparkles },
+  ];
+
+  const navigateTo = (id: string) => {
+    if (id.startsWith('/')) {
+      navigate(id);
+    } else {
+      navigate(`/hr/${id}`);
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard": return <div className="space-y-6"><StatsGrid stats={stats} /><div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><Activities activities={recentActivities} /><PerformanceInsights stats={stats} /></div></div>;
@@ -313,25 +336,148 @@ const HRDashboard = () => {
       case "support": return <SupportTicketManagement />;
       case "qr": return <QRManagement />;
       case "academy": return <AcademyEnquiriesList />;
-
       default: return <StatsGrid stats={stats} />;
     }
   };
 
+  // Sidebar nav content — shared between desktop rail and mobile drawer
+  const SidebarNav = ({ compact = false }: { compact?: boolean }) => (
+    <div className="flex-1 overflow-y-auto px-3 overscroll-contain">
+      <div className="space-y-6 py-4">
+        {menuGroups.map((group, gIdx) => (
+          <div key={gIdx} className="space-y-2">
+            {!compact && (
+              <h3 className="px-4 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                {group.label}
+              </h3>
+            )}
+            <div className="space-y-1">
+              {group.items.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => navigateTo(item.id)}
+                  className={`
+                    w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative
+                    ${activeTab === item.id
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"}
+                  `}
+                >
+                  <item.icon className={`w-5 h-5 shrink-0 ${activeTab === item.id ? "text-primary" : "group-hover:text-primary transition-colors"}`} />
+                  {!compact && (
+                    <span className="text-sm font-medium tracking-wide text-left">
+                      {item.label}
+                    </span>
+                  )}
+                  {activeTab === item.id && (
+                    <motion.div
+                      layoutId="activeTabIndicator"
+                      className="absolute inset-y-2 left-0 w-1 bg-primary rounded-full"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                  {!compact && activeTab === item.id && (
+                    <ChevronRight className="w-3 h-3 ml-auto opacity-50" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // User profile footer — shared
+  const SidebarFooter = ({ compact = false }: { compact?: boolean }) => (
+    <div className="p-4 border-t border-border">
+      <div className={`flex items-center gap-3 p-3 rounded-2xl bg-muted/50 ${compact ? 'justify-center' : ''}`}>
+        <Avatar className="h-9 w-9 border border-primary/30 shrink-0">
+          <AvatarImage src={hrProfile?.avatar_url} />
+          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+            {hrProfile?.full_name?.split(' ').map((n: string) => n[0]).join('')}
+          </AvatarFallback>
+        </Avatar>
+        {!compact && (
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate text-foreground">{hrProfile?.full_name || 'HR Admin'}</p>
+            <p className="text-[10px] text-muted-foreground font-bold tracking-wider uppercase">{hrProfile?.role || 'HR'}</p>
+          </div>
+        )}
+        {!compact && (
+          <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0">
+            <LogOut className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden selection:bg-primary/30">
+    <div className="flex h-[100dvh] bg-background text-foreground overflow-hidden selection:bg-primary/30">
       <SEO title="HR Dashboard | VAW Technologies" description="Internal Human Resources portal for VAW Technologies." />
+
       {/* Background Glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/5 blur-[120px] rounded-full" />
       </div>
 
-      {/* Sidebar */}
+      {/* ── MOBILE DRAWER BACKDROP ── */}
+      <AnimatePresence>
+        {isMobileDrawerOpen && (
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+            onClick={() => setIsMobileDrawerOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── MOBILE DRAWER SIDEBAR ── */}
+      <AnimatePresence>
+        {isMobileDrawerOpen && (
+          <motion.aside
+            key="mobile-drawer"
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed inset-y-0 left-0 z-50 w-72 h-full bg-card/95 backdrop-blur-xl border-r border-border flex flex-col md:hidden"
+          >
+            {/* Drawer header */}
+            <div className="p-5 flex items-center justify-between border-b border-border">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+                  <ShieldCheck className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <span className="font-bold text-lg tracking-tight text-foreground">VAW HR</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMobileDrawerOpen(false)}
+                className="hover:bg-muted text-muted-foreground"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            <SidebarNav compact={false} />
+            <SidebarFooter compact={false} />
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      {/* ── DESKTOP SIDEBAR (hidden on mobile) ── */}
       <motion.aside
         initial={false}
         animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="relative z-50 h-full bg-card/80 backdrop-blur-xl border-r border-border flex flex-col transition-all duration-300 ease-in-out"
+        className="relative z-30 h-full bg-card/80 backdrop-blur-xl border-r border-border hidden md:flex flex-col transition-all duration-300 ease-in-out"
       >
         <div className="p-6 flex items-center justify-between">
           <AnimatePresence mode="wait">
@@ -370,91 +516,40 @@ const HRDashboard = () => {
           </Button>
         </div>
 
-        <ScrollArea className="flex-1 px-3">
-          <div className="space-y-6 py-4">
-            {menuGroups.map((group, gIdx) => (
-              <div key={gIdx} className="space-y-2">
-                {isSidebarOpen && (
-                  <h3 className="px-4 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                    {group.label}
-                  </h3>
-                )}
-                <div className="space-y-1">
-                  {group.items.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => item.id.startsWith('/') ? navigate(item.id) : navigate(`/hr/${item.id}`)}
-                      className={`
-                        w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative
-                        ${activeTab === item.id
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"}
-                      `}
-                    >
-                      <item.icon className={`w-5 h-5 ${activeTab === item.id ? "text-primary" : "group-hover:text-primary transition-colors"}`} />
-                      {isSidebarOpen && (
-                        <span className="text-sm font-medium tracking-wide">
-                          {item.label}
-                        </span>
-                      )}
-                      {activeTab === item.id && (
-                        <motion.div
-                          layoutId="activeTabIndicator"
-                          className="absolute inset-y-2 left-0 w-1 bg-primary rounded-full"
-                          initial={false}
-                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        />
-                      )}
-                      {isSidebarOpen && activeTab === item.id && (
-                        <ChevronRight className="w-3 h-3 ml-auto opacity-50" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
-
-        <div className="p-4 border-t border-border">
-          <div className={`flex items-center gap-3 p-3 rounded-2xl bg-muted/50 ${!isSidebarOpen && 'justify-center'}`}>
-            <Avatar className="h-9 w-9 border border-primary/30">
-              <AvatarImage src={hrProfile?.avatar_url} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                {hrProfile?.full_name?.split(' ').map((n: string) => n[0]).join('')}
-              </AvatarFallback>
-            </Avatar>
-            {isSidebarOpen && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate text-foreground">{hrProfile?.full_name || 'HR Admin'}</p>
-                <p className="text-[10px] text-muted-foreground font-bold tracking-wider uppercase">{hrProfile?.role || 'HR'}</p>
-              </div>
-            )}
-            {isSidebarOpen && (
-              <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 text-muted-foreground hover:text-destructive">
-                <LogOut className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        </div>
+        <SidebarNav compact={!isSidebarOpen} />
+        <SidebarFooter compact={!isSidebarOpen} />
       </motion.aside>
 
-      {/* Main Content */}
+      {/* ── MAIN CONTENT ── */}
       <main className="flex-1 flex flex-col min-w-0 bg-background relative z-10">
-        {/* Top bar */}
-        <header className="h-20 border-b border-border px-8 flex items-center justify-between bg-card/50 backdrop-blur-md sticky top-0 z-40">
-          <div className="flex items-center gap-4">
-            <h2 className="text-xl font-bold tracking-tight capitalize text-foreground">
-              {activeTab.replace('-', ' ')}
+
+        {/* ── TOP HEADER ── */}
+        <header className="h-16 md:h-20 border-b border-border px-4 md:px-8 flex items-center justify-between bg-card/50 backdrop-blur-md sticky top-0 z-40">
+          <div className="flex items-center gap-3">
+            {/* Mobile hamburger */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMobileDrawerOpen(true)}
+              className="md:hidden text-muted-foreground hover:text-foreground hover:bg-muted"
+              aria-label="Open navigation"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+
+            <h2 className="text-base md:text-xl font-bold tracking-tight capitalize text-foreground truncate">
+              {activeTab.replace(/-/g, ' ')}
             </h2>
-            <Separator orientation="vertical" className="h-6 bg-border" />
+
+            <Separator orientation="vertical" className="h-5 bg-border hidden sm:block" />
             <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
               <Sparkles className="w-4 h-4 text-primary" />
               <span>Team efficiency is up 12% this week</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 md:gap-6">
+            {/* Search — desktop only */}
             <div className="relative hidden lg:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -462,21 +557,41 @@ const HRDashboard = () => {
                 className="w-64 bg-muted/50 border-border pl-10 h-9 rounded-full focus:ring-primary focus:border-primary transition-all text-xs"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/hr/notifications')} className="relative text-muted-foreground hover:text-foreground hover:bg-muted">
+            <div className="flex items-center gap-1 md:gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/hr/notifications')}
+                className="relative text-muted-foreground hover:text-foreground hover:bg-muted h-9 w-9"
+              >
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-background" />
               </Button>
-              <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="text-muted-foreground hover:text-foreground hover:bg-muted">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleDarkMode}
+                className="text-muted-foreground hover:text-foreground hover:bg-muted h-9 w-9"
+              >
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </Button>
+              {/* Mobile logout */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="md:hidden text-muted-foreground hover:text-destructive hover:bg-muted h-9 w-9"
+              >
+                <LogOut className="w-5 h-5" />
               </Button>
             </div>
           </div>
         </header>
 
-        {/* Dynamic Section Rendering */}
+        {/* ── DYNAMIC CONTENT ── */}
         <ScrollArea className="flex-1">
-          <div className="p-8 max-w-7xl mx-auto w-full">
+          {/* pb-24 on mobile to clear the bottom nav bar */}
+          <div className="p-4 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -490,6 +605,41 @@ const HRDashboard = () => {
             </AnimatePresence>
           </div>
         </ScrollArea>
+
+        {/* ── MOBILE BOTTOM NAV ── */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border safe-area-pb">
+          <div className="flex items-center justify-around px-2 py-2">
+            {bottomNavItems.map((item) => {
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => navigateTo(item.id)}
+                  className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 min-w-0 flex-1 ${
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-lg transition-all duration-200 ${isActive ? "bg-primary/15" : ""}`}>
+                    <item.icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-semibold tracking-wide truncate w-full text-center">
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+            {/* "More" opens the full drawer */}
+            <button
+              onClick={() => setIsMobileDrawerOpen(true)}
+              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 min-w-0 flex-1 text-muted-foreground"
+            >
+              <div className="p-1.5 rounded-lg">
+                <Menu className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] font-semibold tracking-wide">More</span>
+            </button>
+          </div>
+        </nav>
       </main>
 
       <PWAInstallPrompt />
@@ -500,7 +650,7 @@ const HRDashboard = () => {
 // --- Dashboard Component Sections ---
 
 const StatsGrid = ({ stats }: any) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+  <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-6">
     <PremiumStatCard
       title="Total Force"
       value={stats.totalStaff}
@@ -536,55 +686,55 @@ const StatsGrid = ({ stats }: any) => (
 const PremiumStatCard = ({ title, value, subtitle, icon: Icon, gradient, trend }: any) => (
   <motion.div
     whileHover={{ y: -5 }}
-    className="group relative overflow-hidden p-6 rounded-[2rem] bg-card border border-border"
+    className="group relative overflow-hidden p-4 md:p-6 rounded-2xl md:rounded-[2rem] bg-card border border-border"
   >
     <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-10 blur-[50px] transition-opacity duration-500`} />
-    <div className="flex justify-between items-start mb-4">
-      <div className={`p-3 rounded-2xl bg-gradient-to-br ${gradient} shadow-lg`}>
-        <Icon className="w-6 h-6 text-white" />
+    <div className="flex justify-between items-start mb-3 md:mb-4">
+      <div className={`p-2 md:p-3 rounded-xl md:rounded-2xl bg-gradient-to-br ${gradient} shadow-lg`}>
+        <Icon className="w-4 h-4 md:w-6 md:h-6 text-white" />
       </div>
       {trend && (
-        <span className="text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-1 rounded-full border border-green-500/20">
+        <span className="text-[9px] md:text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-500/10 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full border border-green-500/20">
           {trend}
         </span>
       )}
     </div>
-    <div className="space-y-1">
-      <h3 className="text-muted-foreground text-xs font-bold tracking-wider uppercase">{title}</h3>
-      <div className="text-3xl font-bold tracking-tight text-foreground">{value}</div>
-      <p className="text-xs text-muted-foreground">{subtitle}</p>
+    <div className="space-y-0.5 md:space-y-1">
+      <h3 className="text-muted-foreground text-[9px] md:text-xs font-bold tracking-wider uppercase">{title}</h3>
+      <div className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{value}</div>
+      <p className="text-[10px] md:text-xs text-muted-foreground">{subtitle}</p>
     </div>
   </motion.div>
 );
 
 const Activities = ({ activities }: any) => (
-  <Card className="bg-card border-border rounded-[2rem] overflow-hidden shadow-2xl">
-    <CardHeader className="border-b border-border p-6">
+  <Card className="bg-card border-border rounded-2xl md:rounded-[2rem] overflow-hidden shadow-2xl">
+    <CardHeader className="border-b border-border p-4 md:p-6">
       <div className="flex items-center justify-between">
-        <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-          <Sparkles className="w-5 h-5 text-primary" />
+        <CardTitle className="text-base md:text-lg flex items-center gap-2 text-foreground">
+          <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
           Live Pulse
         </CardTitle>
         <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-primary/80 hover:bg-primary/10">View Log</Button>
       </div>
     </CardHeader>
     <CardContent className="p-0">
-      <ScrollArea className="h-[400px]">
-        <div className="p-6 space-y-4">
+      <ScrollArea className="h-[300px] md:h-[400px]">
+        <div className="p-4 md:p-6 space-y-3 md:space-y-4">
           {activities.length > 0 ? activities.map((activity: any, idx: number) => (
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.1 }}
               key={idx}
-              className="flex items-center gap-4 p-4 rounded-2xl bg-muted/50 border border-border hover:bg-muted transition-all group"
+              className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/50 border border-border hover:bg-muted transition-all group"
             >
-              <div className={`p-2.5 rounded-xl bg-card border border-border group-hover:scale-110 transition-transform ${activity.color}`}>
-                <activity.icon className="w-5 h-5" />
+              <div className={`p-2 md:p-2.5 rounded-lg md:rounded-xl bg-card border border-border group-hover:scale-110 transition-transform ${activity.color}`}>
+                <activity.icon className="w-4 h-4 md:w-5 md:h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium tracking-wide truncate text-foreground">{activity.title}</p>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-medium">
+                <p className="text-xs md:text-sm font-medium tracking-wide truncate text-foreground">{activity.title}</p>
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium">
                   <Clock className="w-3 h-3" />
                   {new Date(activity.time).toLocaleTimeString()}
                 </div>
@@ -603,15 +753,15 @@ const Activities = ({ activities }: any) => (
 );
 
 const PerformanceInsights = ({ stats }: any) => (
-  <Card className="bg-card border-border rounded-[2rem] shadow-2xl">
-    <CardHeader className="p-6">
-      <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-        <TrendingUp className="w-5 h-5 text-primary" />
+  <Card className="bg-card border-border rounded-2xl md:rounded-[2rem] shadow-2xl">
+    <CardHeader className="p-4 md:p-6">
+      <CardTitle className="text-base md:text-lg flex items-center gap-2 text-foreground">
+        <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-primary" />
         Intelligence
       </CardTitle>
     </CardHeader>
-    <CardContent className="p-6 pt-0 space-y-6">
-      <div className="space-y-4">
+    <CardContent className="p-4 md:p-6 pt-0 space-y-4 md:space-y-6">
+      <div className="space-y-3 md:space-y-4">
         <div className="flex justify-between items-center px-1">
           <span className="text-sm text-muted-foreground font-medium">Monthly Efficiency</span>
           <span className="text-sm font-bold text-foreground">87%</span>
@@ -625,18 +775,18 @@ const PerformanceInsights = ({ stats }: any) => (
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="p-4 rounded-2xl bg-muted/50 border border-border">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Response Time</p>
-          <p className="text-xl font-bold text-foreground">2.4h</p>
+      <div className="grid grid-cols-2 gap-3 md:gap-4">
+        <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/50 border border-border">
+          <p className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Response Time</p>
+          <p className="text-lg md:text-xl font-bold text-foreground">2.4h</p>
           <div className="text-[10px] text-green-600 dark:text-green-400 mt-1 flex items-center gap-1 font-bold">
             <TrendingUp className="h-3 w-3" />
             15% FASTER
           </div>
         </div>
-        <div className="p-4 rounded-2xl bg-muted/50 border border-border">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Satisfaction</p>
-          <p className="text-xl font-bold text-foreground">4.8/5</p>
+        <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/50 border border-border">
+          <p className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Satisfaction</p>
+          <p className="text-lg md:text-xl font-bold text-foreground">4.8/5</p>
           <div className="text-[10px] text-primary mt-1 flex items-center gap-1 font-bold">
             <Sparkles className="h-3 w-3" />
             TOP TIER
@@ -644,7 +794,7 @@ const PerformanceInsights = ({ stats }: any) => (
         </div>
       </div>
 
-      <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 text-sm text-foreground/80 leading-relaxed italic">
+      <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-primary/10 border border-primary/20 text-xs md:text-sm text-foreground/80 leading-relaxed italic">
         "Team velocity is high. Focus on completing templates to automate repetitive workflows in the next sprint."
       </div>
     </CardContent>
