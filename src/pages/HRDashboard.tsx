@@ -260,16 +260,13 @@ const HRDashboard = () => {
         { id: "tasks", label: "Task Board", icon: ClipboardList },
         { id: "templates", label: "Task Templates", icon: Layers },
         { id: "attendance", label: "Attendance", icon: Calendar },
-        { id: "qr", label: "QR Manager", icon: QrCode },
       ]
     },
     {
       label: "RELATIONSHIPS",
       items: [
-        { id: "/sales/dashboard", label: "Sales Hub", icon: Briefcase },
         { id: "clients", label: "Clients", icon: UserPlus },
         { id: "support", label: "Support Tickets", icon: HeadphonesIcon },
-        { id: "manage-projects", label: "Manage Projects", icon: FolderSearch },
         { id: "financials", label: "Financial Oversight", icon: DollarSign },
         { id: "pricing", label: "Pricing Manager", icon: Tag },
         { id: "applications", label: "Applications", icon: UserPlus },
@@ -341,7 +338,7 @@ const HRDashboard = () => {
   };
 
   // Sidebar nav content — shared between desktop rail and mobile drawer
-  const SidebarNav = ({ compact = false }: { compact?: boolean }) => (
+  const renderSidebarNav = (compact: boolean = false) => (
     <div className="flex-1 overflow-y-auto px-3 overscroll-contain">
       <div className="space-y-6 py-4">
         {menuGroups.map((group, gIdx) => (
@@ -390,7 +387,7 @@ const HRDashboard = () => {
   );
 
   // User profile footer — shared
-  const SidebarFooter = ({ compact = false }: { compact?: boolean }) => (
+  const renderSidebarFooter = (compact: boolean = false) => (
     <div className="p-4 border-t border-border">
       <div className={`flex items-center gap-3 p-3 rounded-2xl bg-muted/50 ${compact ? 'justify-center' : ''}`}>
         <Avatar className="h-9 w-9 border border-primary/30 shrink-0">
@@ -467,8 +464,8 @@ const HRDashboard = () => {
                 <X className="w-5 h-5" />
               </Button>
             </div>
-            <SidebarNav compact={false} />
-            <SidebarFooter compact={false} />
+            {renderSidebarNav(false)}
+            {renderSidebarFooter(false)}
           </motion.aside>
         )}
       </AnimatePresence>
@@ -516,8 +513,8 @@ const HRDashboard = () => {
           </Button>
         </div>
 
-        <SidebarNav compact={!isSidebarOpen} />
-        <SidebarFooter compact={!isSidebarOpen} />
+        {renderSidebarNav(!isSidebarOpen)}
+        {renderSidebarFooter(!isSidebarOpen)}
       </motion.aside>
 
       {/* ── MAIN CONTENT ── */}

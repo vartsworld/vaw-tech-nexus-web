@@ -30,7 +30,8 @@ import {
   Circle,
   Swords,
   ClipboardList,
-  Globe
+  Globe,
+  QrCode
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import TeamChat from "./TeamChat";
@@ -408,6 +409,7 @@ const VirtualOfficeLayout = ({
         { id: 'notepad', name: 'Quick Notepad', icon: ClipboardList, path: '#' },
         { id: 'activity', name: 'Activity', icon: Activity, path: '/staff/activity' },
         { id: 'project-monitor', name: 'Project Monitor', icon: Globe, path: '/staff/project-monitor' },
+        ...(userProfile?.role === 'team_head' ? [{ id: 'qr', name: 'QR Manager', icon: QrCode, path: '#' }] : []),
       ]
     }
   ];

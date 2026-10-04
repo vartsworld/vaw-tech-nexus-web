@@ -84,32 +84,66 @@ const TasksManager = ({
     staleTime: 2 * 60 * 1000,
   });
 
+  const filterString = userProfile?.department_id 
+    ? `or=(assigned_to.eq.${userId},department_id.eq.${userProfile.department_id})`
+    : `assigned_to=eq.${userId}`;
+
+  const { data: directTasksData } = useRealtimeQuery<any[]>({
+    queryKey: ['staff_tasks_direct', userId, userProfile?.department_id],
+    table: 'staff_tasks',
+    filter: filterString,
+    select: '*, staff_subtasks(*)',
+    order: { column: 'created_at', ascending: false },
+    staleTime: 2 * 60 * 1000,
+  });
+
   // Group subtasks by parent task and map to Task interface
   const tasks: Task[] = useMemo(() => {
     const subtaskItems = (subtasksData || []) as any[];
-    const taskGroups: Record<string, any[]> = {};
+    const directTasks = (directTasksData || []) as any[];
+    const taskGroups: Record<string, any> = {};
     
-    subtaskItems.forEach(st => {
-      if (!st.task_id || !st.staff_tasks) return;
-      if (!taskGroups[st.task_id]) taskGroups[st.task_id] = [];
-      taskGroups[st.task_id].push(st);
+    // First, process direct/department tasks
+    directTasks.forEach(task => {
+      taskGroups[task.id] = {
+        parent: task,
+        subs: task.staff_subtasks?.filter((s: any) => s.assigned_to === userId) || []
+      };
     });
 
-    return Object.entries(taskGroups).map(([taskId, subs]) => {
-      const parent = subs[0].staff_tasks;
+    // Then process subtasks (in case parent wasn't caught by direct/department filter)
+    subtaskItems.forEach(st => {
+      if (!st.task_id || !st.staff_tasks) return;
+      if (!taskGroups[st.task_id]) {
+        taskGroups[st.task_id] = { parent: st.staff_tasks, subs: [] };
+      }
+      // Avoid duplicate subtasks if already populated
+      if (!taskGroups[st.task_id].subs.find((existing: any) => existing.id === st.id)) {
+         taskGroups[st.task_id].subs.push(st);
+      }
+    });
+
+    return Object.entries(taskGroups).map(([taskId, group]) => {
+      const parent = group.parent;
+      const subs = group.subs;
       
       // Determine "effective" status for this user's dashboard view
-      let effectiveStatus = "pending";
-      if (subs.some(s => s.status === 'in_progress')) {
-        effectiveStatus = 'in_progress';
-      } else if (subs.every(s => ['completed', 'review_pending', 'pending_approval', 'handover'].includes(s.status || ''))) {
-        effectiveStatus = 'completed';
+      let effectiveStatus = parent.status || "pending";
+      
+      // If we are looking at it via subtasks assigned to us, override the effective status based on our subtasks
+      if (subs.length > 0) {
+        effectiveStatus = "pending";
+        if (subs.some((s: any) => s.status === 'in_progress')) {
+          effectiveStatus = 'in_progress';
+        } else if (subs.every((s: any) => ['completed', 'review_pending', 'pending_approval', 'handover'].includes(s.status || ''))) {
+          effectiveStatus = 'completed';
+        }
       }
 
-      // Use earliest due date from assigned subtasks
-      const subtasksWithDates = subs.filter(s => s.due_date);
+      // Use earliest due date from assigned subtasks, fallback to parent
+      const subtasksWithDates = subs.filter((s: any) => s.due_date);
       const earliestDueDate = subtasksWithDates.length > 0 
-        ? subtasksWithDates.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0].due_date 
+        ? subtasksWithDates.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0].due_date 
         : parent.due_date;
 
       // Check for overdue (if not completed and date passed)
@@ -125,7 +159,7 @@ const TasksManager = ({
         assignedBy: { full_name: 'Team Lead' }, // Profile fetching can be added if needed
       };
     });
-  }, [subtasksData]);
+  }, [subtasksData, directTasksData, userId]);
 
   // Real-time subscription for new subtask assignments
   useRealtimeSubscription({

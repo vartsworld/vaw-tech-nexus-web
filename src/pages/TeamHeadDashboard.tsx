@@ -103,7 +103,8 @@ import QuickQuiz from "@/components/staff/games/QuickQuiz";
 import SnakeGame from "@/components/staff/games/SnakeGame";
 import MemoryMatrix from "@/components/staff/games/MemoryMatrix";
 import ArcadeGameHeader from "@/components/staff/ArcadeGameHeader";
-import { Swords, Circle, Quote, Code, Globe, Brain, Zap, Palette } from "lucide-react";
+import QRManagement from "@/components/hr/QRManagement";
+import { Swords, Circle, Quote, Code, Globe, Brain, Zap, Palette, QrCode } from "lucide-react";
 
 type RoomType =
   | 'home'
@@ -134,7 +135,8 @@ type RoomType =
   | 'quickquiz'
   | 'snake'
   | 'memory'
-  | 'project-monitor';
+  | 'project-monitor'
+  | 'qr';
 
 const EMOJI_OPTIONS = [
   "😀", "😂", "🥰", "😍", "🤔", "😎", "🥳", "🤗", "😇", "🙃",
@@ -158,7 +160,7 @@ const paramToRoom = (param: string): RoomType | null => {
     'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
     'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox',
     'chat', 'staff', 'coin', 'game', 'arcade', 'tictactoe', 'pingpong',
-    'codetyper', 'colormatch', 'codepuzzle', 'quickquiz', 'snake', 'memory', 'project-monitor'
+    'codetyper', 'colormatch', 'codepuzzle', 'quickquiz', 'snake', 'memory', 'project-monitor', 'qr'
   ];
   if (validRooms.includes(param as RoomType)) return param as RoomType;
   return null;
@@ -747,6 +749,23 @@ const TeamHeadDashboard = () => {
 
         <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[500px] backdrop-blur-md overflow-hidden">
           <ProjectMonitor standalone={true} />
+        </div>
+      </div>
+    ),
+    qr: (
+      <div className="space-y-6 max-w-7xl mx-auto py-2 h-full overflow-y-auto pb-24">
+        <div className="flex flex-col space-y-1">
+          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
+            <QrCode className="w-8 h-8 text-blue-500" />
+            QR Manager
+          </h1>
+          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
+            Manage attendance endpoints and quick codes
+          </p>
+        </div>
+
+        <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[500px] backdrop-blur-md overflow-hidden">
+          <QRManagement />
         </div>
       </div>
     ),

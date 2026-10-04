@@ -49,17 +49,7 @@ export default defineConfig(({ mode }) => ({
         icons: [
           {
             src: '/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: '/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: '/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png',
-            sizes: '512x512',
+            sizes: '192x192 512x512 any',
             type: 'image/png',
             purpose: 'any maskable'
           }

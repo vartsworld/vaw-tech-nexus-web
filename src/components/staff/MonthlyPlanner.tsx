@@ -448,73 +448,13 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
       if (subtasksError) throw subtasksError;
 
-      const filteredTasks = (tasksData || []).filter(task => {
-        if (task.department_id && userProfile?.department_id && task.department_id === userProfile.department_id) {
-          return true;
-        }
+      let filteredTasks = tasksData || [];
+      let filteredSubtasks = subtasksData || [];
 
-        const stageConfig = task.stage_config ? (typeof task.stage_config === 'string' ? JSON.parse(task.stage_config) : task.stage_config) : {};
-        const targetDepts = (stageConfig as any)?.target_departments;
-        if (Array.isArray(targetDepts) && userProfile?.department_id && targetDepts.includes(userProfile.department_id)) {
-          return true;
-        }
-
-        if (!task.client_id) return true;
-
-        if (userProfile?.role === 'team_head' || userProfile?.role === 'lead' || userProfile?.role === 'manager' || userProfile?.role === 'admin' || userProfile?.role === 'super_admin' || userProfile?.is_department_head) {
-          return true;
-        }
-
-        let isAssignedToTask = false;
-        if (task.assigned_to) {
-          try {
-            const parsed = typeof task.assigned_to === 'string' ? JSON.parse(task.assigned_to) : task.assigned_to;
-            isAssignedToTask = Array.isArray(parsed) ? parsed.includes(userId) : parsed === userId;
-          } catch {
-            isAssignedToTask = String(task.assigned_to).includes(userId);
-          }
-        }
-
-        const subtasksOfThisTask = (subtasksData || []).filter((s: any) => s.task_id === task.id);
-        const isAssignedToSubtask = subtasksOfThisTask.some((st: any) => st.assigned_to === userId);
-
-        return isAssignedToTask || isAssignedToSubtask;
-      });
-
-      const filteredSubtasks = (subtasksData || []).filter(subtask => {
-        const parentTask = subtask.staff_tasks;
-        if (!parentTask) return false;
-
-        if (parentTask.department_id && userProfile?.department_id && parentTask.department_id === userProfile.department_id) {
-          return true;
-        }
-
-        const stageConfig = parentTask.stage_config ? (typeof parentTask.stage_config === 'string' ? JSON.parse(parentTask.stage_config) : parentTask.stage_config) : {};
-        const targetDepts = (stageConfig as any)?.target_departments;
-        if (Array.isArray(targetDepts) && userProfile?.department_id && targetDepts.includes(userProfile.department_id)) {
-          return true;
-        }
-
-        if (!parentTask.client_id) return true;
-
-        if (userProfile?.role === 'team_head' || userProfile?.role === 'lead' || userProfile?.role === 'manager' || userProfile?.role === 'admin' || userProfile?.role === 'super_admin' || userProfile?.is_department_head) {
-          return true;
-        }
-
-        let isAssignedToParent = false;
-        if (parentTask.assigned_to) {
-          try {
-            const parsed = typeof parentTask.assigned_to === 'string' ? JSON.parse(parentTask.assigned_to) : parentTask.assigned_to;
-            isAssignedToParent = Array.isArray(parsed) ? parsed.includes(userId) : parsed === userId;
-          } catch {
-            isAssignedToParent = String(parentTask.assigned_to).includes(userId);
-          }
-        }
-
-        const isAssignedToSubtask = subtask.assigned_to === userId;
-
-        return isAssignedToParent || isAssignedToSubtask;
-      });
+      if (filterClientId) {
+        filteredTasks = filteredTasks.filter(task => task.client_id === filterClientId);
+        filteredSubtasks = filteredSubtasks.filter(st => st.staff_tasks?.client_id === filterClientId);
+      }
 
       setTasks(filteredTasks);
       setSubtasks(filteredSubtasks);

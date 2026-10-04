@@ -345,7 +345,6 @@ const AttendanceReports = () => {
                   <TableHead className="whitespace-nowrap hidden sm:table-cell">Department</TableHead>
                   <TableHead className="whitespace-nowrap hidden md:table-cell">Emotion</TableHead>
                   <TableHead className="whitespace-nowrap hidden lg:table-cell">Note</TableHead>
-                  <TableHead className="whitespace-nowrap">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -371,7 +370,7 @@ const AttendanceReports = () => {
                       <React.Fragment key={dateStr}>
                         {/* Date Header Row */}
                         <TableRow className={`hover:bg-transparent ${baseBgClass}`}>
-                          <TableCell colSpan={6} className="font-semibold text-sm py-2">
+                          <TableCell colSpan={5} className="font-semibold text-sm py-2">
                             <div className="flex items-center gap-2">
                               <CalendarIcon className="h-4 w-4 text-blue-500" />
                               {dateStr !== 'unknown' ? format(new Date(dateStr), 'MMM dd, yyyy') : 'Unknown Date'}
@@ -434,17 +433,6 @@ const AttendanceReports = () => {
                                   </div>
                                 ) : (
                                   <span className="text-gray-400 text-sm">-</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                {isLate24h ? (
-                                  <Badge variant="outline" className="text-red-600 border-red-600/30 bg-red-100/50 text-xs shadow-none">
-                                    Late {'>'} 24h
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-green-600 border-green-600/30 bg-green-100/50 text-xs shadow-none">
-                                    On Time
-                                  </Badge>
                                 )}
                               </TableCell>
                             </TableRow>

@@ -1368,21 +1368,22 @@ const TaskManagement = () => {
     <TooltipProvider>
       <div className="space-y-5">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-row justify-between items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                <ClipboardList className="h-5 w-5 text-primary" />
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2 sm:gap-2.5">
+              <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
               Tasks
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              {filteredTasks.length} of {tasks.length} tasks shown
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+              {filteredTasks.length} of {tasks.length} tasks
             </p>
           </div>
-          <Button className="flex items-center gap-2 shadow-md" onClick={() => { setSelectedEditTask(null); setCurrentView('create'); }}>
+          <Button size="sm" className="flex items-center gap-1.5 sm:gap-2 shadow-md shrink-0" onClick={() => { setSelectedEditTask(null); setCurrentView('create'); }}>
             <Plus className="h-4 w-4" />
-            Create Task
+            <span className="hidden sm:inline">Create Task</span>
+            <span className="sm:hidden">New</span>
           </Button>
         </div>
 
