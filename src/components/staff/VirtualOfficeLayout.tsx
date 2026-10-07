@@ -65,6 +65,7 @@ interface VirtualOfficeLayoutProps {
   onOpenCoins?: () => void;
   isSidebarCollapsed?: boolean;
   onSidebarCollapse?: (collapsed: boolean) => void;
+  customSidebarLinks?: any[];
 }
 
 const VirtualOfficeLayout = ({
@@ -78,7 +79,8 @@ const VirtualOfficeLayout = ({
   className,
   onOpenCoins,
   isSidebarCollapsed: isSidebarCollapsedProp,
-  onSidebarCollapse
+  onSidebarCollapse,
+  customSidebarLinks
 }: VirtualOfficeLayoutProps) => {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [mobileSidebarTab, setMobileSidebarTab] = useState<'status' | 'chat'>('status');

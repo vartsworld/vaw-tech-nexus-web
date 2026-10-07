@@ -405,27 +405,41 @@ const TeamHeadDashboard = () => {
 
     try {
       const today = new Date().toISOString().split('T')[0];
+      const nowMs = Date.now();
+      const twentyFourHoursMs = 24 * 60 * 60 * 1000;
 
-      // Check if user has marked attendance today
+      // Check latest attendance entry
       const { data: attendanceData } = await supabase
         .from('staff_attendance')
         .select('*')
         .eq('user_id', profile.user_id)
-        .eq('date', today)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
-      // Check if user has submitted mood today
+      const hasRecentAttendance = attendanceData && (
+        attendanceData.date === today ||
+        (attendanceData.created_at && (nowMs - new Date(attendanceData.created_at).getTime()) < twentyFourHoursMs)
+      );
+
+      // Check latest mood entry
       const { data: moodData } = await supabase
         .from('user_mood_entries')
         .select('*')
         .eq('user_id', profile.user_id)
-        .eq('date', today)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
-      if (!attendanceData) {
+      const hasRecentMood = moodData && (
+        moodData.date === today ||
+        (moodData.created_at && (nowMs - new Date(moodData.created_at).getTime()) < twentyFourHoursMs)
+      );
+
+      if (!hasRecentAttendance) {
         setShowAttendanceCheck(true);
         setShowMoodCheck(false);
-      } else if (!moodData) {
+      } else if (!hasRecentMood) {
         setShowAttendanceCheck(false);
         setShowMoodCheck(true);
       } else {

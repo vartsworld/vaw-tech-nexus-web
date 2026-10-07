@@ -64,11 +64,15 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
       if (!activeUserId) return;
 
       const today = new Date().toISOString().split('T')[0];
+      const nowMs = Date.now();
+      const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+
       const { data, error } = await supabase
         .from('user_mood_entries')
         .select('*')
         .eq('user_id', activeUserId)
-        .eq('date', today)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
@@ -76,7 +80,12 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
         return;
       }
 
-      setTodayMoodEntry(data);
+      const isRecent = data && (
+        data.date === today ||
+        (data.created_at && (nowMs - new Date(data.created_at).getTime()) < twentyFourHoursMs)
+      );
+
+      setTodayMoodEntry(isRecent ? data : null);
     } catch (error) {
       console.error('Error checking mood entry:', error);
     }
