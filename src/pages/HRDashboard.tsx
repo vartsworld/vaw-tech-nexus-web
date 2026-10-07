@@ -5,6 +5,7 @@ import { useUser } from "@/context/UserContext";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
 import AttendanceChecker from "@/components/staff/AttendanceChecker";
 import MoodQuoteChecker from "@/components/staff/MoodQuoteChecker";
+import { supabase } from "@/integrations/supabase/client";
 
 // HR Components
 import StaffManagement from "@/components/hr/StaffManagement";
@@ -45,16 +46,57 @@ export default function HRDashboard() {
   const [initialChecksDone, setInitialChecksDone] = useState(false);
 
   useEffect(() => {
-    if (!profileLoading && userProfile) {
-      if (!userProfile.attendance_checked_today) {
-        setShowAttendanceChecker(true);
-      } else if (!userProfile.mood_checked_today) {
-        setShowMoodChecker(true);
-      } else {
-        setInitialChecksDone(true);
-      }
+    if (profileLoading) return;
+    
+    if (!userProfile) {
+      navigate('/admin');
+      return;
     }
-  }, [userProfile, profileLoading]);
+
+    if (userProfile.role !== 'hr' && userProfile.role !== 'admin' && userProfile.role !== 'super_admin') {
+      navigate('/staff');
+      return;
+    }
+
+    const checkDailyRequirements = async () => {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+
+        // Check if user has marked attendance today
+        const { data: attendanceData } = await supabase
+          .from('staff_attendance')
+          .select('*')
+          .eq('user_id', userProfile.id)
+          .eq('date', today)
+          .maybeSingle();
+
+        // Check if user has submitted mood today
+        const { data: moodData } = await supabase
+          .from('user_mood_entries')
+          .select('*')
+          .eq('user_id', userProfile.id)
+          .eq('entry_date', today)
+          .maybeSingle();
+
+        if (!attendanceData) {
+          setShowAttendanceChecker(true);
+          setShowMoodChecker(false);
+        } else if (!moodData) {
+          setShowAttendanceChecker(false);
+          setShowMoodChecker(true);
+        } else {
+          setShowAttendanceChecker(false);
+          setShowMoodChecker(false);
+          setInitialChecksDone(true);
+        }
+      } catch (error) {
+        console.error("Error checking daily requirements:", error);
+        setInitialChecksDone(true); // Fallback to let them in if DB fails
+      }
+    };
+
+    checkDailyRequirements();
+  }, [userProfile, profileLoading, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -62,38 +104,65 @@ export default function HRDashboard() {
     if (room && typeof room === 'string') {
       setCurrentRoom(room);
     }
-  }, [location]);
+  }, [location.search]);
 
-  if (profileLoading || !initialChecksDone) {
+  if (profileLoading || (!initialChecksDone && !showAttendanceChecker && !showMoodChecker)) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        {showAttendanceChecker && (
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (showAttendanceChecker) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md animate-in fade-in zoom-in duration-500">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white mb-2">Step 1: Mark Attendance</h2>
+            <p className="text-white/80">Please mark your attendance to continue</p>
+          </div>
           <AttendanceChecker 
-            onComplete={() => {
+            userId={userProfile?.id || ''}
+            onAttendanceMarked={async () => {
               setShowAttendanceChecker(false);
-              if (!userProfile?.mood_checked_today) {
+              const today = new Date().toISOString().split('T')[0];
+              const { data: moodData } = await supabase
+                .from('user_mood_entries')
+                .select('*')
+                .eq('user_id', userProfile?.id)
+                .eq('entry_date', today)
+                .maybeSingle();
+                
+              if (!moodData) {
                 setShowMoodChecker(true);
               } else {
                 setInitialChecksDone(true);
               }
             }} 
           />
-        )}
-        {showMoodChecker && !showAttendanceChecker && (
-          <MoodQuoteChecker onComplete={() => {
-            setShowMoodChecker(false);
-            setInitialChecksDone(true);
-          }} />
-        )}
-        {(!showAttendanceChecker && !showMoodChecker) && (
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        )}
+        </div>
       </div>
     );
   }
 
-  if (userProfile?.role !== 'hr' && userProfile?.role !== 'admin' && userProfile?.role !== 'super_admin') {
-    return <Navigate to="/staff" replace />;
+  if (showMoodChecker) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md animate-in fade-in zoom-in duration-500">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white mb-2">Step 2: How are you feeling?</h2>
+            <p className="text-white/80">Share your mood to unlock your dashboard</p>
+          </div>
+          <MoodQuoteChecker 
+            onMoodSubmitted={() => {
+              setShowMoodChecker(false);
+              setInitialChecksDone(true);
+            }} 
+          />
+        </div>
+      </div>
+    );
   }
 
   const customSidebarLinks = [
