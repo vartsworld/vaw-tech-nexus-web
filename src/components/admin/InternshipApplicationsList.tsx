@@ -39,6 +39,7 @@ const InternshipApplicationsList = () => {
       const { data, error } = await supabase
         .from('internship_applications')
         .select('*')
+        .neq('status', 'deleted')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -69,7 +70,7 @@ const InternshipApplicationsList = () => {
     try {
       const { error } = await supabase
         .from('internship_applications')
-        .delete()
+        .update({ status: 'deleted' })
         .eq('id', application.id);
 
       if (error) throw error;
