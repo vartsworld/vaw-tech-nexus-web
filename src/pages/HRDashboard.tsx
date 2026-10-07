@@ -1,801 +1,184 @@
-import { useState, useEffect, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useRealtimeQuery } from "@/hooks/useRealtimeQuery";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Users,
-  UserCheck,
-  ClipboardList,
-  BarChart3,
-  Plus,
-  Search,
-  Calendar,
-  AlertCircle,
-  TrendingUp,
-  Building2,
-  Clock,
-  Moon,
-  Sun,
-  LogOut,
-  LayoutDashboard,
-  ShieldCheck,
-  Briefcase,
-  Trophy,
-  Bell,
-  Layers,
-  FileText,
-  Megaphone,
-  UserPlus,
-  Menu,
-  X,
-  ChevronRight,
-  Sparkles,
-  Star,
-  Activity,
-  FolderSearch,
-  DollarSign,
-  Zap,
-  Tag,
-  HeadphonesIcon,
-  QrCode,
-  GraduationCap
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import SEO from "@/components/SEO";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useUser } from "@/context/UserContext";
+import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
+import AttendanceChecker from "@/components/staff/AttendanceChecker";
+import MoodQuoteChecker from "@/components/staff/MoodQuoteChecker";
 
-// Sub-components
+// HR Components
 import StaffManagement from "@/components/hr/StaffManagement";
 import AttendanceReports from "@/components/hr/AttendanceReports";
 import TaskManagement from "@/components/hr/TaskManagement";
+import TaskTemplateManagement from "@/components/hr/TaskTemplateManagement";
+import ClientManagement from "@/components/hr/ClientManagement";
 import DepartmentManagement from "@/components/hr/DepartmentManagement";
 import PerformanceMetrics from "@/components/hr/PerformanceMetrics";
-import NotificationCenter from "@/components/hr/NotificationCenter";
-import TeamApplicationsList from "@/components/hr/TeamApplicationsList";
-import InternshipApplicationsList from "@/components/admin/InternshipApplicationsList";
-import EmmaAssistant from "@/components/ai/EmmaAssistant";
-import ClientManagement from "@/components/hr/ClientManagement";
 import PointsMonitoring from "@/components/hr/PointsMonitoring";
 import RewardsManagement from "@/components/hr/RewardsManagement";
 import RedemptionApprovals from "@/components/hr/RedemptionApprovals";
-import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import NotificationCenter from "@/components/hr/NotificationCenter";
 import BannerManagement from "@/components/hr/BannerManagement";
-import TaskTemplateManagement from "@/components/hr/TaskTemplateManagement";
-import ManageProjects from "@/components/hr/ManageProjects";
-import ProjectMonitor from "@/pages/ProjectMonitor";
+import TeamApplicationsList from "@/components/hr/TeamApplicationsList";
+import InternshipApplicationsList from "@/components/admin/InternshipApplicationsList";
 import PricingManagement from "@/components/hr/PricingManagement";
-import ApiIntegration from "@/components/hr/ApiIntegration";
 import FinancialOversight from "@/components/hr/FinancialOversight";
+import ApiIntegration from "@/components/hr/ApiIntegration";
 import SupportTicketManagement from "@/components/hr/SupportTicketManagement";
-import QRManagement from "@/components/hr/QRManagement";
 import AcademyEnquiriesList from "@/components/hr/AcademyEnquiriesList";
 
+import {
+  Users, CheckSquare, Settings2, HandCoins, Building2, BarChart3,
+  Award, Bell, Image as ImageIcon, Briefcase, UserPlus, CreditCard,
+  DollarSign, Code, LifeBuoy, GraduationCap, LayoutDashboard
+} from "lucide-react";
 
-const HRDashboard = () => {
+export default function HRDashboard() {
+  const { userProfile, isLoading: profileLoading } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
 
-  const pathParts = location.pathname.split('/');
-  let activeTab = pathParts[2] || "dashboard";
-  if (activeTab === "overview") activeTab = "dashboard";
-
-  const [hrProfile, setHrProfile] = useState<any>(null);
-  const [departmentName, setDepartmentName] = useState<string>("");
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  // Desktop sidebar: collapsed/expanded rail
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  // Mobile sidebar: drawer open/closed
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-
-  const { toast } = useToast();
-
-  // Close mobile drawer on route change
-  useEffect(() => {
-    setIsMobileDrawerOpen(false);
-  }, [activeTab]);
-
-  // Real-time queries for dashboard data
-  const { data: staffData } = useRealtimeQuery({
-    queryKey: ['staff-profiles'],
-    table: 'staff_profiles',
-    select: 'id',
-  });
-
-  const today = new Date().toISOString().split('T')[0];
-  const { data: attendanceData } = useRealtimeQuery({
-    queryKey: ['attendance-today', today],
-    table: 'staff_attendance',
-    filter: `date=eq.${today}`,
-    select: 'id',
-  });
-
-  const { data: activeTasksData } = useRealtimeQuery({
-    queryKey: ['active-tasks'],
-    table: 'staff_tasks',
-    select: 'id, status',
-  });
-
-  const firstOfMonth = new Date();
-  firstOfMonth.setDate(1);
-  const { data: completedTasksData } = useRealtimeQuery({
-    queryKey: ['completed-tasks', firstOfMonth.toISOString()],
-    table: 'staff_tasks',
-    filter: `status=eq.completed`,
-    select: 'id',
-  });
-
-  const { data: departmentsData } = useRealtimeQuery({
-    queryKey: ['departments'],
-    table: 'departments',
-    select: 'id',
-  });
-
-  const { data: recentTasksData } = useRealtimeQuery({
-    queryKey: ['recent-completed-tasks'],
-    table: 'staff_tasks',
-    filter: 'status=eq.completed',
-    select: 'id, title, completed_at, updated_at, assigned_to',
-    order: { column: 'completed_at', ascending: false },
-    limit: 5,
-  });
-
-  const { data: recentAttendanceData } = useRealtimeQuery({
-    queryKey: ['recent-attendance'],
-    table: 'staff_attendance',
-    select: 'id, check_in_time, is_late, user_id',
-    order: { column: 'check_in_time', ascending: false },
-    limit: 5,
-  });
-
-  // Calculate stats
-  const stats = useMemo(() => ({
-    totalStaff: staffData?.length || 0,
-    presentToday: attendanceData?.length || 0,
-    activeTasks: activeTasksData?.filter((t: any) => t.status === 'pending' || t.status === 'in_progress').length || 0,
-    completedTasks: completedTasksData?.length || 0,
-    departments: departmentsData?.length || 0,
-    avgAttendance: staffData?.length ? Math.round(((attendanceData?.length || 0) / staffData.length) * 100) : 0,
-  }), [staffData, attendanceData, activeTasksData, completedTasksData, departmentsData]);
-
-  const recentActivities = useMemo(() => {
-    const activities = [
-      ...(recentTasksData || []).map((task: any) => ({
-        type: 'task_completed',
-        title: `Task "${task.title}" completed`,
-        time: task.completed_at,
-        icon: ClipboardList,
-        color: "text-green-500"
-      })),
-      ...(recentAttendanceData || []).map((attendance: any) => ({
-        type: 'attendance',
-        title: `Staff member checked in${attendance.is_late ? ' (Late)' : ''}`,
-        time: attendance.check_in_time,
-        icon: attendance.is_late ? AlertCircle : UserCheck,
-        color: attendance.is_late ? "text-amber-500" : "text-blue-500"
-      })),
-    ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8);
-    return activities;
-  }, [recentTasksData, recentAttendanceData]);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/staff/login");
-  };
+  const [currentRoom, setCurrentRoom] = useState('home');
+  const [showAttendanceChecker, setShowAttendanceChecker] = useState(false);
+  const [showMoodChecker, setShowMoodChecker] = useState(false);
+  const [initialChecksDone, setInitialChecksDone] = useState(false);
 
   useEffect(() => {
-    fetchHRProfile();
-    document.documentElement.classList.add('dark');
-  }, []);
-
-  const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    if (newMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
+    if (!profileLoading && userProfile) {
+      if (!userProfile.attendance_checked_today) {
+        setShowAttendanceChecker(true);
+      } else if (!userProfile.mood_checked_today) {
+        setShowMoodChecker(true);
+      } else {
+        setInitialChecksDone(true);
+      }
     }
-  };
+  }, [userProfile, profileLoading]);
 
-  const fetchHRProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/staff/login");
-        return;
-      }
-
-      const { data: profile, error } = await supabase
-        .from('staff_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!profile || (profile.role !== 'hr' && profile.role !== 'super_admin')) {
-        navigate("/404");
-        return;
-      }
-
-      setHrProfile(profile);
-
-      if (profile?.department_id) {
-        const { data: dept } = await supabase
-          .from('departments')
-          .select('name')
-          .eq('id', profile.department_id)
-          .single();
-        if (dept) setDepartmentName(dept.name);
-      }
-    } catch (error) {
-      console.error('Error fetching HR profile:', error);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const room = Array.from(params.keys())[0];
+    if (room && typeof room === 'string') {
+      setCurrentRoom(room);
     }
-  };
+  }, [location]);
 
-  const menuGroups = [
+  if (profileLoading || !initialChecksDone) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        {showAttendanceChecker && (
+          <AttendanceChecker 
+            onComplete={() => {
+              setShowAttendanceChecker(false);
+              if (!userProfile?.mood_checked_today) {
+                setShowMoodChecker(true);
+              } else {
+                setInitialChecksDone(true);
+              }
+            }} 
+          />
+        )}
+        {showMoodChecker && !showAttendanceChecker && (
+          <MoodQuoteChecker onComplete={() => {
+            setShowMoodChecker(false);
+            setInitialChecksDone(true);
+          }} />
+        )}
+        {(!showAttendanceChecker && !showMoodChecker) && (
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        )}
+      </div>
+    );
+  }
+
+  if (userProfile?.role !== 'hr' && userProfile?.role !== 'admin' && userProfile?.role !== 'super_admin') {
+    return <Navigate to="/staff" replace />;
+  }
+
+  const customSidebarLinks = [
     {
-      label: "ASSISTANT",
+      title: "Operations",
+      icon: LayoutDashboard,
       items: [
-        { id: "emma", label: "EMMA AI", icon: Sparkles },
+        { id: 'tasks', name: 'Task Board', icon: CheckSquare, path: '/hr?tasks' },
+        { id: 'templates', name: 'Templates', icon: Settings2, path: '/hr?templates' },
+        { id: 'attendance', name: 'Attendance', icon: HandCoins, path: '/hr?attendance' },
+        { id: 'staff', name: 'Staff Management', icon: Users, path: '/hr?staff' },
+        { id: 'departments', name: 'Departments', icon: Building2, path: '/hr?departments' },
       ]
     },
     {
-      label: "CORE",
+      title: "Relationships",
+      icon: Users,
       items: [
-        { id: "dashboard", label: "Overview", icon: LayoutDashboard },
-        { id: "staff", label: "Staff Directory", icon: Users },
-        { id: "departments", label: "Departments", icon: Building2 },
+        { id: 'clients', name: 'Clients', icon: Briefcase, path: '/hr?clients' },
+        { id: 'applications', name: 'Team Applications', icon: UserPlus, path: '/hr?applications' },
+        { id: 'interns', name: 'Interns', icon: GraduationCap, path: '/hr?interns' },
+        { id: 'support', name: 'Support Tickets', icon: LifeBuoy, path: '/hr?support' },
+        { id: 'academy', name: 'Academy', icon: Award, path: '/hr?academy' },
       ]
     },
     {
-      label: "OPERATIONS",
+      title: "Administration",
+      icon: Settings2,
       items: [
-        { id: "tasks", label: "Task Board", icon: ClipboardList },
-        { id: "templates", label: "Task Templates", icon: Layers },
-        { id: "attendance", label: "Attendance", icon: Calendar },
-      ]
-    },
-    {
-      label: "RELATIONSHIPS",
-      items: [
-        { id: "clients", label: "Clients", icon: UserPlus },
-        { id: "support", label: "Support Tickets", icon: HeadphonesIcon },
-        { id: "financials", label: "Financial Oversight", icon: DollarSign },
-        { id: "pricing", label: "Pricing Manager", icon: Tag },
-        { id: "applications", label: "Applications", icon: UserPlus },
-        { id: "interns", label: "Interns", icon: UserPlus },
-        { id: "academy", label: "Academy Enquiries", icon: GraduationCap },
-      ]
-    },
-    {
-      label: "PERFORMANCE",
-      items: [
-        { id: "performance", label: "Metrics", icon: BarChart3 },
-        { id: "points", label: "Points System", icon: Star },
-        { id: "rewards", label: "Rewards Store", icon: Trophy },
-      ]
-    },
-    {
-      label: "COMPANY",
-      items: [
-        { id: "api-integration", label: "API Integration", icon: Zap },
-        { id: "banners", label: "Banners", icon: Megaphone },
-        { id: "notifications", label: "Notifications", icon: Bell },
+        { id: 'performance', name: 'Performance', icon: BarChart3, path: '/hr?performance' },
+        { id: 'points', name: 'Points & Analytics', icon: Award, path: '/hr?points' },
+        { id: 'rewards', name: 'Rewards', icon: Award, path: '/hr?rewards' },
+        { id: 'pricing', name: 'Pricing', icon: CreditCard, path: '/hr?pricing' },
+        { id: 'financials', name: 'Financials', icon: DollarSign, path: '/hr?financials' },
+        { id: 'notifications', name: 'Notifications', icon: Bell, path: '/hr?notifications' },
+        { id: 'banners', name: 'Banners', icon: ImageIcon, path: '/hr?banners' },
+        { id: 'api-integration', name: 'API Integrations', icon: Code, path: '/hr?api-integration' },
+        { id: 'legacy', name: 'Legacy Admin', icon: LayoutDashboard, path: '/hr/legacy' }
       ]
     }
   ];
 
-  // Bottom nav items (most-used, mobile only)
-  const bottomNavItems = [
-    { id: "dashboard", label: "Home", icon: LayoutDashboard },
-    { id: "staff", label: "Staff", icon: Users },
-    { id: "tasks", label: "Tasks", icon: ClipboardList },
-    { id: "attendance", label: "Attend.", icon: Calendar },
-    { id: "emma", label: "EMMA", icon: Sparkles },
-  ];
-
-  const navigateTo = (id: string) => {
-    if (id.startsWith('/')) {
-      navigate(id);
-    } else {
-      navigate(`/hr/${id}`);
+  const renderRoomContent = () => {
+    switch (currentRoom) {
+      case 'tasks': return <TaskManagement />;
+      case 'templates': return <TaskTemplateManagement />;
+      case 'attendance': return <AttendanceReports />;
+      case 'staff': return <StaffManagement />;
+      case 'departments': return <DepartmentManagement />;
+      case 'clients': return <ClientManagement />;
+      case 'applications': return <TeamApplicationsList />;
+      case 'interns': return <InternshipApplicationsList />;
+      case 'support': return <SupportTicketManagement />;
+      case 'academy': return <AcademyEnquiriesList />;
+      case 'performance': return <PerformanceMetrics />;
+      case 'points': return <PointsMonitoring />;
+      case 'rewards': return <div className="space-y-6"><RewardsManagement /><RedemptionApprovals /></div>;
+      case 'pricing': return <PricingManagement />;
+      case 'financials': return <FinancialOversight />;
+      case 'notifications': return <NotificationCenter />;
+      case 'banners': return <BannerManagement />;
+      case 'api-integration': return <ApiIntegration />;
+      default: 
+        return (
+          <div className="flex flex-col items-center justify-center h-[70vh] text-center space-y-4">
+            <h1 className="text-4xl font-bold">HR Virtual Office</h1>
+            <p className="text-muted-foreground max-w-md">
+              Welcome to the new HR Dashboard. Select a module from the sidebar to manage your operations and team data.
+            </p>
+          </div>
+        );
     }
   };
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case "dashboard": return <div className="space-y-6"><StatsGrid stats={stats} /><div className="grid grid-cols-1 lg:grid-cols-2 gap-6"><Activities activities={recentActivities} /><PerformanceInsights stats={stats} /></div></div>;
-      case "emma": return <EmmaAssistant role="hr" />;
-      case "staff": return <StaffManagement />;
-      case "attendance": return <AttendanceReports />;
-      case "tasks": return <TaskManagement />;
-      case "templates": return <TaskTemplateManagement />;
-      case "clients": return <ClientManagement />;
-      case "manage-projects": return <ManageProjects />;
-      case "departments": return <DepartmentManagement />;
-      case "performance": return <PerformanceMetrics />;
-      case "points": return <PointsMonitoring />;
-      case "rewards": return <div className="space-y-6"><RewardsManagement /><RedemptionApprovals /></div>;
-      case "notifications": return <NotificationCenter />;
-      case "banners": return <BannerManagement />;
-      case "applications": return <TeamApplicationsList />;
-      case "interns": return <InternshipApplicationsList />;
-      case "pricing": return <PricingManagement />;
-      case "financials": return <FinancialOversight />;
-      case "api-integration": return <ApiIntegration />;
-      case "support": return <SupportTicketManagement />;
-      case "qr": return <QRManagement />;
-      case "academy": return <AcademyEnquiriesList />;
-      default: return <StatsGrid stats={stats} />;
-    }
-  };
-
-  // Sidebar nav content — shared between desktop rail and mobile drawer
-  const renderSidebarNav = (compact: boolean = false) => (
-    <div className="flex-1 overflow-y-auto px-3 overscroll-contain">
-      <div className="space-y-6 py-4">
-        {menuGroups.map((group, gIdx) => (
-          <div key={gIdx} className="space-y-2">
-            {!compact && (
-              <h3 className="px-4 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                {group.label}
-              </h3>
-            )}
-            <div className="space-y-1">
-              {group.items.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => navigateTo(item.id)}
-                  className={`
-                    w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group relative
-                    ${activeTab === item.id
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"}
-                  `}
-                >
-                  <item.icon className={`w-5 h-5 shrink-0 ${activeTab === item.id ? "text-primary" : "group-hover:text-primary transition-colors"}`} />
-                  {!compact && (
-                    <span className="text-sm font-medium tracking-wide text-left">
-                      {item.label}
-                    </span>
-                  )}
-                  {activeTab === item.id && (
-                    <motion.div
-                      layoutId="activeTabIndicator"
-                      className="absolute inset-y-2 left-0 w-1 bg-primary rounded-full"
-                      initial={false}
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    />
-                  )}
-                  {!compact && activeTab === item.id && (
-                    <ChevronRight className="w-3 h-3 ml-auto opacity-50" />
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  // User profile footer — shared
-  const renderSidebarFooter = (compact: boolean = false) => (
-    <div className="p-4 border-t border-border">
-      <div className={`flex items-center gap-3 p-3 rounded-2xl bg-muted/50 ${compact ? 'justify-center' : ''}`}>
-        <Avatar className="h-9 w-9 border border-primary/30 shrink-0">
-          <AvatarImage src={hrProfile?.avatar_url} />
-          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-            {hrProfile?.full_name?.split(' ').map((n: string) => n[0]).join('')}
-          </AvatarFallback>
-        </Avatar>
-        {!compact && (
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate text-foreground">{hrProfile?.full_name || 'HR Admin'}</p>
-            <p className="text-[10px] text-muted-foreground font-bold tracking-wider uppercase">{hrProfile?.role || 'HR'}</p>
-          </div>
-        )}
-        {!compact && (
-          <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0">
-            <LogOut className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
-    </div>
-  );
 
   return (
-    <div className="flex h-[100dvh] bg-background text-foreground overflow-hidden selection:bg-primary/30">
-      <SEO title="HR Dashboard | VAW Technologies" description="Internal Human Resources portal for VAW Technologies." />
-
-      {/* Background Glow */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/5 blur-[120px] rounded-full" />
+    <VirtualOfficeLayout
+      currentRoom={currentRoom}
+      onRoomChange={setCurrentRoom}
+      userId={userProfile?.id}
+      userProfile={userProfile}
+      customSidebarLinks={customSidebarLinks}
+    >
+      <div className="p-4 md:p-6 pb-24 lg:pb-6 animate-in fade-in duration-300">
+        {renderRoomContent()}
       </div>
-
-      {/* ── MOBILE DRAWER BACKDROP ── */}
-      <AnimatePresence>
-        {isMobileDrawerOpen && (
-          <motion.div
-            key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
-            onClick={() => setIsMobileDrawerOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* ── MOBILE DRAWER SIDEBAR ── */}
-      <AnimatePresence>
-        {isMobileDrawerOpen && (
-          <motion.aside
-            key="mobile-drawer"
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed inset-y-0 left-0 z-50 w-72 h-full bg-card/95 backdrop-blur-xl border-r border-border flex flex-col md:hidden"
-          >
-            {/* Drawer header */}
-            <div className="p-5 flex items-center justify-between border-b border-border">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-                  <ShieldCheck className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <span className="font-bold text-lg tracking-tight text-foreground">VAW HR</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMobileDrawerOpen(false)}
-                className="hover:bg-muted text-muted-foreground"
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-            {renderSidebarNav(false)}
-            {renderSidebarFooter(false)}
-          </motion.aside>
-        )}
-      </AnimatePresence>
-
-      {/* ── DESKTOP SIDEBAR (hidden on mobile) ── */}
-      <motion.aside
-        initial={false}
-        animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="relative z-30 h-full bg-card/80 backdrop-blur-xl border-r border-border hidden md:flex flex-col transition-all duration-300 ease-in-out"
-      >
-        <div className="p-6 flex items-center justify-between">
-          <AnimatePresence mode="wait">
-            {isSidebarOpen ? (
-              <motion.div
-                key="logo"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="flex items-center gap-2"
-              >
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-                  <ShieldCheck className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <span className="font-bold text-lg tracking-tight text-foreground">VAW HR</span>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="logo-collapsed"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="mx-auto"
-              >
-                <ShieldCheck className="w-6 h-6 text-primary" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="hover:bg-muted text-muted-foreground"
-          >
-            {isSidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </Button>
-        </div>
-
-        {renderSidebarNav(!isSidebarOpen)}
-        {renderSidebarFooter(!isSidebarOpen)}
-      </motion.aside>
-
-      {/* ── MAIN CONTENT ── */}
-      <main className="flex-1 flex flex-col min-w-0 bg-background relative z-10">
-
-        {/* ── TOP HEADER ── */}
-        <header className="h-16 md:h-20 border-b border-border px-4 md:px-8 flex items-center justify-between bg-card/50 backdrop-blur-md sticky top-0 z-40">
-          <div className="flex items-center gap-3">
-            {/* Mobile hamburger */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMobileDrawerOpen(true)}
-              className="md:hidden text-muted-foreground hover:text-foreground hover:bg-muted"
-              aria-label="Open navigation"
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
-
-            <h2 className="text-base md:text-xl font-bold tracking-tight capitalize text-foreground truncate">
-              {activeTab.replace(/-/g, ' ')}
-            </h2>
-
-            <Separator orientation="vertical" className="h-5 bg-border hidden sm:block" />
-            <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span>Team efficiency is up 12% this week</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 md:gap-6">
-            {/* Search — desktop only */}
-            <div className="relative hidden lg:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Universal search..."
-                className="w-64 bg-muted/50 border-border pl-10 h-9 rounded-full focus:ring-primary focus:border-primary transition-all text-xs"
-              />
-            </div>
-            <div className="flex items-center gap-1 md:gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/hr/notifications')}
-                className="relative text-muted-foreground hover:text-foreground hover:bg-muted h-9 w-9"
-              >
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-background" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleDarkMode}
-                className="text-muted-foreground hover:text-foreground hover:bg-muted h-9 w-9"
-              >
-                {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </Button>
-              {/* Mobile logout */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="md:hidden text-muted-foreground hover:text-destructive hover:bg-muted h-9 w-9"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        {/* ── DYNAMIC CONTENT ── */}
-        <ScrollArea className="flex-1">
-          {/* pb-24 on mobile to clear the bottom nav bar */}
-          <div className="p-4 md:p-8 max-w-7xl mx-auto w-full pb-24 md:pb-8">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              >
-                {renderContent()}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </ScrollArea>
-
-        {/* ── MOBILE BOTTOM NAV ── */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-xl border-t border-border safe-area-pb">
-          <div className="flex items-center justify-around px-2 py-2">
-            {bottomNavItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => navigateTo(item.id)}
-                  className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 min-w-0 flex-1 ${
-                    isActive ? "text-primary" : "text-muted-foreground"
-                  }`}
-                >
-                  <div className={`p-1.5 rounded-lg transition-all duration-200 ${isActive ? "bg-primary/15" : ""}`}>
-                    <item.icon className="w-5 h-5" />
-                  </div>
-                  <span className="text-[10px] font-semibold tracking-wide truncate w-full text-center">
-                    {item.label}
-                  </span>
-                </button>
-              );
-            })}
-            {/* "More" opens the full drawer */}
-            <button
-              onClick={() => setIsMobileDrawerOpen(true)}
-              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 min-w-0 flex-1 text-muted-foreground"
-            >
-              <div className="p-1.5 rounded-lg">
-                <Menu className="w-5 h-5" />
-              </div>
-              <span className="text-[10px] font-semibold tracking-wide">More</span>
-            </button>
-          </div>
-        </nav>
-      </main>
-
-      <PWAInstallPrompt />
-    </div>
+    </VirtualOfficeLayout>
   );
-};
-
-// --- Dashboard Component Sections ---
-
-const StatsGrid = ({ stats }: any) => (
-  <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 md:gap-6">
-    <PremiumStatCard
-      title="Total Force"
-      value={stats.totalStaff}
-      subtitle="Active Workforce"
-      icon={Users}
-      gradient="from-blue-600 to-indigo-600"
-    />
-    <PremiumStatCard
-      title="Today's Attendance"
-      value={`${stats.avgAttendance}%`}
-      subtitle={`${stats.presentToday} members present`}
-      icon={UserCheck}
-      gradient="from-green-600 to-emerald-600"
-      trend="+4% from yesterday"
-    />
-    <PremiumStatCard
-      title="Live Operations"
-      value={stats.activeTasks}
-      subtitle="Running Tasks"
-      icon={ClipboardList}
-      gradient="from-orange-600 to-red-600"
-    />
-    <PremiumStatCard
-      title="Strategic Units"
-      value={stats.departments}
-      subtitle="Active Departments"
-      icon={Building2}
-      gradient="from-purple-600 to-violet-600"
-    />
-  </div>
-);
-
-const PremiumStatCard = ({ title, value, subtitle, icon: Icon, gradient, trend }: any) => (
-  <motion.div
-    whileHover={{ y: -5 }}
-    className="group relative overflow-hidden p-4 md:p-6 rounded-2xl md:rounded-[2rem] bg-card border border-border"
-  >
-    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-10 blur-[50px] transition-opacity duration-500`} />
-    <div className="flex justify-between items-start mb-3 md:mb-4">
-      <div className={`p-2 md:p-3 rounded-xl md:rounded-2xl bg-gradient-to-br ${gradient} shadow-lg`}>
-        <Icon className="w-4 h-4 md:w-6 md:h-6 text-white" />
-      </div>
-      {trend && (
-        <span className="text-[9px] md:text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-500/10 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full border border-green-500/20">
-          {trend}
-        </span>
-      )}
-    </div>
-    <div className="space-y-0.5 md:space-y-1">
-      <h3 className="text-muted-foreground text-[9px] md:text-xs font-bold tracking-wider uppercase">{title}</h3>
-      <div className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{value}</div>
-      <p className="text-[10px] md:text-xs text-muted-foreground">{subtitle}</p>
-    </div>
-  </motion.div>
-);
-
-const Activities = ({ activities }: any) => (
-  <Card className="bg-card border-border rounded-2xl md:rounded-[2rem] overflow-hidden shadow-2xl">
-    <CardHeader className="border-b border-border p-4 md:p-6">
-      <div className="flex items-center justify-between">
-        <CardTitle className="text-base md:text-lg flex items-center gap-2 text-foreground">
-          <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-          Live Pulse
-        </CardTitle>
-        <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-primary/80 hover:bg-primary/10">View Log</Button>
-      </div>
-    </CardHeader>
-    <CardContent className="p-0">
-      <ScrollArea className="h-[300px] md:h-[400px]">
-        <div className="p-4 md:p-6 space-y-3 md:space-y-4">
-          {activities.length > 0 ? activities.map((activity: any, idx: number) => (
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              key={idx}
-              className="flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/50 border border-border hover:bg-muted transition-all group"
-            >
-              <div className={`p-2 md:p-2.5 rounded-lg md:rounded-xl bg-card border border-border group-hover:scale-110 transition-transform ${activity.color}`}>
-                <activity.icon className="w-4 h-4 md:w-5 md:h-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs md:text-sm font-medium tracking-wide truncate text-foreground">{activity.title}</p>
-                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-medium">
-                  <Clock className="w-3 h-3" />
-                  {new Date(activity.time).toLocaleTimeString()}
-                </div>
-              </div>
-            </motion.div>
-          )) : (
-            <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
-              <Clock className="w-8 h-8 mb-2 opacity-20" />
-              <p className="text-sm font-medium">No recent activities</p>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-    </CardContent>
-  </Card>
-);
-
-const PerformanceInsights = ({ stats }: any) => (
-  <Card className="bg-card border-border rounded-2xl md:rounded-[2rem] shadow-2xl">
-    <CardHeader className="p-4 md:p-6">
-      <CardTitle className="text-base md:text-lg flex items-center gap-2 text-foreground">
-        <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-        Intelligence
-      </CardTitle>
-    </CardHeader>
-    <CardContent className="p-4 md:p-6 pt-0 space-y-4 md:space-y-6">
-      <div className="space-y-3 md:space-y-4">
-        <div className="flex justify-between items-center px-1">
-          <span className="text-sm text-muted-foreground font-medium">Monthly Efficiency</span>
-          <span className="text-sm font-bold text-foreground">87%</span>
-        </div>
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: "87%" }}
-            className="h-full bg-gradient-to-r from-primary to-accent"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 md:gap-4">
-        <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/50 border border-border">
-          <p className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Response Time</p>
-          <p className="text-lg md:text-xl font-bold text-foreground">2.4h</p>
-          <div className="text-[10px] text-green-600 dark:text-green-400 mt-1 flex items-center gap-1 font-bold">
-            <TrendingUp className="h-3 w-3" />
-            15% FASTER
-          </div>
-        </div>
-        <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-muted/50 border border-border">
-          <p className="text-[9px] md:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Satisfaction</p>
-          <p className="text-lg md:text-xl font-bold text-foreground">4.8/5</p>
-          <div className="text-[10px] text-primary mt-1 flex items-center gap-1 font-bold">
-            <Sparkles className="h-3 w-3" />
-            TOP TIER
-          </div>
-        </div>
-      </div>
-
-      <div className="p-3 md:p-4 rounded-xl md:rounded-2xl bg-primary/10 border border-primary/20 text-xs md:text-sm text-foreground/80 leading-relaxed italic">
-        "Team velocity is high. Focus on completing templates to automate repetitive workflows in the next sprint."
-      </div>
-    </CardContent>
-  </Card>
-);
-
-export default HRDashboard;
+}

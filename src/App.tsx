@@ -11,6 +11,7 @@ import ServiceRequest from "./pages/ServiceRequest";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import HRDashboard from "./pages/HRDashboard";
+import LegacyHRDashboard from "./pages/LegacyHRDashboard";
 import Internship from "./pages/Internship";
 import InternshipRegistration from "./pages/InternshipRegistration";
 import InternExperience from "./pages/InternExperience";
@@ -149,6 +150,7 @@ const AppContent = () => {
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/super-admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/hr/legacy/*" element={<LegacyHRDashboard />} />
           <Route path="/hr/*" element={<HRDashboard />} />
           <Route path="/staff/profile" element={<Navigate to="/account" replace />} />
           <Route path="/staff/login" element={<StaffLogin />} />

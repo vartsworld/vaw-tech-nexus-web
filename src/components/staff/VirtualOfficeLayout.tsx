@@ -386,7 +386,7 @@ const VirtualOfficeLayout = ({
   }, [currentRoom]);
 
   // Restructured Sidebar Configuration (Removed Tags, Space contains chess, onboarding, notes, leave, tools)
-  const sidebarLinks = [
+  const sidebarLinks = customSidebarLinks || [
     {
       title: "Folders",
       icon: Folder,
@@ -435,7 +435,7 @@ const VirtualOfficeLayout = ({
     } else {
       const isTeamHead = location.pathname.startsWith('/team-head') ||
         (userProfile?.role === 'manager' || userProfile?.role === 'lead' || userProfile?.is_department_head);
-      const targetDashboard = isTeamHead ? '/team-head' : '/staff';
+      const targetDashboard = location.pathname.startsWith('/hr') ? '/hr' : (isTeamHead ? '/team-head' : '/staff');
 
       let suffix = '';
       if (item.id === 'planner') {

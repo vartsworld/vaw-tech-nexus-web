@@ -21,7 +21,9 @@ import {
   Trash2,
   AlertTriangle,
   ShieldAlert,
-  Copy
+  Copy,
+  LayoutGrid,
+  List
 } from "lucide-react";
 import {
   AlertDialog,
@@ -44,6 +46,7 @@ const TeamApplicationsList = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,6 +60,7 @@ const TeamApplicationsList = () => {
         .from('team_applications_staff')
         .select('*')
         .neq('status', 'approved')
+        .neq('status', 'deleted')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -125,7 +129,7 @@ const TeamApplicationsList = () => {
     try {
       const { error } = await supabase
         .from('team_applications_staff')
-        .delete()
+        .update({ status: 'deleted' })
         .eq('id', application.id);
 
       if (error) throw error;
@@ -311,10 +315,112 @@ const TeamApplicationsList = () => {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle>Recent Applications</CardTitle>
+          <div className="flex items-center bg-muted/50 p-1 rounded-lg">
+            <Button
+              variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+              className="h-8 px-2"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className="h-8 px-2"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+              {applications.map((application) => (
+                <Card key={application.id} className="overflow-hidden border-border/50 bg-background/50 backdrop-blur-sm transition-all hover:bg-muted/10">
+                  <div className="p-4 flex flex-col h-full space-y-4">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="h-10 w-10 border border-border shrink-0">
+                          <AvatarImage src={application.profile_photo_url} />
+                          <AvatarFallback>{application.full_name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0">
+                          <h4 className="font-semibold text-sm truncate" title={application.full_name}>{application.full_name}</h4>
+                          <p className="text-xs text-muted-foreground truncate">@{application.username}</p>
+                        </div>
+                      </div>
+                      <Badge className={getStatusBadgeColor(application.status)}>
+                        {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-2 flex-grow">
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Role</p>
+                        <p className="text-sm">{application.role}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Department</p>
+                        <Badge variant="outline" className="font-normal">{getDepartmentName(application.department_id)}</Badge>
+                      </div>
+                      <div className="flex flex-col gap-1.5 pt-2 border-t border-border/50">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Mail className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{application.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Phone className="h-3.5 w-3.5 shrink-0" />
+                          <span>{application.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-3.5 w-3.5 shrink-0" />
+                          <span>{new Date(application.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2">
+                      <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        APP-{application.id.slice(0, 8).toUpperCase()}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedApplication(application);
+                            setIsViewDialogOpen(true);
+                          }}
+                          className="h-8 w-8 text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleteTarget(application)}
+                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          title="Delete application"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+              {applications.length === 0 && (
+                <div className="col-span-full py-8 text-center text-muted-foreground">
+                  No applications found.
+                </div>
+              )}
+            </div>
+          ) : (
           <div className="overflow-x-auto"><Table>
             <TableHeader>
               <TableRow>
@@ -441,6 +547,7 @@ const TeamApplicationsList = () => {
               ))}
             </TableBody>
           </Table></div>
+          )}
         </CardContent>
       </Card>
 

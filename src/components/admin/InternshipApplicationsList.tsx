@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Mail, Phone, Download } from "lucide-react";
+import { Eye, Mail, Phone, Download, Trash2, LayoutGrid, List, AlertTriangle, Calendar } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { InternshipApplication } from "@/types/database";
@@ -25,6 +26,9 @@ const InternshipApplicationsList = () => {
   const [applications, setApplications] = useState<InternshipApplication[]>([]);
   const [selectedApplication, setSelectedApplication] = useState<InternshipApplication | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [deleteTarget, setDeleteTarget] = useState<InternshipApplication | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadApplications();
@@ -56,6 +60,28 @@ const InternshipApplicationsList = () => {
       toast.error("Failed to load applications");
     } finally {
       setLoading(false);
+    }
+  };
+
+  
+  const deleteApplication = async (application: InternshipApplication) => {
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('internship_applications')
+        .delete()
+        .eq('id', application.id);
+
+      if (error) throw error;
+
+      setApplications(prev => prev.filter(a => a.id !== application.id));
+      setDeleteTarget(null);
+      toast.success("Application deleted successfully");
+    } catch (error) {
+      console.error("Error deleting application:", error);
+      toast.error("Failed to delete application");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -109,8 +135,16 @@ const InternshipApplicationsList = () => {
   if (loading) {
     return (
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle>Internship Applications</CardTitle>
+          <div className="flex items-center bg-muted/50 p-1 rounded-lg">
+            <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('table')} className="h-8 px-2">
+              <List className="h-4 w-4" />
+            </Button>
+            <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('grid')} className="h-8 px-2">
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">Loading applications...</div>
