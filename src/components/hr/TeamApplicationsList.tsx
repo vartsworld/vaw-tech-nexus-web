@@ -313,11 +313,73 @@ const TeamApplicationsList = () => {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle>Recent Applications</CardTitle>
+          <div className="flex items-center bg-muted/50 p-1 rounded-lg">
+            <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('table')} className="h-8 px-2">
+              <span className="font-semibold text-xs">Table</span>
+            </Button>
+            <Button variant={viewMode === 'grid' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('grid')} className="h-8 px-2">
+              <span className="font-semibold text-xs">Grid</span>
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto"><Table>
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {applications.length === 0 ? (
+                <div className="col-span-full text-center py-8 text-muted-foreground border rounded-lg bg-muted/20">
+                  No applications found
+                </div>
+              ) : (
+                applications.map((app: any) => (
+                  <Card key={app.id} className="overflow-hidden hover:shadow-md transition-shadow relative">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={app.profile_photo_url} />
+                          <AvatarFallback>{app.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{app.full_name}</p>
+                          <p className="text-xs text-muted-foreground truncate capitalize">{app.preferred_role}</p>
+                        </div>
+                        <Badge variant="outline" className={`shrink-0 ${app.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100'}`}>
+                          {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-1.5 text-xs text-muted-foreground mt-2 pt-2 border-t">
+                        <div className="flex items-center gap-2"><Mail className="h-3 w-3" /><span className="truncate">{app.email}</span></div>
+                        {app.phone && <div className="flex items-center gap-2"><Phone className="h-3 w-3" /><span>{app.phone}</span></div>}
+                        <div className="flex items-center gap-2"><Calendar className="h-3 w-3" /><span>{new Date(app.created_at).toLocaleDateString()}</span></div>
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-1.5 justify-end mt-4 pt-2">
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setSelectedApplication(app); setIsViewDialogOpen(true); }}>
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                        {app.status === 'pending' && (
+                          <>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => approveAndCreateStaff(app)}>
+                              <CheckCircle className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => updateApplicationStatus(app.id, 'rejected')}>
+                              <XCircle className="h-3 w-3" />
+                            </Button>
+                          </>
+                        )}
+                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500 hover:bg-red-50" onClick={() => setDeleteTarget(app)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto"><Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Applicant</TableHead>
