@@ -89,7 +89,7 @@ const RedemptionApprovals = () => {
           .from("staff_profiles")
           .select("total_points")
           .eq("user_id", selectedRedemption.user_id)
-          .single();
+          .maybeSingle();
 
         if (profile) {
           await supabase

@@ -112,9 +112,9 @@ const StaffLogin = () => {
   };
 
   const getDashboardRoute = (staffProfile: any) => {
-    // Specific route for HR
-    if (staffProfile.role === 'hr') {
-      return '/hr/dashboard';
+    // Specific route for HR, Admin, or Super Admin
+    if (staffProfile.role === 'hr' || staffProfile.role === 'admin' || staffProfile.role === 'super_admin') {
+      return '/hr';
     }
 
     if (staffProfile.role === 'sales') {
