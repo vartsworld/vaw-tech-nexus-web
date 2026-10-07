@@ -168,13 +168,13 @@ const PointsMonitoring = () => {
         .from('app_settings')
         .select('value')
         .eq('key', 'points_config')
-        .single();
+        .maybeSingle();
 
       const { data: rateData } = await supabase
         .from('app_settings')
         .select('value')
         .eq('key', 'vaw_coin_rate')
-        .single();
+        .maybeSingle();
 
       setConfig(prev => ({
         ...prev,

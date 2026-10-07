@@ -232,7 +232,7 @@ const StaffManagement = () => {
           blood_group: newStaff.blood_group || null
         } as any)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -358,7 +358,7 @@ const StaffManagement = () => {
         .update(updates)
         .eq('id', staffId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
