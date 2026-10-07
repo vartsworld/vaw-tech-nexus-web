@@ -4,12 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Heart, Smile, Meh, Frown, Zap } from "lucide-react";
+import { Heart, Smile, Meh, Frown, Zap, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface MoodQuoteCheckerProps {
-  userId: string;
+  userId?: string;
   onMoodSubmitted: () => void;
 }
 
@@ -54,11 +55,19 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
 
   const checkTodayMoodEntry = async () => {
     try {
+      let activeUserId = userId;
+      if (!activeUserId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        activeUserId = user?.id;
+      }
+
+      if (!activeUserId) return;
+
       const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from('user_mood_entries')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', activeUserId)
         .eq('date', today)
         .maybeSingle();
 
@@ -83,6 +92,21 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
       return;
     }
 
+    let activeUserId = userId;
+    if (!activeUserId) {
+      const { data: { user } } = await supabase.auth.getUser();
+      activeUserId = user?.id;
+    }
+
+    if (!activeUserId) {
+      toast({
+        title: "Authentication Error",
+        description: "Unable to identify user session. Please log in again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Calculate sentiment score based on mood
@@ -97,7 +121,7 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
       const { error } = await supabase
         .from('user_mood_entries')
         .insert({
-          user_id: userId,
+          user_id: activeUserId,
           mood: selectedMood as 'happy' | 'excited' | 'neutral' | 'sad' | 'stressed',
           personal_quote: personalQuote || null,
           share_anonymously: shareAnonymously,
@@ -120,7 +144,7 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
         await supabase
           .from('user_points_log')
           .insert({
-            user_id: userId,
+            user_id: activeUserId,
             points: moodPoints,
             reason: personalQuote ? 'Daily Mood & Quote Submission' : 'Daily Mood Check-in',
             category: 'mood_checkin'
@@ -130,7 +154,7 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
         await supabase
           .from('user_coin_transactions')
           .insert({
-            user_id: userId,
+            user_id: activeUserId,
             coins: moodPoints,
             transaction_type: 'hr_grant',
             reason: personalQuote ? 'Daily Mood & Quote Submission' : 'Daily Mood Check-in',
@@ -140,7 +164,7 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
 
         // Log to user_activity_log for ActivityLogPanel
         await supabase.from('user_activity_log').insert({
-          user_id: userId,
+          user_id: activeUserId,
           activity_type: 'mood_submitted',
           points_earned: moodPoints,
           metadata: { mood: selectedMood, has_quote: !!personalQuote }
@@ -235,28 +259,42 @@ const MoodQuoteChecker = ({ userId, onMoodSubmitted }: MoodQuoteCheckerProps) =>
           </div>
         </div>
 
-        {/* Personal Quote */}
-        <div className="space-y-3">
-          <Label className="text-white text-base">Share your own quote or reflection (optional)</Label>
-          <Textarea
-            placeholder="What's inspiring you today? Share a quote, thought, or reflection..."
-            value={personalQuote}
-            onChange={(e) => setPersonalQuote(e.target.value)}
-            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 resize-none"
-            rows={3}
-          />
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="share-anonymous"
-              checked={shareAnonymously}
-              onCheckedChange={setShareAnonymously}
+        {/* Personal Quote Collapsible */}
+        <Collapsible defaultOpen={false} className="space-y-3 border border-white/10 rounded-lg p-3 bg-white/5">
+          <CollapsibleTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center justify-between w-full text-left focus:outline-none group"
+              aria-label="Toggle share your own quote or reflection"
+              title="Toggle optional quote input"
+            >
+              <Label className="text-white text-base cursor-pointer pointer-events-none">
+                Share your own quote or reflection (optional)
+              </Label>
+              <ChevronDown className="w-5 h-5 text-white/60 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+            </button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-3 pt-2">
+            <Textarea
+              placeholder="What's inspiring you today? Share a quote, thought, or reflection..."
+              value={personalQuote}
+              onChange={(e) => setPersonalQuote(e.target.value)}
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/40 resize-none"
+              rows={3}
             />
-            <Label htmlFor="share-anonymous" className="text-white/80">
-              Share my quote anonymously with the team
-            </Label>
-          </div>
-        </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="share-anonymous"
+                checked={shareAnonymously}
+                onCheckedChange={setShareAnonymously}
+              />
+              <Label htmlFor="share-anonymous" className="text-white/80">
+                Share my quote anonymously with the team
+              </Label>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         <Button
           onClick={submitMoodAndQuote}

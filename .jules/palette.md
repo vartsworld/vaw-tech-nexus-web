@@ -41,3 +41,7 @@ This journal contains CRITICAL UX and accessibility learnings specific to this a
 ## 2026-07-28 - Elevating Onboarding Form Accessibility
 **Learning:** In client-facing intake and onboarding forms, mandatory input labels must utilize explicitly styled, high-contrast required indicators instead of plain-text asterisks to meet modern web design and accessibility guidelines. Separating the asterisk into a colored `<span className="text-red-500">*</span>` element provides strong visual cues and significantly improves form scannability and professional polish.
 **Action:** Always format mandatory form label indicators using a dedicated, high-contrast colored span element across all client intake, onboarding, and registration forms.
+
+## 2026-10-07 - Collapsible Optional Inputs in Daily Check-in Cards
+**Learning:** Secondary or optional input fields in required daily check-in workflows (such as optional personal reflections or quotes in mood checkers) can increase visual cognitive load if expanded by default.
+**Action:** Wrap optional inputs in a `Collapsible` primitive defaulted to `false` with a toggle trigger button, allowing users to focus on primary check-in actions first while keeping optional inputs accessible.
