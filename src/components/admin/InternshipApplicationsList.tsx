@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Mail, Phone, Download, Trash2, LayoutGrid, List, AlertTriangle, Calendar } from "lucide-react";
+import { Eye, Mail, Phone, Download, Trash2,
+  LayoutGrid, LayoutGrid, List, AlertTriangle, Calendar } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -331,6 +332,7 @@ const InternshipApplicationsList = () => {
             </Table>
           </div>
         </div>
+        )}
       </CardContent>
     </Card>
   );

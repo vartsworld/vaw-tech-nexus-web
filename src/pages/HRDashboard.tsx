@@ -49,7 +49,7 @@ export default function HRDashboard() {
     if (profileLoading) return;
     
     if (!userProfile) {
-      navigate('/admin');
+      navigate('/staff/login');
       return;
     }
 
@@ -245,9 +245,25 @@ export default function HRDashboard() {
       userProfile={userProfile}
       customSidebarLinks={customSidebarLinks}
     >
-      <div className="p-4 md:p-6 pb-24 lg:pb-6 animate-in fade-in duration-300">
-        {renderRoomContent()}
-      </div>
+      <>
+        {currentRoom !== 'home' && (
+          <div className="fixed inset-0 z-0 pointer-events-none">
+            <div className="absolute inset-0 bg-black/40 z-10"></div>
+            <img
+              src="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
+              alt="Office background"
+              className="w-full h-full object-cover scale-100 opacity-100"
+            />
+          </div>
+        )}
+        <div className="p-4 md:p-6 pb-24 lg:pb-6 animate-in fade-in duration-300 relative z-10 h-full overflow-y-auto">
+          <div className="space-y-6 max-w-7xl mx-auto py-2">
+            <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[500px] backdrop-blur-md overflow-hidden">
+              {renderRoomContent()}
+            </div>
+          </div>
+        </div>
+      </>
     </VirtualOfficeLayout>
   );
 }

@@ -39,6 +39,7 @@ import { viewOrDownloadFile } from "@/pages/TeamApplication";
 
 const TeamApplicationsList = () => {
   const [applications, setApplications] = useState([]);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [departments, setDepartments] = useState([]);
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -442,6 +443,7 @@ const TeamApplicationsList = () => {
               ))}
             </TableBody>
           </Table></div>
+          )}
         </CardContent>
       </Card>
 
