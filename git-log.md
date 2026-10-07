@@ -4,3 +4,4 @@ All the git log will be shown in here
 - Build error fixed
 - Updated the HR and the calendar
 - Updated
+- updated the HR dashboard UI and UX
