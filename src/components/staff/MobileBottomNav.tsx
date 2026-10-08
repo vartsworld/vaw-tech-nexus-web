@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 type RoomType = 'home' | 'workspace' | 'breakroom' | 'meeting' | 'planner';
 
 interface MobileBottomNavProps {
-  currentRoom: RoomType;
-  onRoomChange: (room: RoomType) => void;
+  currentRoom: string;
+  onRoomChange: (room: string) => void;
   onOpenChat?: () => void;
   onOpenActivity?: () => void;
   onOpenCoins?: () => void;
+  customSidebarLinks?: any[];
 }
 
 const MobileBottomNav = ({
@@ -20,13 +21,14 @@ const MobileBottomNav = ({
   onOpenChat,
   onOpenActivity,
   onOpenCoins,
+  customSidebarLinks,
 }: MobileBottomNavProps) => {
   const [showMenu, setShowMenu] = useState(false);
 
-  const rooms = [
-    { id: 'workspace' as const, label: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
-    { id: 'planner' as const, label: 'Planner', icon: Calendar, color: 'from-purple-500 to-purple-600' },
-    { id: 'meeting' as const, label: 'Meeting Room', icon: Users, color: 'from-yellow-500 to-yellow-600' },
+  const defaultRooms = [
+    { id: 'workspace', label: 'Workspace', icon: Monitor, color: 'from-blue-500 to-blue-600' },
+    { id: 'planner', label: 'Planner', icon: Calendar, color: 'from-purple-500 to-purple-600' },
+    { id: 'meeting', label: 'Meeting Room', icon: Users, color: 'from-yellow-500 to-yellow-600' },
   ];
 
   const navItems = [
@@ -79,49 +81,85 @@ const MobileBottomNav = ({
           <SheetHeader className="pb-2">
             <SheetTitle className="text-base font-semibold">Quick Actions</SheetTitle>
           </SheetHeader>
-          <div className="space-y-4 pb-6">
-            {/* Room Switcher */}
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">Office Rooms</p>
-              <div className="grid grid-cols-3 gap-2">
-                {rooms.map((room) => {
-                  const Icon = room.icon;
-                  const isActive = currentRoom === room.id;
-                  return (
-                    <Button
-                      key={room.id}
-                      variant={isActive ? "default" : "outline"}
-                      size="sm"
-                      className={cn(
-                        "flex flex-col items-center gap-1 h-auto py-3",
-                        isActive && `bg-gradient-to-r ${room.color} text-white border-none`
-                      )}
-                      onClick={() => {
-                        onRoomChange(room.id);
-                        setShowMenu(false);
-                      }}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span className="text-[10px]">{room.label}</span>
-                    </Button>
-                  );
-                })}
+          <div className="space-y-4 pb-6 overflow-y-auto max-h-[50vh] px-1">
+            {customSidebarLinks && customSidebarLinks.length > 0 ? (
+              customSidebarLinks.map((section: any) => (
+                <div key={section.title} className="space-y-2">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    {section.icon && <section.icon className="w-3.5 h-3.5" />}
+                    {section.title}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {section.items.map((item: any) => {
+                      const Icon = item.icon;
+                      const isActive = currentRoom === item.id;
+                      return (
+                        <Button
+                          key={item.id}
+                          variant={isActive ? "default" : "outline"}
+                          size="sm"
+                          className={cn(
+                            "justify-start h-10 gap-2 truncate",
+                            isActive && "bg-primary text-primary-foreground font-bold"
+                          )}
+                          onClick={() => {
+                            onRoomChange(item.id);
+                            setShowMenu(false);
+                          }}
+                        >
+                          <Icon className="w-4 h-4 shrink-0" />
+                          <span className="text-xs truncate">{item.name}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">Office Rooms</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {defaultRooms.map((room) => {
+                    const Icon = room.icon;
+                    const isActive = currentRoom === room.id;
+                    return (
+                      <Button
+                        key={room.id}
+                        variant={isActive ? "default" : "outline"}
+                        size="sm"
+                        className={cn(
+                          "flex flex-col items-center gap-1 h-auto py-3",
+                          isActive && `bg-gradient-to-r ${room.color} text-white border-none`
+                        )}
+                        onClick={() => {
+                          onRoomChange(room.id);
+                          setShowMenu(false);
+                        }}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="text-[10px]">{room.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Actions */}
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">Actions</p>
+            {/* Quick Actions */}
+            <div className="space-y-2 border-t border-border pt-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">Quick Actions</p>
               <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="justify-start h-10"
-                  onClick={() => { onOpenCoins?.(); setShowMenu(false); }}
-                >
-                  <Coins className="w-4 h-4 mr-2 text-amber-500" />
-                  My Coins
-                </Button>
+                {onOpenCoins && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="justify-start h-10"
+                    onClick={() => { onOpenCoins?.(); setShowMenu(false); }}
+                  >
+                    <Coins className="w-4 h-4 mr-2 text-amber-500" />
+                    My Coins
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"

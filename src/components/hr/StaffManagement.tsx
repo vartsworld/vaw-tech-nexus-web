@@ -29,8 +29,15 @@ import {
   Loader2,
   Eye,
   Download,
-  ShieldAlert
+  ShieldAlert,
+  MoreVertical
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -666,12 +673,12 @@ const StaffManagement = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center gap-2">
           <Users className="h-6 w-6 text-blue-600" />
           <h2 className="text-2xl font-bold">Staff Management</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
             className="flex items-center gap-2"
@@ -1009,90 +1016,102 @@ const StaffManagement = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1 min-w-[140px]">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title="View Full Profile Details"
-                        onClick={() => {
-                          setSelectedStaffDetail(member);
-                          setIsViewStaffDialogOpen(true);
-                        }}
-                      >
-                        <Eye className="h-4 w-4 text-blue-600" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title="Request Re-KYC Verification"
-                        onClick={() => requestStaffReKyc(member)}
-                        className="text-amber-600 hover:text-amber-700 hover:bg-amber-500/10"
-                      >
-                        <ShieldAlert className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title="Edit Staff Member"
-                        onClick={() => {
-                          setEditingStaff(member);
-                          setNewStaff({
-                            full_name: member.full_name,
-                            email: member.email,
-                            username: member.username,
-                            role: member.role,
-                            department_id: member.department_id || "",
-                            hire_date: member.hire_date || "",
-                            is_department_head: member.is_department_head,
-                            gender: member.gender || "",
-                            date_of_birth: member.date_of_birth || "",
-                            cv_url: member.cv_url || "",
-                            about_me: member.about_me || "",
-                            profile_photo_url: member.profile_photo_url || "",
-                            kyc_selfie_url: member.kyc_selfie_url || "",
-                            kyc_gps_location: member.kyc_gps_location || "",
-                            father_name: member.father_name || "",
-                            mother_name: member.mother_name || "",
-                            siblings: member.siblings || "",
-                            relationship_status: member.relationship_status || "",
-                            marriage_preference: member.marriage_preference || "",
-                            work_confidence_level: member.work_confidence_level || "",
-                            reference_person_name: member.reference_person_name || "",
-                            reference_person_number: member.reference_person_number || "",
-                            physical_address: member.physical_address || "",
-                            govt_id_number: member.govt_id_number || "",
-                            blood_group: member.blood_group || "",
-                             geo_coordinates: "",
-                             govt_id_type: member.govt_id_type || "aadhaar",
-                             emergency_contact_name: member.emergency_contact_name || "",
-                             emergency_contact_phone: member.emergency_contact_phone || ""
-                          });
-                          setIsEditDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        title={member.patra_card_url ? "View Digital ID Card" : "Generate ID Card"}
-                        className={member.patra_card_url 
-                          ? "text-green-600 hover:text-green-700 hover:bg-green-50"
-                          : "text-blue-600 hover:text-blue-700 hover:bg-blue-50"}
-                        onClick={() => handleGenerateCard(member)}
-                      >
-                        <Contact2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setStaffToDelete(member)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        title="Fully remove staff"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedStaffDetail(member);
+                            setIsViewStaffDialogOpen(true);
+                          }}
+                          className="cursor-pointer flex items-center justify-between"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Eye className="h-4 w-4 text-blue-600" /> View Profile
+                          </span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={() => requestStaffReKyc(member)}
+                          className="cursor-pointer flex items-center justify-between"
+                        >
+                          <span className="flex items-center gap-2">
+                            <ShieldAlert className="h-4 w-4 text-amber-600" />
+                            {member.kyc_selfie_url ? "KYC" : "Re-KYC"}
+                          </span>
+                          {member.kyc_selfie_url && (
+                            <Check className="h-4 w-4 text-green-600 ml-auto" />
+                          )}
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEditingStaff(member);
+                            setNewStaff({
+                              full_name: member.full_name,
+                              email: member.email,
+                              username: member.username,
+                              role: member.role,
+                              department_id: member.department_id || "",
+                              hire_date: member.hire_date || "",
+                              is_department_head: member.is_department_head,
+                              gender: member.gender || "",
+                              date_of_birth: member.date_of_birth || "",
+                              cv_url: member.cv_url || "",
+                              about_me: member.about_me || "",
+                              profile_photo_url: member.profile_photo_url || "",
+                              kyc_selfie_url: member.kyc_selfie_url || "",
+                              kyc_gps_location: member.kyc_gps_location || "",
+                              father_name: member.father_name || "",
+                              mother_name: member.mother_name || "",
+                              siblings: member.siblings || "",
+                              relationship_status: member.relationship_status || "",
+                              marriage_preference: member.marriage_preference || "",
+                              work_confidence_level: member.work_confidence_level || "",
+                              reference_person_name: member.reference_person_name || "",
+                              reference_person_number: member.reference_person_number || "",
+                              physical_address: member.physical_address || "",
+                              govt_id_number: member.govt_id_number || "",
+                              blood_group: member.blood_group || "",
+                              geo_coordinates: "",
+                              govt_id_type: member.govt_id_type || "aadhaar",
+                              emergency_contact_name: member.emergency_contact_name || "",
+                              emergency_contact_phone: member.emergency_contact_phone || ""
+                            });
+                            setIsEditDialogOpen(true);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Edit className="h-4 w-4" /> Edit Staff
+                          </span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={() => handleGenerateCard(member)}
+                          className="cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Contact2 className={`h-4 w-4 ${member.patra_card_url ? "text-green-600" : "text-blue-600"}`} />
+                            {member.patra_card_url ? "View Digital ID Card" : "Generate ID Card"}
+                          </span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={() => setStaffToDelete(member)}
+                          className="cursor-pointer text-red-600 focus:text-red-600"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Trash2 className="h-4 w-4" /> Remove Staff
+                          </span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
