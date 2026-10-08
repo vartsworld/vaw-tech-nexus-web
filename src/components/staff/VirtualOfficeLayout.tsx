@@ -823,6 +823,7 @@ const VirtualOfficeLayout = ({
         onRoomChange={onRoomChange as any}
         onOpenChat={() => setShowMobileChat(true)}
         onOpenCoins={onOpenCoins}
+        customSidebarLinks={customSidebarLinks || sidebarLinks}
       />
 
       {/* Leave Application Dialog */}

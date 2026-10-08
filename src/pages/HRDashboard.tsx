@@ -31,6 +31,9 @@ import AcademyEnquiriesList from "@/components/hr/AcademyEnquiriesList";
 import ManageProjects from "@/components/hr/ManageProjects";
 import QRManagement from "@/components/hr/QRManagement";
 import EmmaAssistant from "@/components/ai/EmmaAssistant";
+import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
+import MeetingRoom from "@/components/staff/MeetingRoom";
+import TeamChat from "@/components/staff/TeamChat";
 
 // Shadcn UI components
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -44,7 +47,7 @@ import {
   Award, Bell, Image as ImageIcon, Briefcase, UserPlus, CreditCard,
   DollarSign, Code, LifeBuoy, GraduationCap, LayoutDashboard,
   Sparkles, TrendingUp, Clock, AlertCircle, UserCheck, QrCode,
-  FolderKanban, ChevronRight, ShieldCheck
+  FolderKanban, ChevronRight, ShieldCheck, Calendar, MessageCircle
 } from "lucide-react";
 
 // Recharts
@@ -226,6 +229,9 @@ export default function HRDashboard() {
       icon: Sparkles,
       items: [
         { id: 'dashboard', name: 'Overview', icon: LayoutDashboard, path: '/hr?dashboard' },
+        { id: 'planner', name: 'Planner', icon: Calendar, path: '/hr?planner' },
+        { id: 'meeting', name: 'Meeting Room', icon: Users, path: '/hr?meeting' },
+        { id: 'chat', name: 'Team Chat', icon: MessageCircle, path: '/hr?chat' },
         { id: 'emma', name: 'EMMA AI', icon: Sparkles, path: '/hr?emma' },
       ]
     },
@@ -281,6 +287,11 @@ export default function HRDashboard() {
       case 'dashboard':
       case 'home':
         return <HROverviewCommandCenter onNavigate={handleRoomChange} />;
+      case 'planner': return <MonthlyPlanner userId={userProfile?.user_id || ''} userProfile={userProfile} />;
+      case 'meeting': return <MeetingRoom />;
+      case 'chat':
+      case 'inbox':
+        return <TeamChat userId={userProfile?.user_id || ''} userProfile={userProfile} />;
       case 'emma': return <EmmaAssistant role="hr" />;
       case 'tasks': return <TaskManagement />;
       case 'templates': return <TaskTemplateManagement />;
