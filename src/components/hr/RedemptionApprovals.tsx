@@ -164,9 +164,9 @@ const RedemptionApprovals = () => {
 
       <div className="space-y-3">
         {redemptions.map(redemption => (
-          <Card key={redemption.id}>
+          <Card key={redemption.id} className="overflow-hidden">
             <CardContent className="p-4">
-              <div className="flex items-start gap-4">
+              <div className="flex flex-col sm:flex-row items-start gap-4">
                 {/* Reward Image */}
                 <div className="w-16 h-16 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
                   {redemption.reward.image_url ? (
@@ -179,21 +179,21 @@ const RedemptionApprovals = () => {
                 </div>
 
                 {/* Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h4 className="font-semibold">{redemption.reward.title}</h4>
-                      <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                        <User className="w-3 h-3" />
-                        <span>{redemption.user.full_name}</span>
+                <div className="flex-1 min-w-0 w-full">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0">
+                      <h4 className="font-semibold text-base break-words">{redemption.reward.title}</h4>
+                      <div className="flex items-center flex-wrap gap-1.5 mt-1 text-xs text-muted-foreground">
+                        <User className="w-3 h-3 flex-shrink-0" />
+                        <span className="font-medium text-foreground">{redemption.user?.full_name || 'Staff Member'}</span>
                         <span>•</span>
-                        <span>{redemption.user.email}</span>
+                        <span className="truncate max-w-[200px]">{redemption.user?.email || 'N/A'}</span>
                       </div>
                     </div>
-                    {getStatusBadge(redemption.status)}
+                    <div className="flex-shrink-0">{getStatusBadge(redemption.status)}</div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm mt-2">
                     <span className="text-muted-foreground">
                       {format(new Date(redemption.redemption_date), "MMM dd, yyyy HH:mm")}
                     </span>
@@ -203,36 +203,36 @@ const RedemptionApprovals = () => {
                   </div>
 
                   {redemption.delivery_address && (
-                    <div className="mt-2 text-sm">
-                      <span className="text-muted-foreground">Delivery: </span>
-                      <span>{redemption.delivery_address}</span>
+                    <div className="mt-2 text-xs sm:text-sm bg-muted/30 p-2 rounded border border-border/40 break-words">
+                      <span className="text-muted-foreground font-medium">Delivery Address: </span>
+                      <span className="break-words">{redemption.delivery_address}</span>
                     </div>
                   )}
 
                   {redemption.rejection_reason && (
-                    <div className="mt-2 text-sm text-destructive">
+                    <div className="mt-2 text-xs sm:text-sm text-destructive bg-destructive/10 p-2 rounded border border-destructive/20 break-words">
                       <span className="font-semibold">Rejection Reason: </span>
-                      <span>{redemption.rejection_reason}</span>
+                      <span className="break-words">{redemption.rejection_reason}</span>
                     </div>
                   )}
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex sm:flex-col gap-2 flex-shrink-0 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 mt-2 sm:mt-0">
                   {redemption.status === "pending" && (
                     <>
-                      <Button size="sm" variant="default" onClick={() => handleAction(redemption, "approve")}>
+                      <Button size="sm" variant="default" onClick={() => handleAction(redemption, "approve")} className="flex-1 sm:flex-initial">
                         <CheckCircle className="w-4 h-4 mr-1" />
                         Approve
                       </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleAction(redemption, "reject")}>
+                      <Button size="sm" variant="destructive" onClick={() => handleAction(redemption, "reject")} className="flex-1 sm:flex-initial">
                         <XCircle className="w-4 h-4 mr-1" />
                         Reject
                       </Button>
                     </>
                   )}
                   {redemption.status === "approved" && (
-                    <Button size="sm" variant="default" onClick={() => handleAction(redemption, "complete")}>
+                    <Button size="sm" variant="default" onClick={() => handleAction(redemption, "complete")} className="w-full sm:w-auto">
                       <Package className="w-4 h-4 mr-1" />
                       Mark Complete
                     </Button>

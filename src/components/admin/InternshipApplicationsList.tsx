@@ -40,7 +40,6 @@ const InternshipApplicationsList = () => {
       const { data, error } = await supabase
         .from('internship_applications')
         .select('*')
-        .neq('status', 'deleted')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -49,8 +48,11 @@ const InternshipApplicationsList = () => {
         return;
       }
 
+      // Filter out deleted items in JS so rows with null/undefined status are preserved
+      const validRows = (data || []).filter(item => item.status !== 'deleted');
+
       // Transform the data to match our InternshipApplication interface
-      const transformedData: InternshipApplication[] = (data || []).map(item => ({
+      const transformedData: InternshipApplication[] = validRows.map(item => ({
         ...item,
         domains: Array.isArray(item.domains) ? item.domains as string[] : 
                 typeof item.domains === 'string' ? [item.domains] : []

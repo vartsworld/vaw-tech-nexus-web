@@ -16,17 +16,22 @@ import {
   Edit,
   Trash2,
   TrendingUp,
-  ClipboardList
+  ClipboardList,
+  ChevronDown,
+  ChevronUp,
+  User
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const DepartmentManagement = () => {
-  const [departments, setDepartments] = useState([]);
-  const [staff, setStaff] = useState([]);
-  const [departmentMetrics, setDepartmentMetrics] = useState({});
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [staff, setStaff] = useState<any[]>([]);
+  const [departmentMetrics, setDepartmentMetrics] = useState<Record<string, any>>({});
+  const [openStaffCollapsible, setOpenStaffCollapsible] = useState<Record<string, boolean>>({});
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [editingDepartment, setEditingDepartment] = useState(null);
+  const [editingDepartment, setEditingDepartment] = useState<any>(null);
   const [newDepartment, setNewDepartment] = useState({
     name: "",
     description: "",
@@ -43,36 +48,41 @@ const DepartmentManagement = () => {
 
   const fetchDepartments = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: deptData, error: deptError } = await supabase
         .from('departments')
         .select('*')
         .order('name');
 
-      if (error) throw error;
+      if (deptError) throw deptError;
 
-      // BOLT OPTIMIZATION: Get staff count for each department in a single batch query to avoid N+1 database queries.
-      const { data: staffCounts, error: staffCountsError } = await supabase
+      // Fetch all staff members to map department heads and department staff lists
+      const { data: allStaff, error: staffError } = await supabase
         .from('staff_profiles')
-        .select('department_id')
-        .not('department_id', 'is', null);
+        .select('id, full_name, username, role, is_department_head, department_id, avatar_url')
+        .order('full_name');
 
-      if (staffCountsError) throw staffCountsError;
+      if (staffError) throw staffError;
 
-      const countsMap: Record<string, number> = {};
-      if (staffCounts) {
-        for (const profile of staffCounts) {
-          if (profile.department_id) {
-            countsMap[profile.department_id] = (countsMap[profile.department_id] || 0) + 1;
-          }
+      const staffList = allStaff || [];
+
+      const departmentsWithStaff = (deptData || []).map((dept) => {
+        const deptStaff = staffList.filter(s => s.department_id === dept.id);
+
+        // Find head either via head_id or via is_department_head / department_head role
+        let headProfile = staffList.find(s => s.id === dept.head_id);
+        if (!headProfile) {
+          headProfile = deptStaff.find(s => s.is_department_head || s.role === 'department_head');
         }
-      }
 
-      const departmentsWithCounts = (data || []).map((dept) => ({
-        ...dept,
-        staff_count: countsMap[dept.id] || 0
-      }));
+        return {
+          ...dept,
+          head_profile: headProfile || null,
+          staff_members: deptStaff,
+          staff_count: deptStaff.length
+        };
+      });
 
-      setDepartments(departmentsWithCounts);
+      setDepartments(departmentsWithStaff);
     } catch (error) {
       console.error('Error fetching departments:', error);
       toast({
@@ -509,14 +519,61 @@ const DepartmentManagement = () => {
                   )}
                 </div>
 
-                {/* Staff Count */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Staff Count:</span>
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    {dept.staff_count}
-                  </Badge>
-                </div>
+                {/* Collapsible Staff Count Dropdown */}
+                <Collapsible
+                  open={!!openStaffCollapsible[dept.id]}
+                  onOpenChange={(isOpen) => setOpenStaffCollapsible(prev => ({ ...prev, [dept.id]: isOpen }))}
+                  className="space-y-2 border rounded-lg p-2.5 bg-muted/20"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium flex items-center gap-1.5">
+                      <Users className="h-4 w-4 text-primary" />
+                      Staff Members:
+                    </span>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1 hover:bg-muted">
+                        <Badge variant="secondary" className="font-semibold">
+                          {dept.staff_count} {dept.staff_count === 1 ? 'member' : 'members'}
+                        </Badge>
+                        {openStaffCollapsible[dept.id] ? (
+                          <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                  </div>
+
+                  <CollapsibleContent className="pt-2 space-y-1.5 border-t mt-2">
+                    {dept.staff_members && dept.staff_members.length > 0 ? (
+                      dept.staff_members.map((member: any) => (
+                        <div
+                          key={member.id}
+                          className="flex items-center justify-between py-1 px-2 rounded hover:bg-muted/50 text-xs"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {member.avatar_url ? (
+                              <img src={member.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                            ) : (
+                              <User className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                            )}
+                            <span className="font-medium truncate">{member.full_name}</span>
+                            {member.id === dept.head_id || member.is_department_head ? (
+                              <Crown className="w-3 h-3 text-yellow-500 flex-shrink-0" title="Department Head" />
+                            ) : null}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground capitalize bg-background px-1.5 py-0.5 rounded border">
+                            {member.role?.replace('_', ' ') || 'Staff'}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-xs text-muted-foreground text-center py-2">
+                        No staff members assigned to this department yet.
+                      </p>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
 
                 {/* Quick Stats */}
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t">
@@ -549,73 +606,6 @@ const DepartmentManagement = () => {
         ))}
       </div>
 
-      {/* Department Staff Assignment */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Department Staff Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto"><Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Department</TableHead>
-                <TableHead>Head</TableHead>
-                <TableHead>Staff Count</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {departments.map((dept) => (
-                <TableRow key={dept.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-blue-600" />
-                      <span className="font-medium">{dept.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {dept.head_profile ? (
-                      <div className="flex items-center gap-2">
-                        <Crown className="h-4 w-4 text-yellow-500" />
-                        <div>
-                          <div className="font-medium">{dept.head_profile.full_name}</div>
-                          <div className="text-sm text-gray-500">@{dept.head_profile.username}</div>
-                        </div>
-                      </div>
-                    ) : (
-                      <Badge variant="outline" className="text-gray-500">
-                        Not Assigned
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                      <Users className="h-3 w-3" />
-                      {dept.staff_count} members
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-xs truncate text-sm text-gray-600">
-                      {dept.description || 'No description'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm text-gray-500">
-                      {new Date(dept.created_at).toLocaleDateString()}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table></div>
-          {departments.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No departments found. Create your first department to get started.
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 };
