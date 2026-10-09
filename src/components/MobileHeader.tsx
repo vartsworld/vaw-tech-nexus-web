@@ -1,72 +1,34 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Moon, Sun, ChevronDown } from "lucide-react";
+import { Menu, X, Moon, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
 import vawLogoDark from "@/assets/vaw-logo-dark.png";
-const navigationItems = [{
-  name: "Home",
-  href: "/"
-}, {
-  name: "About",
-  href: "/#about"
-}, {
-  name: "Portfolio",
-  href: "/#portfolio"
-}, {
-  name: "Pricing",
-  href: "/pricing"
-}, {
-  name: "Contact",
-  href: "/#contact"
-}, {
-  name: "Request Service",
-  href: "/service-request"
-}, {
-  name: "Internship",
-  href: "/internship"
-}];
-const servicesItems = [{
-  name: "All Our Services",
-  href: "/pricing"
-}, {
-  name: "Website Development",
-  href: "/website-development"
-}, {
-  name: "WebApp Development",
-  href: "/webapp-development"
-}, {
-  name: "AI Solutions",
-  href: "/ai-solutions"
-}, {
-  name: "VR/AR Development",
-  href: "/vr-ar-development"
-}, {
-  name: "Digital Marketing",
-  href: "/digital-marketing"
-}, {
-  name: "Digital Design",
-  href: "/digital-design"
-}];
+
+const navigationItems = [
+  { name: "Home", href: "/" },
+  { name: "About", href: "/about" },
+  { name: "Pricing", href: "/pricing" },
+  { name: "Contact", href: "/contact" },
+  { name: "Request Service", href: "/service-request" },
+];
+
 const MobileHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const {
-    theme,
-    setTheme
-  } = useTheme();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const handleScroll = () => {
       const scrolled = window.scrollY > 50;
       setIsScrolled(prev => prev !== scrolled ? scrolled : prev);
     };
-    // Use passive event listener to optimize scrolling performance
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-  return <div className="md:hidden">
+
+  return (
+    <div className="md:hidden">
       {/* Mobile Header Bar */}
       <div className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled ? "bg-card/95 backdrop-blur-md shadow-lg rounded-b-[2rem] mx-2 border border-border/50" : "bg-transparent backdrop-blur-none border-b-0"
@@ -118,53 +80,28 @@ const MobileHeader = () => {
                 <Link
                   key={index}
                   to={item.href}
-                  className="block py-3 px-3 text-foreground/80 hover:text-accent hover:bg-muted/50 rounded-lg transition-colors"
+                  className="block py-3 px-3 text-foreground/80 hover:text-accent hover:bg-muted/50 rounded-lg transition-colors font-medium"
                   onClick={() => setIsMenuOpen(false)}
                   data-cuelume-hover="tick"
                 >
                   {item.name}
                 </Link>
               ))}
-
-              {/* Services Dropdown */}
-              <div className="py-2">
-                <button
-                  className="flex items-center justify-between w-full py-3 px-3 text-foreground/80 hover:text-accent hover:bg-muted/50 rounded-lg transition-colors"
-                  onClick={() => setIsServicesOpen(!isServicesOpen)}
-                  data-cuelume-hover="tick"
-                >
-                  <span>Services</span>
-                  <ChevronDown size={16} className={`transition-transform ${isServicesOpen ? 'rotate-180' : ''}`} />
-                </button>
-                
-                {isServicesOpen && <div className="ml-4 mt-2 space-y-1">
-                    {servicesItems.map((service, index) => (
-                      <Link
-                        key={index}
-                        to={service.href}
-                        className="block py-2 px-3 text-sm text-foreground/70 hover:text-accent hover:bg-muted/30 rounded-lg transition-colors"
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          setIsServicesOpen(false);
-                        }}
-                        data-cuelume-hover="tick"
-                      >
-                        {service.name}
-                      </Link>
-                    ))}
-                  </div>}
-              </div>
             </nav>
           </div>
 
           {/* Footer */}
           <div className="p-4 border-t border-border">
-            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-              Get a Quote
+            <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold" asChild>
+              <Link to="/contact" onClick={() => setIsMenuOpen(false)}>
+                Get a Quote
+              </Link>
             </Button>
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default MobileHeader;

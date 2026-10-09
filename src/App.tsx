@@ -25,6 +25,9 @@ import WebsiteDevelopment from "./pages/WebsiteDevelopment";
 import AISolutions from "./pages/AISolutions";
 import VRARDevelopment from "./pages/VRARDevelopment";
 import DigitalDesign from "./pages/DigitalDesign";
+import About from "./pages/About";
+import Career from "./pages/Career";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UserProvider } from "./context/UserContext";
@@ -131,6 +134,10 @@ const AppContent = () => {
         <ManifestSwitcher />
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/careers" element={<Career />} />
+          <Route path="/career" element={<Career />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/service-request" element={<ServiceRequest />} />
           <Route path="/internship" element={<Internship />} />
           <Route path="/internship/registration" element={<InternshipRegistration />} />
