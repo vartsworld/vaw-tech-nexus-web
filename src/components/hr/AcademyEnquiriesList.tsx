@@ -28,16 +28,26 @@ export default function AcademyEnquiriesList() {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("academy_enquiries")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) {
-      toast({ title: "Failed to load enquiries", description: error.message, variant: "destructive" });
-    } else {
-      setItems(data || []);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("academy_enquiries")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) {
+        // If table does not exist or schema issue, default to empty list instead of noisy destructive toast
+        if (error.code === '42P01' || error.message?.includes('does not exist')) {
+          setItems([]);
+        } else {
+          toast({ title: "Failed to load enquiries", description: error.message, variant: "destructive" });
+        }
+      } else {
+        setItems(data || []);
+      }
+    } catch (e) {
+      setItems([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {

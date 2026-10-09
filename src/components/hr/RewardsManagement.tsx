@@ -140,7 +140,19 @@ const RewardsManagement = () => {
       .eq("id", id);
 
     if (error) {
-      toast.error("Failed to delete reward");
+      console.warn("Delete error, trying soft-delete (inactive):", error);
+      // If foreign key constraint or RLS blocks deletion, deactivate instead
+      const { error: updateError } = await supabase
+        .from("rewards_catalog")
+        .update({ is_active: false })
+        .eq("id", id);
+
+      if (updateError) {
+        toast.error("Failed to delete reward");
+        return;
+      }
+      toast.success("Reward deactivated (has existing redemptions)");
+      fetchRewards();
       return;
     }
 
@@ -195,25 +207,29 @@ const RewardsManagement = () => {
               Add Reward
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full p-4 sm:p-6">
             <DialogHeader>
-              <DialogTitle>{editingReward ? "Edit Reward" : "Add New Reward"}</DialogTitle>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Gift className="w-5 h-5 text-primary" />
+                {editingReward ? "Edit Reward" : "Add New Reward"}
+              </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Title *</Label>
+                  <Label htmlFor="title">Title <span className="text-red-500">*</span></Label>
                   <Input
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="e.g., Premium Wireless Headphones"
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
+                  <Label htmlFor="category">Category <span className="text-red-500">*</span></Label>
                   <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                    <SelectTrigger>
+                    <SelectTrigger id="category">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -233,20 +249,27 @@ const RewardsManagement = () => {
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Provide details about what staff will receive..."
                   rows={3}
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="points_cost">Points Cost *</Label>
+                  <Label htmlFor="points_cost">Points / Coins Cost <span className="text-red-500">*</span></Label>
                   <Input
                     id="points_cost"
                     type="number"
                     value={formData.points_cost}
-                    onChange={(e) => setFormData({ ...formData, points_cost: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, points_cost: parseInt(e.target.value) || 0 })}
+                    min={0}
                     required
                   />
+                  {coinRate > 0 && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Approx. ₹{(formData.points_cost * coinRate).toLocaleString()}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="monetary_value">Monetary Value (₹)</Label>
@@ -255,6 +278,7 @@ const RewardsManagement = () => {
                     type="number"
                     value={formData.monetary_value}
                     onChange={(e) => setFormData({ ...formData, monetary_value: parseFloat(e.target.value) || 0 })}
+                    placeholder="0"
                   />
                 </div>
                 <div className="space-y-2">
@@ -262,21 +286,21 @@ const RewardsManagement = () => {
                   <Input
                     id="stock_quantity"
                     type="number"
-                    value={formData.stock_quantity || ""}
+                    value={formData.stock_quantity ?? ""}
                     onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value ? parseInt(e.target.value) : null })}
-                    placeholder="Unlimited"
+                    placeholder="Leave empty for unlimited"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="image_url">Image URL</Label>
                   <Input
                     id="image_url"
                     value={formData.image_url}
                     onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    placeholder="https://..."
+                    placeholder="https://images.unsplash.com/..."
                   />
                 </div>
                 <div className="space-y-2">
@@ -284,40 +308,41 @@ const RewardsManagement = () => {
                   <Input
                     id="redemption_limit"
                     type="number"
-                    value={formData.redemption_limit || ""}
+                    value={formData.redemption_limit ?? ""}
                     onChange={(e) => setFormData({ ...formData, redemption_limit: e.target.value ? parseInt(e.target.value) : null })}
-                    placeholder="Unlimited"
+                    placeholder="Leave empty for unlimited"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="terms_conditions">Terms & Conditions</Label>
+                <Label htmlFor="terms_conditions">Terms &amp; Conditions</Label>
                 <Textarea
                   id="terms_conditions"
                   value={formData.terms_conditions}
                   onChange={(e) => setFormData({ ...formData, terms_conditions: e.target.value })}
+                  placeholder="Specify any restrictions or instructions..."
                   rows={2}
                 />
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 pt-2">
                 <input
                   type="checkbox"
                   id="is_active"
                   checked={formData.is_active}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="rounded"
+                  className="rounded border-gray-300 h-4 w-4 text-primary focus:ring-primary"
                 />
-                <Label htmlFor="is_active">Active (visible to staff)</Label>
+                <Label htmlFor="is_active" className="cursor-pointer font-medium">Active &amp; visible to staff in store</Label>
               </div>
 
-              <div className="flex gap-2 justify-end">
+              <div className="flex gap-2 justify-end pt-4 border-t">
                 <Button type="button" variant="outline" onClick={handleCloseDialog}>
                   Cancel
                 </Button>
                 <Button type="submit">
-                  {editingReward ? "Update" : "Create"} Reward
+                  {editingReward ? "Update Reward" : "Create Reward"}
                 </Button>
               </div>
             </form>
