@@ -228,7 +228,7 @@ const Hero = () => {
             </Button>
           </Link>
 
-          <Link to="/#contact">
+          <Link to="/contact">
             <Button
               size="lg"
               variant="outline"

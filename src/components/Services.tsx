@@ -25,7 +25,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   
   return (
     <Card 
-      className={`bg-card border-muted/20 hover:border-primary/50 transition-all duration-500 shadow-lg hover:shadow-tech-gold/20 h-full ${className} relative group overflow-hidden`} 
+      className={`bg-card border-muted/20 hover:border-primary/50 transition-all duration-500 shadow-lg hover:shadow-tech-gold/20 h-full ${className} relative group overflow-hidden flex flex-col justify-between`}
       style={style} 
       onMouseEnter={() => setIsHovered(true)} 
       onMouseLeave={() => setIsHovered(false)}
@@ -37,40 +37,47 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
       {/* Background glow effect */}
       <div className="absolute inset-0 bg-gradient-to-br from-tech-gold/0 via-tech-red/0 to-tech-purple/0 group-hover:from-tech-gold/5 group-hover:via-tech-red/5 group-hover:to-tech-purple/5 transition-all duration-700 opacity-0 group-hover:opacity-100 pointer-events-none"></div>
       
-      <CardHeader className="relative z-10">
-        <CardTitle className="text-xl font-semibold relative">
-          <span className="relative z-10 inline-block transform transition-transform duration-300 group-hover:translate-x-1">{title}</span>
-          <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-tech-gold/30 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 delay-100"></span>
-        </CardTitle>
-        <CardDescription className="text-muted-foreground">{description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-2 relative z-10">
-        <ul className="list-none space-y-1">
-          {examples.map((example, index) => (
-            <li key={index} className="text-foreground/80 flex items-start group" style={{
-              transform: isHovered ? 'translateX(5px)' : 'none',
-              opacity: isHovered ? 1 : 0.8,
-              transition: `transform 0.3s ease, opacity 0.3s ease`,
-              transitionDelay: `${index * 0.05}s`
-            }}>
-              <div className="mr-2 flex-shrink-0 h-5 w-5 bg-tech-gold/10 rounded-full flex items-center justify-center text-[10px] text-tech-gold group-hover:bg-tech-gold/20 transition-colors">
-                <span>✓</span>
-              </div>
-              <span>{example}</span>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-      <CardFooter className="flex gap-2 relative z-10">
-        <Button variant="ghost" className="text-accent hover:text-accent/80 hover:bg-accent/10 px-0 group flex-1" asChild>
-          <Link to={linkTo}>
-            <span>Learn more</span>
-            <ArrowRight className="ml-1 h-4 w-4 transition-transform duration-300 transform group-hover:translate-x-1" />
+      <div>
+        <CardHeader className="relative z-10">
+          <CardTitle className="text-xl font-semibold relative">
+            <span className="relative z-10 inline-block transform transition-transform duration-300 group-hover:translate-x-1">{title}</span>
+            <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-tech-gold/30 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 delay-100"></span>
+          </CardTitle>
+          <CardDescription className="text-muted-foreground">{description}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 relative z-10">
+          <ul className="list-none space-y-1">
+            {examples.map((example, index) => (
+              <li key={index} className="text-foreground/80 flex items-start group" style={{
+                transform: isHovered ? 'translateX(5px)' : 'none',
+                opacity: isHovered ? 1 : 0.8,
+                transition: `transform 0.3s ease, opacity 0.3s ease`,
+                transitionDelay: `${index * 0.05}s`
+              }}>
+                <div className="mr-2 flex-shrink-0 h-5 w-5 bg-tech-gold/10 rounded-full flex items-center justify-center text-[10px] text-tech-gold group-hover:bg-tech-gold/20 transition-colors">
+                  <span>✓</span>
+                </div>
+                <span>{example}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </div>
+
+      <CardFooter className="flex gap-3 relative z-10 pt-4 border-t border-border/30">
+        <Button
+          variant="outline"
+          className="bg-muted/60 hover:bg-muted text-foreground dark:text-white font-semibold flex-1 border border-border/80 hover:border-primary/50 shadow-sm transition-all"
+          asChild
+        >
+          <Link to={linkTo} className="flex items-center justify-center">
+            <span>Learn More</span>
+            <ArrowRight className="ml-1.5 h-4 w-4 transition-transform duration-300 transform group-hover:translate-x-1" />
           </Link>
         </Button>
-        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground flex-1" asChild>
+        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold flex-1" asChild>
           <Link to="/pricing">
-            Book now
+            Book Now
           </Link>
         </Button>
       </CardFooter>
@@ -119,7 +126,7 @@ const Services = () => {
   ];
 
   return (
-    <section id="services" className="relative overflow-hidden py-0">
+    <section id="services" className="relative overflow-hidden py-16">
       {/* Background decorative elements */}
       <div className="absolute top-40 left-10 w-64 h-64 rounded-full bg-tech-gold/5 blur-3xl"></div>
       <div className="absolute bottom-20 right-10 w-80 h-80 rounded-full bg-tech-red/5 blur-3xl"></div>
@@ -127,7 +134,7 @@ const Services = () => {
       <div className="container mx-auto px-4 relative">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk'] relative inline-block">
-            Our <span className="text-gradient">Premium Services</span>
+            Our <span className="text-gradient">Services</span>
             <div className="absolute -bottom-4 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-tech-gold/50 to-transparent"></div>
           </h2>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-['Outfit']">
