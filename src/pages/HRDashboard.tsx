@@ -34,6 +34,7 @@ import EmmaAssistant from "@/components/ai/EmmaAssistant";
 import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
 import MeetingRoom from "@/components/staff/MeetingRoom";
 import TeamChat from "@/components/staff/TeamChat";
+import TeamHeadMobileHome from "@/components/staff/TeamHeadMobileHome";
 
 // Shadcn UI components
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -62,6 +63,7 @@ export default function HRDashboard() {
   const isMobile = useIsMobile();
 
   const [currentRoom, setCurrentRoom] = useState('dashboard');
+  const [showMobileHome, setShowMobileHome] = useState(true);
   const [showAttendanceChecker, setShowAttendanceChecker] = useState(false);
   const [showMoodChecker, setShowMoodChecker] = useState(false);
   const [initialChecksDone, setInitialChecksDone] = useState(false);
@@ -168,6 +170,15 @@ export default function HRDashboard() {
           <p className="text-sm text-muted-foreground font-medium animate-pulse">Loading HR Portal...</p>
         </div>
       </div>
+    );
+  }
+
+  if (isMobile && showMobileHome && userProfile?.user_id) {
+    return (
+      <TeamHeadMobileHome
+        profile={userProfile}
+        onEnterDesktop={() => setShowMobileHome(false)}
+      />
     );
   }
 

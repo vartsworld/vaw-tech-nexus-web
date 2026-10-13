@@ -193,34 +193,51 @@ const StaffMobileHome = ({
     if (!profile?.user_id) return;
     setLoading(true);
     try {
-      const { data: subtasks, error } = await supabase
-        .from("staff_subtasks")
-        .select("*, staff_tasks(*)")
-        .eq("assigned_to", profile.user_id);
+      const [subtasksRes, directTasksRes] = await Promise.all([
+        supabase
+          .from("staff_subtasks")
+          .select("*, staff_tasks(*)")
+          .eq("assigned_to", profile.user_id),
+        supabase
+          .from("staff_tasks")
+          .select("*")
+          .or(`assigned_to.ilike.%${profile.user_id}%,department_id.eq.${profile.department_id || 'none'}`)
+      ]);
 
-      if (error) throw error;
+      const subtaskItems = (subtasksRes.data as any[]) || [];
+      const directTasks = (directTasksRes.data as any[]) || [];
+      const taskGroups: Record<string, { parent: any; subs: any[] }> = {};
 
-      const subtaskItems = (subtasks as any[]) || [];
-      const taskGroups: Record<string, any[]> = {};
-      subtaskItems.forEach(st => {
-        if (!st.task_id || !st.staff_tasks) return;
-        if (!taskGroups[st.task_id]) taskGroups[st.task_id] = [];
-        taskGroups[st.task_id].push(st);
+      directTasks.forEach(pt => {
+        taskGroups[pt.id] = { parent: pt, subs: [] };
       });
 
-      const taskItems: TaskItem[] = Object.entries(taskGroups).map(([taskId, subs]) => {
-        const parent = subs[0].staff_tasks;
-        let effectiveStatus = "pending";
-        if (subs.some(s => s.status === 'in_progress')) {
-          effectiveStatus = 'in_progress';
-        } else if (subs.every(s => ['completed', 'review_pending', 'pending_approval', 'handover'].includes(s.status || ''))) {
-          effectiveStatus = 'completed';
+      subtaskItems.forEach(st => {
+        if (!st.task_id || !st.staff_tasks) return;
+        if (!taskGroups[st.task_id]) {
+          taskGroups[st.task_id] = { parent: st.staff_tasks, subs: [] };
+        }
+        if (!taskGroups[st.task_id].subs.some(s => s.id === st.id)) {
+          taskGroups[st.task_id].subs.push(st);
+        }
+      });
+
+      const taskItems: TaskItem[] = Object.entries(taskGroups).map(([taskId, group]) => {
+        const parent = group.parent;
+        const subs = group.subs;
+        let effectiveStatus = parent.status || "pending";
+        if (subs.length > 0) {
+          if (subs.some(s => s.status === 'in_progress')) {
+            effectiveStatus = 'in_progress';
+          } else if (subs.every(s => ['completed', 'review_pending', 'pending_approval', 'handover'].includes(s.status || ''))) {
+            effectiveStatus = 'completed';
+          }
         }
 
-        const subtasksWithDates = subs.filter(s => s.due_date);
+        const subtasksWithDates = subs.filter(s => s.due_date || s.created_at);
         const earliestDueDate = subtasksWithDates.length > 0 
-          ? subtasksWithDates.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())[0].due_date 
-          : parent.due_date;
+          ? subtasksWithDates.sort((a, b) => new Date(a.due_date || a.created_at).getTime() - new Date(b.due_date || b.created_at).getTime())[0].due_date
+          : (parent.due_date || parent.created_at);
 
         const isPastDue = earliestDueDate && new Date(earliestDueDate) < new Date(new Date().setHours(0,0,0,0));
         if (effectiveStatus !== 'completed' && isPastDue) {
@@ -265,7 +282,7 @@ const StaffMobileHome = ({
     } finally {
       setLoading(false);
     }
-  }, [profile?.user_id]);
+  }, [profile?.user_id, profile?.department_id]);
 
   // Fetch plans, clients, staff members, and tasks/subtasks
   const fetchPlans = useCallback(async () => {
@@ -537,8 +554,9 @@ const StaffMobileHome = ({
     });
 
     filteredPlannerTasks.forEach(t => {
-      if (!t.due_date) return;
-      const key = getIsoDateKey(t.due_date);
+      const taskDate = t.due_date || t.created_at;
+      if (!taskDate) return;
+      const key = getIsoDateKey(taskDate);
       if (key) {
         if (!tasksMap[key]) tasksMap[key] = [];
         tasksMap[key].push(t);
@@ -546,8 +564,9 @@ const StaffMobileHome = ({
     });
 
     filteredPlannerSubtasks.forEach(s => {
-      if (!s.due_date) return;
-      const key = getIsoDateKey(s.due_date);
+      const subDate = s.due_date || s.created_at;
+      if (!subDate) return;
+      const key = getIsoDateKey(subDate);
       if (key) {
         if (!subtasksMap[key]) subtasksMap[key] = [];
         subtasksMap[key].push(s);

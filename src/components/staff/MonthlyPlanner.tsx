@@ -814,8 +814,9 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     });
 
     filteredTasks.forEach(t => {
-      if (!t.due_date) return;
-      const key = getIsoDateKey(t.due_date);
+      const taskDate = t.due_date || t.created_at;
+      if (!taskDate) return;
+      const key = getIsoDateKey(taskDate);
       if (key) {
         if (!tasksMap[key]) tasksMap[key] = [];
         tasksMap[key].push(t);
@@ -823,8 +824,9 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     });
 
     filteredSubtasks.forEach(s => {
-      if (!s.due_date) return;
-      const key = getIsoDateKey(s.due_date);
+      const subDate = s.due_date || s.created_at;
+      if (!subDate) return;
+      const key = getIsoDateKey(subDate);
       if (key) {
         if (!subtasksMap[key]) subtasksMap[key] = [];
         subtasksMap[key].push(s);
@@ -872,8 +874,9 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
     // 2. Staff Tasks
     filteredTasks.forEach(task => {
-      if (!task.due_date) return;
-      const dateKey = getIsoDateKey(task.due_date);
+      const taskDate = task.due_date || task.created_at;
+      if (!taskDate) return;
+      const dateKey = getIsoDateKey(taskDate);
       if (!dateKey) return;
       const startDate = new Date(`${dateKey}T10:00:00`);
       const endDate = new Date(`${dateKey}T12:00:00`);
@@ -897,8 +900,9 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
     // 3. Subtasks
     filteredSubtasks.forEach(sub => {
-      if (!sub.due_date) return;
-      const dateKey = getIsoDateKey(sub.due_date);
+      const subDate = sub.due_date || sub.created_at;
+      if (!subDate) return;
+      const dateKey = getIsoDateKey(subDate);
       if (!dateKey) return;
       const startDate = new Date(`${dateKey}T14:00:00`);
       const endDate = new Date(`${dateKey}T16:00:00`);
