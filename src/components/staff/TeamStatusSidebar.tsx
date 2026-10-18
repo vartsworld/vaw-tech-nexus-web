@@ -3,17 +3,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, ArrowLeft, MessageCircle } from "lucide-react";
+import { Send, ArrowLeft, MessageCircle, Search, X, Users, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import TypingIndicator from "./TypingIndicator";
 import { AnimatePresence } from "framer-motion";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TeamMember {
   user_id: string;
   full_name: string;
   status: string;
   avatar_url?: string;
+  role?: string;
+  department_name?: string;
   isOnline: boolean;
 }
 
@@ -36,6 +39,9 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterOnlineOnly, setFilterOnlineOnly] = useState(false);
+  const [loadingMembers, setLoadingMembers] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -161,10 +167,17 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
 
   const fetchTeamMembers = async () => {
     try {
+      setLoadingMembers(true);
       // Get all staff profiles
       const { data: profiles } = await supabase
         .from('staff_profiles')
-        .select('user_id, full_name, avatar_url')
+        .select(`
+          user_id, 
+          full_name, 
+          avatar_url,
+          role,
+          departments:departments!fk_staff_profiles_department(name)
+        `)
         .eq('application_status', 'approved');
 
       // Get presence statuses
@@ -186,7 +199,7 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
       if (profiles) {
         const members: TeamMember[] = profiles
           .filter(p => p.user_id !== currentUserId) // Exclude current user
-          .map(profile => {
+          .map((profile: any) => {
             const status = statuses?.find(s => s.user_id === profile.user_id);
             const isOnline = onlineUserIds.has(profile.user_id);
             return {
@@ -194,6 +207,8 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
               full_name: profile.full_name,
               status: status?.current_status || 'offline',
               avatar_url: profile.avatar_url,
+              role: profile.role,
+              department_name: profile.departments?.name,
               isOnline
             };
           })
@@ -208,6 +223,8 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
       }
     } catch (error) {
       console.error('Error fetching team members:', error);
+    } finally {
+      setLoadingMembers(false);
     }
   };
 
@@ -411,44 +428,140 @@ const TeamStatusSidebar = ({ onlineUsers, currentUserId }: TeamStatusSidebarProp
     );
   }
 
-  // Team List View
-  return (
-    <div className="space-y-2">
-      {teamMembers.length === 0 ? (
-        <div className="text-center py-4 text-white/50 text-sm">
-          No team members found
-        </div>
-      ) : (
-        teamMembers.map((member) => {
-          const initials = member.full_name?.split(' ').map((n: string) => n[0]).join('') || '?';
+  // Filter team members by search query and online filter
+  const onlineCount = teamMembers.filter(m => m.isOnline).length;
+  const displayedMembers = teamMembers.filter(m => {
+    if (filterOnlineOnly && !m.isOnline) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        m.full_name?.toLowerCase().includes(q) ||
+        (m.role && m.role.toLowerCase().includes(q)) ||
+        (m.department_name && m.department_name.toLowerCase().includes(q))
+      );
+    }
+    return true;
+  });
 
-          return (
+  return (
+    <div className="space-y-3">
+      {/* Search Input & Online Filter Pills */}
+      <div className="space-y-2">
+        <div className="relative">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-white/40" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search directory..."
+            className="h-8 pl-8 pr-7 bg-white/5 border-white/10 text-xs text-white placeholder:text-white/40 rounded-xl focus-visible:ring-indigo-500"
+          />
+          {searchQuery && (
             <button
-              key={member.user_id}
-              className="w-full flex items-center gap-3 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer text-left"
-              onClick={() => setSelectedMember(member)}
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
             >
-              <div className="relative">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium shadow-lg">
-                  {initials}
-                </div>
-                {/* Online indicator */}
-                <div
-                  className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-slate-900 ${getStatusColor(member.status, member.isOnline)} ${member.isOnline ? 'animate-pulse' : ''}`}
-                  title={getStatusText(member.status, member.isOnline)}
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white text-sm font-medium truncate">{member.full_name}</p>
-                <p className={`text-xs ${member.isOnline ? 'text-green-400' : 'text-white/50'}`}>
-                  {getStatusText(member.status, member.isOnline)}
-                </p>
-              </div>
-              <MessageCircle className="w-4 h-4 text-white/30" />
+              <X className="w-3 h-3" />
             </button>
-          );
-        })
-      )}
+          )}
+        </div>
+
+        {/* Tab Pills */}
+        <div className="flex items-center gap-1.5 p-1 bg-black/40 border border-white/5 rounded-xl">
+          <button
+            onClick={() => setFilterOnlineOnly(false)}
+            className={`flex-1 text-[11px] py-1 px-2 rounded-lg font-medium transition-all ${
+              !filterOnlineOnly ? "bg-white/10 text-white font-bold" : "text-white/50 hover:text-white"
+            }`}
+          >
+            All ({teamMembers.length})
+          </button>
+          <button
+            onClick={() => setFilterOnlineOnly(true)}
+            className={`flex-1 text-[11px] py-1 px-2 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 ${
+              filterOnlineOnly ? "bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30" : "text-white/50 hover:text-white"
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            Online ({onlineCount})
+          </button>
+        </div>
+      </div>
+
+      {/* List Container */}
+      <div className="space-y-1.5">
+        {loadingMembers ? (
+          <div className="space-y-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center gap-3 p-2 rounded-xl bg-white/[0.02] border border-white/5">
+                <Skeleton className="w-9 h-9 rounded-full bg-white/5 shrink-0" />
+                <div className="space-y-1.5 flex-1">
+                  <Skeleton className="h-3.5 w-3/4 bg-white/10 rounded" />
+                  <Skeleton className="h-2.5 w-1/2 bg-white/5 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : displayedMembers.length === 0 ? (
+          <div className="text-center py-8 text-white/40 text-xs space-y-1">
+            <Users className="w-8 h-8 mx-auto mb-1 opacity-30" />
+            <p>No team members found</p>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="text-indigo-400 hover:text-indigo-300 underline text-[10px]"
+              >
+                Clear search
+              </button>
+            )}
+          </div>
+        ) : (
+          displayedMembers.map((member) => {
+            const initials = member.full_name?.split(' ').map((n: string) => n[0]).join('') || '?';
+            const roleLabel = member.role ? member.role.replace(/_/g, ' ') : null;
+
+            return (
+              <button
+                key={member.user_id}
+                className="w-full flex items-center gap-3 p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-indigo-500/30 transition-all cursor-pointer text-left group"
+                onClick={() => setSelectedMember(member)}
+              >
+                <div className="relative shrink-0">
+                  {member.avatar_url ? (
+                    <img 
+                      src={member.avatar_url} 
+                      alt={member.full_name} 
+                      className="w-9 h-9 rounded-full object-cover border border-white/10" 
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-md">
+                      {initials}
+                    </div>
+                  )}
+                  {/* Online indicator dot */}
+                  <div
+                    className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-zinc-950 ${getStatusColor(member.status, member.isOnline)} ${member.isOnline ? 'animate-pulse ring-2 ring-emerald-500/20' : ''}`}
+                    title={getStatusText(member.status, member.isOnline)}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-white text-xs font-semibold truncate group-hover:text-indigo-300 transition-colors">
+                      {member.full_name}
+                    </p>
+                    {member.isOnline && (
+                      <span className="text-[9px] text-emerald-400 font-mono shrink-0">online</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-zinc-400 truncate capitalize mt-0.5">
+                    {roleLabel || member.department_name || getStatusText(member.status, member.isOnline)}
+                  </p>
+                </div>
+                <MessageCircle className="w-3.5 h-3.5 text-white/20 group-hover:text-indigo-400 transition-colors shrink-0" />
+              </button>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 };

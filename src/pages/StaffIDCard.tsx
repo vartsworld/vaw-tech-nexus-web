@@ -77,12 +77,57 @@ const StaffIDCard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center p-6">
-        <Card className="w-full max-w-md bg-[#111] border-white/5 p-8 space-y-6">
-          <Skeleton className="h-64 w-full rounded-3xl bg-white/5" />
-          <Skeleton className="h-10 w-3/4 mx-auto bg-white/5" />
-          <Skeleton className="h-6 w-1/2 mx-auto bg-white/5" />
-        </Card>
+      <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans">
+        {/* Ambient Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-cyan-600/10 blur-[140px] rounded-full pointer-events-none" />
+
+        <div className="w-full max-w-sm relative rounded-3xl bg-gradient-to-b from-[#12121A] to-[#0A0A0F] border border-cyan-500/30 p-8 space-y-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl overflow-hidden">
+          {/* Laser Scanner Line */}
+          <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent blur-[1px] animate-[pulse_1.5s_ease-in-out_infinite] top-1/3" />
+
+          {/* Corner Brackets */}
+          <div className="absolute top-3 left-3 w-3 h-3 border-t-2 border-l-2 border-cyan-400/60" />
+          <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-cyan-400/60" />
+          <div className="absolute bottom-3 left-3 w-3 h-3 border-b-2 border-l-2 border-cyan-400/60" />
+          <div className="absolute bottom-3 right-3 w-3 h-3 border-b-2 border-r-2 border-cyan-400/60" />
+
+          {/* Card Lanyard Clip & Logo */}
+          <div className="flex items-center justify-between pb-4 border-b border-white/5">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-cyan-500/20 border border-cyan-500/30 animate-pulse" />
+              <div className="h-4 w-20 bg-white/10 rounded animate-pulse" />
+            </div>
+            <div className="h-4 w-16 bg-cyan-500/20 rounded-full animate-pulse" />
+          </div>
+
+          {/* Avatar Area */}
+          <div className="flex flex-col items-center text-center space-y-3">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
+                <Cpu className="w-8 h-8 text-cyan-400/50" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-cyan-500/30 border-2 border-[#12121A] animate-ping" />
+            </div>
+            <div className="space-y-1.5 w-full">
+              <div className="h-5 w-40 bg-white/15 rounded-lg mx-auto animate-pulse" />
+              <div className="h-3 w-28 bg-white/5 rounded mx-auto animate-pulse" />
+            </div>
+          </div>
+
+          {/* Details Skeleton */}
+          <div className="space-y-2.5 pt-2 border-t border-white/5">
+            <div className="h-3.5 w-full bg-white/5 rounded animate-pulse" />
+            <div className="h-3.5 w-5/6 bg-white/5 rounded animate-pulse" />
+            <div className="h-3.5 w-3/4 bg-white/5 rounded animate-pulse" />
+          </div>
+
+          {/* Telemetry Status Readout */}
+          <div className="pt-2 text-center">
+            <span className="text-[10px] font-mono tracking-wider text-cyan-400/70 animate-pulse">
+              VERIFYING CLEARANCE CREDENTIALS...
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
