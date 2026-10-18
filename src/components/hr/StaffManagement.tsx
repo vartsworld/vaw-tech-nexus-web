@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 import EnhancedStaffForm from "./EnhancedStaffForm";
 import { createPatraStaff, updatePatraStaff } from "@/integrations/patra";
 import { StaffCardResult } from "./StaffCardResult";
@@ -52,6 +53,7 @@ const StaffManagement = () => {
   const [staff, setStaff] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [filteredStaff, setFilteredStaff] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDepartment, setFilterDepartment] = useState("all");
   const [filterRole, setFilterRole] = useState("all");
@@ -115,6 +117,7 @@ const StaffManagement = () => {
   }, [staff, searchTerm, filterDepartment, filterRole]);
 
   const fetchStaff = async () => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('staff_profiles')
@@ -133,6 +136,8 @@ const StaffManagement = () => {
         description: "Failed to load staff data.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -900,7 +905,37 @@ const StaffManagement = () => {
                 </TableRow>
               </TableHeader>
             <TableBody>
-              {filteredStaff.map((member) => (
+              {isLoading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="space-y-1.5">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-20" />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-24 rounded-md" /></TableCell>
+                  </TableRow>
+                ))
+              ) : filteredStaff.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
+                    <Users className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                    <p className="font-medium">No staff members found</p>
+                    <p className="text-xs text-muted-foreground/80 mt-1">Try adjusting your search or department filter</p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredStaff.map((member) => (
                 <TableRow key={member.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -1095,8 +1130,9 @@ const StaffManagement = () => {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
+              ))
+            )}
+          </TableBody>
             </Table>
           </div>
         </CardContent>

@@ -34,12 +34,14 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 import SharedProjectForm from "../projects/SharedProjectForm";
 import { syncClientToBilling, fetchClientFromBilling, searchClientsInBilling, generateSyncId, fetchInvoicesFromBilling } from "@/utils/syncUtils";
 
 const ClientManagement = () => {
   const [clients, setClients] = useState([]);
   const [filteredClients, setFilteredClients] = useState([]);
+  const [isLoadingClients, setIsLoadingClients] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -100,6 +102,7 @@ const ClientManagement = () => {
   }, [clients, searchTerm]);
 
   const fetchClients = async () => {
+    setIsLoadingClients(true);
     console.log('Fetching clients from table: clients');
     try {
       const { data, error } = await supabase
@@ -117,6 +120,8 @@ const ClientManagement = () => {
         description: "Failed to load clients.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingClients(false);
     }
   };
 
@@ -919,7 +924,29 @@ const ClientManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredClients.map((client) => (
+              {isLoadingClients ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="space-y-1.5">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-40" />
+                      </div>
+                    </TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-24 rounded-md" /></TableCell>
+                  </TableRow>
+                ))
+              ) : filteredClients.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                    No clients found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredClients.map((client) => (
                 <TableRow key={client.id}>
                   <TableCell>
                     <div className="font-medium">{client.company_name}</div>
@@ -1033,15 +1060,9 @@ const ClientManagement = () => {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
-              {filteredClients.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center text-gray-500">
-                    No clients found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
+              ))
+            )}
+          </TableBody>
           </Table></div>
         </CardContent>
       </Card>

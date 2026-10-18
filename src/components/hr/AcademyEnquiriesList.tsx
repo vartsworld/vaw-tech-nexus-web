@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 import { GraduationCap, Mail, Phone, Calendar, Trash2, Loader2, RefreshCw } from "lucide-react";
 
 interface Enquiry {
@@ -28,16 +29,23 @@ export default function AcademyEnquiriesList() {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("academy_enquiries")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) {
-      toast({ title: "Failed to load enquiries", description: error.message, variant: "destructive" });
-    } else {
-      setItems(data || []);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("academy_enquiries")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.warn("academy_enquiries table not populated or accessible:", error.message);
+        setItems([]);
+      } else {
+        setItems(data || []);
+      }
+    } catch (e: any) {
+      console.warn("Error loading academy enquiries:", e?.message);
+      setItems([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -85,8 +93,22 @@ export default function AcademyEnquiriesList() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="p-4 space-y-3 bg-card/60 border-border/50">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1.5 flex-1">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-4 w-28" />
+                </div>
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <div className="space-y-2 pt-2 border-t border-border/30">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+            </Card>
+          ))}
         </div>
       ) : items.length === 0 ? (
         <Card>

@@ -75,7 +75,7 @@ export default function HRDashboard() {
           .from('user_mood_entries')
           .select('*')
           .eq('user_id', userProfile.id)
-          .eq('entry_date', today)
+          .eq('date', today)
           .maybeSingle();
 
         if (!attendanceData) {
@@ -131,7 +131,7 @@ export default function HRDashboard() {
                 .from('user_mood_entries')
                 .select('*')
                 .eq('user_id', userProfile?.id)
-                .eq('entry_date', today)
+                .eq('date', today)
                 .maybeSingle();
                 
               if (!moodData) {
@@ -155,6 +155,7 @@ export default function HRDashboard() {
             <p className="text-white/80">Share your mood to unlock your dashboard</p>
           </div>
           <MoodQuoteChecker 
+            userId={userProfile?.id || ''}
             onMoodSubmitted={() => {
               setShowMoodChecker(false);
               setInitialChecksDone(true);

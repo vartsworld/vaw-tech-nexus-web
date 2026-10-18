@@ -14,8 +14,37 @@ import { Link } from "react-router-dom";
 import {
     Plus, Edit, Trash2, Star, Tag, Globe, Zap, Shield, TrendingUp, Bot,
     Loader2, Eye, EyeOff, GripVertical, ChevronUp, ChevronDown, Package,
-    DollarSign, Sparkles, ToggleLeft, ToggleRight, ExternalLink
+    DollarSign, Sparkles, ToggleLeft, ToggleRight, ExternalLink, Gift, Clock, CheckCircle
 } from "lucide-react";
+
+export interface PromotionalOffer {
+    is_enabled: boolean;
+    badge_text: string;
+    title: string;
+    discount_label: string;
+    description: string;
+    coupon_code: string;
+    end_date: string;
+    button_text: string;
+    highlights: string[];
+}
+
+export const defaultOffer: PromotionalOffer = {
+    is_enabled: true,
+    badge_text: "Exclusive Limited Offer",
+    title: "Launch & Grow Special: Up to 35% OFF All Packages",
+    discount_label: "Save up to ₹50,000",
+    description: "Launch your custom digital project this season with VAW Technologies. Includes free 1-year high-speed hosting, domain (.com/.in), SSL security, and complimentary 3-month maintenance.",
+    coupon_code: "VAW35",
+    end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    button_text: "Claim Your Offer",
+    highlights: [
+        "Free 1-Year Cloud Hosting",
+        "Free Custom Domain (.com / .in)",
+        "SSL Security & Malware Protection",
+        "Dedicated Tech Lead & Priority Support"
+    ]
+};
 
 interface PricingPackage {
     id: string;
@@ -99,6 +128,9 @@ export default function PricingManagement() {
     const { toast } = useToast();
     const [packages, setPackages] = useState<PricingPackage[]>([]);
     const [addons, setAddons] = useState<PricingAddon[]>([]);
+    const [promotionalOffer, setPromotionalOffer] = useState<PromotionalOffer>(defaultOffer);
+    const [highlightsText, setHighlightsText] = useState(defaultOffer.highlights.join("\n"));
+    const [savingOffer, setSavingOffer] = useState(false);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -127,16 +159,65 @@ export default function PricingManagement() {
     const fetchAll = async () => {
         setLoading(true);
         try {
-            const [pkgRes, addonRes] = await Promise.all([
+            const [pkgRes, addonRes, offerRes] = await Promise.all([
                 supabase.from("pricing_packages").select("*").order("sort_order"),
                 supabase.from("pricing_addons").select("*").order("sort_order"),
+                supabase.from("app_settings").select("value").eq("key", "pricing_promotional_offer").maybeSingle(),
             ]);
             if (pkgRes.data) setPackages(pkgRes.data);
             if (addonRes.data) setAddons(addonRes.data);
+            if (offerRes.data?.value) {
+                const off = offerRes.data.value as unknown as PromotionalOffer;
+                setPromotionalOffer(off);
+                setHighlightsText((off.highlights || []).join("\n"));
+            } else {
+                const cached = localStorage.getItem("pricing_promotional_offer");
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        setPromotionalOffer(parsed);
+                        setHighlightsText((parsed.highlights || []).join("\n"));
+                    } catch {}
+                }
+            }
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const saveOffer = async () => {
+        setSavingOffer(true);
+        const highlights = highlightsText.split("\n").map(h => h.trim()).filter(Boolean);
+        const updatedOffer: PromotionalOffer = {
+            ...promotionalOffer,
+            highlights,
+        };
+        try {
+            const { error } = await supabase.from("app_settings").upsert({
+                key: "pricing_promotional_offer",
+                value: updatedOffer as any,
+                updated_at: new Date().toISOString()
+            }, { onConflict: "key" });
+
+            localStorage.setItem("pricing_promotional_offer", JSON.stringify(updatedOffer));
+            setPromotionalOffer(updatedOffer);
+            if (error) {
+                console.warn("Could not write to app_settings, saved locally:", error);
+            }
+            toast({
+                title: "Promotional Offer Saved",
+                description: updatedOffer.is_enabled
+                    ? "Active offer is now live on the public pricing page!"
+                    : "Promotional offer has been disabled on the public pricing page.",
+            });
+        } catch (err: any) {
+            localStorage.setItem("pricing_promotional_offer", JSON.stringify(updatedOffer));
+            setPromotionalOffer(updatedOffer);
+            toast({ title: "Offer Saved Locally", description: "Saved to browser cache." });
+        } finally {
+            setSavingOffer(false);
         }
     };
 
@@ -299,6 +380,15 @@ export default function PricingManagement() {
                             <Tag className="h-4 w-4 mr-2" />
                             Addon Services ({addons.length})
                         </TabsTrigger>
+                        <TabsTrigger value="offer" className="data-[state=active]:bg-indigo-600 flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-amber-400" />
+                            Promotional Offer
+                            {promotionalOffer.is_enabled ? (
+                                <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            ) : (
+                                <span className="text-[10px] text-gray-500 font-mono">(Disabled)</span>
+                            )}
+                        </TabsTrigger>
                     </TabsList>
 
                     {/* ── PACKAGES TAB ── */}
@@ -452,6 +542,260 @@ export default function PricingManagement() {
                                     <p>No addon services yet. Create one!</p>
                                 </div>
                             )}
+                        </div>
+                    </TabsContent>
+
+                    {/* ── PROMOTIONAL OFFER TAB ── */}
+                    <TabsContent value="offer" className="space-y-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-transparent border border-amber-500/20">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="h-5 w-5 text-amber-400" />
+                                    <h3 className="text-base font-semibold text-white">Public Promotional Offer Banner</h3>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    Configure the promotional campaign shown at the top of the public /pricing page. Changes take effect immediately.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-3 bg-[#111] px-4 py-2 rounded-lg border border-white/10 shrink-0">
+                                <Label htmlFor="offer-status-switch" className="text-xs font-medium cursor-pointer">
+                                    {promotionalOffer.is_enabled ? (
+                                        <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                            Offer Visible to Public
+                                        </span>
+                                    ) : (
+                                        <span className="text-gray-400">Offer Hidden (Off)</span>
+                                    )}
+                                </Label>
+                                <Switch
+                                    id="offer-status-switch"
+                                    checked={promotionalOffer.is_enabled}
+                                    onCheckedChange={(checked) => setPromotionalOffer({ ...promotionalOffer, is_enabled: checked })}
+                                    className="data-[state=checked]:bg-emerald-600"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            {/* Form Controls */}
+                            <div className="lg:col-span-7 space-y-4">
+                                <Card className="bg-[#111] border-white/10">
+                                    <CardHeader className="pb-3">
+                                        <CardTitle className="text-sm font-semibold text-gray-200 flex items-center gap-2">
+                                            <Gift className="h-4 w-4 text-indigo-400" />
+                                            Campaign Configuration
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-gray-300">Badge Text</Label>
+                                                <Input
+                                                    value={promotionalOffer.badge_text}
+                                                    onChange={(e) => setPromotionalOffer({ ...promotionalOffer, badge_text: e.target.value })}
+                                                    placeholder="e.g. Exclusive Limited Offer"
+                                                    className="bg-white/5 border-white/10 text-white text-xs"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-gray-300">Discount Callout</Label>
+                                                <Input
+                                                    value={promotionalOffer.discount_label}
+                                                    onChange={(e) => setPromotionalOffer({ ...promotionalOffer, discount_label: e.target.value })}
+                                                    placeholder="e.g. Save up to ₹50,000"
+                                                    className="bg-white/5 border-white/10 text-white text-xs"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs text-gray-300">Headline / Title *</Label>
+                                            <Input
+                                                value={promotionalOffer.title}
+                                                onChange={(e) => setPromotionalOffer({ ...promotionalOffer, title: e.target.value })}
+                                                placeholder="e.g. Launch & Grow Special: Up to 35% OFF All Packages"
+                                                className="bg-white/5 border-white/10 text-white text-xs font-semibold"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <Label className="text-xs text-gray-300">Description</Label>
+                                            <Textarea
+                                                rows={3}
+                                                value={promotionalOffer.description}
+                                                onChange={(e) => setPromotionalOffer({ ...promotionalOffer, description: e.target.value })}
+                                                placeholder="Detailed description of what the offer includes..."
+                                                className="bg-white/5 border-white/10 text-white text-xs resize-none"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-gray-300">Coupon Code</Label>
+                                                <Input
+                                                    value={promotionalOffer.coupon_code}
+                                                    onChange={(e) => setPromotionalOffer({ ...promotionalOffer, coupon_code: e.target.value.toUpperCase() })}
+                                                    placeholder="e.g. VAW35"
+                                                    className="bg-white/5 border-white/10 text-amber-400 font-mono text-xs uppercase"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-gray-300">Offer Expiration Date</Label>
+                                                <Input
+                                                    type="date"
+                                                    value={promotionalOffer.end_date}
+                                                    onChange={(e) => setPromotionalOffer({ ...promotionalOffer, end_date: e.target.value })}
+                                                    className="bg-white/5 border-white/10 text-white text-xs"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <Label className="text-xs text-gray-300">CTA Button Text</Label>
+                                                <Input
+                                                    value={promotionalOffer.button_text}
+                                                    onChange={(e) => setPromotionalOffer({ ...promotionalOffer, button_text: e.target.value })}
+                                                    placeholder="Claim Your Offer"
+                                                    className="bg-white/5 border-white/10 text-white text-xs"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between">
+                                                <Label className="text-xs text-gray-300">Key Inclusions / Perks (One per line)</Label>
+                                                <span className="text-[10px] text-gray-500">
+                                                    {highlightsText.split("\n").filter(Boolean).length} bullet(s)
+                                                </span>
+                                            </div>
+                                            <Textarea
+                                                rows={4}
+                                                value={highlightsText}
+                                                onChange={(e) => setHighlightsText(e.target.value)}
+                                                placeholder={"Free 1-Year Cloud Hosting\nFree Custom Domain (.com / .in)\nSSL Security & Malware Protection\nDedicated Tech Lead & Priority Support"}
+                                                className="bg-white/5 border-white/10 text-white text-xs font-mono resize-none"
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-xs text-gray-400 hover:text-white"
+                                                onClick={() => {
+                                                    setPromotionalOffer(defaultOffer);
+                                                    setHighlightsText((defaultOffer.highlights || []).join("\n"));
+                                                }}
+                                            >
+                                                Reset to Default
+                                            </Button>
+                                            <Button
+                                                onClick={saveOffer}
+                                                disabled={savingOffer}
+                                                className="bg-gradient-to-r from-amber-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white gap-2 text-xs font-semibold"
+                                            >
+                                                {savingOffer ? (
+                                                    <>
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="h-3.5 w-3.5" /> Save &amp; Publish Offer
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Live Public Preview */}
+                            <div className="lg:col-span-5 space-y-3">
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-xs font-medium text-gray-400 flex items-center gap-1.5">
+                                        <Eye className="h-3.5 w-3.5 text-indigo-400" /> Live Preview on /pricing
+                                    </span>
+                                    {promotionalOffer.is_enabled ? (
+                                        <Badge className="bg-emerald-500/20 text-emerald-400 text-[10px] border-emerald-500/30">
+                                            Previewing Active
+                                        </Badge>
+                                    ) : (
+                                        <Badge variant="outline" className="text-gray-500 text-[10px] border-white/10">
+                                            Hidden on Live Site
+                                        </Badge>
+                                    )}
+                                </div>
+
+                                <div className={`relative rounded-2xl p-6 border transition-all ${
+                                    promotionalOffer.is_enabled
+                                        ? "bg-gradient-to-br from-[#13111C] via-[#101018] to-[#0D1527] border-amber-500/30 shadow-xl shadow-amber-500/5"
+                                        : "bg-[#111]/60 border-white/5 opacity-60"
+                                }`}>
+                                    {!promotionalOffer.is_enabled && (
+                                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center p-4 text-center z-10">
+                                            <EyeOff className="h-8 w-8 text-gray-500 mb-2" />
+                                            <p className="text-sm font-semibold text-gray-300">Offer is currently Disabled</p>
+                                            <p className="text-xs text-gray-500 mt-1 max-w-xs">
+                                                Enable the switch above to display this promotional banner on the public /pricing page.
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                        <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/40 text-xs px-2.5 py-0.5 font-medium flex items-center gap-1.5">
+                                            <Sparkles className="h-3 w-3 text-amber-400" />
+                                            {promotionalOffer.badge_text || "Special Offer"}
+                                        </Badge>
+                                        {promotionalOffer.discount_label && (
+                                            <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                                                {promotionalOffer.discount_label}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <h4 className="text-lg font-bold text-white mb-2 leading-snug">
+                                        {promotionalOffer.title || "Limited Time Promotional Offer"}
+                                    </h4>
+
+                                    <p className="text-xs text-gray-400 mb-4 line-clamp-3">
+                                        {promotionalOffer.description || "Take advantage of our limited period pricing discount."}
+                                    </p>
+
+                                    {/* Highlights list */}
+                                    <div className="space-y-1.5 mb-4">
+                                        {highlightsText.split("\n").filter(Boolean).map((highlight, idx) => (
+                                            <div key={idx} className="flex items-center gap-2 text-xs text-gray-300">
+                                                <CheckCircle className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                                                <span>{highlight}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Coupon & End Date */}
+                                    <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5 mb-4">
+                                        <div>
+                                            <span className="text-[10px] text-gray-400 uppercase tracking-wider block">Use Coupon Code</span>
+                                            <span className="text-sm font-mono font-bold text-amber-400">
+                                                {promotionalOffer.coupon_code || "N/A"}
+                                            </span>
+                                        </div>
+                                        {promotionalOffer.end_date && (
+                                            <div className="text-right">
+                                                <span className="text-[10px] text-gray-400 uppercase tracking-wider block flex items-center gap-1 justify-end">
+                                                    <Clock className="h-3 w-3 text-gray-400" /> Expires On
+                                                </span>
+                                                <span className="text-xs font-medium text-white">
+                                                    {promotionalOffer.end_date}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <Button className="w-full bg-gradient-to-r from-amber-500 to-indigo-600 text-white text-xs font-semibold h-9 shadow-md pointer-events-none">
+                                        {promotionalOffer.button_text || "Claim Offer"}
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
                     </TabsContent>
                 </Tabs>

@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, Mail, Phone, Download, Trash2,
-  LayoutGrid, LayoutGrid, List, AlertTriangle, Calendar } from "lucide-react";
+  LayoutGrid, List, AlertTriangle, Calendar } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 import { InternshipApplication } from "@/types/database";
 
 const domains = {
@@ -138,7 +139,10 @@ const InternshipApplicationsList = () => {
     return (
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle>Internship Applications</CardTitle>
+          <div>
+            <CardTitle className="text-lg sm:text-xl">Internship Applications</CardTitle>
+            <CardDescription className="text-sm">Loading applications...</CardDescription>
+          </div>
           <div className="flex items-center bg-muted/50 p-1 rounded-lg">
             <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="sm" onClick={() => setViewMode('table')} className="h-8 px-2">
               <List className="h-4 w-4" />
@@ -149,7 +153,64 @@ const InternshipApplicationsList = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">Loading applications...</div>
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="space-y-1.5 flex-1">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5 pt-1">
+                    <Skeleton className="h-4 w-16 rounded-full" />
+                    <Skeleton className="h-4 w-14 rounded-full" />
+                  </div>
+                  <div className="space-y-2 pt-2 border-t">
+                    <Skeleton className="h-3 w-36" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Applicant</TableHead>
+                    <TableHead>College</TableHead>
+                    <TableHead>Domains</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Applied Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-8 w-8 rounded-full" />
+                          <div className="space-y-1">
+                            <Skeleton className="h-4 w-28" />
+                            <Skeleton className="h-3 w-36" />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-20 rounded-full" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-8 w-20 rounded-md" /></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -164,6 +225,51 @@ const InternshipApplicationsList = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {applications.length === 0 ? (
+              <div className="col-span-full text-center py-8 text-muted-foreground border rounded-lg bg-muted/20">
+                No internship applications found
+              </div>
+            ) : (
+              applications.map((app) => (
+                <Card key={app.id} className="overflow-hidden hover:shadow-md transition-shadow relative">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>{app.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">{app.full_name}</p>
+                        <p className="text-xs text-muted-foreground truncate capitalize">{app.college_name}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1">
+                      {app.domains.map((domain, index) => (
+                        <Badge key={index} variant="secondary" className="text-[10px] px-1.5 py-0">{domain}</Badge>
+                      ))}
+                    </div>
+
+                    <div className="space-y-1.5 text-xs text-muted-foreground mt-2 pt-2 border-t">
+                      <div className="flex items-center gap-2"><Mail className="h-3 w-3" /><span className="truncate">{app.email}</span></div>
+                      <div className="flex items-center gap-2"><Calendar className="h-3 w-3" /><span>{new Date(app.created_at).toLocaleDateString()}</span></div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-1.5 justify-end mt-4 pt-2">
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setSelectedApplication(app); setIsViewDialogOpen(true); }}>
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-red-500 hover:bg-red-50" onClick={() => setDeleteTarget(app)}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        ) : (
         <div className="rounded-md border overflow-hidden">
           <div className="overflow-x-auto">
             <Table className="min-w-[800px]">
@@ -339,3 +445,6 @@ const InternshipApplicationsList = () => {
 };
 
 export default InternshipApplicationsList;
+
+
+

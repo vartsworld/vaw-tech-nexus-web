@@ -35,10 +35,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 import { viewOrDownloadFile } from "@/pages/TeamApplication";
 
 const TeamApplicationsList = () => {
   const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [departments, setDepartments] = useState([]);
   const [selectedApplication, setSelectedApplication] = useState(null);
@@ -53,6 +55,7 @@ const TeamApplicationsList = () => {
   }, []);
 
   const fetchApplications = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('team_applications_staff')
@@ -70,6 +73,8 @@ const TeamApplicationsList = () => {
         description: "Failed to load team applications.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -327,7 +332,23 @@ const TeamApplicationsList = () => {
         <CardContent>
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {applications.length === 0 ? (
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <Card key={i} className="p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                      <div className="space-y-1.5 flex-1">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-3 w-20" />
+                      </div>
+                    </div>
+                    <div className="space-y-2 pt-2 border-t">
+                      <Skeleton className="h-3 w-36" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </Card>
+                ))
+              ) : applications.length === 0 ? (
                 <div className="col-span-full text-center py-8 text-muted-foreground border rounded-lg bg-muted/20">
                   No applications found
                 </div>
@@ -391,7 +412,33 @@ const TeamApplicationsList = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {applications.map((application) => (
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="space-y-1.5">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-20" />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+                    <TableCell><Skeleton className="h-8 w-20 rounded-md" /></TableCell>
+                  </TableRow>
+                ))
+              ) : applications.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No applications found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                applications.map((application) => (
                 <TableRow key={application.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -502,8 +549,9 @@ const TeamApplicationsList = () => {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
+              ))
+            )}
+          </TableBody>
           </Table></div>
           )}
         </CardContent>

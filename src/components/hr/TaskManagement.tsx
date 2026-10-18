@@ -18,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { DragDropContext, Draggable } from "react-beautiful-dnd";
 import StrictModeDroppable from "@/components/ui/StrictModeDroppable";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import {
   ClipboardList,
@@ -78,6 +79,7 @@ const TaskManagement = () => {
   const [currentView, setCurrentView] = useState<'list' | 'create' | 'detail' | 'edit'>('list');
   const [selectedEditTask, setSelectedEditTask] = useState<any>(null);
   const [tasks, setTasks] = useState<any[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(true);
   const [viewMode, setViewMode] = useState<'table' | 'grid' | 'kanban'>('table');
   const [staff, setStaff] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -201,6 +203,7 @@ const TaskManagement = () => {
   }, [selectedTask]);
 
   const fetchTasks = async () => {
+    setLoadingTasks(true);
     try {
       // Get current user profile to check role and department
       const { data: { user } } = await supabase.auth.getUser();
@@ -292,6 +295,8 @@ const TaskManagement = () => {
         description: "Failed to load tasks.",
         variant: "destructive",
       });
+    } finally {
+      setLoadingTasks(false);
     }
   };
 
@@ -1482,7 +1487,25 @@ const TaskManagement = () => {
 
         {/* Content Area */}
         <div>
-          {filteredTasks.length === 0 ? (
+          {loadingTasks ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} className="p-4 space-y-3 bg-muted/20 border-white/10">
+                    <div className="flex justify-between items-start">
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                    </div>
+                    <Skeleton className="h-3.5 w-1/2" />
+                    <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                      <Skeleton className="h-5 w-20 rounded-full" />
+                      <Skeleton className="h-7 w-7 rounded-full" />
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ) : filteredTasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">
                 <ClipboardList className="h-8 w-8 text-muted-foreground/40" />

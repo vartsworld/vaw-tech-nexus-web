@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import NotFound from "./NotFound";
 
 const StaffIDCard = () => {
   const { id } = useParams();
@@ -87,12 +88,7 @@ const StaffIDCard = () => {
   }
 
   if (!profile) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-6 text-white">
-        <h2 className="text-2xl font-bold mb-4">Staff Not Found</h2>
-        <Button onClick={() => navigate('/')} className="bg-indigo-600">Home</Button>
-      </div>
-    );
+    return <NotFound />;
   }
 
   return (

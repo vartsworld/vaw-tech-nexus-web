@@ -38,7 +38,9 @@ import {
   ChevronDown,
   Filter,
   Search,
-  ExternalLink
+  ExternalLink,
+  Crown,
+  Building2
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -88,15 +90,27 @@ const getLocalDateKey = (d: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-// Helper to format an ISO string date as YYYY-MM-DD in local time
-const getIsoDateKey = (isoStr: string) => {
+// Safe helper to extract YYYY-MM-DD without UTC timezone offset shift
+const getSafeDateKey = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return '';
+  const str = String(dateStr).trim();
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return `${match[1]}-${match[2]}-${match[3]}`;
+  }
   try {
-    const d = parseISO(isoStr);
-    return getLocalDateKey(d);
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      return getLocalDateKey(d);
+    }
   } catch {
     return '';
   }
+  return '';
 };
+
+// Backwards-compatible alias
+const getIsoDateKey = (isoStr: string | null | undefined) => getSafeDateKey(isoStr);
 
 const calculatePriorityFromDueDate = (dueDateStr: string | null | undefined): 'low' | 'medium' | 'high' | 'urgent' => {
   if (!dueDateStr) return 'medium';
@@ -229,6 +243,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>(['all']);
   const [clientFilterSearch, setClientFilterSearch] = useState('');
+  const [selectedDepartmentIds, setSelectedDepartmentIds] = useState<string[]>(['all']);
+  const [departmentFilterSearch, setDepartmentFilterSearch] = useState('');
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#3b82f6');
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -259,6 +275,37 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       clearInterval(interval);
     };
   }, []);
+
+  const isTeamHeadUserId = (uId: string | null | undefined): boolean => {
+    if (!uId) return false;
+    const member = staffMembers.find(s => s.user_id === uId || s.id === uId);
+    if (!member) return false;
+    return (
+      member.is_department_head === true ||
+      ['department_head', 'team_head', 'manager', 'lead', 'hr', 'admin'].includes(member.role?.toLowerCase())
+    );
+  };
+
+  const handleToggleDepartmentFilter = (deptId: string) => {
+    if (deptId === 'all') {
+      setSelectedDepartmentIds(['all']);
+      return;
+    }
+
+    let nextSelected = selectedDepartmentIds.filter(id => id !== 'all');
+
+    if (nextSelected.includes(deptId)) {
+      nextSelected = nextSelected.filter(id => id !== deptId);
+    } else {
+      nextSelected.push(deptId);
+    }
+
+    if (nextSelected.length === 0) {
+      nextSelected = ['all'];
+    }
+
+    setSelectedDepartmentIds(nextSelected);
+  };
 
   const handleToggleClientFilter = (clientId: string) => {
     if (clientId === 'all') {
@@ -331,10 +378,30 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     fetchStaffMembers();
     fetchTasksAndSubtasks();
     fetchDepartments();
+
+    // Subscribe to realtime updates for tasks, subtasks, and plans
+    const channel = supabase
+      .channel('monthly-planner-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_tasks' }, () => {
+        fetchTasksAndSubtasks();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_subtasks' }, () => {
+        fetchTasksAndSubtasks();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_plans' }, () => {
+        fetchPlans();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [currentMonth, filterClientId]);
 
   const fetchStaffMembers = async () => {
-    const { data } = await supabase.from('staff_profiles').select('id, user_id, full_name, email, department_id, avatar_url');
+    const { data } = await supabase
+      .from('staff_profiles')
+      .select('id, user_id, full_name, email, department_id, avatar_url, role, is_department_head');
     setStaffMembers(data || []);
   };
 
@@ -436,24 +503,59 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
   const fetchTasksAndSubtasks = async () => {
     try {
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('staff_tasks')
-        .select('*');
+      let tasksData: any[] = [];
 
-      if (tasksError) throw tasksError;
+      // 1. First attempt to call get_calendar_tasks_for_staff RPC (bypasses RLS and enriches team head info)
+      try {
+        const { data: rpcTasks, error: rpcError } = await supabase.rpc('get_calendar_tasks_for_staff' as any);
+        if (!rpcError && rpcTasks && Array.isArray(rpcTasks) && rpcTasks.length > 0) {
+          tasksData = rpcTasks;
+        }
+      } catch (e) {
+        console.warn('get_calendar_tasks_for_staff RPC not available:', e);
+      }
 
-      const { data: subtasksData, error: subtasksError } = await supabase
-        .from('staff_subtasks')
-        .select('*, staff_tasks(*)');
+      // 2. Fall back to direct staff_tasks select if RPC returned no rows or errored
+      if (tasksData.length === 0) {
+        const { data: directTasks, error: tasksError } = await supabase
+          .from('staff_tasks')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (subtasksError) throw subtasksError;
+        if (tasksError) {
+          console.warn('Error fetching staff_tasks directly:', tasksError);
+        } else {
+          tasksData = directTasks || [];
+        }
+      }
+
+      // 3. Fetch subtasks independently so any subtask query error never blocks tasks
+      let subtasksData: any[] = [];
+      try {
+        const { data: rawSubtasks, error: subtasksError } = await supabase
+          .from('staff_subtasks')
+          .select('*, staff_tasks(*)');
+
+        if (subtasksError) {
+          console.warn('Error fetching staff_subtasks with join, falling back:', subtasksError);
+          const { data: plainSubs } = await supabase.from('staff_subtasks').select('*');
+          subtasksData = plainSubs || [];
+        } else {
+          subtasksData = rawSubtasks || [];
+        }
+      } catch (subErr) {
+        console.warn('Subtasks fetch exception:', subErr);
+      }
 
       let filteredTasks = tasksData || [];
       let filteredSubtasks = subtasksData || [];
 
       if (filterClientId) {
         filteredTasks = filteredTasks.filter(task => task.client_id === filterClientId);
-        filteredSubtasks = filteredSubtasks.filter(st => st.staff_tasks?.client_id === filterClientId);
+        filteredSubtasks = filteredSubtasks.filter(st => {
+          const parent = st.staff_tasks || tasksData.find(t => t.id === st.task_id);
+          return parent?.client_id === filterClientId;
+        });
       }
 
       setTasks(filteredTasks);
@@ -765,38 +867,52 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   };
 
   // Memoize filtered lists based on active filters
+  // Memoize filtered lists based on active client & department filters
   const { filteredPlans, filteredTasks, filteredSubtasks } = useMemo(() => {
-    if (selectedClientIds.includes('all')) {
-      return {
-        filteredPlans: plans,
-        filteredTasks: tasks,
-        filteredSubtasks: subtasks
-      };
+    let pList = plans;
+    let tList = tasks;
+    let sList = subtasks;
+
+    // 1. Client filter
+    if (!selectedClientIds.includes('all')) {
+      pList = pList.filter(p => {
+        const cId = p.client_id || 'common';
+        return selectedClientIds.includes(cId);
+      });
+      tList = tList.filter(t => {
+        const cId = t.client_id || 'common';
+        return selectedClientIds.includes(cId);
+      });
+      sList = sList.filter(s => {
+        const parentTask = s.staff_tasks || tasks.find(t => t.id === s.task_id);
+        const cId = parentTask?.client_id || 'common';
+        return selectedClientIds.includes(cId);
+      });
     }
 
-    const filteredPlansList = plans.filter(p => {
-      if (!p.client_id) return selectedClientIds.includes('common');
-      return selectedClientIds.includes(p.client_id);
-    });
-
-    const filteredTasksList = tasks.filter(t => {
-      if (!t.client_id) return selectedClientIds.includes('common');
-      return selectedClientIds.includes(t.client_id);
-    });
-
-    const filteredSubtasksList = subtasks.filter(s => {
-      const parentTask = s.staff_tasks;
-      if (!parentTask) return false;
-      if (!parentTask.client_id) return selectedClientIds.includes('common');
-      return selectedClientIds.includes(parentTask.client_id);
-    });
+    // 2. Department filter (viewing tasks apart from / across departments, or specific departments)
+    if (!selectedDepartmentIds.includes('all')) {
+      pList = pList.filter(p => {
+        const dId = p.department_id || 'general';
+        return selectedDepartmentIds.includes(dId);
+      });
+      tList = tList.filter(t => {
+        const dId = t.department_id || 'general';
+        return selectedDepartmentIds.includes(dId);
+      });
+      sList = sList.filter(s => {
+        const parentTask = s.staff_tasks || tasks.find(t => t.id === s.task_id);
+        const dId = parentTask?.department_id || 'general';
+        return selectedDepartmentIds.includes(dId);
+      });
+    }
 
     return {
-      filteredPlans: filteredPlansList,
-      filteredTasks: filteredTasksList,
-      filteredSubtasks: filteredSubtasksList
+      filteredPlans: pList,
+      filteredTasks: tList,
+      filteredSubtasks: sList
     };
-  }, [plans, tasks, subtasks, selectedClientIds]);
+  }, [plans, tasks, subtasks, selectedClientIds, selectedDepartmentIds]);
 
   // Precompute grouped items by local date key YYYY-MM-DD for day lookup
   const { plansByDate, tasksByDate, subtasksByDate } = useMemo(() => {
@@ -806,7 +922,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
     filteredPlans.forEach(p => {
       if (!p.date) return;
-      const key = getIsoDateKey(p.date);
+      const key = getSafeDateKey(p.date);
       if (key) {
         if (!plansMap[key]) plansMap[key] = [];
         plansMap[key].push(p);
@@ -814,8 +930,10 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     });
 
     filteredTasks.forEach(t => {
-      if (!t.due_date) return;
-      const key = getIsoDateKey(t.due_date);
+      // If due_date is null, safely fall back to created_at so the task is not lost!
+      const rawDate = t.due_date || t.created_at;
+      if (!rawDate) return;
+      const key = getSafeDateKey(rawDate);
       if (key) {
         if (!tasksMap[key]) tasksMap[key] = [];
         tasksMap[key].push(t);
@@ -823,8 +941,10 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     });
 
     filteredSubtasks.forEach(s => {
-      if (!s.due_date) return;
-      const key = getIsoDateKey(s.due_date);
+      const parentTask = s.staff_tasks || tasks.find(t => t.id === s.task_id);
+      const rawDate = s.due_date || s.created_at || parentTask?.due_date || parentTask?.created_at;
+      if (!rawDate) return;
+      const key = getSafeDateKey(rawDate);
       if (key) {
         if (!subtasksMap[key]) subtasksMap[key] = [];
         subtasksMap[key].push(s);
@@ -836,14 +956,14 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       tasksByDate: tasksMap,
       subtasksByDate: subtasksMap,
     };
-  }, [filteredPlans, filteredTasks, filteredSubtasks]);
+  }, [filteredPlans, filteredTasks, filteredSubtasks, tasks]);
 
   // Convert monthly plans, staff tasks, and subtasks into CalendarKit Pro CalendarEvents
   const calendarEvents = useMemo<CalendarEvent[]>(() => {
     const events: CalendarEvent[] = [];
 
     const getClientName = (cId: string | null | undefined) => {
-      if (!cId || cId === 'common') return 'Common (No Client)';
+      if (!cId || cId === 'common' || cId === 'no-client') return 'Common (Internal)';
       const found = clients.find(c => c.id === cId);
       return found ? found.company_name : 'Client';
     };
@@ -851,8 +971,10 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     // 1. Monthly Plans
     filteredPlans.forEach(plan => {
       if (!plan.date) return;
-      const startDate = new Date(`${plan.date}T09:00:00`);
-      const endDate = new Date(`${plan.date}T17:00:00`);
+      const dateKey = getSafeDateKey(plan.date);
+      if (!dateKey) return;
+      const startDate = new Date(`${dateKey}T09:00:00`);
+      const endDate = new Date(`${dateKey}T17:00:00`);
       const clientName = getClientName(plan.client_id);
       events.push({
         id: plan.id,
@@ -872,37 +994,50 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
     // 2. Staff Tasks
     filteredTasks.forEach(task => {
-      if (!task.due_date) return;
-      const dateKey = getIsoDateKey(task.due_date);
+      // Fall back to created_at if due_date is null
+      const rawDate = task.due_date || task.created_at;
+      if (!rawDate) return;
+      const dateKey = getSafeDateKey(rawDate);
       if (!dateKey) return;
       const startDate = new Date(`${dateKey}T10:00:00`);
       const endDate = new Date(`${dateKey}T12:00:00`);
       const clientName = getClientName(task.client_id);
       const isCompleted = task.status === 'completed';
+
+      const isTeamHead = isTeamHeadUserId(task.assigned_by) || Boolean(task.is_team_head_task);
+      const creator = staffMembers.find(s => s.user_id === task.assigned_by || s.id === task.assigned_by);
+      const dept = departments.find(d => d.id === task.department_id);
+
+      const titlePrefix = isTeamHead ? '👑 ' : '⚡ ';
+      const deptLabel = dept?.name || task.department_name;
+      const eventTitle = `${titlePrefix}${task.title}${deptLabel ? ` [${deptLabel}]` : ''}`;
+
       events.push({
         id: `task-${task.id}`,
-        title: `⚡ ${task.title}`,
+        title: eventTitle,
         start: startDate,
         end: endDate,
         description: task.description || '',
-        color: isCompleted ? '#10b981' : '#8b5cf6',
+        color: isCompleted ? '#10b981' : (isTeamHead ? '#f59e0b' : '#8b5cf6'),
         allDay: true,
         calendarId: 'task',
         resourceId: task.client_id || 'common',
         type: 'task',
         rawTask: task,
-        guests: [clientName],
+        guests: [clientName, creator?.full_name || task.creator_name || 'Team Head', deptLabel || 'General'],
       });
     });
 
     // 3. Subtasks
     filteredSubtasks.forEach(sub => {
-      if (!sub.due_date) return;
-      const dateKey = getIsoDateKey(sub.due_date);
+      const parentTask = sub.staff_tasks || tasks.find(t => t.id === sub.task_id);
+      const rawDate = sub.due_date || sub.created_at || parentTask?.due_date || parentTask?.created_at;
+      if (!rawDate) return;
+      const dateKey = getSafeDateKey(rawDate);
       if (!dateKey) return;
       const startDate = new Date(`${dateKey}T14:00:00`);
       const endDate = new Date(`${dateKey}T16:00:00`);
-      const clientName = getClientName(sub.staff_tasks?.client_id);
+      const clientName = getClientName(parentTask?.client_id);
       const isCompleted = sub.status === 'completed';
       events.push({
         id: `subtask-${sub.id}`,
@@ -913,7 +1048,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         color: isCompleted ? '#10b981' : '#ec4899',
         allDay: true,
         calendarId: 'subtask',
-        resourceId: sub.staff_tasks?.client_id || 'common',
+        resourceId: parentTask?.client_id || 'common',
         type: 'subtask',
         rawSubtask: sub,
         guests: [sub.status === 'completed' ? 'Completed' : 'Pending'],
@@ -921,7 +1056,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     });
 
     return events;
-  }, [filteredPlans, filteredTasks, filteredSubtasks, clients]);
+  }, [filteredPlans, filteredTasks, filteredSubtasks, clients, staffMembers, departments, tasks]);
 
   const handleEventDrop = async (event: CalendarEvent, start: Date) => {
     if (event.type === 'plan' && event.rawPlan) {
@@ -1048,7 +1183,135 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       `}</style>
 
       {portalTarget && createPortal(
-        <div className="inline-flex items-center mr-2">
+        <div className="inline-flex items-center gap-1.5 mr-2">
+          {/* Department Filter (Apart from / Across Departments) */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-8 px-2.5 border border-white/10 rounded-xl bg-zinc-900/90 text-white hover:bg-zinc-800 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md",
+                  !selectedDepartmentIds.includes('all') && "border-amber-500/50 bg-amber-500/10 text-amber-300"
+                )}
+              >
+                <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="hidden sm:inline">
+                  {selectedDepartmentIds.includes('all')
+                    ? 'All Depts'
+                    : selectedDepartmentIds.length === 1
+                    ? (departments.find(d => d.id === selectedDepartmentIds[0])?.name || (selectedDepartmentIds[0] === 'general' ? 'General' : '1 Dept'))
+                    : `${selectedDepartmentIds.length} Depts`}
+                </span>
+                <ChevronDown className="w-3 h-3 opacity-60 shrink-0" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-3 bg-zinc-950 border-white/10 text-white rounded-2xl shadow-2xl space-y-2 z-[99999]" align="end">
+              <div className="flex items-center justify-between px-1">
+                <p className="text-[10px] font-black uppercase text-white/40 tracking-wider">Filter Departments</p>
+                {!selectedDepartmentIds.includes('all') && (
+                  <button
+                    onClick={() => handleToggleDepartmentFilter('all')}
+                    className="text-[10px] font-bold text-amber-400 hover:underline"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+
+              {/* Search Field */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-white/40" />
+                <Input
+                  placeholder="Search departments..."
+                  value={departmentFilterSearch}
+                  onChange={(e) => setDepartmentFilterSearch(e.target.value)}
+                  className="h-8 pl-8 pr-3 text-xs bg-white/5 border-white/10 rounded-xl focus:border-amber-500 text-white placeholder:text-white/30"
+                />
+                {departmentFilterSearch && (
+                  <X
+                    className="w-3 h-3 absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white cursor-pointer"
+                    onClick={() => setDepartmentFilterSearch('')}
+                  />
+                )}
+              </div>
+
+              {/* Active Selected Tags */}
+              {!selectedDepartmentIds.includes('all') && selectedDepartmentIds.length > 0 && (
+                <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto p-1 bg-white/[0.02] border border-white/5 rounded-xl">
+                  {selectedDepartmentIds.map(id => {
+                    const label = id === 'general' ? 'General' : departments.find(d => d.id === id)?.name || 'Dept';
+                    return (
+                      <Badge
+                        key={id}
+                        variant="secondary"
+                        className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] font-semibold py-0.5 px-2 rounded-lg flex items-center gap-1 group cursor-pointer hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/30 transition-all"
+                        onClick={() => handleToggleDepartmentFilter(id)}
+                      >
+                        <span className="truncate max-w-[100px]">{label}</span>
+                        <X className="w-2.5 h-2.5 opacity-60 group-hover:opacity-100" />
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Options List */}
+              <div className="max-h-48 overflow-y-auto space-y-0.5 pr-1 scrollbar-thin scrollbar-thumb-white/10">
+                {('all departments'.includes(departmentFilterSearch.toLowerCase()) || !departmentFilterSearch) && (
+                  <div
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl cursor-pointer hover:bg-white/5 transition-colors text-xs font-medium",
+                      selectedDepartmentIds.includes('all') && "bg-amber-500/10 text-amber-300 font-bold"
+                    )}
+                    onClick={() => handleToggleDepartmentFilter('all')}
+                  >
+                    <Checkbox checked={selectedDepartmentIds.includes('all')} />
+                    <span>All Departments</span>
+                  </div>
+                )}
+
+                {('general (unassigned)'.includes(departmentFilterSearch.toLowerCase()) || !departmentFilterSearch) && (
+                  <div
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl cursor-pointer hover:bg-white/5 transition-colors text-xs font-medium",
+                      selectedDepartmentIds.includes('general') && "bg-amber-500/10 text-amber-300 font-bold"
+                    )}
+                    onClick={() => handleToggleDepartmentFilter('general')}
+                  >
+                    <Checkbox checked={selectedDepartmentIds.includes('general')} />
+                    <span>General (Company-wide)</span>
+                  </div>
+                )}
+
+                <div className="h-px bg-white/10 my-1" />
+
+                {departments
+                  .filter(d => d.name?.toLowerCase().includes(departmentFilterSearch.toLowerCase()))
+                  .map(dept => {
+                    const isSelected = selectedDepartmentIds.includes(dept.id);
+                    return (
+                      <div
+                        key={dept.id}
+                        className={cn(
+                          "flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl cursor-pointer hover:bg-white/5 transition-colors text-xs font-medium truncate",
+                          isSelected && "bg-amber-500/10 text-amber-300 font-bold"
+                        )}
+                        onClick={() => handleToggleDepartmentFilter(dept.id)}
+                      >
+                        <Checkbox checked={isSelected} />
+                        <span className="truncate">{dept.name}</span>
+                      </div>
+                    );
+                  })}
+                {departments.filter(d => d.name?.toLowerCase().includes(departmentFilterSearch.toLowerCase())).length === 0 && departmentFilterSearch && (
+                  <p className="text-[11px] text-white/40 text-center py-2">No matching departments</p>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Client Filter */}
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -1291,7 +1554,10 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           }
         }}
         isDarkMode={true}
-        resources={clients.map(c => ({ id: c.id, label: c.company_name, color: '#3b82f6' }))}
+        resources={[
+          { id: 'common', label: 'Common (Internal)', color: '#3b82f6' },
+          ...clients.map(c => ({ id: c.id, label: c.company_name, color: '#3b82f6' }))
+        ]}
         calendars={[
           { id: 'plan', label: 'Monthly Plans', color: '#3b82f6', active: true },
           { id: 'task', label: 'Staff Tasks', color: '#8b5cf6', active: true },
@@ -1434,27 +1700,37 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                       }
                     }
                     const assignedStaffList = staffMembers.filter(s => assignedIds.includes(s.user_id || s.id));
+                    const isTeamHead = isTeamHeadUserId(t.assigned_by) || Boolean(t.is_team_head_task);
+                    const creator = staffMembers.find(s => s.user_id === t.assigned_by || s.id === t.assigned_by);
+                    const dept = departments.find(d => d.id === (t.department_id || creator?.department_id));
 
                     return (
                       <div
                         key={t.id}
                         onClick={() => setViewDetailTask({ type: 'task', data: t })}
                         className={cn(
-                          "p-3 rounded-2xl cursor-pointer transition-all space-y-1.5 group relative border",
+                          "p-3 rounded-2xl cursor-pointer transition-all space-y-2 group relative border",
                           isDone
                             ? "bg-emerald-950/30 border-emerald-500/20 opacity-70"
+                            : isTeamHead
+                            ? "bg-amber-950/20 hover:bg-amber-900/30 border-amber-500/25 hover:border-amber-500/50"
                             : "bg-purple-950/20 hover:bg-purple-900/30 border-purple-500/20 hover:border-purple-500/40"
                         )}
-                        style={{ borderLeft: `4px solid ${isDone ? '#10b981' : '#8b5cf6'}` }}
+                        style={{ borderLeft: `4px solid ${isDone ? '#10b981' : isTeamHead ? '#f59e0b' : '#8b5cf6'}` }}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className={cn(
                             "font-bold text-sm transition-colors flex items-center gap-1.5",
-                            isDone ? "line-through text-white/40" : "text-purple-200 group-hover:text-purple-100"
+                            isDone ? "line-through text-white/40" : isTeamHead ? "text-amber-200 group-hover:text-amber-100" : "text-purple-200 group-hover:text-purple-100"
                           )}>
-                            ⚡ {t.title}
+                            {isTeamHead ? '👑' : '⚡'} {t.title}
                           </span>
                           <div className="flex items-center gap-2 shrink-0">
+                            {isTeamHead && (
+                              <Badge variant="outline" className="font-bold text-[9px] uppercase tracking-wider border-amber-500/40 bg-amber-500/15 text-amber-300 flex items-center gap-0.5">
+                                <Crown className="w-2.5 h-2.5" /> Team Head
+                              </Badge>
+                            )}
                             <Badge variant="outline" className={cn("font-bold text-[10px] uppercase tracking-wider", isDone ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300" : "border-purple-500/40 bg-purple-500/15 text-purple-300")}>Task</Badge>
                             <Button
                               size="sm"
@@ -1486,6 +1762,23 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                         </div>
                         {t.description && <p className="text-xs text-white/60 line-clamp-2">{t.description}</p>}
                         
+                        {/* Metadata row: Due date, Department, Creator */}
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/50 pt-0.5">
+                          <span>
+                            📅 {t.due_date ? `Due: ${t.due_date}${t.due_time ? ` @ ${t.due_time}` : ''}` : `Created: ${t.created_at ? t.created_at.slice(0, 10) : 'N/A'} (No due date)`}
+                          </span>
+                          {dept && (
+                            <span className="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 text-blue-300 font-medium text-[10px] flex items-center gap-1">
+                              <Building2 className="w-2.5 h-2.5" /> {dept.name}
+                            </span>
+                          )}
+                          {creator && (
+                            <span className="text-zinc-400 text-[10px]">
+                              by <strong className="text-zinc-300">{creator.full_name || creator.email}</strong>
+                            </span>
+                          )}
+                        </div>
+
                         {/* Overlapping Staff Avatar Circles */}
                         {assignedStaffList.length > 0 && (
                           <div className="flex items-center gap-1.5 pt-1">
@@ -1959,11 +2252,14 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
             }
             const assignedStaffList = staffMembers.filter(s => assignedIds.includes(s.user_id || s.id));
             const dueDateObj = item.due_date ? new Date(`${item.due_date}T12:00:00`) : null;
+            const creator = staffMembers.find(s => s.user_id === item.assigned_by || s.id === item.assigned_by);
+            const isTeamHead = isTeamHeadUserId(item.assigned_by) || Boolean(item.is_team_head_task);
+            const dept = departments.find(d => d.id === (item.department_id || creator?.department_id));
 
             return (
               <>
                 <div className="p-6 border-b border-white/5 bg-white/[0.02]">
-                  <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
                     <Badge variant="outline" className={cn(
                       "font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full",
                       isDone
@@ -1974,6 +2270,16 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                     )}>
                       {isDone ? 'Completed' : viewDetailTask.type === 'task' ? 'Task' : 'Subtask'}
                     </Badge>
+                    {isTeamHead && (
+                      <Badge variant="outline" className="font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border-amber-500/40 bg-amber-500/15 text-amber-300 flex items-center gap-1">
+                        <Crown className="w-3 h-3 text-amber-400" /> Team Head Task
+                      </Badge>
+                    )}
+                    {dept && (
+                      <Badge variant="outline" className="font-bold text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full border-blue-500/30 bg-blue-500/10 text-blue-300 flex items-center gap-1">
+                        <Building2 className="w-3 h-3 text-blue-400" /> {dept.name}
+                      </Badge>
+                    )}
                   </div>
                   <DialogTitle className="text-xl font-black text-white tracking-tight flex items-center gap-2">
                     {viewDetailTask.type === 'task' ? '⚡' : '📌'} {item.title}
@@ -1981,8 +2287,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                 </div>
 
                 <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-                  {/* Large Prominent Due Date Card */}
-                  {dueDateObj && (
+                  {/* Large Prominent Due Date Card or Fallback */}
+                  {dueDateObj ? (
                     <div className="p-4 bg-gradient-to-r from-violet-950/40 to-purple-950/40 border border-violet-500/20 rounded-2xl flex items-center justify-between">
                       <div>
                         <p className="text-[10px] font-black uppercase text-violet-300/60 tracking-widest">Due Date</p>
@@ -1992,6 +2298,19 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                       </div>
                       <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
                         <CalendarIcon className="w-5 h-5 text-violet-400" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-zinc-900/60 border border-white/10 rounded-2xl flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">Date / Created</p>
+                        <p className="text-base font-bold text-white tracking-tight mt-0.5">
+                          {item.created_at ? format(new Date(item.created_at), 'EEEE, MMMM d, yyyy') : 'No Due Date Set'}
+                        </p>
+                        <p className="text-[10px] text-amber-400/80 font-medium mt-0.5">No explicit due date set</p>
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                        <CalendarIcon className="w-5 h-5 text-zinc-400" />
                       </div>
                     </div>
                   )}
@@ -2023,6 +2342,30 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                       )}
                     </div>
                   </div>
+
+                  {/* Creator / Team Head Info */}
+                  {creator && (
+                    <div className="p-3.5 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-white/40 tracking-wider">Created By</p>
+                        <p className="text-xs font-bold text-white mt-0.5 flex items-center gap-1.5">
+                          {creator.full_name || creator.email}
+                          {isTeamHead && (
+                            <span className="text-[10px] font-semibold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                              👑 Team Head
+                            </span>
+                          )}
+                        </p>
+                        {creator.role && <p className="text-[10px] text-white/50 capitalize mt-0.5">{creator.role}</p>}
+                      </div>
+                      <Avatar className="h-8 w-8 rounded-full">
+                        <AvatarImage src={creator.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(creator.full_name || 'creator')}`} />
+                        <AvatarFallback className="bg-amber-600 text-[10px] font-bold text-white uppercase">
+                          {(creator.full_name || 'H').slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                  )}
 
                   {/* Assigned Staff Members Field */}
                   <div className="p-4 bg-white/5 border border-white/5 rounded-2xl space-y-2.5">
