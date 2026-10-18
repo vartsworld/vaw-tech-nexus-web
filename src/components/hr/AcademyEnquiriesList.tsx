@@ -35,8 +35,12 @@ export default function AcademyEnquiriesList() {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) {
-        console.warn("academy_enquiries table not populated or accessible:", error.message);
-        setItems([]);
+        if (error.code === '42P01' || error.message?.includes('does not exist')) {
+          setItems([]);
+        } else {
+          console.warn("academy_enquiries table issue:", error.message);
+          setItems([]);
+        }
       } else {
         setItems(data || []);
       }

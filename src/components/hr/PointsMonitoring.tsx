@@ -55,10 +55,13 @@ const PointsMonitoring = () => {
 
       setPointsLog(logsData || []);
 
-      // Fetch staff with total points
+      // Fetch staff with total points and department details
       const { data: staffData, error: staffError } = await supabase
         .from('staff_profiles')
-        .select('user_id, full_name, username, avatar_url, total_points, department_id')
+        .select(`
+          user_id, full_name, username, avatar_url, total_points, department_id,
+          departments(name)
+        `)
         .order('total_points', { ascending: false });
 
       if (staffError) throw staffError;
@@ -168,13 +171,13 @@ const PointsMonitoring = () => {
         .from('app_settings')
         .select('value')
         .eq('key', 'points_config')
-        .single();
+        .maybeSingle();
 
       const { data: rateData } = await supabase
         .from('app_settings')
         .select('value')
         .eq('key', 'vaw_coin_rate')
-        .single();
+        .maybeSingle();
 
       setConfig(prev => ({
         ...prev,
@@ -482,7 +485,11 @@ const PointsMonitoring = () => {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {staff.department_id ? 'Assigned' : 'Unassigned'}
+                      {Array.isArray(staff.departments)
+                        ? (staff.departments[0]?.name || 'Unassigned')
+                        : (staff.departments && typeof staff.departments === 'object' && 'name' in staff.departments)
+                          ? (staff.departments as { name: string }).name
+                          : 'Unassigned'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-bold">

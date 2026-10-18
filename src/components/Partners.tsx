@@ -1,157 +1,93 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { type Partner } from "@/types/partners";
 import { useUser } from "@/context/UserContext";
-import { 
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious 
-} from "@/components/ui/carousel";
-import { toast } from "@/hooks/use-toast";
 
-interface PartnerLogoProps {
-  src: string;
-  alt: string;
+interface PartnerBrand {
+  id: string;
+  name: string;
+  logo_url: string;
 }
 
-const PartnerLogo: React.FC<PartnerLogoProps> = ({ src, alt }) => {
-  return (
-    <div className="flex items-center justify-center p-4">
-      <img 
-        src={src} 
-        alt={alt} 
-        className="h-16 w-auto object-contain hover:opacity-100 transition-all duration-300"
-      />
-    </div>
-  );
-};
+const DEFAULT_BRANDS: PartnerBrand[] = [
+  { id: "microsoft", name: "Microsoft", logo_url: "https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg" },
+  { id: "google", name: "Google", logo_url: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" },
+  { id: "aws", name: "Amazon Web Services", logo_url: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-original-wordmark.svg" },
+  { id: "oracle", name: "Oracle", logo_url: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/oracle/oracle-original.svg" },
+  { id: "ibm", name: "IBM", logo_url: "https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg" },
+  { id: "salesforce", name: "Salesforce", logo_url: "https://cdn.jsdelivr.net/gh/devicons/devicon/icons/salesforce/salesforce-original.svg" },
+  { id: "adobe", name: "Adobe", logo_url: "https://upload.wikimedia.org/wikipedia/commons/a/af/Adobe_Photoshop_CC_icon.svg" },
+  { id: "shopify", name: "Shopify", logo_url: "https://upload.wikimedia.org/wikipedia/commons/0/0e/Shopify_logo_2018.svg" }
+];
 
 const Partners = () => {
-  const [featuredPartners, setFeaturedPartners] = useState<Partner[]>([]);
-  const [partnerCount, setPartnerCount] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [brands, setBrands] = useState<PartnerBrand[]>(DEFAULT_BRANDS);
   const { userName } = useUser();
-  
+
   useEffect(() => {
     const fetchPartners = async () => {
       try {
-        setLoading(true);
-        
-        // Fetch featured partners
-        const { data: featuredData, error: featuredError } = await (supabase as any)
-          .from('partners')
-          .select('*')
-          .eq('featured', true)
-          .order('display_order', { ascending: true });
-        
-        if (featuredError) {
-          throw new Error(featuredError.message);
+        const { data, error } = await supabase
+          .from("partners")
+          .select("*")
+          .eq("featured", true)
+          .order("display_order", { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          // Filter valid logo_urls and merge with fallbacks
+          const dbBrands = (data as PartnerBrand[]).filter((p) => p.logo_url && p.logo_url.trim() !== "");
+          if (dbBrands.length > 0) {
+            setBrands(dbBrands);
+          }
         }
-        
-        // Count all partners
-        const { count, error: countError } = await supabase
-          .from('partners')
-          .select('*', { count: 'exact', head: true });
-        
-        if (countError) {
-          throw new Error(countError.message);
-        }
-        
-        setFeaturedPartners(featuredData as Partner[]);
-        setPartnerCount(count || 0);
       } catch (err) {
-        console.error('Error fetching partners:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load partners');
-        toast({
-          title: "Error loading partners",
-          description: "There was a problem loading partner information",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+        console.warn("Using default partner logos:", err);
       }
     };
-    
+
     fetchPartners();
   }, []);
-  
-  // Show skeleton loader while loading
-  if (loading) {
-    return (
-      <section className="py-12 bg-background/50 backdrop-blur-sm">
-        <div className="container mx-auto">
-          <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold mb-2">Trusted by Industry Leaders</h3>
-            <p className="text-muted-foreground">Loading partners...</p>
-          </div>
-          <div className="flex justify-center space-x-8">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="w-24 h-12 bg-muted/30 animate-pulse rounded"></div>
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
-  
-  if (error) {
-    return (
-      <section className="py-8 bg-background/50">
-        <div className="container mx-auto text-center">
-          <p className="text-muted-foreground">Unable to load partner information</p>
-        </div>
-      </section>
-    );
-  }
 
-  if (featuredPartners.length === 0) {
-    return null;
-  }
+  // Triple the items for continuous seamless loop
+  const marqueeItems = [...brands, ...brands, ...brands];
 
   return (
-    <section className="py-12 bg-background/50 backdrop-blur-sm">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-8">
-          <h3 className="text-2xl font-bold mb-2 font-['Space_Grotesk']">
-            {userName 
-              ? `${userName}, We're Trusted by Industry Leaders` 
-              : 'Trusted by Industry Leaders'
-            }
-          </h3>
-          <p className="text-muted-foreground font-['Outfit']">
-            Working with {partnerCount}+ organizations worldwide
-          </p>
-        </div>
-        
-        {/* Desktop view: Standard display */}
-        <div className="hidden md:flex justify-center items-center space-x-12">
-          {featuredPartners.map((partner) => (
-            <PartnerLogo 
-              key={partner.id} 
-              src={partner.logo_url} 
-              alt={partner.name} 
-            />
-          ))}
-        </div>
-        
-        {/* Mobile view: Carousel */}
-        <div className="md:hidden">
-          <Carousel className="w-full max-w-xs mx-auto">
-            <CarouselContent>
-              {featuredPartners.map((partner) => (
-                <CarouselItem key={partner.id} className="flex justify-center">
-                  <PartnerLogo src={partner.logo_url} alt={partner.name} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <div className="flex justify-center mt-4">
-              <CarouselPrevious className="relative static translate-y-0 mr-2" />
-              <CarouselNext className="relative static translate-y-0" />
+    <section className="py-8 bg-muted/10 border-y border-border/30 overflow-hidden">
+      <div className="container mx-auto px-4 mb-6 text-center">
+        <h3 className="text-xl md:text-2xl font-bold font-['Space_Grotesk'] text-foreground">
+          {userName
+            ? `${userName}, We're Trusted by Industry Leaders`
+            : "Trusted by Industry Leaders"
+          }
+        </h3>
+        <p className="text-xs md:text-sm text-muted-foreground font-['Outfit'] mt-1">
+          Powering innovation alongside world-class organizations
+        </p>
+      </div>
+
+      {/* Small Marquee Slider */}
+      <div className="relative w-full overflow-hidden py-4 before:absolute before:left-0 before:top-0 before:z-10 before:w-20 before:h-full before:bg-gradient-to-r before:from-background before:to-transparent after:absolute after:right-0 after:top-0 after:z-10 after:w-20 after:h-full after:bg-gradient-to-l after:from-background after:to-transparent">
+        <div className="flex items-center gap-12 w-max animate-[scroll_25s_linear_infinite] hover:[animation-play-state:paused]">
+          {marqueeItems.map((brand, idx) => (
+            <div key={`${brand.id}-${idx}`} className="flex items-center justify-center shrink-0 px-4">
+              <img
+                src={brand.logo_url}
+                alt={brand.name}
+                className="h-7 md:h-9 max-w-[110px] object-contain filter grayscale hover:grayscale-0 opacity-80 hover:opacity-100 transition-all duration-300"
+                onError={(e) => {
+                  // Fallback on error to text badge
+                  const target = e.currentTarget;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent && !parent.querySelector('.fallback-badge')) {
+                    const span = document.createElement('span');
+                    span.className = 'fallback-badge text-xs font-bold text-muted-foreground uppercase tracking-wider px-2 py-1 bg-muted/40 rounded';
+                    span.innerText = brand.name;
+                    parent.appendChild(span);
+                  }
+                }}
+              />
             </div>
-          </Carousel>
+          ))}
         </div>
       </div>
     </section>

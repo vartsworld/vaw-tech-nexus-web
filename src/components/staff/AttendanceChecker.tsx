@@ -25,11 +25,15 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
   const checkTodayAttendance = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
+      const nowMs = Date.now();
+      const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+
       const { data, error } = await supabase
         .from('staff_attendance')
         .select('*')
         .eq('user_id', userId)
-        .eq('date', today)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
@@ -37,7 +41,12 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
         return;
       }
 
-      setTodayAttendance(data);
+      const isRecent = data && (
+        data.date === today ||
+        (data.created_at && (nowMs - new Date(data.created_at).getTime()) < twentyFourHoursMs)
+      );
+
+      setTodayAttendance(isRecent ? data : null);
     } catch (error) {
       console.error('Error checking attendance:', error);
     }
@@ -73,21 +82,32 @@ const AttendanceChecker = ({ userId, onAttendanceMarked }: AttendanceCheckerProp
       // Request: "mark the attentance within 5:30 to 18:30 wont be marked as late and those who marked before or after the timer being will be considered late."
       const isLate = now < startWindow || now > endWindow;
 
-      // Check if attendance already exists for today
+      // Check if attendance already exists for today or last 24 hours
       const today = new Date().toISOString().split('T')[0];
+      const nowMs = Date.now();
+      const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+
       const { data: existingAttendance } = await supabase
         .from('staff_attendance')
         .select('*')
         .eq('user_id', userId)
-        .eq('date', today)
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
-      if (existingAttendance) {
+      const isRecent = existingAttendance && (
+        existingAttendance.date === today ||
+        (existingAttendance.created_at && (nowMs - new Date(existingAttendance.created_at).getTime()) < twentyFourHoursMs)
+      );
+
+      if (isRecent) {
         toast({
           title: "Already Marked!",
-          description: "You've already marked your attendance for today.",
+          description: "You've already marked your attendance within the last 24 hours.",
           variant: "destructive",
         });
+        onAttendanceMarked();
+        setTodayAttendance(existingAttendance);
         return;
       }
 

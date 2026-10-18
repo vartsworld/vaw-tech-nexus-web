@@ -618,23 +618,23 @@ const TaskTemplateManagement = () => {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Package className="h-5 w-5" />
+            <Package className="h-5 w-5 text-primary" />
             Select Package
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3">
             {packages.map(pkg => (
               <button
                 key={pkg.id}
                 onClick={() => setSelectedPackageId(pkg.id)}
-                className={`p-3 rounded-lg border-2 text-left transition-all ${selectedPackageId === pkg.id
-                  ? 'border-primary bg-primary/5 shadow-md'
+                className={`p-2.5 sm:p-3 rounded-lg border-2 text-left transition-all ${selectedPackageId === pkg.id
+                  ? 'border-primary bg-primary/10 shadow-sm font-semibold'
                   : 'border-border hover:border-primary/50 hover:bg-muted/50'
                   }`}
               >
-                <div className="font-medium text-sm truncate">{pkg.name}</div>
-                <div className="text-xs text-muted-foreground mt-1">
+                <div className="font-medium text-xs sm:text-sm truncate">{pkg.name}</div>
+                <div className="text-[11px] sm:text-xs text-muted-foreground mt-1 font-mono">
                   ₹{pkg.discount_price?.toLocaleString()}
                 </div>
               </button>
@@ -820,13 +820,13 @@ const TaskTemplateManagement = () => {
 
       {/* Create/Edit Task Template Dialog */}
       <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{editingTemplate ? 'Edit Task Template' : 'Create Task Template'}</DialogTitle>
+            <DialogTitle className="text-xl font-bold">{editingTemplate ? 'Edit Task Template' : 'Create Task Template'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Task Title *</Label>
+              <Label>Task Title <span className="text-red-500">*</span></Label>
               <Input
                 value={taskForm.title}
                 onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
@@ -1064,8 +1064,8 @@ const TaskTemplateManagement = () => {
                                             <Trash2 className="h-3 w-3" />
                                           </Button>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_80px_90px] gap-3">
-                                          <div className="space-y-1">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_80px_80px_90px] gap-2 sm:gap-3">
+                                          <div className="space-y-1 sm:col-span-2 lg:col-span-1">
                                             <Label className="text-xs text-muted-foreground">Title</Label>
                                             <Input
                                               placeholder="Subtask title"
@@ -1093,7 +1093,7 @@ const TaskTemplateManagement = () => {
                                               min="0"
                                             />
                                           </div>
-                                          <div className="space-y-1">
+                                          <div className="space-y-1 sm:col-span-2 lg:col-span-1">
                                             <Label className="text-xs text-muted-foreground">Days to Due</Label>
                                             <Input
                                               type="number"

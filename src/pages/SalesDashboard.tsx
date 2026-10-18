@@ -152,12 +152,26 @@ const SalesDashboard = () => {
   const checkDailyRequirements = async () => {
     if (!profile?.user_id) return;
     const today = new Date().toISOString().split("T")[0];
+    const nowMs = Date.now();
+    const twentyFourHoursMs = 24 * 60 * 60 * 1000;
+
     const [{ data: att }, { data: mood }] = await Promise.all([
-      supabase.from("staff_attendance").select("id").eq("user_id", profile.user_id).eq("date", today).maybeSingle(),
-      supabase.from("user_mood_entries").select("id").eq("user_id", profile.user_id).eq("date", today).maybeSingle(),
+      supabase.from("staff_attendance").select("*").eq("user_id", profile.user_id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("user_mood_entries").select("*").eq("user_id", profile.user_id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
-    setShowAttendanceCheck(!att);
-    setShowMoodCheck(!!att && !mood);
+
+    const hasRecentAttendance = att && (
+      att.date === today ||
+      (att.created_at && (nowMs - new Date(att.created_at).getTime()) < twentyFourHoursMs)
+    );
+
+    const hasRecentMood = mood && (
+      mood.date === today ||
+      (mood.created_at && (nowMs - new Date(mood.created_at).getTime()) < twentyFourHoursMs)
+    );
+
+    setShowAttendanceCheck(!hasRecentAttendance);
+    setShowMoodCheck(!!hasRecentAttendance && !hasRecentMood);
   };
 
   const handleLogout = async () => {

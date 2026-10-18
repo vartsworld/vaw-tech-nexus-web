@@ -388,7 +388,7 @@ const WebAppDevelopment = () => {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="border-tech-gold/30 hover:bg-tech-gold/10" asChild>
-                <Link to="/#contact">
+                <Link to="/contact">
                   Schedule Consultation
                 </Link>
               </Button>

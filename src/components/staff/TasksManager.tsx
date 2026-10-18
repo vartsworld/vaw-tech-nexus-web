@@ -85,8 +85,8 @@ const TasksManager = ({
   });
 
   const filterString = userProfile?.department_id 
-    ? `or=(assigned_to.eq.${userId},department_id.eq.${userProfile.department_id})`
-    : `assigned_to=eq.${userId}`;
+    ? `or=(assigned_to.ilike.%${userId}%,department_id.eq.${userProfile.department_id})`
+    : `assigned_to.ilike.%${userId}%`;
 
   const { data: directTasksData } = useRealtimeQuery<any[]>({
     queryKey: ['staff_tasks_direct', userId, userProfile?.department_id],
@@ -360,8 +360,8 @@ const TasksManager = ({
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
-      if (filter === 'all') return task.status !== 'completed';
-      if (filter === 'completed') return ['review_pending', 'pending_approval'].includes(task.status);
+      if (filter === 'all') return true;
+      if (filter === 'completed') return ['completed', 'review_pending', 'pending_approval'].includes(task.status);
       return task.status === filter;
     });
   }, [tasks, filter]);

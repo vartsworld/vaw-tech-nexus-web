@@ -558,6 +558,7 @@ const TeamHeadMobileHome = ({
     profile?.role === 'manager' ||
     profile?.role === 'admin' ||
     profile?.role === 'super_admin' ||
+    profile?.role === 'hr' ||
     profile?.is_department_head;
 
   // Filter plans based on selected client filter
@@ -643,7 +644,7 @@ const TeamHeadMobileHome = ({
   const tasksByDate = useMemo(() => {
     const map: Record<string, any[]> = {};
     filteredPlannerTasks.forEach(t => {
-      const dKey = getIsoDateKey(t.due_date);
+      const dKey = getIsoDateKey(t.due_date || t.created_at);
       if (dKey) {
         if (!map[dKey]) map[dKey] = [];
         map[dKey].push(t);
@@ -655,7 +656,7 @@ const TeamHeadMobileHome = ({
   const subtasksByDate = useMemo(() => {
     const map: Record<string, any[]> = {};
     filteredPlannerSubtasks.forEach(s => {
-      const dKey = getIsoDateKey(s.due_date);
+      const dKey = getIsoDateKey(s.due_date || s.created_at);
       if (dKey) {
         if (!map[dKey]) map[dKey] = [];
         map[dKey].push(s);

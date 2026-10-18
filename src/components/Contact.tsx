@@ -1,4 +1,3 @@
-
 import ContactForm from "./ContactForm";
 import { Mail, Phone, MapPin } from "lucide-react";
 import { Button } from "./ui/button";
@@ -38,8 +37,7 @@ const Contact = () => {
                   </div>
                   <div className={`${isMobile ? 'text-center' : ''}`}>
                     <h4 className="text-sm font-medium text-muted-foreground">Email Address</h4>
-                    <p className="text-foreground">info@vawtechnologies.com</p>
-                    <p className="text-foreground">support@vawtechnologies.com</p>
+                    <p className="text-foreground font-semibold">hello@vawtech.in</p>
                   </div>
                 </div>
                 
@@ -49,7 +47,7 @@ const Contact = () => {
                   </div>
                   <div className={`${isMobile ? 'text-center' : ''}`}>
                     <h4 className="text-sm font-medium text-muted-foreground">Phone Number</h4>
-                    <p className="text-foreground">+91 8281543610</p>
+                    <p className="text-foreground font-semibold">+91 8281543610</p>
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -77,16 +75,15 @@ const Contact = () => {
                   </div>
                   <div className={`${isMobile ? 'text-center' : ''}`}>
                     <h4 className="text-sm font-medium text-muted-foreground">Office Location</h4>
-                    <p className="text-foreground">123 Tech Park, Innovation Street</p>
-                    <p className="text-foreground">Bangalore, India - 560001</p>
+                    <p className="text-foreground">V Arts World Pvt. Ltd.</p>
+                    <p className="text-foreground">Kerala, India</p>
                   </div>
                 </div>
               </div>
               
               <div className={`mt-8 ${isMobile ? 'text-center' : ''}`}>
                 <h4 className="text-sm font-medium mb-4">Working Hours</h4>
-                <p className="text-muted-foreground">Monday - Friday: 9:00 AM - 6:00 PM</p>
-                <p className="text-muted-foreground">Saturday: 10:00 AM - 2:00 PM</p>
+                <p className="text-muted-foreground">Monday - Saturday: 9:00 AM - 6:00 PM IST</p>
                 <p className="text-muted-foreground">Sunday: Closed</p>
               </div>
             </div>

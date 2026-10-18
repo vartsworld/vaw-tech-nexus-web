@@ -77,14 +77,14 @@ const PerformanceMetrics = () => {
         .from('staff_profiles')
         .select(`
           *,
-          departments!fk_staff_profiles_department(name),
-          tasks_assigned:staff_tasks!fk_staff_tasks_assigned_to(
+          departments(name),
+          tasks_assigned:staff_tasks(
             id, status, points, completed_at, created_at
           ),
-          attendance:staff_attendance!fk_staff_attendance_user(
+          attendance:staff_attendance(
             id, date, is_late, check_in_time
           ),
-          points:user_points_log!fk_user_points_log_user(
+          points:user_points_log(
             id, points, created_at
           )
         `);
