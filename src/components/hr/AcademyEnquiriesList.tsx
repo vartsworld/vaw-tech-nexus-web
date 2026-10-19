@@ -65,14 +65,14 @@ export default function AcademyEnquiriesList() {
 
   const updateStatus = async (id: string, status: string) => {
     const { error } = await (supabase as any).from("academy_enquiries").update({ status }).eq("id", id);
-    if (error) toast({ title: "Update failed", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Update failed", description: error.message || "Could not update status", variant: "destructive" });
     else toast({ title: "Status updated" });
   };
 
   const remove = async (id: string) => {
     if (!confirm("Delete this enquiry?")) return;
     const { error } = await (supabase as any).from("academy_enquiries").delete().eq("id", id);
-    if (error) toast({ title: "Delete failed", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Delete failed", description: error.message || "Could not delete enquiry", variant: "destructive" });
     else toast({ title: "Deleted" });
   };
 

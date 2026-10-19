@@ -86,7 +86,7 @@ const BannerManagement = () => {
     });
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error?.message || "Failed to create banner", variant: "destructive" });
     } else {
       toast({ title: "Banner created", description: "Announcement is now live" });
       setShowCreate(false);
@@ -103,7 +103,11 @@ const BannerManagement = () => {
   };
 
   const deleteBanner = async (id: string) => {
-    await supabase.from('announcement_banners').delete().eq('id', id);
+    const { error } = await supabase.from('announcement_banners').delete().eq('id', id);
+    if (error) {
+      toast({ title: "Error", description: error?.message || "Failed to delete banner", variant: "destructive" });
+      return;
+    }
     toast({ title: "Banner deleted" });
     refetch();
   };

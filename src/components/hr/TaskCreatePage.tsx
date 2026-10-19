@@ -145,7 +145,7 @@ const TaskCreatePage = ({ onBack, onCreated, userProfile, taskToEdit }: TaskCrea
       setNewTask({ ...newTask, client_id: data.id });
       toast({ title: "Client added!" });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error?.message || "Failed to add client", variant: "destructive" });
     }
   };
 

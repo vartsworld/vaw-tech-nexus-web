@@ -702,7 +702,7 @@ const ClientManagement = () => {
       setSelectedClientForSync(null);
       toast({ title: "Unlinked", description: "Client disconnected from billing software." });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Error", description: err?.message || "Failed to disconnect billing sync", variant: "destructive" });
     }
   };
 

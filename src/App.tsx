@@ -105,16 +105,21 @@ const ManifestSwitcher = () => {
   const location = useLocation();
 
   useEffect(() => {
-    const manifestLink = document.querySelector('link[rel="manifest"]');
+    let manifestLink = document.querySelector('link[rel="manifest"]');
+    if (!manifestLink) {
+      manifestLink = document.createElement('link');
+      manifestLink.setAttribute('rel', 'manifest');
+      document.head.appendChild(manifestLink);
+    }
     if (location.pathname.startsWith('/client')) {
-      manifestLink?.setAttribute('href', '/client-manifest.json');
+      manifestLink.setAttribute('href', '/client-manifest.json');
     } else if (
       location.pathname.startsWith('/staff') ||
       location.pathname.startsWith('/team-head')
     ) {
-      manifestLink?.setAttribute('href', '/staff-manifest.json');
+      manifestLink.setAttribute('href', '/staff-manifest.json');
     } else {
-      manifestLink?.setAttribute('href', '/manifest.json');
+      manifestLink.setAttribute('href', '/manifest.json');
     }
   }, [location.pathname]);
 

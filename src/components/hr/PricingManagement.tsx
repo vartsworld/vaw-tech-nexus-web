@@ -256,7 +256,7 @@ export default function PricingManagement() {
             setPkgDialogOpen(false);
             fetchAll();
         } catch (err: any) {
-            toast({ title: "Error", description: err.message, variant: "destructive" });
+            toast({ title: "Error", description: err?.message || "Failed to save package", variant: "destructive" });
         } finally {
             setSaving(false);
         }
@@ -264,7 +264,11 @@ export default function PricingManagement() {
 
     const deletePkg = async (id: string) => {
         if (!confirm("Delete this package?")) return;
-        await supabase.from("pricing_packages").delete().eq("id", id);
+        const { error } = await supabase.from("pricing_packages").delete().eq("id", id);
+        if (error) {
+            toast({ title: "Error", description: error.message || "Failed to delete package", variant: "destructive" });
+            return;
+        }
         fetchAll();
         toast({ title: "Package deleted" });
     };
@@ -324,7 +328,7 @@ export default function PricingManagement() {
             setAddonDialogOpen(false);
             fetchAll();
         } catch (err: any) {
-            toast({ title: "Error", description: err.message, variant: "destructive" });
+            toast({ title: "Error", description: err?.message || "Failed to save addon", variant: "destructive" });
         } finally {
             setSaving(false);
         }
@@ -332,7 +336,11 @@ export default function PricingManagement() {
 
     const deleteAddon = async (id: string) => {
         if (!confirm("Delete this addon?")) return;
-        await supabase.from("pricing_addons").delete().eq("id", id);
+        const { error } = await supabase.from("pricing_addons").delete().eq("id", id);
+        if (error) {
+            toast({ title: "Error", description: error.message || "Failed to delete addon", variant: "destructive" });
+            return;
+        }
         fetchAll();
         toast({ title: "Addon deleted" });
     };

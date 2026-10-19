@@ -17,7 +17,7 @@ const AdminHeader = () => {
         console.error("Logout error:", error);
         toast({
           title: "Logout failed",
-          description: error.message,
+          description: error?.message || "Failed to sign out",
           variant: "destructive",
         });
         return;

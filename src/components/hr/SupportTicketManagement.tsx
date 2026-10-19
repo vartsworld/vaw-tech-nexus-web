@@ -120,7 +120,7 @@ const SupportTicketManagement = () => {
       setSelectedTicket(null);
       fetchTickets();
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err?.message || "Failed to send response to client");
     } finally {
       setIsResponding(false);
     }
@@ -169,7 +169,7 @@ const SupportTicketManagement = () => {
       setReassignDept("");
       fetchTickets();
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err?.message || "Failed to reassign ticket");
     }
   };
 

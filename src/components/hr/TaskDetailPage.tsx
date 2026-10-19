@@ -340,7 +340,7 @@ const TaskDetailPage = ({
       setIsCreateSubtaskDialogOpen(false);
       toast({ title: "Subtask created!" });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error?.message || "Failed to create subtask", variant: "destructive" });
     }
   };
 
@@ -491,7 +491,7 @@ const TaskDetailPage = ({
       setEditingSubtask(null);
       toast({ title: "Subtask updated!" });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error?.message || "Failed to update subtask", variant: "destructive" });
     } finally {
       setSavingSubtask(false);
     }
@@ -664,7 +664,7 @@ const TaskDetailPage = ({
       setSelectedTaskTemplateId("none");
       toast({ title: "Success", description: `${data?.length} subtasks added.` });
     } catch (error: any) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error?.message || "Failed to add subtasks", variant: "destructive" });
     }
   };
 

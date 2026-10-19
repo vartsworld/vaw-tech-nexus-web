@@ -131,7 +131,7 @@ const ManageProjects = () => {
             setProjects(projects.filter(p => p.id !== id));
             toast({ title: "Success", description: "Project deleted." });
         } catch (error: any) {
-            toast({ title: "Error", description: error.message, variant: "destructive" });
+            toast({ title: "Error", description: error?.message || "Failed to delete project", variant: "destructive" });
         }
     };
 
