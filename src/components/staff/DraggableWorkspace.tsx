@@ -282,37 +282,40 @@ const DraggableWorkspace = ({ userId, userProfile, onWidgetControlsChange }: Dra
                           : 'h-[350px] sm:h-[500px]'
                       }`}>
                         {/* Controls - always visible on mobile, hover on desktop */}
-                        {item.component !== 'TasksManager' && (
-                          <div className={`absolute top-2 right-2 flex gap-1 z-10 transition-opacity duration-200 ${
-                            isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                          }`}>
-                            <Button
-                              onClick={() => toggleWidgetVisibility(item.id)}
-                              className="p-1 h-6 w-6 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 hover:text-blue-300 border-blue-500/30"
-                              size="sm"
-                              title={item.isVisible ? 'Hide widget' : 'Show widget'}
-                            >
-                              {item.isVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                            </Button>
-                            {item.removable && (
+                        <div className={`absolute top-2 right-2 flex gap-1 z-10 transition-opacity duration-200 ${
+                          isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                        }`}>
+                          {item.component !== 'TasksManager' && (
+                            <>
                               <Button
-                                onClick={() => removeWidget(item.id)}
-                                className="p-1 h-6 w-6 bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 border-red-500/30"
+                                onClick={() => toggleWidgetVisibility(item.id)}
+                                className="p-1 h-6 w-6 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 hover:text-blue-300 border-blue-500/30"
                                 size="sm"
+                                title={item.isVisible ? 'Hide widget' : 'Show widget'}
                               >
-                                <X className="w-3 h-3" />
+                                {item.isVisible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                               </Button>
-                            )}
-                            {!isMobile && (
-                              <div
-                                {...provided.dragHandleProps}
-                                className="p-1 h-6 w-6 cursor-grab active:cursor-grabbing bg-white/10 hover:bg-white/20 rounded flex items-center justify-center"
-                              >
-                                <GripVertical className="w-3 h-3 text-white/60 hover:text-white/80" />
-                              </div>
-                            )}
-                          </div>
-                        )}
+                              {item.removable && (
+                                <Button
+                                  onClick={() => removeWidget(item.id)}
+                                  className="p-1 h-6 w-6 bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300 border-red-500/30"
+                                  size="sm"
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </>
+                          )}
+                          {!isMobile && (
+                            <div
+                              {...provided.dragHandleProps}
+                              className="p-1 h-6 w-6 cursor-grab active:cursor-grabbing bg-white/10 hover:bg-white/20 rounded flex items-center justify-center"
+                              title="Drag to reorder"
+                            >
+                              <GripVertical className="w-3 h-3 text-white/60 hover:text-white/80" />
+                            </div>
+                          )}
+                        </div>
 
                         {/* Drag handle for mobile - hidden since drag doesn't work well on touch */}
                         {isMobile && (

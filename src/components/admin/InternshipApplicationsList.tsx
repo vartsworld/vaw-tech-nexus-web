@@ -75,7 +75,7 @@ const InternshipApplicationsList = () => {
     try {
       const { error } = await supabase
         .from('internship_applications')
-        .update({ status: 'deleted' })
+        .delete()
         .eq('id', application.id);
 
       if (error) throw error;

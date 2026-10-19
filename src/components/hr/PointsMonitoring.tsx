@@ -60,7 +60,7 @@ const PointsMonitoring = () => {
         .from('staff_profiles')
         .select(`
           user_id, full_name, username, avatar_url, total_points, department_id,
-          departments(name)
+          departments!fk_staff_profiles_department(name)
         `)
         .order('total_points', { ascending: false });
 

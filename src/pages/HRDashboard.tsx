@@ -240,7 +240,7 @@ export default function HRDashboard() {
       icon: Sparkles,
       items: [
         { id: 'dashboard', name: 'Overview', icon: LayoutDashboard, path: '/hr?dashboard' },
-        { id: 'planner', name: 'Planner', icon: Calendar, path: '/hr?planner' },
+        { id: 'calendar', name: 'Calendar', icon: Calendar, path: '/hr?calendar' },
         { id: 'meeting', name: 'Meeting Room', icon: Users, path: '/hr?meeting' },
         { id: 'chat', name: 'Team Chat', icon: MessageCircle, path: '/hr?chat' },
         { id: 'emma', name: 'EMMA AI', icon: Sparkles, path: '/hr?emma' },
@@ -298,7 +298,9 @@ export default function HRDashboard() {
       case 'dashboard':
       case 'home':
         return <HROverviewCommandCenter onNavigate={handleRoomChange} />;
-      case 'planner': return <MonthlyPlanner userId={userProfile?.user_id || ''} userProfile={userProfile} />;
+      case 'calendar':
+      case 'planner':
+        return <MonthlyPlanner userId={userProfile?.user_id || userProfile?.id || ''} userProfile={userProfile} />;
       case 'meeting': return <MeetingRoom />;
       case 'chat':
       case 'inbox':
@@ -389,13 +391,12 @@ function HROverviewCommandCenter({ onNavigate }: HROverviewProps) {
   const { data: internAppsData } = useRealtimeQuery({
     queryKey: ['internship-applications-overview'],
     table: 'internship_applications',
-    filter: 'status=neq.deleted',
     select: 'id',
   });
 
   const { data: supportTicketsData } = useRealtimeQuery({
     queryKey: ['support-tickets-overview'],
-    table: 'support_tickets',
+    table: 'client_feedback',
     select: 'id, status',
   });
 

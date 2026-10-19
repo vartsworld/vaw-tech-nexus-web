@@ -94,6 +94,15 @@ const VirtualOfficeLayout = ({
     }
   };
   const [openSections, setOpenSections] = useState<string[]>(['Folders', 'Space']);
+
+  useEffect(() => {
+    if (customSidebarLinks && customSidebarLinks.length > 0) {
+      setOpenSections(prev => {
+        const customTitles = customSidebarLinks.map((s: any) => s.title);
+        return Array.from(new Set([...prev, ...customTitles]));
+      });
+    }
+  }, [customSidebarLinks]);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [showCompletedTasksDialog, setShowCompletedTasksDialog] = useState(false);
   const [celebrationTask, setCelebrationTask] = useState<any | null>(null);
@@ -440,7 +449,7 @@ const VirtualOfficeLayout = ({
       const targetDashboard = location.pathname.startsWith('/hr') ? '/hr' : (isTeamHead ? '/team-head' : '/staff');
 
       let suffix = '';
-      if (item.id === 'planner') {
+      if (item.id === 'planner' || item.id === 'calendar') {
         suffix = 'calendar';
       } else if (item.id === 'workspace') {
         suffix = 'dashboard';
@@ -502,16 +511,16 @@ const VirtualOfficeLayout = ({
       {currentRoom !== 'home' && (
         <aside
           className={cn(
-            "hidden lg:flex lg:flex-col border-r border-white/5 transition-all duration-300 ease-in-out relative z-30 group overflow-hidden bg-cover bg-center bg-no-repeat",
+            "hidden lg:flex lg:flex-col border-r border-white/5 transition-all duration-300 ease-in-out relative z-30 group overflow-hidden bg-cover bg-center bg-no-repeat h-full",
             isSidebarCollapsed ? "w-20" : "w-72"
           )}
           style={{ backgroundImage: "url('/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png')" }}
         >
           {/* Transparent masking color and blur overlay */}
           <div className="absolute inset-0 bg-black/85 backdrop-blur-2xl z-0 pointer-events-none" />
-          <div className="relative z-10 flex flex-col h-full w-full">
+          <div className="relative z-10 flex flex-col h-full w-full min-h-0">
           {/* Top Header Logo (VAW Technologies) */}
-          <div className={cn("p-6 flex items-center", isSidebarCollapsed ? "justify-center" : "justify-between border-b border-white/5")}>
+          <div className={cn("p-6 flex items-center shrink-0", isSidebarCollapsed ? "justify-center" : "justify-between border-b border-white/5")}>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 shadow-lg">
                 <img
@@ -538,7 +547,7 @@ const VirtualOfficeLayout = ({
             )}
           </div>
 
-          <ScrollArea className="flex-1 px-4">
+          <ScrollArea className="flex-1 min-h-0 px-4">
             <div className="space-y-6 py-4">
               {sidebarLinks.map((section) => (
                 <div key={section.title} className="space-y-2">
@@ -560,7 +569,7 @@ const VirtualOfficeLayout = ({
                     <div className="space-y-1">
                       {section.items.map((item) => {
                         const Icon = item.icon;
-                        const isActive = currentRoom === item.id || location.pathname === item.path;
+                        const isActive = currentRoom === item.id || location.pathname === item.path || ((item.id === 'calendar' || item.id === 'planner') && (currentRoom === 'calendar' || currentRoom === 'planner'));
 
                         return (
                           <Button

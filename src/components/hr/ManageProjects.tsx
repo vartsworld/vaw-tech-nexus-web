@@ -203,7 +203,7 @@ const ManageProjects = () => {
                                 New Project
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-[#0f0f0f] border-white/5 text-white max-w-md">
+                        <DialogContent className="bg-[#0f0f0f] border-white/5 text-white max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
                             <DialogHeader><DialogTitle>Initialize Strategy</DialogTitle></DialogHeader>
                             <div className="py-2">
                                 <SharedProjectForm
@@ -377,7 +377,7 @@ const ManageProjects = () => {
 
             {/* Edit Dialog */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="bg-[#0f0f0f] border-white/5 text-white max-w-md">
+                <DialogContent className="bg-[#0f0f0f] border-white/5 text-white max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
                     <DialogHeader><DialogTitle>Refine Unit Parameters</DialogTitle></DialogHeader>
                     <div className="py-2">
                         <SharedProjectForm

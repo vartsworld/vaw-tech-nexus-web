@@ -30,11 +30,21 @@ import {
   Check,
   X,
   Trash,
-  Link
+  Link,
+  MoreVertical
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import SharedProjectForm from "../projects/SharedProjectForm";
 import { syncClientToBilling, fetchClientFromBilling, searchClientsInBilling, generateSyncId, fetchInvoicesFromBilling } from "@/utils/syncUtils";
 
@@ -70,6 +80,33 @@ const ClientManagement = () => {
     notes: "",
     status: "active"
   });
+  const [newIsTech, setNewIsTech] = useState(false);
+  const [newIsMarketing, setNewIsMarketing] = useState(false);
+  const [editIsTech, setEditIsTech] = useState(false);
+  const [editIsMarketing, setEditIsMarketing] = useState(false);
+
+  const parseClientTypes = (notes: string | null | undefined) => {
+    if (!notes) return { isTech: false, isMarketing: false };
+    const lower = notes.toLowerCase();
+    const isTech = lower.includes('[tech') || lower.includes('client type: tech') || lower.includes('type: tech') || lower.includes('website') || lower.includes('tech client') || lower.includes('software');
+    const isMarketing = lower.includes('[marketing') || lower.includes('marketing') || lower.includes('social media');
+    return { isTech, isMarketing };
+  };
+
+  const buildNotesWithType = (rawNotes: string | null | undefined, isTech: boolean, isMarketing: boolean) => {
+    const cleanedNotes = (rawNotes || '')
+      .replace(/\[Client Type:.*?\]\s*/gi, '')
+      .replace(/\[Services:.*?\]\s*/gi, '')
+      .trim();
+
+    const types: string[] = [];
+    if (isTech) types.push('Tech');
+    if (isMarketing) types.push('Marketing');
+
+    if (types.length === 0) return cleanedNotes;
+    const tag = `[Client Type: ${types.join(', ')}]`;
+    return cleanedNotes ? `${tag} ${cleanedNotes}` : tag;
+  };
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -154,10 +191,13 @@ const ClientManagement = () => {
 
       console.log('Creating client with user:', user.id);
 
+      const finalNotes = buildNotesWithType(newClient.notes, newIsTech, newIsMarketing);
+
       const { data, error } = await supabase
         .from('clients')
         .insert({
           ...newClient,
+          notes: finalNotes,
           created_by: user.id
         })
         .select('id, company_name, contact_person, email, phone, address, status, notes, created_at, billing_sync_id')
@@ -195,6 +235,8 @@ const ClientManagement = () => {
         notes: "",
         status: "active"
       });
+      setNewIsTech(false);
+      setNewIsMarketing(false);
 
       toast({
         title: "Success",
@@ -510,6 +552,8 @@ const ClientManagement = () => {
 
   const handleEditClient = async () => {
     try {
+      const finalNotes = buildNotesWithType(editingClient.notes, editIsTech, editIsMarketing);
+
       const { error } = await supabase
         .from('clients')
         .update({
@@ -518,7 +562,7 @@ const ClientManagement = () => {
           email: editingClient.email,
           phone: editingClient.phone,
           address: editingClient.address,
-          notes: editingClient.notes,
+          notes: finalNotes,
           status: editingClient.status,
           updated_at: new Date().toISOString()
         })
@@ -578,6 +622,8 @@ const ClientManagement = () => {
       setIsEditDialogOpen(false);
       setEditingClient(null);
       setOriginalClientEmail("");
+      setEditIsTech(false);
+      setEditIsMarketing(false);
     } catch (error) {
       console.error('Error updating client:', error);
       toast({
@@ -803,7 +849,7 @@ const ClientManagement = () => {
               Add Client
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
             <DialogHeader>
               <DialogTitle>Add New Client</DialogTitle>
             </DialogHeader>
@@ -817,6 +863,33 @@ const ClientManagement = () => {
                   placeholder="Enter company name"
                 />
               </div>
+
+              {/* Client Classification (Marketing / Tech / Both) */}
+              <div className="space-y-2 border border-border/70 rounded-xl p-3 bg-muted/30">
+                <Label className="text-xs font-semibold text-foreground uppercase tracking-wider block">
+                  Client Classification
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Tick one or both service types (clients can engage for both marketing and tech/website):
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                    <Checkbox
+                      checked={newIsTech}
+                      onCheckedChange={(checked) => setNewIsTech(!!checked)}
+                    />
+                    <span>Tech / Website Client</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                    <Checkbox
+                      checked={newIsMarketing}
+                      onCheckedChange={(checked) => setNewIsMarketing(!!checked)}
+                    />
+                    <span>Marketing Client</span>
+                  </label>
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="contact_person">Contact Person</Label>
                 <Input
@@ -949,7 +1022,19 @@ const ClientManagement = () => {
                 filteredClients.map((client) => (
                 <TableRow key={client.id}>
                   <TableCell>
-                    <div className="font-medium">{client.company_name}</div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium">{client.company_name}</span>
+                      {parseClientTypes(client.notes).isTech && (
+                        <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/30 text-[10px] px-1.5 py-0 font-medium">
+                          Tech
+                        </Badge>
+                      )}
+                      {parseClientTypes(client.notes).isMarketing && (
+                        <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/30 text-[10px] px-1.5 py-0 font-medium">
+                          Marketing
+                        </Badge>
+                      )}
+                    </div>
                     {client.address && (
                       <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                         <MapPin className="h-3 w-3" />
@@ -978,86 +1063,97 @@ const ClientManagement = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={async () => {
-                          setSelectedClientForSync(client);
-                          setSyncCode(client.billing_sync_id || "");
-                          setLinkedBillingClient(null);
-                          setIsSyncDialogOpen(true);
-                          if (client.billing_sync_id) {
-                            setIsLoadingLinkedClient(true);
-                            try {
-                              const billingData = await fetchClientFromBilling(client.billing_sync_id);
-                              setLinkedBillingClient(billingData || null);
-                            } catch (e) {
-                              console.warn('Could not fetch linked billing client:', e);
-                            } finally {
-                              setIsLoadingLinkedClient(false);
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52 bg-popover/95 backdrop-blur-md border-border/50 shadow-xl">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedClientForProjects(client);
+                            fetchClientProjects(client.id);
+                            setIsProjectDialogOpen(true);
+                          }}
+                          className="cursor-pointer flex items-center gap-2"
+                        >
+                          <Folder className="h-4 w-4 text-indigo-500" />
+                          <span>Manage Projects</span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEditingClient(client);
+                            setOriginalClientEmail(client.email || "");
+                            const types = parseClientTypes(client.notes);
+                            setEditIsTech(types.isTech);
+                            setEditIsMarketing(types.isMarketing);
+                            setIsEditDialogOpen(true);
+                          }}
+                          className="cursor-pointer flex items-center gap-2"
+                        >
+                          <Edit className="h-4 w-4 text-blue-500" />
+                          <span>Edit Client</span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            setSelectedClientForSync(client);
+                            setSyncCode(client.billing_sync_id || "");
+                            setLinkedBillingClient(null);
+                            setIsSyncDialogOpen(true);
+                            if (client.billing_sync_id) {
+                              setIsLoadingLinkedClient(true);
+                              try {
+                                const billingData = await fetchClientFromBilling(client.billing_sync_id);
+                                setLinkedBillingClient(billingData || null);
+                              } catch (e) {
+                                console.warn('Could not fetch linked billing client:', e);
+                              } finally {
+                                setIsLoadingLinkedClient(false);
+                              }
                             }
-                          }
-                        }}
-                        className={client.billing_sync_id ? "text-green-600" : "text-amber-600"}
-                        title={client.billing_sync_id ? `Synced: ${client.billing_sync_id}` : "Sync with Billing"}
-                      >
-                        <RefreshCw className={`h-4 w-4 ${client.billing_sync_id ? "" : "animate-pulse"}`} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          if (!client.email) {
-                            toast({
-                              title: "Missing Email",
-                              description: "Please update the client email before creating a password.",
-                              variant: "destructive"
-                            });
-                            return;
-                          }
-                          setSelectedClientForPassword(client);
-                          setPassword("");
-                          setConfirmPassword("");
-                          setIsPasswordDialogOpen(true);
-                        }}
-                        className="text-blue-600"
-                        title={client.user_id ? "Change Password" : "Create Login"}
-                      >
-                        <Lock className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedClientForProjects(client);
-                          fetchClientProjects(client.id);
-                          setIsProjectDialogOpen(true);
-                        }}
-                        className="text-indigo-600"
-                        title="Manage Projects"
-                      >
-                        <Folder className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEditingClient(client);
-                          setOriginalClientEmail(client.email || "");
-                          setIsEditDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteClient(client.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                          }}
+                          className="cursor-pointer flex items-center gap-2"
+                        >
+                          <RefreshCw className={cn("h-4 w-4", client.billing_sync_id ? "text-green-500" : "text-amber-500")} />
+                          <span>{client.billing_sync_id ? "Billing Synced" : "Sync Billing"}</span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={() => {
+                            if (!client.email) {
+                              toast({
+                                title: "Missing Email",
+                                description: "Please update the client email before creating a password.",
+                                variant: "destructive"
+                              });
+                              return;
+                            }
+                            setSelectedClientForPassword(client);
+                            setPassword("");
+                            setConfirmPassword("");
+                            setIsPasswordDialogOpen(true);
+                          }}
+                          className="cursor-pointer flex items-center gap-2"
+                        >
+                          <Lock className="h-4 w-4 text-amber-500" />
+                          <span>{client.user_id ? "Change Password" : "Create Login"}</span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteClient(client.id)}
+                          className="cursor-pointer flex items-center gap-2 text-rose-500 focus:text-rose-500 focus:bg-rose-500/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span>Delete Client</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -1070,7 +1166,7 @@ const ClientManagement = () => {
       {/* Edit Client Dialog */}
       {editingClient && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto custom-scrollbar">
             <DialogHeader>
               <DialogTitle>Edit Client</DialogTitle>
             </DialogHeader>
@@ -1084,6 +1180,33 @@ const ClientManagement = () => {
                   placeholder="Enter company name"
                 />
               </div>
+
+              {/* Client Classification (Marketing / Tech / Both) */}
+              <div className="space-y-2 border border-border/70 rounded-xl p-3 bg-muted/30">
+                <Label className="text-xs font-semibold text-foreground uppercase tracking-wider block">
+                  Client Classification
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Tick one or both service domains (clients can engage for both marketing and tech/website):
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                    <Checkbox
+                      checked={editIsTech}
+                      onCheckedChange={(checked) => setEditIsTech(!!checked)}
+                    />
+                    <span>Tech / Website Client</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                    <Checkbox
+                      checked={editIsMarketing}
+                      onCheckedChange={(checked) => setEditIsMarketing(!!checked)}
+                    />
+                    <span>Marketing Client</span>
+                  </label>
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="edit_contact_person">Contact Person</Label>
                 <Input
@@ -1147,6 +1270,8 @@ const ClientManagement = () => {
                 <Button variant="outline" onClick={() => {
                   setIsEditDialogOpen(false);
                   setEditingClient(null);
+                  setEditIsTech(false);
+                  setEditIsMarketing(false);
                 }}>
                   Cancel
                 </Button>

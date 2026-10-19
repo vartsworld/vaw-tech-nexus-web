@@ -134,30 +134,48 @@ const RewardsManagement = () => {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this reward?")) return;
 
-    const { error } = await supabase
-      .from("rewards_catalog")
-      .delete()
-      .eq("id", id);
+    try {
+      // First check if any staff member has redeemed this reward
+      const { count, error: countError } = await supabase
+        .from("points_redemptions")
+        .select("id", { count: "exact", head: true })
+        .eq("reward_id", id);
 
-    if (error) {
-      console.warn("Delete error, trying soft-delete (inactive):", error);
-      // If foreign key constraint or RLS blocks deletion, deactivate instead
-      const { error: updateError } = await supabase
-        .from("rewards_catalog")
-        .update({ is_active: false })
-        .eq("id", id);
+      if (!countError && count && count > 0) {
+        // Redemptions exist: deactivate directly to avoid HTTP 409 Foreign Key conflict
+        const { error: deactivateError } = await supabase
+          .from("rewards_catalog")
+          .update({ is_active: false })
+          .eq("id", id);
 
-      if (updateError) {
-        toast.error("Failed to delete reward");
+        if (deactivateError) throw deactivateError;
+        toast.success("Reward deactivated (preserved for past redemption history)");
+        fetchRewards();
         return;
       }
-      toast.success("Reward deactivated (has existing redemptions)");
-      fetchRewards();
-      return;
-    }
 
-    toast.success("Reward deleted");
-    fetchRewards();
+      // No redemptions: safely delete
+      const { error } = await supabase
+        .from("rewards_catalog")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        // Fallback to deactivation if delete fails
+        await supabase
+          .from("rewards_catalog")
+          .update({ is_active: false })
+          .eq("id", id);
+        toast.success("Reward deactivated");
+      } else {
+        toast.success("Reward deleted");
+      }
+
+      fetchRewards();
+    } catch (err: any) {
+      console.error("Error deleting reward:", err);
+      toast.error(err.message || "Failed to delete reward");
+    }
   };
 
   const handleEdit = (reward: Reward) => {

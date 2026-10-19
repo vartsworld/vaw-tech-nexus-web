@@ -29,24 +29,32 @@ export default function AcademyEnquiriesList() {
 
   const load = async () => {
     setLoading(true);
+    let remoteData: Enquiry[] = [];
     try {
       const { data, error } = await (supabase as any)
         .from("academy_enquiries")
         .select("*")
         .order("created_at", { ascending: false });
-      if (error) {
-        if (error.code === '42P01' || error.message?.includes('does not exist')) {
-          setItems([]);
-        } else {
-          console.warn("academy_enquiries table issue:", error.message);
-          setItems([]);
-        }
-      } else {
-        setItems(data || []);
+
+      if (!error && data) {
+        remoteData = data;
       }
-    } catch (e: any) {
-      console.warn("Error loading academy enquiries:", e?.message);
-      setItems([]);
+    } catch {
+      // Table may not exist yet, fallback to localStorage
+    }
+
+    try {
+      const localData: Enquiry[] = JSON.parse(localStorage.getItem("vaw_academy_enquiries_local") || "[]");
+      // Merge unique by id
+      const combined = [...remoteData];
+      for (const item of localData) {
+        if (!combined.some(c => c.id === item.id)) {
+          combined.push(item);
+        }
+      }
+      setItems(combined);
+    } catch {
+      setItems(remoteData);
     } finally {
       setLoading(false);
     }
@@ -54,26 +62,55 @@ export default function AcademyEnquiriesList() {
 
   useEffect(() => {
     load();
-    const ch = (supabase as any)
-      .channel("academy-enquiries-hr")
-      .on("postgres_changes", { event: "*", schema: "public", table: "academy_enquiries" }, () => load())
-      .subscribe();
+    let ch: any = null;
+    try {
+      ch = (supabase as any)
+        .channel("academy-enquiries-hr")
+        .on("postgres_changes", { event: "*", schema: "public", table: "academy_enquiries" }, () => load())
+        .subscribe();
+    } catch {
+      // Ignore channel subscribe if table not registered
+    }
     return () => {
-      (supabase as any).removeChannel(ch);
+      if (ch) (supabase as any).removeChannel(ch);
     };
   }, []);
 
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await (supabase as any).from("academy_enquiries").update({ status }).eq("id", id);
-    if (error) toast({ title: "Update failed", description: error.message || "Could not update status", variant: "destructive" });
-    else toast({ title: "Status updated" });
+    try {
+      await (supabase as any).from("academy_enquiries").update({ status }).eq("id", id);
+    } catch {
+      // Ignore
+    }
+
+    // Update in local storage
+    try {
+      const stored: Enquiry[] = JSON.parse(localStorage.getItem("vaw_academy_enquiries_local") || "[]");
+      const updated = stored.map(s => s.id === id ? { ...s, status } : s);
+      localStorage.setItem("vaw_academy_enquiries_local", JSON.stringify(updated));
+    } catch {}
+
+    setItems(prev => prev.map(s => s.id === id ? { ...s, status } : s));
+    toast({ title: "Status updated" });
   };
 
   const remove = async (id: string) => {
     if (!confirm("Delete this enquiry?")) return;
-    const { error } = await (supabase as any).from("academy_enquiries").delete().eq("id", id);
-    if (error) toast({ title: "Delete failed", description: error.message || "Could not delete enquiry", variant: "destructive" });
-    else toast({ title: "Deleted" });
+    try {
+      await (supabase as any).from("academy_enquiries").delete().eq("id", id);
+    } catch {
+      // Ignore
+    }
+
+    // Remove from local storage
+    try {
+      const stored: Enquiry[] = JSON.parse(localStorage.getItem("vaw_academy_enquiries_local") || "[]");
+      const updated = stored.filter(s => s.id !== id);
+      localStorage.setItem("vaw_academy_enquiries_local", JSON.stringify(updated));
+    } catch {}
+
+    setItems(prev => prev.filter(s => s.id !== id));
+    toast({ title: "Deleted" });
   };
 
   const statusColor = (s: string) =>

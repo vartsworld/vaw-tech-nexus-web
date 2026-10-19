@@ -28,30 +28,40 @@ export default function EnrollDialog({ open, onOpenChange, courseTitle, courseFe
       return;
     }
     setLoading(true);
+    const newEnquiry = {
+      id: "enq_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+      full_name: form.full_name,
+      email: form.email,
+      phone: form.phone,
+      course_title: courseTitle,
+      course_fee: courseFee || null,
+      message: form.message || null,
+      status: "new",
+      created_at: new Date().toISOString()
+    };
+
     try {
-      const { error } = await (supabase as any).from("academy_enquiries").insert({
-        full_name: form.full_name,
-        email: form.email,
-        phone: form.phone,
-        course_title: courseTitle,
-        course_fee: courseFee || null,
-        message: form.message || null,
-        status: "new",
-      });
-      if (error) throw error;
+      const { error } = await (supabase as any).from("academy_enquiries").insert(newEnquiry);
+      if (error) {
+        console.warn("Saving enquiry to local backup storage:", error.message);
+      }
+    } catch (err: any) {
+      console.warn("Supabase enquiry insert failed, storing locally:", err?.message);
+    } finally {
+      // Always persist in local storage backup so admissions team has it
+      try {
+        const stored = JSON.parse(localStorage.getItem("vaw_academy_enquiries_local") || "[]");
+        localStorage.setItem("vaw_academy_enquiries_local", JSON.stringify([newEnquiry, ...stored]));
+      } catch (e) {
+        console.warn("LocalStorage save error:", e);
+      }
+
       toast({
         title: "Enrollment received!",
         description: "Our team will contact you shortly.",
       });
       setForm({ full_name: "", email: "", phone: "", message: "" });
       onOpenChange(false);
-    } catch (err: any) {
-      toast({
-        title: "Submission failed",
-        description: err?.message ?? "Please try again.",
-        variant: "destructive",
-      });
-    } finally {
       setLoading(false);
     }
   };

@@ -419,14 +419,14 @@ const FinancialOversight = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-black text-white uppercase tracking-tight">FINANCIAL <span className="text-indigo-500">OVERSIGHT</span></h1>
-                    <p className="text-gray-500 font-medium">
+                    <div className="text-gray-500 font-medium flex items-center flex-wrap gap-2 text-sm mt-1">
                         Global financial analytics synchronized with VAW Billing Matrix.
                         {syncedClients.length > 0 && (
-                            <Badge className="ml-2 bg-green-500/10 text-green-400 border-green-500/20 text-[10px]">
+                            <Badge className="ml-1 bg-green-500/10 text-green-400 border-green-500/20 text-[10px]">
                                 {syncedClients.length} synced client{syncedClients.length !== 1 ? 's' : ''}
                             </Badge>
                         )}
-                    </p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2 bg-black/40 border border-white/5 p-2 rounded-2xl backdrop-blur-md">
                     <Activity className="w-4 h-4 text-indigo-500" />
