@@ -11,7 +11,7 @@ interface RequestSentProps {
 
 const RequestSent = ({ result, onStartOver }: RequestSentProps) => (
   <div className="mx-auto max-w-3xl space-y-6" role="status">
-    <div className="rounded-xl border border-border bg-card p-8 text-center">
+    <div className="rounded-2xl border border-white/10 bg-[#111116] p-8 text-center text-white">
       <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
       <h2 className="mt-4 text-2xl font-bold text-foreground">Request received, thank you {result.name.split(" ")[0]}</h2>
       <p className="mt-2 text-sm text-muted-foreground">
@@ -36,7 +36,9 @@ const RequestSent = ({ result, onStartOver }: RequestSentProps) => (
       </div>
     </div>
 
-    <CartSummaryPanel summary={result.summary} />
+    <div className="rounded-2xl border border-white/10 bg-[#111116] p-5">
+      <CartSummaryPanel summary={result.summary} />
+    </div>
 
     <div className="text-center">
       <Button type="button" variant="ghost" onClick={onStartOver}>

@@ -52,6 +52,7 @@ export const usePricingData = (): PricingData => {
             popular: !!pkg.is_popular,
             features: Array.isArray(pkg.features) ? pkg.features : [],
             category: inferCategory(pkg.name, description),
+            iconName: pkg.icon_name ?? undefined,
           };
         })
       );

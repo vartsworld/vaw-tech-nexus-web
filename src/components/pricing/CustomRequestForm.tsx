@@ -162,7 +162,7 @@ const CustomRequestForm = ({ summary }: CustomRequestFormProps) => {
                 <SelectTrigger id="cr-type" aria-invalid={invalid("requestType")} aria-describedby={errors.requestType ? "cr-type-error" : undefined}>
                   <SelectValue placeholder="Choose a category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark">
                   {REQUEST_TYPES.map((o) => (
                     <SelectItem key={o.value} value={o.value}>
                       {o.label}
@@ -183,7 +183,7 @@ const CustomRequestForm = ({ summary }: CustomRequestFormProps) => {
                 <SelectTrigger id="cr-budget" aria-invalid={invalid("budget")} aria-describedby={errors.budget ? "cr-budget-error" : undefined}>
                   <SelectValue placeholder="Choose a range" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark">
                   {BUDGET_OPTIONS.map((o) => (
                     <SelectItem key={o.value} value={o.value}>
                       {o.label}
@@ -204,7 +204,7 @@ const CustomRequestForm = ({ summary }: CustomRequestFormProps) => {
                 <SelectTrigger id="cr-timeline" aria-invalid={invalid("timeline")} aria-describedby={errors.timeline ? "cr-timeline-error" : undefined}>
                   <SelectValue placeholder="Choose a timeline" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark">
                   {TIMELINE_OPTIONS.map((o) => (
                     <SelectItem key={o.value} value={o.value}>
                       {o.label}

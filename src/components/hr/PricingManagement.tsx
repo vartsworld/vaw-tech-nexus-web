@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
+import CouponStats from "@/components/hr/CouponStats";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     Plus, Edit, Trash2, Star, Tag, Globe, Zap, Shield, TrendingUp, Bot,
     Loader2, Eye, EyeOff, GripVertical, ChevronUp, ChevronDown, Package,
@@ -27,6 +29,9 @@ export interface PromotionalOffer {
     end_date: string;
     button_text: string;
     highlights: string[];
+    discount_type?: "percent" | "flat" | "none";
+    discount_value?: number;
+    applies_to?: "all" | "package";
 }
 
 export const defaultOffer: PromotionalOffer = {
@@ -43,7 +48,10 @@ export const defaultOffer: PromotionalOffer = {
         "Free Custom Domain (.com / .in)",
         "SSL Security & Malware Protection",
         "Dedicated Tech Lead & Priority Support"
-    ]
+    ],
+    discount_type: "percent",
+    discount_value: 35,
+    applies_to: "all",
 };
 
 interface PricingPackage {
@@ -188,10 +196,31 @@ export default function PricingManagement() {
     };
 
     const saveOffer = async () => {
-        setSavingOffer(true);
         const highlights = highlightsText.split("\n").map(h => h.trim()).filter(Boolean);
+        const type = promotionalOffer.discount_type ?? "none";
+        const value = Number(promotionalOffer.discount_value ?? 0);
+        const code = (promotionalOffer.coupon_code || "").trim().toUpperCase().replace(/\s+/g, "");
+
+        if (promotionalOffer.is_enabled && !promotionalOffer.title.trim()) {
+            return toast({ title: "Headline required", description: "Add a headline before publishing the offer.", variant: "destructive" });
+        }
+        if (type !== "none" && !code) {
+            return toast({ title: "Coupon code required", description: "A discount needs a code customers can enter.", variant: "destructive" });
+        }
+        if (type !== "none" && !(value > 0)) {
+            return toast({ title: "Enter a discount value", description: "Set how much the coupon takes off.", variant: "destructive" });
+        }
+        if (type === "percent" && value > 100) {
+            return toast({ title: "Percentage too high", description: "A percentage discount can't be more than 100%.", variant: "destructive" });
+        }
+
+        setSavingOffer(true);
         const updatedOffer: PromotionalOffer = {
             ...promotionalOffer,
+            coupon_code: code,
+            discount_type: type,
+            discount_value: type === "none" ? 0 : value,
+            applies_to: promotionalOffer.applies_to ?? "all",
             highlights,
         };
         try {
@@ -200,22 +229,23 @@ export default function PricingManagement() {
                 value: updatedOffer as any,
                 updated_at: new Date().toISOString()
             }, { onConflict: "key" });
+            if (error) throw error;
 
             localStorage.setItem("pricing_promotional_offer", JSON.stringify(updatedOffer));
             setPromotionalOffer(updatedOffer);
-            if (error) {
-                console.warn("Could not write to app_settings, saved locally:", error);
-            }
             toast({
-                title: "Promotional Offer Saved",
+                title: "Promotional offer saved",
                 description: updatedOffer.is_enabled
-                    ? "Active offer is now live on the public pricing page!"
-                    : "Promotional offer has been disabled on the public pricing page.",
+                    ? "The offer and coupon are now live on the public pricing page."
+                    : "The offer is saved but hidden from the public pricing page.",
             });
-        } catch (err: any) {
-            localStorage.setItem("pricing_promotional_offer", JSON.stringify(updatedOffer));
-            setPromotionalOffer(updatedOffer);
-            toast({ title: "Offer Saved Locally", description: "Saved to browser cache." });
+        } catch (err) {
+            console.error("Could not save the offer:", err);
+            toast({
+                title: "Offer not saved",
+                description: "The change could not be written to the database, so visitors won't see it. Check your connection and permissions, then try again.",
+                variant: "destructive",
+            });
         } finally {
             setSavingOffer(false);
         }
@@ -585,6 +615,8 @@ export default function PricingManagement() {
                             </div>
                         </div>
 
+                        <CouponStats code={(promotionalOffer.coupon_code || "").trim()} enabled={promotionalOffer.is_enabled} />
+
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                             {/* Form Controls */}
                             <div className="lg:col-span-7 space-y-4">
@@ -666,6 +698,76 @@ export default function PricingManagement() {
                                                     className="bg-white/5 border-white/10 text-white text-xs"
                                                 />
                                             </div>
+                                        </div>
+
+                                        <div className="space-y-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                                            <div>
+                                                <p className="text-xs font-semibold text-amber-300">What does the coupon do?</p>
+                                                <p className="text-[11px] text-gray-400">Visitors enter the code in their plan on /pricing. The discount is applied before 18% GST and recorded with their request.</p>
+                                            </div>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs text-gray-300">Discount type</Label>
+                                                    <Select
+                                                        value={promotionalOffer.discount_type ?? "none"}
+                                                        onValueChange={(v) => setPromotionalOffer({ ...promotionalOffer, discount_type: v as PromotionalOffer["discount_type"] })}
+                                                    >
+                                                        <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs"><SelectValue /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="percent">Percentage off</SelectItem>
+                                                            <SelectItem value="flat">Flat amount off (₹)</SelectItem>
+                                                            <SelectItem value="none">No discount (record only)</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs text-gray-300">
+                                                        {promotionalOffer.discount_type === "flat" ? "Amount off (₹)" : "Percent off (%)"}
+                                                    </Label>
+                                                    <Input
+                                                        type="number"
+                                                        min={0}
+                                                        max={promotionalOffer.discount_type === "percent" ? 100 : undefined}
+                                                        inputMode="decimal"
+                                                        disabled={(promotionalOffer.discount_type ?? "none") === "none"}
+                                                        value={promotionalOffer.discount_value ?? ""}
+                                                        onChange={(e) => setPromotionalOffer({ ...promotionalOffer, discount_value: e.target.value === "" ? undefined : Number(e.target.value) })}
+                                                        placeholder={promotionalOffer.discount_type === "flat" ? "e.g. 5000" : "e.g. 35"}
+                                                        className="bg-white/5 border-white/10 text-white text-xs"
+                                                    />
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    <Label className="text-xs text-gray-300">Applies to</Label>
+                                                    <Select
+                                                        value={promotionalOffer.applies_to ?? "all"}
+                                                        onValueChange={(v) => setPromotionalOffer({ ...promotionalOffer, applies_to: v as PromotionalOffer["applies_to"] })}
+                                                        disabled={(promotionalOffer.discount_type ?? "none") === "none"}
+                                                    >
+                                                        <SelectTrigger className="bg-white/5 border-white/10 text-white text-xs"><SelectValue /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="all">Package + add-ons</SelectItem>
+                                                            <SelectItem value="package">Package only</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                            {(promotionalOffer.discount_type ?? "none") === "none" || !(Number(promotionalOffer.discount_value) > 0) ? (
+                                                <p className="text-[11px] text-amber-300">
+                                                    No discount value is set, so the code is only recorded on requests and customers see no price reduction.
+                                                    {(() => {
+                                                        const m = (promotionalOffer.title || "").match(/(\d{1,2})\s*%/);
+                                                        return m ? (
+                                                            <button
+                                                                type="button"
+                                                                className="ml-1 underline underline-offset-2 hover:text-white"
+                                                                onClick={() => setPromotionalOffer({ ...promotionalOffer, discount_type: "percent", discount_value: Number(m[1]) })}
+                                                            >
+                                                                Use {m[1]}% from the headline
+                                                            </button>
+                                                        ) : null;
+                                                    })()}
+                                                </p>
+                                            ) : null}
                                         </div>
 
                                         <div className="space-y-1.5">
