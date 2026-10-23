@@ -53,7 +53,7 @@ const ClientLogos = () => {
     return (
       <section className="relative overflow-hidden my-0 px-0 py-0">
         <div className="container mx-auto px-4 pt-6 mt-0 pb-4 transition-all duration-300 smooth-scroll py-0">
-          <h2 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk'] text-center mb-12 animate-pulse-gentle">
+          <h2 className="text-3xl md:text-4xl font-bold font-display text-center mb-12 animate-pulse-gentle">
             <span className="bg-gradient-to-r from-tech-blue via-[#33C3F0] to-[#0FA0CE] bg-clip-text text-transparent animate-gradient-x py-0 my-0">
               Trusted & Partnered with Industry Leaders
             </span>
@@ -70,7 +70,7 @@ const ClientLogos = () => {
     return (
       <section className="relative overflow-hidden my-0 px-0 py-0">
         <div className="container mx-auto px-4 pt-6 mt-0 pb-4 transition-all duration-300 smooth-scroll py-0">
-          <h2 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk'] text-center mb-12 animate-pulse-gentle">
+          <h2 className="text-3xl md:text-4xl font-bold font-display text-center mb-12 animate-pulse-gentle">
             <span className="bg-gradient-to-r from-tech-blue via-[#33C3F0] to-[#0FA0CE] bg-clip-text text-transparent animate-gradient-x py-0 my-0">
               Trusted & Partnered with Industry Leaders
             </span>
@@ -86,7 +86,7 @@ const ClientLogos = () => {
   return (
     <section className="relative overflow-hidden my-0 px-0 py-0">
       <div className="container mx-auto px-4 pt-6 mt-0 pb-4 transition-all duration-300 smooth-scroll py-0">
-        <h2 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk'] text-center mb-12 animate-pulse-gentle">
+        <h2 className="text-3xl md:text-4xl font-bold font-display text-center mb-12 animate-pulse-gentle">
           <span className="bg-gradient-to-r from-tech-blue via-[#33C3F0] to-[#0FA0CE] bg-clip-text text-transparent animate-gradient-x py-0 my-0">
             Trusted & Partnered with Industry Leaders
           </span>

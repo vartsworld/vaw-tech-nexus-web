@@ -30,7 +30,9 @@ import {
   Search,
   X,
   ExternalLink,
-  ChevronDown
+  ChevronDown,
+  Compass,
+  Globe
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

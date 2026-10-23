@@ -559,7 +559,7 @@ const DepartmentManagement = () => {
                             )}
                             <span className="font-medium truncate">{member.full_name}</span>
                             {member.id === dept.head_id || member.is_department_head ? (
-                              <Crown className="w-3 h-3 text-yellow-500 flex-shrink-0" title="Department Head" />
+                              <span title="Department Head" className="flex-shrink-0"><Crown className="w-3 h-3 text-yellow-500" /></span>
                             ) : null}
                           </div>
                           <span className="text-[10px] text-muted-foreground capitalize bg-background px-1.5 py-0.5 rounded border">

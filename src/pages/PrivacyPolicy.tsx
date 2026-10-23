@@ -1,6 +1,5 @@
 import SEO from "@/components/SEO";
 import Navbar from "@/components/Navbar";
-import MobileHeader from "@/components/MobileHeader";
 import Footer from "@/components/Footer";
 import { Link } from "react-router-dom";
 
@@ -13,10 +12,9 @@ const PrivacyPolicy = () => {
         ogImage="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png"
       />
       <Navbar />
-      <MobileHeader />
 
-      <main className="container mx-auto px-4 pt-28 pb-16 max-w-4xl">
-        <h1 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk'] mb-8">
+      <main className="container mx-auto px-4 pt-32 md:pt-36 pb-16 max-w-4xl">
+        <h1 className="text-3xl md:text-4xl font-bold font-display mb-8">
           Privacy <span className="text-accent">Policy</span>
         </h1>
         <p className="text-muted-foreground mb-6">Last updated: March 11, 2026</p>

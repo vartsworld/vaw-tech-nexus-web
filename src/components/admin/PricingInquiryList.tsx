@@ -34,6 +34,7 @@ interface PricingInquiry {
   timeline?: string;
   budget: string;
   package: string;
+  message?: string;
   status: string;
   createdAt: string;
 }
@@ -65,19 +66,20 @@ const PricingInquiryList = () => {
         
         // Filter for pricing inquiries and transform data
         const pricingInquiries = data?.filter(item => 
-          item.service && (item.service.includes("₹") || item.service.includes("Package"))
+          item.service && (item.service.includes("₹") || item.service.includes("Package") || item.service.startsWith("Custom Request"))
         ).map(item => ({
           id: item.id,
           name: item.name,
           email: item.email,
           phone: item.phone || "",
           company: extractFromMessage(item.message, "Company:"),
-          preferredDomain: extractFromMessage(item.message, "Preferred Domain:"),
-          websiteType: extractFromMessage(item.message, "Website Type:"),
+          preferredDomain: extractFromMessage(item.message, "Preferred Domain:").replace(/^-$/, ""),
+          websiteType: extractFromMessage(item.message, "Website Type:") || extractFromMessage(item.message, "Request type:"),
           requirements: extractFromMessage(item.message, "Requirements:"),
           timeline: extractFromMessage(item.message, "Timeline:"),
           budget: item.service,
           package: item.service?.split(" - ")[0] || "",
+          message: item.message || "",
           status: item.status,
           createdAt: item.created_at
         })) || [];
@@ -287,6 +289,13 @@ const PricingInquiryList = () => {
                   </p>
                 </div>
                 
+                {inquiry.message?.startsWith("Reference:") && (
+                  <details className="rounded border bg-muted/20 p-3 text-sm">
+                    <summary className="cursor-pointer font-medium">Full request &amp; selected items</summary>
+                    <pre className="mt-2 whitespace-pre-wrap font-sans text-sm">{inquiry.message}</pre>
+                  </details>
+                )}
+
                 <div className="text-xs text-muted-foreground">
                   Received on {format(new Date(inquiry.createdAt), "PPP 'at' p")}
                 </div>

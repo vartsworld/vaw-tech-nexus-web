@@ -27,6 +27,19 @@ const MobileHeader = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Close on Escape and lock page scroll while the drawer is open
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setIsMenuOpen(false);
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [isMenuOpen]);
+
   return (
     <div className="md:hidden">
       {/* Mobile Header Bar */}
@@ -35,7 +48,7 @@ const MobileHeader = () => {
       }`}>
         <div className="flex items-center justify-between px-4 py-4">
           {/* Menu Button - Left */}
-          <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="h-10 w-10" aria-label="Toggle menu" title="Toggle menu">
+          <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(!isMenuOpen)} className="h-10 w-10" aria-label="Toggle menu" aria-expanded={isMenuOpen} title="Toggle menu">
             {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </Button>
 
@@ -59,7 +72,7 @@ const MobileHeader = () => {
       {isMenuOpen && <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />}
 
       {/* Mobile Menu Drawer */}
-      <div className={`fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-background/98 backdrop-blur-md border-r border-border z-50 transform transition-transform duration-300 ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-background border-r border-border z-50 transform transition-transform duration-300 ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">

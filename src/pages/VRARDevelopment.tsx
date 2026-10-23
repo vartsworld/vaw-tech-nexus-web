@@ -63,7 +63,7 @@ const VRARDevelopment = () => {
               <span className="text-tech-purple font-medium">VR/AR Development</span>
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 font-['Space_Grotesk'] animate-slide-in" style={{ animationDelay: '0.2s' }}>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 font-display animate-slide-in" style={{ animationDelay: '0.2s' }}>
               Creating <span className="text-gradient bg-gradient-to-r from-tech-purple to-tech-cyan bg-clip-text text-transparent">Immersive</span> Experiences
             </h1>
 
@@ -115,7 +115,7 @@ const VRARDevelopment = () => {
             </div>
 
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6 font-['Space_Grotesk']">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6 font-display">
                 Beyond Reality, Into <span className="text-tech-purple">Innovation</span>
               </h2>
               <p className="text-lg text-muted-foreground mb-6">
@@ -142,7 +142,7 @@ const VRARDevelopment = () => {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-display">
               Our <span className="text-gradient">VR/AR Solutions</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -189,7 +189,7 @@ const VRARDevelopment = () => {
       <section className="py-20 bg-gradient-to-r from-tech-purple/10 to-tech-cyan/10">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-display">
               Our <span className="text-tech-cyan">Technology Stack</span>
             </h2>
           </div>
@@ -219,7 +219,7 @@ const VRARDevelopment = () => {
       <section className="py-20">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 font-['Space_Grotesk']">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 font-display">
               Ready to Step Into the <span className="text-gradient">Future?</span>
             </h2>
             <p className="text-lg text-muted-foreground mb-8">

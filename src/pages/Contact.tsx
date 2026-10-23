@@ -21,10 +21,10 @@ const Contact = () => {
       <section className="pt-36 pb-20 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-5xl font-bold font-['Space_Grotesk'] mb-4">
+            <h1 className="text-3xl md:text-5xl font-bold font-display mb-4">
               Get In <span className="text-gradient">Touch</span>
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-['Outfit']">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
               Have a project in mind, need a custom software solution, or want to discuss digital strategy? Reach out to our team today.
             </p>
           </div>
@@ -33,7 +33,7 @@ const Contact = () => {
             {/* Contact Form Container */}
             <div className="lg:col-span-2">
               <div className="bg-card border border-border/60 rounded-2xl p-8 shadow-xl">
-                <h2 className="text-2xl font-bold mb-6 font-['Space_Grotesk']">Send Us A Message</h2>
+                <h2 className="text-2xl font-bold mb-6 font-display">Send Us A Message</h2>
                 <ContactForm />
               </div>
             </div>
@@ -42,7 +42,7 @@ const Contact = () => {
             <div>
               <div className="bg-card border border-border/60 rounded-2xl p-8 shadow-xl h-full flex flex-col justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold mb-8 font-['Space_Grotesk']">Contact Info</h2>
+                  <h2 className="text-2xl font-bold mb-8 font-display">Contact Info</h2>
 
                   <div className="space-y-8">
                     {/* Email */}

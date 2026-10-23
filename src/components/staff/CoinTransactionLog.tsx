@@ -46,7 +46,7 @@ const CoinTransactionLog = ({ userId }: CoinTransactionLogProps) => {
           id: tx.id,
           coins: tx.coins ?? (tx as any).amount ?? 0,
           transaction_type: tx.transaction_type || 'earning',
-          description: tx.reason || tx.description || 'Transaction',
+          description: tx.reason || (tx as any).description || 'Transaction',
           source_type: tx.source_type || 'coin',
           created_at: tx.created_at
         })));

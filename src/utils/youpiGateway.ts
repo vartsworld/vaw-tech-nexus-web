@@ -10,6 +10,8 @@ export interface YoupiPaymentOptions {
   customerName?: string;
   customerEmail?: string;
   customerMobile?: string;
+  /** Alias of customerMobile */
+  customerPhone?: string;
   description?: string;
   gatewayApiUrl?: string; // Defaults to http://localhost:6100
   checkoutBaseUrl?: string; // Defaults to http://localhost:7000
@@ -53,11 +55,11 @@ export async function createYoupiPaymentSession(
     currency: options.currency || 'INR'
   };
 
-  if (options.customerName || options.customerPhone || options.customerEmail) {
+  if (options.customerName || options.customerPhone || options.customerMobile || options.customerEmail) {
     payload.customer = {
       name: options.customerName || 'Guest Payer',
       email: options.customerEmail || '',
-      mobileNumber: options.customerPhone || ''
+      mobileNumber: options.customerPhone || options.customerMobile || ''
     };
   }
 

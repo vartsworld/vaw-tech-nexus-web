@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "@/components/Navbar";
-import MobileHeader from "@/components/MobileHeader";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { useUser } from "@/context/UserContext";
@@ -322,7 +321,6 @@ Terms Agreed: Yes
   if (submitted) {
     return (
       <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col justify-between pt-20 md:pt-28">
-        <MobileHeader />
         <Navbar />
         <div className="container mx-auto px-4 py-12 flex items-center justify-center flex-1">
           <Card className="w-full max-w-xl bg-zinc-900/90 border-zinc-800 text-zinc-100 shadow-2xl backdrop-blur-2xl p-6 sm:p-8">
@@ -406,7 +404,6 @@ Terms Agreed: Yes
       />
       
       {/* Mobile Header for mobile view */}
-      <MobileHeader />
       {/* Navbar for desktop view */}
       <Navbar />
 
@@ -424,7 +421,7 @@ Terms Agreed: Yes
 
         {/* Page Title */}
         <div className="text-center space-y-2 mb-8">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-['Space_Grotesk']">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-display">
             Internship Application <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Registration</span>
           </h1>
           <p className="text-sm text-zinc-400 max-w-xl mx-auto">

@@ -22,11 +22,11 @@ const About = () => {
             <Building2 className="w-4 h-4 text-tech-gold" />
             <span>A Subsidiary of V Arts World Pvt. Ltd.</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black font-['Space_Grotesk'] tracking-tight mb-6 leading-tight">
+          <h1 className="text-4xl md:text-6xl font-black font-display tracking-tight mb-6 leading-tight">
             Human-Centric Art &<br />
             <span className="text-gradient">Technological Innovation</span>
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto font-['Outfit']">
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto font-sans">
             VAW Technologies brings together artistic elegance and enterprise-grade software engineering to craft extraordinary digital products for businesses worldwide.
           </p>
         </div>
@@ -37,7 +37,7 @@ const About = () => {
         <div className="container mx-auto max-w-5xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold font-['Space_Grotesk'] mb-6">
+              <h2 className="text-3xl font-bold font-display mb-6">
                 Our Parentage & Legacy
               </h2>
               <p className="text-muted-foreground leading-relaxed mb-4">
@@ -84,7 +84,7 @@ const About = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk'] mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold font-display mb-4">
               Our Core <span className="text-gradient">Pillars</span>
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -97,7 +97,7 @@ const About = () => {
               <div className="w-12 h-12 rounded-xl bg-tech-gold/10 text-tech-gold flex items-center justify-center mb-6">
                 <Lightbulb className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold font-['Space_Grotesk'] mb-3">Relentless Innovation</h3>
+              <h3 className="text-xl font-bold font-display mb-3">Relentless Innovation</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 We stay ahead of technology curves—leveraging modern AI agents, WebXR spatial computing, and serverless architectures to deliver future-proof solutions.
               </p>
@@ -107,7 +107,7 @@ const About = () => {
               <div className="w-12 h-12 rounded-xl bg-tech-purple/10 text-tech-purple flex items-center justify-center mb-6">
                 <Heart className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold font-['Space_Grotesk'] mb-3">Human-Centric Focus</h3>
+              <h3 className="text-xl font-bold font-display mb-3">Human-Centric Focus</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 Technology exists to serve human needs. Every user interface, workflow, and system architecture is optimized for intuitive simplicity and human delight.
               </p>
@@ -117,7 +117,7 @@ const About = () => {
               <div className="w-12 h-12 rounded-xl bg-tech-red/10 text-tech-red flex items-center justify-center mb-6">
                 <ShieldCheck className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-bold font-['Space_Grotesk'] mb-3">Uncompromising Quality</h3>
+              <h3 className="text-xl font-bold font-display mb-3">Uncompromising Quality</h3>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 From high-security web applications to precision marketing funnels, we adhere to rigorous enterprise standards and seamless delivery timelines.
               </p>
@@ -129,7 +129,7 @@ const About = () => {
       {/* CTA Section */}
       <section className="py-16 px-4 bg-muted/10 border-t border-border/40">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-3xl font-bold font-['Space_Grotesk'] mb-4">
+          <h2 className="text-3xl font-bold font-display mb-4">
             Want to Collaborate or Work With Us?
           </h2>
           <p className="text-muted-foreground mb-8">

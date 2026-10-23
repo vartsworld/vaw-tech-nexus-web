@@ -16,7 +16,19 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
   },
   build: {
-    sourcemap: true,
+    // Don't ship source maps to production (exposes source, adds ~16 MB of output)
+    sourcemap: false,
+    chunkSizeWarningLimit: 900,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-motion": ["framer-motion"],
+          "vendor-charts": ["recharts"],
+        },
+      },
+    },
   },
   plugins: [
     react(),
@@ -57,7 +69,9 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8 MB limit
-        globPatterns: ['**/*.{js,css,ico,svg,woff2,html}'],
+        // Precache only the app shell. Route chunks are cached on first use (see runtimeCaching below)
+        // so first-time visitors don't download the staff/HR dashboards in the background.
+        globPatterns: ['index.html', 'assets/index-*.{js,css}', 'assets/vendor-react-*.js', 'assets/vendor-supabase-*.js', 'fonts/*.woff2'],
         globIgnores: ['**/lovable-uploads/**'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/lovable-uploads/],
@@ -65,6 +79,16 @@ export default defineConfig(({ mode }) => ({
         clientsClaim: true,
         skipWaiting: true,
         runtimeCaching: [
+          {
+            // Content-hashed build output is immutable, so cache-first is safe
+            urlPattern: ({ url }: { url: URL }) => url.pathname.startsWith('/assets/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'app-chunks',
+              expiration: { maxEntries: 150, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           {
             urlPattern: /.*\.html$/,
             handler: 'NetworkFirst',

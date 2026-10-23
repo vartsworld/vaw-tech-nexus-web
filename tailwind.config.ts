@@ -20,6 +20,10 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ['Manrope', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+				display: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -54,6 +58,7 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				brand: 'hsl(var(--brand-text))',
 				tech: {
 					dark: '#121212',
 					blue: '#1EAEDB',
@@ -162,10 +167,10 @@ export default {
 			'pulse-ring': 'pulse-ring 2.5s ease-in-out infinite'
 			},
 			boxShadow: {
-				'neon': '0 0 5px theme("colors.tech.gold"), 0 0 20px theme("colors.tech.gold")',
-				'inner-glow': 'inset 0 0 20px rgba(255,215,0,0.3)',
-				'tech': '0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 215, 0, 0.2)',
-				'cyber': '0 0 0 2px rgba(255, 215, 0, 0.1), 0 15px 35px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1)',
+				'neon': '0 1px 2px rgba(0, 0, 0, 0.2)',
+				'inner-glow': 'inset 0 1px 2px rgba(0, 0, 0, 0.15)',
+				'tech': '0 4px 12px -2px rgba(0, 0, 0, 0.25)',
+				'cyber': '0 6px 16px -4px rgba(0, 0, 0, 0.25)',
 				'neu': 'var(--neu-shadow-light)',
 				'neu-sm': 'var(--neu-shadow-light-sm)',
 				'neu-inset': 'var(--neu-shadow-inset)',
@@ -174,9 +179,9 @@ export default {
 			backgroundImage: {
 				'tech-gradient': 'linear-gradient(135deg, rgba(0,0,0,0.8) 0%, rgba(42,42,42,0.8) 100%)',
 				'gold-gradient': 'linear-gradient(90deg, #FFD700 0%, #FFC107 100%)',
-				'dark-gradient': 'radial-gradient(circle at center, rgba(42,42,42,1) 0%, rgba(0,0,0,1) 100%)',
-				'cyber-grid': 'linear-gradient(transparent 0%, rgba(255, 215, 0, 0.05) 1px, transparent 2px), linear-gradient(90deg, transparent 0%, rgba(255, 215, 0, 0.05) 1px, transparent 2px)',
-				'holographic': 'linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(234, 56, 76, 0.2) 50%, rgba(155, 135, 245, 0.2) 100%)'
+				'dark-gradient': 'linear-gradient(180deg, rgba(24,24,27,1) 0%, rgba(0,0,0,1) 100%)',
+				'cyber-grid': 'none',
+				'holographic': 'none'
 			},
 			backdropFilter: {
 				'none': 'none',

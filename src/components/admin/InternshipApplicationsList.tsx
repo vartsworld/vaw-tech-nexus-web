@@ -51,7 +51,7 @@ const InternshipApplicationsList = () => {
       }
 
       // Filter out deleted items in JS so rows with null/undefined status are preserved
-      const validRows = (data || []).filter(item => item.status !== 'deleted');
+      const validRows = (data || []).filter((item: any) => item.status !== 'deleted');
 
       // Transform the data to match our InternshipApplication interface
       const transformedData: InternshipApplication[] = validRows.map(item => ({

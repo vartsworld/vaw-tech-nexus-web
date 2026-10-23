@@ -24,11 +24,11 @@ const Career = () => {
             <Sparkles className="w-4 h-4 text-tech-gold" />
             <span>We're Hiring Young Innovators & Tech Mavericks!</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black font-['Space_Grotesk'] tracking-tight mb-6 leading-tight">
+          <h1 className="text-4xl md:text-6xl font-black font-display tracking-tight mb-6 leading-tight">
             Build The Future.<br />
             <span className="text-gradient">Unleash Your Potential.</span>
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto font-['Outfit'] mb-8">
+          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto font-sans mb-8">
             Tired of boring 9-to-5s and endless bureaucracy? At VAW Technologies, we build real-world products, run viral campaigns, and push the boundaries of AI, Web, and Marketing with total creative freedom.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -49,7 +49,7 @@ const Career = () => {
       <section id="why-us" className="py-20 px-4 bg-muted/5">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold font-['Space_Grotesk'] mb-4">
+            <h2 className="text-3xl md:text-5xl font-bold font-display mb-4">
               Why Work <span className="text-gradient">With Us?</span>
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -63,7 +63,7 @@ const Career = () => {
                 <div className="w-12 h-12 rounded-xl bg-tech-gold/10 text-tech-gold flex items-center justify-center mb-4">
                   <Rocket className="w-6 h-6" />
                 </div>
-                <CardTitle className="text-xl font-bold font-['Space_Grotesk']">Zero Micromanagement</CardTitle>
+                <CardTitle className="text-xl font-bold font-display">Zero Micromanagement</CardTitle>
               </CardHeader>
               <CardContent className="text-muted-foreground">
                 We focus on impact, output, and creativity—not clocking hours. You own your project and have the autonomy to make big decisions.
@@ -75,7 +75,7 @@ const Career = () => {
                 <div className="w-12 h-12 rounded-xl bg-tech-purple/10 text-tech-purple flex items-center justify-center mb-4">
                   <Zap className="w-6 h-6" />
                 </div>
-                <CardTitle className="text-xl font-bold font-['Space_Grotesk']">Bleeding-Edge Tech</CardTitle>
+                <CardTitle className="text-xl font-bold font-display">Bleeding-Edge Tech</CardTitle>
               </CardHeader>
               <CardContent className="text-muted-foreground">
                 Work directly with AI LLM agents, WebXR, modern full-stack frameworks, Web3 systems, and high-converting marketing tools.
@@ -87,7 +87,7 @@ const Career = () => {
                 <div className="w-12 h-12 rounded-xl bg-tech-red/10 text-tech-red flex items-center justify-center mb-4">
                   <HeartHandshake className="w-6 h-6" />
                 </div>
-                <CardTitle className="text-xl font-bold font-['Space_Grotesk']">Vibrant & Fun Culture</CardTitle>
+                <CardTitle className="text-xl font-bold font-display">Vibrant & Fun Culture</CardTitle>
               </CardHeader>
               <CardContent className="text-muted-foreground">
                 An energetic, high-octane environment with hackathons, game arcades, mentorship, dynamic rewards, and zero legacy toxicity.
@@ -101,7 +101,7 @@ const Career = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold font-['Space_Grotesk'] mb-4">
+            <h2 className="text-3xl md:text-5xl font-bold font-display mb-4">
               What We Do <span className="text-gradient">In Tech & Marketing</span>
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -118,7 +118,7 @@ const Career = () => {
                   <Code2 className="w-8 h-8" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold font-['Space_Grotesk']">Tech & Engineering</h3>
+                  <h3 className="text-2xl font-bold font-display">Tech & Engineering</h3>
                   <p className="text-sm text-muted-foreground">Building scalable digital experiences</p>
                 </div>
               </div>
@@ -146,7 +146,7 @@ const Career = () => {
                   <Megaphone className="w-8 h-8" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold font-['Space_Grotesk']">Digital Marketing</h3>
+                  <h3 className="text-2xl font-bold font-display">Digital Marketing</h3>
                   <p className="text-sm text-muted-foreground">Driving exponential ROI & brand growth</p>
                 </div>
               </div>
@@ -172,7 +172,7 @@ const Career = () => {
       {/* Call to Action Banner */}
       <section className="py-16 px-4 bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20 border-y border-primary/20">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-3xl md:text-4xl font-black font-['Space_Grotesk'] mb-4">
+          <h2 className="text-3xl md:text-4xl font-black font-display mb-4">
             Ready to Take the Leap?
           </h2>
           <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">

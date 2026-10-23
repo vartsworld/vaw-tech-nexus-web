@@ -261,6 +261,8 @@ const TeamHeadMobileHome = ({
           due_date: newTaskDueDate ? newTaskDueDate : null,
           department_id: profile?.department_id,
           assigned_by: profile?.user_id,
+          // staff_tasks.assigned_to is NOT NULL – fall back to the creator when unassigned
+          assigned_to: newTaskAssignee || profile?.user_id,
           status: 'pending'
         })
         .select('*')
@@ -276,6 +278,7 @@ const TeamHeadMobileHome = ({
             task_id: taskData.id,
             title: newTaskTitle.trim(),
             assigned_to: newTaskAssignee,
+            created_by: profile?.user_id,
             status: 'pending'
           });
         if (subtaskError) throw subtaskError;
@@ -374,9 +377,9 @@ const TeamHeadMobileHome = ({
   // ⚡ Bolt Performance Optimization: Replaced three separate O(N) .filter() array iterations
   // with a single O(N) pass to categorize todo, in progress, and completed tasks
   const { todoTasks, inProgressTasks, completedTasks } = useMemo(() => {
-    const todo: Task[] = [];
-    const inProgress: Task[] = [];
-    const completed: Task[] = [];
+    const todo: TaskItem[] = [];
+    const inProgress: TaskItem[] = [];
+    const completed: TaskItem[] = [];
 
     for (const task of tasks) {
       if (task.status === 'pending') todo.push(task);
@@ -772,7 +775,7 @@ const TeamHeadMobileHome = ({
       <motion.div variants={fadeUp} className="space-y-3">
         <div className="flex justify-between items-center">
           <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Team Projects</h3>
-          <button onClick={() => setActiveTab('projects')} className="text-xs text-violet-400 font-bold">
+          <button onClick={() => { setActiveTool('projects'); setActiveTab('tools'); }} className="text-xs text-violet-400 font-bold">
             View All
           </button>
         </div>
@@ -787,7 +790,8 @@ const TeamHeadMobileHome = ({
                 key={project.id}
                 onClick={() => {
                   setSelectedProject(project);
-                  setActiveTab('projects');
+                  setActiveTool('projects');
+                  setActiveTab('tools');
                 }}
                 className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 hover:border-white/15 active:scale-[0.98] transition-all cursor-pointer shadow-lg"
               >

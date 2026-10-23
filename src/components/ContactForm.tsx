@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { submitInquiry, CONTACT_EMAIL } from "@/lib/inquiries";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -63,36 +63,13 @@ const ContactForm = () => {
     }
 
     try {
-      // Store in localStorage as a fallback
-      const inquiries = JSON.parse(localStorage.getItem('inquiries') || '[]');
-      const newInquiry = {
-        ...formData,
-        status: 'new',
-        created_at: new Date().toISOString(),
-      };
-      
-      inquiries.push(newInquiry);
-      localStorage.setItem('inquiries', JSON.stringify(inquiries));
-      
-      // Try to send to Supabase (this may fail if table doesn't exist)
-      try {
-        const { error } = await supabase
-          .from("inquiries")
-          .insert({
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            service: formData.service,
-            message: formData.message,
-            status: 'new'
-          });
-        
-        if (error) {
-          console.log("Supabase storage failed, but message saved locally:", error);
-        }
-      } catch (supabaseError) {
-        console.log("Using local storage fallback due to Supabase error");
-      }
+      await submitInquiry({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        service: formData.service,
+        message: formData.message,
+      });
 
       toast({
         title: "Message sent successfully!",
@@ -109,7 +86,7 @@ const ContactForm = () => {
       });
     } catch (error) {
       console.error("Error submitting form:", error);
-      setFormError("There was a problem sending your message. Please try again or contact us directly by email.");
+      setFormError(`We could not send your message. Please try again, or email us directly at ${CONTACT_EMAIL}.`);
     } finally {
       setIsSubmitting(false);
     }

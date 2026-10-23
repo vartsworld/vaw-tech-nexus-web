@@ -51,7 +51,7 @@ const AdminHeader = () => {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           <Link to="/admin/dashboard" className="flex items-center gap-2">
-            <span className="font-bold text-xl font-['Space_Grotesk'] text-gradient">
+            <span className="font-bold text-xl font-display text-gradient">
               VAW<span className="text-accent">tech</span> Admin
             </span>
           </Link>

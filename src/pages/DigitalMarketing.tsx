@@ -99,7 +99,7 @@ const DigitalMarketing = () => {
               Strategy First · Spend Later
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 font-['Space_Grotesk'] leading-[1.05] tracking-tight">
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 font-display leading-[1.05] tracking-tight">
               Digital Marketing
               <br />
               <span className="bg-gradient-to-r from-tech-gold via-tech-red to-tech-purple bg-clip-text text-transparent">
@@ -107,7 +107,7 @@ const DigitalMarketing = () => {
               </span>
             </h1>
 
-            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed font-['Outfit']">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-10 leading-relaxed font-sans">
               We don't sell pre-packaged ad bundles. We do a complete case study on your business, brand
               and market — then deliver a focused <span className="text-foreground font-semibold">3 to 6 month strategy</span>,
               plan and budget that actually fits you.
@@ -156,7 +156,7 @@ const DigitalMarketing = () => {
                 <Target className="h-3.5 w-3.5" />
                 Our Marketing Principle
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-5 font-['Space_Grotesk'] tracking-tight">
+              <h2 className="text-4xl md:text-5xl font-bold mb-5 font-display tracking-tight">
                 Right Ads. Right Time.<br />
                 <span className="text-gradient">Right Place.</span>
               </h2>
@@ -175,7 +175,7 @@ const DigitalMarketing = () => {
                         <div className="w-11 h-11 rounded-xl bg-foreground/5 border border-muted/20 flex items-center justify-center mb-5">
                           <Icon className="h-5 w-5 text-tech-gold" />
                         </div>
-                        <h3 className="text-lg font-semibold mb-2 font-['Space_Grotesk']">{p.title}</h3>
+                        <h3 className="text-lg font-semibold mb-2 font-display">{p.title}</h3>
                         <p className="text-sm text-muted-foreground leading-relaxed">{p.desc}</p>
                       </CardContent>
                     </Card>
@@ -201,7 +201,7 @@ const DigitalMarketing = () => {
                 <ClipboardList className="h-3.5 w-3.5" />
                 The Case Study Process
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-5 font-['Space_Grotesk'] tracking-tight">
+              <h2 className="text-4xl md:text-5xl font-bold mb-5 font-display tracking-tight">
                 What Goes Into Your <span className="text-gradient">Case Study</span>
               </h2>
               <p className="text-lg text-muted-foreground">
@@ -224,7 +224,7 @@ const DigitalMarketing = () => {
                             {String(index + 1).padStart(2, "0")}
                           </span>
                         </div>
-                        <h3 className="text-lg font-semibold mb-2 font-['Space_Grotesk']">
+                        <h3 className="text-lg font-semibold mb-2 font-display">
                           {step.title}
                         </h3>
                         <p className="text-sm text-muted-foreground leading-relaxed">{step.desc}</p>
@@ -253,7 +253,7 @@ const DigitalMarketing = () => {
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Why Brands Trust Us
               </div>
-              <h2 className="text-4xl md:text-5xl font-bold mb-5 font-['Space_Grotesk'] tracking-tight">
+              <h2 className="text-4xl md:text-5xl font-bold mb-5 font-display tracking-tight">
                 Honest Marketing.<br />
                 <span className="text-gradient">No Cookie-Cutter Packages.</span>
               </h2>
@@ -288,7 +288,7 @@ const DigitalMarketing = () => {
                     <ClipboardList className="h-3.5 w-3.5" />
                     Case Study & Consulting
                   </div>
-                  <h3 className="text-2xl font-bold mb-1 font-['Space_Grotesk']">
+                  <h3 className="text-2xl font-bold mb-1 font-display">
                     Start With A Real Plan
                   </h3>
                   <p className="text-sm text-muted-foreground mb-6">
@@ -296,7 +296,7 @@ const DigitalMarketing = () => {
                   </p>
 
                   <div className="flex items-baseline gap-2 mb-8 pb-8 border-b border-muted/20">
-                    <span className="text-6xl font-bold font-['Space_Grotesk'] tracking-tight">₹999</span>
+                    <span className="text-6xl font-bold font-display tracking-tight">₹999</span>
                     <span className="text-sm text-muted-foreground">one-time</span>
                   </div>
 
@@ -347,7 +347,7 @@ const DigitalMarketing = () => {
             className="max-w-5xl mx-auto"
           >
             <motion.div variants={itemVariants} className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4 font-['Space_Grotesk'] tracking-tight">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 font-display tracking-tight">
                 What We <span className="text-gradient">Deliver After</span>
               </h2>
               <p className="text-lg text-muted-foreground">
@@ -386,7 +386,7 @@ const DigitalMarketing = () => {
             transition={{ duration: 0.7 }}
           >
             <Megaphone className="h-12 w-12 text-tech-gold mx-auto mb-6" />
-            <h2 className="text-4xl md:text-5xl font-bold mb-5 font-['Space_Grotesk'] tracking-tight">
+            <h2 className="text-4xl md:text-5xl font-bold mb-5 font-display tracking-tight">
               Ready For A Marketing Plan
               <br />
               <span className="text-gradient">That Actually Fits You?</span>
@@ -421,7 +421,7 @@ const DigitalMarketing = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h3 className="text-3xl font-bold text-center mb-12 font-['Space_Grotesk'] tracking-tight">Get In Touch</h3>
+            <h3 className="text-3xl font-bold text-center mb-12 font-display tracking-tight">Get In Touch</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-4xl mx-auto">
               {[
                 { icon: Phone, title: "Call Us", lines: ["+91 9946882478"] },
@@ -435,7 +435,7 @@ const DigitalMarketing = () => {
                       <div className="w-11 h-11 rounded-xl bg-foreground/5 border border-muted/20 flex items-center justify-center mb-4 group-hover:bg-tech-gold/10 transition-colors">
                         <Icon className="h-5 w-5 text-tech-gold" />
                       </div>
-                      <h4 className="font-semibold text-base mb-2 font-['Space_Grotesk']">{c.title}</h4>
+                      <h4 className="font-semibold text-base mb-2 font-display">{c.title}</h4>
                       {c.lines.map((l) => (
                         <p key={l} className="text-sm text-muted-foreground">{l}</p>
                       ))}
