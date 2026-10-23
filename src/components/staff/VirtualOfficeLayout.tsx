@@ -55,7 +55,7 @@ import {
 
 interface VirtualOfficeLayoutProps {
   children: ReactNode;
-  header?: ReactNode;
+  header?: ReactNode | ((ctx: { collapsed: boolean; expand: () => void }) => ReactNode);
   currentRoom: string;
   onRoomChange?: (room: string) => void;
   onlineUsers?: Record<string, any>;
@@ -66,6 +66,10 @@ interface VirtualOfficeLayoutProps {
   isSidebarCollapsed?: boolean;
   onSidebarCollapse?: (collapsed: boolean) => void;
   customSidebarLinks?: any[];
+  /** Numeric badges keyed by room id (sidebar and mobile nav) */
+  badges?: Record<string, number>;
+  /** Overrides the bottom tabs on mobile */
+  mobileNavItems?: { id: string; label: string; icon: any }[];
 }
 
 const VirtualOfficeLayout = ({
@@ -80,7 +84,9 @@ const VirtualOfficeLayout = ({
   onOpenCoins,
   isSidebarCollapsed: isSidebarCollapsedProp,
   onSidebarCollapse,
-  customSidebarLinks
+  customSidebarLinks,
+  badges,
+  mobileNavItems,
 }: VirtualOfficeLayoutProps) => {
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [mobileSidebarTab, setMobileSidebarTab] = useState<'status' | 'chat'>('status');
@@ -592,7 +598,20 @@ const VirtualOfficeLayout = ({
                               (item as any).color
                             )} />
                             {!isSidebarCollapsed && (
-                              <span className="text-xs font-bold uppercase tracking-tight">{item.name}</span>
+                              <span className="text-[13px] font-semibold tracking-tight">{item.name}</span>
+                            )}
+
+                            {/* Pending-work badge (HR and other custom sidebars) */}
+                            {(badges?.[item.id] || 0) > 0 && (
+                              <span
+                                className={cn(
+                                  "absolute flex items-center justify-center rounded-full bg-red-500 font-black text-white",
+                                  isSidebarCollapsed ? "right-1.5 top-1.5 h-2.5 w-2.5" : "right-3 top-1/2 -translate-y-1/2 h-5 min-w-5 px-1 text-[10px]"
+                                )}
+                                aria-label={`${badges![item.id]} waiting`}
+                              >
+                                {!isSidebarCollapsed && Math.min(badges![item.id], 99)}
+                              </span>
                             )}
 
                             {/* Render Inbox notification bubble */}
@@ -674,7 +693,7 @@ const VirtualOfficeLayout = ({
       {/* Right Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 h-full relative z-10 overflow-hidden">
         {/* Optional Header slot (spans main content area only, not full width!) */}
-        {header}
+        {typeof header === 'function' ? header({ collapsed: isSidebarCollapsed, expand: () => setIsSidebarCollapsed(false) }) : header}
 
         {/* Scrollable Main Content */}
         <main ref={mainContentRef} className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6 relative bg-transparent">
@@ -833,6 +852,8 @@ const VirtualOfficeLayout = ({
         onOpenChat={() => setShowMobileChat(true)}
         onOpenCoins={onOpenCoins}
         customSidebarLinks={customSidebarLinks || sidebarLinks}
+        primaryItems={mobileNavItems}
+        badges={badges}
       />
 
       {/* Leave Application Dialog */}

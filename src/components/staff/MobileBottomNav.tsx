@@ -13,6 +13,10 @@ interface MobileBottomNavProps {
   onOpenActivity?: () => void;
   onOpenCoins?: () => void;
   customSidebarLinks?: any[];
+  /** Replaces the default bottom tabs. Use id "menu" for the "More" sheet. */
+  primaryItems?: { id: string; label: string; icon: any }[];
+  /** Numeric badges keyed by room id, shown on tabs and menu items */
+  badges?: Record<string, number>;
 }
 
 const MobileBottomNav = ({
@@ -22,6 +26,8 @@ const MobileBottomNav = ({
   onOpenActivity,
   onOpenCoins,
   customSidebarLinks,
+  primaryItems,
+  badges = {},
 }: MobileBottomNavProps) => {
   const [showMenu, setShowMenu] = useState(false);
 
@@ -31,7 +37,18 @@ const MobileBottomNav = ({
     { id: 'meeting', label: 'Meeting Room', icon: Users, color: 'from-yellow-500 to-yellow-600' },
   ];
 
-  const navItems = [
+  const menuBadge = Object.entries(badges).reduce(
+    (t, [id, n]) => t + (primaryItems?.some((p) => p.id === id) ? 0 : n || 0),
+    0,
+  );
+
+  const navItems: { id: string; label: string; icon: any; isRoom: boolean; action?: () => void }[] = primaryItems
+    ? primaryItems.map((p) =>
+        p.id === 'menu'
+          ? { ...p, isRoom: false, action: () => setShowMenu(true) }
+          : { ...p, isRoom: true },
+      )
+    : [
     { id: 'workspace' as const, label: 'Work', icon: Monitor, isRoom: true },
     { id: 'planner' as const, label: 'Plan', icon: Calendar, isRoom: true },
     { id: 'meeting' as const, label: 'Meet', icon: Users, isRoom: true },
@@ -57,6 +74,8 @@ const MobileBottomNav = ({
                     item.action();
                   }
                 }}
+                aria-label={item.label}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-200 min-w-[56px] relative",
                   isActive
@@ -65,6 +84,11 @@ const MobileBottomNav = ({
                 )}
               >
                 <Icon className={cn("w-5 h-5", isActive && "text-primary")} />
+                {(item.id === 'menu' ? menuBadge : badges[item.id] || 0) > 0 && (
+                  <span className="absolute right-1.5 top-0.5 min-w-[16px] rounded-full bg-red-500 px-1 text-center text-[10px] font-bold leading-4 text-white">
+                    {Math.min(item.id === 'menu' ? menuBadge : badges[item.id], 99)}
+                  </span>
+                )}
                 <span className="text-[10px] font-medium leading-tight">{item.label}</span>
                 {isActive && (
                   <div className="absolute -bottom-0.5 w-4 h-0.5 bg-primary rounded-full" />
@@ -77,11 +101,11 @@ const MobileBottomNav = ({
 
       {/* More Menu Sheet */}
       <Sheet open={showMenu} onOpenChange={setShowMenu}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[60vh] bg-background/98 backdrop-blur-xl border-t border-border">
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] bg-background/98 backdrop-blur-xl border-t border-border">
           <SheetHeader className="pb-2">
-            <SheetTitle className="text-base font-semibold">Quick Actions</SheetTitle>
+            <SheetTitle className="text-base font-semibold">{primaryItems ? "All pages" : "Quick Actions"}</SheetTitle>
           </SheetHeader>
-          <div className="space-y-4 pb-6 overflow-y-auto max-h-[50vh] px-1">
+          <div className="space-y-4 pb-6 overflow-y-auto max-h-[70vh] px-1">
             {customSidebarLinks && customSidebarLinks.length > 0 ? (
               customSidebarLinks.map((section: any) => (
                 <div key={section.title} className="space-y-2">
@@ -109,6 +133,9 @@ const MobileBottomNav = ({
                         >
                           <Icon className="w-4 h-4 shrink-0" />
                           <span className="text-xs truncate">{item.name}</span>
+                          {(badges[item.id] || 0) > 0 && (
+                            <span className="ml-auto rounded-full bg-red-500 px-1.5 text-[10px] font-bold leading-4 text-white">{badges[item.id]}</span>
+                          )}
                         </Button>
                       );
                     })}

@@ -32,14 +32,13 @@ export interface SubmittedPlan {
 
 interface CheckoutFormProps {
   summary: CartSummary;
-  coupon: string;
   onBack: () => void;
   onSubmitted: (result: SubmittedPlan) => void;
 }
 
 const NOTES_MAX = 1500;
 
-const CheckoutForm = ({ summary, coupon, onBack, onSubmitted }: CheckoutFormProps) => {
+const CheckoutForm = ({ summary, onBack, onSubmitted }: CheckoutFormProps) => {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
@@ -50,7 +49,7 @@ const CheckoutForm = ({ summary, coupon, onBack, onSubmitted }: CheckoutFormProp
     formState: { errors, isSubmitting },
   } = useForm<CheckoutValues>({
     resolver: zodResolver(checkoutSchema),
-    defaultValues: { name: "", email: "", phone: "", company: "", domain: "", timeline: "", notes: "", coupon, consent: undefined, website: "" },
+    defaultValues: { name: "", email: "", phone: "", company: "", domain: "", timeline: "", notes: "", consent: undefined, website: "" },
   });
 
   const notes = watch("notes") || "";
@@ -64,7 +63,7 @@ const CheckoutForm = ({ summary, coupon, onBack, onSubmitted }: CheckoutFormProp
     }
     const reference = generateReference();
     const extra = summary.addons.length ? ` + ${summary.addons.length} add-on${summary.addons.length > 1 ? "s" : ""}` : "";
-    const service = `${summary.pkg?.name ?? "Add-ons only"}${extra} - ${formatPrice(summary.subtotal)}`;
+    const service = `${summary.pkg?.name ?? "Add-ons only"}${extra} - ${formatPrice(summary.total)}`;
     try {
       await submitInquiry({
         name: values.name,
@@ -85,7 +84,7 @@ const CheckoutForm = ({ summary, coupon, onBack, onSubmitted }: CheckoutFormProp
   const invalid = (key: keyof CheckoutValues) => (errors[key] ? true : undefined);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="rounded-xl border border-border bg-card p-5 sm:p-7 space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="relative space-y-6 rounded-2xl border border-white/10 bg-[#111116] p-5 text-white sm:p-7">
       <div>
         <h2 className="text-xl font-bold text-foreground">Your details</h2>
         <p className="mt-1 text-sm text-muted-foreground">Tell us who you are and anything we should know. We'll reply with a confirmed scope and price.</p>
@@ -123,7 +122,7 @@ const CheckoutForm = ({ summary, coupon, onBack, onSubmitted }: CheckoutFormProp
                 <SelectTrigger id="co-timeline" aria-invalid={invalid("timeline")} aria-describedby={errors.timeline ? "co-timeline-error" : undefined}>
                   <SelectValue placeholder="Choose a timeline" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark">
                   {TIMELINE_OPTIONS.map((o) => (
                     <SelectItem key={o.value} value={o.value}>
                       {o.label}
@@ -150,10 +149,6 @@ const CheckoutForm = ({ summary, coupon, onBack, onSubmitted }: CheckoutFormProp
         }
       >
         <Textarea id="co-notes" rows={4} maxLength={NOTES_MAX} placeholder="Tell us a little about your project" {...register("notes")} />
-      </FormField>
-
-      <FormField id="co-coupon" label="Coupon code" error={err("coupon")} hint="Our team verifies the code and applies it to your final quote.">
-        <Input id="co-coupon" className="sm:max-w-xs uppercase" autoCapitalize="characters" {...register("coupon")} />
       </FormField>
 
       {/* Honeypot – hidden from people, attractive to bots */}

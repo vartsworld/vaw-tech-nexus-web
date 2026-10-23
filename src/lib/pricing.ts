@@ -12,6 +12,7 @@ export interface PricingPackage {
   popular: boolean;
   features: string[];
   category: string;
+  iconName?: string;
 }
 
 export interface PricingAddon {
@@ -33,6 +34,11 @@ export interface PromotionalOffer {
   end_date?: string;
   button_text?: string;
   highlights?: string[];
+  /** How the coupon reduces the price. Without a value the code is only recorded. */
+  discount_type?: "percent" | "flat";
+  discount_value?: number;
+  /** Whether the discount applies to the package only or to the whole plan */
+  applies_to?: "all" | "package";
 }
 
 export interface CartState {
@@ -65,25 +71,105 @@ export const inferCategory = (name: string, description: string): string => {
   return "Web Development";
 };
 
+/* ─────────────────────────── Tax & coupons ─────────────────────────── */
+
+/** GST charged on top of every plan (India, services). */
+export const GST_RATE = 0.18;
+export const GST_LABEL = `${Math.round(GST_RATE * 100)}% GST`;
+
+export const normalizeCode = (code: string) => code.trim().toUpperCase().replace(/\s+/g, "");
+
+/** End of the (inclusive) end date, local time. */
+export const endOfDay = (date: string) => {
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setHours(23, 59, 59, 999);
+  return d;
+};
+
+export interface CouponCheck {
+  ok: boolean;
+  reason?: string;
+}
+
+/** Is `code` an active, unexpired coupon right now? */
+export const validateCoupon = (code: string, offer: PromotionalOffer | null | undefined): CouponCheck => {
+  const wanted = normalizeCode(code);
+  if (!wanted) return { ok: false, reason: "Enter a coupon code" };
+  const actual = normalizeCode(offer?.coupon_code ?? "");
+  if (!offer?.is_enabled || !actual) return { ok: false, reason: "That code isn't valid" };
+  if (offer.end_date) {
+    const end = endOfDay(offer.end_date);
+    if (end && end.getTime() < Date.now()) return { ok: false, reason: "This offer has expired" };
+  }
+  if (wanted !== actual) return { ok: false, reason: "That code isn't valid" };
+  return { ok: true };
+};
+
+/** Does this offer actually take money off (as opposed to only being recorded)? */
+export const offerHasDiscount = (offer: PromotionalOffer | null | undefined) =>
+  !!offer && (offer.discount_type === "percent" || offer.discount_type === "flat") && toNumber(offer.discount_value) > 0;
+
+export const describeDiscount = (offer: PromotionalOffer | null | undefined) => {
+  if (!offerHasDiscount(offer)) return "";
+  const v = toNumber(offer!.discount_value);
+  return offer!.discount_type === "percent" ? `${v}% off` : `${formatPrice(v)} off`;
+};
+
 /* ─────────────────────────── Cart maths ─────────────────────────── */
 
 export interface CartSummary {
   pkg: PricingPackage | null;
   addons: PricingAddon[];
   quotedAddons: PricingAddon[];
+  /** Package + priced add-ons, before coupon and GST */
   subtotal: number;
   /** Savings on the package versus its list price */
   savings: number;
   itemCount: number;
+  /** Applied (valid) coupon code, or "" */
+  couponCode: string;
+  /** Money taken off by the coupon */
+  discount: number;
+  /** Coupon is valid but the offer carries no discount value (confirmed by our team) */
+  couponUnpriced: boolean;
+  /** subtotal - discount */
+  taxable: number;
+  gstRate: number;
+  gst: number;
+  /** What the customer would pay: taxable + GST */
+  total: number;
 }
 
-export const summarizeCart = (cart: CartState, packages: PricingPackage[], addons: PricingAddon[]): CartSummary => {
+export const summarizeCart = (
+  cart: CartState,
+  packages: PricingPackage[],
+  addons: PricingAddon[],
+  offer?: PromotionalOffer | null
+): CartSummary => {
   const pkg = packages.find((p) => p.id === cart.packageId) ?? null;
   const selected = addons.filter((a) => cart.addonIds.includes(a.id));
   const priced = selected.filter((a) => a.price > 0);
   const quotedAddons = selected.filter((a) => a.price <= 0);
   const subtotal = (pkg?.price ?? 0) + priced.reduce((sum, a) => sum + a.price, 0);
   const savings = pkg ? Math.max(0, pkg.originalPrice - pkg.price) : 0;
+
+  let couponCode = "";
+  let discount = 0;
+  let couponUnpriced = false;
+  if (cart.coupon && subtotal > 0 && validateCoupon(cart.coupon, offer).ok) {
+    couponCode = normalizeCode(cart.coupon);
+    if (offerHasDiscount(offer)) {
+      const base = offer!.applies_to === "package" ? pkg?.price ?? 0 : subtotal;
+      const value = toNumber(offer!.discount_value);
+      discount = offer!.discount_type === "percent" ? Math.round((base * Math.min(value, 100)) / 100) : Math.min(value, base);
+    } else {
+      couponUnpriced = true;
+    }
+  }
+
+  const taxable = Math.max(0, subtotal - discount);
+  const gst = Math.round(taxable * GST_RATE);
   return {
     pkg,
     addons: selected,
@@ -91,6 +177,13 @@ export const summarizeCart = (cart: CartState, packages: PricingPackage[], addon
     subtotal,
     savings,
     itemCount: (pkg ? 1 : 0) + selected.length,
+    couponCode,
+    discount,
+    couponUnpriced,
+    taxable,
+    gstRate: GST_RATE,
+    gst,
+    total: taxable + gst,
   };
 };
 
@@ -137,7 +230,6 @@ export const checkoutSchema = z.object({
   domain: z.string().trim().max(150).optional().or(z.literal("")),
   timeline: z.string().min(1, "Choose a timeline"),
   notes: z.string().trim().max(1500, "Please keep notes under 1500 characters").optional().or(z.literal("")),
-  coupon: z.string().trim().max(40).optional().or(z.literal("")),
   consent: z.literal(true, { errorMap: () => ({ message: "Please confirm so we can contact you" }) }),
   /** honeypot – must stay empty */
   website: z.string().max(0).optional().or(z.literal("")),
@@ -168,7 +260,11 @@ export const generateReference = () => {
   return `VAW-${stamp}${rand}`;
 };
 
-const describeCart = (summary: CartSummary): string[] => {
+/**
+ * Plain-text summary stored with the request. The HR dashboard parses these
+ * "Label: value" lines, so keep the labels stable.
+ */
+export const describeCart = (summary: CartSummary): string[] => {
   const lines: string[] = [];
   lines.push(`Package: ${summary.pkg ? `${summary.pkg.name} - ${formatPrice(summary.pkg.price)}` : "None selected"}`);
   if (summary.addons.length) {
@@ -177,9 +273,16 @@ const describeCart = (summary: CartSummary): string[] => {
   } else {
     lines.push("Add-ons: none");
   }
-  lines.push(
-    `Estimated total: ${formatPrice(summary.subtotal)}${summary.quotedAddons.length ? " (+ items quoted separately)" : ""}`
-  );
+  lines.push(`Subtotal: ${formatPrice(summary.subtotal)}`);
+  if (summary.couponCode) {
+    lines.push(`Coupon: ${summary.couponCode}`);
+    lines.push(`Discount: ${formatPrice(summary.discount)}`);
+  } else {
+    lines.push("Coupon: -");
+  }
+  lines.push(`Taxable amount: ${formatPrice(summary.taxable)}`);
+  lines.push(`GST (${Math.round(summary.gstRate * 100)}%): ${formatPrice(summary.gst)}`);
+  lines.push(`Total payable: ${formatPrice(summary.total)}${summary.quotedAddons.length ? " (+ items quoted separately)" : ""}`);
   return lines;
 };
 
@@ -191,7 +294,6 @@ export const buildPlanMessage = (values: CheckoutValues, summary: CartSummary, r
     `Preferred Domain: ${values.domain || "-"}`,
     `Timeline: ${values.timeline}`,
     ...describeCart(summary),
-    `Coupon: ${values.coupon || "-"}`,
     `Requirements: ${(values.notes || "-").replace(/\r?\n/g, " ")}`,
   ].join("\n");
 

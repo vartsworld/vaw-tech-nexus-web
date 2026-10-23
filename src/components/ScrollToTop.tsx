@@ -60,7 +60,7 @@ const ScrollToTop = () => {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 animate-in fade-in zoom-in duration-300">
+    <div className={`fixed right-4 sm:right-6 z-30 animate-in fade-in zoom-in duration-300 ${pathname.startsWith("/pricing") ? "bottom-28" : "bottom-6"}`}>
       <Button
         variant="secondary"
         size="icon"
