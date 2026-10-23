@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
-import MobileHeader from "@/components/MobileHeader";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { useUser } from "@/context/UserContext";
@@ -215,7 +214,6 @@ const Internship = () => {
       />
       
       {/* Mobile Header for mobile view */}
-      <MobileHeader />
       {/* Navbar for desktop view */}
       <Navbar />
 
@@ -227,11 +225,11 @@ const Internship = () => {
             <span>2-Month Online Certificate Internship Program</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight font-['Space_Grotesk'] leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight font-display leading-tight">
             Shape Your Career in <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">Tech & Design</span>
           </h1>
 
-          <p className="text-base sm:text-lg text-zinc-400 max-w-2xl mx-auto font-['Outfit']">
+          <p className="text-base sm:text-lg text-zinc-400 max-w-2xl mx-auto font-sans">
             Master real-world skills, 1-on-1 industry mentorship, build live portfolio projects, and earn an official verified certificate.
           </p>
 

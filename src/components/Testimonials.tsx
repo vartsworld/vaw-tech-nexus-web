@@ -75,7 +75,7 @@ const Testimonials = () => {
   }
   return <section className="bg-background/50 py-0">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-8 font-['Space_Grotesk']">
+        <h2 className="text-3xl font-bold text-center mb-8 font-display">
           What Our Clients <span className="text-gradient">Say</span>
         </h2>
         

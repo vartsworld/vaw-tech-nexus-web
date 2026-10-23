@@ -50,13 +50,13 @@ const WebsiteDevelopment = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="pt-24 pb-16 px-4">
+      <section className="pt-32 md:pt-40 pb-16 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 font-['Space_Grotesk']">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 font-display">
               Website <span className="text-gradient">Development</span>
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-8 font-['Outfit']">
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-8 font-sans">
               Creating stunning, responsive websites that deliver exceptional user experiences.
             </p>
             <Button size="lg" className="bg-primary hover:bg-primary/80 text-primary-foreground" asChild>
@@ -73,7 +73,7 @@ const WebsiteDevelopment = () => {
       <section className="py-16 px-4">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-display">
               What We <span className="text-gradient">Build</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -100,7 +100,7 @@ const WebsiteDevelopment = () => {
       <section className="py-16 px-4 bg-muted/20">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-display">
               Why Choose <span className="text-gradient">Our Development</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -131,7 +131,7 @@ const WebsiteDevelopment = () => {
       {/* CTA Section */}
       <section className="py-16 px-4">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 font-['Space_Grotesk']">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 font-display">
             Ready to Build Your <span className="text-gradient">Dream Website?</span>
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">

@@ -73,7 +73,7 @@ const CoinPopup = ({ isOpen, onOpenChange, userId, userProfile, isInline }: Coin
           id: tx.id,
           coins: tx.coins ?? (tx as any).amount ?? 0,
           transaction_type: tx.transaction_type || 'earning',
-          reason: tx.reason || tx.description || 'Transaction',
+          reason: tx.reason || (tx as any).description || 'Transaction',
           source_type: tx.source_type || 'coin',
           created_at: tx.created_at,
           type: 'coin'

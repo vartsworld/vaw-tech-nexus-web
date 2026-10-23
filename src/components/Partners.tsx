@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useUser } from "@/context/UserContext";
 
 interface PartnerBrand {
   id: string;
@@ -21,7 +20,7 @@ const DEFAULT_BRANDS: PartnerBrand[] = [
 
 const Partners = () => {
   const [brands, setBrands] = useState<PartnerBrand[]>(DEFAULT_BRANDS);
-  const { userName } = useUser();
+  const [fromDatabase, setFromDatabase] = useState(false);
 
   useEffect(() => {
     const fetchPartners = async () => {
@@ -37,6 +36,7 @@ const Partners = () => {
           const dbBrands = (data as PartnerBrand[]).filter((p) => p.logo_url && p.logo_url.trim() !== "");
           if (dbBrands.length > 0) {
             setBrands(dbBrands);
+            setFromDatabase(true);
           }
         }
       } catch (err) {
@@ -51,17 +51,11 @@ const Partners = () => {
   const marqueeItems = [...brands, ...brands, ...brands];
 
   return (
-    <section className="py-8 bg-muted/10 border-y border-border/30 overflow-hidden">
+    <section className="py-8 bg-background border-b border-border overflow-hidden">
       <div className="container mx-auto px-4 mb-6 text-center">
-        <h3 className="text-xl md:text-2xl font-bold font-['Space_Grotesk'] text-foreground">
-          {userName
-            ? `${userName}, We're Trusted by Industry Leaders`
-            : "Trusted by Industry Leaders"
-          }
+        <h3 className="text-xl md:text-2xl font-bold text-foreground">
+          {fromDatabase ? "Trusted by growing businesses" : "Platforms and technologies we build with"}
         </h3>
-        <p className="text-xs md:text-sm text-muted-foreground font-['Outfit'] mt-1">
-          Powering innovation alongside world-class organizations
-        </p>
       </div>
 
       {/* Small Marquee Slider */}

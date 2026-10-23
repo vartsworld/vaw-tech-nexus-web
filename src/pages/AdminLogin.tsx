@@ -152,7 +152,7 @@ const AdminLogin = () => {
 
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <span className="font-bold text-2xl font-['Space_Grotesk'] text-gradient">
+            <span className="font-bold text-2xl font-display text-gradient">
               VAW<span className="text-accent">tech</span>
             </span>
           </div>

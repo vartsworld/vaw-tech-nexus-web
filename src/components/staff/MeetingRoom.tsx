@@ -30,7 +30,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   Heart,
-  Copy
+  Copy,
+  X
 } from "lucide-react";
 
 // Video component

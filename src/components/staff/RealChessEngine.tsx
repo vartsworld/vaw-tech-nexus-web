@@ -336,7 +336,7 @@ const RealChessEngine = ({ userId, userProfile }: { userId: string; userProfile:
   // ── Click-to-Move ──────────────────────────────────────────────────────────
   const getMoveOptions = (square: string) => {
     const moves = chess.moves({
-      square,
+      square: square as any,
       verbose: true,
     });
     if (moves.length === 0) {

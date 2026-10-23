@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
-import MobileHeader from "@/components/MobileHeader";
 import Footer from "@/components/Footer";
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -177,7 +176,6 @@ const NotFound = () => {
         description="The sector or page coordinates you requested do not exist in the VAW Technologies Nexus. Return home or browse our services."
       />
       <Navbar />
-      <MobileHeader />
 
       {/* Futuristic Background Atmospheric Mesh & Grid */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">

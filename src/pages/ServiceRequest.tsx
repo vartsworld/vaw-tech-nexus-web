@@ -28,13 +28,13 @@ const ServiceRequest = () => {
         ogImage="/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png"
       />
       <Navbar />
-      <section className="py-16 md:py-24">
+      <section className="pt-28 pb-16 md:pt-36 md:pb-24">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
+            <h1 className="text-3xl md:text-4xl font-bold mb-4 font-display">
               Request Our <span className="text-gradient">Services</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-['Outfit']">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto font-sans">
               Tell us about your project needs, and we'll help bring your vision to reality.
             </p>
           </div>

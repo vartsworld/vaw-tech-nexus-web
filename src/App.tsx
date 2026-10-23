@@ -3,90 +3,96 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { bind } from "cuelume";
 
 import Index from "./pages/Index";
-import ServiceRequest from "./pages/ServiceRequest";
-import AdminLogin from "./pages/AdminLogin";
-import AdminDashboard from "./pages/AdminDashboard";
-import HRDashboard from "./pages/HRDashboard";
-import LegacyHRDashboard from "./pages/LegacyHRDashboard";
-import Internship from "./pages/Internship";
-import InternshipRegistration from "./pages/InternshipRegistration";
-import InternExperience from "./pages/InternExperience";
-import TeamApplication from "./pages/TeamApplication";
-import TrackApplication from "./pages/TrackApplication";
-import ReKYCPage from "./pages/ReKYCPage";
-import Pricing from "./pages/Pricing";
-import DigitalMarketing from "./pages/DigitalMarketing";
-import WebAppDevelopment from "./pages/WebAppDevelopment";
-import WebsiteDevelopment from "./pages/WebsiteDevelopment";
-import AISolutions from "./pages/AISolutions";
-import VRARDevelopment from "./pages/VRARDevelopment";
-import DigitalDesign from "./pages/DigitalDesign";
-import About from "./pages/About";
-import Career from "./pages/Career";
-import Contact from "./pages/Contact";
+const ServiceRequest = lazy(() => import("./pages/ServiceRequest"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const HRDashboard = lazy(() => import("./pages/HRDashboard"));
+const LegacyHRDashboard = lazy(() => import("./pages/LegacyHRDashboard"));
+const Internship = lazy(() => import("./pages/Internship"));
+const InternshipRegistration = lazy(() => import("./pages/InternshipRegistration"));
+const InternExperience = lazy(() => import("./pages/InternExperience"));
+const TeamApplication = lazy(() => import("./pages/TeamApplication"));
+const TrackApplication = lazy(() => import("./pages/TrackApplication"));
+const ReKYCPage = lazy(() => import("./pages/ReKYCPage"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const DigitalMarketing = lazy(() => import("./pages/DigitalMarketing"));
+const WebAppDevelopment = lazy(() => import("./pages/WebAppDevelopment"));
+const WebsiteDevelopment = lazy(() => import("./pages/WebsiteDevelopment"));
+const AISolutions = lazy(() => import("./pages/AISolutions"));
+const VRARDevelopment = lazy(() => import("./pages/VRARDevelopment"));
+const DigitalDesign = lazy(() => import("./pages/DigitalDesign"));
+const About = lazy(() => import("./pages/About"));
+const Career = lazy(() => import("./pages/Career"));
+const Contact = lazy(() => import("./pages/Contact"));
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./providers/ThemeProvider";
 import { UserProvider } from "./context/UserContext";
 import ScrollToTop from "./components/ScrollToTop";
 import { useUser } from "./context/UserContext";
-import StaffDashboard from "./pages/StaffDashboard";
-import StaffTaskDetail from "./pages/StaffTaskDetail";
-import StaffWork from "./pages/StaffWork";
-import StaffLogin from "./pages/StaffLogin";
-import TeamHeadDashboard from "./pages/TeamHeadDashboard";
-import AccountDashboard from "./pages/AccountDashboard";
-import ClientPortal from "./pages/ClientPortal";
-import VAWCups from "./pages/VAWCups";
-import VAWVendor from "./pages/VAWVendor";
-import VAWSponsor from "./pages/VAWSponsor";
-import VAWAdmin from "./pages/VAWAdmin";
-import MyCoins from "./pages/MyCoins";
-import ProjectMonitor from "./pages/ProjectMonitor";
-import Install from "./pages/Install";
-import ClientLogin from "./pages/ClientLogin";
-import ClientDashboard from "./pages/ClientDashboard";
-import SuperAdminDashboard from "./pages/SuperAdminDashboard";
-import DigitalMarketingInternship from "./pages/DigitalMarketingInternship";
-import ClientOnboarding from "./pages/ClientOnboarding";
-import StaffIDCard from "./pages/StaffIDCard";
-import TermsOfService from "./pages/TermsOfService";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import DataDeletion from "./pages/DataDeletion";
-import LMSBuilder from "./pages/LMSBuilder";
-import ReferralProgram from "./pages/ReferralProgram";
-import ReferralFormPage from "./pages/ReferralFormPage";
-import Team from "./pages/Team";
-import QRRedirection from "./pages/QRRedirection";
-import SalesDashboard from "./pages/SalesDashboard";
-import SalesAgenda from "./components/sales/SalesAgenda";
-import SalesPricing from "./components/sales/SalesPricing";
-import SalesPlans from "./components/sales/SalesPlans";
-import SalesOnboarding from "./components/sales/SalesOnboarding";
-import MonthlyPlannerPage from "./pages/MonthlyPlannerPage";
-import AddClient from "./pages/AddClient";
-import Portal from "./pages/Portal";
-import ClientFeedback from "./pages/ClientFeedback";
-import GPSProposal from "./pages/GPSProposal";
-import GPSAIProposal from "./pages/GPSAIProposal";
-import FintechProposal from "./pages/FintechProposal";
-import FintechProposal2 from "./pages/FintechProposal2";
-import VAWAcademy from "./pages/VAWAcademy";
-import ToolsNexus from "./pages/ToolsNexus";
-import InboxPage from "./pages/InboxPage";
-import NotesPage from "./pages/NotesPage";
-import OnboardingPage from "./pages/OnboardingPage";
-import LeavePage from "./pages/LeavePage";
-import ActivityPage from "./pages/ActivityPage";
-import DocsPage from "./pages/DocsPage";
-import OperationsPage from "./pages/OperationsPage";
-import ChannelsPage from "./pages/ChannelsPage";
-import SketchItMakeIt from "./pages/SketchItMakeIt";
+const StaffDashboard = lazy(() => import("./pages/StaffDashboard"));
+const StaffTaskDetail = lazy(() => import("./pages/StaffTaskDetail"));
+const StaffWork = lazy(() => import("./pages/StaffWork"));
+const StaffLogin = lazy(() => import("./pages/StaffLogin"));
+const TeamHeadDashboard = lazy(() => import("./pages/TeamHeadDashboard"));
+const AccountDashboard = lazy(() => import("./pages/AccountDashboard"));
+const ClientPortal = lazy(() => import("./pages/ClientPortal"));
+const VAWCups = lazy(() => import("./pages/VAWCups"));
+const VAWVendor = lazy(() => import("./pages/VAWVendor"));
+const VAWSponsor = lazy(() => import("./pages/VAWSponsor"));
+const VAWAdmin = lazy(() => import("./pages/VAWAdmin"));
+const MyCoins = lazy(() => import("./pages/MyCoins"));
+const ProjectMonitor = lazy(() => import("./pages/ProjectMonitor"));
+const Install = lazy(() => import("./pages/Install"));
+const ClientLogin = lazy(() => import("./pages/ClientLogin"));
+const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
+const SuperAdminDashboard = lazy(() => import("./pages/SuperAdminDashboard"));
+const DigitalMarketingInternship = lazy(() => import("./pages/DigitalMarketingInternship"));
+const ClientOnboarding = lazy(() => import("./pages/ClientOnboarding"));
+const StaffIDCard = lazy(() => import("./pages/StaffIDCard"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const DataDeletion = lazy(() => import("./pages/DataDeletion"));
+const LMSBuilder = lazy(() => import("./pages/LMSBuilder"));
+const ReferralProgram = lazy(() => import("./pages/ReferralProgram"));
+const ReferralFormPage = lazy(() => import("./pages/ReferralFormPage"));
+const Team = lazy(() => import("./pages/Team"));
+const QRRedirection = lazy(() => import("./pages/QRRedirection"));
+const SalesDashboard = lazy(() => import("./pages/SalesDashboard"));
+const SalesAgenda = lazy(() => import("./components/sales/SalesAgenda"));
+const SalesPricing = lazy(() => import("./components/sales/SalesPricing"));
+const SalesPlans = lazy(() => import("./components/sales/SalesPlans"));
+const SalesOnboarding = lazy(() => import("./components/sales/SalesOnboarding"));
+const MonthlyPlannerPage = lazy(() => import("./pages/MonthlyPlannerPage"));
+const AddClient = lazy(() => import("./pages/AddClient"));
+const Portal = lazy(() => import("./pages/Portal"));
+const ClientFeedback = lazy(() => import("./pages/ClientFeedback"));
+const GPSProposal = lazy(() => import("./pages/GPSProposal"));
+const GPSAIProposal = lazy(() => import("./pages/GPSAIProposal"));
+const FintechProposal = lazy(() => import("./pages/FintechProposal"));
+const FintechProposal2 = lazy(() => import("./pages/FintechProposal2"));
+const VAWAcademy = lazy(() => import("./pages/VAWAcademy"));
+const ToolsNexus = lazy(() => import("./pages/ToolsNexus"));
+const InboxPage = lazy(() => import("./pages/InboxPage"));
+const NotesPage = lazy(() => import("./pages/NotesPage"));
+const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
+const LeavePage = lazy(() => import("./pages/LeavePage"));
+const ActivityPage = lazy(() => import("./pages/ActivityPage"));
+const DocsPage = lazy(() => import("./pages/DocsPage"));
+const OperationsPage = lazy(() => import("./pages/OperationsPage"));
+const ChannelsPage = lazy(() => import("./pages/ChannelsPage"));
+const SketchItMakeIt = lazy(() => import("./pages/SketchItMakeIt"));
 
 
+
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background" role="status" aria-label="Loading page">
+    <div className="h-8 w-8 rounded-full border-2 border-muted border-t-primary animate-spin" />
+  </div>
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -137,6 +143,7 @@ const AppContent = () => {
       <BrowserRouter>
         <ScrollToTop />
         <ManifestSwitcher />
+        <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/about" element={<About />} />
@@ -226,6 +233,7 @@ const AppContent = () => {
           <Route path="/sketchit-makeit" element={<SketchItMakeIt />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </>
   );

@@ -192,7 +192,7 @@ const InternExperience = () => {
           <div className="container mx-auto px-4 text-center">
             <div className="max-w-2xl mx-auto space-y-8">
               <Award className="w-24 h-24 mx-auto text-primary animate-pulse" />
-              <h1 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk']">
+              <h1 className="text-3xl md:text-4xl font-bold font-display">
                 Thank You for Sharing Your Experience!
               </h1>
               <div className="tech-card space-y-6">
@@ -413,13 +413,13 @@ const InternExperience = () => {
       />
       <Navbar />
       
-      <section className="py-16 md:py-24">
+      <section className="pt-28 pb-16 md:pt-36 md:pb-24">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
+            <h1 className="text-3xl md:text-4xl font-bold mb-4 font-display">
               Share Your <span className="text-gradient">Internship Experience</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto font-['Outfit']">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto font-sans">
               Help us improve our program and get your completion certificate by sharing your valuable feedback.
             </p>
           </div>

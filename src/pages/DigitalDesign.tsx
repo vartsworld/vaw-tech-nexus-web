@@ -91,7 +91,7 @@ const DigitalDesign = () => {
               <span className="text-tech-gold font-medium">Digital Design</span>
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 font-['Space_Grotesk'] animate-slide-in" style={{ animationDelay: '0.2s' }}>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 font-display animate-slide-in" style={{ animationDelay: '0.2s' }}>
               Creative <span className="text-gradient bg-gradient-to-r from-tech-gold to-tech-red bg-clip-text text-transparent">Digital Designs</span>
             </h1>
 
@@ -118,7 +118,7 @@ const DigitalDesign = () => {
       <section className="py-16">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-display">
               Our Design <span className="text-tech-gold">Showcase</span>
             </h2>
             <p className="text-lg text-muted-foreground">
@@ -151,7 +151,7 @@ const DigitalDesign = () => {
       <section className="py-20 bg-gradient-to-r from-tech-dark/30 to-tech-gray/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-display">
               Our Design <span className="text-gradient">Services</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -198,7 +198,7 @@ const DigitalDesign = () => {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-display">
               Our Creative <span className="text-tech-red">Process</span>
             </h2>
           </div>
@@ -232,7 +232,7 @@ const DigitalDesign = () => {
       <section className="py-20 bg-gradient-to-r from-tech-gold/10 to-tech-red/10">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 font-display">
               Our Design <span className="text-tech-purple">Toolkit</span>
             </h2>
           </div>
@@ -261,7 +261,7 @@ const DigitalDesign = () => {
       <section className="py-20">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6 font-['Space_Grotesk']">
+            <h2 className="text-3xl md:text-4xl font-bold mb-6 font-display">
               Ready to Transform Your <span className="text-gradient">Brand?</span>
             </h2>
             <p className="text-lg text-muted-foreground mb-8">

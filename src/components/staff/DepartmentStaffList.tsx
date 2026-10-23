@@ -113,7 +113,7 @@ const DepartmentStaffList = ({
         .map(m => m.user_id)
         .filter(Boolean);
 
-      let taskStats: Record<string, { completed: number; inProgress: number }> = {};
+      const taskStats: Record<string, { completed: number; inProgress: number }> = {};
 
       if (memberUserIds.length > 0) {
         const { data: taskData } = await supabase

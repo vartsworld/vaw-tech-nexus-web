@@ -4,6 +4,7 @@ import { Moon, Sun } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/hooks/use-theme";
 import vawLogoDark from "@/assets/vaw-logo-dark.png";
+import MobileHeader from "@/components/MobileHeader";
 
 const navigationItems = [
   { name: "Home", href: "/" },
@@ -27,6 +28,8 @@ const Navbar = () => {
   }, []);
 
   return (
+    <>
+    <MobileHeader />
     <nav className={`hidden md:block fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       isScrolled ? "bg-card/95 backdrop-blur-md shadow-lg py-3 rounded-b-[2rem] mx-4 border border-border/50" : "bg-transparent py-6"
     }`}>
@@ -77,6 +80,7 @@ const Navbar = () => {
         </div>
       </div>
     </nav>
+    </>
   );
 };
 

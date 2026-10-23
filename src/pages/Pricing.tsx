@@ -1,774 +1,392 @@
-import { useEffect, useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Check, Clock, Star, Shield, Zap, Globe, TrendingUp, Bot, Package,
-  Sparkles, Plus, Search, X, Copy, CheckCircle2, ShieldCheck, Server,
-  Headphones, ArrowRight, ArrowUpRight, HelpCircle, AlertCircle
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { AlertCircle, ArrowRight, RefreshCw, ShoppingBag } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import PricingInquiryForm from "@/components/PricingInquiryForm";
 import SEO from "@/components/SEO";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { toast } from "@/hooks/use-toast";
+import { usePricingData } from "@/hooks/usePricingData";
+import PackageCard from "@/components/pricing/PackageCard";
+import AddonCard from "@/components/pricing/AddonCard";
+import CartSummaryPanel from "@/components/pricing/CartSummaryPanel";
+import CheckoutForm, { type SubmittedPlan } from "@/components/pricing/CheckoutForm";
+import CustomRequestForm from "@/components/pricing/CustomRequestForm";
+import RequestSent from "@/components/pricing/RequestSent";
+import PromoBanner from "@/components/pricing/PromoBanner";
+import { CONTACT_EMAIL } from "@/lib/inquiries";
+import { EMPTY_CART, formatPrice, loadCart, saveCart, summarizeCart, type CartState } from "@/lib/pricing";
+import { cn } from "@/lib/utils";
 
-interface PricingTier {
-  id: string;
-  name: string;
-  slug?: string;
-  originalPrice: number;
-  discountPrice: number;
-  icon_name?: string;
-  popular?: boolean;
-  features: string[];
-  description: string;
-  category?: string;
-}
-
-interface PricingAddon {
-  id: string;
-  name: string;
-  slug?: string;
-  description: string;
-  price: number;
-}
-
-interface PromotionalOffer {
-  is_enabled: boolean;
-  badge_text: string;
-  title: string;
-  discount_label: string;
-  description: string;
-  coupon_code: string;
-  end_date: string;
-  button_text: string;
-  highlights: string[];
-}
-
-const IconComponent = ({ name, className }: { name?: string; className?: string }) => {
-  const props = { className: className || "h-7 w-7" };
-  switch (name) {
-    case "Zap": return <Zap {...props} />;
-    case "Shield": return <Shield {...props} />;
-    case "Star": return <Star {...props} />;
-    case "TrendingUp": return <TrendingUp {...props} />;
-    case "Bot": return <Bot {...props} />;
-    case "Package": return <Package {...props} />;
-    case "Sparkles": return <Sparkles {...props} />;
-    default: return <Globe {...props} />;
-  }
-};
-
-const ICON_COLOR_MAP: Record<string, string> = {
-  Globe: "text-tech-blue",
-  Zap: "text-tech-purple",
-  Shield: "text-amber-400",
-  Star: "text-tech-red",
-  TrendingUp: "text-tech-purple",
-  Bot: "text-emerald-400",
-  Package: "text-tech-blue",
-  Sparkles: "text-amber-400",
-};
-
-// Auto-categorize packages for user-friendly filtering
-const inferCategory = (name: string, description: string): string => {
-  const text = `${name} ${description}`.toLowerCase();
-  if (text.includes("e-commerce") || text.includes("store") || text.includes("cart") || text.includes("catalog")) {
-    return "E-Commerce";
-  }
-  if (text.includes("ai") || text.includes("bot") || text.includes("machine learning") || text.includes("automation")) {
-    return "AI & Automation";
-  }
-  if (text.includes("news") || text.includes("social") || text.includes("media") || text.includes("feed")) {
-    return "Media & News";
-  }
-  return "Web Development";
-};
-
-const CATEGORIES = ["All Plans", "Web Development", "E-Commerce", "AI & Automation", "Media & News"];
+type View = "build" | "checkout" | "sent";
+const ALL = "All";
 
 const Pricing = () => {
-  const { toast } = useToast();
-  const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
-  const [addons, setAddons] = useState<PricingAddon[]>([]);
-  const [promotionalOffer, setPromotionalOffer] = useState<PromotionalOffer | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { packages, addons, offer, loading, error, reload } = usePricingData();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Search & Filter state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All Plans");
-  const [sortBy, setSortBy] = useState<"featured" | "price-asc" | "price-desc">("featured");
-  const [copiedCoupon, setCopiedCoupon] = useState(false);
+  const [cart, setCart] = useState<CartState>(() => loadCart());
+  const [view, setView] = useState<View>("build");
+  const [sent, setSent] = useState<SubmittedPlan | null>(null);
+  const [tab, setTab] = useState<"build" | "custom">(searchParams.get("tab") === "custom" ? "custom" : "build");
+  const [category, setCategory] = useState(ALL);
+  const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc">("featured");
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const topRef = useRef<HTMLDivElement>(null);
+  const preselected = useRef(false);
 
-  // Countdown timer state
-  const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number; minutes: number; seconds: number } | null>(null);
+  /* Persist the cart between visits */
+  useEffect(() => saveCart(cart), [cart]);
 
-  // Load public pricing and offer data
-  const fetchAllData = async () => {
-    try {
-      const [pkgRes, addonRes, offerRes] = await Promise.all([
-        supabase
-          .from("pricing_packages")
-          .select("*")
-          .eq("is_enabled", true)
-          .order("sort_order"),
-        supabase
-          .from("pricing_addons")
-          .select("*")
-          .eq("is_enabled", true)
-          .order("sort_order"),
-        supabase
-          .from("app_settings")
-          .select("value")
-          .eq("key", "pricing_promotional_offer")
-          .maybeSingle(),
-      ]);
-
-      if (pkgRes.data) {
-        setPricingTiers(
-          pkgRes.data.map(pkg => ({
-            id: pkg.id,
-            name: pkg.name,
-            slug: pkg.slug,
-            originalPrice: pkg.original_price,
-            discountPrice: pkg.discount_price,
-            icon_name: pkg.icon_name,
-            popular: pkg.is_popular,
-            features: pkg.features || [],
-            description: pkg.description || "",
-            category: inferCategory(pkg.name, pkg.description || ""),
-          }))
-        );
-      }
-
-      if (addonRes.data) {
-        setAddons(addonRes.data);
-      }
-
-      if (offerRes.data?.value) {
-        setPromotionalOffer(offerRes.data.value as unknown as PromotionalOffer);
-      } else {
-        const cached = localStorage.getItem("pricing_promotional_offer");
-        if (cached) {
-          try {
-            setPromotionalOffer(JSON.parse(cached));
-          } catch {}
-        }
-      }
-    } catch (err) {
-      console.error("Error fetching pricing data:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  /* Drop anything that no longer exists in the price list (HR may disable items) */
   useEffect(() => {
-    fetchAllData();
-
-    // Real-time synchronization so changes made by HR in /hr take effect immediately
-    const channel = supabase
-      .channel("public-pricing-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "pricing_packages" }, fetchAllData)
-      .on("postgres_changes", { event: "*", schema: "public", table: "pricing_addons" }, fetchAllData)
-      .on("postgres_changes", { event: "*", schema: "public", table: "app_settings" }, fetchAllData)
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  // Update countdown timer whenever promotional offer changes
-  useEffect(() => {
-    if (!promotionalOffer?.is_enabled || !promotionalOffer?.end_date) {
-      setTimeLeft(null);
-      return;
-    }
-
-    const calculateTime = () => {
-      const end = new Date(promotionalOffer.end_date).getTime();
-      // Assume end of day if only date is specified
-      const targetTime = end + 24 * 60 * 60 * 1000 - 1000;
-      const now = new Date().getTime();
-      const distance = targetTime - now;
-
-      if (distance > 0) {
-        setTimeLeft({
-          days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-          hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-          minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-          seconds: Math.floor((distance % (1000 * 60)) / 1000),
-        });
-      } else {
-        setTimeLeft(null);
-      }
-    };
-
-    calculateTime();
-    const interval = setInterval(calculateTime, 1000);
-    return () => clearInterval(interval);
-  }, [promotionalOffer]);
-
-  const copyCouponCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCoupon(true);
-    toast({
-      title: "Coupon Copied!",
-      description: `Coupon "${code}" copied to clipboard. Mention it during inquiry!`,
+    if (loading || error) return;
+    setCart((c) => {
+      const packageId = c.packageId && packages.some((p) => p.id === c.packageId) ? c.packageId : null;
+      const addonIds = c.addonIds.filter((id) => addons.some((a) => a.id === id));
+      if (packageId === c.packageId && addonIds.length === c.addonIds.length) return c;
+      return { ...c, packageId, addonIds };
     });
-    setTimeout(() => setCopiedCoupon(false), 2500);
+  }, [packages, addons, loading, error]);
+
+  /* Deep link: /pricing?package=<slug|id> preselects a package */
+  useEffect(() => {
+    if (loading || preselected.current) return;
+    preselected.current = true;
+    const wanted = searchParams.get("package") || searchParams.get("plan");
+    if (!wanted) return;
+    const match = packages.find((p) => p.slug === wanted || p.id === wanted);
+    if (match) setCart((c) => ({ ...c, packageId: match.id }));
+  }, [loading, packages, searchParams]);
+
+  const summary = useMemo(() => summarizeCart(cart, packages, addons), [cart, packages, addons]);
+
+  /* If the cart empties while on the checkout step, go back */
+  useEffect(() => {
+    if (view === "checkout" && summary.itemCount === 0) setView("build");
+  }, [view, summary.itemCount]);
+
+  const scrollToTop = () => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  const goTo = (next: View) => {
+    setView(next);
+    setSheetOpen(false);
+    requestAnimationFrame(scrollToTop);
   };
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(price);
+  const changeTab = (value: string) => {
+    const next = value === "custom" ? "custom" : "build";
+    setTab(next);
+    const params = new URLSearchParams(searchParams);
+    if (next === "custom") params.set("tab", "custom");
+    else params.delete("tab");
+    setSearchParams(params, { replace: true });
+  };
 
-  // Filter & sort tiers
-  const filteredTiers = useMemo(() => {
-    let result = [...pricingTiers];
+  /* ── cart actions ── */
+  const togglePackage = useCallback((id: string) => setCart((c) => ({ ...c, packageId: c.packageId === id ? null : id })), []);
+  const toggleAddon = useCallback(
+    (id: string) =>
+      setCart((c) => ({ ...c, addonIds: c.addonIds.includes(id) ? c.addonIds.filter((x) => x !== id) : [...c.addonIds, id] })),
+    []
+  );
+  const applyCoupon = (code: string) => {
+    setCart((c) => ({ ...c, coupon: code }));
+    toast({ title: "Coupon added", description: `${code} will be included with your request.` });
+  };
+  const clearCart = () => setCart(EMPTY_CART);
 
-    // Category filter
-    if (selectedCategory !== "All Plans") {
-      result = result.filter(t => t.category === selectedCategory);
-    }
+  /* ── filtering ── */
+  const categories = useMemo(() => Array.from(new Set(packages.map((p) => p.category))), [packages]);
+  const visiblePackages = useMemo(() => {
+    const list = category === ALL ? [...packages] : packages.filter((p) => p.category === category);
+    if (sort === "price-asc") list.sort((a, b) => a.price - b.price);
+    else if (sort === "price-desc") list.sort((a, b) => b.price - a.price);
+    else list.sort((a, b) => Number(b.popular) - Number(a.popular));
+    return list;
+  }, [packages, category, sort]);
 
-    // Search query filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        t =>
-          t.name.toLowerCase().includes(q) ||
-          t.description.toLowerCase().includes(q) ||
-          t.features.some(f => f.toLowerCase().includes(q))
-      );
-    }
+  const canContinue = summary.itemCount > 0;
 
-    // Sort order
-    if (sortBy === "price-asc") {
-      result.sort((a, b) => a.discountPrice - b.discountPrice);
-    } else if (sortBy === "price-desc") {
-      result.sort((a, b) => b.discountPrice - a.discountPrice);
-    } else {
-      // Featured / Default: popular items first
-      result.sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
-    }
+  const continueButton = (
+    <Button type="button" size="lg" className="w-full font-semibold" disabled={!canContinue} onClick={() => goTo("checkout")}>
+      Continue to details <ArrowRight className="h-4 w-4" aria-hidden="true" />
+    </Button>
+  );
 
-    return result;
-  }, [pricingTiers, selectedCategory, searchQuery, sortBy]);
+  const customLink = (
+    <p className="mt-4 border-t border-border pt-4 text-sm text-muted-foreground">
+      Need something that isn't listed?{" "}
+      <button
+        type="button"
+        className="font-semibold text-foreground underline underline-offset-2 hover:text-brand"
+        onClick={() => {
+          setSheetOpen(false);
+          changeTab("custom");
+          requestAnimationFrame(scrollToTop);
+        }}
+      >
+        Send a custom request
+      </button>
+    </p>
+  );
+
+  const cartPanel = (
+    <CartSummaryPanel
+      summary={summary}
+      coupon={cart.coupon}
+      onRemovePackage={() => setCart((c) => ({ ...c, packageId: null }))}
+      onRemoveAddon={toggleAddon}
+      onClearCoupon={() => setCart((c) => ({ ...c, coupon: "" }))}
+      onClear={clearCart}
+      action={continueButton}
+      footer={customLink}
+    />
+  );
 
   return (
-    <div className="min-h-screen bg-[#0A0A0E] text-foreground overflow-x-hidden selection:bg-indigo-500/30 selection:text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <SEO
-        title="Pricing & Investment Packages | VAW Technologies"
-        description="Transparent and value-driven pricing for custom web development, AI integration, high-growth e-commerce platforms, and digital enterprise software at VAW Technologies."
-        keywords="web development pricing, web app cost, AI website cost, e-commerce development pricing, VAW Technologies packages, Kerala IT agency rates"
+        title="Pricing & Packages | VAW Technologies"
+        description="Pick a website, web app or AI package, add the extras you need and send us your request. Clear one-time prices from VAW Technologies, Kerala."
+        keywords="web development pricing, website cost Kerala, web app cost, e-commerce development pricing, VAW Technologies packages"
         ogImage="/og/pricing.png"
       />
       <Navbar />
 
-      {/* ── HERO SECTION ── */}
-      <section className="relative pt-32 pb-16 overflow-hidden">
-        {/* Cyberpunk Glow Background Effects */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-gradient-to-tr from-indigo-600/15 via-purple-600/10 to-transparent blur-[120px] pointer-events-none rounded-full" />
-        <div className="absolute -top-10 left-10 w-96 h-96 bg-tech-blue/10 blur-[130px] pointer-events-none rounded-full" />
-        <div className="absolute top-40 right-10 w-80 h-80 bg-amber-500/10 blur-[140px] pointer-events-none rounded-full" />
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center space-y-6">
-            {/* Pill Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md shadow-lg shadow-indigo-500/5">
-              <Sparkles className="h-4 w-4 text-amber-400 animate-pulse" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-gray-300">
-                Transparent &amp; Value-Driven Pricing
-              </span>
-            </div>
-
-            {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight font-['Space_Grotesk'] leading-[1.15]">
-              Engineering Scalable Digital Experiences With{" "}
-              <span className="text-gradient">Predictable Pricing</span>
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-              No hidden fees, no ambiguity. Full-cycle development backed by enterprise architecture, high-speed hosting, and post-launch technical support.
+      <main className={cn("pt-28 md:pt-36", view === "build" && tab === "build" && summary.itemCount > 0 ? "pb-32 lg:pb-20" : "pb-20")}>
+        <div ref={topRef} className="container mx-auto px-4 sm:px-8 scroll-mt-24">
+          <header className="max-w-2xl">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground">Build your plan</h1>
+            <p className="mt-4 text-base sm:text-lg text-muted-foreground leading-relaxed">
+              Choose a package, add whatever extras you need, then send us your details. You'll get a confirmed scope and price before anything is
+              charged.
             </p>
+          </header>
 
-            {/* Trust Highlights Grid */}
-            <div className="pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-3xl mx-auto">
-              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/5 text-left">
-                <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
-                <div>
-                  <div className="text-xs font-semibold text-white">100% IP Ownership</div>
-                  <div className="text-[10px] text-gray-500">Full source code & rights</div>
-                </div>
-              </div>
+          <div className="mt-8 space-y-8">
+            <PromoBanner offer={offer} appliedCoupon={cart.coupon} onApply={applyCoupon} />
 
-              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/5 text-left">
-                <Server className="h-5 w-5 text-tech-blue shrink-0" />
-                <div>
-                  <div className="text-xs font-semibold text-white">Free 1-Yr Cloud Hosting</div>
-                  <div className="text-[10px] text-gray-500">Domain + SSL Included</div>
-                </div>
-              </div>
+            <Tabs value={tab} onValueChange={changeTab}>
+              <TabsList className="h-auto w-full justify-start gap-1 sm:w-auto">
+                <TabsTrigger value="build" className="flex-1 sm:flex-none px-4 py-2">
+                  Packages &amp; add-ons
+                </TabsTrigger>
+                <TabsTrigger value="custom" className="flex-1 sm:flex-none px-4 py-2">
+                  Custom request
+                </TabsTrigger>
+              </TabsList>
 
-              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/5 text-left">
-                <Zap className="h-5 w-5 text-amber-400 shrink-0" />
-                <div>
-                  <div className="text-xs font-semibold text-white">7-14 Days Delivery</div>
-                  <div className="text-[10px] text-gray-500">Rapid agile deployment</div>
-                </div>
-              </div>
+              {/* ───────────── BUILD ───────────── */}
+              <TabsContent value="build" className="mt-8 focus-visible:outline-none">
+                {view === "sent" && sent ? (
+                  <RequestSent
+                    result={sent}
+                    onStartOver={() => {
+                      clearCart();
+                      setSent(null);
+                      goTo("build");
+                    }}
+                  />
+                ) : view === "checkout" ? (
+                  <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+                    <CheckoutForm
+                      summary={summary}
+                      coupon={cart.coupon}
+                      onBack={() => goTo("build")}
+                      onSubmitted={(result) => {
+                        setSent(result);
+                        goTo("sent");
+                      }}
+                    />
+                    <div className="lg:sticky lg:top-28 order-first lg:order-none">
+                      <CartSummaryPanel summary={summary} coupon={cart.coupon} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+                    <div className="space-y-14 min-w-0">
+                      {/* Step 1 */}
+                      <section aria-labelledby="step-packages">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-brand">Step 1</p>
+                            <h2 id="step-packages" className="text-2xl font-bold text-foreground">
+                              Choose a package
+                            </h2>
+                          </div>
+                          {!loading && !error && packages.length > 1 && (
+                            <div className="flex items-center gap-2">
+                              <label htmlFor="pricing-sort" className="text-sm text-muted-foreground">
+                                Sort
+                              </label>
+                              <select
+                                id="pricing-sort"
+                                value={sort}
+                                onChange={(e) => setSort(e.target.value as typeof sort)}
+                                className="h-9 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                              >
+                                <option value="featured">Featured</option>
+                                <option value="price-asc">Price: low to high</option>
+                                <option value="price-desc">Price: high to low</option>
+                              </select>
+                            </div>
+                          )}
+                        </div>
 
-              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/[0.02] border border-white/5 text-left">
-                <Headphones className="h-5 w-5 text-tech-purple shrink-0" />
-                <div>
-                  <div className="text-xs font-semibold text-white">Dedicated Tech Lead</div>
-                  <div className="text-[10px] text-gray-500">Priority SLA support</div>
+                        {!loading && !error && categories.length > 1 && packages.length > 3 && (
+                          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter packages by category">
+                            {[ALL, ...categories].map((c) => (
+                              <button
+                                key={c}
+                                type="button"
+                                onClick={() => setCategory(c)}
+                                aria-pressed={category === c}
+                                className={cn(
+                                  "rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors",
+                                  category === c
+                                    ? "border-primary bg-primary text-primary-foreground"
+                                    : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/40"
+                                )}
+                              >
+                                {c}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="mt-6">
+                          {loading ? (
+                            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
+                              {[0, 1, 2].map((i) => (
+                                <Skeleton key={i} className="h-[420px] rounded-xl" />
+                              ))}
+                            </div>
+                          ) : error ? (
+                            <div className="rounded-xl border border-border bg-card p-8 text-center" role="alert">
+                              <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" />
+                              <h3 className="mt-3 font-semibold text-foreground">{error}</h3>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                Check your connection and try again, or send us a custom request and we'll quote you directly.
+                              </p>
+                              <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+                                <Button type="button" variant="outline" onClick={() => reload()}>
+                                  <RefreshCw className="h-4 w-4" /> Try again
+                                </Button>
+                                <Button type="button" onClick={() => changeTab("custom")}>
+                                  Send a custom request
+                                </Button>
+                              </div>
+                            </div>
+                          ) : packages.length === 0 ? (
+                            <div className="rounded-xl border border-border bg-card p-8 text-center">
+                              <h3 className="font-semibold text-foreground">Packages are being updated</h3>
+                              <p className="mt-1 text-sm text-muted-foreground">Send us a custom request and we'll prepare a quote for you.</p>
+                              <Button type="button" className="mt-5" onClick={() => changeTab("custom")}>
+                                Send a custom request
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                              {visiblePackages.map((pkg) => (
+                                <PackageCard key={pkg.id} pkg={pkg} selected={cart.packageId === pkg.id} onToggle={togglePackage} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </section>
+
+                      {/* Step 2 */}
+                      {!loading && !error && addons.length > 0 && (
+                        <section aria-labelledby="step-addons">
+                          <p className="text-sm font-semibold text-brand">Step 2 · Optional</p>
+                          <h2 id="step-addons" className="text-2xl font-bold text-foreground">
+                            Add extras
+                          </h2>
+                          <p className="mt-1.5 text-sm text-muted-foreground">Add as many as you like. Items marked “Quote” are priced after we talk.</p>
+                          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                            {addons.map((addon) => (
+                              <AddonCard key={addon.id} addon={addon} selected={cart.addonIds.includes(addon.id)} onToggle={toggleAddon} />
+                            ))}
+                          </div>
+                        </section>
+                      )}
+                    </div>
+
+                    {/* Cart – desktop */}
+                    <div className="hidden lg:block lg:sticky lg:top-28">{cartPanel}</div>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ───────────── CUSTOM ───────────── */}
+              <TabsContent value="custom" className="mt-8 focus-visible:outline-none">
+                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+                  <CustomRequestForm summary={summary} />
+                  <aside className="rounded-xl border border-border bg-card p-5 text-sm text-muted-foreground leading-relaxed">
+                    <h2 className="text-base font-bold text-foreground">What happens next</h2>
+                    <ol className="mt-3 list-decimal space-y-2 pl-5">
+                      <li>We read your request and ask any follow-up questions.</li>
+                      <li>You receive a tailored proposal with scope, timeline and price.</li>
+                      <li>You approve it, and we get started.</li>
+                    </ol>
+                    <p className="mt-4 border-t border-border pt-4">
+                      Prefer to talk? Email{" "}
+                      <a href={`mailto:${CONTACT_EMAIL}`} className="font-medium text-foreground underline underline-offset-2">
+                        {CONTACT_EMAIL}
+                      </a>
+                      .
+                    </p>
+                  </aside>
                 </div>
-              </div>
-            </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
-      </section>
+      </main>
 
-      {/* ── PROMOTIONAL OFFER BANNER (Configured by HR) ── */}
-      {promotionalOffer?.is_enabled && (
-        <section className="pb-12">
-          <div className="container mx-auto px-4 max-w-5xl">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1A132B]/90 via-[#12111E]/95 to-[#0F172A]/90 border border-amber-500/30 p-6 sm:p-8 shadow-2xl shadow-amber-500/10 backdrop-blur-xl">
-              {/* Decorative radial flare */}
-              <div className="absolute -top-24 -right-24 w-72 h-72 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                {/* Left: Offer Details */}
-                <div className="lg:col-span-7 space-y-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border-amber-500/40 text-xs px-3 py-1 font-semibold flex items-center gap-1.5">
-                      <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-                      {promotionalOffer.badge_text || "Special Limited Offer"}
-                    </Badge>
-                    {promotionalOffer.discount_label && (
-                      <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                        {promotionalOffer.discount_label}
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight font-['Space_Grotesk']">
-                    {promotionalOffer.title}
-                  </h3>
-
-                  <p className="text-sm text-gray-300 leading-relaxed">
-                    {promotionalOffer.description}
-                  </p>
-
-                  {/* Highlights Checklist */}
-                  {promotionalOffer.highlights && promotionalOffer.highlights.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                      {promotionalOffer.highlights.map((highlight, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-xs text-gray-200">
-                          <CheckCircle2 className="h-4 w-4 text-amber-400 shrink-0" />
-                          <span>{highlight}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Right: Countdown & Action */}
-                <div className="lg:col-span-5 flex flex-col items-center justify-center space-y-4 bg-white/[0.03] border border-white/10 rounded-2xl p-6 backdrop-blur-md">
-                  {/* Countdown Timer */}
-                  {timeLeft && (
-                    <div className="w-full text-center space-y-2">
-                      <div className="flex items-center justify-center gap-1.5 text-xs text-amber-300/90 font-medium">
-                        <Clock className="h-3.5 w-3.5 animate-pulse text-amber-400" />
-                        <span>Offer Valid Until Countdown Ends:</span>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2">
-                        {[
-                          { label: "Days", val: timeLeft.days },
-                          { label: "Hours", val: timeLeft.hours },
-                          { label: "Mins", val: timeLeft.minutes },
-                          { label: "Secs", val: timeLeft.seconds },
-                        ].map(({ label, val }) => (
-                          <div key={label} className="bg-black/40 border border-white/5 rounded-xl p-2.5">
-                            <div className="text-xl sm:text-2xl font-mono font-bold text-amber-300">
-                              {String(val).padStart(2, "0")}
-                            </div>
-                            <div className="text-[10px] uppercase tracking-wider text-gray-400">{label}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Coupon Code Pill */}
-                  {promotionalOffer.coupon_code && (
-                    <div className="w-full flex items-center justify-between p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                      <div className="text-left pl-1">
-                        <div className="text-[9px] uppercase tracking-widest text-amber-300/80">Coupon Code</div>
-                        <div className="text-sm font-mono font-bold text-white tracking-wide">
-                          {promotionalOffer.coupon_code}
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => copyCouponCode(promotionalOffer.coupon_code)}
-                        className="text-xs text-amber-300 hover:text-white hover:bg-amber-500/20 gap-1.5 h-8 px-3"
-                      >
-                        {copiedCoupon ? (
-                          <>
-                            <Check className="h-3.5 w-3.5 text-emerald-400" /> Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3.5 w-3.5" /> Copy Code
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  )}
-
-                  {/* Claim Offer CTA */}
-                  <PricingInquiryForm
-                    packageName={`Promotional Offer: ${promotionalOffer.title}`}
-                    packagePrice={0}
-                  >
-                    <Button className="w-full bg-gradient-to-r from-amber-500 via-orange-500 to-indigo-600 hover:from-amber-600 hover:to-indigo-700 text-white font-bold py-5 shadow-lg shadow-amber-500/20 text-sm">
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      {promotionalOffer.button_text || "Claim Offer Now"}
-                    </Button>
-                  </PricingInquiryForm>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ── PACKAGES & CATALOG SECTION ── */}
-      <section className="py-8 pb-24">
-        <div className="container mx-auto px-4 max-w-7xl">
-          {/* Search & Filter Toolbar */}
-          <div className="mb-12 space-y-6">
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-              {/* Search Bar */}
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search packages, features, technologies..."
-                  className="pl-10 pr-9 bg-[#121218] border-white/10 text-white placeholder:text-gray-500 focus-visible:ring-indigo-500 h-11 rounded-xl text-sm"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1"
-                    aria-label="Clear search"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-
-              {/* Sort Selector */}
-              <div className="flex items-center gap-2 self-end md:self-auto">
-                <span className="text-xs text-gray-400 shrink-0">Sort By:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-[#121218] border border-white/10 text-xs text-white rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500 cursor-pointer"
-                >
-                  <option value="featured">Featured / Popular</option>
-                  <option value="price-asc">Price: Low to High</option>
-                  <option value="price-desc">Price: High to Low</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Category Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-              {CATEGORIES.map((cat) => {
-                const isActive = selectedCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`text-xs px-4 py-2 rounded-xl font-medium transition-all shrink-0 ${
-                      isActive
-                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 border border-indigo-500"
-                        : "bg-white/[0.03] text-gray-400 hover:text-white hover:bg-white/[0.06] border border-white/5"
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Counter */}
-            <div className="flex items-center justify-between text-xs text-gray-500 px-1">
-              <span>
-                Showing <strong className="text-white">{filteredTiers.length}</strong> available package{filteredTiers.length === 1 ? "" : "s"}
-              </span>
-              {(selectedCategory !== "All Plans" || searchQuery) && (
-                <button
-                  onClick={() => {
-                    setSelectedCategory("All Plans");
-                    setSearchQuery("");
-                  }}
-                  className="text-indigo-400 hover:text-indigo-300 underline underline-offset-4"
-                >
-                  Reset filters
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* ── PACKAGES GRID ── */}
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="bg-[#111116] border-white/10 p-6 space-y-6">
-                  <div className="flex items-center gap-3">
-                    <Skeleton className="h-12 w-12 rounded-2xl bg-white/5" />
-                    <div className="space-y-2 flex-1">
-                      <Skeleton className="h-5 w-3/4 bg-white/5" />
-                      <Skeleton className="h-3 w-1/2 bg-white/5" />
-                    </div>
-                  </div>
-                  <Skeleton className="h-10 w-full bg-white/5" />
-                  <div className="space-y-3 pt-4">
-                    <Skeleton className="h-4 w-full bg-white/5" />
-                    <Skeleton className="h-4 w-5/6 bg-white/5" />
-                    <Skeleton className="h-4 w-4/5 bg-white/5" />
-                    <Skeleton className="h-4 w-2/3 bg-white/5" />
-                  </div>
-                  <Skeleton className="h-11 w-full rounded-xl bg-white/5" />
-                </Card>
-              ))}
-            </div>
-          ) : filteredTiers.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
-              {filteredTiers.map((tier) => {
-                const hasDiscount = tier.originalPrice > tier.discountPrice;
-                const savings = tier.originalPrice - tier.discountPrice;
-                const discountPercentage = hasDiscount
-                  ? Math.round((savings / tier.originalPrice) * 100)
-                  : 0;
-
-                return (
-                  <Card
-                    key={tier.id}
-                    className={`relative flex flex-col justify-between bg-gradient-to-b from-[#13131B] to-[#0D0D14] transition-all duration-300 rounded-3xl overflow-hidden group ${
-                      tier.popular
-                        ? "border-indigo-500/50 shadow-2xl shadow-indigo-500/10 scale-[1.02] ring-1 ring-indigo-500/30"
-                        : "border-white/10 hover:border-white/20 hover:shadow-xl"
-                    }`}
-                  >
-                    {/* Popular Pill */}
-                    {tier.popular && (
-                      <div className="absolute top-0 right-0">
-                        <span className="bg-gradient-to-r from-amber-500 to-indigo-600 text-white text-[11px] font-bold px-4 py-1.5 rounded-bl-2xl uppercase tracking-wider shadow-md">
-                          ⭐ Most Popular
-                        </span>
-                      </div>
-                    )}
-
-                    <div>
-                      <CardHeader className="p-6 pb-4">
-                        {/* Icon & Category */}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 group-hover:border-indigo-500/30 transition-colors">
-                            <IconComponent
-                              name={tier.icon_name}
-                              className={`h-7 w-7 ${ICON_COLOR_MAP[tier.icon_name || "Globe"] || "text-indigo-400"}`}
-                            />
-                          </div>
-                          {tier.category && (
-                            <Badge variant="outline" className="text-[10px] text-gray-400 border-white/10">
-                              {tier.category}
-                            </Badge>
-                          )}
-                        </div>
-
-                        {/* Title & Description */}
-                        <CardTitle className="text-xl sm:text-2xl font-bold text-white group-hover:text-indigo-300 transition-colors">
-                          {tier.name}
-                        </CardTitle>
-                        <p className="text-xs sm:text-sm text-gray-400 mt-2 min-h-[40px] leading-relaxed">
-                          {tier.description}
-                        </p>
-
-                        {/* Pricing Block */}
-                        <div className="pt-6 pb-2 border-b border-white/5">
-                          <div className="flex items-baseline gap-2.5">
-                            <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-                              {formatPrice(tier.discountPrice)}
-                            </span>
-                            {hasDiscount && (
-                              <span className="text-sm sm:text-base text-gray-500 line-through">
-                                {formatPrice(tier.originalPrice)}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Savings Badge */}
-                          {hasDiscount && (
-                            <div className="flex items-center gap-2 mt-2">
-                              <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                                Save {formatPrice(savings)} ({discountPercentage}% OFF)
-                              </span>
-                              <span className="text-[10px] text-gray-500">• One-time price</span>
-                            </div>
-                          )}
-                        </div>
-                      </CardHeader>
-
-                      {/* Features List */}
-                      <CardContent className="p-6 pt-2">
-                        <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-3">
-                          What's Included:
-                        </div>
-                        <ul className="space-y-2.5">
-                          {tier.features.map((feature, fi) => (
-                            <li key={fi} className="flex items-start gap-2.5 text-xs text-gray-300">
-                              <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                              <span className="leading-snug">{feature}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </CardContent>
-                    </div>
-
-                    {/* Card Footer CTA */}
-                    <div className="p-6 pt-0">
-                      <PricingInquiryForm packageName={tier.name} packagePrice={tier.discountPrice}>
-                        <Button
-                          className={`w-full font-semibold rounded-xl h-11 text-sm shadow-md transition-all ${
-                            tier.popular
-                              ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-600/20 hover:shadow-indigo-600/40"
-                              : "bg-white/10 hover:bg-white/20 text-white"
-                          }`}
-                        >
-                          Select This Plan
-                          <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Button>
-                      </PricingInquiryForm>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-20 px-4 rounded-3xl bg-[#111116] border border-white/5 max-w-lg mx-auto">
-              <AlertCircle className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-white mb-2">No Packages Found</h3>
-              <p className="text-xs text-gray-400 mb-6">
-                We couldn't find any packages matching "{searchQuery}". Try searching with different keywords or reset your filters.
-              </p>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCategory("All Plans");
-                }}
-                className="border-white/10 text-white hover:bg-white/5"
+      {/* Cart – mobile bottom bar + sheet */}
+      {tab === "build" && view === "build" && summary.itemCount > 0 && (
+        <>
+          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
+            <div className="mx-auto flex max-w-xl items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSheetOpen(true)}
+                className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                aria-label="Review your plan"
               >
-                Reset All Filters
+                <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                  <ShoppingBag className="h-5 w-5 text-foreground" aria-hidden="true" />
+                  <span className="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-primary-foreground">
+                    {summary.itemCount}
+                  </span>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs text-muted-foreground">Estimated total</span>
+                  <span className="block truncate text-lg font-extrabold tabular-nums text-foreground">{formatPrice(summary.subtotal)}</span>
+                </span>
+              </button>
+              <Button type="button" className="shrink-0 font-semibold" onClick={() => goTo("checkout")}>
+                Continue
               </Button>
             </div>
-          )}
-
-          {/* ── ADDONS SECTION ── */}
-          {addons.length > 0 && !loading && (
-            <div className="mt-28">
-              <div className="text-center mb-12 space-y-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-tech-purple/10 border border-tech-purple/20 text-tech-purple text-xs font-semibold">
-                  <Plus className="h-3.5 w-3.5" /> Modular Inclusions
-                </div>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-white font-['Space_Grotesk']">
-                  Addon <span className="text-gradient">Services &amp; Upgrades</span>
-                </h2>
-                <p className="text-xs sm:text-sm text-gray-400 max-w-xl mx-auto">
-                  Customize and enhance your project with high-impact extras and security modules
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {addons.map((addon) => (
-                  <Card
-                    key={addon.id}
-                    className="bg-[#121218] border-white/5 hover:border-indigo-500/30 transition-all rounded-2xl group flex flex-col justify-between"
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="space-y-1.5 flex-1">
-                          <h3 className="font-bold text-base text-white group-hover:text-indigo-400 transition-colors">
-                            {addon.name}
-                          </h3>
-                          <p className="text-xs text-gray-400 leading-relaxed">
-                            {addon.description}
-                          </p>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 whitespace-nowrap">
-                            {addon.price > 0 ? formatPrice(addon.price) : "Custom Quote"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-end">
-                        <PricingInquiryForm packageName={`Addon: ${addon.name}`} packagePrice={addon.price}>
-                          <Button size="sm" variant="ghost" className="text-xs text-indigo-400 hover:text-white p-0 h-auto gap-1">
-                            Add to Project <ArrowUpRight className="h-3 w-3" />
-                          </Button>
-                        </PricingInquiryForm>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── CUSTOM ARCHITECTURE / ENTERPRISE CTA ── */}
-          <div className="mt-28 relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-950/60 via-purple-950/40 to-[#0F172A]/70 border border-white/10 p-8 sm:p-12 text-center backdrop-blur-md">
-            <div className="absolute inset-0 bg-grid-white/[0.02] -z-10" />
-            <div className="max-w-2xl mx-auto space-y-4">
-              <Badge className="bg-white/10 text-white border-white/20 text-xs px-3 py-1">
-                Enterprise &amp; Bespoke Builds
-              </Badge>
-              <h3 className="text-3xl sm:text-4xl font-extrabold text-white font-['Space_Grotesk']">
-                Have a Complex or Custom Architecture Requirement?
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
-                Whether you need a full-scale SaaS platform, specialized AI model integration, high-frequency cryptocurrency gateway, or bespoke cloud microservices, our technical architects can prepare an exhaustive scope of work.
-              </p>
-              <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
-                <PricingInquiryForm packageName="Custom Enterprise Architecture" packagePrice={0}>
-                  <Button size="lg" className="bg-white text-black hover:bg-gray-200 font-bold px-8 rounded-xl h-12 shadow-xl">
-                    Schedule Architecture Call
-                  </Button>
-                </PricingInquiryForm>
-                <a
-                  href="/contact"
-                  className="inline-flex items-center justify-center text-xs font-semibold text-gray-300 hover:text-white px-5 py-3 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
-                >
-                  General Contact <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
-                </a>
-              </div>
-            </div>
           </div>
-        </div>
-      </section>
+
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl px-4 pb-6">
+              <SheetHeader className="text-left">
+                <SheetTitle className="sr-only">Your plan</SheetTitle>
+                <SheetDescription className="sr-only">Review the items in your plan before continuing.</SheetDescription>
+              </SheetHeader>
+              <div className="mt-2">{cartPanel}</div>
+            </SheetContent>
+          </Sheet>
+        </>
+      )}
 
       <Footer />
     </div>

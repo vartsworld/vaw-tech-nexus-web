@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Coffee, Gamepad2, MessageCircle, Zap, Trophy, Loader2, Star } from "lucide-react";
 import { useStaffData } from "@/hooks/useStaffData";
 
-import WordChallenge from "./games/WordChallenge";
 import QuickQuiz from "./games/QuickQuiz";
 import CodePuzzle from "./games/CodePuzzle";
 import { toast } from "sonner";
@@ -319,7 +318,6 @@ const BreakRoom = ({
   if (activeGame !== 'none') {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[80vh]">
-        {activeGame === 'word-challenge' && <WordChallenge onClose={() => setActiveGame('none')} userId={userId} />}
         {activeGame === 'quick-quiz' && <QuickQuiz onClose={() => setActiveGame('none')} userId={userId} />}
         {activeGame === 'code-puzzle' && <CodePuzzle onClose={() => setActiveGame('none')} userId={userId} />}
       </div>

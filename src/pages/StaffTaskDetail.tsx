@@ -33,7 +33,7 @@ const StaffTaskDetail = () => {
           .eq('user_id', user.id)
           .single();
         
-        setIsTeamHead(profile?.is_department_head || profile?.role === 'team_head');
+        setIsTeamHead(profile?.is_department_head || (profile?.role as string) === 'team_head');
 
         const { data: taskData, error } = await supabase
           .from('staff_tasks')

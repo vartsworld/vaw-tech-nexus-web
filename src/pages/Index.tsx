@@ -1,7 +1,6 @@
 
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
-import MobileHeader from "@/components/MobileHeader";
 import Hero from "@/components/Hero";
 import Services from "@/components/Services";
 import About from "@/components/About";
@@ -37,7 +36,6 @@ const Index = () => {
         ogImageAlt="VAW Technologies - Best Website Development & Digital Marketing Agency in Kerala"
       />
       <Navbar />
-      <MobileHeader />
       {/* Tight grouping of Hero and Partners with no gap */}
       <div className="flex flex-col">
         <Hero />

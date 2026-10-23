@@ -8,7 +8,7 @@ const About = () => {
         <div className="flex flex-col-reverse md:flex-row gap-12 items-center">
           <div className="md:w-1/2">
             <div className="space-y-6">
-              <h2 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk']">
+              <h2 className="text-3xl md:text-4xl font-bold font-display">
                 About <span className="text-gradient">VAW Technologies</span>
               </h2>
               

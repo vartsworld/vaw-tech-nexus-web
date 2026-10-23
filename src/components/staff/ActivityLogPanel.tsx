@@ -66,7 +66,7 @@ export const ActivityLogPanel = ({ userId, className = '' }: ActivityLogPanelPro
             logType: 'coin',
             activity_type: 'coin_transaction',
             metadata: { 
-              reason: coin.reason || coin.description,
+              reason: coin.reason || (coin as any).description,
               amount: coin.coins ?? (coin as any).amount,
               type: coin.transaction_type 
             }

@@ -1,6 +1,5 @@
 import SEO from "@/components/SEO";
 import Navbar from "@/components/Navbar";
-import MobileHeader from "@/components/MobileHeader";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Trash2, Mail, ShieldCheck } from "lucide-react";
@@ -13,10 +12,9 @@ const DataDeletion = () => {
         description="VAW Technologies Data Deletion - Learn how to request deletion of your personal data from our systems."
       />
       <Navbar />
-      <MobileHeader />
 
-      <main className="container mx-auto px-4 pt-28 pb-16 max-w-4xl">
-        <h1 className="text-3xl md:text-4xl font-bold font-['Space_Grotesk'] mb-8">
+      <main className="container mx-auto px-4 pt-32 md:pt-36 pb-16 max-w-4xl">
+        <h1 className="text-3xl md:text-4xl font-bold font-display mb-8">
           Data <span className="text-accent">Deletion</span> Instructions
         </h1>
         <p className="text-muted-foreground mb-8">

@@ -38,10 +38,10 @@ const TechStack = () => {
   return (
     <section id="tech-stack" className="relative overflow-hidden py-16 bg-muted/5 border-y border-border/30">
       <div className="container mx-auto px-4 text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4 font-['Space_Grotesk']">
+        <h2 className="text-3xl md:text-4xl font-bold mb-4 font-display">
           Our Tech Stack & <span className="text-gradient">Expertise</span>
         </h2>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-['Outfit']">
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
           {userName
             ? `${userName}, we work with cutting-edge technologies to build future-proof software and digital solutions.`
             : "We work with future-proof technologies to deliver robust, scalable digital solutions."

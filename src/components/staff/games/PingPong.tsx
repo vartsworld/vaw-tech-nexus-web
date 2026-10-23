@@ -61,7 +61,7 @@ export default function PingPong() {
       }
 
       // Check collision with paddles
-      let playerHit = (ball.x < canvas.width / 2) ? player : ai;
+      const playerHit = (ball.x < canvas.width / 2) ? player : ai;
 
       if (ball.x - ball.radius < playerHit.x + playerHit.width &&
           ball.x + ball.radius > playerHit.x &&
@@ -71,8 +71,8 @@ export default function PingPong() {
         let collidePoint = (ball.y - (playerHit.y + playerHit.height / 2));
         collidePoint = collidePoint / (playerHit.height / 2);
 
-        let angleRad = (Math.PI / 4) * collidePoint;
-        let direction = (ball.x < canvas.width / 2) ? 1 : -1;
+        const angleRad = (Math.PI / 4) * collidePoint;
+        const direction = (ball.x < canvas.width / 2) ? 1 : -1;
 
         ball.velocityX = direction * ball.speed * Math.cos(angleRad);
         ball.velocityY = ball.speed * Math.sin(angleRad);
