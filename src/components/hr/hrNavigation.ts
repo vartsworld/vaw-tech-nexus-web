@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Award, Megaphone, BarChart3, Briefcase, Building2, Calendar, CalendarOff, CheckSquare, Code, CreditCard, DollarSign, FolderKanban, GraduationCap,
   HandCoins, Image as ImageIcon, Inbox, LayoutDashboard, LifeBuoy, MessageCircle, MessageSquare, QrCode, Settings2, ShieldCheck, Sparkles,
-  UserPlus, Users, Video, Wallet, Globe, Gift, Trophy,
+  UserPlus, Users, Video, Wallet, Globe, Gift, Trophy, Gamepad2,
 } from "lucide-react";
 
 export interface HRRoom {
@@ -34,6 +34,7 @@ export const HR_SECTIONS: HRSection[] = [
       { id: "chat", name: "Team Chat", description: "Message your team", icon: MessageCircle, keywords: "inbox messages" },
       { id: "meeting", name: "Meeting Room", description: "Start or join a video meeting", icon: Video, keywords: "call video" },
       { id: "emma", name: "EMMA AI", description: "Ask the AI assistant for help with HR work", icon: Sparkles, keywords: "assistant ai help" },
+      { id: "arcade", name: "Arcade", description: "Take a break with chess, quizzes and quick games", icon: Gamepad2, keywords: "games play break chess snake quiz" },
     ],
   },
   {
@@ -94,6 +95,9 @@ export const HR_SECTIONS: HRSection[] = [
 export const ALL_ROOMS: (HRRoom & { section: string })[] = HR_SECTIONS.flatMap((s) => s.items.map((i) => ({ ...i, section: s.title })));
 
 const ROOM_ALIASES: Record<string, string> = { banners: "announcements", notifications: "announcements", legacy: "admin" };
+
+/** Individual games live under the Arcade page; they are not sidebar items. */
+export const GAME_ROOM_IDS = ["chess", "tictactoe", "pingpong", "codetyper", "colormatch", "codepuzzle", "quickquiz", "snake", "memory"];
 
 export const findRoom = (rawId: string) => {
   const id = ROOM_ALIASES[rawId] ?? rawId;
