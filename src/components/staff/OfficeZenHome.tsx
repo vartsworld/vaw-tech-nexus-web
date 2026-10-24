@@ -96,7 +96,7 @@ export default function OfficeZenHome({ userId, userProfile, onEnterWorkspace }:
         });
         const active = mine.filter((t: any) => ["in_progress", "review_pending"].includes(t.status));
         const done = mine.filter((t: any) => t.status === "completed");
-        const todo = mine.filter((t: any) => ["todo", "backlog"].includes(t.status));
+        const todo = mine.filter((t: any) => ["pending", "overdue", "handover"].includes(t.status));
         setCurrentTasks(active);
         setTaskSummary({ todo: todo.length, inProgress: active.length, completed: done.length, total: mine.length });
       }

@@ -692,7 +692,7 @@ const TeamChat = ({ userId, userProfile }: TeamChatProps) => {
             ))}
           </div>
         )}
-        <div className="flex items-end gap-2">
+        <div className="flex items-end gap-2 pr-14">
           <Popover>
             <PopoverTrigger asChild>
               <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0 text-white/60 hover:bg-white/10 hover:text-white" aria-label="Insert emoji"><Smile className="h-5 w-5" /></Button>

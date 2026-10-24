@@ -133,6 +133,28 @@ const calculatePriorityFromDueDate = (dueDateStr: string | null | undefined): 'l
   }
 };
 
+/**
+ * The calendar library ships its own generic event form (reminders, location, guests...).
+ * We never show it: creating opens the task dialog, clicking an event opens the matching detail dialog.
+ */
+const CalendarFormBridge = ({ isOpen, event, initialDate, onClose, onCreate, onOpenEvent }: {
+  isOpen: boolean;
+  event?: any;
+  initialDate?: Date;
+  onClose: () => void;
+  onCreate: (date: Date) => void;
+  onOpenEvent: (event: any) => void;
+}) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    if (event) onOpenEvent(event);
+    else onCreate(initialDate ? new Date(initialDate) : new Date());
+    onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+  return null;
+};
+
 const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyPlannerProps) => {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [view, setView] = useState<ViewType>('month');
@@ -158,11 +180,14 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     title: '',
     description: '',
     client_id: '',
+    client_project_id: '',
     assigned_to: [] as string[],
     priority: 'medium' as string,
     points: 10,
     due_date: '',
   });
+  const [clientProjects, setClientProjects] = useState<{ id: string; title: string }[]>([]);
+  const [isLoadingClientProjects, setIsLoadingClientProjects] = useState(false);
   const [isSubmittingCalendarTask, setIsSubmittingCalendarTask] = useState(false);
   const [calendarTaskClientSearch, setCalendarTaskClientSearch] = useState('');
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
@@ -429,6 +454,40 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       return dateStr;
     }
   };
+  // Load the project folders of the selected client so the task can be filed in one.
+  useEffect(() => {
+    const cid = newCalendarTask.client_id;
+    if (!isCreateTaskDialogOpen || !cid || cid === 'no-client') {
+      setClientProjects([]);
+      return;
+    }
+    let cancelled = false;
+    setIsLoadingClientProjects(true);
+    supabase
+      .from('client_projects')
+      .select('id, title')
+      .eq('client_id', cid)
+      .order('created_at', { ascending: true })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        setIsLoadingClientProjects(false);
+        if (error) {
+          console.error('Error loading client projects:', error);
+          setClientProjects([]);
+          return;
+        }
+        const list = (data || []) as { id: string; title: string }[];
+        setClientProjects(list);
+        // File the task in the client's folder by default: keep a valid choice, else pick the first folder.
+        setNewCalendarTask(prev => {
+          if (prev.client_id !== cid) return prev;
+          if (prev.client_project_id && list.some(p => p.id === prev.client_project_id)) return prev;
+          return { ...prev, client_project_id: list[0]?.id || '' };
+        });
+      });
+    return () => { cancelled = true; };
+  }, [isCreateTaskDialogOpen, newCalendarTask.client_id]);
+
   const handleCreateTaskFromCalendar = async () => {
     if (!newCalendarTask.title || newCalendarTask.assigned_to.length === 0) {
       toast({
@@ -444,6 +503,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
       const targetDueDate = newCalendarTask.due_date || (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null);
       const autoPriority = calculatePriorityFromDueDate(targetDueDate);
+      const hasClient = !!newCalendarTask.client_id && newCalendarTask.client_id !== 'no-client';
 
       if (editingTask && editingTask.type === 'task') {
         const { error } = await supabase
@@ -452,7 +512,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
             title: newCalendarTask.title,
             description: newCalendarTask.description || null,
             assigned_to: JSON.stringify(newCalendarTask.assigned_to),
-            client_id: newCalendarTask.client_id && newCalendarTask.client_id !== 'no-client' ? newCalendarTask.client_id : null,
+            client_id: hasClient ? newCalendarTask.client_id : null,
+            client_project_id: hasClient && newCalendarTask.client_project_id ? newCalendarTask.client_project_id : null,
             priority: autoPriority,
             due_date: targetDueDate,
             updated_at: new Date().toISOString()
@@ -470,7 +531,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
             description: newCalendarTask.description || null,
             assigned_to: JSON.stringify(newCalendarTask.assigned_to),
             assigned_by: user?.id,
-            client_id: newCalendarTask.client_id && newCalendarTask.client_id !== 'no-client' ? newCalendarTask.client_id : null,
+            client_id: hasClient ? newCalendarTask.client_id : null,
+            client_project_id: hasClient && newCalendarTask.client_project_id ? newCalendarTask.client_project_id : null,
             priority: autoPriority,
             status: 'pending',
             due_date: targetDueDate,
@@ -488,7 +550,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
       setIsCreateTaskDialogOpen(false);
       setEditingTask(null);
-      setNewCalendarTask({ title: '', description: '', client_id: '', assigned_to: [], priority: 'medium', points: 10, due_date: '' });
+      setNewCalendarTask({ title: '', description: '', client_id: '', client_project_id: '', assigned_to: [], priority: 'medium', points: 10, due_date: '' });
       setCalendarTaskClientSearch('');
       setStaffSearchQuery('');
       fetchTasksAndSubtasks();
@@ -988,7 +1050,6 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         resourceId: plan.client_id || 'common',
         type: 'plan',
         rawPlan: plan,
-        guests: [clientName],
       });
     });
 
@@ -1024,7 +1085,6 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         resourceId: task.client_id || 'common',
         type: 'task',
         rawTask: task,
-        guests: [clientName, creator?.full_name || task.creator_name || 'Team Head', deptLabel || 'General'],
       });
     });
 
@@ -1051,7 +1111,6 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         resourceId: parentTask?.client_id || 'common',
         type: 'subtask',
         rawSubtask: sub,
-        guests: [sub.status === 'completed' ? 'Completed' : 'Pending'],
       });
     });
 
@@ -1083,6 +1142,26 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           variant: "destructive"
         });
       }
+    }
+  };
+
+  // Open the app's own dialogs when a calendar event is clicked (instead of the library's generic form).
+  const openCalendarEvent = (event: any) => {
+    if (event?.type === 'task' && event.rawTask) {
+      setViewDetailTask({ type: 'task', data: event.rawTask });
+    } else if (event?.type === 'subtask' && event.rawSubtask) {
+      setViewDetailTask({ type: 'subtask', data: event.rawSubtask });
+    } else if (event?.type === 'plan' && event.rawPlan) {
+      const p = event.rawPlan;
+      setSelectedPlan(p);
+      setNewPlan({
+        title: p.title,
+        description: p.description,
+        assigned_staff: p.assigned_staff || [],
+        client_id: p.client_id || 'common',
+        color: p.color || '#3b82f6'
+      });
+      setIsAddDialogOpen(true);
     }
   };
 
@@ -1450,90 +1529,23 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         firstDayOfWeek={0}
         weekStartsOn={0}
         maxEventsPerDay={100}
-        translations={{
-          guests: "Assigned Staff",
-          whosJoining: "Assign Staff",
-          resource: "Client",
-          selectResource: "Choose Client"
-        }}
-        guests={[
-          ...staffMembers.map(s => ({
-            id: s.user_id || s.id,
-            name: s.full_name || s.email || 'Staff Member',
-            email: s.email || `${(s.full_name || 'staff').toLowerCase().replace(/\s+/g, '')}@vaw.com`,
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(s.full_name || 'staff')}`
-          })),
-          { id: 'common', name: 'Common (Internal)', email: 'common@vaw.com', avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=Common` },
-          ...clients.map(c => ({
-            id: c.id,
-            name: c.company_name || 'Client',
-            email: c.email || 'client@vaw.com',
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(c.company_name || 'client')}`
-          }))
-        ]}
         onEventDrop={handleEventDrop}
         onEventResize={handleEventDrop}
-        onEventCreate={async (eventData: any) => {
-          try {
-            const eventDate = eventData.start ? new Date(eventData.start) : (selectedDate || new Date());
-            const assignedStaff = Array.isArray(eventData.guests)
-              ? eventData.guests.map((g: any) => typeof g === 'string' ? g : (g.id || g.user_id))
-              : [];
-
-            const { error } = await supabase
-              .from('monthly_plans')
-              .insert({
-                date: format(eventDate, 'yyyy-MM-dd'),
-                title: eventData.title || 'New Task',
-                description: eventData.description || '',
-                created_by: userId,
-                department_id: userProfile?.department_id,
-                assigned_staff: assignedStaff,
-                client_id: eventData.resourceId && eventData.resourceId !== 'common' ? eventData.resourceId : null,
-                color: eventData.color || '#3b82f6'
-              });
-
-            if (error) throw error;
-            toast({
-              title: "Success",
-              description: "Task created successfully",
-            });
-            fetchPlans();
-          } catch (err: any) {
-            console.error('Error creating task from calendar popup:', err);
-            toast({
-              title: "Error",
-              description: "Failed to create task",
-              variant: "destructive"
-            });
-          }
-        }}
-        onEventUpdate={async (eventData: any) => {
-          if (eventData.rawPlan) {
-            try {
-              const assignedStaff = Array.isArray(eventData.guests)
-                ? eventData.guests.map((g: any) => typeof g === 'string' ? g : (g.id || g.user_id))
-                : undefined;
-
-              const { error } = await supabase
-                .from('monthly_plans')
-                .update({
-                  title: eventData.title,
-                  description: eventData.description,
-                  ...(assignedStaff ? { assigned_staff: assignedStaff } : {}),
-                  client_id: eventData.resourceId && eventData.resourceId !== 'common' ? eventData.resourceId : null,
-                  color: eventData.color
-                })
-                .eq('id', eventData.rawPlan.id);
-
-              if (error) throw error;
-              toast({ title: "Updated", description: "Plan updated successfully" });
-              fetchPlans();
-            } catch (err) {
-              console.error('Error updating plan:', err);
-            }
-          }
-        }}
+        renderEventForm={({ isOpen, onClose, event, initialDate }: any) => (
+          <CalendarFormBridge
+            isOpen={isOpen}
+            event={event}
+            initialDate={initialDate}
+            onClose={onClose}
+            onCreate={(date: Date) => {
+              setSelectedDate(date);
+              setEditingTask(null);
+              setNewCalendarTask({ title: '', description: '', client_id: '', client_project_id: '', assigned_to: [], priority: 'medium', points: 10, due_date: format(date, 'yyyy-MM-dd') });
+              setIsCreateTaskDialogOpen(true);
+            }}
+            onOpenEvent={openCalendarEvent}
+          />
+        )}
         onEventDelete={(eventId) => {
           if (!eventId) return;
           const idStr = String(eventId);
@@ -1785,7 +1797,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                             <div className="flex -space-x-2 overflow-hidden">
                               {assignedStaffList.slice(0, 4).map((member, i) => (
                                 <Avatar key={member.user_id || i} className="inline-block h-6 w-6 rounded-full ring-2 ring-zinc-950">
-                                  <AvatarImage src={member.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(member.full_name || 'staff')}`} />
+                                  <AvatarImage src={member.avatar_url} />
                                   <AvatarFallback className="bg-violet-600 text-[9px] font-bold text-white uppercase">
                                     {(member.full_name || 'S').slice(0, 2)}
                                   </AvatarFallback>
@@ -1860,7 +1872,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                         {assignedMember && (
                           <div className="flex items-center gap-1.5 pt-1">
                             <Avatar className="h-6 w-6 rounded-full ring-2 ring-zinc-950">
-                              <AvatarImage src={assignedMember.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(assignedMember.full_name || 'staff')}`} />
+                              <AvatarImage src={assignedMember.avatar_url} />
                               <AvatarFallback className="bg-pink-600 text-[9px] font-bold text-white uppercase">
                                 {(assignedMember.full_name || 'S').slice(0, 2)}
                               </AvatarFallback>
@@ -2007,9 +2019,9 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       }}>
         <DialogContent hideCloseButton className="sm:max-w-[520px] bg-zinc-950 border-white/10 rounded-3xl p-0 overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
           <div className="p-6 border-b border-white/5 bg-white/[0.02] shrink-0">
-            <DialogTitle className="text-xl font-black uppercase italic text-white tracking-tighter flex items-center gap-2">
-              <ClipboardList className="w-5 h-5 text-violet-400" />
-              {editingTask ? 'Edit Task Details' : 'Assign Task from Calendar'}
+            <DialogTitle className="text-lg font-bold text-white flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-amber-400" />
+              {editingTask ? 'Edit task' : 'Assign a task'}
             </DialogTitle>
             <DialogDescription className="text-[10px] text-white/40 uppercase font-black tracking-widest mt-1">
               Due Date: {newCalendarTask.due_date ? format(new Date(`${newCalendarTask.due_date}T12:00:00`), 'EEEE, MMMM do, yyyy') : (selectedDate ? format(selectedDate, 'EEEE, MMMM do, yyyy') : '')}
@@ -2161,7 +2173,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                       <button
                         type="button"
                         onClick={() => {
-                          setNewCalendarTask({ ...newCalendarTask, client_id: 'no-client' });
+                          setNewCalendarTask({ ...newCalendarTask, client_id: 'no-client', client_project_id: '' });
                           setIsCalendarClientPopoverOpen(false);
                           setCalendarTaskClientSearch('');
                         }}
@@ -2184,7 +2196,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                             key={c.id}
                             type="button"
                             onClick={() => {
-                              setNewCalendarTask({ ...newCalendarTask, client_id: c.id });
+                              setNewCalendarTask({ ...newCalendarTask, client_id: c.id, client_project_id: '' });
                               setIsCalendarClientPopoverOpen(false);
                               setCalendarTaskClientSearch('');
                             }}
@@ -2204,6 +2216,47 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                 </PopoverContent>
               </Popover>
             </div>
+
+            {/* Project folder of the selected client */}
+            {newCalendarTask.client_id && newCalendarTask.client_id !== 'no-client' && (
+              <div className="grid gap-2">
+                <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Client project folder</Label>
+                {isLoadingClientProjects ? (
+                  <div className="h-12 rounded-xl bg-white/5 border border-white/10 flex items-center px-4 text-xs text-white/40">
+                    <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> Loading folders...
+                  </div>
+                ) : clientProjects.length > 0 ? (
+                  <Select
+                    value={newCalendarTask.client_project_id || undefined}
+                    onValueChange={(v) => setNewCalendarTask(prev => ({ ...prev, client_project_id: v }))}
+                  >
+                    <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl text-white font-semibold">
+                      <SelectValue placeholder="Choose a folder" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-950 border-white/10 text-white">
+                      {clientProjects.map(p => (
+                        <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-xs text-white/50">
+                    This client has no project folder yet. The task will be linked to the client only; create a project for the client to file tasks in a folder.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Due date */}
+            <div className="grid gap-2">
+              <Label className="text-[10px] uppercase font-black tracking-widest text-white/40">Due date</Label>
+              <Input
+                type="date"
+                value={newCalendarTask.due_date || (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '')}
+                onChange={(e) => setNewCalendarTask(prev => ({ ...prev, due_date: e.target.value }))}
+                className="h-12 bg-white/5 border-white/10 rounded-xl font-semibold text-white [color-scheme:dark]"
+              />
+            </div>
           </div>
 
           <div className="p-6 border-t border-white/5 bg-white/[0.02] flex gap-3 shrink-0">
@@ -2217,7 +2270,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
             <Button
               onClick={handleCreateTaskFromCalendar}
               disabled={isSubmittingCalendarTask}
-              className="flex-1 h-12 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-lg"
+              className="flex-1 h-12 bg-amber-500 hover:bg-amber-400 text-black rounded-xl font-bold text-sm"
             >
               {isSubmittingCalendarTask ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {editingTask ? 'Saving...' : 'Creating...'}</>
@@ -2359,7 +2412,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                         {creator.role && <p className="text-[10px] text-white/50 capitalize mt-0.5">{creator.role}</p>}
                       </div>
                       <Avatar className="h-8 w-8 rounded-full">
-                        <AvatarImage src={creator.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(creator.full_name || 'creator')}`} />
+                        <AvatarImage src={creator.avatar_url} />
                         <AvatarFallback className="bg-amber-600 text-[10px] font-bold text-white uppercase">
                           {(creator.full_name || 'H').slice(0, 2)}
                         </AvatarFallback>
@@ -2375,7 +2428,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                         {assignedStaffList.map(member => (
                           <div key={member.user_id || member.id} className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">
                             <Avatar className="h-6 w-6 rounded-full">
-                              <AvatarImage src={member.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(member.full_name || 'staff')}`} />
+                              <AvatarImage src={member.avatar_url} />
                               <AvatarFallback className="bg-violet-600 text-[9px] font-bold text-white uppercase">
                                 {(member.full_name || 'S').slice(0, 2)}
                               </AvatarFallback>
@@ -2418,6 +2471,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
                           title: t.data.title || '',
                           description: t.data.description || '',
                           client_id: t.data.client_id || 'no-client',
+                          client_project_id: t.data.client_project_id || '',
                           assigned_to: assignedIds,
                           priority: t.data.priority || 'medium',
                           points: t.data.points || 10,

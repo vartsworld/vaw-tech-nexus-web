@@ -128,6 +128,8 @@ const VirtualOfficeLayout = ({
   // Custom Overhauls states
   const [isTeamStatusExpanded, setIsTeamStatusExpanded] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const roomRef = useRef(currentRoom);
+  roomRef.current = currentRoom;
   const [notepadContent, setNotepadContent] = useState("");
   const [isNotepadOpen, setIsNotepadOpen] = useState(false);
   const [isNotepadPinned, setIsNotepadPinned] = useState(false);
@@ -193,9 +195,12 @@ const VirtualOfficeLayout = ({
         event: 'INSERT',
         schema: 'public',
         table: 'chat_messages'
-      }, () => {
+      }, (payload: any) => {
+        const m = payload?.new || {};
+        // Only count messages from others that are addressed to everyone or to this user
+        if (m.sender_id === userId || (m.recipient_id && m.recipient_id !== userId)) return;
         // If the user is currently on the Inbox page or currentRoom is inbox, reset and don't count
-        if (window.location.pathname === '/staff/inbox' || currentRoom === 'inbox') {
+        if (window.location.pathname === '/staff/inbox' || ['inbox', 'chat', 'channels'].includes(roomRef.current)) {
           setUnreadCount(0);
           localStorage.setItem(`vaw_unread_inbox_count_${userId}`, "0");
           return;
@@ -217,7 +222,7 @@ const VirtualOfficeLayout = ({
 
   // Reset unread count if route matches InboxPage or currentRoom is inbox
   useEffect(() => {
-    if ((window.location.pathname === '/staff/inbox' || currentRoom === 'inbox') && userId) {
+    if ((window.location.pathname === '/staff/inbox' || ['inbox', 'chat', 'channels'].includes(currentRoom)) && userId) {
       setUnreadCount(0);
       localStorage.setItem(`vaw_unread_inbox_count_${userId}`, "0");
     }
@@ -535,7 +540,7 @@ const VirtualOfficeLayout = ({
           style={{ backgroundImage: "url('/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png')" }}
         >
           {/* Transparent masking color and blur overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/40 to-black/65 backdrop-blur-[3px] z-0 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/55 to-black/70 backdrop-blur-xl z-0 pointer-events-none" />
           <div className="relative z-10 flex flex-col h-full w-full min-h-0">
           {/* Top Header Logo (VAW Technologies) – click to collapse / expand (Ctrl+Shift+B) */}
           <button
