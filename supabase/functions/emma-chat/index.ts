@@ -9,21 +9,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You are EMMA (Executive Multi-task Management Assistant) for VAW-Tech.
-You help HR managers and Team Heads plan and create tasks, subtasks, and assign work.
+const SYSTEM_PROMPT = `You are EMMA, the workspace assistant for VAW Technologies.
+You help HR, team heads and staff look up information, plan work, and create or update tasks.
+Use the provided tools to read or change real data. Never claim something was done unless a tool confirmed it.
+Be concise and accurate. Format replies in markdown. Follow any formatting and safety instructions in later system messages.`;
 
-Capabilities:
-- Conversational planning: ask clarifying questions when needed.
-- Use the provided tools to actually create tasks/subtasks. Never claim something is created unless you called the corresponding tool.
-- When user asks to create a task, call create_task. For sub-items, call create_subtask (requires parent task_id).
-- Use list_staff or list_departments to look up IDs before assigning.
-- Be concise, friendly, and proactive. Offer subtasks breakdowns.
-- Default priority is 'medium' and points 10 unless specified.
-- Always confirm what you did with a short summary.
-
-Format responses in markdown.`;
-
-const tools = [
+// Default tools, used only if the client does not send its own `tools` list.
+const defaultTools = [
   {
     type: "function",
     function: {
@@ -76,7 +68,7 @@ const tools = [
           priority: { type: "string", enum: ["low", "medium", "high", "urgent"] },
           status: {
             type: "string",
-            enum: ["pending", "in_progress", "completed", "approved", "rework"],
+            enum: ["pending", "in_progress", "completed", "overdue", "handover", "pending_approval", "review_pending"],
           },
           due_date: { type: "string", description: "YYYY-MM-DD" },
           due_time: { type: "string", description: "HH:MM:SS" },
@@ -119,7 +111,8 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const { messages, role } = await req.json();
+    const { messages, role, tools: clientTools } = await req.json();
+    const tools = Array.isArray(clientTools) && clientTools.length ? clientTools.slice(0, 40) : defaultTools;
     if (!Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: "messages array required" }), {
         status: 400,
