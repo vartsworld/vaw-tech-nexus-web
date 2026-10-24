@@ -134,7 +134,7 @@ const HRProfileMenu = ({ profile, onNavigate }: Props) => {
           <div className="grid grid-cols-2 gap-2 px-4 pb-3">
             <button onClick={() => setShowStreak(true)} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 p-2.5 text-left hover:bg-white/10">
               <Flame className="h-4 w-4 text-orange-400" />
-              <span><span className="block text-sm font-semibold leading-none">{streak} days</span><span className="text-[10px] text-white/50">Attendance streak</span></span>
+              <span><span className="block text-sm font-semibold leading-none">{streak} days</span><span className="text-[10px] text-white/50">Streak</span></span>
             </button>
             <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 p-2.5">
               <Coins className="h-4 w-4 text-amber-400" />

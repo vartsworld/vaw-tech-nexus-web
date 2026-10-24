@@ -82,7 +82,7 @@ const ROLE_BLURB: Record<EmmaRole, string> = {
 
 /** Keep tool results within a size the model can use without breaking the JSON. */
 function compact(result: any, limit = 12000): string {
-  let s = JSON.stringify(result ?? null);
+  const s = JSON.stringify(result ?? null);
   if (s.length <= limit) return s;
   if (Array.isArray(result)) {
     let items = result.slice();

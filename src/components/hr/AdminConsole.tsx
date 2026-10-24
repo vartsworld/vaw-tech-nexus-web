@@ -30,7 +30,13 @@ const SecurityPanel = () => {
         db.from("staff_profiles").select("id,user_id,full_name,username,email,role,application_status,login_attempts,last_login_attempt,first_time_passcode,passcode_used,is_emoji_password,created_at,hire_date,dismissed_at,dismissal_reason"),
         db.from("staff_attendance").select("user_id").gte("date", since),
       ]);
-      setStaff(s.data || []);
+      let rows = s.data;
+      if (s.error) {
+        // The dismissal migration may not be applied yet: retry without its columns
+        const retry = await db.from("staff_profiles").select("id,user_id,full_name,username,email,role,application_status,login_attempts,last_login_attempt,first_time_passcode,passcode_used,is_emoji_password,created_at,hire_date");
+        rows = retry.data;
+      }
+      setStaff(rows || []);
       setRecent(new Set((a.data || []).map((r: any) => r.user_id)));
       setLoading(false);
     })();
