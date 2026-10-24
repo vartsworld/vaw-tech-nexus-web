@@ -1443,15 +1443,15 @@ const StaffDashboard = () => {
       {/* EMMA AI floating button + dialog */}
       <Button
         onClick={() => setShowEmma(true)}
-        className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-br from-primary to-purple-500 hover:scale-105 transition-transform hidden md:flex"
+        className="fixed bottom-6 right-6 z-40 h-12 w-12 rounded-full border border-white/15 bg-slate-800 shadow-xl hover:bg-slate-700 hidden md:flex"
         size="icon"
         title="Ask EMMA"
       >
-        <Sparkles className="w-6 h-6 text-white" />
+        <Sparkles className="w-5 h-5 text-sky-300" />
       </Button>
       <Dialog open={showEmma} onOpenChange={setShowEmma}>
         <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
-          <EmmaAssistant role="team_head" />
+          <EmmaAssistant role={['team_head','lead','manager','admin','super_admin'].includes(profile?.role as string) ? 'team_head' : 'staff'} className="h-[min(680px,85dvh)]" />
         </DialogContent>
       </Dialog>
 

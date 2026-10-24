@@ -47,7 +47,7 @@ const VideoPlayer = ({ stream, isLocal, name, isMuted, isVideoOff, profileImage,
 
   // Simulate or compute active speaker via AudioContext
   useEffect(() => {
-    if (!stream || isLocal || isVideoOff) return;
+    if (!stream || isLocal) return;
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const analyser = audioContext.createAnalyser();
@@ -82,9 +82,11 @@ const VideoPlayer = ({ stream, isLocal, name, isMuted, isVideoOff, profileImage,
     } catch (e) {
       console.warn("AudioContext not supported or allowed", e);
     }
-  }, [stream, isLocal, isVideoOff]);
+  }, [stream, isLocal]);
 
   const active = isActiveSpeaker || computedAudioLevel;
+  const connecting = !isLocal && !stream;
+  const showAvatar = !!isVideoOff || connecting;
   
   let borderColor = 'border-white/10';
   let shadow = '';
@@ -103,8 +105,16 @@ const VideoPlayer = ({ stream, isLocal, name, isMuted, isVideoOff, profileImage,
              <span className="text-6xl drop-shadow-2xl">{reaction}</span>
           </div>
        )}
-       {isVideoOff ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md">
+       {/* The <video> stays mounted even when the camera is off so remote audio keeps playing. */}
+       <video
+         ref={videoRef}
+         autoPlay
+         playsInline
+         muted={isLocal}
+         className={`w-full h-full object-cover transition-transform ${isLocal ? 'scale-x-[-1]' : ''} ${showAvatar ? 'invisible' : ''}`}
+       />
+       {showAvatar && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/90 backdrop-blur-md">
              <Avatar className={`w-24 h-24 border-4 transition-colors ${active ? 'border-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]' : (isHandRaised ? 'border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]' : 'border-white/10')}`}>
                <AvatarImage src={profileImage} />
                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-3xl text-white font-bold">
@@ -112,15 +122,8 @@ const VideoPlayer = ({ stream, isLocal, name, isMuted, isVideoOff, profileImage,
                </AvatarFallback>
              </Avatar>
              <span className="mt-3 text-white/70 text-sm font-medium">{name}</span>
+             {connecting && <span className="mt-1 flex items-center gap-1.5 text-xs text-amber-300"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-300" />Connecting…</span>}
           </div>
-       ) : (
-         <video 
-           ref={videoRef} 
-           autoPlay 
-           playsInline 
-           muted={isLocal} 
-           className={`w-full h-full object-cover transition-transform ${isLocal ? 'scale-x-[-1]' : ''}`}
-         />
        )}
        
        <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2">
@@ -162,7 +165,7 @@ const MeetingRoom = () => {
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const [remoteStreams, setRemoteStreams] = useState<Record<string, { stream: MediaStream, profile: any, isVideoOff?: boolean, isMuted?: boolean, isHandRaised?: boolean, reaction?: string | null }>>({});
+  const [remoteStreams, setRemoteStreams] = useState<Record<string, { stream?: MediaStream, profile: any, isVideoOff?: boolean, isMuted?: boolean, isHandRaised?: boolean, reaction?: string | null }>>({});
   
   const [isMuted, setIsMuted] = useState(true);
   const [isVideoOff, setIsVideoOff] = useState(true);
@@ -176,10 +179,19 @@ const MeetingRoom = () => {
   const pendingCandidates = useRef<Record<string, RTCIceCandidateInit[]>>({});
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const localStateRef = useRef({ isMuted: false, isVideoOff: false, isHandRaised: false, isAdmin: false });
+  const syncPresenceRef = useRef<(() => void) | null>(null);
   const [upcomingMeetings, setUpcomingMeetings] = useState<any[]>([]);
   
   useEffect(() => {
     fetchScheduledMeetings();
+  }, []);
+
+  // Leave the room cleanly when the tab is closed so others see it right away.
+  useEffect(() => {
+    const onHide = () => { channelRef.current?.untrack(); };
+    window.addEventListener('pagehide', onHide);
+    return () => window.removeEventListener('pagehide', onHide);
   }, []);
 
   const fetchScheduledMeetings = async () => {
@@ -629,14 +641,13 @@ const MeetingRoom = () => {
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
-        setRemoteStreams(prev => {
-          const next = { ...prev };
-          delete next[peerId];
-          return next;
-        });
-        delete peersRef.current[peerId];
-        if (pinnedId === peerId) setPinnedId(null);
+      // The person stays in the participant list (presence decides that); only the media link is retried.
+      if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+        if (peersRef.current[peerId] === pc) {
+          delete peersRef.current[peerId];
+          setRemoteStreams(prev => prev[peerId] ? { ...prev, [peerId]: { ...prev[peerId], stream: undefined } } : prev);
+          setTimeout(() => syncPresenceRef.current?.(), 1500);
+        }
       }
     };
 
@@ -701,84 +712,72 @@ const MeetingRoom = () => {
         });
         channelRef.current = channel;
         
-        channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        // Presence is the source of truth for "who is in the room". It updates instantly for everyone,
+        // without waiting for the video connection to come up, and without any page reload.
+        const syncPresence = () => {
           if (!active) return;
-          newPresences.forEach(peerPresence => {
-             const peerId = peerPresence.user_id;
-             if (peerId && peerId !== profile.user_id && !peersRef.current[peerId]) {
-                 if (profile.user_id < peerId) {
-                    setTimeout(() => {
-                       if (active && peersRef.current[peerId] === undefined) {
-                          createPeerConnection(peerId, peerPresence.profile, true, stream!);
-                       }
-                    }, 500); // Small delay to ensure the new peer is fully listening
-                 }
-             }
-             // Sync video/audio states from presence payload
-             if (peerId && peerId !== profile.user_id) {
-               setRemoteStreams(prev => {
-                 if (!prev[peerId]) return prev;
-                 return {
-                   ...prev,
-                   [peerId]: {
-                     ...prev[peerId],
-                     isVideoOff: peerPresence.isVideoOff,
-                     isMuted: peerPresence.isMuted
-                   }
-                 }
-               });
-             }
+          const state = channel.presenceState() as Record<string, any[]>;
+          const present: Record<string, any> = {};
+          Object.values(state).forEach((list) => {
+            const p = list[list.length - 1];
+            if (p?.user_id && p.user_id !== profile.user_id) present[p.user_id] = p;
           });
-        });
-        
-        channel.on('presence', { event: 'sync' }, () => {
-          if (!active) return;
-          const state = channel.presenceState();
-          console.log('Meeting presence sync:', state);
-          Object.keys(state).forEach(presId => {
-            const presences = state[presId] as any[];
-            if (presences && presences.length > 0) {
-              const peerPresence = presences[0];
-              const peerId = peerPresence.user_id;
-              
-              if (peerId && peerId !== profile.user_id && !peersRef.current[peerId]) {
-                console.log(`Initiating WebRTC with ${peerId}`);
-                // Simple tie-breaker: user with lower ID initiates the offer
-                if (profile.user_id < peerId) {
-                  createPeerConnection(peerId, peerPresence.profile, true, stream!);
-                }
-              }
-              // Sync video/audio states from presence payload
-              if (peerId && peerId !== profile.user_id) {
-                setRemoteStreams(prev => {
-                  if (!prev[peerId]) return prev;
-                  return {
-                    ...prev,
-                    [peerId]: {
-                      ...prev[peerId],
-                      isVideoOff: peerPresence.isVideoOff,
-                      isMuted: peerPresence.isMuted
-                    }
-                  }
-                });
-              }
+
+          setRemoteStreams(prev => {
+            const next = { ...prev };
+            Object.keys(next).forEach(id => { if (!present[id]) delete next[id]; });
+            Object.entries(present).forEach(([id, p]) => {
+              next[id] = {
+                ...next[id],
+                stream: next[id]?.stream,
+                profile: p.profile ?? next[id]?.profile,
+                isVideoOff: p.isVideoOff,
+                isMuted: p.isMuted,
+                isHandRaised: !!p.isHandRaised,
+              };
+            });
+            return next;
+          });
+
+          // Close links to people who left
+          Object.keys(peersRef.current).forEach(id => {
+            if (!present[id]) {
+              peersRef.current[id].close();
+              delete peersRef.current[id];
+              delete pendingCandidates.current[id];
             }
           });
+          setPinnedId(cur => (cur && cur !== 'local' && !present[cur] ? null : cur));
+
+          // Connect to newcomers and to anyone whose link broke. The lower id sends the offer.
+          Object.entries(present).forEach(([id, p]) => {
+            let pc = peersRef.current[id];
+            if (pc && (pc.connectionState === 'failed' || pc.connectionState === 'closed')) {
+              pc.close();
+              delete peersRef.current[id];
+              pc = undefined as any;
+            }
+            if (!pc && profile.user_id < id) {
+              createPeerConnection(id, p.profile, true, stream!);
+            }
+          });
+        };
+        syncPresenceRef.current = syncPresence;
+
+        channel.on('presence', { event: 'sync' }, syncPresence);
+        channel.on('presence', { event: 'join' }, ({ newPresences }) => {
+          if (!active) return;
+          newPresences.forEach((p: any) => {
+            if (p.user_id && p.user_id !== profile.user_id) toast.info(`${p.profile?.full_name || 'Someone'} joined the meeting`);
+          });
+          syncPresence();
         });
-        
-        channel.on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-           if (!active) return;
-           const peerId = leftPresences[0]?.user_id;
-           if (peerId && peersRef.current[peerId]) {
-             peersRef.current[peerId].close();
-             delete peersRef.current[peerId];
-             setRemoteStreams(prev => {
-               const next = { ...prev };
-               delete next[peerId];
-               return next;
-             });
-             if (pinnedId === peerId) setPinnedId(null);
-           }
+        channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
+          if (!active) return;
+          leftPresences.forEach((p: any) => {
+            if (p.user_id && p.user_id !== profile.user_id) toast.info(`${p.profile?.full_name || 'Someone'} left the meeting`);
+          });
+          syncPresence();
         });
 
         channel.on('broadcast', { event: 'webrtc' }, async (payload) => {
@@ -789,9 +788,13 @@ const MeetingRoom = () => {
           let pc = peersRef.current[senderId];
           
           if (type === 'offer') {
-            if (!pc) {
-              pc = createPeerConnection(senderId, senderProfile, false, stream!);
+            // A new offer always starts a fresh session (the sender may have rejoined or reloaded).
+            if (pc) {
+              pc.close();
+              delete peersRef.current[senderId];
+              delete pendingCandidates.current[senderId];
             }
+            pc = createPeerConnection(senderId, senderProfile, false, stream!);
             await pc.setRemoteDescription(new RTCSessionDescription(sdp));
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
@@ -871,18 +874,7 @@ const MeetingRoom = () => {
           if (!active) return;
           const { type, targetId, reaction } = payload.payload;
           
-          if (type === 'hand_raise') {
-             setRemoteStreams(prev => {
-                if (!prev[targetId]) return prev;
-                return {
-                   ...prev,
-                   [targetId]: {
-                      ...prev[targetId],
-                      isHandRaised: !prev[targetId].isHandRaised
-                   }
-                };
-             });
-          } else if (type === 'reaction') {
+          if (type === 'reaction') {
              setRemoteStreams(prev => {
                 if (!prev[targetId]) return prev;
                 return {
@@ -913,13 +905,15 @@ const MeetingRoom = () => {
         
         channel.subscribe(async (status) => {
           if (status === 'SUBSCRIBED' && active) {
+            localStateRef.current = { isMuted: false, isVideoOff: false, isHandRaised: false, isAdmin: currentAdmin === profile.user_id };
+            setIsMuted(false);
+            setIsVideoOff(false);
+            setIsHandRaised(false);
             await channel.track({
               user_id: profile.user_id,
               profile: profile,
               online_at: new Date().toISOString(),
-              isVideoOff: false,
-              isMuted: false,
-              isAdmin: currentAdmin === profile.user_id
+              ...localStateRef.current
             });
           }
         });
@@ -956,14 +950,19 @@ const MeetingRoom = () => {
     };
   }, [inRoom, roomId, profile?.user_id]);
 
-  const updatePresenceState = async (muted: boolean, videoOff: boolean) => {
+  const updatePresenceState = async (muted: boolean, videoOff: boolean, handRaised?: boolean) => {
+    localStateRef.current = {
+      ...localStateRef.current,
+      isMuted: muted,
+      isVideoOff: videoOff,
+      isHandRaised: handRaised ?? localStateRef.current.isHandRaised,
+    };
     if (channelRef.current) {
       await channelRef.current.track({
         user_id: profile?.user_id,
         profile: profile,
         online_at: new Date().toISOString(),
-        isMuted: muted,
-        isVideoOff: videoOff
+        ...localStateRef.current,
       });
     }
   };
@@ -1036,14 +1035,9 @@ const MeetingRoom = () => {
   };
 
   const handleRaiseHand = () => {
-     setIsHandRaised(!isHandRaised);
-     if (channelRef.current) {
-         channelRef.current.send({
-             type: 'broadcast',
-             event: 'interaction',
-             payload: { type: 'hand_raise', targetId: profile?.user_id }
-         });
-     }
+     const next = !isHandRaised;
+     setIsHandRaised(next);
+     updatePresenceState(isMuted, isVideoOff, next);
   };
 
   const handleReaction = (reaction: string) => {
@@ -1621,6 +1615,10 @@ const MeetingRoom = () => {
                <button onClick={() => { navigator.clipboard.writeText(roomId); toast.success("Room ID copied!"); }} className="ml-1 text-white/50 hover:text-white/80 transition-colors" title="Copy Room ID">
                   <Copy className="w-3 h-3" />
                </button>
+            </Badge>
+            <Badge variant="outline" className="bg-black/40 backdrop-blur-md text-white border-white/10 px-3 py-2 text-sm font-medium flex items-center gap-2" aria-live="polite">
+               <Users className="w-3.5 h-3.5 text-green-400" />
+               {Object.keys(remoteStreams).length + 1} in room
             </Badge>
           </div>
           

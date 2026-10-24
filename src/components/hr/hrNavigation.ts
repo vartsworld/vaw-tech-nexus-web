@@ -1,8 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Award, Bell, BarChart3, Briefcase, Building2, Calendar, CalendarOff, CheckSquare, Code, CreditCard, DollarSign, FolderKanban, GraduationCap,
+  Award, Megaphone, BarChart3, Briefcase, Building2, Calendar, CalendarOff, CheckSquare, Code, CreditCard, DollarSign, FolderKanban, GraduationCap,
   HandCoins, Image as ImageIcon, Inbox, LayoutDashboard, LifeBuoy, MessageCircle, MessageSquare, QrCode, Settings2, ShieldCheck, Sparkles,
-  UserPlus, Users, Video, Wallet, Globe, Gift, Trophy,
+  UserPlus, Users, Video, Wallet, Globe, Gift, Trophy, Gamepad2,
 } from "lucide-react";
 
 export interface HRRoom {
@@ -34,6 +34,7 @@ export const HR_SECTIONS: HRSection[] = [
       { id: "chat", name: "Team Chat", description: "Message your team", icon: MessageCircle, keywords: "inbox messages" },
       { id: "meeting", name: "Meeting Room", description: "Start or join a video meeting", icon: Video, keywords: "call video" },
       { id: "emma", name: "EMMA AI", description: "Ask the AI assistant for help with HR work", icon: Sparkles, keywords: "assistant ai help" },
+      { id: "arcade", name: "Arcade", description: "Take a break with chess, quizzes and quick games", icon: Gamepad2, keywords: "games play break chess snake quiz" },
     ],
   },
   {
@@ -83,24 +84,31 @@ export const HR_SECTIONS: HRSection[] = [
     title: "Website & System",
     icon: Globe,
     items: [
-      { id: "banners", name: "Banner Manager", description: "Announcement banners on the website and portals", icon: ImageIcon, keywords: "announcement" },
-      { id: "notifications", name: "Notifications", description: "Send notifications to staff and clients", icon: Bell, keywords: "alerts push" },
+      { id: "announcements", name: "Announcements", description: "Notifications to staff and banners shown across the apps", icon: Megaphone, keywords: "banner notification alert push broadcast message" },
       { id: "qr", name: "QR Manager", description: "Generate and manage QR codes", icon: QrCode, keywords: "codes" },
       { id: "api-integration", name: "API Integrations", description: "Keys and webhooks for connected services", icon: Code, keywords: "webhook keys" },
-      { id: "legacy", name: "Legacy Admin", description: "The previous HR dashboard", icon: ShieldCheck, keywords: "old classic" },
+      { id: "admin", name: "Admin Console", description: "Security checks, audit logs, data exports and system health", icon: ShieldCheck, keywords: "legacy audit export csv security health logs" },
     ],
   },
 ];
 
 export const ALL_ROOMS: (HRRoom & { section: string })[] = HR_SECTIONS.flatMap((s) => s.items.map((i) => ({ ...i, section: s.title })));
 
-export const findRoom = (id: string) => ALL_ROOMS.find((r) => r.id === id || (id === "planner" && r.id === "calendar") || (id === "home" && r.id === "dashboard") || (id === "inbox" && r.id === "chat"));
+const ROOM_ALIASES: Record<string, string> = { banners: "announcements", notifications: "announcements", legacy: "admin" };
+
+/** Individual games live under the Arcade page; they are not sidebar items. */
+export const GAME_ROOM_IDS = ["chess", "tictactoe", "pingpong", "codetyper", "colormatch", "codepuzzle", "quickquiz", "snake", "memory"];
+
+export const findRoom = (rawId: string) => {
+  const id = ROOM_ALIASES[rawId] ?? rawId;
+  return ALL_ROOMS.find((r) => r.id === id || (id === "planner" && r.id === "calendar") || (id === "home" && r.id === "dashboard") || (id === "inbox" && r.id === "chat"));
+};
 
 /** Shape expected by VirtualOfficeLayout / MobileBottomNav */
 export const toSidebarLinks = () =>
   HR_SECTIONS.map((s) => ({
     title: s.title,
     icon: s.icon,
-    items: s.items.map((i) => ({ id: i.id, name: i.name, icon: i.icon, path: i.id === "legacy" ? "/hr/legacy" : `/hr?${i.id}` })),
+    items: s.items.map((i) => ({ id: i.id, name: i.name, icon: i.icon, path: `/hr?${i.id}` })),
   }));
 

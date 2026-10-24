@@ -118,6 +118,14 @@ export const useStaffData = () => {
         return;
       }
 
+      // Dismissed employees are signed out immediately.
+      if ((staffProfile as any).application_status === 'dismissed') {
+        await supabase.auth.signOut();
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
       const userProfile: Profile = {
         id: staffProfile.id,
         user_id: staffProfile.user_id,

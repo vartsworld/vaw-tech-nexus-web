@@ -17,8 +17,8 @@ import PerformanceMetrics from "@/components/hr/PerformanceMetrics";
 import PointsMonitoring from "@/components/hr/PointsMonitoring";
 import RewardsManagement from "@/components/hr/RewardsManagement";
 import RedemptionApprovals from "@/components/hr/RedemptionApprovals";
-import NotificationCenter from "@/components/hr/NotificationCenter";
-import BannerManagement from "@/components/hr/BannerManagement";
+import AdminConsole from "@/components/hr/AdminConsole";
+import AnnouncementsHub from "@/components/hr/AnnouncementsHub";
 import TeamApplicationsList from "@/components/hr/TeamApplicationsList";
 import InternshipApplicationsList from "@/components/admin/InternshipApplicationsList";
 import PricingManagement from "@/components/hr/PricingManagement";
@@ -33,12 +33,13 @@ import MonthlyPlanner from "@/components/staff/MonthlyPlanner";
 import MeetingRoom from "@/components/staff/MeetingRoom";
 import TeamChat from "@/components/staff/TeamChat";
 
+import HRArcade from "@/components/hr/HRArcade";
 import PricingRequests from "@/components/hr/PricingRequests";
 import GeneralInquiries from "@/components/hr/GeneralInquiries";
 import LeaveRequests from "@/components/hr/LeaveRequests";
 import HROverview from "@/components/hr/HROverview";
 import HRCommandBar from "@/components/hr/HRCommandBar";
-import { findRoom, toSidebarLinks } from "@/components/hr/hrNavigation";
+import { findRoom, GAME_ROOM_IDS, toSidebarLinks } from "@/components/hr/hrNavigation";
 import { useHRBadges } from "@/hooks/useHRBadges";
 import { LayoutDashboard, Inbox, Users, CheckSquare, Menu } from "lucide-react";
 
@@ -145,6 +146,10 @@ export default function HRDashboard() {
     const pathParts = location.pathname.split('/');
     const pathRoom = pathParts[2] || pathParts[1];
 
+    if (searchRoom && GAME_ROOM_IDS.includes(searchRoom)) {
+      setCurrentRoom(searchRoom);
+      return;
+    }
     // Unknown names fall back to the overview instead of leaving the sidebar with nothing highlighted
     if (searchRoom && searchRoom !== 'dashboard' && searchRoom !== 'hr' && findRoom(searchRoom)) {
       setCurrentRoom(findRoom(searchRoom)!.id);
@@ -157,9 +162,7 @@ export default function HRDashboard() {
 
   const handleRoomChange = (room: string) => {
     setCurrentRoom(room);
-    if (room === 'legacy') {
-      navigate('/hr/legacy');
-    } else if (room === 'dashboard' || room === 'home') {
+    if (room === 'dashboard' || room === 'home') {
       navigate('/hr');
     } else {
       navigate(`/hr?${room}`);
@@ -240,8 +243,13 @@ export default function HRDashboard() {
       case 'meeting': return <MeetingRoom />;
       case 'chat':
       case 'inbox':
-        return <TeamChat userId={userProfile?.user_id || ''} userProfile={userProfile} />;
+        return (
+          <div className="h-[calc(100dvh-9rem)] min-h-[480px]">
+            <TeamChat userId={userProfile?.user_id || ''} userProfile={userProfile} />
+          </div>
+        );
       case 'emma': return <EmmaAssistant role="hr" />;
+      case 'arcade': return <HRArcade room="arcade" profile={userProfile} onNavigate={handleRoomChange} />;
       case 'pricing-requests': return <PricingRequests />;
       case 'inquiries': return <GeneralInquiries />;
       case 'leave': return <LeaveRequests />;
@@ -261,31 +269,31 @@ export default function HRDashboard() {
       case 'rewards': return <div className="space-y-6"><RewardsManagement /><RedemptionApprovals /></div>;
       case 'pricing': return <PricingManagement />;
       case 'financials': return <FinancialOversight />;
-      case 'notifications': return <NotificationCenter />;
-      case 'banners': return <BannerManagement />;
+      case 'announcements': return <AnnouncementsHub initialTab={new URLSearchParams(location.search).has('banners') ? 'banners' : 'notifications'} />;
       case 'api-integration': return <ApiIntegration />;
       case 'qr': return <QRManagement />;
-      default: 
+      case 'admin': return <AdminConsole />;
+      default:
+        if (GAME_ROOM_IDS.includes(currentRoom)) return <HRArcade room={currentRoom} profile={userProfile} onNavigate={handleRoomChange} />;
         return <HROverview firstName={userProfile?.full_name?.split(' ')[0]} onNavigate={handleRoomChange} />;
     }
   };
 
   return (
     <VirtualOfficeLayout
-      currentRoom={currentRoom}
+      currentRoom={GAME_ROOM_IDS.includes(currentRoom) ? 'arcade' : currentRoom}
       onRoomChange={handleRoomChange}
       userId={userProfile?.user_id}
       userProfile={userProfile}
       customSidebarLinks={SIDEBAR_LINKS}
       badges={sidebarBadges}
       mobileNavItems={MOBILE_TABS}
-      header={({ collapsed, expand }) => (
+      header={() => (
         <HRCommandBar
-          currentRoom={currentRoom}
+          currentRoom={GAME_ROOM_IDS.includes(currentRoom) ? 'arcade' : currentRoom}
           onNavigate={handleRoomChange}
           badges={sidebarBadges}
-          sidebarCollapsed={collapsed}
-          onExpandSidebar={expand}
+          profile={userProfile}
         />
       )}
     >

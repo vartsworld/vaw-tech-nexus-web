@@ -76,6 +76,9 @@ const TaskTemplateManagement = () => {
   const [duplicateTargetPackageId, setDuplicateTargetPackageId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isPackageDialogOpen, setIsPackageDialogOpen] = useState(false);
+  const [packageForm, setPackageForm] = useState({ name: "", description: "", publish: false, price: "" });
+  const [creatingPackage, setCreatingPackage] = useState(false);
 
   const [taskForm, setTaskForm] = useState({
     title: "",
@@ -118,6 +121,53 @@ const TaskTemplateManagement = () => {
       console.error('Error fetching packages:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreatePackage = async () => {
+    const name = packageForm.name.trim();
+    if (name.length < 2) {
+      toast({ title: "Name the package", description: "Give it a name of at least 2 letters.", variant: "destructive" });
+      return;
+    }
+    if (packages.some((p) => p.name.trim().toLowerCase() === name.toLowerCase())) {
+      toast({ title: "Name already used", description: "Pick a different name so the packages are easy to tell apart.", variant: "destructive" });
+      return;
+    }
+    const price = Math.max(0, Number(packageForm.price) || 0);
+    setCreatingPackage(true);
+    try {
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Math.random().toString(36).slice(2, 6);
+      const { data, error } = await supabase
+        .from("pricing_packages")
+        .insert({
+          name,
+          slug,
+          description: packageForm.description.trim() || null,
+          original_price: price,
+          discount_price: price,
+          features: [],
+          icon: "Package",
+          is_active: true,
+          // Internal by default: it only appears on the public pricing page if HR switches it on.
+          is_enabled: packageForm.publish,
+          is_popular: false,
+          display_order: packages.length + 1,
+          sort_order: packages.length + 1,
+        } as any)
+        .select("id, name, discount_price, original_price, icon, features")
+        .single();
+      if (error) throw error;
+      setPackages((prev) => [...prev, data as any]);
+      setSelectedPackageId((data as any).id);
+      setIsPackageDialogOpen(false);
+      setPackageForm({ name: "", description: "", publish: false, price: "" });
+      toast({ title: "Package created", description: `Add the first task template for ${name}.` });
+    } catch (error: any) {
+      console.error("Error creating package:", error);
+      toast({ title: "Could not create package", description: error.message || "Something went wrong.", variant: "destructive" });
+    } finally {
+      setCreatingPackage(false);
     }
   };
 
@@ -617,13 +667,21 @@ const TaskTemplateManagement = () => {
       {/* Package Selector */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Package className="h-5 w-5 text-primary" />
-            Select Package
-          </CardTitle>
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              Select Package
+            </CardTitle>
+            <Button size="sm" onClick={() => setIsPackageDialogOpen(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" /> New package
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3">
+            {packages.length === 0 && (
+              <p className="col-span-full text-sm text-muted-foreground">No packages yet. Create one to start adding task templates.</p>
+            )}
             {packages.map(pkg => (
               <button
                 key={pkg.id}
@@ -1218,6 +1276,47 @@ const TaskTemplateManagement = () => {
                 Duplicate
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New package */}
+      <Dialog open={isPackageDialogOpen} onOpenChange={setIsPackageDialogOpen}>
+        <DialogContent className="dark sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New package</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              A package groups the task templates used when work for it starts, for example "Mobile App" or "Annual Maintenance".
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="pkg-name">Package name</Label>
+              <Input id="pkg-name" value={packageForm.name} onChange={(e) => setPackageForm({ ...packageForm, name: e.target.value })} placeholder="e.g. Mobile App Development" autoFocus />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="pkg-desc">Description (optional)</Label>
+              <Textarea id="pkg-desc" rows={2} value={packageForm.description} onChange={(e) => setPackageForm({ ...packageForm, description: e.target.value })} />
+            </div>
+            <label className="flex items-start justify-between gap-4 rounded-lg border border-white/10 p-3">
+              <span>
+                <span className="block text-sm font-medium">Show on the public pricing page</span>
+                <span className="block text-xs text-muted-foreground">Off keeps it internal, only used for task templates. You can switch it on later in Pricing & Coupons.</span>
+              </span>
+              <Switch checked={packageForm.publish} onCheckedChange={(v) => setPackageForm({ ...packageForm, publish: v })} />
+            </label>
+            {packageForm.publish && (
+              <div className="space-y-1.5">
+                <Label htmlFor="pkg-price">Price (₹, before GST)</Label>
+                <Input id="pkg-price" type="number" min={0} inputMode="numeric" value={packageForm.price} onChange={(e) => setPackageForm({ ...packageForm, price: e.target.value })} placeholder="e.g. 25000" />
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setIsPackageDialogOpen(false)} disabled={creatingPackage}>Cancel</Button>
+            <Button onClick={handleCreatePackage} disabled={creatingPackage || packageForm.name.trim().length < 2}>
+              {creatingPackage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create package
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

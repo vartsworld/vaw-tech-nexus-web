@@ -11,7 +11,6 @@ const ServiceRequest = lazy(() => import("./pages/ServiceRequest"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 const HRDashboard = lazy(() => import("./pages/HRDashboard"));
-const LegacyHRDashboard = lazy(() => import("./pages/LegacyHRDashboard"));
 const Internship = lazy(() => import("./pages/Internship"));
 const InternshipRegistration = lazy(() => import("./pages/InternshipRegistration"));
 const InternExperience = lazy(() => import("./pages/InternExperience"));
@@ -169,7 +168,7 @@ const AppContent = () => {
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/super-admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/hr/legacy/*" element={<LegacyHRDashboard />} />
+          <Route path="/hr/legacy/*" element={<Navigate to="/hr?admin" replace />} />
           <Route path="/hr/*" element={<HRDashboard />} />
           <Route path="/staff/profile" element={<Navigate to="/account" replace />} />
           <Route path="/staff/login" element={<StaffLogin />} />
