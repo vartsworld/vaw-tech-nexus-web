@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, ExternalLink, PanelLeftOpen, Search } from "lucide-react";
+import { ChevronRight, ExternalLink, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ALL_ROOMS, HR_SECTIONS, findRoom } from "@/components/hr/hrNavigation";
@@ -8,12 +8,10 @@ interface HRCommandBarProps {
   currentRoom: string;
   onNavigate: (room: string) => void;
   badges: Record<string, number>;
-  sidebarCollapsed: boolean;
-  onExpandSidebar: () => void;
 }
 
 /** Slim bar above every HR page: where you are + a search box (Ctrl/⌘ K) that jumps to any page. */
-const HRCommandBar = ({ currentRoom, onNavigate, badges, sidebarCollapsed, onExpandSidebar }: HRCommandBarProps) => {
+const HRCommandBar = ({ currentRoom, onNavigate, badges }: HRCommandBarProps) => {
   const [open, setOpen] = useState(false);
   const room = findRoom(currentRoom);
   const section = ALL_ROOMS.find((r) => r.id === room?.id)?.section;
@@ -39,11 +37,6 @@ const HRCommandBar = ({ currentRoom, onNavigate, badges, sidebarCollapsed, onExp
   return (
     <>
       <div className="flex shrink-0 items-center gap-2 border-b border-white/10 bg-black/30 px-3 py-2 backdrop-blur-md sm:px-4 lg:px-6">
-        {sidebarCollapsed && (
-          <Button variant="ghost" size="icon" className="hidden h-8 w-8 text-white/70 hover:text-white lg:inline-flex" aria-label="Expand sidebar" title="Expand sidebar" onClick={onExpandSidebar}>
-            <PanelLeftOpen className="h-4 w-4" />
-          </Button>
-        )}
         <nav aria-label="Breadcrumb" className="flex min-w-0 flex-1 items-center gap-1.5 text-sm">
           {section && room?.id !== "dashboard" && (
             <>

@@ -1,631 +1,383 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { QRCodeCanvas } from "qrcode.react";
+import {
+  Building, Check, Copy, Download, Edit, ExternalLink, Key, Layers, Loader2, Mail, MoreVertical, Phone, Plus, QrCode, RefreshCw, Search, Shield, Trash2, User,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { 
-  Plus, 
-  Search, 
-  Edit, 
-  Trash2, 
-  Layers, 
-  User, 
-  Check,
-  Building,
-  Key,
-  Shield,
-  ArrowRight,
-  ExternalLink,
-  Phone,
-  Mail
-} from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+
+const db = supabase as any;
+const portalUrl = () => `${window.location.origin}/portal`;
+
+const ICONS = [
+  { value: "layers", label: "Default", Icon: Layers },
+  { value: "user", label: "Profile", Icon: User },
+  { value: "card", label: "ID card", Icon: Building },
+  { value: "shield", label: "Secure", Icon: Shield },
+  { value: "key", label: "Credentials", Icon: Key },
+];
 
 const QRManagement = () => {
+  const { toast } = useToast();
   const [portals, setPortals] = useState<any[]>([]);
   const [clients, setClients] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isAddPortalOpen, setIsAddPortalOpen] = useState(false);
-  const [isEditPortalOpen, setIsEditPortalOpen] = useState(false);
-  const [isCardsDialogOpen, setIsCardsDialogOpen] = useState(false);
-  const [selectedPortal, setSelectedPortal] = useState<any>(null);
-  const [portalLinks, setPortalLinks] = useState<any[]>([]);
-  
-  const [newPortal, setNewPortal] = useState({
-    client_id: "",
-    description: ""
-  });
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
-  const { toast } = useToast();
+  const [addOpen, setAddOpen] = useState(false);
+  const [newPortal, setNewPortal] = useState({ client_id: "", description: "" });
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchPortals();
-    fetchClients();
-  }, []);
+  const [editing, setEditing] = useState<any>(null);
+  const [editDescription, setEditDescription] = useState("");
 
-  const fetchPortals = async () => {
+  const [pagesFor, setPagesFor] = useState<any>(null);
+  const [links, setLinks] = useState<any[]>([]);
+  const [linksLoading, setLinksLoading] = useState(false);
+
+  const [qrFor, setQrFor] = useState<any>(null);
+  const qrWrap = useRef<HTMLDivElement>(null);
+  const [toRemove, setToRemove] = useState<any>(null);
+
+  const load = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await (supabase as any)
-        .from('client_portals')
-        .select(`
-          *,
-          client:clients(*),
-          portal_links:portal_links(count)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setPortals(data || []);
-    } catch (error) {
-      console.error('Error fetching portals:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load portals.",
-        variant: "destructive",
-      });
+      const [p, c] = await Promise.all([
+        db.from("client_portals").select("*, client:clients(*), portal_links:portal_links(count)").order("created_at", { ascending: false }),
+        supabase.from("clients").select("id, company_name, email, phone").order("company_name"),
+      ]);
+      if (p.error) throw p.error;
+      setPortals(p.data || []);
+      setClients(c.data || []);
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Could not load portals", description: e.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchClients = async () => {
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return portals;
+    return portals.filter((p) => [p.client?.company_name, p.client?.email, p.client?.phone, p.description].some((v) => (v || "").toLowerCase().includes(q)));
+  }, [portals, search]);
+
+  const stats = useMemo(() => {
+    const withPortal = new Set(portals.map((p) => p.client_id));
+    return {
+      portals: portals.length,
+      pages: portals.reduce((t, p) => t + (p.portal_links?.[0]?.count || 0), 0),
+      without: clients.filter((c) => !withPortal.has(c.id)).length,
+    };
+  }, [portals, clients]);
+
+  const availableClients = clients.filter((c) => !portals.some((p) => p.client_id === c.id));
+
+  const addPortal = async () => {
+    if (!newPortal.client_id) return toast({ title: "Pick a client first", variant: "destructive" });
+    setSaving(true);
     try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('id, company_name, email, phone')
-        .order('company_name');
+      const { data, error } = await db.from("client_portals").insert([newPortal]).select("*, client:clients(*), portal_links:portal_links(count)");
       if (error) throw error;
-      setClients(data || []);
-    } catch (error) {
-      console.error('Error fetching clients:', error);
-    }
-  };
-
-  const fetchPortalLinks = async (clientId: string) => {
-    try {
-      const { data, error } = await (supabase as any)
-        .from('portal_links')
-        .select('*')
-        .eq('client_id', clientId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setPortalLinks(data || []);
-    } catch (error) {
-      console.error('Error fetching links:', error);
-    }
-  };
-
-  const handleAddPortal = async () => {
-    try {
-      if (!newPortal.client_id) {
-        toast({
-          title: "Incomplete",
-          description: "Please select a client.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const { data, error } = await (supabase as any)
-        .from('client_portals')
-        .insert([newPortal])
-        .select(`
-          *,
-          client:clients(*)
-        `);
-
-      if (error) throw error;
-
-      setPortals([...portals, data[0]]);
-      setIsAddPortalOpen(false);
+      setPortals((prev) => [data[0], ...prev]);
+      setAddOpen(false);
       setNewPortal({ client_id: "", description: "" });
-      
-      toast({
-        title: "Success",
-        description: "Client added to portals.",
-      });
-    } catch (error: any) {
-      console.error('Error adding portal:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Something went wrong.",
-        variant: "destructive",
-      });
+      toast({ title: "Portal created", description: "Now add the pages the client should see." });
+    } catch (e: any) {
+      toast({ title: "Could not create portal", description: e.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDeletePortal = async (id: string) => {
-    if (!confirm("Are you sure you want to remove this client?")) return;
-
+  const saveDescription = async () => {
+    if (!editing) return;
+    setSaving(true);
     try {
-      const { error } = await (supabase as any)
-        .from('client_portals')
-        .delete()
-        .eq('id', id);
-
+      const { error } = await db.from("client_portals").update({ description: editDescription }).eq("id", editing.id);
       if (error) throw error;
-
-      setPortals(portals.filter(p => p.id !== id));
-      toast({
-        title: "Success",
-        description: "Client removed.",
-      });
-    } catch (error) {
-      console.error('Error deleting portal:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove client.",
-        variant: "destructive",
-      });
+      setPortals((prev) => prev.map((p) => (p.id === editing.id ? { ...p, description: editDescription } : p)));
+      setEditing(null);
+      toast({ title: "Description updated" });
+    } catch (e: any) {
+      toast({ title: "Could not save", description: e.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleAddPortalLink = async (clientId: string) => {
+  const removePortal = async () => {
+    if (!toRemove) return;
     try {
-      const newCard = {
-        client_id: clientId,
-        title: "New Page",
-        url: "",
-        description: "Simple description for the client",
-        icon: "layers",
-        page_id: "",
-        password: "",
-        is_active: true
-      };
-
-      const { data, error } = await (supabase as any)
-        .from('portal_links')
-        .insert([newCard])
-        .select();
-
+      const { error } = await db.from("client_portals").delete().eq("id", toRemove.id);
       if (error) throw error;
-      setPortalLinks([...portalLinks, data[0]]);
-      toast({ title: "New page added" });
-    } catch (error) {
-      console.error('Error adding link:', error);
+      setPortals((prev) => prev.filter((p) => p.id !== toRemove.id));
+      toast({ title: "Portal removed", description: `${toRemove.client?.company_name} no longer has a portal.` });
+    } catch (e: any) {
+      toast({ title: "Could not remove", description: e.message, variant: "destructive" });
+    } finally {
+      setToRemove(null);
     }
   };
 
-  const handleUpdatePortalLink = async (id: string, updates: any) => {
-    try {
-      const { error } = await (supabase as any)
-        .from('portal_links')
-        .update(updates)
-        .eq('id', id);
-
-      if (error) throw error;
-      setPortalLinks(portalLinks.map(l => l.id === id ? { ...l, ...updates } : l));
-    } catch (error) {
-      console.error('Error updating page:', error);
-    }
+  const openPages = async (portal: any) => {
+    setPagesFor(portal);
+    setLinksLoading(true);
+    const { data, error } = await db.from("portal_links").select("*").eq("client_id", portal.client_id).order("created_at", { ascending: true });
+    if (error) toast({ title: "Could not load pages", description: error.message, variant: "destructive" });
+    setLinks(data || []);
+    setLinksLoading(false);
   };
 
-  const handleDeletePortalLink = async (id: string) => {
-    try {
-      const { error } = await (supabase as any)
-        .from('portal_links')
-        .delete()
-        .eq('id', id);
+  const refreshCount = (clientId: string, count: number) =>
+    setPortals((prev) => prev.map((p) => (p.client_id === clientId ? { ...p, portal_links: [{ count }] } : p)));
 
-      if (error) throw error;
-      setPortalLinks(portalLinks.filter(l => l.id !== id));
-      toast({ title: "Page removed" });
-    } catch (error) {
-      console.error('Error deleting page:', error);
-    }
+  const addLink = async () => {
+    const { data, error } = await db.from("portal_links").insert([{ client_id: pagesFor.client_id, title: "New page", url: "", description: "", icon: "layers", page_id: "", password: "", is_active: true }]).select();
+    if (error) return toast({ title: "Could not add page", description: error.message, variant: "destructive" });
+    const next = [...links, data[0]];
+    setLinks(next);
+    refreshCount(pagesFor.client_id, next.length);
   };
 
-  const filteredPortals = portals.filter(p => 
-    p.client?.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.client?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.client?.phone?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const updateLink = async (id: string, updates: any) => {
+    const { error } = await db.from("portal_links").update(updates).eq("id", id);
+    if (error) return toast({ title: "Change not saved", description: error.message, variant: "destructive" });
+    setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
+  };
+
+  const deleteLink = async (id: string) => {
+    const { error } = await db.from("portal_links").delete().eq("id", id);
+    if (error) return toast({ title: "Could not remove page", description: error.message, variant: "destructive" });
+    const next = links.filter((l) => l.id !== id);
+    setLinks(next);
+    refreshCount(pagesFor.client_id, next.length);
+  };
+
+  const copy = async (text: string, label: string) => {
+    try { await navigator.clipboard.writeText(text); toast({ title: `${label} copied` }); } catch { toast({ title: "Copy failed", variant: "destructive" }); }
+  };
+
+  const downloadQr = () => {
+    const canvas = qrWrap.current?.querySelector("canvas");
+    if (!canvas) return;
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `${(qrFor?.client?.company_name || "portal").replace(/\s+/g, "-").toLowerCase()}-portal-qr.png`;
+    a.click();
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-amber-500/10 rounded-xl">
-            <Layers className="h-6 w-6 text-amber-500" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-black tracking-tight">Client Portals</h2>
-            <p className="text-muted-foreground text-sm font-medium">Add and manage pages for each client.</p>
-          </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold tracking-tight">QR & Client Portals</h1>
+          <p className="text-sm text-muted-foreground">Give each client a portal with the pages and logins they need, and share it with a QR code.</p>
         </div>
-        
-        <Dialog open={isAddPortalOpen} onOpenChange={setIsAddPortalOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center gap-2 rounded-2xl bg-amber-500 hover:bg-amber-600 border-0 h-10 px-6 font-bold">
-              <Plus className="h-4 w-4" />
-              Add Client
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] rounded-3xl bg-card border-white/5 backdrop-blur-2xl text-foreground">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-black">Select Client</DialogTitle>
-              <CardDescription className="font-semibold italic">Choose a client from your records.</CardDescription>
-            </DialogHeader>
-            <div className="space-y-6 py-6 font-primary">
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-black opacity-40 italic">Client List</Label>
-                <Select 
-                  value={newPortal.client_id} 
-                  onValueChange={(val) => setNewPortal({...newPortal, client_id: val})}
-                >
-                  <SelectTrigger className="rounded-2xl bg-muted/50 border-0 h-12">
-                    <SelectValue placeholder="Click to see all clients" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-white/5 backdrop-blur-3xl max-h-[300px]">
-                    {clients.length > 0 ? clients.map(client => (
-                      <SelectItem key={client.id} value={client.id} className="rounded-xl my-1">
-                        <div className="flex flex-col text-left py-1">
-                          <span className="font-black text-sm">{client.company_name}</span>
-                          <span className="text-[10px] opacity-60 font-bold">{client.email || client.phone || "No contact info"}</span>
-                        </div>
-                      </SelectItem>
-                    )) : (
-                      <div className="p-4 text-center text-sm font-bold opacity-40">No clients found in records.</div>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-black opacity-40 italic">Portal Description</Label>
-                <Input 
-                  placeholder="e.g. Service Portal" 
-                  value={newPortal.description}
-                  onChange={(e) => setNewPortal({...newPortal, description: e.target.value})}
-                  className="rounded-2xl bg-muted/50 border-0 h-12 font-medium"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 pt-2">
-              <Button variant="ghost" onClick={() => setIsAddPortalOpen(false)} className="rounded-2xl flex-1 h-12 font-bold transition-all">Cancel</Button>
-              <Button onClick={handleAddPortal} className="rounded-2xl flex-1 bg-amber-500 hover:bg-amber-600 h-12 font-bold">Save Portal</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog open={isEditPortalOpen} onOpenChange={setIsEditPortalOpen}>
-          <DialogContent className="sm:max-w-[425px] rounded-3xl bg-card border-white/5 backdrop-blur-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-black">Edit Portal</DialogTitle>
-              <CardDescription className="font-semibold italic">Change the details for this client.</CardDescription>
-            </DialogHeader>
-            <div className="space-y-6 py-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-black opacity-40 italic">Client Name</Label>
-                <Input 
-                  value={selectedPortal?.client?.company_name || ""} 
-                  disabled
-                  className="rounded-2xl bg-muted/30 border-0 h-12 font-bold opacity-50"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-black opacity-40 italic">Description</Label>
-                <Input 
-                  placeholder="What is this portal for?" 
-                  defaultValue={selectedPortal?.description || ""}
-                  onBlur={(e) => setSelectedPortal({...selectedPortal, description: e.target.value})}
-                  className="rounded-2xl bg-muted/50 border-0 h-12 font-medium"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3 pt-2">
-              <Button variant="ghost" onClick={() => setIsEditPortalOpen(false)} className="rounded-2xl flex-1 h-12 font-bold transition-all">Cancel</Button>
-              <Button 
-                onClick={async () => {
-                  try {
-                    const { error } = await (supabase as any)
-                      .from('client_portals')
-                      .update({ description: selectedPortal.description })
-                      .eq('id', selectedPortal.id);
-                    if (error) throw error;
-                    setPortals(portals.map(p => p.id === selectedPortal.id ? selectedPortal : p));
-                    setIsEditPortalOpen(false);
-                    toast({ title: "Updated successfully" });
-                  } catch (e) {
-                    console.error(e);
-                  }
-                }} 
-                className="rounded-2xl flex-1 bg-amber-500 hover:bg-amber-600 h-12 font-bold"
-              >
-                Save Changes
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={load} disabled={loading} className="gap-2 border-white/10 bg-white/5"><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh</Button>
+          <Button onClick={() => setAddOpen(true)} className="gap-2"><Plus className="h-4 w-4" /> Add client portal</Button>
+        </div>
       </div>
 
-      <Card className="border-white/5 bg-background/40 backdrop-blur-3xl rounded-[2.5rem] overflow-hidden border">
-        <CardHeader className="border-b border-white/5 p-8 flex flex-col md:flex-row justify-between items-center gap-6">
-          <CardTitle className="text-xl font-black flex items-center gap-3">
-            <Shield className="h-6 w-6 text-amber-500" />
-            Active Portals
-          </CardTitle>
-          <div className="relative w-full md:w-80 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-amber-500 transition-colors" />
-            <Input
-              placeholder="Search by name, email, or phone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 h-12 rounded-full bg-muted/30 border-0 focus:ring-amber-500/20 transition-all font-medium"
-            />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {[
+          { label: "Client portals", value: stats.portals, hint: "clients with a portal", Icon: Building, tone: "text-amber-400" },
+          { label: "Pages published", value: stats.pages, hint: "links across all portals", Icon: Layers, tone: "text-sky-400" },
+          { label: "Clients without a portal", value: stats.without, hint: "could be added", Icon: QrCode, tone: "text-violet-400" },
+        ].map(({ label, value, hint, Icon, tone }) => (
+          <div key={label} className="rounded-2xl border border-white/10 bg-card/70 p-4">
+            <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground"><Icon className={`h-3.5 w-3.5 ${tone}`} /> {label}</p>
+            <p className="mt-1 text-2xl font-black tabular-nums">{loading ? "–" : value}</p>
+            <p className="text-xs text-muted-foreground">{hint}</p>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto"><Table>
-            <TableHeader className="bg-muted/10">
-              <TableRow className="border-white/5 hover:bg-transparent h-16">
-                <TableHead className="pl-8 font-black text-[10px] uppercase tracking-widest italic">Client Name</TableHead>
-                <TableHead className="font-black text-[10px] uppercase tracking-widest italic">Contact Info</TableHead>
-                <TableHead className="font-black text-[10px] uppercase tracking-widest italic">Description</TableHead>
-                <TableHead className="pr-8 text-right font-black text-[10px] uppercase tracking-widest italic">Tools</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPortals.length > 0 ? filteredPortals.map((p) => (
-                <TableRow key={p.id} className="border-white/5 hover:bg-white/5 transition-all group h-24">
-                  <TableCell className="pl-8">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500 border border-amber-500/20 group-hover:scale-110 transition-transform">
-                        <Building className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <h4 className="font-black text-lg -mb-1">{p.client?.company_name}</h4>
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-amber-500/60 tracking-widest uppercase">
-                          <Check className="h-3 w-3" />
-                          Active
-                        </div>
-                      </div>
+        ))}
+      </div>
+
+      <Card className="rounded-2xl border-white/10 bg-card/70">
+        <CardContent className="space-y-4 p-4 sm:p-5">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by client, email, phone or description" className="pl-9" aria-label="Search portals" />
+          </div>
+
+          {loading ? (
+            <div className="space-y-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 rounded-xl" />)}</div>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-white/15 p-10 text-center">
+              <Layers className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+              <p className="font-semibold">{portals.length === 0 ? "No client portals yet" : "No portal matches your search"}</p>
+              <p className="text-sm text-muted-foreground">{portals.length === 0 ? "Add a client to create their first portal." : "Try a different name or email."}</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-white/10 overflow-hidden rounded-xl border border-white/10">
+              {filtered.map((p) => (
+                <li key={p.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400"><Building className="h-5 w-5" /></span>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{p.client?.company_name || "Unknown client"}</p>
+                      <p className="truncate text-xs text-muted-foreground">{p.description || "Client workspace"}</p>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2 text-sm font-bold opacity-80">
-                        <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                        {p.client?.email}
-                      </div>
-                      <div className="flex items-center gap-2 text-[11px] font-semibold text-muted-foreground">
-                        <Phone className="h-3 w-3" />
-                        {p.client?.phone || "No phone"}
-                      </div>
+                  </div>
+                  <div className="min-w-0 space-y-0.5 text-xs text-muted-foreground sm:w-56">
+                    {p.client?.email && <p className="flex items-center gap-1.5 truncate"><Mail className="h-3 w-3 shrink-0" />{p.client.email}</p>}
+                    {p.client?.phone && <p className="flex items-center gap-1.5"><Phone className="h-3 w-3 shrink-0" />{p.client.phone}</p>}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 sm:justify-end">
+                    <Badge variant="outline" className="border-white/15">{p.portal_links?.[0]?.count || 0} pages</Badge>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="outline" className="h-9 gap-1.5 border-white/10 bg-white/5" onClick={() => openPages(p)}><Layers className="h-4 w-4" /> Pages</Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost" className="h-9 w-9" aria-label={`Actions for ${p.client?.company_name}`}><MoreVertical className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuItem onClick={() => openPages(p)}><Layers className="mr-2 h-4 w-4" /> Manage pages</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setQrFor(p)}><QrCode className="mr-2 h-4 w-4" /> Show QR code</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => copy(portalUrl(), "Portal link")}><Copy className="mr-2 h-4 w-4" /> Copy portal link</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => window.open("/portal", "_blank", "noopener")}><ExternalLink className="mr-2 h-4 w-4" /> Open portal</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => { setEditing(p); setEditDescription(p.description || ""); }}><Edit className="mr-2 h-4 w-4" /> Edit description</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={() => setToRemove(p)}><Trash2 className="mr-2 h-4 w-4" /> Remove portal</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-2">
-                       <span className="text-sm font-medium opacity-60 italic max-w-xs block truncate bg-muted/20 px-3 py-1.5 rounded-xl border border-white/5">
-                        {p.description || "Client Workspace"}
-                      </span>
-                      <div className="flex items-center gap-2">
-                         <Badge variant="outline" className="bg-amber-500/5 text-amber-500 border-amber-500/10 text-[10px] font-black">
-                            {p.portal_links?.[0]?.count || 0} Pages Added
-                         </Badge>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="pr-8 text-right">
-                    <div className="flex items-center justify-end gap-3 translate-x-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-12 w-12 rounded-2xl text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 border border-amber-500/10 font-black"
-                        onClick={() => {
-                          setSelectedPortal(p);
-                          fetchPortalLinks(p.client_id);
-                          setIsCardsDialogOpen(true);
-                        }}
-                        title="Manage Pages"
-                      >
-                        <Plus className="h-6 w-6" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-12 w-12 rounded-2xl text-muted-foreground hover:text-amber-500 hover:bg-white/10 border border-white/10"
-                        title="Edit Info"
-                        onClick={() => {
-                          setSelectedPortal({ ...p });
-                          setIsEditPortalOpen(true);
-                        }}
-                      >
-                        <Edit className="h-5 w-5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-12 w-12 rounded-2xl text-muted-foreground hover:text-primary hover:bg-white/10 border border-white/10"
-                        title="Open Portal"
-                        onClick={() => window.open('/portal', '_blank')}
-                      >
-                        <ExternalLink className="h-5 w-5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-12 w-12 rounded-2xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 border border-destructive/10"
-                        onClick={() => handleDeletePortal(p.id)}
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-96 text-center">
-                    <div className="flex flex-col items-center justify-center space-y-4 opacity-20">
-                      <Layers className="h-20 w-20 mb-2" />
-                      <p className="text-2xl font-black tracking-tighter uppercase">No clients added yet</p>
-                      <p className="text-sm font-bold uppercase tracking-[0.2em]">Start by adding a client portal</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table></div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
 
-      {/* Portal Pages Management Dialog */}
-      <Dialog open={isCardsDialogOpen} onOpenChange={setIsCardsDialogOpen}>
-        <DialogContent className="sm:max-w-[750px] rounded-[3rem] bg-card border-white/5 backdrop-blur-3xl">
-          <DialogHeader className="px-6 pt-6">
-            <DialogTitle className="text-3xl font-black tracking-tighter">PORTAL PAGES</DialogTitle>
-            <CardDescription className="text-lg font-bold opacity-60">
-              Adding pages for <span className="text-amber-500 font-black">{selectedPortal?.client?.company_name}</span>
-            </CardDescription>
+      {/* Add */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="dark sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add a client portal</DialogTitle>
+            <DialogDescription>Choose a client from your records. You can add pages right after.</DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-6 py-8 overflow-y-auto max-h-[65vh] px-8 custom-scrollbar">
-            <div className="flex justify-between items-center bg-gradient-to-r from-amber-500/10 via-transparent to-transparent p-6 rounded-[2rem] border border-amber-500/20 mb-8">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-amber-500 rounded-2xl">
-                  <Plus className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                   <h4 className="font-black text-lg tracking-tight">Add a Page</h4>
-                   <p className="text-xs font-bold opacity-40 uppercase tracking-widest italic">Create a new link for this client</p>
-                </div>
-              </div>
-              <Button 
-                onClick={() => handleAddPortalLink(selectedPortal?.client_id)} 
-                className="rounded-2xl h-12 px-8 bg-amber-500 hover:bg-amber-600 font-black shadow-lg shadow-amber-500/10"
-              >
-                ADD PAGE
-              </Button>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Client</Label>
+              <Select value={newPortal.client_id} onValueChange={(v) => setNewPortal({ ...newPortal, client_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Select a client" /></SelectTrigger>
+                <SelectContent className="dark max-h-72">
+                  {availableClients.length ? availableClients.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.company_name}<span className="ml-2 text-xs text-muted-foreground">{c.email || c.phone || ""}</span></SelectItem>
+                  )) : <div className="p-3 text-center text-sm text-muted-foreground">Every client already has a portal.</div>}
+                </SelectContent>
+              </Select>
             </div>
-
-            <div className="grid gap-6">
-              {portalLinks.map((link, index) => (
-                <div key={link.id} className="relative group/card bg-muted/20 hover:bg-muted/30 transition-all rounded-[2rem] p-6 border border-white/5 overflow-hidden">
-                  <div className="flex flex-col md:flex-row gap-6 relative z-10">
-                    <div className="flex-1 space-y-4">
-                      <div className="flex gap-4">
-                        <div className="space-y-2 flex-1">
-                          <Label className="text-[10px] uppercase font-black opacity-30 tracking-widest pl-1 italic">Page Title</Label>
-                          <Input 
-                            defaultValue={link.title} 
-                            onBlur={(e) => handleUpdatePortalLink(link.id, { title: e.target.value })}
-                            className="h-12 bg-background/50 border-0 rounded-2xl font-black text-lg focus:ring-amber-500/20"
-                          />
-                        </div>
-                        <div className="space-y-2 w-32">
-                          <Label className="text-[10px] uppercase font-black opacity-30 tracking-widest pl-1 italic">Icon</Label>
-                          <Select 
-                            value={link.icon} 
-                            onValueChange={(val) => handleUpdatePortalLink(link.id, { icon: val })}
-                          >
-                            <SelectTrigger className="h-12 bg-background/50 border-0 rounded-2xl focus:ring-primary/20 transition-all">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-2xl border-white/5 backdrop-blur-2xl">
-                              <SelectItem value="layers"><div className="flex items-center gap-2 font-bold"><Layers className="h-4 w-4" /> Default</div></SelectItem>
-                              <SelectItem value="user"><div className="flex items-center gap-2 font-bold"><User className="h-4 w-4" /> Profile</div></SelectItem>
-                              <SelectItem value="card"><div className="flex items-center gap-2 font-bold"><Building className="h-4 w-4" /> ID Card</div></SelectItem>
-                              <SelectItem value="settings"><div className="flex items-center gap-2 font-bold"><Edit className="h-4 w-4" /> Admin</div></SelectItem>
-                              <SelectItem value="shield"><div className="flex items-center gap-2 font-bold"><Shield className="h-4 w-4" /> Secure</div></SelectItem>
-                              <SelectItem value="key"><div className="flex items-center gap-2 font-bold"><Key className="h-4 w-4" /> Credentials</div></SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-black opacity-30 tracking-widest pl-1 italic">Link / URL</Label>
-                        <div className="relative">
-                          <ExternalLink className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 opacity-40" />
-                          <Input 
-                             defaultValue={link.url} 
-                             onBlur={(e) => handleUpdatePortalLink(link.id, { url: e.target.value })}
-                             placeholder="vawtech.in/admin-v2"
-                             className="pl-12 h-12 bg-background/50 border-0 rounded-2xl font-semibold"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-[10px] uppercase font-black opacity-30 tracking-widest pl-1 italic">Description</Label>
-                        <Input 
-                           defaultValue={link.description} 
-                           onBlur={(e) => handleUpdatePortalLink(link.id, { description: e.target.value })}
-                           className="h-12 bg-background/50 border-0 rounded-2xl font-medium text-sm"
-                        />
-                      </div>
-
-                      <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-between border-t border-white/5">
-                        <div className="flex gap-4">
-                           <div className="space-y-2">
-                              <Label className="text-[10px] uppercase font-black opacity-30 tracking-widest pl-1 italic">User ID / Login</Label>
-                              <Input 
-                                 defaultValue={link.page_id || ""} 
-                                 onBlur={(e) => handleUpdatePortalLink(link.id, { page_id: e.target.value })}
-                                 placeholder="USERID"
-                                 className="h-10 w-36 bg-background/50 border-0 rounded-xl font-bold"
-                              />
-                           </div>
-                           <div className="space-y-2">
-                              <Label className="text-[10px] uppercase font-black opacity-30 tracking-widest pl-1 italic">Password / Key</Label>
-                              <Input 
-                                 defaultValue={link.password || ""} 
-                                 onBlur={(e) => handleUpdatePortalLink(link.id, { password: e.target.value })}
-                                 placeholder="PASSWORD"
-                                 className="h-10 w-36 bg-background/50 border-0 rounded-xl font-bold"
-                              />
-                           </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4 mt-auto">
-                          <div className="flex items-center gap-2 bg-background/40 px-4 py-2.5 rounded-xl border border-white/5">
-                            <span className="text-[10px] font-black uppercase opacity-60">Shown</span>
-                            <Switch 
-                               checked={link.is_active} 
-                               onCheckedChange={(val) => handleUpdatePortalLink(link.id, { is_active: val })}
-                            />
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-10 w-10 text-destructive hover:bg-destructive/10 rounded-xl"
-                            onClick={() => handleDeletePortalLink(link.id)}
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {portalLinks.length === 0 && (
-                <div className="text-center py-20 bg-muted/10 rounded-[3rem] border border-dashed border-white/10">
-                   <h4 className="text-xl font-black opacity-60">NO PAGES ADDED</h4>
-                   <p className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-30 max-w-[200px] mx-auto mt-2">Initialize your first page to build the portal</p>
-                </div>
-              )}
+            <div className="space-y-1.5">
+              <Label>Description (optional)</Label>
+              <Input value={newPortal.description} onChange={(e) => setNewPortal({ ...newPortal, description: e.target.value })} placeholder="e.g. Website project portal" />
             </div>
           </div>
-          
-          <div className="px-8 pb-8 flex justify-end gap-3 translate-y-[-10px]">
-             <Button 
-               onClick={() => setIsCardsDialogOpen(false)} 
-               className="rounded-2xl h-12 px-10 bg-amber-500 hover:bg-amber-600 font-black"
-             >
-               Save Changes
-             </Button>
-          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button onClick={addPortal} disabled={saving || !newPortal.client_id}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Create portal</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit description */}
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent className="dark sm:max-w-md">
+          <DialogHeader><DialogTitle>Edit description</DialogTitle><DialogDescription>{editing?.client?.company_name}</DialogDescription></DialogHeader>
+          <Input value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="What is this portal for?" autoFocus />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={saveDescription} disabled={saving}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR */}
+      <Dialog open={!!qrFor} onOpenChange={(o) => !o && setQrFor(null)}>
+        <DialogContent className="dark sm:max-w-sm">
+          <DialogHeader><DialogTitle>Portal QR code</DialogTitle><DialogDescription>Scan to open the client portal sign-in page.</DialogDescription></DialogHeader>
+          <div ref={qrWrap} className="mx-auto rounded-2xl bg-white p-4"><QRCodeCanvas value={portalUrl()} size={220} level="M" includeMargin={false} /></div>
+          <p className="break-all text-center text-xs text-muted-foreground">{portalUrl()}</p>
+          <DialogFooter className="gap-2 sm:justify-center">
+            <Button variant="outline" onClick={() => copy(portalUrl(), "Portal link")} className="gap-2"><Copy className="h-4 w-4" /> Copy link</Button>
+            <Button onClick={downloadQr} className="gap-2"><Download className="h-4 w-4" /> Download PNG</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pages */}
+      <Dialog open={!!pagesFor} onOpenChange={(o) => !o && setPagesFor(null)}>
+        <DialogContent className="dark flex max-h-[88vh] flex-col sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Portal pages</DialogTitle>
+            <DialogDescription>Pages {pagesFor?.client?.company_name} sees in their portal. Changes save when you leave a field.</DialogDescription>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 custom-scrollbar">
+            {linksLoading ? <Skeleton className="h-40 rounded-xl" /> : links.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-white/15 p-8 text-center text-sm text-muted-foreground">No pages yet. Add the first one.</p>
+            ) : links.map((link) => (
+              <div key={link.id} className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_9rem]">
+                  <div className="space-y-1.5"><Label className="text-xs">Title</Label><Input defaultValue={link.title} onBlur={(e) => e.target.value !== link.title && updateLink(link.id, { title: e.target.value })} /></div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Icon</Label>
+                    <Select value={link.icon || "layers"} onValueChange={(v) => updateLink(link.id, { icon: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent className="dark">{ICONS.map(({ value, label, Icon }) => <SelectItem key={value} value={value}><span className="flex items-center gap-2"><Icon className="h-4 w-4" />{label}</span></SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-1.5"><Label className="text-xs">Link</Label><Input defaultValue={link.url} placeholder="https://" onBlur={(e) => e.target.value !== link.url && updateLink(link.id, { url: e.target.value })} /></div>
+                <div className="space-y-1.5"><Label className="text-xs">Short description</Label><Input defaultValue={link.description} onBlur={(e) => e.target.value !== link.description && updateLink(link.id, { description: e.target.value })} /></div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5"><Label className="text-xs">Login / user ID</Label><Input defaultValue={link.page_id || ""} onBlur={(e) => e.target.value !== (link.page_id || "") && updateLink(link.id, { page_id: e.target.value })} /></div>
+                  <div className="space-y-1.5"><Label className="text-xs">Password / key</Label><Input defaultValue={link.password || ""} onBlur={(e) => e.target.value !== (link.password || "") && updateLink(link.id, { password: e.target.value })} /></div>
+                </div>
+                <div className="flex items-center justify-between border-t border-white/10 pt-3">
+                  <label className="flex items-center gap-2 text-sm"><Switch checked={!!link.is_active} onCheckedChange={(v) => updateLink(link.id, { is_active: v })} /> Visible to client</label>
+                  <Button variant="ghost" size="sm" className="gap-1.5 text-red-500 hover:bg-red-500/10 hover:text-red-500" onClick={() => deleteLink(link.id)}><Trash2 className="h-4 w-4" /> Remove</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button variant="outline" onClick={addLink} className="gap-2"><Plus className="h-4 w-4" /> Add page</Button>
+            <Button onClick={() => setPagesFor(null)} className="gap-2"><Check className="h-4 w-4" /> Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove */}
+      <AlertDialog open={!!toRemove} onOpenChange={(o) => !o && setToRemove(null)}>
+        <AlertDialogContent className="dark">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove {toRemove?.client?.company_name}'s portal?</AlertDialogTitle>
+            <AlertDialogDescription>The client loses access to the portal. Their client record is not affected. Pages are kept in the database but are no longer listed here.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={removePortal} className="bg-red-600 text-white hover:bg-red-700">Remove portal</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
 export default QRManagement;
-

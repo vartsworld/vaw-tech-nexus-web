@@ -30,12 +30,19 @@ import {
   Eye,
   Download,
   ShieldAlert,
-  MoreVertical
+  MoreVertical,
+  UserX,
+  UserMinus,
+  RotateCcw,
+  Moon
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -56,6 +63,8 @@ import { createPatraStaff, updatePatraStaff } from "@/integrations/patra";
 import { StaffCardResult } from "./StaffCardResult";
 import { viewOrDownloadFile } from "@/pages/TeamApplication";
 
+const INACTIVE_AFTER_DAYS = 7;
+
 const StaffManagement = () => {
   const [staff, setStaff] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -71,6 +80,12 @@ const StaffManagement = () => {
   const [isCreatingCard, setIsCreatingCard] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState<any>(null);
+  const [filterStatus, setFilterStatus] = useState("current");
+  const [recentActiveIds, setRecentActiveIds] = useState<Set<string>>(new Set());
+  const [staffToDismiss, setStaffToDismiss] = useState<any>(null);
+  const [dismissReason, setDismissReason] = useState("");
+  const [reassignOnDismiss, setReassignOnDismiss] = useState(true);
+  const [isDismissing, setIsDismissing] = useState(false);
   const [selectedStaffDetail, setSelectedStaffDetail] = useState<any>(null);
   const [isViewStaffDialogOpen, setIsViewStaffDialogOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -121,7 +136,7 @@ const StaffManagement = () => {
 
   useEffect(() => {
     filterStaffData();
-  }, [staff, searchTerm, filterDepartment, filterRole]);
+  }, [staff, searchTerm, filterDepartment, filterRole, filterStatus, recentActiveIds]);
 
   const fetchStaff = async () => {
     setIsLoading(true);
@@ -136,6 +151,14 @@ const StaffManagement = () => {
 
       if (error) throw error;
       setStaff(data || []);
+
+      // Who showed up recently? Used to mark people inactive after 7 days without a login or attendance.
+      const since = new Date(Date.now() - INACTIVE_AFTER_DAYS * 86400000).toISOString().split('T')[0];
+      const { data: recent } = await supabase
+        .from('staff_attendance')
+        .select('user_id')
+        .gte('date', since);
+      setRecentActiveIds(new Set((recent || []).map((r: any) => r.user_id)));
     } catch (error) {
       console.error('Error fetching staff:', error);
       toast({
@@ -179,6 +202,12 @@ const StaffManagement = () => {
 
     if (filterRole !== "all") {
       filtered = filtered.filter(member => member.role === filterRole);
+    }
+
+    if (filterStatus === "current") {
+      filtered = filtered.filter(member => getStaffStatus(member).key !== "dismissed");
+    } else if (filterStatus !== "all") {
+      filtered = filtered.filter(member => getStaffStatus(member).key === filterStatus);
     }
 
     setFilteredStaff(filtered);
@@ -501,16 +530,86 @@ const StaffManagement = () => {
     }
   };
 
+  /** Active / Inactive (no login or attendance for 7+ days) / Dismissed */
+  const getStaffStatus = (member: any): { key: "active" | "inactive" | "dismissed"; label: string; hint: string } => {
+    if (member.application_status === "dismissed") {
+      return { key: "dismissed", label: "Dismissed", hint: member.dismissal_reason ? `Reason: ${member.dismissal_reason}` : "Dismissed" };
+    }
+    const cutoff = Date.now() - INACTIVE_AFTER_DAYS * 86400000;
+    const lastLogin = member.last_login_attempt ? new Date(member.last_login_attempt).getTime() : 0;
+    const joined = member.hire_date ? new Date(member.hire_date).getTime() : member.created_at ? new Date(member.created_at).getTime() : 0;
+    const active = recentActiveIds.has(member.user_id) || lastLogin >= cutoff || joined >= cutoff;
+    return active
+      ? { key: "active", label: "Active", hint: "Logged in or marked attendance in the last 7 days" }
+      : { key: "inactive", label: "Inactive", hint: "No login or attendance for more than 7 days" };
+  };
+
+  const reassignOpenWork = async (userId: string) => {
+    if (!currentUserId) return;
+    const { data: tasks } = await supabase.from('staff_tasks').select('id, assigned_to, status');
+    for (const task of tasks || []) {
+      const current = Array.isArray(task.assigned_to) ? (task.assigned_to as unknown as string[]) : [];
+      if (!current.includes(userId) || task.status === 'completed') continue;
+      const next = current.filter(id => id !== userId);
+      if (!next.includes(currentUserId)) next.push(currentUserId);
+      await supabase.from('staff_tasks').update({ assigned_to: next as any }).eq('id', task.id);
+    }
+    await supabase.from('staff_subtasks').update({ assigned_to: currentUserId }).eq('assigned_to', userId).not('status', 'in', '(completed,approved)' as any);
+  };
+
+  const handleDismissStaff = async () => {
+    const member = staffToDismiss;
+    const reason = dismissReason.trim();
+    if (!member || reason.length < 5) return;
+    setIsDismissing(true);
+    try {
+      const payload: any = {
+        application_status: "dismissed",
+        dismissed_at: new Date().toISOString(),
+        dismissed_by: currentUserId,
+        dismissal_reason: reason,
+      };
+      let { error } = await supabase.from('staff_profiles').update(payload).eq('id', member.id);
+      if (error && /dismiss/i.test(error.message || "")) {
+        throw new Error("The dismissal columns are missing in the database. Apply migration 20261024000000_staff_dismissal.sql and try again.");
+      }
+      if (error) throw error;
+
+      if (reassignOnDismiss) await reassignOpenWork(member.user_id);
+
+      setStaff((prev: any[]) => prev.map(m => m.id === member.id ? { ...m, ...payload } : m));
+      toast({ title: "Employee dismissed", description: `${member.full_name} can no longer sign in. The reason has been recorded.` });
+      setStaffToDismiss(null);
+      setDismissReason("");
+    } catch (error) {
+      console.error('Error dismissing staff:', error);
+      toast({ title: "Could not dismiss", description: error instanceof Error ? error.message : "Something went wrong.", variant: "destructive" });
+    } finally {
+      setIsDismissing(false);
+    }
+  };
+
+  const handleReinstateStaff = async (member: any) => {
+    try {
+      const payload: any = { application_status: "approved", dismissed_at: null, dismissed_by: null, dismissal_reason: null };
+      const { error } = await supabase.from('staff_profiles').update(payload).eq('id', member.id);
+      if (error) throw error;
+      setStaff((prev: any[]) => prev.map(m => m.id === member.id ? { ...m, ...payload } : m));
+      toast({ title: "Employee reinstated", description: `${member.full_name} can sign in again.` });
+    } catch (error) {
+      toast({ title: "Could not reinstate", description: error instanceof Error ? error.message : "Something went wrong.", variant: "destructive" });
+    }
+  };
+
   const getRoleBadgeColor = (role) => {
     switch (role) {
-      case 'super_admin': return 'bg-red-100 text-red-800';
-      case 'hr': return 'bg-purple-100 text-purple-800';
-      case 'manager': return 'bg-blue-100 text-blue-800';
-      case 'team_head': return 'bg-yellow-100 text-yellow-800';
-      case 'lead': return 'bg-green-100 text-green-800';
-      case 'intern': return 'bg-orange-100 text-orange-800';
-      case 'staff': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'super_admin': return 'bg-red-500/15 text-red-400 hover:bg-red-500/15';
+      case 'hr': return 'bg-purple-500/15 text-purple-400 hover:bg-purple-500/15';
+      case 'manager': return 'bg-blue-500/15 text-blue-400 hover:bg-blue-500/15';
+      case 'team_head': return 'bg-yellow-500/15 text-yellow-400 hover:bg-yellow-500/15';
+      case 'lead': return 'bg-green-500/15 text-green-400 hover:bg-green-500/15';
+      case 'intern': return 'bg-orange-500/15 text-orange-400 hover:bg-orange-500/15';
+      default: return 'bg-white/10 text-gray-300 hover:bg-white/10';
     }
   };
 
@@ -846,7 +945,7 @@ const StaffManagement = () => {
           <CardTitle className="text-base md:text-lg">Filter & Search</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
@@ -882,8 +981,20 @@ const StaffManagement = () => {
                 <SelectItem value="super_admin">Super Admin</SelectItem>
               </SelectContent>
             </Select>
-            <div className="flex items-center gap-2">
-              <span className="text-xs md:text-sm text-gray-600">
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="current">Current staff</SelectItem>
+                <SelectItem value="active">Active only</SelectItem>
+                <SelectItem value="inactive">Inactive (7+ days)</SelectItem>
+                <SelectItem value="dismissed">Dismissed</SelectItem>
+                <SelectItem value="all">Everyone</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2 sm:col-span-2 md:col-span-5">
+              <span className="text-xs md:text-sm text-muted-foreground">
                 Showing {filteredStaff.length} of {staff.length} staff
               </span>
             </div>
@@ -907,7 +1018,7 @@ const StaffManagement = () => {
                   <TableHead className="whitespace-nowrap hidden md:table-cell">Contact</TableHead>
                   <TableHead className="whitespace-nowrap hidden lg:table-cell">Hire Date</TableHead>
                   <TableHead className="whitespace-nowrap">Status</TableHead>
-                  <TableHead className="whitespace-nowrap hidden md:table-cell">Login Info</TableHead>
+                  <TableHead className="whitespace-nowrap hidden md:table-cell">Passcode</TableHead>
                   <TableHead className="whitespace-nowrap">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -975,16 +1086,16 @@ const StaffManagement = () => {
                   </TableCell>
                   <TableCell>
                     <Badge className={getRoleBadgeColor(member.role)}>
-                      {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                      {(member.role || "staff").replace("_"," ").replace(/^./, c => c.toUpperCase())}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-gray-400" />
                       {member.departments?.name || 'Unassigned'}
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-sm">
                         <Mail className="h-3 w-3 text-gray-400" />
@@ -992,19 +1103,28 @@ const StaffManagement = () => {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="h-3 w-3 text-gray-400" />
                       {member.hire_date ? new Date(member.hire_date).toLocaleDateString() : 'N/A'}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="text-green-600 border-green-600">
-                      <UserCheck className="h-3 w-3 mr-1" />
-                      Active
-                    </Badge>
+                    {(() => {
+                      const st = getStaffStatus(member);
+                      const tone = st.key === "active" ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10"
+                        : st.key === "inactive" ? "text-amber-400 border-amber-500/40 bg-amber-500/10"
+                        : "text-red-400 border-red-500/40 bg-red-500/10";
+                      const Icon = st.key === "active" ? UserCheck : st.key === "inactive" ? Moon : UserX;
+                      return (
+                        <Badge variant="outline" className={tone} title={st.hint}>
+                          <Icon className="h-3 w-3 mr-1" />
+                          {st.label}
+                        </Badge>
+                      );
+                    })()}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     <div className="space-y-2">
                       {member.first_time_passcode && !member.passcode_used && (
                         <div className="flex items-center gap-2">
@@ -1039,15 +1159,6 @@ const StaffManagement = () => {
                           No Login Set
                         </div>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => generatePasscode(member.id)}
-                        className="h-7 text-xs gap-1"
-                      >
-                        <KeyRound className="h-3 w-3" />
-                        {member.first_time_passcode || member.is_emoji_password ? 'Reset' : 'Generate'} Passcode
-                      </Button>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -1138,6 +1249,32 @@ const StaffManagement = () => {
                         </DropdownMenuItem>
 
                         <DropdownMenuItem
+                          onClick={() => generatePasscode(member.id)}
+                          className="cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2">
+                            <KeyRound className="h-4 w-4 text-amber-500" />
+                            {member.first_time_passcode || member.is_emoji_password ? 'Reset passcode' : 'Generate passcode'}
+                          </span>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuSeparator />
+
+                        {member.application_status === "dismissed" ? (
+                          <DropdownMenuItem onClick={() => handleReinstateStaff(member)} className="cursor-pointer">
+                            <span className="flex items-center gap-2"><RotateCcw className="h-4 w-4 text-emerald-500" /> Reinstate employee</span>
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            disabled={member.user_id === currentUserId}
+                            onClick={() => { setDismissReason(""); setStaffToDismiss(member); }}
+                            className="cursor-pointer text-orange-500 focus:text-orange-500"
+                          >
+                            <span className="flex items-center gap-2"><UserMinus className="h-4 w-4" /> Dismiss employee…</span>
+                          </DropdownMenuItem>
+                        )}
+
+                        <DropdownMenuItem
                           onClick={() => setStaffToDelete(member)}
                           className="cursor-pointer text-red-600 focus:text-red-600"
                         >
@@ -1156,6 +1293,48 @@ const StaffManagement = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dismiss employee dialog */}
+      <Dialog open={!!staffToDismiss} onOpenChange={(open) => { if (!open && !isDismissing) setStaffToDismiss(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-500">
+              <UserMinus className="h-5 w-5" /> Dismiss {staffToDismiss?.full_name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              They will be signed out and blocked from logging in. Their profile, attendance and history stay on record, and you can reinstate them later.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="dismiss-reason">Reason for dismissal <span className="text-red-500">*</span></Label>
+              <Textarea
+                id="dismiss-reason"
+                value={dismissReason}
+                onChange={(e) => setDismissReason(e.target.value)}
+                placeholder="Write the reason. It is stored with the employee record."
+                rows={4}
+                maxLength={1000}
+              />
+              <p className="text-xs text-muted-foreground">{dismissReason.trim().length < 5 ? "At least 5 characters." : `${dismissReason.length}/1000`}</p>
+            </div>
+            <label className="flex items-start gap-2 text-sm">
+              <Checkbox checked={reassignOnDismiss} onCheckedChange={(v) => setReassignOnDismiss(v === true)} className="mt-0.5" />
+              <span>Move their unfinished tasks to me so nothing is lost</span>
+            </label>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setStaffToDismiss(null)} disabled={isDismissing}>Cancel</Button>
+            <Button
+              onClick={handleDismissStaff}
+              disabled={isDismissing || dismissReason.trim().length < 5}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {isDismissing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Dismissing…</> : "Dismiss employee"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Full Removal Confirmation Dialog */}
       <AlertDialog open={!!staffToDelete} onOpenChange={(open) => { if (!open) setStaffToDelete(null); }}>

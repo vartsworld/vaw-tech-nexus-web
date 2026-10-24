@@ -17,8 +17,8 @@ import PerformanceMetrics from "@/components/hr/PerformanceMetrics";
 import PointsMonitoring from "@/components/hr/PointsMonitoring";
 import RewardsManagement from "@/components/hr/RewardsManagement";
 import RedemptionApprovals from "@/components/hr/RedemptionApprovals";
-import NotificationCenter from "@/components/hr/NotificationCenter";
-import BannerManagement from "@/components/hr/BannerManagement";
+import AdminConsole from "@/components/hr/AdminConsole";
+import AnnouncementsHub from "@/components/hr/AnnouncementsHub";
 import TeamApplicationsList from "@/components/hr/TeamApplicationsList";
 import InternshipApplicationsList from "@/components/admin/InternshipApplicationsList";
 import PricingManagement from "@/components/hr/PricingManagement";
@@ -157,9 +157,7 @@ export default function HRDashboard() {
 
   const handleRoomChange = (room: string) => {
     setCurrentRoom(room);
-    if (room === 'legacy') {
-      navigate('/hr/legacy');
-    } else if (room === 'dashboard' || room === 'home') {
+    if (room === 'dashboard' || room === 'home') {
       navigate('/hr');
     } else {
       navigate(`/hr?${room}`);
@@ -261,10 +259,10 @@ export default function HRDashboard() {
       case 'rewards': return <div className="space-y-6"><RewardsManagement /><RedemptionApprovals /></div>;
       case 'pricing': return <PricingManagement />;
       case 'financials': return <FinancialOversight />;
-      case 'notifications': return <NotificationCenter />;
-      case 'banners': return <BannerManagement />;
+      case 'announcements': return <AnnouncementsHub initialTab={new URLSearchParams(location.search).has('banners') ? 'banners' : 'notifications'} />;
       case 'api-integration': return <ApiIntegration />;
       case 'qr': return <QRManagement />;
+      case 'admin': return <AdminConsole />;
       default: 
         return <HROverview firstName={userProfile?.full_name?.split(' ')[0]} onNavigate={handleRoomChange} />;
     }
@@ -279,13 +277,11 @@ export default function HRDashboard() {
       customSidebarLinks={SIDEBAR_LINKS}
       badges={sidebarBadges}
       mobileNavItems={MOBILE_TABS}
-      header={({ collapsed, expand }) => (
+      header={() => (
         <HRCommandBar
           currentRoom={currentRoom}
           onNavigate={handleRoomChange}
           badges={sidebarBadges}
-          sidebarCollapsed={collapsed}
-          onExpandSidebar={expand}
         />
       )}
     >

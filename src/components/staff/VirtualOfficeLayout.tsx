@@ -99,6 +99,18 @@ const VirtualOfficeLayout = ({
       onSidebarCollapse(collapsed);
     }
   };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        setIsSidebarCollapsed(!isSidebarCollapsed);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSidebarCollapsed]);
+
   const [openSections, setOpenSections] = useState<string[]>(['Folders', 'Space']);
 
   useEffect(() => {
@@ -467,7 +479,7 @@ const VirtualOfficeLayout = ({
   };
 
   return (
-    <div className={`flex flex-col lg:flex-row h-full w-full overflow-hidden bg-transparent ${className || ""}`}>
+    <div className={`flex flex-col lg:flex-row h-[100dvh] w-full overflow-hidden bg-transparent ${className || ""}`}>
       {/* Mobile Chat Sheet */}
       <Sheet open={showMobileChat} onOpenChange={setShowMobileChat}>
         <SheetContent side="right" className="w-full sm:w-[400px] p-0 bg-background/95 backdrop-blur-xl">
@@ -523,37 +535,32 @@ const VirtualOfficeLayout = ({
           style={{ backgroundImage: "url('/lovable-uploads/472162b9-c883-43ff-b81c-428cd163ffd8.png')" }}
         >
           {/* Transparent masking color and blur overlay */}
-          <div className="absolute inset-0 bg-black/85 backdrop-blur-2xl z-0 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/40 to-black/65 backdrop-blur-[3px] z-0 pointer-events-none" />
           <div className="relative z-10 flex flex-col h-full w-full min-h-0">
-          {/* Top Header Logo (VAW Technologies) */}
-          <div className={cn("p-6 flex items-center shrink-0", isSidebarCollapsed ? "justify-center" : "justify-between border-b border-white/5")}>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 shadow-lg">
-                <img
-                  src="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png"
-                  alt="VAW Logo"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              {!isSidebarCollapsed && (
-                <span className="font-black text-white uppercase italic tracking-tighter text-sm">VAW Technologies</span>
-              )}
-            </div>
-            {!isSidebarCollapsed && (
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Collapse sidebar"
-                title="Collapse sidebar"
-                className="text-white/20 hover:text-white hover:bg-white/5 transition-all focus-visible:ring-2 focus-visible:ring-white/20"
-                onClick={() => setIsSidebarCollapsed(true)}
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
+          {/* Top Header Logo (VAW Technologies) – click to collapse / expand (Ctrl+Shift+B) */}
+          <button
+            type="button"
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            aria-label={isSidebarCollapsed ? "Expand sidebar (Ctrl+Shift+B)" : "Collapse sidebar (Ctrl+Shift+B)"}
+            aria-expanded={!isSidebarCollapsed}
+            title={isSidebarCollapsed ? "Expand sidebar (Ctrl+Shift+B)" : "Collapse sidebar (Ctrl+Shift+B)"}
+            className={cn(
+              "group/logo shrink-0 flex items-center p-5 text-left transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/30",
+              isSidebarCollapsed ? "justify-center" : "justify-between border-b border-white/10"
             )}
-          </div>
+          >
+            <span className="flex items-center gap-3 min-w-0">
+              <span className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 shadow-lg">
+                <img src="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png" alt="VAW Logo" className="w-full h-full object-contain" />
+              </span>
+              {!isSidebarCollapsed && <span className="font-black text-white tracking-tight text-sm truncate">VAW Technologies</span>}
+            </span>
+            {!isSidebarCollapsed && (
+              <ChevronLeft className="w-5 h-5 text-white/40 group-hover/logo:text-white transition-colors shrink-0" />
+            )}
+          </button>
 
-          <ScrollArea className="flex-1 min-h-0 px-4">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 custom-scrollbar" tabIndex={-1}>
             <div className="space-y-6 py-4">
               {sidebarLinks.map((section) => (
                 <div key={section.title} className="space-y-2">
@@ -632,7 +639,7 @@ const VirtualOfficeLayout = ({
                 </div>
               ))}
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Team Status Area - Changes to Icon button when collapsed */}
           {isSidebarCollapsed ? (
