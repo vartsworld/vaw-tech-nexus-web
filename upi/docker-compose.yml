@@ -1,0 +1,67 @@
+# =============================================================================
+# VAW Pay — Docker Compose Configuration
+#
+# Usage:
+#   docker compose up -d       # Start all services in background
+#   docker compose logs -f     # Follow combined service logs
+#   docker compose down        # Stop services
+#   docker compose down -v     # Stop and remove persistent SQLite volume
+# =============================================================================
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    image: vaw-pay:latest
+    container_name: vaw-pay
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      VAWPAY_MODE: ${VAWPAY_MODE:-localhost}
+      # The container ships without a Cloudflare domain, so localhost mode is requested
+      # explicitly rather than being an implicit fallback. scripts/start.js still refuses to
+      # run in production mode without a domain.
+      VAWPAY_ALLOW_LOCALHOST_MODE: ${VAWPAY_ALLOW_LOCALHOST_MODE:-true}
+      VAWPAY_BIND_HOST: "0.0.0.0"
+      BASE_PAYMENT_API_URL: http://localhost:6100
+      BASE_CHECKOUT_URL: http://localhost:7000
+      BASE_ADMIN_URL: http://localhost:6001
+      USE_SQLITE_FALLBACK: "true"
+      SQLITE_DB_PATH: /app/data/vawpay_pg.sqlite
+      PAYMENT_API_PORT: 6100
+      CHECKOUT_PORTAL_PORT: 7000
+      MERCHANT_ADMIN_PORT: 6001
+      GMAIL_OBSERVER_PORT: 6003
+      SMS_OBSERVER_PORT: 6002
+      COIN_WALLET_STORE_PORT: 5000
+      CONTROL_CENTER_PORT: 8090
+    ports:
+      # Public surfaces. These are the ports meant to be reachable (and are the ones the
+      # Cloudflare Tunnel targets).
+      - "6100:6100"   # Payment Core REST API
+      - "7000:7000"   # Checkout Portal
+      - "5000:5000"   # Coin Wallet Demo Store
+      # Operator surfaces. Bound to loopback on the host: the Merchant Admin holds admin
+      # credentials and the Control Center can start/stop every service and stream their
+      # logs. Publish them on 0.0.0.0 only if the host is not directly reachable.
+      - "127.0.0.1:6001:6001"   # Merchant Admin Dashboard
+      - "127.0.0.1:6002:6002"   # Android SMS Observer
+      - "127.0.0.1:6003:6003"   # Gmail Observer
+      - "127.0.0.1:8090:8090"   # Process Supervisor Daemon
+    volumes:
+      - vawpay-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:6100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  vawpay-data:
+    driver: local

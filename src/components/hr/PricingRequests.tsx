@@ -14,12 +14,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useInquiries } from "@/hooks/useInquiries";
+import { PAYMENT_STATUS_META, usePaymentRequests } from "@/hooks/usePaymentRequests";
+import PaymentLinkControl from "@/components/hr/PaymentLinkControl";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/pricing";
 import { INQUIRY_STATUSES, csvEscape, parseInquiry, statusMeta, type ParsedInquiry } from "@/lib/inquiryParser";
 import { cn } from "@/lib/utils";
 
 type KindFilter = "all" | "plan" | "custom";
+type PayFilter = "all" | "paid" | "pending" | "none";
 
 const waLink = (phone: string | null) => {
   const digits = (phone || "").replace(/\D/g, "");
@@ -59,7 +62,9 @@ const PricingRequests = () => {
     }
   });
 
+  const { byInquiry, available: paymentsAvailable, upsert: upsertPayment, rows: paymentRows } = usePaymentRequests();
   const [kind, setKind] = useState<KindFilter>("all");
+  const [pay, setPay] = useState<PayFilter>("all");
   const [status, setStatus] = useState<string>("all");
   const [couponOnly, setCouponOnly] = useState(false);
   const [query, setQuery] = useState("");
@@ -83,16 +88,26 @@ const PricingRequests = () => {
     };
   }, [all]);
 
+  const collected = useMemo(() => {
+    const ids = new Set(all.map((p) => p.row.id));
+    const paid = paymentRows.filter((r) => r.status === "paid" && r.inquiry_id && ids.has(r.inquiry_id));
+    return { count: paid.length, value: paid.reduce((t, r) => t + Number(r.amount_paise) / 100, 0) };
+  }, [all, paymentRows]);
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     return all.filter((p) => {
       if (kind !== "all" && p.kind !== kind) return false;
       if (status !== "all" && p.status !== status) return false;
       if (couponOnly && !p.coupon) return false;
+      if (pay !== "all") {
+        const st = byInquiry.get(p.row.id)?.status;
+        if (pay === "none" ? !!st : pay === "pending" ? st !== "pending" : st !== "paid") return false;
+      }
       if (!q) return true;
       return [p.row.name, p.row.email, p.row.phone, p.reference, p.company, p.packageName, p.coupon, ...p.addons].some((v) => (v || "").toLowerCase().includes(q));
     });
-  }, [all, kind, status, couponOnly, query]);
+  }, [all, kind, status, couponOnly, query, pay, byInquiry]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: all.length };
@@ -156,7 +171,7 @@ const PricingRequests = () => {
     URL.revokeObjectURL(url);
   };
 
-  const filtersActive = kind !== "all" || status !== "all" || couponOnly || query.trim() !== "";
+  const filtersActive = kind !== "all" || status !== "all" || pay !== "all" || couponOnly || query.trim() !== "";
 
   return (
     <div className="space-y-6">
@@ -176,16 +191,17 @@ const PricingRequests = () => {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-          {[0, 1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
             <Skeleton key={i} className="h-24 rounded-xl" />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
           <Stat label="Needs action" value={stats.fresh} hint={`of ${stats.total} total`} tone={stats.fresh ? "text-blue-400" : undefined} />
           <Stat label="Open pipeline" value={formatPrice(stats.pipeline)} hint="new + in progress, incl. GST" />
           <Stat label="Won" value={formatPrice(stats.wonValue)} hint={`${stats.wonCount} request${stats.wonCount === 1 ? "" : "s"}`} tone="text-emerald-400" />
+          <Stat label="Paid online" value={formatPrice(collected.value)} hint={paymentsAvailable ? `${collected.count} payment${collected.count === 1 ? "" : "s"} via VAW Pay` : "Payments not set up yet"} tone="text-emerald-400" />
           <Stat label="Coupon claims" value={stats.coupons} hint={stats.total ? `${Math.round((stats.coupons / stats.total) * 100)}% of plans` : undefined} tone="text-amber-400" />
           <Stat label="Total requests" value={stats.total} />
         </div>
@@ -214,6 +230,19 @@ const PricingRequests = () => {
                 <SelectItem value="custom">Custom requests</SelectItem>
               </SelectContent>
             </Select>
+            {paymentsAvailable && (
+              <Select value={pay} onValueChange={(v) => setPay(v as PayFilter)}>
+                <SelectTrigger className="md:w-[180px]" aria-label="Payment status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any payment status</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="pending">Awaiting payment</SelectItem>
+                  <SelectItem value="none">No link yet</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             <Button variant={couponOnly ? "default" : "outline"} onClick={() => setCouponOnly((v) => !v)} aria-pressed={couponOnly} className="gap-2">
               <Tag className="h-4 w-4" /> Coupon used
             </Button>
@@ -270,6 +299,7 @@ const PricingRequests = () => {
                 onClick={() => {
                   setKind("all");
                   setStatus("all");
+                  setPay("all");
                   setCouponOnly(false);
                   setQuery("");
                 }}
@@ -285,6 +315,8 @@ const PricingRequests = () => {
             const meta = statusMeta(p.status);
             const isOpen = open === p.row.id;
             const wa = waLink(p.row.phone);
+            const payment = byInquiry.get(p.row.id);
+            const payMeta = payment ? PAYMENT_STATUS_META[payment.status] : null;
             const created = p.row.created_at ? new Date(p.row.created_at) : null;
             return (
               <li key={p.row.id}>
@@ -296,6 +328,11 @@ const PricingRequests = () => {
                           <h3 className="truncate text-base font-bold text-foreground">{p.row.name}</h3>
                           <Badge variant="outline" className={cn("border text-[11px]", meta.tone)}>{meta.label}</Badge>
                           <Badge variant="outline" className="border-white/15 text-[11px] text-muted-foreground">{p.kind === "plan" ? "Plan" : "Custom"}</Badge>
+                          {payMeta && (
+                            <Badge variant="outline" className={cn("border text-[11px]", payMeta.tone)}>
+                              {payMeta.label}{payment?.status === "paid" ? ` · ${formatPrice(Number(payment.amount_paise) / 100)}` : ""}
+                            </Badge>
+                          )}
                           {p.coupon && (
                             <Badge variant="outline" className="gap-1 border-amber-500/30 bg-amber-500/10 font-mono text-[11px] text-amber-400">
                               <Tag className="h-3 w-3" /> {p.coupon}
@@ -364,6 +401,16 @@ const PricingRequests = () => {
                             <a href={`tel:${p.row.phone}`}><Phone className="h-4 w-4" /> Call</a>
                           </Button>
                         )}
+                        {paymentsAvailable && (
+                          <PaymentLinkControl
+                            inquiryId={p.row.id}
+                            customerName={p.row.name}
+                            phone={p.row.phone}
+                            defaultAmount={p.kind === "plan" ? p.total : null}
+                            payment={payment}
+                            onCreated={upsertPayment}
+                          />
+                        )}
                         {wa && (
                           <Button variant="outline" size="sm" asChild className="gap-1.5">
                             <a href={wa} target="_blank" rel="noopener noreferrer"><MessageCircle className="h-4 w-4" /> WhatsApp</a>
@@ -387,6 +434,8 @@ const PricingRequests = () => {
                           {p.kind === "plan" && p.subtotal !== null && <Field label="Subtotal" value={formatPrice(p.subtotal)} />}
                           {p.discount > 0 && <Field label="Coupon discount" value={`− ${formatPrice(p.discount)}`} />}
                           {p.gst !== null && <Field label="GST (18%)" value={formatPrice(p.gst)} />}
+                          {payment?.status === "paid" && <Field label="Bank reference (UTR)" value={payment.utr || "Not provided"} />}
+                          {payment?.status === "paid" && payment.paid_at && <Field label="Paid at" value={format(new Date(payment.paid_at), "PPP p")} />}
                         </dl>
                         <div>
                           <div className="mb-1.5 flex items-center justify-between">

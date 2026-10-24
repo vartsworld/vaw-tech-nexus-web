@@ -1,0 +1,17 @@
+{
+  "name": "@vawpay/mcp-server",
+  "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) server for VAW Pay payment gateway debugging, slot inspection, and transaction simulation",
+  "type": "module",
+  "main": "./src/index.js",
+  "bin": {
+    "vawpay-mcp": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node ./src/index.js",
+    "test": "node --test src/__tests__/**/*.test.js"
+  },
+  "dependencies": {
+    "@vawpay/common": "*"
+  }
+}

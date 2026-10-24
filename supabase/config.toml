@@ -1,1 +1,3 @@
 project_id = "ecexzlqjobqajfhxmiaa"
+[functions.vaw-pay-webhook]
+verify_jwt = false

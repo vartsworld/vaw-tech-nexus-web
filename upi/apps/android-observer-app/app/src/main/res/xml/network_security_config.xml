@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Invariant: Cleartext traffic is disabled by default app-wide. Only HTTPS is allowed. -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <!-- Development/emulator loopback domain config -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <!-- To pair a physical device with a gateway on a private LAN over plain HTTP,
+             add that exact host here and rebuild the APK. Prefer HTTPS (see
+             docs/ANDROID_MOBILE_APP.md, "Pair with Gateway").
+        <domain includeSubdomains="true">192.168.1.50</domain>
+        -->
+    </domain-config>
+</network-security-config>

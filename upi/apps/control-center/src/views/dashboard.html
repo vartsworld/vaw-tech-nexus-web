@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control Center - VAW Pay</title>
+  <script>
+    /* Apply saved theme pref (system | light | dark) before first paint to avoid a flash. */
+    (function () {
+      var p = 'system';
+      try { var v = localStorage.getItem('vawpay-theme'); if (v === 'light' || v === 'dark') p = v; } catch (e) {}
+      var dark = p === 'dark' || (p === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    })();
+  </script>
+  <style>
+    /* Same tokens as the Merchant & Supervisor Hub (system / light / dark). Fonts self-hosted from /fonts (CSP). */
+    @font-face { font-family: "DM Sans"; src: url("/fonts/dm-sans.woff2") format("woff2"); font-weight: 100 1000; font-display: swap; }
+    @font-face { font-family: "Sora"; src: url("/fonts/sora.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
+
+    :root,
+    [data-theme="light"] {
+      --font-ui: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-display: "Sora", "DM Sans", system-ui, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+      --bg: #eef0ee;
+      --bar: #141414;
+      --card: #fbfcfb;
+      --surface: #f2f4f1;
+      --surface-hover: #e8ebe7;
+      --border: #d9ddd7;
+      --border-hover: #c0c6bd;
+      --hair: rgba(16, 26, 23, 0.08);
+      --row-hover: #f2f4f1;
+      --text: #1b2421;
+      --muted: #55625d;
+      --dim: #66726c;
+      --primary: #b45309;
+      --success: #15803d;
+      --danger: #b91c1c;
+      --warning: #b45309;
+      --ok-bg: #e6f4ea; --ok-text: #166534; --ok-border: #b7dfc3;
+      --bad-bg: #fbe9e7; --bad-text: #991b1b; --bad-border: #f0bdb7;
+      --wait-bg: #fbf0dc; --wait-text: #8a4208; --wait-border: #ecd19b;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0b0f0e;
+      --bar: #070a09;
+      --card: #121917;
+      --surface: #172120;
+      --surface-hover: #1f2d2b;
+      --border: #243230;
+      --border-hover: #364643;
+      --hair: rgba(255, 255, 255, 0.07);
+      --row-hover: rgba(255, 255, 255, 0.025);
+      --text: #e6ece9;
+      --muted: #94a39e;
+      --dim: #8a9a94;
+      --primary: #f59e0b;
+      --success: #4ade80;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --ok-bg: rgba(74, 222, 128, 0.12); --ok-text: #86efac; --ok-border: rgba(74, 222, 128, 0.3);
+      --bad-bg: rgba(248, 113, 113, 0.12); --bad-text: #fca5a5; --bad-border: rgba(248, 113, 113, 0.3);
+      --wait-bg: rgba(251, 191, 36, 0.12); --wait-text: #fcd34d; --wait-border: rgba(251, 191, 36, 0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-ui); }
+    code { font-family: var(--font-mono); font-size: 0.85em; }
+    body { background: var(--bg); color: var(--text); min-height: 100dvh; font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+    header {
+      background: var(--bar);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .brand { display: flex; align-items: baseline; gap: 0.9rem; flex-wrap: wrap; }
+    .brand h1, .card-title, .summary dd { font-family: var(--font-display); }
+    .brand h1 { font-size: 1.1rem; font-weight: 800; letter-spacing: 0.02em; color: #fff; }
+    .brand span { font-size: 0.8rem; color: rgba(255,255,255,0.65); }
+    .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+
+    .btn {
+      padding: 0.5rem 0.95rem;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.84rem;
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+      transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+        .btn-success { background: #15803d; color: #fff; }
+    .btn-success:hover { background: #166534; }
+    .btn-danger { background: #b91c1c; color: #fff; }
+    .btn-danger:hover { background: #991b1b; }
+    .btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border-hover); }
+    .btn-secondary:hover { background: var(--surface-hover); }
+    header .btn-secondary { background: rgba(255, 255, 255, 0.06); color: #e6ece9; border-color: rgba(255, 255, 255, 0.18); }
+    header .btn-secondary:hover { background: rgba(255, 255, 255, 0.12); }
+    .i { width: 1.15em; height: 1.15em; flex: none; margin-right: 0.4rem; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .theme-switch { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 6px; background: rgba(255, 255, 255, 0.04); }
+    .theme-switch button { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.55rem; border: none; border-radius: 4px; background: transparent; color: #9fb2ab; font-size: 0.73rem; font-weight: 600; cursor: pointer; }
+    .theme-switch button .i { margin-right: 0; }
+    .theme-switch button:hover { color: #fff; }
+    .theme-switch button.active { background: rgba(255, 255, 255, 0.16); color: #fff; }
+    .theme-switch button:focus-visible { outline: 2px solid #fbbf24; outline-offset: 1px; }
+    .btn-sm { padding: 0.28rem 0.6rem; font-size: 0.76rem; }
+
+    main { max-width: 1200px; margin: 0 auto; padding: 1.75rem; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .summary div { padding: 1rem 1.25rem; border-right: 1px solid var(--border); }
+    .summary div:last-child { border-right: none; }
+    .summary dt { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+    .summary dd { font-family: var(--font-display); font-variant-numeric: tabular-nums; font-size: 1.7rem; font-weight: 600; letter-spacing: -0.03em; margin-top: 0.2rem; }
+    .summary .ok { color: var(--success); }
+    .summary .bad { color: var(--danger); }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.4rem; margin-bottom: 1.5rem; }
+    .card-title {
+      font-size: 1.02rem;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--hair);
+    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+    th { text-align: left; padding: 0.6rem 0.9rem; color: var(--muted); font-weight: 600; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    td { padding: 0.8rem 0.9rem; border-bottom: 1px solid var(--hair); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--row-hover); }
+    td .sub { display: block; font-size: 0.75rem; color: var(--dim); font-family: var(--font-mono); }
+    td.num, td.num code { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    td.actions { display: flex; gap: 0.4rem; }
+    td.empty { text-align: center; color: var(--muted); padding: 2rem; }
+
+    .badge { display: inline-flex; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.73rem; font-weight: 600; border: 1px solid; }
+    .badge-running { background: var(--ok-bg); color: var(--ok-text); border-color: var(--ok-border); }
+    .badge-stopped { background: var(--bad-bg); color: var(--bad-text); border-color: var(--bad-border); }
+    .badge-starting { background: var(--wait-bg); color: var(--wait-text); border-color: var(--wait-border); }
+
+    .terminal-window {
+      background: #060908;
+      border: 1px solid #1a2523;
+      border-radius: 10px;
+      height: 380px;
+      overflow-y: auto;
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.79rem;
+      line-height: 1.65;
+      color: #b6c9c2;
+    }
+    .log-line { margin-bottom: 0.15rem; word-break: break-all; font-family: var(--font-mono); }
+    .log-ts { color: #62736d; margin-right: 0.5rem; }
+    .log-svc { color: #fbbf24; font-weight: 600; margin-right: 0.5rem; }
+    .log-stderr { color: #fca5a5; }
+    .log-system { color: #bef264; }
+
+    @media (max-width: 767px) {
+      header, main { padding-left: 1rem; padding-right: 1rem; }
+      .summary div { border-right: none; border-bottom: 1px solid var(--border); }
+      .summary div:last-child { border-bottom: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true"><symbol id="i-play" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></symbol><symbol id="i-stop" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 0 1 7.5 5.25h9a2.25 2.25 0 0 1 2.25 2.25v9a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25v-9Z"/></symbol><symbol id="i-arrow-path" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/></symbol><symbol id="i-arrow-top-right-on-square" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></symbol><symbol id="i-x-mark" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></symbol><symbol id="i-sun" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z"/></symbol><symbol id="i-moon" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/></symbol><symbol id="i-computer-desktop" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25"/></symbol></svg>
+
+<header>
+  <div class="brand">
+    <h1>VAW Pay Control Center</h1>
+    <span>Local process supervisor, port 8090</span>
+  </div>
+  <div class="header-actions">
+    <div class="theme-switch" role="radiogroup" aria-label="Colour theme"><button type="button" role="radio" data-theme-pref="system" onclick="setThemePref('system')" title="Follow system setting"><svg class="i" aria-hidden="true"><use href="#i-computer-desktop"/></svg>System</button><button type="button" role="radio" data-theme-pref="light" onclick="setThemePref('light')" title="Light theme"><svg class="i" aria-hidden="true"><use href="#i-sun"/></svg>Light</button><button type="button" role="radio" data-theme-pref="dark" onclick="setThemePref('dark')" title="Dark theme"><svg class="i" aria-hidden="true"><use href="#i-moon"/></svg>Dark</button></div>
+    <a href="http://localhost:6001" class="btn btn-secondary"><svg class="i" aria-hidden="true"><use href="#i-arrow-top-right-on-square"/></svg>Open merchant hub</a>
+    <button class="btn btn-success" onclick="startAllServices()"><svg class="i" aria-hidden="true"><use href="#i-play"/></svg>Start all</button>
+    <button class="btn btn-danger" onclick="stopAllServices()"><svg class="i" aria-hidden="true"><use href="#i-stop"/></svg>Stop all</button>
+  </div>
+</header>
+
+<main>
+  <dl class="summary" aria-label="Service summary">
+    <div><dt>Services</dt><dd id="sumTotal">0</dd></div>
+    <div><dt>Running</dt><dd id="sumRunning" class="ok">0</dd></div>
+    <div><dt>Stopped</dt><dd id="sumStopped" class="bad">0</dd></div>
+  </dl>
+
+  <!-- Services Process Table -->
+  <section class="card">
+    <div class="card-title">
+      <span>Managed host processes</span>
+      <button class="btn btn-secondary btn-sm" onclick="loadServices()"><svg class="i" aria-hidden="true"><use href="#i-arrow-path"/></svg>Refresh</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Port</th>
+            <th>PID</th>
+            <th>Status</th>
+            <th>Uptime</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="servicesTableBody">
+          <tr><td colspan="6" class="empty">Loading processes...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Real-Time Aggregate Log Stream -->
+  <section class="card">
+    <div class="card-title">
+      <span>Live logs, all services</span>
+      <button class="btn btn-secondary btn-sm" onclick="clearLogs()"><svg class="i" aria-hidden="true"><use href="#i-x-mark"/></svg>Clear</button>
+    </div>
+
+    <div class="terminal-window" id="terminalLogWindow" role="log" aria-live="off">
+      <div class="log-line log-system">
+        <span class="log-ts">[Ready]</span> Control Center running. Waiting for log output.
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+  let sse = null;
+
+  window.__vawpayAdminAuth = (function () {
+    const KEY = 'vawpay_admin_token';
+    const nativeFetch = window.fetch.bind(window);
+    let pending = null;
+
+    const read = () => { try { return sessionStorage.getItem(KEY) || ''; } catch (e) { return ''; } };
+    const write = (t) => { try { sessionStorage.setItem(KEY, t); } catch (e) {} };
+    const clear = () => { try { sessionStorage.removeItem(KEY); } catch (e) {} };
+
+    function isProtected(url) {
+      return /\/api\/services/.test(url);
+    }
+
+    function prompt(message) {
+      if (pending) return pending;
+      pending = new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:rgba(15,23,42,.85);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,sans-serif';
+        const box = document.createElement('form');
+        box.style.cssText = 'background:#fff;color:#0f172a;border-radius:12px;padding:24px;max-width:420px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.4)';
+        const title = document.createElement('h3');
+        title.textContent = 'Admin token required';
+        title.style.margin = '0 0 8px';
+        const hint = document.createElement('p');
+        hint.textContent = message || 'Enter the admin API token (ADMIN_API_TOKEN, or the contents of data/.secrets/admin_api_token on the server).';
+        hint.style.cssText = 'margin:0 0 12px;font-size:14px;color:#475569';
+        const input = document.createElement('input');
+        input.type = 'password';
+        input.autocomplete = 'off';
+        input.required = true;
+        input.style.cssText = 'width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:12px';
+        const btn = document.createElement('button');
+        btn.type = 'submit';
+        btn.textContent = 'Unlock';
+        btn.style.cssText = 'width:100%;padding:10px;border:0;border-radius:8px;background:#b45309;color:#fff;font-weight:600;cursor:pointer';
+        box.append(title, hint, input, btn);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        input.focus();
+        box.addEventListener('submit', (ev) => {
+          ev.preventDefault();
+          write(input.value.trim());
+          overlay.remove();
+          pending = null;
+          resolve();
+        });
+      });
+      return pending;
+    }
+
+    async function authedFetch(input, init) {
+      const url = typeof input === 'string' ? input : (input && input.url) || '';
+      if (!isProtected(url)) return nativeFetch(input, init);
+      if (!read()) {
+        await prompt();
+        if (typeof connectLogsSse === 'function') connectLogsSse();
+      }
+      const attempt = () => {
+        const headers = new Headers((init && init.headers) || (input && input.headers) || {});
+        headers.set('Authorization', 'Bearer ' + read());
+        return nativeFetch(input, Object.assign({}, init, { headers }));
+      };
+      let res = await attempt();
+      if (res.status === 401) {
+        clear();
+        await prompt('That token was rejected. Enter the admin API token again.');
+        res = await attempt();
+        if (res.ok && typeof connectLogsSse === 'function') connectLogsSse();
+      }
+      return res;
+    }
+
+    window.fetch = authedFetch;
+    return { token: read, ensure: () => (read() ? Promise.resolve() : prompt()) };
+  })();
+
+  const THEME_KEY = 'vawpay-theme';
+  const themeMQ = window.matchMedia('(prefers-color-scheme: dark)');
+
+  function getThemePref() {
+    try {
+      const v = localStorage.getItem(THEME_KEY);
+      return v === 'light' || v === 'dark' ? v : 'system';
+    } catch (e) { return 'system'; }
+  }
+
+  function applyTheme(pref) {
+    const theme = pref === 'system' ? (themeMQ.matches ? 'dark' : 'light') : pref;
+    document.documentElement.setAttribute('data-theme', theme);
+    document.querySelectorAll('[data-theme-pref]').forEach(b => {
+      const on = b.dataset.themePref === pref;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  }
+
+  function setThemePref(pref) {
+    try {
+      if (pref === 'system') localStorage.removeItem(THEME_KEY);
+      else localStorage.setItem(THEME_KEY, pref);
+    } catch (e) {}
+    applyTheme(pref);
+  }
+
+  themeMQ.addEventListener('change', () => { if (getThemePref() === 'system') applyTheme('system'); });
+  applyTheme(getThemePref());
+
+
+  async function loadServices() {
+    try {
+      const res = await fetch('/api/services');
+      const services = await res.json();
+      const tbody = document.getElementById('servicesTableBody');
+
+      const running = services.filter(s => s.status === 'RUNNING').length;
+      document.getElementById('sumTotal').textContent = services.length;
+      document.getElementById('sumRunning').textContent = running;
+      document.getElementById('sumStopped').textContent = services.length - running;
+
+      if (!services.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty">No services configured.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = services.map(s => {
+        let badgeClass = 'badge-stopped';
+        if (s.status === 'RUNNING') badgeClass = 'badge-running';
+        if (s.status === 'STARTING') badgeClass = 'badge-starting';
+
+        const isRunning = s.status === 'RUNNING';
+
+        return `
+          <tr>
+            <td><strong>${s.name}</strong><span class="sub">${s.id}</span></td>
+            <td class="num"><code>${s.port}</code></td>
+            <td class="num"><code>${s.pid || '-'}</code></td>
+            <td><span class="badge ${badgeClass}">${s.status}</span></td>
+            <td class="num">${s.uptimeSeconds ? s.uptimeSeconds + 's' : '-'}</td>
+            <td class="actions">
+              ${isRunning ? `
+                <button class="btn btn-secondary btn-sm" onclick="restartService('${s.id}')"><svg class="i" aria-hidden="true"><use href="#i-arrow-path"/></svg>Restart</button>
+                <button class="btn btn-danger btn-sm" onclick="stopService('${s.id}')"><svg class="i" aria-hidden="true"><use href="#i-stop"/></svg>Stop</button>
+              ` : `
+                <button class="btn btn-success btn-sm" onclick="startService('${s.id}')"><svg class="i" aria-hidden="true"><use href="#i-play"/></svg>Start</button>
+              `}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function startService(id) {
+    await fetch(`/api/services/${id}/start`, { method: 'POST' });
+    loadServices();
+  }
+
+  async function stopService(id) {
+    await fetch(`/api/services/${id}/stop`, { method: 'POST' });
+    loadServices();
+  }
+
+  async function restartService(id) {
+    await fetch(`/api/services/${id}/restart`, { method: 'POST' });
+    loadServices();
+  }
+
+  async function startAllServices() {
+    await fetch('/api/services/start-all', { method: 'POST' });
+    setTimeout(loadServices, 1000);
+  }
+
+  async function stopAllServices() {
+    await fetch('/api/services/stop-all', { method: 'POST' });
+    setTimeout(loadServices, 1000);
+  }
+
+  function clearLogs() {
+    document.getElementById('terminalLogWindow').innerHTML = '';
+  }
+
+
+    /**
+     * Opens an SSE stream with an Authorization header.
+     *
+     * EventSource cannot send request headers, which is why the admin token used to be
+     * passed as a `?token=` query parameter. That put a credential with write access into
+     * the URL, so it landed in access logs, browser history and Referer headers. This uses
+     * fetch() with a streaming body instead and keeps the token in the header only.
+     *
+     * @param {string} url
+     * @param {string} token
+     * @param {(event: string, data: string) => void} onEvent
+     * @param {() => void} onError
+     * @returns {{ close: () => void }}
+     */
+    function openAuthenticatedEventStream(url, token, onEvent, onError) {
+      const controller = new AbortController();
+      const listeners = new Map();
+      let closed = false;
+
+      const emit = (type, data) => {
+        const handlers = listeners.get(type) || [];
+        for (const handler of handlers) {
+          try { handler({ data, type }); } catch (e) { }
+        }
+        if (onEvent) { try { onEvent(type, data); } catch (e) { } }
+      };
+
+      const run = async () => {
+        try {
+          const res = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'text/event-stream' },
+            signal: controller.signal
+          });
+          if (!res.ok || !res.body) throw new Error(`SSE failed: ${res.status}`);
+
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          while (!closed) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            let sep;
+            while ((sep = buffer.indexOf('\n\n')) !== -1) {
+              const raw = buffer.slice(0, sep);
+              buffer = buffer.slice(sep + 2);
+
+              let eventName = 'message';
+              const dataLines = [];
+              for (const line of raw.split('\n')) {
+                if (line.startsWith('event:')) eventName = line.slice(6).trim();
+                else if (line.startsWith('data:')) dataLines.push(line.slice(5).replace(/^ /, ''));
+              }
+              emit(eventName, dataLines.join('\n'));
+            }
+          }
+        } catch (err) {
+          if (!closed) {
+            if (typeof apiSse.onerror === 'function') { try { apiSse.onerror(err); } catch (e) { } }
+            if (onError) { try { onError(err); } catch (e) { } }
+          }
+        }
+      };
+
+      // Minimal EventSource-compatible surface so existing call sites keep working.
+      const apiSse = {
+        addEventListener(type, handler) {
+          if (!listeners.has(type)) listeners.set(type, []);
+          listeners.get(type).push(handler);
+        },
+        removeEventListener(type, handler) {
+          const arr = listeners.get(type) || [];
+          const i = arr.indexOf(handler);
+          if (i !== -1) arr.splice(i, 1);
+        },
+        close() {
+          closed = true;
+          try { controller.abort(); } catch (e) { }
+        },
+        onerror: null
+      };
+
+      run();
+      return apiSse;
+    }
+
+  function connectLogsSse() {
+    if (sse) sse.close();
+    const token = window.__vawpayAdminAuth ? window.__vawpayAdminAuth.token() : '';
+    if (!token) return;
+    sse = openAuthenticatedEventStream('/api/logs/stream', token, null, null);
+
+    sse.addEventListener('log', (e) => {
+      try {
+        const log = JSON.parse(e.data);
+        appendTerminalLine(log);
+      } catch {}
+    });
+
+    sse.addEventListener('status_change', () => {
+      loadServices();
+    });
+
+    sse.onerror = () => {
+      setTimeout(connectLogsSse, 3000);
+    };
+  }
+
+  function appendTerminalLine(log) {
+    const term = document.getElementById('terminalLogWindow');
+    const div = document.createElement('div');
+    div.className = `log-line ${log.stream === 'stderr' ? 'log-stderr' : (log.stream === 'system' ? 'log-system' : '')}`;
+
+    const time = new Date(log.timestamp).toLocaleTimeString();
+    div.innerHTML = `<span class="log-ts">[${time}]</span><span class="log-svc">[${log.serviceId}]</span> ${escapeHtml(log.line)}`;
+
+    term.appendChild(div);
+    term.scrollTop = term.scrollHeight;
+  }
+
+  function escapeHtml(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // Init
+  loadServices();
+  connectLogsSse();
+  setInterval(loadServices, 5000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "name": "vaw-pay",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Self-Hosted White-Label UPI Payment Gateway with Payment Observation Engine",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "node scripts/clean.js",
+    "setup": "node scripts/setup.js",
+    "db:setup": "node scripts/init-db.cjs",
+    "sync:package": "node scripts/sync-package.cjs",
+    "start": "node scripts/start.js",
+    "start:prod": "node scripts/start.js",
+    "start:prod:api": "node apps/payment-api/src/index.js",
+    "dev": "node scripts/dev.js",
+    "test": "node scripts/test-all.js",
+    "test:all": "node scripts/test-all.js",
+    "test:acceptance": "node --test scripts/production-infrastructure.test.js",
+    "build:android:apk": "node scripts/build-android-apk.js",
+    "sync:android-allowlist": "node scripts/sync-android-allowlist.js",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^7.0.2"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "author": "VAW Technologies",
+  "license": "UNLICENSED"
+}

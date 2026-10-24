@@ -1,0 +1,179 @@
+    <!-- HELP MODAL -->
+    <div class="ypg-dialog-overlay" id="helpModal" hidden>
+      <div class="ypg-dialog-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <strong style="font-size:15px;" id="helpModalTitle">VAW Pay Help &amp; Support</strong>
+          <button type="button" onclick="closeHelpModal()"
+            style="background:none; border:none; font-size:18px; cursor:pointer; color:#64748b;">✕</button>
+        </div>
+        <div style="font-size:12px; color:#64748b; margin-bottom:12px;">For inquiries regarding your order or payment
+          status:</div>
+        <div id="helpModalEmailsContainer" style="margin-bottom:8px; font-size:12px;"></div>
+        <div id="helpModalMobilesContainer" style="margin-bottom:12px; font-size:12px;"></div>
+        <div id="helpModalLegalLinks"
+          style="display:none; gap:12px; font-size:11.5px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #e2e8f0;">
+        </div>
+        <div style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; margin-bottom:4px;">
+          Payment Case Info</div>
+        <pre id="helpModalCaseInfoText"
+          style="background:#f1f5f9; padding:8px; border-radius:6px; font-size:10px; color:#334155; white-space:pre-wrap; font-family:monospace; margin-bottom:12px;"></pre>
+        <button type="button" class="ypg-btn-auth-action" onclick="copyCaseInfo()">
+          <span id="copyCaseText">Copy Payment Case Details</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SINGLE ACTIVE SESSION CONFLICT MODAL -->
+    <div class="ypg-dialog-overlay" id="activeConflictModal" hidden>
+      <div class="ypg-dialog-card" style="max-width:380px; text-align:center;">
+        <div
+          style="width:48px; height:48px; border-radius:50%; background:#fef3c7; color:#d97706; display:flex; align-items:center; justify-content:center; font-size:24px; margin:0 auto 12px auto;">
+          ⚠️</div>
+        <strong style="font-size:16px; color:#0f172a; display:block; margin-bottom:6px;" id="conflictModalTitle">Active Session Detected</strong>
+        <p style="font-size:12.5px; color:#475569; line-height:1.5; margin-bottom:16px;" id="conflictModalDesc">
+          You already have an active payment session.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button type="button" class="ypg-btn-auth-action" id="btnContinueExistingActive"
+            onclick="continueExistingActivePayment()"
+            style="background:#b45309; color:#ffffff; font-size:13px; font-weight:700; padding:11px;">
+            CONTINUE ACTIVE SESSION
+          </button>
+          <button type="button" class="ypg-btn-auth-action" id="btnEndSessionAndStartNew"
+            onclick="executeRetryNewPayment()"
+            style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; font-size:12.5px; font-weight:600; padding:9px;">
+            END SESSION &amp; START NEW PAYMENT
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RAZORPAY AUTHENTIC "PROCESSING YOUR PAYMENT" MODAL SHEET -->
+    <div class="rzp-sheet-backdrop" id="rzpProcessingModal" hidden>
+      <div class="rzp-sheet-dialog" style="position:relative;">
+        <button type="button" class="rzp-btn-sheet-close" onclick="closeProcessingModal()" title="Back to QR"
+          style="position:absolute; top:14px; right:14px; background:none; border:none; font-size:18px; cursor:pointer; color:#64748b; z-index:10; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:background 0.15s;">✕</button>
+        <div class="rzp-sheet-content">
+          <div class="rzp-sheet-title" id="rzpProcessingTitle">Verifying Your Payment</div>
+          <div class="rzp-sheet-subtitle" id="rzpProcessingSubtitle">Bank verification in progress. Please do not close
+            or refresh this window.</div>
+          <div class="rzp-coin-stage">
+            <div class="rzp-halo-ring"></div>
+            <div class="rzp-3d-coin">
+              <div class="rzp-coin-face rzp-coin-front">
+                <div class="rzp-coin-inner-rim"></div>
+                <div class="rzp-coin-sheen"></div>
+              </div>
+              <div class="rzp-coin-face rzp-coin-back">
+                <div class="rzp-coin-inner-rim"></div>
+                <div class="rzp-coin-sheen"></div>
+              </div>
+            </div>
+          </div>
+          <div
+            style="font-size:12px; color:#10b981; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; margin-top:10px;">
+            <span
+              style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#10b981; box-shadow:0 0 6px #10b981; animation:rzpHaloPulse 1.2s infinite;"></span>
+            Checking UPI transaction in real-time...
+          </div>
+          <button type="button" class="rzp-sheet-cancel-btn" onclick="openCancelPaymentModal()"
+            style="margin-top:12px;">Cancel Payment</button>
+          <button type="button" onclick="closeProcessingModal()"
+            style="background:none; border:none; color:#64748b; font-size:12px; font-weight:600; cursor:pointer; margin-top:8px; text-decoration:underline;">
+            Return to QR Code
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RAZORPAY AUTHENTIC "CANCEL PAYMENT" CONFIRMATION MODAL SHEET -->
+    <div class="rzp-sheet-backdrop" id="rzpCancelModal" hidden>
+      <div class="rzp-sheet-dialog">
+        <!-- State 1: Exit Door & Confirm Prompt -->
+        <div id="rzpCancelPromptView"
+          style="display:flex; flex-direction:column; align-items:center; text-align:center; padding-bottom:16px;">
+          <div class="rzp-cancel-header-arc">
+            <button type="button" class="rzp-btn-sheet-close" onclick="closeCancelPaymentModal()"
+              title="Back">✕</button>
+            <!-- Authentic Exit Door Illustration with EXIT sign & footprints -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" width="88" height="62" fill="none">
+              <rect x="65" y="10" width="30" height="13" rx="2" fill="#dc2626" stroke="#b91c1c" stroke-width="0.8" />
+              <text x="80" y="19.5" font-family="-apple-system, BlinkMacSystemFont, Arial, sans-serif" font-size="7.5"
+                font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="0.8">EXIT</text>
+              <path d="M50 23 H110 V90 H104 V27 H56 V90 H50 Z" fill="#94a3b8" />
+              <rect x="54" y="26" width="52" height="64" fill="#f8fafc" opacity="0.6" />
+              <path d="M55 27 L38 34 V97 L55 90 Z" fill="rgba(224, 242, 254, 0.75)" stroke="#64748b"
+                stroke-width="1.8" />
+              <path d="M53 30 L41 35 V93 L53 87 Z" fill="rgba(186, 230, 253, 0.45)" stroke="#94a3b8" stroke-width="1" />
+              <rect x="44" y="60" width="3" height="10" rx="1" fill="#334155" />
+              <path d="M105 27 L122 34 V97 L105 90 Z" fill="rgba(224, 242, 254, 0.75)" stroke="#64748b"
+                stroke-width="1.8" />
+              <path d="M107 30 L119 35 V93 L107 87 Z" fill="rgba(186, 230, 253, 0.45)" stroke="#94a3b8"
+                stroke-width="1" />
+              <rect x="113" y="60" width="3" height="10" rx="1" fill="#334155" />
+              <line x1="30" y1="94" x2="130" y2="94" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="2 2" />
+              <g transform="translate(74, 80) rotate(-10) scale(0.65)" fill="#475569">
+                <ellipse cx="4" cy="3" rx="3.5" ry="4.5" />
+                <ellipse cx="4" cy="10" rx="2.5" ry="3" />
+              </g>
+              <g transform="translate(85, 88) rotate(12) scale(0.75)" fill="#334155">
+                <ellipse cx="4" cy="3" rx="3.5" ry="4.5" />
+                <ellipse cx="4" cy="10" rx="2.5" ry="3" />
+              </g>
+              <g transform="translate(71, 98) rotate(-8) scale(0.85)" fill="#1e293b">
+                <ellipse cx="4" cy="3" rx="3.8" ry="4.8" />
+                <ellipse cx="4" cy="11" rx="2.8" ry="3.2" />
+              </g>
+              <g transform="translate(87, 106) rotate(10) scale(0.95)" fill="#0f172a">
+                <ellipse cx="4" cy="3" rx="4" ry="5" />
+                <ellipse cx="4" cy="12" rx="3" ry="3.5" />
+              </g>
+            </svg>
+          </div>
+          <div
+            style="padding:12px 20px 0; width:100%; display:flex; flex-direction:column; align-items:center; box-sizing:border-box;">
+            <div class="rzp-sheet-title">
+              <span class="pc-only-title">Are you sure you want to exit?</span>
+              <span class="mob-only-title">Cancel Payment</span>
+            </div>
+            <div class="rzp-sheet-subtitle" style="margin-bottom:0; max-width:320px; line-height:1.45;">
+              <span class="pc-only-sub">You will be taken back to <span
+                  class="cancelMerchantNameSpan">{{MERCHANT_NAME}}</span> website</span>
+              <span class="mob-only-sub">Your payment is ongoing. Are you sure you want to cancel the payment?</span>
+            </div>
+            <button type="button" class="rzp-btn-wait" onclick="closeCancelPaymentModal()">
+              <span class="pc-only-btn">Continue to payment</span>
+              <span class="mob-only-btn">No, wait</span>
+            </button>
+            <button type="button" class="rzp-btn-confirm-cancel" onclick="confirmCancelPayment()">
+              <span class="pc-only-btn">Yes, exit</span>
+              <span class="mob-only-btn">Yes, Cancel</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- State 2: Cancelling Payment with Running Coin -->
+        <div id="rzpCancellingProgressView"
+          style="display:none; padding:28px 20px 24px; flex-direction:column; align-items:center; text-align:center;">
+          <div class="rzp-sheet-title">Cancelling Payment</div>
+          <div class="rzp-sheet-subtitle">This will only take a few seconds.</div>
+          <div class="rzp-coin-stage">
+            <div class="rzp-halo-ring"></div>
+            <div class="rzp-3d-coin">
+              <div class="rzp-coin-face rzp-coin-front">
+                <div class="rzp-coin-inner-rim"></div>
+                <div class="rzp-coin-sheen"></div>
+              </div>
+              <div class="rzp-coin-face rzp-coin-back">
+                <div class="rzp-coin-inner-rim"></div>
+                <div class="rzp-coin-sheen"></div>
+              </div>
+            </div>
+          </div>
+          <div class="rzp-secured-by">
+            <span>Secured by</span>
+            <strong style="color:#0f172a; font-weight:800;">{{APP_NAME}}</strong>
+          </div>
+        </div>
+      </div>
+    </div>

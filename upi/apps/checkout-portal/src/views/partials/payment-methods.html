@@ -1,0 +1,526 @@
+        <!-- MAIN PAYMENT GATEWAY INTERFACE -->
+        <div id="paymentGatewayInterface" hidden>
+
+          <!-- DYNAMIC PAYMENT METHOD SELECTOR BAR (ONLINE / OFFLINE MODALITY TABS) -->
+          <div id="paymentMethodSelectorBar" class="ypg-method-selector-bar" style="display:{{METHOD_SELECTOR_DISPLAY}};">
+            <button type="button" class="ypg-method-tab active" id="tabMethodUpi" onclick="selectPaymentMethod('UPI')">
+              <img src="/icons/upi.svg" alt="UPI" class="ypg-tab-icon" style="height:15px;" />
+              <span>UPI QR</span>
+            </button>
+            <button type="button" class="ypg-method-tab" id="tabMethodCod" onclick="selectPaymentMethod('COD')"
+              style="{{TAB_COD_STYLE}}">
+              <img src="/icons/cash.svg" alt="COD" class="ypg-tab-icon" style="height:14px; width:14px;" />
+              <span>Cash on Delivery</span>
+            </button>
+            <button type="button" class="ypg-method-tab" id="tabMethodCash"
+              onclick="selectPaymentMethod('CASH_COUNTER')" style="{{TAB_CASH_STYLE}}">
+              <img src="/icons/cash.svg" alt="Cash" class="ypg-tab-icon" style="height:14px; width:14px;" />
+              <span>Cash</span>
+            </button>
+            <button type="button" class="ypg-method-tab" id="tabMethodCard"
+              onclick="selectPaymentMethod('CARD_COUNTER')" style="{{TAB_CARD_STYLE}}">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px; vertical-align:middle;"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              <span>Card</span>
+            </button>
+          </div>
+
+          <!-- PC 2-SUB-COLUMN CONTAINER (Exact Razorpay Frame 002 layout on Desktop) -->
+          <div class="ypg-pc-columns">
+            <!-- PC LEFT METHODS SUB-COLUMN -->
+            <div class="ypg-pc-methods-list" id="pcMethodsList">
+              <!-- UPI Card -->
+              <div class="ypg-pc-method-card is-active" id="pcMethodCardUpi" onclick="selectPaymentMethod('UPI')">
+                <div class="ypg-pc-method-header">
+                  <img src="/icons/upi.svg" alt="UPI" style="height:15px; margin-right:6px; vertical-align:middle;" />
+                  <div class="ypg-pc-method-title">UPI QR</div>
+                </div>
+                <div class="ypg-pc-method-sub">Scan &amp; Pay via UPI Apps</div>
+                <div class="ypg-pc-method-icons">
+                  <img class="ypg-pc-mini-icon" src="/icons/gpay.png"
+                    onerror="if(window.FALLBACK_ICONS)this.src=window.FALLBACK_ICONS.gpay" alt="GPay" />
+                  <img class="ypg-pc-mini-icon" src="/icons/phonepe.png"
+                    onerror="if(window.FALLBACK_ICONS)this.src=window.FALLBACK_ICONS.phonepe" alt="PhonePe" />
+                  <img class="ypg-pc-mini-icon" src="/icons/paytm.png"
+                    onerror="if(window.FALLBACK_ICONS)this.src=window.FALLBACK_ICONS.paytm" alt="Paytm" />
+                  <img class="ypg-pc-mini-icon" src="/icons/cred.png"
+                    onerror="if(window.FALLBACK_ICONS)this.src=window.FALLBACK_ICONS.cred" alt="CRED" />
+                </div>
+              </div>
+
+              <!-- Cash at Till Card (Offline Mode) -->
+              <div class="ypg-pc-method-card" id="pcMethodCardCash" onclick="selectPaymentMethod('CASH_COUNTER')" style="{{PC_CASH_STYLE}}">
+                <div class="ypg-pc-method-header">
+                  <img src="/icons/cash.svg" alt="Cash" style="width:16px; height:16px; margin-right:6px; vertical-align:middle;" />
+                  <div class="ypg-pc-method-title">Cash at Till</div>
+                  <span class="ypg-pc-cash-pill">Counter</span>
+                </div>
+                <div class="ypg-pc-method-sub">Pay cash directly to cashier</div>
+                <div class="ypg-pc-method-icons" style="margin-top:6px;">
+                  <span style="font-size:10.5px; font-weight:700; color:#15803d; background:#dcfce7; padding:2px 8px; border-radius:5px; display:inline-flex; align-items:center; gap:4px; border:1px solid #bbf7d0;">
+                    <img src="/icons/cash.svg" alt="Cash" style="width:12px; height:12px;" />
+                    Physical Cash
+                  </span>
+                </div>
+              </div>
+
+              <!-- Card at Counter (Offline Mode) -->
+              <div class="ypg-pc-method-card" id="pcMethodCardCard" onclick="selectPaymentMethod('CARD_COUNTER')" style="{{PC_CARD_STYLE}}">
+                <div class="ypg-pc-method-header">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; vertical-align:middle; color:#475569;"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                  <div class="ypg-pc-method-title">Card at Counter</div>
+                  <span class="ypg-pc-cash-pill" style="background:#f1f5f9; color:#475569;">POS</span>
+                </div>
+                <div class="ypg-pc-method-sub">Swipe or tap card at POS desk</div>
+                <div class="ypg-pc-method-icons" style="gap:5px; margin-top:6px; display:flex; align-items:center;">
+                  <img src="/icons/visa.svg" alt="Visa" style="height:15px; width:auto; object-fit:contain;" />
+                  <img src="/icons/mastercard.svg" alt="Mastercard" style="height:15px; width:auto; object-fit:contain;" />
+                  <img src="/icons/rupay.svg" alt="RuPay" style="height:15px; width:auto; object-fit:contain;" />
+                </div>
+              </div>
+
+              <!-- Cash on Delivery (COD) Card (Online Mode) -->
+              <div class="ypg-pc-method-card" id="pcMethodCardCod" onclick="selectPaymentMethod('COD')" style="{{PC_COD_STYLE}}">
+                <div class="ypg-pc-method-header">
+                  <img src="/icons/cash.svg" alt="COD" style="width:16px; height:16px; margin-right:6px; vertical-align:middle;" />
+                  <div class="ypg-pc-method-title">Cash on Delivery</div>
+                  <span class="ypg-pc-cash-pill" style="background:#fef3c7; color:#92400e;">COD</span>
+                </div>
+                <div class="ypg-pc-method-sub">Pay physical cash at doorstep</div>
+                <div class="ypg-pc-method-icons" style="margin-top:6px;">
+                  <span style="font-size:10.5px; font-weight:700; color:#b45309; background:#fef3c7; padding:2px 8px; border-radius:5px; display:inline-flex; align-items:center; gap:4px; border:1px solid #fde68a;">
+                    <img src="/icons/cash.svg" alt="COD" style="width:12px; height:12px;" />
+                    Doorstep Cash
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- PC RIGHT ACTIVE PAYMENT WORKSPACE -->
+            <div class="ypg-pc-active-view">
+              <!-- VIEW A: PURE UPI QR INTERFACE -->
+              <div id="viewUpiContent">
+                <h2 class="ypg-page-title">UPI QR Payment</h2>
+
+                <!-- Section Label & Countdown Timer -->
+                <div class="ypg-section-label-row">
+                  <span class="ypg-section-heading">Scan &amp; Pay via UPI</span>
+                  <div class="ypg-countdown-pill" id="activeTimerBadge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.2">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span id="activeTimerText">05:00</span>
+                  </div>
+                </div>
+
+                <!-- UPI Server Health Indicator & Downtime Warning -->
+                <div class="ypg-server-health-indicator {{SERVER_HEALTH_CLASS}}" id="upiServerHealthIndicator">
+                  <span class="ypg-pulse-dot" id="serverPulseDot"></span>
+                  <span id="serverStatusLabel">{{SERVER_HEALTH_LABEL}}</span>
+                </div>
+
+                <div class="{{DOWNTIME_ALERT_CLASS}}" id="serverDowntimeAlert" style="display:{{DOWNTIME_ALERT_STYLE}};">
+                  <div class="ypg-downtime-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  </div>
+                  <div class="ypg-downtime-info">
+                    <div class="ypg-downtime-heading">{{DOWNTIME_HEADING}}</div>
+                    <div class="ypg-downtime-msg" id="serverDowntimeMsg">
+                      {{DOWNTIME_MSG}}
+                    </div>
+                    <button type="button" class="ypg-btn-downtime-alt" id="btnDowntimeCashAlt"
+                      onclick="switchMethodFromDowntime()" style="display:{{DOWNTIME_ALT_BTN_DISPLAY}};">
+                      {{DOWNTIME_ALT_BTN_LABEL}}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Core UPI QR Card -->
+                <div class="ypg-qr-card-container">
+                  <!-- Left: QR Box -->
+                  <div class="ypg-qr-image-box" id="qrImageContainer">
+                    <div style="font-size:11px; color:#94a3b8; text-align:center;">Loading QR...</div>
+                  </div>
+
+                  <!-- Right: Prompt, UPI App Logos -->
+                  <div class="ypg-qr-details-col">
+                    <div class="ypg-qr-prompt-title">Scan the QR using any UPI App</div>
+
+                    <!-- Brand Logos Row (Zero Fake Offers) -->
+                    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:3px 0 6px 0;">
+                      <div class="ypg-upi-logos-row">
+                        <div class="ypg-app-icon" title="Google Pay"><img src="/icons/gpay.png"
+                            onerror="if(window.FALLBACK_ICONS)this.src=window.FALLBACK_ICONS.gpay" alt="GPay" /></div>
+                        <div class="ypg-app-icon" title="PhonePe"><img src="/icons/phonepe.png"
+                            onerror="if(window.FALLBACK_ICONS)this.src=window.FALLBACK_ICONS.phonepe" alt="PhonePe" />
+                        </div>
+                        <div class="ypg-app-icon" title="Paytm"><img src="/icons/paytm.png"
+                            onerror="if(window.FALLBACK_ICONS)this.src=window.FALLBACK_ICONS.paytm" alt="Paytm" /></div>
+                        <div class="ypg-app-icon" title="CRED"><img src="/icons/cred.png"
+                            onerror="if(window.FALLBACK_ICONS)this.src=window.FALLBACK_ICONS.cred" alt="CRED" /></div>
+                        <div class="ypg-app-icon" title="BHIM UPI"><img src="/icons/bhim.png"
+                            onerror="if(window.FALLBACK_ICONS)this.src=window.FALLBACK_ICONS.bhim" alt="BHIM" /></div>
+                        <div class="ypg-app-icon" title="Amazon Pay"><img src="/icons/amazonpay.png"
+                            onerror="if(window.FALLBACK_ICONS)this.src=window.FALLBACK_ICONS.amazonpay"
+                            alt="Amazon Pay" /></div>
+                      </div>
+                    </div>
+
+                    <div style="font-size:12px; color:#64748b; line-height:1.4;">
+                      Open any UPI app on your phone to scan and pay directly.
+                    </div>
+                  </div>
+                </div>
+                <!-- UPI Payment Instructions Guide -->
+                <div class="ypg-instructions-card">
+                  <div class="ypg-instruction-step">
+                    <div class="ypg-step-num">1</div>
+                    <div>Open any UPI App on your phone (Google Pay, PhonePe, Paytm, CRED).</div>
+                  </div>
+                  <div class="ypg-instruction-step">
+                    <div class="ypg-step-num">2</div>
+                    <div>Scan the QR code above and complete the payment of <strong>₹{{AMOUNT}}</strong>.</div>
+                  </div>
+                  <div class="ypg-instruction-step">
+                    <div class="ypg-step-num">3</div>
+                    <div>Payment is detected automatically, or tap <strong>Continue</strong> below after paying.</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- VIEW COD: CASH ON DELIVERY (ONLINE SELLING MODE) -->
+              <div id="viewCodContent" hidden>
+                <div class="ypg-section-label-row" style="margin-top:0; margin-bottom:12px;">
+                  <h2 class="ypg-page-title" style="margin-bottom:0;">Cash on Delivery (COD)</h2>
+                  <div class="ypg-countdown-pill" id="codTimerBadge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.2">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span id="codTimerText">05:00</span>
+                  </div>
+                </div>
+
+                <!-- COD Notice Pill -->
+                <div class="ypg-offers-pill" style="background:#fef3c7; border-color:#fde68a;">
+                  <div class="ypg-offers-left">
+                    <div class="ypg-offer-icon-badge" style="background:#d97706; color:#fff; display:flex; align-items:center; justify-content:center;">
+                      <img src="/icons/cash.svg" alt="Cash" style="width:14px; height:14px;" />
+                    </div>
+                    <span style="color:#92400e; font-weight:700;">Pay Cash at Doorstep</span>
+                  </div>
+                  <div class="ypg-offers-right">
+                    <span style="color:#b45309;">Verified Purchase</span>
+                  </div>
+                </div>
+
+                <!-- Order Summary Card -->
+                <div
+                  style="background:#ffffff; border:1px solid var(--ypg-border); border-radius:12px; padding:16px; margin:14px 0;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <span style="font-size:12px; color:#64748b; font-weight:600;">Payable on Delivery</span>
+                    <strong style="font-size:20px; font-weight:800; color:#0f172a;">₹{{AMOUNT}}</strong>
+                  </div>
+                  <div
+                    style="font-size:12px; color:#334155; line-height:1.5; border-top:1px dashed var(--ypg-border); padding-top:10px;">
+                    <div>Recipient: <strong id="codCustomerName">Customer</strong></div>
+                    <div>Contact: <span id="codCustomerPhone" style="font-family:monospace;">-</span></div>
+                  </div>
+                </div>
+
+                <!-- Doorstep Delivery Guide -->
+                <div class="ypg-instructions-card">
+                  <div class="ypg-instruction-step">
+                    <div class="ypg-step-num">1</div>
+                    <div>Review and confirm your Cash on Delivery order below.</div>
+                  </div>
+                  <div class="ypg-instruction-step">
+                    <div class="ypg-step-num">2</div>
+                    <div>Merchant processes and ships your package directly to your destination.</div>
+                  </div>
+                  <div class="ypg-instruction-step">
+                    <div class="ypg-step-num">3</div>
+                    <div>Hand over <strong>₹{{AMOUNT}}</strong> in physical cash to the courier agent upon arrival.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Action Button with Pre-Purchase Confirmation -->
+                <button type="button" class="ypg-btn-auth-action" id="btnConfirmCod" onclick="promptConfirmCodOrder()"
+                  style="background:#0d9f67; font-size:14px; padding:12px;">
+                  <span>Confirm &amp; Place COD Order (₹{{AMOUNT}})</span> &rsaquo;
+                </button>
+              </div>
+
+              <!-- VIEW CASH: CASH AT BILLING TILL (OFFLINE SELLING MODE) -->
+              <div id="viewCashContent" hidden>
+                <h2 class="ypg-page-title">Pay with Cash at Till</h2>
+
+                <div
+                  style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:16px; margin:14px 0; text-align:center;">
+                  <div
+                    style="font-size:12px; font-weight:700; color:#166534; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+                    Amount Payable to Cashier</div>
+                  <div style="font-size:28px; font-weight:800; color:#15803d;">₹{{AMOUNT}}</div>
+
+                  <!-- Prominent Cashier Order ID Display -->
+                  <div
+                    style="margin-top:12px; padding-top:10px; border-top:1px dashed #86efac; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span style="font-size:12px; font-weight:700; color:#166534;">Store Order ID:</span>
+                    <span class="cashierOrderIdDisplay"
+                      style="font-family:monospace; font-size:14.5px; font-weight:900; color:#0f172a; background:#ffffff; padding:3px 10px; border-radius:6px; border:1.5px solid #86efac; letter-spacing:0.5px;">#{{ORDER_ID}}</span>
+                  </div>
+                </div>
+
+                <!-- Counter Desk Instructions -->
+                <div class="ypg-instructions-card">
+                  <div style="font-size:12.5px; font-weight:700; color:#0f172a; margin-bottom:8px;">Counter Desk
+                    Instructions</div>
+                  <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;" id="cashCounterDeskNotice">
+                    {{COUNTER_INSTRUCTIONS}}
+                  </p>
+                </div>
+
+                <div class="ypg-live-observer-strip" style="background:#fffbeb; border-color:#bfdbfe; color:#1e40af;">
+                  <div class="ypg-radar-dot" style="background:#b45309; box-shadow:0 0 0 0 rgba(37,99,235,0.7);"></div>
+                  <span>Awaiting Cashier Confirmation at Billing Desk...</span>
+                </div>
+
+                <div style="font-size:12px; color:#64748b; text-align:center; padding:8px;">
+                  Present this screen and Order ID to the cashier. Your payment will automatically update once confirmed
+                  by staff.
+                </div>
+              </div>
+
+              <!-- VIEW CARD: CARD AT POS MACHINE (OFFLINE SELLING MODE) -->
+              <div id="viewCardContent" hidden>
+                <h2 class="ypg-page-title">Pay with Card at Counter</h2>
+                <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin:6px 0 12px 0;">
+                  <img src="/icons/visa.svg" alt="Visa" style="height:16px; width:auto; object-fit:contain;" />
+                  <img src="/icons/mastercard.svg" alt="Mastercard" style="height:16px; width:auto; object-fit:contain;" />
+                  <img src="/icons/rupay.svg" alt="RuPay" style="height:16px; width:auto; object-fit:contain;" />
+                </div>
+
+                <div
+                  style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin:14px 0; text-align:center;">
+                  <div
+                    style="font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">
+                    POS Terminal Charge</div>
+                  <div style="font-size:28px; font-weight:800; color:#0f172a;">₹{{AMOUNT}}</div>
+
+                  <!-- Prominent Cashier Order ID Display -->
+                  <div
+                    style="margin-top:12px; padding-top:10px; border-top:1px dashed #cbd5e1; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span style="font-size:12px; font-weight:700; color:#475569;">Store Order ID:</span>
+                    <span class="cashierOrderIdDisplay"
+                      style="font-family:monospace; font-size:14.5px; font-weight:900; color:#0f172a; background:#ffffff; padding:3px 10px; border-radius:6px; border:1.5px solid #cbd5e1; letter-spacing:0.5px;">#{{ORDER_ID}}</span>
+                  </div>
+                </div>
+
+                <!-- Counter Desk Instructions -->
+                <div class="ypg-instructions-card">
+                  <div style="font-size:12.5px; font-weight:700; color:#0f172a; margin-bottom:8px;">POS Terminal
+                    Instructions</div>
+                  <p style="font-size:12px; color:#475569; line-height:1.5; margin:0;" id="cardCounterDeskNotice">
+                    Please swipe, insert, or tap your credit or debit card on the store POS terminal at the billing
+                    desk.
+                  </p>
+                </div>
+
+                <div class="ypg-live-observer-strip" style="background:#fffbeb; border-color:#bfdbfe; color:#1e40af;">
+                  <div class="ypg-radar-dot" style="background:#b45309; box-shadow:0 0 0 0 rgba(37,99,235,0.7);"></div>
+                  <span>Awaiting Cashier Slip Verification...</span>
+                </div>
+
+                <div style="font-size:12px; color:#64748b; text-align:center; padding:8px;">
+                  Present this screen and Order ID to the cashier. Cashier will verify transaction and approve this
+                  checkout session.
+                </div>
+              </div>
+
+              <!-- VIEW B: QUEUE VIEW (WHEN CHANNELS ARE OCCUPIED) -->
+              <div id="viewQueuedContent" hidden>
+                <!-- Psychological Time-Saving Conversion Hook in Queue -->
+                <div id="queueTimeSavingBanner" class="ypg-time-saving-banner" style="display:none;"></div>
+
+                <div class="ypg-queue-container">
+                  <div style="font-size:16px; font-weight:800; color:#1e3a8a;">You Are In Line for Payment</div>
+                  <div class="ypg-queue-number" id="queueNumberDisplay">#1</div>
+                  <div style="font-size:13px; font-weight:700; color:#b45309;">
+                    Estimated Wait: <span id="queueTimerText">00:30</span>
+                  </div>
+                  <div style="font-size:12px; color:#475569; margin-top:8px; line-height:1.4;">
+                    Your payment slot is reserved. You will be activated automatically the moment the current
+                    transaction finishes.
+                  </div>
+                </div>
+              </div>
+
+              <!-- VIEW C: RAZORPAY AUTHENTIC PROCESSING / VERIFYING VIEW -->
+              <div id="viewProcessingContent" hidden>
+                <div
+                  style="padding:28px 16px 20px; display:flex; flex-direction:column; align-items:center; text-align:center;">
+                  <div class="rzp-sheet-title">Processing your payment</div>
+                  <div class="rzp-sheet-subtitle">This will only take a few seconds.</div>
+                  <div class="rzp-coin-stage">
+                    <div class="rzp-halo-ring"></div>
+                    <div class="rzp-3d-coin">
+                      <div class="rzp-coin-face rzp-coin-front">
+                        <div class="rzp-coin-inner-rim"></div>
+                        <div class="rzp-coin-sheen"></div>
+                      </div>
+                      <div class="rzp-coin-face rzp-coin-back">
+                        <div class="rzp-coin-inner-rim"></div>
+                        <div class="rzp-coin-sheen"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="font-size:12px; color:#64748b; margin-top:8px;">
+                    Bank verification in progress (<span id="procTimerText">30s</span>)
+                  </div>
+                  <button type="button" class="rzp-sheet-cancel-btn" onclick="openCancelPaymentModal()"
+                    style="max-width:320px;">Cancel</button>
+                </div>
+              </div>
+
+              <!-- VIEW D: SUCCESS CELEBRATION VIEW -->
+              <div id="viewSuccessContent" hidden>
+                <div class="ypg-success-box">
+                  <div class="ypg-success-circle" id="successIconCircle">
+                    <svg class="ypg-check-svg" viewBox="0 0 24 24">
+                      <polyline class="ypg-check-path" points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                  <div class="ypg-success-title" id="successTitleText">Payment Successful!</div>
+                  <div class="ypg-success-amount" id="successAmountVal">₹{{AMOUNT}}</div>
+                  <div style="font-size:12px; color:var(--ypg-text-muted); margin-bottom:14px;" id="successDescText">
+                    Your payment was automatically verified by VAW Pay banking observers.
+                  </div>
+                  <div id="successCodDevApiBox"
+                    style="display:none; font-size:11.5px; background:#f1f5f9; padding:10px 14px; border-radius:8px; margin-bottom:14px; text-align:left; border:1px solid #e2e8f0;">
+                    <span style="font-weight:700; color:#334155;">Developer Order API:</span>
+                    <div
+                      style="word-break:break-all; font-family:monospace; color:#b45309; margin-top:3px; font-size:11px;"
+                      id="successCodDevApiUrl"></div>
+                  </div>
+                  <a href="javascript:void(0)" class="btn-return-merchant" id="btnReturnStore">Return to Merchant</a>
+                </div>
+              </div>
+
+              <!-- VIEW E: DEDICATED PAYMENT EXPIRED / FAILED VIEW (CLEAN & CENTERED) -->
+              <div id="viewFailedContent" hidden>
+                <div class="ypg-expired-box">
+                  <div class="ypg-expired-icon-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                      stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                  </div>
+                  <div class="ypg-expired-title" id="failedTitleText">Payment Session Expired</div>
+                  <div class="ypg-expired-desc" id="failedDescriptionText">
+                    The 5-minute active payment window elapsed before verification was completed. For security, please
+                    return to the store and initiate a new order.
+                  </div>
+                  <div class="ypg-expired-actions">
+                    <button type="button" class="ypg-btn-expired-primary" id="btnFailedAction"
+                      onclick="handleRetryNewPayment()">
+                      Try Again
+                    </button>
+                    <button type="button" class="ypg-btn-expired-secondary" onclick="openHelpModal()">
+                      Help & Support
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- VIEW F: DEDICATED FRAUD / SECURITY ALERT & ACCESS BLOCKED VIEW -->
+              <div id="viewBlockedContent" hidden>
+                <div class="ypg-blocked-box">
+                  <div class="ypg-blocked-badge">
+                    <span class="ypg-blocked-badge-dot"></span>
+                    <span>Security Alert &bull; Under Investigation</span>
+                  </div>
+                  <div class="ypg-blocked-icon-wrap">
+                    <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                      <line x1="12" y1="8" x2="12" y2="12"/>
+                      <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                  </div>
+                  <div class="ypg-blocked-title" id="blockedTitleText">Fraudulent Activity Detected</div>
+                  <div class="ypg-blocked-subtitle" id="blockedSubtitleText">Payment Session Terminated &amp; Account Suspended</div>
+                  
+                  <div class="ypg-blocked-card">
+                    <p class="ypg-blocked-desc" id="blockedNoticeText">
+                      Our automated verification engine detected fraudulent payment activity associated with this transaction. Access has been immediately suspended to protect network integrity.
+                    </p>
+                    <div class="ypg-blocked-investigation">
+                      <span style="font-size:15px; line-height:1;">🔍</span>
+                      <span><strong>Investigation In Progress:</strong> Our fraud risk &amp; security operations team is reviewing the activity. Store administrator review is required before access can be restored.</span>
+                    </div>
+                  </div>
+
+                  <div class="ypg-blocked-details">
+                    <span class="ypg-blocked-details-label">Order Ref:</span>
+                    <span class="ypg-blocked-details-val" id="blockedOrderRefVal">-</span>
+                    <span class="ypg-blocked-details-label">Session ID:</span>
+                    <span class="ypg-blocked-details-val" id="blockedSessionIdVal">-</span>
+                    <span class="ypg-blocked-details-label">Status:</span>
+                    <span class="ypg-blocked-details-val" style="color:#ef4444; font-weight:800;">ACCOUNT BLOCKED</span>
+                    <span class="ypg-blocked-details-label">Timestamp:</span>
+                    <span class="ypg-blocked-details-val" id="blockedTimestampVal">-</span>
+                  </div>
+
+                  <div style="display:flex; flex-direction:column; gap:8px; width:100%; max-width:340px;">
+                    <button type="button" class="ypg-btn-blocked-exit" onclick="handleBlockedExit()">
+                      <span>Return to Merchant Store</span>
+                    </button>
+                    <button type="button" onclick="openHelpModal()" style="background:none; border:none; color:#64748b; font-size:12px; font-weight:600; cursor:pointer; text-decoration:underline; padding:6px;">
+                      Need help? View Security Case Reference
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- VIEW G: DEDICATED DUPLICATE SESSION DETECTED VIEW (DEVICE BINDING SECURITY) -->
+              <div id="viewDuplicateSessionContent" hidden>
+                <div class="ypg-duplicate-box">
+                  <div class="ypg-duplicate-badge">
+                    <span class="ypg-duplicate-badge-dot"></span>
+                    <span>Device Security Check</span>
+                  </div>
+                  <div class="ypg-duplicate-icon-wrap">
+                    <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                      <line x1="8" y1="21" x2="16" y2="21"/>
+                      <line x1="12" y1="17" x2="12" y2="21"/>
+                      <line x1="12" y1="7" x2="12" y2="10"/>
+                      <line x1="12" y1="13" x2="12.01" y2="13"/>
+                    </svg>
+                  </div>
+                  <div class="ypg-duplicate-title" id="dupSessionTitleText">Duplicate Session Detected</div>
+                  <div class="ypg-duplicate-subtitle" id="dupSessionSubtitleText">Payment Session Active on Another Device</div>
+                  
+                  <div class="ypg-duplicate-card">
+                    <p class="ypg-duplicate-desc" style="font-weight:700; color:#0f172a; margin-bottom:6px;">
+                      This payment session was created on another device.
+                    </p>
+                    <p class="ypg-duplicate-desc" style="color:#64748b; font-size:12.5px;">
+                      For security reasons, this session cannot be continued from this device.
+                    </p>
+                  </div>
+
+                  <div style="display:flex; flex-direction:column; gap:8px; width:100%; max-width:360px;">
+                    <button type="button" class="ypg-btn-duplicate-action" id="btnEndAndRestartPayment" onclick="handleEndAndStartNewPayment()">
+                      <span>END SESSION &amp; START NEW PAYMENT</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+      </main>
