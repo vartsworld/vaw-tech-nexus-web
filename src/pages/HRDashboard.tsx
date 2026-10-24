@@ -238,7 +238,11 @@ export default function HRDashboard() {
       case 'meeting': return <MeetingRoom />;
       case 'chat':
       case 'inbox':
-        return <TeamChat userId={userProfile?.user_id || ''} userProfile={userProfile} />;
+        return (
+          <div className="h-[calc(100dvh-9rem)] min-h-[480px]">
+            <TeamChat userId={userProfile?.user_id || ''} userProfile={userProfile} />
+          </div>
+        );
       case 'emma': return <EmmaAssistant role="hr" />;
       case 'pricing-requests': return <PricingRequests />;
       case 'inquiries': return <GeneralInquiries />;
