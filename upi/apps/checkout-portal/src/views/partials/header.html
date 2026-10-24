@@ -1,0 +1,101 @@
+    <!-- PC RIGHT WORKSPACE WRAPPER -->
+    <div class="ypg-pc-workspace">
+      <!-- PC TOPBAR -->
+      <div class="ypg-pc-topbar">
+        <div class="ypg-pc-topbar-title">Payment Options</div>
+        <div class="ypg-pc-topbar-actions" style="position: relative;">
+          <button type="button" class="ypg-pc-btn-more" id="btnPcMore" onclick="toggleAccountMenu(event)" title="Options">•••</button>
+          <button type="button" class="ypg-pc-btn-close" onclick="openCancelPaymentModal()"
+            title="Close Checkout">✕</button>
+
+          <!-- PC Account Popover Menu -->
+          <div class="ypg-account-popover" id="accountMenuPopoverPc" hidden style="position: absolute; top: 40px; right: 0; background: #ffffff; color: var(--ypg-text-dark); border-radius: 12px; box-shadow: 0 12px 35px rgba(0, 0, 0, 0.18); border: 1px solid var(--ypg-border); padding: 8px; z-index: 1000; min-width: 220px;">
+            <div class="popoverCustomerName" id="popoverCustomerNamePc"
+              style="padding:6px 10px 8px 10px; font-weight:700; font-size:12px; border-bottom:1px solid #f1f5f9; color:#0f172a; word-break:break-word;">
+              Guest User</div>
+            <button type="button" class="ypg-popover-item" onclick="openHelpModal()">
+              <span>❓</span> Help & Support
+            </button>
+            <button type="button" class="ypg-popover-item" onclick="handleCustomerLogout()"
+              style="color:var(--ypg-danger);">
+              <span>🚪</span> Sign Out / Change Number
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. AUTHENTIC VAW Pay HEADER -->
+      <header class="ypg-header">
+        <!-- Mobile Top Drag Handle -->
+        <div class="ypg-drag-handle-bar"></div>
+
+        <!-- Main Header Row -->
+        <div class="ypg-header-main-row">
+          <div class="ypg-header-left-group">
+            <!-- Back Button -->
+            <button type="button" class="ypg-btn-back" id="btnHeaderBack" onclick="cancelPayment()" title="Back">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            <!-- Teal Merchant Avatar with White Initial -->
+            <div class="ypg-merchant-avatar" id="merchantAvatarBox">
+              <span id="merchantAvatarLetter">{{MERCHANT_INITIAL}}</span>
+              <img id="merchantAvatarImg" alt="Logo" style="display:none;" />
+            </div>
+
+            <!-- Merchant Name & Secure UPI payment Badge -->
+            <div class="ypg-merchant-text-group">
+              <div class="ypg-merchant-name" id="headerMerchantName">{{MERCHANT_NAME}}</div>
+              <div class="ypg-trusted-badge" id="headerTrustBadge">
+                <svg class="ypg-green-shield" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2L3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-9-4z" fill="#10b981" />
+                  <path d="M8.5 12l2.5 2.5 5-5" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+                <span id="headerTrustBadgeText">Secure UPI payment</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Profile Button (Toggles User Details Popover) -->
+          <button type="button" class="ypg-btn-profile" id="btnProfileMenu" onclick="toggleAccountMenu(event)"
+            title="User Profile">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Header Sub-banner -->
+        <div class="ypg-header-subbanner" id="headerSubbanner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="9" cy="21" r="1" />
+            <circle cx="20" cy="21" r="1" />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+          </svg>
+          <span id="subbannerText">Pay with any UPI app. Your payment is confirmed automatically.</span>
+        </div>
+
+        <!-- Account Popover Menu -->
+        <div class="ypg-account-popover" id="accountMenuPopover" hidden>
+          <div id="popoverCustomerName"
+            style="padding:4px 8px 8px 8px; font-weight:700; font-size:12px; border-bottom:1px solid #f1f5f9; color:#0f172a;">
+            Guest User</div>
+          <button type="button" class="ypg-popover-item" onclick="openHelpModal()">
+            <span>❓</span> Help & Support
+          </button>
+          <button type="button" class="ypg-popover-item" onclick="handleCustomerLogout()"
+            style="color:var(--ypg-danger);">
+            <span>🚪</span> Sign Out / Change Number
+          </button>
+        </div>
+      </header>
+
+      <!-- 3. SCROLLABLE BODY -->
+      <main class="ypg-body">

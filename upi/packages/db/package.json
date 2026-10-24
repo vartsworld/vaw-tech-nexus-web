@@ -1,0 +1,16 @@
+{
+  "name": "@vawpay/db",
+  "version": "1.0.0",
+  "description": "Database layer, migrations, and repository abstractions for VAW Pay",
+  "type": "module",
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "node --test src/__tests__/**/*.test.js"
+  },
+  "dependencies": {
+    "@vawpay/common": "*"
+  },
+  "devDependencies": {
+    "@vawpay/core": "*"
+  }
+}

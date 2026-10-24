@@ -1,0 +1,13 @@
+{
+  "name": "@vawpay/merchant-sdk",
+  "version": "1.0.0",
+  "description": "Developer SDK and client library for integrating with VAW Pay",
+  "type": "module",
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "node --test src/__tests__/**/*.test.js"
+  },
+  "dependencies": {
+    "@vawpay/common": "*"
+  }
+}

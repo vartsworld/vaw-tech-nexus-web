@@ -1,0 +1,54 @@
+      <!-- 4. AUTHENTIC STICKY BOTTOM FOOTER (SHOWN ONLY WHEN ACTIVE) -->
+      <footer class="ypg-sticky-footer" id="ypgStickyFooter">
+
+        <!-- Legal Disclaimer -->
+        <div class="ypg-legal-disclaimer" id="footerLegalDisclaimer">
+          Secured by VAW Pay & 256-Bit Bank Encryption &bull; <span style="text-decoration:underline; cursor:pointer;"
+            onclick="openHelpModal()">Privacy Notice</span>
+        </div>
+
+        <!-- Bottom Action Row: ₹5,500 View Details | Continue Button -->
+        <div class="ypg-action-bottom-bar">
+          <div class="ypg-amount-view-group">
+            <div class="ypg-bottom-price" id="bottomAmountDisplay">₹{{AMOUNT}}</div>
+            <button type="button" class="ypg-btn-view-details" onclick="toggleOrderDetails()">
+              <span>View Details</span>
+              <span id="chevronDetailsIcon">&#9652;</span>
+            </button>
+          </div>
+
+          <!-- Continue CTA Button (Triggers Verification - only appears after 2 minutes elapsed) -->
+          <button type="button" class="ypg-btn-continue" id="btnContinuePayment" onclick="submitPaymentDone()"
+            style="display:none;">
+            Payment Done — Check My Payment
+          </button>
+        </div>
+
+        <!-- ORDER BREAKDOWN POPUP DRAWER -->
+        <div class="ypg-details-drawer" id="orderDetailsDrawer">
+          <div class="ypg-details-header">
+            <span>Order Summary</span>
+            <button type="button" onclick="toggleOrderDetails()"
+              style="background:none; border:none; font-size:18px; cursor:pointer; color:#64748b;">✕</button>
+          </div>
+          <div class="ypg-details-row">
+            <span>Order Reference</span>
+            <strong id="drawerOrderId">{{ORDER_ID}}</strong>
+          </div>
+          <div class="ypg-details-row">
+            <span>Merchant</span>
+            <strong>{{MERCHANT_NAME}}</strong>
+          </div>
+
+          <div class="ypg-details-row">
+            <span>Platform & Processing Fee</span>
+            <span style="color:#10b981; font-weight:700;">₹0.00 (Zero Fee)</span>
+          </div>
+          <div class="ypg-details-row total">
+            <span>Total Amount</span>
+            <strong id="drawerTotalAmount">₹{{AMOUNT}}</strong>
+          </div>
+        </div>
+      </footer>
+
+    </div><!-- END ypg-pc-workspace -->

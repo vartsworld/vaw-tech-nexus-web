@@ -1,0 +1,110 @@
+        <!-- PRE-GATEWAY CUSTOMER AUTHENTICATION VIEW (WHATSAPP BERRY PROTOCOL OTP FLOW) -->
+        <div id="preGatewayAuthView" hidden>
+          <h2 class="ypg-page-title" id="authViewMainTitle">Sign in to Pay</h2>
+          <div class="ypg-auth-box">
+            <div class="ypg-auth-sub-desc" id="authViewSubTitle">Enter your 10-digit WhatsApp mobile number to continue
+            </div>
+
+            <!-- Saved Account (1-Tap Selection) -->
+            <div class="ypg-saved-accs-wrapper" id="preAuthSavedAccountsContainer" hidden>
+              <div
+                style="font-size:11px; font-weight:800; color:var(--ypg-text-muted); text-transform:uppercase; margin-bottom:8px;">
+                Saved Account
+              </div>
+              <div id="savedAccountsList"></div>
+            </div>
+
+            <!-- STEP 1: ENTER MOBILE NUMBER -->
+            <div id="authStepMobile">
+              <div class="ypg-input-group">
+                <label class="ypg-input-label">WhatsApp Mobile Number</label>
+                <div class="ypg-phone-input-wrap">
+                  <div class="ypg-phone-prefix">
+                    <span>🇮🇳</span>
+                    <span>+91</span>
+                  </div>
+                  <input type="tel" class="ypg-phone-control" id="authMobileInput" placeholder="10-digit mobile number"
+                    maxlength="10" inputmode="numeric" />
+                </div>
+              </div>
+
+              <div
+                style="font-size:12px; color:var(--ypg-text-muted); margin-bottom:14px; display:flex; align-items:center; gap:6px;">
+                <span>💬</span>
+                <span>We'll verify your mobile via WhatsApp OTP</span>
+              </div>
+
+              <button type="button" class="ypg-btn-auth-action" id="btnAuthContinue" onclick="handleAuthMobileSubmit()">
+                <span>Continue</span> &rsaquo;
+              </button>
+            </div>
+
+            <!-- STEP 2: NEW CUSTOMER SIGN UP (Shown only if user does NOT exist) -->
+            <div id="authStepSignup" hidden>
+              <div class="ypg-auth-badge-banner">
+                <div>
+                  <span>Mobile: </span>
+                  <strong id="authSignupPhoneBadge">+91 </strong>
+                </div>
+                <button type="button" class="ypg-btn-link" onclick="goToAuthStep('mobile')">Change</button>
+              </div>
+
+              <div style="font-size:12.5px; color:var(--ypg-text-dark); font-weight:600; margin-bottom:12px;">
+                New to VAW Pay? Please enter your name and email to proceed:
+              </div>
+
+              <div class="ypg-input-group">
+                <label class="ypg-input-label">Full Name</label>
+                <input type="text" class="ypg-input-control" id="authSignupName" placeholder="e.g. Alex Sharma" />
+              </div>
+
+              <div class="ypg-input-group">
+                <label class="ypg-input-label">Email Address</label>
+                <input type="email" class="ypg-input-control" id="authSignupEmail"
+                  placeholder="e.g. gaurav@example.com" />
+              </div>
+
+              <button type="button" class="ypg-btn-auth-action" id="btnAuthSignup" onclick="handleAuthSignupSubmit()">
+                <span>Sign Up &amp; Send WhatsApp OTP</span> &rsaquo;
+              </button>
+            </div>
+
+            <!-- STEP 3: OTP VERIFICATION (Shown for existing user login OR after signup) -->
+            <div id="authStepOtp" hidden>
+              <div class="ypg-auth-badge-banner" style="background:#fffbeb; border-color:#bfdbfe; color:#1e40af;">
+                <div>
+                  <span>Code sent to WhatsApp / SMS: </span>
+                  <strong id="authOtpPhoneBadge">+91 </strong>
+                </div>
+                <button type="button" class="ypg-btn-link" onclick="goToAuthStep('mobile')">Edit</button>
+              </div>
+
+              <div id="authOtpGreeting"
+                style="font-size:12.5px; color:var(--ypg-text-dark); font-weight:600; margin-bottom:8px;">
+                Enter the 6-digit code sent to your phone:
+              </div>
+
+              <div class="ypg-input-group">
+                <input type="text" class="ypg-input-control ypg-otp-control" id="authOtpInput" placeholder="••••••"
+                  maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code"
+                  autocorrect="off" autocapitalize="off" spellcheck="false" />
+              </div>
+
+              <button type="button" class="ypg-btn-auth-action" id="btnAuthVerifyOtp"
+                onclick="handleAuthVerifyOtpSubmit()">
+                <span>Verify &amp; Continue to Pay</span> &rsaquo;
+              </button>
+
+              <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:12px; color:var(--ypg-text-muted);">
+                <div>
+                  Didn't receive code?
+                  <button type="button" class="ypg-btn-link" id="btnResendOtp" onclick="handleResendOtp()"
+                    style="margin-left:4px;">Resend OTP</button>
+                </div>
+                <span id="otpCountdownTimer" style="font-weight:600; color:#64748b;"></span>
+              </div>
+            </div>
+
+          </div>
+        </div>
