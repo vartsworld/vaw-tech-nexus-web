@@ -315,7 +315,7 @@ const DepartmentStaffList = ({
           {filteredStaff.map((member) => {
             const isOnline = onlineUsers[member.user_id] || member.status === "online";
             const isSelf = member.user_id === currentUserId;
-            const photoUrl = member.profile_photo_url || member.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(member.full_name || "staff")}`;
+            const photoUrl = member.profile_photo_url || member.avatar_url;
             const isLead = member.role?.toLowerCase().includes("head") || member.role?.toLowerCase().includes("lead");
 
             return (

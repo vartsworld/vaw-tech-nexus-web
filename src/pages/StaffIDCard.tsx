@@ -203,11 +203,15 @@ const StaffIDCard = () => {
             <div className="relative mb-8 group">
               <div className="absolute -inset-2 bg-gradient-to-tr from-indigo-600 via-purple-600 to-indigo-600 rounded-[2.5rem] blur-md opacity-20 group-hover:opacity-40 transition-opacity" />
               <div className="relative w-48 h-48 rounded-[2rem] overflow-hidden border-[6px] border-[#0a0a0a] ring-1 ring-white/10 shadow-2xl">
+                {(profile.profile_photo_url || profile.avatar_url) ? (
                 <img 
-                  src={profile.profile_photo_url || profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${profile.full_name}`} 
+                  src={profile.profile_photo_url || profile.avatar_url} 
                   alt={profile.full_name}
                   className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-700"
                 />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-white/5 text-6xl font-bold text-white/40">{(profile.full_name || '?').slice(0,1).toUpperCase()}</div>
+                )}
               </div>
               <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap">
                 <Badge className="bg-white text-black hover:bg-white px-5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase shadow-xl ring-4 ring-[#0a0a0a]">

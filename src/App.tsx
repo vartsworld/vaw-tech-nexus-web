@@ -80,8 +80,6 @@ const NotesPage = lazy(() => import("./pages/NotesPage"));
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
 const LeavePage = lazy(() => import("./pages/LeavePage"));
 const ActivityPage = lazy(() => import("./pages/ActivityPage"));
-const DocsPage = lazy(() => import("./pages/DocsPage"));
-const OperationsPage = lazy(() => import("./pages/OperationsPage"));
 const ChannelsPage = lazy(() => import("./pages/ChannelsPage"));
 const SketchItMakeIt = lazy(() => import("./pages/SketchItMakeIt"));
 
@@ -182,8 +180,8 @@ const AppContent = () => {
           <Route path="/staff/onboarding" element={<OnboardingPage />} />
           <Route path="/staff/leave" element={<LeavePage />} />
           <Route path="/staff/activity" element={<ActivityPage />} />
-          <Route path="/staff/docs" element={<DocsPage />} />
-          <Route path="/staff/operations" element={<OperationsPage />} />
+          <Route path="/staff/docs" element={<Navigate to="/staff" replace />} />
+          <Route path="/staff/operations" element={<Navigate to="/staff" replace />} />
           <Route path="/staff/channels" element={<ChannelsPage />} />
           <Route path="/team-head" element={<TeamHeadDashboard />} />
           <Route path="/team-head/:room" element={<TeamHeadDashboard />} />

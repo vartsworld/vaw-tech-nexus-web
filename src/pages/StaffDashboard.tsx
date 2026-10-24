@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -8,46 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Coffee,
-  Users,
-  Briefcase,
-  Music,
-  Wallet,
-  Gamepad2,
-  StickyNote,
-  MessageCircle,
-  Calendar,
-  Clock,
-  Target,
-  TrendingUp,
-  LogOut,
-  User,
-  Trophy,
-  Coins,
-  Flame,
-  Fingerprint,
-  Loader2,
-  Sparkles,
-  Cpu,
-  ShieldAlert,
-  Hash,
-  Plus,
-  Search,
-  ThumbsUp,
-  ExternalLink,
-  Maximize2,
-  Layout,
-  MessageSquare,
-  Compass,
-  Activity,
-  Settings,
-  Lock as LockIcon,
-  Eraser,
-  Volume2,
-  VolumeX,
-  ChevronLeft
-} from "lucide-react";
+import { Briefcase, Gamepad2, StickyNote, Calendar, LogOut, User, Trophy, Coins, Flame, Fingerprint, Loader2, Sparkles, Compass, Activity, Lock as LockIcon, Eraser, Volume2, VolumeX, ChevronLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUser } from "@/context/UserContext";
 import { BiometricSettingsDialog } from "@/components/staff/BiometricSettingsDialog";
@@ -116,8 +76,6 @@ type RoomType =
   | 'chess'
   | 'onboarding'
   | 'notes'
-  | 'operations'
-  | 'docs'
   | 'activity'
   | 'channels'
   | 'inbox'
@@ -153,10 +111,11 @@ const paramToRoom = (param: string): RoomType | null => {
   if (param === 'dashboard' || param === 'workspace') return 'workspace';
   if (param === 'calendar' || param === 'planner') return 'planner';
   if (param === 'meetingroom') return 'meeting';
+  if (param === 'operations' || param === 'docs') return 'workspace';
 
   const validRooms: RoomType[] = [
     'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
-    'chess', 'onboarding', 'notes', 'operations', 'docs', 'activity', 'channels', 'inbox',
+    'chess', 'onboarding', 'notes', 'activity', 'channels', 'inbox',
     'chat', 'staff', 'coin', 'game', 'arcade', 'tictactoe', 'pingpong',
     'codetyper', 'colormatch', 'codepuzzle', 'quickquiz', 'snake', 'memory', 'project-monitor'
   ];
@@ -575,8 +534,6 @@ const StaffDashboard = () => {
       arcade: "Arcade",
       onboarding: "Onboarding",
       notes: "Notes",
-      operations: "Operations",
-      docs: "Documents",
       activity: "Activity",
       channels: "Channels",
       inbox: "Inbox"
@@ -669,9 +626,9 @@ const StaffDashboard = () => {
       </div>
     ),
     chat: (
-       <div className="w-full h-[calc(100vh-100px)] flex flex-col p-4 bg-zinc-950/80 rounded-xl overflow-hidden border border-white/10">
-         <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
-       </div>
+      <div className="mx-auto h-[calc(100dvh-7rem)] min-h-[480px] max-w-7xl">
+        <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
+      </div>
     ),
     staff: (
        <div className="w-full p-2 sm:p-6">
@@ -847,101 +804,6 @@ const StaffDashboard = () => {
         </div>
       </div>
     ),
-    operations: (
-      <div className="space-y-6 max-w-5xl mx-auto py-2">
-        <div className="flex flex-col space-y-1">
-          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-            <Layout className="w-8 h-8 text-blue-500" />
-            Operations Overview
-          </h1>
-          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
-            Real-time tracking of department metrics and performance standards
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {[
-            { label: "Pipeline Load", value: "84%", trend: "Optimal Capacity", icon: Cpu, color: "text-blue-400" },
-            { label: "Service Availability", value: "99.98%", trend: "Excellent SLA", icon: TrendingUp, color: "text-emerald-400" },
-            { label: "Active Escalations", value: "0 Cases", trend: "All Cleared", icon: ShieldAlert, color: "text-amber-400" },
-            { label: "Redemption Pool", value: "₹4,25,000", trend: "Fully Funded", icon: Trophy, color: "text-purple-400" },
-          ].map((metric, idx) => {
-            const Icon = metric.icon;
-            return (
-              <Card key={idx} className="bg-black/30 border-white/10 text-white rounded-[2rem] backdrop-blur-md">
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-white/40">{metric.label}</span>
-                    <Icon className={`w-5 h-5 ${metric.color}`} />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-black text-white">{metric.value}</h3>
-                    <p className="text-[9px] font-bold text-white/30 uppercase mt-0.5">{metric.trend}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-    ),
-    docs: (
-      <div className="space-y-6 max-w-5xl mx-auto py-2">
-        <div className="flex flex-col space-y-1">
-          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-            <StickyNote className="w-8 h-8 text-blue-500" />
-            Documents Nexus
-          </h1>
-          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
-            Central repository of manuals, specifications, and code policies
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[
-            {
-              title: "VAW Coin Economy Guidelines",
-              desc: "Comprehensive manual explaining the correlation between VAW Coin productivity, INR redemption, and reward standards.",
-              icon: Sparkles,
-              color: "text-amber-400 bg-amber-500/10 border-amber-500/20"
-            },
-            {
-              title: "Vite & React Development Best Practices",
-              desc: "Code standards, state-management policies, Supabase client subscription cleanup requirements, and design protocols.",
-              icon: Briefcase,
-              color: "text-blue-400 bg-blue-500/10 border-blue-500/20"
-            },
-            {
-              title: "Security & Credential Vault Access",
-              desc: "Protocols on environment variables, private access credentials, and user data privacy standards inside Bondify.",
-              icon: Target,
-              color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-            },
-            {
-              title: "Escalation Matrix & Core Directives",
-              desc: "Emergency contact protocols, departmental head reviews, and standard code review workflows.",
-              icon: Clock,
-              color: "text-red-400 bg-red-500/10 border-red-500/20"
-            }
-          ].map((doc, idx) => {
-            const Icon = doc.icon;
-            return (
-              <Card key={idx} className="bg-black/30 border-white/10 text-white rounded-[2.5rem] hover:bg-white/[0.04] transition-all cursor-pointer group backdrop-blur-md">
-                <CardContent className="p-6 space-y-4">
-                  <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${doc.color} group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors leading-snug">{doc.title}</h3>
-                    <p className="text-xs text-white/50 leading-relaxed">{doc.desc}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-    ),
     activity: (
       <div className="space-y-6 max-w-4xl mx-auto py-2">
         <div className="flex flex-col space-y-1">
@@ -977,69 +839,13 @@ const StaffDashboard = () => {
       </div>
     ),
     channels: (
-      <div className="space-y-6 max-w-4xl mx-auto py-2">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-              <MessageSquare className="w-8 h-8 text-blue-500" />
-              Chat Channels
-            </h1>
-            <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
-              Explore open channels and synchronized team chat topics
-            </p>
-          </div>
-
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase h-11 px-5 gap-2 border-none">
-            <Plus className="w-4 h-4" />
-            Create Channel
-          </Button>
-        </div>
-
-        <div className="bg-black/35 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-6 lg:p-8 min-h-[500px]">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {[
-              { id: '1', name: 'general', description: 'General company-wide news, major accomplishments, and official announcements.', is_general: true },
-              { id: '2', name: 'tech', description: 'Tech stacks, system architectures, API updates, design patterns, and deployment reviews.', is_general: false },
-              { id: '3', name: 'random', description: 'Casual chitchat, memes, chess match schedules, break-time discussions, and zen logs.', is_general: false },
-              { id: '4', name: 'design', description: 'Client layouts, glassmorphism templates, Tailwind parameters, and feedback approvals.', is_general: false }
-            ].map((chan) => (
-              <Card key={chan.id} className="bg-black/30 border-white/10 text-white rounded-[2rem] hover:bg-white/[0.04] transition-all cursor-pointer group backdrop-blur-md">
-                <CardContent className="p-6 flex items-start gap-4">
-                  <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
-                    {chan.is_general ? <Sparkles className="w-6 h-6" /> : <Hash className="w-4 h-4" />}
-                  </div>
-                  <div className="space-y-1 flex-1 min-w-0">
-                    <h3 className="text-base font-bold text-white group-hover:text-blue-400 transition-colors truncate">#{chan.name}</h3>
-                    <p className="text-xs text-white/50 line-clamp-2 leading-relaxed">{chan.description}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+      <div className="mx-auto h-[calc(100dvh-7rem)] min-h-[480px] max-w-7xl">
+        <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
       </div>
     ),
     inbox: (
-      <div className="space-y-6 max-w-5xl mx-auto py-2">
-        <div className="flex flex-col space-y-1">
-          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-            <MessageSquare className="w-8 h-8 text-blue-500" />
-            Inbox
-          </h1>
-          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
-            Professional Team Communications & Direct Messages
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 h-[600px] overflow-hidden backdrop-blur-md">
-            <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
-          </div>
-          <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 h-[600px] overflow-y-auto backdrop-blur-md">
-            <h3 className="text-xs font-black uppercase tracking-widest text-white/40 mb-4 px-2">Team Directory</h3>
-            <TeamStatusSidebar onlineUsers={onlineUsers} currentUserId={profile?.user_id || ''} />
-          </div>
-        </div>
+      <div className="mx-auto h-[calc(100dvh-7rem)] min-h-[480px] max-w-7xl">
+        <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
       </div>
     )
   };
