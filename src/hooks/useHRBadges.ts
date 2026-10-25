@@ -9,6 +9,7 @@ export interface HRBadges {
   applications: number;
   support: number;
   overdueTasks: number;
+  marketEnquiries: number;
 }
 
 /** Live counts of everything waiting for HR – drives sidebar badges and the overview's "needs attention" list. */
@@ -45,6 +46,16 @@ export const useHRBadges = (): HRBadges => {
     filter: `due_date=lt.${today}`,
   });
 
+  // Marketing site enquiries live in their own table; it may not exist until the migration is applied, so don't retry noisily.
+  const { data: marketNew } = useRealtimeQuery({
+    queryKey: ["hr-badge-market-enquiries"],
+    table: "market_enquiries",
+    select: "id",
+    filter: "status=eq.new",
+    retry: false,
+    refetchInterval: 2 * 60 * 1000,
+  });
+
   return useMemo(() => {
     const inq = Array.isArray(newInquiries) ? newInquiries : [];
     const pricing = inq.filter((r: any) => isPricingInquiry({ ...r, message: r.message ?? "" })).length;
@@ -54,7 +65,8 @@ export const useHRBadges = (): HRBadges => {
       leave: Array.isArray(pendingLeave) ? pendingLeave.length : 0,
       applications: Array.isArray(pendingApps) ? pendingApps.length : 0,
       support: Array.isArray(tickets) ? tickets.filter((t: any) => t.status !== "closed" && t.status !== "resolved").length : 0,
+      marketEnquiries: Array.isArray(marketNew) ? marketNew.length : 0,
       overdueTasks: Array.isArray(openTasks) ? openTasks.filter((t: any) => t.status !== "completed" && t.status !== "cancelled").length : 0,
     };
-  }, [newInquiries, pendingLeave, pendingApps, tickets, openTasks]);
+  }, [newInquiries, pendingLeave, pendingApps, tickets, openTasks, marketNew]);
 };

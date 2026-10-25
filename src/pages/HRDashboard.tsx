@@ -35,6 +35,11 @@ import TeamChat from "@/components/staff/TeamChat";
 
 import HRArcade from "@/components/hr/HRArcade";
 import PricingRequests from "@/components/hr/PricingRequests";
+import MarketEnquiries from "@/components/hr/marketing/MarketEnquiries";
+import MarketQuotes from "@/components/hr/marketing/MarketQuotes";
+import MarketWork from "@/components/hr/marketing/MarketWork";
+import MarketBlog from "@/components/hr/marketing/MarketBlog";
+import MarketTestimonials from "@/components/hr/marketing/MarketTestimonials";
 import GeneralInquiries from "@/components/hr/GeneralInquiries";
 import LeaveRequests from "@/components/hr/LeaveRequests";
 import HROverview from "@/components/hr/HROverview";
@@ -65,6 +70,7 @@ export default function HRDashboard() {
     applications: badges.applications,
     support: badges.support,
     tasks: badges.overdueTasks,
+    'market-enquiries': badges.marketEnquiries,
   }), [badges]);
 
   const [currentRoom, setCurrentRoom] = useState('dashboard');
@@ -252,6 +258,11 @@ export default function HRDashboard() {
       case 'arcade': return <HRArcade room="arcade" profile={userProfile} onNavigate={handleRoomChange} />;
       case 'pricing-requests': return <PricingRequests />;
       case 'inquiries': return <GeneralInquiries />;
+      case 'market-enquiries': return <MarketEnquiries />;
+      case 'market-quotes': return <MarketQuotes />;
+      case 'market-work': return <MarketWork />;
+      case 'market-blog': return <MarketBlog />;
+      case 'market-testimonials': return <MarketTestimonials />;
       case 'leave': return <LeaveRequests />;
       case 'tasks': return <TaskManagement />;
       case 'templates': return <TaskTemplateManagement />;

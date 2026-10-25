@@ -3,6 +3,7 @@ import {
   Award, Megaphone, BarChart3, Briefcase, Building2, Calendar, CalendarOff, CheckSquare, Code, CreditCard, DollarSign, FolderKanban, GraduationCap,
   HandCoins, Image as ImageIcon, Inbox, LayoutDashboard, LifeBuoy, MessageCircle, MessageSquare, QrCode, Settings2, ShieldCheck, Sparkles,
   UserPlus, Users, Video, Wallet, Globe, Gift, Trophy, Gamepad2,
+  TrendingUp, MailOpen, Receipt, Clapperboard, FileText, MessageSquareQuote,
 } from "lucide-react";
 
 export interface HRRoom {
@@ -88,6 +89,17 @@ export const HR_SECTIONS: HRSection[] = [
       { id: "qr", name: "QR Manager", description: "Generate and manage QR codes", icon: QrCode, keywords: "codes" },
       { id: "api-integration", name: "API Integrations", description: "Keys and webhooks for connected services", icon: Code, keywords: "webhook keys" },
       { id: "admin", name: "Admin Console", description: "Security checks, audit logs, data exports and system health", icon: ShieldCheck, keywords: "legacy audit export csv security health logs" },
+    ],
+  },
+  {
+    title: "Marketing",
+    icon: TrendingUp,
+    items: [
+      { id: "market-enquiries", name: "Marketing Enquiries", description: "Enquiries from the marketing website, kept separate from the main inquiries", icon: MailOpen, keywords: "marketing leads website contact enquiry market" },
+      { id: "market-quotes", name: "Plan Quotes", description: "Plans and quotes visitors built on the marketing website", icon: Receipt, keywords: "marketing quote plan builder pricing calculator" },
+      { id: "market-work", name: "Our Work", description: "Case studies and projects shown on the marketing website", icon: Clapperboard, keywords: "marketing portfolio case studies projects works" },
+      { id: "market-blog", name: "Blog", description: "Articles published on the marketing website", icon: FileText, keywords: "marketing articles posts seo content" },
+      { id: "market-testimonials", name: "Testimonials", description: "Client feedback shown on the marketing website", icon: MessageSquareQuote, keywords: "marketing reviews quotes feedback" },
     ],
   },
 ];

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { format, formatDistanceToNow, subDays } from "date-fns";
 import {
-  AlertTriangle, ArrowRight, CalendarOff, CheckCircle2, CheckSquare, ClipboardList, Clock, Inbox, LifeBuoy, MessageSquare, UserCheck, UserPlus, Users,
+  AlertTriangle, ArrowRight, CalendarOff, CheckCircle2, CheckSquare, ClipboardList, Clock, Inbox, LifeBuoy, Megaphone, MessageSquare, UserCheck, UserPlus, Users,
 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Badge } from "@/components/ui/badge";
@@ -80,6 +80,7 @@ const HROverview = ({ firstName, onNavigate }: HROverviewProps) => {
   const attention = [
     { id: "pricing-requests", label: "New pricing requests", count: badges.pricing, icon: Inbox, tone: "text-blue-400 bg-blue-500/10" },
     { id: "inquiries", label: "New website messages", count: badges.inquiries, icon: MessageSquare, tone: "text-sky-400 bg-sky-500/10" },
+    { id: "market-enquiries", label: "New marketing-site enquiries", count: badges.marketEnquiries, icon: Megaphone, tone: "text-teal-400 bg-teal-500/10" },
     { id: "leave", label: "Leave requests to review", count: badges.leave, icon: CalendarOff, tone: "text-amber-400 bg-amber-500/10" },
     { id: "applications", label: "Pending team applications", count: badges.applications, icon: UserPlus, tone: "text-purple-400 bg-purple-500/10" },
     { id: "support", label: "Open support tickets", count: badges.support, icon: LifeBuoy, tone: "text-rose-400 bg-rose-500/10" },
