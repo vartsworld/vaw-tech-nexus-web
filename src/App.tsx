@@ -66,6 +66,7 @@ const SalesPricing = lazy(() => import("./components/sales/SalesPricing"));
 const SalesPlans = lazy(() => import("./components/sales/SalesPlans"));
 const SalesOnboarding = lazy(() => import("./components/sales/SalesOnboarding"));
 const MonthlyPlannerPage = lazy(() => import("./pages/MonthlyPlannerPage"));
+const PostScheduler = lazy(() => import("./pages/PostScheduler"));
 const AddClient = lazy(() => import("./pages/AddClient"));
 const Portal = lazy(() => import("./pages/Portal"));
 const ClientFeedback = lazy(() => import("./pages/ClientFeedback"));
@@ -224,6 +225,7 @@ const AppContent = () => {
             <Route path="onboarding" element={<SalesOnboarding />} />
           </Route>
           <Route path="/monthlyplanner" element={<MonthlyPlannerPage />} />
+          <Route path="/postit" element={<PostScheduler />} />
           <Route path="/sales/add-client" element={<AddClient />} />
           <Route path="/portal" element={<Portal />} />
           <Route path="/feedback/:token" element={<ClientFeedback />} />
