@@ -31,7 +31,8 @@ import {
   Swords,
   ClipboardList,
   Globe,
-  QrCode
+  QrCode,
+  CalendarClock
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import TeamChat from "./TeamChat";
@@ -436,6 +437,8 @@ const VirtualOfficeLayout = ({
       items: [
         { id: 'leave', name: 'Leave Application', icon: PlaneTakeoff, path: '/staff/leave' },
         { id: 'tools', name: 'Tools Nexus', icon: Compass, path: '/staff/tools-nexus' },
+        // `href` items open their own page instead of a dashboard room
+        { id: 'postit', name: 'Post Scheduler', icon: CalendarClock, path: '/postit', href: '/postit' },
         { id: 'arcade', name: 'Arcade', icon: Swords, path: '#' },
         { id: 'onboarding', name: 'Onboarding', icon: Compass, path: '/staff/onboarding' },
         { id: 'notes', name: 'Personal Notes', icon: ClipboardList, path: '/staff/notes' },
@@ -457,6 +460,10 @@ const VirtualOfficeLayout = ({
   };
 
   const handleLinkClick = (item: any) => {
+    if (item.href) {
+      navigate(item.href);
+      return;
+    }
     if (item.id === 'notepad') {
       setIsNotepadOpen(true);
       fetchNotepadNotes();
@@ -860,7 +867,12 @@ const VirtualOfficeLayout = ({
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav
         currentRoom={currentRoom as any}
-        onRoomChange={onRoomChange as any}
+        onRoomChange={((room: string) => {
+          // Items with an `href` (e.g. Post Scheduler) open their own page
+          const linked = (customSidebarLinks || sidebarLinks).flatMap((s: any) => s.items).find((i: any) => i.id === room && i.href);
+          if (linked) navigate(linked.href);
+          else onRoomChange?.(room);
+        }) as any}
         onOpenChat={() => setShowMobileChat(true)}
         onOpenCoins={onOpenCoins}
         customSidebarLinks={customSidebarLinks || sidebarLinks}
