@@ -33,7 +33,6 @@ import TeamStatusSidebar from "@/components/staff/TeamStatusSidebar";
 import LeaveApplicationDialog from "@/components/staff/LeaveApplicationDialog";
 import DepartmentStaffList from "@/components/staff/DepartmentStaffList";
 import MyCoins from "@/pages/MyCoins";
-import WidgetManager from "@/components/staff/WidgetManager";
 import { PersonalNotes } from "@/components/staff/PersonalNotes";
 import ClientOnboardingCreator from "@/components/staff/ClientOnboardingCreator";
 import AnnouncementBanner from "@/components/staff/AnnouncementBanner";
@@ -62,10 +61,11 @@ import ColorMatch from "@/components/staff/games/ColorMatch";
 import CodePuzzle from "@/components/staff/games/CodePuzzle";
 import QuickQuiz from "@/components/staff/games/QuickQuiz";
 import SnakeGame from "@/components/staff/games/SnakeGame";
+import Sudoku from "@/components/staff/games/Sudoku";
 import MemoryMatrix from "@/components/staff/games/MemoryMatrix";
 import ArcadeGameHeader from "@/components/staff/ArcadeGameHeader";
 import QRManagement from "@/components/hr/QRManagement";
-import { Swords, Circle, Quote, Code, Globe, Brain, Zap, Palette, QrCode } from "lucide-react";
+import { Swords, Circle, Quote, Code, Globe, Brain, Zap, Palette, QrCode, Grid3x3 } from "lucide-react";
 
 type RoomType =
   | 'home'
@@ -95,6 +95,7 @@ type RoomType =
   | 'quickquiz'
   | 'snake'
   | 'memory'
+  | 'sudoku'
   | 'project-monitor'
   | 'qr';
 
@@ -121,7 +122,7 @@ const paramToRoom = (param: string): RoomType | null => {
     'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
     'chess', 'onboarding', 'notes', 'activity', 'channels', 'inbox', 'emma',
     'chat', 'staff', 'coin', 'game', 'arcade', 'tictactoe', 'pingpong',
-    'codetyper', 'colormatch', 'codepuzzle', 'quickquiz', 'snake', 'memory', 'project-monitor', 'qr'
+    'codetyper', 'colormatch', 'codepuzzle', 'quickquiz', 'snake', 'memory', 'sudoku', 'project-monitor', 'qr'
   ];
   if (validRooms.includes(param as RoomType)) return param as RoomType;
   return null;
@@ -169,26 +170,6 @@ const TeamHeadDashboard = () => {
   const [showCoinPopup, setShowCoinPopup] = useState(false);
   const [showStreakCalendar, setShowStreakCalendar] = useState(false);
   const [showBiometricDialog, setShowBiometricDialog] = useState(false);
-
-  // Widgets state
-  const [widgets, setWidgets] = useState(() => {
-    const saved = localStorage.getItem('th_widgets_v1');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error("Error parsing saved widgets", e);
-      }
-    }
-    return [
-      { id: 'activity', name: 'Activity Log', description: 'Track your daily activities', isVisible: false },
-    ];
-  });
-
-  // Save widgets to localStorage
-  useEffect(() => {
-    localStorage.setItem('th_widgets_v1', JSON.stringify(widgets));
-  }, [widgets]);
 
   const { profile, loading } = useStaffData();
 
@@ -626,20 +607,6 @@ const TeamHeadDashboard = () => {
     );
   }
 
-  const toggleWidget = (widgetId: string) => {
-    setWidgets(prev => prev.map(w =>
-      w.id === widgetId ? { ...w, isVisible: !w.isVisible } : w
-    ));
-  };
-
-  const showAllWidgets = () => {
-    setWidgets(prev => prev.map(w => ({ ...w, isVisible: true })));
-  };
-
-  const hideAllWidgets = () => {
-    setWidgets(prev => prev.map(w => ({ ...w, isVisible: false })));
-  };
-
   const roomComponents = {
     home: (
       <OfficeZenHome 
@@ -654,24 +621,9 @@ const TeamHeadDashboard = () => {
           <TeamHeadWorkspace
             userId={profile?.user_id || ''}
             userProfile={profile}
-            widgetManager={
-              <WidgetManager
-                widgets={widgets}
-                onToggleWidget={toggleWidget}
-                onShowAll={showAllWidgets}
-                onHideAll={hideAllWidgets}
-              />
-            }
           />
         </div>
 
-
-        {/* Row 2: Activity Log */}
-        {widgets.find(w => w.id === 'activity')?.isVisible && (
-          <div className="w-full relative z-10">
-            <ActivityLogPanel userId={profile?.user_id || ''} className="bg-black/40 backdrop-blur-lg border-white/10 h-[600px]" />
-          </div>
-        )}
       </div>
     ),
     game: (
@@ -862,6 +814,17 @@ const TeamHeadDashboard = () => {
         <MemoryMatrix userId={profile?.user_id || ''} onClose={() => handleRoomChange('arcade')} />
       </div>
     ),
+    sudoku: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <ArcadeGameHeader
+          title="Sudoku"
+          description="Fill the grid so every row, column and box has 1 to 9"
+          icon={Grid3x3}
+          onBack={() => handleRoomChange('arcade')}
+        />
+        <Sudoku userId={profile.user_id} onClose={() => handleRoomChange('arcade')} />
+      </div>
+    ),
     onboarding: (
       <div className="space-y-6 max-w-4xl mx-auto py-2">
         <div className="flex flex-col space-y-1">
@@ -880,7 +843,7 @@ const TeamHeadDashboard = () => {
       </div>
     ),
     notes: (
-      <div className="mx-auto max-w-4xl py-2">
+      <div className="mx-auto max-w-6xl py-2">
         <PersonalNotes userId={profile?.user_id || ''} />
       </div>
     ),
@@ -907,7 +870,7 @@ const TeamHeadDashboard = () => {
       </div>
     ),
     emma: (
-      <div className="mx-auto max-w-4xl py-2">
+      <div className="mx-auto max-w-6xl py-2">
         <EmmaAssistant role="team_head" className="h-[calc(100dvh-7rem)] min-h-[480px]" />
       </div>
     ),

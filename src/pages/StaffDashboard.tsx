@@ -61,9 +61,10 @@ import ColorMatch from "@/components/staff/games/ColorMatch";
 import CodePuzzle from "@/components/staff/games/CodePuzzle";
 import QuickQuiz from "@/components/staff/games/QuickQuiz";
 import SnakeGame from "@/components/staff/games/SnakeGame";
+import Sudoku from "@/components/staff/games/Sudoku";
 import MemoryMatrix from "@/components/staff/games/MemoryMatrix";
 import ArcadeGameHeader from "@/components/staff/ArcadeGameHeader";
-import { Swords, Circle, Quote, Code, Globe, Brain, Zap, Palette } from "lucide-react";
+import { Swords, Circle, Quote, Code, Globe, Brain, Zap, Palette, Grid3x3 } from "lucide-react";
 
 type RoomType =
   | 'home'
@@ -93,6 +94,7 @@ type RoomType =
   | 'quickquiz'
   | 'snake'
   | 'memory'
+  | 'sudoku'
   | 'project-monitor';
 
 const EMOJI_OPTIONS = [
@@ -118,7 +120,7 @@ const paramToRoom = (param: string): RoomType | null => {
     'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
     'chess', 'onboarding', 'notes', 'activity', 'channels', 'inbox', 'emma',
     'chat', 'staff', 'coin', 'game', 'arcade', 'tictactoe', 'pingpong',
-    'codetyper', 'colormatch', 'codepuzzle', 'quickquiz', 'snake', 'memory', 'project-monitor'
+    'codetyper', 'colormatch', 'codepuzzle', 'quickquiz', 'snake', 'memory', 'sudoku', 'project-monitor'
   ];
   if (validRooms.includes(param as RoomType)) return param as RoomType;
   return null;
@@ -152,7 +154,6 @@ const StaffDashboard = () => {
 
   const [currentRoom, setCurrentRoom] = useState<RoomType>(getInitialRoom);
   const [showMobileHome, setShowMobileHome] = useState(true);
-  const [workspaceControls, setWorkspaceControls] = useState<React.ReactNode>(null);
   const [showAttendanceCheck, setShowAttendanceCheck] = useState(false);
   const [showMoodCheck, setShowMoodCheck] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -771,6 +772,17 @@ const StaffDashboard = () => {
         <MemoryMatrix userId={profile.user_id} onClose={() => handleRoomChange('arcade')} />
       </div>
     ),
+    sudoku: (
+      <div className="space-y-6 max-w-5xl mx-auto py-2">
+        <ArcadeGameHeader
+          title="Sudoku"
+          description="Fill the grid so every row, column and box has 1 to 9"
+          icon={Grid3x3}
+          onBack={() => handleRoomChange('arcade')}
+        />
+        <Sudoku userId={profile.user_id} onClose={() => handleRoomChange('arcade')} />
+      </div>
+    ),
     onboarding: (
       <div className="space-y-6 max-w-4xl mx-auto py-2">
         <div className="flex flex-col space-y-1">
@@ -789,7 +801,7 @@ const StaffDashboard = () => {
       </div>
     ),
     notes: (
-      <div className="mx-auto max-w-4xl py-2">
+      <div className="mx-auto max-w-6xl py-2">
         <PersonalNotes userId={profile?.user_id || ''} />
       </div>
     ),
@@ -833,7 +845,7 @@ const StaffDashboard = () => {
       </div>
     ),
     emma: (
-      <div className="mx-auto max-w-4xl py-2">
+      <div className="mx-auto max-w-6xl py-2">
         <EmmaAssistant role={['team_head','lead','manager','admin','super_admin'].includes(profile?.role as string) ? 'team_head' : 'staff'} className="h-[calc(100dvh-7rem)] min-h-[480px]" />
       </div>
     ),

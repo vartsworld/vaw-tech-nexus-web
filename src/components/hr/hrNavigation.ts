@@ -109,7 +109,7 @@ export const ALL_ROOMS: (HRRoom & { section: string })[] = HR_SECTIONS.flatMap((
 const ROOM_ALIASES: Record<string, string> = { banners: "announcements", notifications: "announcements", legacy: "admin" };
 
 /** Individual games live under the Arcade page; they are not sidebar items. */
-export const GAME_ROOM_IDS = ["chess", "tictactoe", "pingpong", "codetyper", "colormatch", "codepuzzle", "quickquiz", "snake", "memory"];
+export const GAME_ROOM_IDS = ["chess", "tictactoe", "pingpong", "codetyper", "colormatch", "codepuzzle", "quickquiz", "snake", "memory", "sudoku"];
 
 export const findRoom = (rawId: string) => {
   const id = ROOM_ALIASES[rawId] ?? rawId;

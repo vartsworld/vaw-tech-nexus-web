@@ -1,10 +1,31 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowUpRight, Swords, Circle, Quote, Gamepad2, Code, Globe, Zap, Sparkles, Palette } from "lucide-react";
+import { ArrowUpRight, Swords, Circle, Quote, Gamepad2, Code, Globe, Zap, Sparkles, Palette, Grid3x3, Anchor } from "lucide-react";
 
-const ArcadeView = () => {
+export const SHIP_MOORING_URL = "https://ship-mooring.vercel.app";
+
+interface ArcadeViewProps {
+  /** Open a built-in game. Without it the card navigates to `?<game id>` (staff and team-head dashboards). */
+  onSelect?: (gameId: string) => void;
+}
+
+interface ArcadeGame {
+  id: string;
+  title: string;
+  description: string;
+  icon: any;
+  color: string;
+  iconColor: string;
+  path: string;
+  available: boolean;
+  /** Opens in a new tab instead of inside the dashboard */
+  external?: string;
+  credit?: string;
+}
+
+const ArcadeView = ({ onSelect }: ArcadeViewProps = {}) => {
   const navigate = useNavigate();
 
-  const games = [
+  const games: ArcadeGame[] = [
     {
       id: "chess",
       title: "Chess Arena",
@@ -86,6 +107,28 @@ const ArcadeView = () => {
       available: true
     },
     {
+      id: "sudoku",
+      title: "Sudoku",
+      description: "Easy, medium and hard puzzles with notes and hints",
+      icon: Grid3x3,
+      color: "bg-gradient-to-br from-sky-950 to-indigo-900 text-white border border-sky-500/30",
+      iconColor: "text-sky-400",
+      path: "?sudoku",
+      available: true
+    },
+    {
+      id: "shipmooring",
+      title: "Ship Mooring",
+      description: "Steer the ship into the berth. Opens in a new tab",
+      icon: Anchor,
+      color: "bg-gradient-to-br from-teal-950 to-cyan-900 text-white border border-teal-500/30",
+      iconColor: "text-teal-300",
+      path: "",
+      available: true,
+      external: SHIP_MOORING_URL,
+      credit: "Made by @Abinbn"
+    },
+    {
       id: "pingpong",
       title: "Ping Pong",
       description: "Fast-paced retro arcade paddle pong vs AI",
@@ -97,13 +140,26 @@ const ArcadeView = () => {
     }
   ];
 
+  const open = (game: ArcadeGame) => {
+    if (game.external) {
+      window.open(game.external, "_blank", "noopener,noreferrer");
+    } else if (onSelect) {
+      onSelect(game.id);
+    } else {
+      navigate(game.path);
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 p-4 lg:p-6 bg-black/40 border border-white/10 rounded-[2.5rem] min-h-[500px] backdrop-blur-md">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-6 p-3 sm:p-4 lg:p-6 bg-black/40 border border-white/10 rounded-[2.5rem] min-h-[500px] backdrop-blur-md">
       {games.map((game) => (
         <div
           key={game.id}
-          onClick={() => navigate(game.path)}
-          className={`relative overflow-hidden rounded-[2rem] p-7 min-h-[200px] flex flex-col justify-between transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl group border ${game.color}`}
+          role="button"
+          tabIndex={0}
+          onClick={() => open(game)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(game); } }}
+          className={`relative overflow-hidden rounded-[2rem] p-5 sm:p-7 min-h-[180px] sm:min-h-[200px] flex flex-col justify-between transition-all duration-300 hover:scale-[1.02] cursor-pointer shadow-xl group border ${game.color}`}
         >
           {/* Content Top Left */}
           <div className="z-10 max-w-[75%] space-y-1">
@@ -116,13 +172,14 @@ const ArcadeView = () => {
           </div>
 
           {/* Action Button Bottom Left */}
-          <div className="z-10 mt-6 flex items-center gap-3">
+          <div className="z-10 mt-6 flex flex-wrap items-center gap-x-3 gap-y-1">
             <div className="w-9 h-9 rounded-full flex items-center justify-center bg-black/60 border border-white/20 text-white group-hover:bg-white group-hover:text-black transition-all shadow-md">
               <ArrowUpRight className="w-4 h-4 group-hover:rotate-45 transition-transform" />
             </div>
             <span className="text-xs font-bold uppercase tracking-wider text-white/90">
-              Play Now
+              {game.external ? "Open in new tab" : "Play Now"}
             </span>
+            {game.credit && <span className="text-[10px] font-medium text-white/60">{game.credit}</span>}
           </div>
 
           {/* Large Icon Right */}
