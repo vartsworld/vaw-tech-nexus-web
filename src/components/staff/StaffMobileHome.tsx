@@ -71,7 +71,7 @@ const getIsoDateKey = (isoStr: string | null | undefined) => {
 // Reusable Sub-views
 import LeaveView from "@/components/staff/LeaveView";
 import TasksManager from "./TasksManager";
-import { QuickNotes } from "@/components/staff/QuickNotes";
+import { PersonalNotes } from "@/components/staff/PersonalNotes";
 import MiniChess from "@/components/staff/MiniChess";
 import MeetingRoom from "./MeetingRoom";
 import ClientOnboardingCreator from "./ClientOnboardingCreator";
@@ -1422,7 +1422,7 @@ const StaffMobileHome = ({
 
                   {/* Render active tool */}
                   {activeTool === "leave" && <LeaveView profile={profile} />}
-                  {activeTool === "notes" && <QuickNotes userId={profile?.user_id} />}
+                  {activeTool === "notes" && <PersonalNotes compact userId={profile?.user_id} />}
                   {activeTool === "arcade" && (
                     <div className="bg-black/40 backdrop-blur-2xl p-4 rounded-3xl border border-white/10 shadow-2xl">
                       <MiniChess userId={profile?.user_id} userProfile={profile} />

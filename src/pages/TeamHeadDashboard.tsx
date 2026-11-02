@@ -34,7 +34,7 @@ import LeaveApplicationDialog from "@/components/staff/LeaveApplicationDialog";
 import DepartmentStaffList from "@/components/staff/DepartmentStaffList";
 import MyCoins from "@/pages/MyCoins";
 import WidgetManager from "@/components/staff/WidgetManager";
-import { QuickNotes } from "@/components/staff/QuickNotes";
+import { PersonalNotes } from "@/components/staff/PersonalNotes";
 import ClientOnboardingCreator from "@/components/staff/ClientOnboardingCreator";
 import AnnouncementBanner from "@/components/staff/AnnouncementBanner";
 import { useStaffData } from "@/hooks/useStaffData";
@@ -81,6 +81,7 @@ type RoomType =
   | 'activity'
   | 'channels'
   | 'inbox'
+  | 'emma'
   | 'chat'
   | 'staff'
   | 'coin'
@@ -118,7 +119,7 @@ const paramToRoom = (param: string): RoomType | null => {
 
   const validRooms: RoomType[] = [
     'home', 'workspace', 'meeting', 'breakroom', 'planner', 'leave', 'tools',
-    'chess', 'onboarding', 'notes', 'activity', 'channels', 'inbox',
+    'chess', 'onboarding', 'notes', 'activity', 'channels', 'inbox', 'emma',
     'chat', 'staff', 'coin', 'game', 'arcade', 'tictactoe', 'pingpong',
     'codetyper', 'colormatch', 'codepuzzle', 'quickquiz', 'snake', 'memory', 'project-monitor', 'qr'
   ];
@@ -168,7 +169,6 @@ const TeamHeadDashboard = () => {
   const [showCoinPopup, setShowCoinPopup] = useState(false);
   const [showStreakCalendar, setShowStreakCalendar] = useState(false);
   const [showBiometricDialog, setShowBiometricDialog] = useState(false);
-  const [showEmma, setShowEmma] = useState(false);
 
   // Widgets state
   const [widgets, setWidgets] = useState(() => {
@@ -433,7 +433,8 @@ const TeamHeadDashboard = () => {
       notes: "Notes",
       activity: "Activity",
       channels: "Channels",
-      inbox: "Inbox"
+      inbox: "Inbox",
+      emma: "EMMA"
     };
 
     const roomTitle = roomTitleMap[currentRoom] || currentRoom.charAt(0).toUpperCase() + currentRoom.slice(1);
@@ -879,20 +880,8 @@ const TeamHeadDashboard = () => {
       </div>
     ),
     notes: (
-      <div className="space-y-6 max-w-4xl mx-auto py-2">
-        <div className="flex flex-col space-y-1">
-          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-            <StickyNote className="w-8 h-8 text-yellow-400" />
-            Personal Notes
-          </h1>
-          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
-            Organize thoughts, design parameters, and daily items securely
-          </p>
-        </div>
-
-        <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[500px] backdrop-blur-md">
-          <QuickNotes userId={profile?.user_id || ''} />
-        </div>
+      <div className="mx-auto max-w-4xl py-2">
+        <PersonalNotes userId={profile?.user_id || ''} />
       </div>
     ),
     activity: (
@@ -915,6 +904,11 @@ const TeamHeadDashboard = () => {
     channels: (
       <div className="mx-auto h-[calc(100dvh-7rem)] min-h-[480px] max-w-7xl">
         <TeamChat userId={profile?.user_id || ''} userProfile={profile} />
+      </div>
+    ),
+    emma: (
+      <div className="mx-auto max-w-4xl py-2">
+        <EmmaAssistant role="team_head" className="h-[calc(100dvh-7rem)] min-h-[480px]" />
       </div>
     ),
     inbox: (
@@ -978,15 +972,6 @@ const TeamHeadDashboard = () => {
                                   <User className="inline w-4 h-4 mr-1.5 text-blue-400" />
                                   {profile?.full_name || profile?.username || 'Team Head'}
                                 </p>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                                  className="h-7 w-7 ml-2 rounded-full bg-white/5 hover:bg-white/20 text-white/70 hover:text-white border border-white/10"
-                                  title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                                >
-                                  <ChevronLeft className={`w-4 h-4 transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''}`} />
-                                </Button>
                               </div>
                               {departmentName && (
                                 <p className="text-blue-300/80 text-xs font-semibold mt-0.5">{departmentName} Department</p>
@@ -1320,21 +1305,6 @@ const TeamHeadDashboard = () => {
           userId={profile.user_id}
         />
       )}
-      {/* EMMA AI floating button + dialog */}
-      <Button
-        onClick={() => setShowEmma(true)}
-        className="fixed bottom-6 right-6 z-40 h-12 w-12 rounded-full border border-white/15 bg-slate-800 shadow-xl hover:bg-slate-700 hidden md:flex"
-        size="icon"
-        title="Ask EMMA"
-      >
-        <Sparkles className="w-5 h-5 text-sky-300" />
-      </Button>
-      <Dialog open={showEmma} onOpenChange={setShowEmma}>
-        <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
-          <EmmaAssistant role="team_head" className="h-[min(680px,85dvh)]" />
-        </DialogContent>
-      </Dialog>
-
       <PWAInstallPrompt />
     </div>
   );

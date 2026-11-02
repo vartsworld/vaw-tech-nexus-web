@@ -72,7 +72,7 @@ const getIsoDateKey = (isoStr: string | null | undefined) => {
 import { TaskDetailDialog } from "./TaskDetailDialog";
 import LeaveView from "@/components/staff/LeaveView";
 import TeamHeadWorkspace from "./TeamHeadWorkspace";
-import { QuickNotes } from "@/components/staff/QuickNotes";
+import { PersonalNotes } from "@/components/staff/PersonalNotes";
 import MiniChess from "@/components/staff/MiniChess";
 import MeetingRoom from "./MeetingRoom";
 import ClientOnboardingCreator from "./ClientOnboardingCreator";
@@ -1041,7 +1041,7 @@ const TeamHeadMobileHome = ({
           {/* Render active tool */}
           {activeTool === "projects" && <SubProjectsView />}
           {activeTool === "leave" && <LeaveView profile={profile} />}
-          {activeTool === "notes" && <QuickNotes userId={profile?.user_id} />}
+          {activeTool === "notes" && <PersonalNotes compact userId={profile?.user_id} />}
           {activeTool === "arcade" && (
             <div className="bg-black/40 backdrop-blur-2xl p-4 rounded-3xl border border-white/10 shadow-2xl">
               <MiniChess userId={profile?.user_id} userProfile={profile} />
