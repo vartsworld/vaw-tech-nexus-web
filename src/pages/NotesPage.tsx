@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { useStaffData } from "@/hooks/useStaffData";
 import { supabase } from "@/integrations/supabase/client";
 import VirtualOfficeLayout from "@/components/staff/VirtualOfficeLayout";
-import { QuickNotes } from "@/components/staff/QuickNotes";
-import { ClipboardList, Loader2 } from "lucide-react";
+import { PersonalNotes } from "@/components/staff/PersonalNotes";
+import { Loader2 } from "lucide-react";
 
 export default function NotesPage() {
   const { profile, loading } = useStaffData();
@@ -62,20 +62,8 @@ export default function NotesPage() {
       userId={profile.user_id}
       userProfile={profile}
     >
-      <div className="space-y-6 max-w-4xl mx-auto py-2">
-        <div className="flex flex-col space-y-1">
-          <h1 className="text-3xl font-black uppercase tracking-tight text-white flex items-center gap-3">
-            <ClipboardList className="w-8 h-8 text-yellow-400" />
-            Personal Notes
-          </h1>
-          <p className="text-xs text-white/40 uppercase tracking-widest font-bold">
-            Organize thoughts, design parameters, and daily items securely
-          </p>
-        </div>
-
-        <div className="bg-black/30 border border-white/10 rounded-[2.5rem] p-4 lg:p-6 min-h-[500px]">
-          <QuickNotes userId={profile.user_id} />
-        </div>
+      <div className="mx-auto max-w-4xl py-2">
+        <PersonalNotes userId={profile.user_id} />
       </div>
     </VirtualOfficeLayout>
   );

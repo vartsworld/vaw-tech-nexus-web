@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Monitor,
@@ -32,7 +33,11 @@ import {
   ClipboardList,
   Globe,
   QrCode,
-  CalendarClock
+  CalendarClock,
+  Sparkles,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ClipboardPaste
 } from "lucide-react";
 import TeamStatusSidebar from "./TeamStatusSidebar";
 import TeamChat from "./TeamChat";
@@ -112,6 +117,13 @@ const VirtualOfficeLayout = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSidebarCollapsed]);
 
+  // Lets pages (e.g. Personal Notes) open the quick notepad without prop drilling
+  useEffect(() => {
+    const open = () => { setIsNotepadOpen(true); };
+    window.addEventListener('vaw:open-quick-notepad', open);
+    return () => window.removeEventListener('vaw:open-quick-notepad', open);
+  }, []);
+
   const [openSections, setOpenSections] = useState<string[]>(['Folders', 'Space']);
 
   useEffect(() => {
@@ -154,7 +166,7 @@ const VirtualOfficeLayout = ({
       if (!error && data) {
         setSavedNotes(data);
       }
-    } catch {}
+    } catch { /* the notepad just shows no recent notes */ }
   };
 
   const handleSaveNotepad = async () => {
@@ -172,6 +184,7 @@ const VirtualOfficeLayout = ({
       if (!error && data) {
         setSavedNotes(prev => [data, ...prev]);
         setNotepadContent("");
+        window.dispatchEvent(new Event('vaw:notes-changed'));
         toast.success("Note saved successfully!");
       }
     } catch {
@@ -429,6 +442,7 @@ const VirtualOfficeLayout = ({
         { id: 'workspace' as const, name: 'Dashboard', icon: LayoutDashboard, path: '/staff?dashboard' },
         { id: 'planner' as const, name: 'Calendar', icon: Calendar, path: '/staff?calendar' },
         { id: 'inbox', name: 'Inbox', icon: Inbox, path: '/staff?inbox' },
+        { id: 'emma', name: 'EMMA', icon: Sparkles, path: '/staff?emma' },
       ]
     },
     {
@@ -443,7 +457,6 @@ const VirtualOfficeLayout = ({
         { id: 'onboarding', name: 'Onboarding', icon: Compass, path: '/staff/onboarding' },
         { id: 'notes', name: 'Personal Notes', icon: ClipboardList, path: '/staff/notes' },
         { id: 'meeting' as const, name: 'Meeting Room', icon: Users, path: '#' },
-        { id: 'notepad', name: 'Quick Notepad', icon: ClipboardList, path: '#' },
         { id: 'activity', name: 'Activity', icon: Activity, path: '/staff/activity' },
         { id: 'project-monitor', name: 'Project Monitor', icon: Globe, path: '/staff/project-monitor' },
         ...(userProfile?.role === 'team_head' ? [{ id: 'qr', name: 'QR Manager', icon: QrCode, path: '#' }] : []),
@@ -549,28 +562,33 @@ const VirtualOfficeLayout = ({
           {/* Transparent masking color and blur overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/55 to-black/70 backdrop-blur-xl z-0 pointer-events-none" />
           <div className="relative z-10 flex flex-col h-full w-full min-h-0">
-          {/* Top Header Logo (VAW Technologies) – click to collapse / expand (Ctrl+Shift+B) */}
-          <button
-            type="button"
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            aria-label={isSidebarCollapsed ? "Expand sidebar (Ctrl+Shift+B)" : "Collapse sidebar (Ctrl+Shift+B)"}
-            aria-expanded={!isSidebarCollapsed}
-            title={isSidebarCollapsed ? "Expand sidebar (Ctrl+Shift+B)" : "Collapse sidebar (Ctrl+Shift+B)"}
-            className={cn(
-              "group/logo shrink-0 flex items-center p-5 text-left transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/30",
-              isSidebarCollapsed ? "justify-center" : "justify-between border-b border-white/10"
-            )}
-          >
-            <span className="flex items-center gap-3 min-w-0">
-              <span className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 shadow-lg">
-                <img src="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png" alt="VAW Logo" className="w-full h-full object-contain" />
-              </span>
-              {!isSidebarCollapsed && <span className="font-black text-white tracking-tight text-sm truncate">VAW Technologies</span>}
-            </span>
-            {!isSidebarCollapsed && (
-              <ChevronLeft className="w-5 h-5 text-white/40 group-hover/logo:text-white transition-colors shrink-0" />
-            )}
-          </button>
+          {/* Logo: turns into the collapse / expand button on hover (Ctrl+Shift+B) */}
+          <div className={cn("shrink-0 flex items-center", isSidebarCollapsed ? "justify-center p-5" : "gap-3 border-b border-white/10 p-5")}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                  aria-label={isSidebarCollapsed ? "Expand sidebar (Ctrl+Shift+B)" : "Collapse sidebar (Ctrl+Shift+B)"}
+                  aria-expanded={!isSidebarCollapsed}
+                  className="group/logo relative h-9 w-9 shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                >
+                  <img
+                    src="/lovable-uploads/0d3e4545-c80e-401b-82f1-3319db5155b4.png"
+                    alt="VAW Logo"
+                    className="absolute inset-0 h-full w-full rounded-lg object-contain transition-opacity duration-150 group-hover/logo:opacity-0 group-focus-visible/logo:opacity-0"
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-white/10 text-white opacity-0 ring-1 ring-white/20 transition-opacity duration-150 group-hover/logo:opacity-100 group-focus-visible/logo:opacity-100">
+                    {isSidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+                  </span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="border-white/10 bg-zinc-950 text-xs text-white">
+                {isSidebarCollapsed ? "Expand" : "Collapse"} <kbd className="ml-1 rounded bg-white/10 px-1.5 py-0.5 font-sans text-[10px] text-white/70">Ctrl + Shift + B</kbd>
+              </TooltipContent>
+            </Tooltip>
+            {!isSidebarCollapsed && <span className="min-w-0 truncate text-sm font-black tracking-tight text-white">VAW Technologies</span>}
+          </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 custom-scrollbar" tabIndex={-1}>
             <div className="space-y-6 py-4">
@@ -596,9 +614,11 @@ const VirtualOfficeLayout = ({
                         const Icon = item.icon;
                         const isActive = currentRoom === item.id || location.pathname === item.path || ((item.id === 'calendar' || item.id === 'planner') && (currentRoom === 'calendar' || currentRoom === 'planner'));
 
+                        const isNotes = item.id === 'notes';
+
                         return (
+                          <div key={item.id} className={cn(isNotes && !isSidebarCollapsed && "flex items-center gap-1.5", isNotes && isSidebarCollapsed && "space-y-1")}>
                           <Button
-                            key={item.id}
                             variant="ghost"
                             className={cn(
                               "w-full transition-all duration-200 group/btn relative",
@@ -644,6 +664,29 @@ const VirtualOfficeLayout = ({
                               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-500 rounded-r-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
                             )}
                           </Button>
+                          {isNotes && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Open Quick Notepad"
+                                  aria-pressed={isNotepadOpen}
+                                  onClick={() => { setIsNotepadOpen(open => !open); fetchNotepadNotes(); }}
+                                  className={cn(
+                                    "shrink-0 rounded-lg border border-white/10 hover:bg-white/10 hover:text-white",
+                                    isSidebarCollapsed ? "h-9 w-full" : "h-10 w-10",
+                                    isNotepadOpen ? "border-amber-400/40 bg-amber-400/15 text-amber-300" : "text-white/60"
+                                  )}
+                                >
+                                  <ClipboardPaste className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="border-white/10 bg-zinc-950 text-xs text-white">Quick Notepad</TooltipContent>
+                            </Tooltip>
+                          )}
+                          </div>
                         );
                       })}
                     </div>

@@ -598,7 +598,7 @@ const BreakRoom = ({
           100% { background-position: 200% 50%; }
         }
         .custom-scrollbar::-webkit-scrollbar {
-          width: 5px;
+          width: 2px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: rgba(255, 255, 255, 0.1);

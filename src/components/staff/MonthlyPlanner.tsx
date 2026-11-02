@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Scheduler } from 'calendarkit-pro';
-import type { CalendarEvent, ViewType } from 'calendarkit-pro';
+import type { CalendarEvent } from 'calendarkit-pro';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,8 @@ import {
   subMonths,
   startOfMonth,
   endOfMonth,
+  startOfWeek,
+  endOfWeek,
   isSameDay,
   parseISO
 } from "date-fns";
@@ -61,6 +63,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { useSchedulerSlots } from "./calendar/useSchedulerSlots";
+import { summarize } from "./calendar/summary";
+import { CalendarSummary } from "./calendar/CalendarSummary";
 
 interface MonthlyPlan {
   id: string;
@@ -157,7 +163,19 @@ const CalendarFormBridge = ({ isOpen, event, initialDate, onClose, onCreate, onO
 
 const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyPlannerProps) => {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
-  const [view, setView] = useState<ViewType>('month');
+  // Month view only: the day dialog replaces week/day/agenda
+  const view = 'month' as const;
+  const hideKey = `vaw_calendar_hide_completed_${userId}`;
+  const [hideCompleted, setHideCompleted] = useState<boolean>(() => {
+    try { return localStorage.getItem(`vaw_calendar_hide_completed_${userId}`) === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { setHideCompleted(localStorage.getItem(hideKey) === '1'); } catch { /* storage blocked */ }
+  }, [hideKey]);
+  const toggleHideCompleted = (next: boolean) => {
+    setHideCompleted(next);
+    try { localStorage.setItem(hideKey, next ? '1' : '0'); } catch { /* storage blocked */ }
+  };
   const [plans, setPlans] = useState<MonthlyPlan[]>([]);
   const [clients, setClients] = useState<any[]>([]);
   const [staffMembers, setStaffMembers] = useState<any[]>([]);
@@ -214,13 +232,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     }
   };
 
-  const handleViewChange = (newView: ViewType) => {
-    // If currently in 'month' view and an automated date cell click tries to switch view to 'day' within 150ms, keep it in 'month' view!
-    if (view === 'month' && newView === 'day' && Date.now() - lastDateClickRef.current < 150) {
-      return;
-    }
-    setView(newView);
-  };
+  // The library's mini calendar asks for the day view when a date is clicked. We only have the month grid.
+  const handleViewChange = () => {};
 
   const [newPlan, setNewPlan] = useState({
     title: '',
@@ -273,33 +286,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#3b82f6');
   const containerRef = React.useRef<HTMLDivElement>(null);
-  const [portalTarget, setPortalTarget] = useState<Element | null>(null);
-
-  useEffect(() => {
-    const updateTarget = () => {
-      if (containerRef.current) {
-        // Find the view switcher container inside calendarkit-pro header (usually contains view buttons month|week|day|agenda)
-        const viewButtons = containerRef.current.querySelectorAll('button');
-        let targetEl: Element | null = null;
-        viewButtons.forEach(btn => {
-          const txt = btn.textContent?.toLowerCase() || '';
-          if (txt.includes('month') || txt.includes('week') || txt.includes('day') || txt.includes('agenda')) {
-            targetEl = btn.parentElement;
-          }
-        });
-        if (targetEl) {
-          setPortalTarget(targetEl);
-        }
-      }
-    };
-
-    const timer = setTimeout(updateTarget, 100);
-    const interval = setInterval(updateTarget, 1000);
-    return () => {
-      clearTimeout(timer);
-      clearInterval(interval);
-    };
-  }, []);
+  const { headerSlot, sidebarSlot } = useSchedulerSlots(containerRef);
 
   const isTeamHeadUserId = (uId: string | null | undefined): boolean => {
     if (!uId) return false;
@@ -397,31 +384,46 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     localStorage.setItem('vaw_planner_custom_colors', JSON.stringify(updated));
   };
 
+  // Latest loaders for the realtime handlers (they must not capture an old month)
+  const fetchPlansRef = React.useRef<() => void>(() => {});
+  const fetchTasksRef = React.useRef<() => void>(() => {});
+
+  // Reference data and live updates: once, not on every month change
   useEffect(() => {
-    fetchPlans();
     fetchClients();
     fetchStaffMembers();
-    fetchTasksAndSubtasks();
     fetchDepartments();
 
-    // Subscribe to realtime updates for tasks, subtasks, and plans
+    // A bulk change fires one event per row, so coalesce them into a single reload
+    const timers: Record<string, ReturnType<typeof setTimeout>> = {};
+    const reload = (key: 'tasks' | 'plans') => () => {
+      clearTimeout(timers[key]);
+      timers[key] = setTimeout(() => (key === 'tasks' ? fetchTasksRef : fetchPlansRef).current(), 400);
+    };
+
     const channel = supabase
       .channel('monthly-planner-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_tasks' }, () => {
-        fetchTasksAndSubtasks();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_subtasks' }, () => {
-        fetchTasksAndSubtasks();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_plans' }, () => {
-        fetchPlans();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_tasks' }, reload('tasks'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff_subtasks' }, reload('tasks'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monthly_plans' }, reload('plans'))
       .subscribe();
 
     return () => {
+      Object.values(timers).forEach(clearTimeout);
       supabase.removeChannel(channel);
     };
-  }, [currentMonth, filterClientId]);
+  }, []);
+
+  // Tasks are not month-scoped, so they load once (and again when the client scope changes)
+  useEffect(() => {
+    fetchTasksAndSubtasks();
+  }, [filterClientId]);
+
+  // Plans are loaded for the visible grid (including the greyed days of the neighbouring months)
+  const monthKey = format(currentMonth, 'yyyy-MM');
+  useEffect(() => {
+    fetchPlans();
+  }, [monthKey, filterClientId]);
 
   const fetchStaffMembers = async () => {
     const { data } = await supabase
@@ -627,6 +629,8 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     }
   };
 
+  fetchTasksRef.current = fetchTasksAndSubtasks;
+
   const handleToggleTaskCompletion = async (taskId: string, currentStatus: string) => {
     try {
       const isCompleted = currentStatus === 'completed';
@@ -741,11 +745,14 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     }
   };
 
+  const plansRequestRef = React.useRef(0);
   const fetchPlans = async () => {
+    const requestId = ++plansRequestRef.current;
     setIsLoading(true);
     try {
-      const start = startOfMonth(currentMonth);
-      const end = endOfMonth(currentMonth);
+      // The month grid shows the trailing/leading days of the neighbouring months too
+      const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 });
+      const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 0 });
 
       let query = supabase
         .from('monthly_plans')
@@ -758,6 +765,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
       }
 
       const { data, error } = await query;
+      if (requestId !== plansRequestRef.current) return; // a newer month was requested meanwhile
 
       if (error) throw error;
       setPlans((data || []).map((item: any) => ({
@@ -772,9 +780,10 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      if (requestId === plansRequestRef.current) setIsLoading(false);
     }
   };
+  fetchPlansRef.current = fetchPlans;
 
   const fetchClients = async () => {
     const { data } = await supabase.from('clients').select('id, company_name');
@@ -811,7 +820,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         ...(data as any),
         assigned_staff: Array.isArray(data.assigned_staff) ? (data.assigned_staff as string[]) : []
       };
-      setPlans([...plans, formattedPlan]);
+      setPlans(prev => [...prev, formattedPlan]);
       setIsAddDialogOpen(false);
       resetNewPlan();
     } catch (error) {
@@ -852,7 +861,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         ...(data as any),
         assigned_staff: Array.isArray(data.assigned_staff) ? (data.assigned_staff as string[]) : []
       };
-      setPlans(plans.map(p => p.id === selectedPlan.id ? formattedPlan : p));
+      setPlans(prev => prev.map(p => p.id === selectedPlan.id ? formattedPlan : p));
       setIsAddDialogOpen(false);
       setSelectedPlan(null);
       resetNewPlan();
@@ -906,7 +915,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         description: "Plan deleted successfully",
       });
 
-      setPlans(plans.filter(p => p.id !== id));
+      setPlans(prev => prev.filter(p => p.id !== id));
     } catch (error) {
       console.error('Error deleting plan:', error);
       toast({
@@ -930,7 +939,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
   // Memoize filtered lists based on active filters
   // Memoize filtered lists based on active client & department filters
-  const { filteredPlans, filteredTasks, filteredSubtasks } = useMemo(() => {
+  const { scopedPlans, scopedTasks, scopedSubtasks } = useMemo(() => {
     let pList = plans;
     let tList = tasks;
     let sList = subtasks;
@@ -970,11 +979,23 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     }
 
     return {
-      filteredPlans: pList,
-      filteredTasks: tList,
-      filteredSubtasks: sList
+      scopedPlans: pList,
+      scopedTasks: tList,
+      scopedSubtasks: sList
     };
   }, [plans, tasks, subtasks, selectedClientIds, selectedDepartmentIds]);
+
+  // "Hide Completed" removes finished work from the grid and the day dialog (the sidebar totals still count it)
+  const { filteredPlans, filteredTasks, filteredSubtasks } = useMemo(() => {
+    if (!hideCompleted) {
+      return { filteredPlans: scopedPlans, filteredTasks: scopedTasks, filteredSubtasks: scopedSubtasks };
+    }
+    return {
+      filteredPlans: scopedPlans.filter(p => !p.is_completed),
+      filteredTasks: scopedTasks.filter(t => t.status !== 'completed'),
+      filteredSubtasks: scopedSubtasks.filter(st => st.status !== 'completed'),
+    };
+  }, [hideCompleted, scopedPlans, scopedTasks, scopedSubtasks]);
 
   // Precompute grouped items by local date key YYYY-MM-DD for day lookup
   const { plansByDate, tasksByDate, subtasksByDate } = useMemo(() => {
@@ -1021,7 +1042,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   }, [filteredPlans, filteredTasks, filteredSubtasks, tasks]);
 
   // Convert monthly plans, staff tasks, and subtasks into CalendarKit Pro CalendarEvents
-  const calendarEvents = useMemo<CalendarEvent[]>(() => {
+  const allEvents = useMemo<CalendarEvent[]>(() => {
     const events: CalendarEvent[] = [];
 
     const getClientName = (cId: string | null | undefined) => {
@@ -1031,7 +1052,7 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
     };
 
     // 1. Monthly Plans
-    filteredPlans.forEach(plan => {
+    scopedPlans.forEach(plan => {
       if (!plan.date) return;
       const dateKey = getSafeDateKey(plan.date);
       if (!dateKey) return;
@@ -1049,12 +1070,13 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         calendarId: 'plan',
         resourceId: plan.client_id || 'common',
         type: 'plan',
+        completed: !!plan.is_completed,
         rawPlan: plan,
       });
     });
 
     // 2. Staff Tasks
-    filteredTasks.forEach(task => {
+    scopedTasks.forEach(task => {
       // Fall back to created_at if due_date is null
       const rawDate = task.due_date || task.created_at;
       if (!rawDate) return;
@@ -1071,25 +1093,27 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
 
       const titlePrefix = isTeamHead ? '👑 ' : '⚡ ';
       const deptLabel = dept?.name || task.department_name;
-      const eventTitle = `${titlePrefix}${task.title}${deptLabel ? ` [${deptLabel}]` : ''}`;
+      // Keep the chip short: the department goes in the description, not after the title
+      const eventTitle = `${titlePrefix}${task.title}`;
 
       events.push({
         id: `task-${task.id}`,
         title: eventTitle,
         start: startDate,
         end: endDate,
-        description: task.description || '',
+        description: [deptLabel, task.description].filter(Boolean).join(' · '),
         color: isCompleted ? '#10b981' : (isTeamHead ? '#f59e0b' : '#8b5cf6'),
         allDay: true,
         calendarId: 'task',
         resourceId: task.client_id || 'common',
         type: 'task',
+        completed: isCompleted,
         rawTask: task,
       });
     });
 
     // 3. Subtasks
-    filteredSubtasks.forEach(sub => {
+    scopedSubtasks.forEach(sub => {
       const parentTask = sub.staff_tasks || tasks.find(t => t.id === sub.task_id);
       const rawDate = sub.due_date || sub.created_at || parentTask?.due_date || parentTask?.created_at;
       if (!rawDate) return;
@@ -1110,16 +1134,29 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
         calendarId: 'subtask',
         resourceId: parentTask?.client_id || 'common',
         type: 'subtask',
+        completed: isCompleted,
         rawSubtask: sub,
       });
     });
 
     return events;
-  }, [filteredPlans, filteredTasks, filteredSubtasks, clients, staffMembers, departments, tasks]);
+  }, [scopedPlans, scopedTasks, scopedSubtasks, clients, staffMembers, departments, tasks]);
+
+  const calendarEvents = useMemo(
+    () => (hideCompleted ? allEvents.filter(e => !e.completed) : allEvents),
+    [allEvents, hideCompleted]
+  );
+
+  const summary = useMemo(() => summarize(allEvents, currentMonth), [allEvents, currentMonth]);
+
+  const isLeadProfile =
+    userProfile?.is_department_head === true ||
+    ['department_head', 'team_head', 'manager', 'lead', 'hr', 'admin', 'super_admin'].includes(String(userProfile?.role || '').toLowerCase());
 
   const handleEventDrop = async (event: CalendarEvent, start: Date) => {
+    const newDateStr = format(start, 'yyyy-MM-dd');
+
     if (event.type === 'plan' && event.rawPlan) {
-      const newDateStr = format(start, 'yyyy-MM-dd');
       try {
         const { error } = await supabase
           .from('monthly_plans')
@@ -1142,6 +1179,40 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           variant: "destructive"
         });
       }
+      return;
+    }
+
+    // Tasks and subtasks: only their creator or a team lead may change the due date
+    const isTask = event.type === 'task' && event.rawTask;
+    const isSubtask = event.type === 'subtask' && event.rawSubtask;
+    if (!isTask && !isSubtask) return;
+
+    const row = isTask ? event.rawTask : event.rawSubtask;
+    const ownerId = isTask ? row.assigned_by : row.created_by;
+    if (!isLeadProfile && ownerId !== userId) {
+      toast({
+        title: "Can't move this one",
+        description: "Only the person who assigned it, or a team head, can change its due date.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (getSafeDateKey(row.due_date) === newDateStr) return;
+
+    try {
+      const { error } = await supabase
+        .from(isTask ? 'staff_tasks' : 'staff_subtasks')
+        .update({ due_date: newDateStr, updated_at: new Date().toISOString() })
+        .eq('id', row.id);
+
+      if (error) throw error;
+
+      toast({ title: "Due date changed", description: `Moved to ${format(start, 'PPP')}` });
+      if (isTask) setTasks(prev => prev.map(t => t.id === row.id ? { ...t, due_date: newDateStr } : t));
+      else setSubtasks(prev => prev.map(st => st.id === row.id ? { ...st, due_date: newDateStr } : st));
+    } catch (err: any) {
+      console.error('Error rescheduling on drop:', err);
+      toast({ title: "Couldn't move it", description: err?.message || "Failed to change the due date", variant: "destructive" });
     }
   };
 
@@ -1166,35 +1237,6 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
   };
 
   const SchedulerAny = Scheduler as any;
-
-  // Compute which dates have all items completed (green highlight)
-  const completedDateKeys = useMemo(() => {
-    const greenDates = new Set<string>();
-    // Collect all date keys that have at least one item
-    const allDateKeys = new Set<string>([
-      ...Object.keys(plansByDate),
-      ...Object.keys(tasksByDate),
-      ...Object.keys(subtasksByDate),
-    ]);
-
-    allDateKeys.forEach(dateKey => {
-      const dayPlans = plansByDate[dateKey] || [];
-      const dayTasks = tasksByDate[dateKey] || [];
-      const daySubtasks = subtasksByDate[dateKey] || [];
-      const total = dayPlans.length + dayTasks.length + daySubtasks.length;
-      if (total === 0) return;
-
-      const allPlansComplete = dayPlans.every(p => p.is_completed === true);
-      const allTasksComplete = dayTasks.every(t => t.status === 'completed');
-      const allSubtasksComplete = daySubtasks.every(s => s.status === 'completed');
-
-      if (allPlansComplete && allTasksComplete && allSubtasksComplete) {
-        greenDates.add(dateKey);
-      }
-    });
-
-    return greenDates;
-  }, [plansByDate, tasksByDate, subtasksByDate]);
 
   return (
     <div ref={containerRef} className="w-full text-white calendar-kit-dark-container max-h-[calc(100vh-100px)] flex flex-col overflow-hidden">
@@ -1246,23 +1288,34 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
           text-decoration: line-through !important;
         }
 
-        ${Array.from(completedDateKeys).map(dateKey => {
-          const [y, m, d] = dateKey.split('-');
-          return `
-            /* Target cells with aria-label or data attrs matching the date */
-            [data-date="${dateKey}"] .ck-month-day-number,
-            [aria-label*="${parseInt(d)} ${new Date(dateKey + 'T12:00:00').toLocaleString('en-US', { month: 'long' })}"] .ck-month-day-number {
-              background: rgba(16, 185, 129, 0.2) !important;
-              border-radius: 50% !important;
-              color: #10b981 !important;
-              box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.5) !important;
-            }
-          `;
-        }).join('\n')}
+        /* Sidebar: our summary replaces the library's inert "Calendars" accordion and timezone picker */
+        .calendar-kit-dark-container [data-vaw-host] > *:not([data-vaw-panel]) {
+          display: none !important;
+        }
+        .calendar-kit-dark-container [data-vaw-sidebar] > .mt-auto {
+          display: none !important;
+        }
       `}</style>
 
-      {portalTarget && createPortal(
-        <div className="inline-flex items-center gap-1.5 mr-2">
+      {headerSlot && createPortal(
+        <div className="flex flex-wrap items-center justify-center gap-1.5 md:justify-end md:mr-2">
+          {/* Hide Completed (remembered per staff member in this browser) */}
+          <label
+            htmlFor="planner-hide-completed"
+            className={cn(
+              "h-8 px-2.5 border border-white/10 rounded-xl bg-zinc-900/90 text-white text-xs font-semibold flex items-center gap-2 cursor-pointer select-none transition-all shadow-md hover:bg-zinc-800",
+              hideCompleted && "border-emerald-500/50 bg-emerald-500/10 text-emerald-300"
+            )}
+          >
+            <Switch
+              id="planner-hide-completed"
+              checked={hideCompleted}
+              onCheckedChange={toggleHideCompleted}
+              className="h-4 w-7 data-[state=checked]:bg-emerald-500 [&>span]:h-3 [&>span]:w-3 [&>span]:data-[state=checked]:translate-x-3"
+            />
+            <span className="whitespace-nowrap">Hide Completed</span>
+          </label>
+
           {/* Department Filter (Apart from / Across Departments) */}
           <Popover>
             <PopoverTrigger asChild>
@@ -1517,12 +1570,23 @@ const MonthlyPlanner = ({ userId, userProfile, filterClientId = null }: MonthlyP
             </PopoverContent>
           </Popover>
         </div>,
-        portalTarget
+        headerSlot
       )}
+
+      {sidebarSlot && createPortal(
+        <CalendarSummary layout="list" summary={summary} month={currentMonth} onOpen={openCalendarEvent} />,
+        sidebarSlot
+      )}
+
+      {/* The library hides its sidebar below the lg breakpoint, so show the numbers as a strip there */}
+      <div className="lg:hidden">
+        <CalendarSummary layout="strip" summary={summary} month={currentMonth} onOpen={openCalendarEvent} />
+      </div>
 
       <SchedulerAny
         events={calendarEvents}
         view={view}
+        hideViewSwitcher
         onViewChange={handleViewChange}
         date={currentMonth}
         onDateChange={handleDateChange}

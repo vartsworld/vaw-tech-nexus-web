@@ -207,10 +207,18 @@
   }
 }
 
-/* Thin scrollbar */
+/* Hairline scrollbars everywhere: 2px wide */
+/* Chrome 121+ ignores ::-webkit-scrollbar when scrollbar-width is set, so only Firefox gets the standard property */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
+  }
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 2px;
+  height: 2px;
 }
 
 ::-webkit-scrollbar-track {
@@ -218,12 +226,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.35);
+  background: hsl(var(--muted-foreground) / 0.4);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.55);
+  background: hsl(var(--muted-foreground) / 0.7);
 }
 
 /* Legacy decorative helpers – intentionally subdued. Kept so existing markup keeps working. */
@@ -318,13 +326,9 @@
 }
 
 @layer utilities {
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
-  }
   .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 2px;
+    height: 2px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: rgba(148, 163, 184, 0.35);
