@@ -62,7 +62,7 @@ export default function NotesPage() {
       userId={profile.user_id}
       userProfile={profile}
     >
-      <div className="mx-auto max-w-4xl py-2">
+      <div className="mx-auto max-w-6xl py-2">
         <PersonalNotes userId={profile.user_id} />
       </div>
     </VirtualOfficeLayout>

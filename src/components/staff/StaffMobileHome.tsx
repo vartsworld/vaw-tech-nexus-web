@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { buildStaffTasks, staffTasksOrFilter } from "@/lib/staffTasks";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +33,8 @@ import {
   ExternalLink,
   ChevronDown,
   Compass,
-  Globe
+  Globe,
+  CalendarClock
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -72,7 +74,7 @@ const getIsoDateKey = (isoStr: string | null | undefined) => {
 import LeaveView from "@/components/staff/LeaveView";
 import TasksManager from "./TasksManager";
 import { PersonalNotes } from "@/components/staff/PersonalNotes";
-import MiniChess from "@/components/staff/MiniChess";
+import { StandaloneArcade } from "@/components/staff/ArcadeHub";
 import MeetingRoom from "./MeetingRoom";
 import ClientOnboardingCreator from "./ClientOnboardingCreator";
 import ToolsNexusView from "./ToolsNexusView";
@@ -203,66 +205,32 @@ const StaffMobileHome = ({
         supabase
           .from("staff_tasks")
           .select("*")
-          .or(`assigned_to.ilike.%${profile.user_id}%,department_id.eq.${profile.department_id || 'none'}`)
+          .or(staffTasksOrFilter(profile.user_id, profile.department_id))
       ]);
 
-      const subtaskItems = (subtasksRes.data as any[]) || [];
-      const directTasks = (directTasksRes.data as any[]) || [];
-      const taskGroups: Record<string, { parent: any; subs: any[] }> = {};
+      if (subtasksRes.error) console.error("Error fetching subtasks:", subtasksRes.error);
+      if (directTasksRes.error) console.error("Error fetching tasks:", directTasksRes.error);
 
-      directTasks.forEach(pt => {
-        taskGroups[pt.id] = { parent: pt, subs: [] };
-      });
-
-      subtaskItems.forEach(st => {
-        if (!st.task_id || !st.staff_tasks) return;
-        if (!taskGroups[st.task_id]) {
-          taskGroups[st.task_id] = { parent: st.staff_tasks, subs: [] };
-        }
-        if (!taskGroups[st.task_id].subs.some(s => s.id === st.id)) {
-          taskGroups[st.task_id].subs.push(st);
-        }
-      });
-
-      const taskItems: TaskItem[] = Object.entries(taskGroups).map(([taskId, group]) => {
-        const parent = group.parent;
-        const subs = group.subs;
-        let effectiveStatus = parent.status || "pending";
-        if (subs.length > 0) {
-          if (subs.some(s => s.status === 'in_progress')) {
-            effectiveStatus = 'in_progress';
-          } else if (subs.every(s => ['completed', 'review_pending', 'pending_approval', 'handover'].includes(s.status || ''))) {
-            effectiveStatus = 'completed';
-          }
-        }
-
-        const subtasksWithDates = subs.filter(s => s.due_date || s.created_at);
-        const earliestDueDate = subtasksWithDates.length > 0 
-          ? subtasksWithDates.sort((a, b) => new Date(a.due_date || a.created_at).getTime() - new Date(b.due_date || b.created_at).getTime())[0].due_date
-          : (parent.due_date || parent.created_at);
-
-        const isPastDue = earliestDueDate && new Date(earliestDueDate) < new Date(new Date().setHours(0,0,0,0));
-        if (effectiveStatus !== 'completed' && isPastDue) {
-          effectiveStatus = 'overdue';
-        }
-
-        return {
-          id: parent.id,
-          title: parent.title,
-          description: parent.description,
-          status: effectiveStatus,
-          priority: parent.priority,
-          points: parent.points,
-          assigned_by: parent.assigned_by,
-          created_at: parent.created_at,
-          due_date: earliestDueDate,
-          due_time: parent.due_time,
-          trial_period: parent.trial_period,
-          client_project_id: parent.client_project_id,
-          project_title: parent.title,
-          current_stage: parent.current_stage,
-        };
-      });
+      const taskItems: TaskItem[] = buildStaffTasks(
+        (directTasksRes.data as any[]) || [],
+        (subtasksRes.data as any[]) || [],
+        profile.user_id
+      ).map(parent => ({
+        id: parent.id,
+        title: parent.title,
+        description: parent.description,
+        status: parent.status,
+        priority: parent.priority,
+        points: parent.points,
+        assigned_by: parent.assigned_by,
+        created_at: parent.created_at,
+        due_date: parent.due_date,
+        due_time: parent.due_time,
+        trial_period: parent.trial_period,
+        client_project_id: parent.client_project_id,
+        project_title: parent.title,
+        current_stage: parent.current_stage,
+      }));
 
       const projectIds = [...new Set(taskItems.filter(t => t.client_project_id).map(t => t.client_project_id!))];
       if (projectIds.length > 0) {
@@ -334,6 +302,15 @@ const StaffMobileHome = ({
     return { currentTasks: current, overdueTasks: overdue, completedTasks: completed };
   }, [tasks]);
   const totalTasks = tasks.length;
+  // Home shows what needs doing: in-progress first, then overdue, then not-yet-started.
+  const upNextTasks = useMemo(
+    () => [
+      ...currentTasks,
+      ...overdueTasks,
+      ...tasks.filter(t => t.status !== "in_progress" && t.status !== "overdue" && t.status !== "completed"),
+    ],
+    [tasks, currentTasks, overdueTasks]
+  );
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -722,13 +699,13 @@ const StaffMobileHome = ({
                     View All
                   </button>
                 </div>
-                {currentTasks.length === 0 ? (
+                {upNextTasks.length === 0 ? (
                   <div className="p-6 bg-black/20 border border-dashed border-white/10 rounded-2xl text-center">
-                    <p className="text-xs text-zinc-500">No active tasks. Tap 'Tasks' below to view all.</p>
+                    <p className="text-xs text-zinc-500">Nothing pending. Tap 'Tasks' below to view all.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {currentTasks.slice(0, 2).map(task => (
+                    {upNextTasks.slice(0, 3).map(task => (
                       <div
                         key={task.id}
                         onClick={() => navigate(`/staff/task/${task.id}`)}
@@ -1397,6 +1374,19 @@ const StaffMobileHome = ({
                     </button>
 
                     <button
+                    onClick={() => navigate("/postit")}
+                    className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-violet-500/15 flex items-center justify-center text-violet-400 border border-violet-500/20">
+                        <CalendarClock className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white">Post Scheduler</h4>
+                        <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Social Posts</p>
+                      </div>
+                    </button>
+
+                    <button
                       onClick={() => setActiveTool("coin")}
                       className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
                     >
@@ -1424,9 +1414,7 @@ const StaffMobileHome = ({
                   {activeTool === "leave" && <LeaveView profile={profile} />}
                   {activeTool === "notes" && <PersonalNotes compact userId={profile?.user_id} />}
                   {activeTool === "arcade" && (
-                    <div className="bg-black/40 backdrop-blur-2xl p-4 rounded-3xl border border-white/10 shadow-2xl">
-                      <MiniChess userId={profile?.user_id} userProfile={profile} />
-                    </div>
+                    <StandaloneArcade profile={profile} />
                   )}
                   {activeTool === "onboarding" && (
                     <div className="bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-3xl p-4 min-h-[400px]">

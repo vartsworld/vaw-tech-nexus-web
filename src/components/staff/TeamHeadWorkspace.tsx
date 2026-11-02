@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { teamHeadTasksOrFilter } from "@/lib/staffTasks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -132,10 +133,9 @@ interface Staff {
 interface TeamHeadWorkspaceProps {
   userId: string;
   userProfile: any;
-  widgetManager?: React.ReactNode;
 }
 
-const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorkspaceProps) => {
+const TeamHeadWorkspace = ({ userId, userProfile }: TeamHeadWorkspaceProps) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeToggle, setActiveToggle] = useState<'upcoming' | 'current' | 'handover' | 'folders'>('current');
   const [selectedFolderProject, setSelectedFolderProject] = useState<any | null>(null);
@@ -496,7 +496,7 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
       const { data, error } = await supabase
         .from('staff_tasks')
         .select('*')
-        .or(`assigned_by.eq.${userId},assigned_to.eq.${userId},assigned_to.like.*${userId}*,department_id.eq.${userProfile?.department_id}`)
+        .or(teamHeadTasksOrFilter(userId, userProfile?.department_id))
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -2299,7 +2299,6 @@ const TeamHeadWorkspace = ({ userId, userProfile, widgetManager }: TeamHeadWorks
               </DialogContent>
             </Dialog>
           )}
-          {widgetManager}
           <Button className="flex items-center gap-2" onClick={() => setCurrentView('create')}>
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Create Task</span>

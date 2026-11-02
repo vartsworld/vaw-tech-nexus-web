@@ -451,14 +451,14 @@ const VirtualOfficeLayout = ({
       items: [
         { id: 'leave', name: 'Leave Application', icon: PlaneTakeoff, path: '/staff/leave' },
         { id: 'tools', name: 'Tools Nexus', icon: Compass, path: '/staff/tools-nexus' },
-        // `href` items open their own page instead of a dashboard room
-        { id: 'postit', name: 'Post Scheduler', icon: CalendarClock, path: '/postit', href: '/postit' },
         { id: 'arcade', name: 'Arcade', icon: Swords, path: '#' },
         { id: 'onboarding', name: 'Onboarding', icon: Compass, path: '/staff/onboarding' },
         { id: 'notes', name: 'Personal Notes', icon: ClipboardList, path: '/staff/notes' },
         { id: 'meeting' as const, name: 'Meeting Room', icon: Users, path: '#' },
         { id: 'activity', name: 'Activity', icon: Activity, path: '/staff/activity' },
         { id: 'project-monitor', name: 'Project Monitor', icon: Globe, path: '/staff/project-monitor' },
+        // `href` items open their own page instead of a dashboard room
+        { id: 'postit', name: 'Post Scheduler', icon: CalendarClock, path: '/postit', href: '/postit' },
         ...(userProfile?.role === 'team_head' ? [{ id: 'qr', name: 'QR Manager', icon: QrCode, path: '#' }] : []),
       ]
     }

@@ -73,7 +73,7 @@ import { TaskDetailDialog } from "./TaskDetailDialog";
 import LeaveView from "@/components/staff/LeaveView";
 import TeamHeadWorkspace from "./TeamHeadWorkspace";
 import { PersonalNotes } from "@/components/staff/PersonalNotes";
-import MiniChess from "@/components/staff/MiniChess";
+import { StandaloneArcade } from "@/components/staff/ArcadeHub";
 import MeetingRoom from "./MeetingRoom";
 import ClientOnboardingCreator from "./ClientOnboardingCreator";
 import ToolsNexusView from "./ToolsNexusView";
@@ -83,7 +83,8 @@ import {
   Activity,
   Compass,
   UserCheck,
-  Globe
+  Globe,
+  CalendarClock
 } from "lucide-react";
 import ProjectMonitor from "@/pages/ProjectMonitor";
 
@@ -1015,6 +1016,19 @@ const TeamHeadMobileHome = ({
             </button>
 
             <button
+            onClick={() => navigate("/postit")}
+            className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-violet-500/15 flex items-center justify-center text-violet-400 border border-violet-500/20">
+                <CalendarClock className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white">Post Scheduler</h4>
+                <p className="text-[10px] text-white/40 mt-1 uppercase font-bold tracking-widest">Social Posts</p>
+              </div>
+            </button>
+
+            <button
               onClick={() => setActiveTool("coin")}
               className="bg-black/40 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 flex flex-col items-center justify-center text-center space-y-3 hover:border-white/15 active:scale-95 transition-all shadow-xl col-span-2"
             >
@@ -1043,9 +1057,7 @@ const TeamHeadMobileHome = ({
           {activeTool === "leave" && <LeaveView profile={profile} />}
           {activeTool === "notes" && <PersonalNotes compact userId={profile?.user_id} />}
           {activeTool === "arcade" && (
-            <div className="bg-black/40 backdrop-blur-2xl p-4 rounded-3xl border border-white/10 shadow-2xl">
-              <MiniChess userId={profile?.user_id} userProfile={profile} />
-            </div>
+            <StandaloneArcade profile={profile} />
           )}
           {activeTool === "onboarding" && (
             <div className="bg-zinc-900/40 backdrop-blur-md border border-white/10 rounded-3xl p-4 min-h-[400px]">
